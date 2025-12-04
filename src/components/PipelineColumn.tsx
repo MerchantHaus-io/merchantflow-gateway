@@ -9,6 +9,7 @@ interface PipelineColumnProps {
   onDragOver: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent, stage: OpportunityStage) => void;
   onCardClick: (opportunity: Opportunity) => void;
+  onAssignmentChange?: (opportunityId: string, assignedTo: string | null) => void;
 }
 
 const PipelineColumn = ({
@@ -18,6 +19,7 @@ const PipelineColumn = ({
   onDragOver,
   onDrop,
   onCardClick,
+  onAssignmentChange,
 }: PipelineColumnProps) => {
   const config = STAGE_CONFIG[stage];
 
@@ -45,6 +47,7 @@ const PipelineColumn = ({
               opportunity={opportunity}
               onDragStart={onDragStart}
               onClick={() => onCardClick(opportunity)}
+              onAssignmentChange={onAssignmentChange}
             />
           ))}
           

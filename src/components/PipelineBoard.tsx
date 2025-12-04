@@ -6,9 +6,10 @@ import OpportunityDetailModal from "./OpportunityDetailModal";
 interface PipelineBoardProps {
   opportunities: Opportunity[];
   onUpdateOpportunity: (id: string, updates: Partial<Opportunity>) => void;
+  onAssignmentChange?: (opportunityId: string, assignedTo: string | null) => void;
 }
 
-const PipelineBoard = ({ opportunities, onUpdateOpportunity }: PipelineBoardProps) => {
+const PipelineBoard = ({ opportunities, onUpdateOpportunity, onAssignmentChange }: PipelineBoardProps) => {
   const [draggedOpportunity, setDraggedOpportunity] = useState<Opportunity | null>(null);
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
 
@@ -47,6 +48,7 @@ const PipelineBoard = ({ opportunities, onUpdateOpportunity }: PipelineBoardProp
               onDragOver={handleDragOver}
               onDrop={handleDrop}
               onCardClick={setSelectedOpportunity}
+              onAssignmentChange={onAssignmentChange}
             />
           ))}
         </div>

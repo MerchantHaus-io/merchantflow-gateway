@@ -248,6 +248,7 @@ export type Database = {
         Row: {
           account_id: string
           agree_to_terms: boolean | null
+          assigned_to: string | null
           contact_id: string
           created_at: string
           id: string
@@ -263,6 +264,7 @@ export type Database = {
         Insert: {
           account_id: string
           agree_to_terms?: boolean | null
+          assigned_to?: string | null
           contact_id: string
           created_at?: string
           id?: string
@@ -278,6 +280,7 @@ export type Database = {
         Update: {
           account_id?: string
           agree_to_terms?: boolean | null
+          assigned_to?: string | null
           contact_id?: string
           created_at?: string
           id?: string

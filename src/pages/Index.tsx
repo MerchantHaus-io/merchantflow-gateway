@@ -144,6 +144,14 @@ const Index = () => {
     );
   };
 
+  const handleAssignmentChange = (opportunityId: string, assignedTo: string | null) => {
+    setOpportunities(
+      opportunities.map((o) => 
+        o.id === opportunityId ? { ...o, assigned_to: assignedTo || undefined } : o
+      )
+    );
+  };
+
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center bg-background">
@@ -163,7 +171,8 @@ const Index = () => {
           <main className="flex-1 overflow-hidden">
             <PipelineBoard 
               opportunities={opportunities} 
-              onUpdateOpportunity={handleUpdateOpportunity} 
+              onUpdateOpportunity={handleUpdateOpportunity}
+              onAssignmentChange={handleAssignmentChange}
             />
           </main>
         </SidebarInset>

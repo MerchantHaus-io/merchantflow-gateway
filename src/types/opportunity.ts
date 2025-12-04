@@ -47,6 +47,7 @@ export interface Opportunity {
   agree_to_terms?: boolean;
   timezone?: string;
   language?: string;
+  assigned_to?: string;
   created_at: string;
   updated_at: string;
   // Joined data
