@@ -44,13 +44,13 @@ All colors MUST be HSL.
 
     --radius: 0.5rem;
 
-    /* Team member colors */
-    --team-wesley: 199 89% 48%;
-    --team-leo: 38 92% 50%;
-    --team-jamie: 262 83% 58%;
-    --team-darryn: 142 76% 36%;
-    --team-taryn: 328 85% 58%;
-    --team-yaseen: 15 90% 55%;
+    /* Team member colors - Chakra spectrum */
+    --team-wesley: 0 84% 60%;      /* Red - Root */
+    --team-leo: 25 95% 53%;        /* Orange - Sacral */
+    --team-jamie: 48 96% 53%;      /* Yellow - Solar Plexus */
+    --team-darryn: 142 71% 45%;    /* Green - Heart */
+    --team-taryn: 199 89% 48%;     /* Blue - Throat */
+    --team-yaseen: 262 83% 58%;    /* Violet - Crown */
     
     /* Pipeline stage colors (mapped to team owners) */
     --stage-lead: var(--team-wesley);
@@ -59,7 +59,7 @@ All colors MUST be HSL.
     --stage-underwriting: var(--team-leo);
     --stage-approval: var(--team-jamie);
     --stage-live: var(--team-darryn);
-    --stage-declined: 0 84% 60%;
+    --stage-declined: 0 0% 45%;
 
     --sidebar-background: 222 47% 11%;
     --sidebar-foreground: 210 40% 98%;
@@ -107,13 +107,13 @@ All colors MUST be HSL.
     --input: 217 33% 25%;
     --ring: 239 84% 67%;
 
-    /* Team member colors */
-    --team-wesley: 199 89% 48%;
-    --team-leo: 38 92% 50%;
-    --team-jamie: 262 83% 58%;
-    --team-darryn: 142 76% 36%;
-    --team-taryn: 328 85% 58%;
-    --team-yaseen: 15 90% 55%;
+    /* Team member colors - Chakra spectrum */
+    --team-wesley: 0 84% 60%;      /* Red - Root */
+    --team-leo: 25 95% 53%;        /* Orange - Sacral */
+    --team-jamie: 48 96% 53%;      /* Yellow - Solar Plexus */
+    --team-darryn: 142 71% 45%;    /* Green - Heart */
+    --team-taryn: 199 89% 48%;     /* Blue - Throat */
+    --team-yaseen: 262 83% 58%;    /* Violet - Crown */
     
     /* Pipeline stage colors (mapped to team owners) */
     --stage-lead: var(--team-wesley);
@@ -122,7 +122,7 @@ All colors MUST be HSL.
     --stage-underwriting: var(--team-leo);
     --stage-approval: var(--team-jamie);
     --stage-live: var(--team-darryn);
-    --stage-declined: 0 84% 60%;
+    --stage-declined: 0 0% 45%;
 
     --sidebar-background: 222 47% 11%;
     --sidebar-foreground: 210 40% 98%;
