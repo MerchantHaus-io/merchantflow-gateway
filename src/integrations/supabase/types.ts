@@ -16,6 +16,8 @@ export type Database = {
     Tables: {
       merchants: {
         Row: {
+          address: string | null
+          address2: string | null
           application_complete: boolean | null
           application_form_received: boolean | null
           application_form_sent: boolean | null
@@ -24,17 +26,26 @@ export type Database = {
           banking_info_received: boolean | null
           banking_info_requested: boolean | null
           call_scheduled: boolean | null
+          city: string | null
           company: string | null
           completeness_verified: boolean | null
+          country: string | null
           created_at: string
           docusign_sent: boolean | null
+          email: string | null
+          fax: string | null
+          first_name: string | null
           gateway: string | null
           id: string
           integration: string | null
           is_live: boolean | null
+          language: string | null
+          last_name: string | null
           lead_name: string
           microsite_submitted: boolean | null
           notes: string | null
+          phone: string | null
+          processing_services: string[] | null
           processor: string | null
           processor_name: string | null
           referral_type: string | null
@@ -42,10 +53,18 @@ export type Database = {
           sent_to_admin: boolean | null
           signed: boolean | null
           stage: string
+          state: string | null
+          timezone: string | null
           updated_at: string
           user_id: string | null
+          username: string | null
+          value_services: string | null
+          website: string | null
+          zip: string | null
         }
         Insert: {
+          address?: string | null
+          address2?: string | null
           application_complete?: boolean | null
           application_form_received?: boolean | null
           application_form_sent?: boolean | null
@@ -54,17 +73,26 @@ export type Database = {
           banking_info_received?: boolean | null
           banking_info_requested?: boolean | null
           call_scheduled?: boolean | null
+          city?: string | null
           company?: string | null
           completeness_verified?: boolean | null
+          country?: string | null
           created_at?: string
           docusign_sent?: boolean | null
+          email?: string | null
+          fax?: string | null
+          first_name?: string | null
           gateway?: string | null
           id?: string
           integration?: string | null
           is_live?: boolean | null
+          language?: string | null
+          last_name?: string | null
           lead_name: string
           microsite_submitted?: boolean | null
           notes?: string | null
+          phone?: string | null
+          processing_services?: string[] | null
           processor?: string | null
           processor_name?: string | null
           referral_type?: string | null
@@ -72,10 +100,18 @@ export type Database = {
           sent_to_admin?: boolean | null
           signed?: boolean | null
           stage?: string
+          state?: string | null
+          timezone?: string | null
           updated_at?: string
           user_id?: string | null
+          username?: string | null
+          value_services?: string | null
+          website?: string | null
+          zip?: string | null
         }
         Update: {
+          address?: string | null
+          address2?: string | null
           application_complete?: boolean | null
           application_form_received?: boolean | null
           application_form_sent?: boolean | null
@@ -84,17 +120,26 @@ export type Database = {
           banking_info_received?: boolean | null
           banking_info_requested?: boolean | null
           call_scheduled?: boolean | null
+          city?: string | null
           company?: string | null
           completeness_verified?: boolean | null
+          country?: string | null
           created_at?: string
           docusign_sent?: boolean | null
+          email?: string | null
+          fax?: string | null
+          first_name?: string | null
           gateway?: string | null
           id?: string
           integration?: string | null
           is_live?: boolean | null
+          language?: string | null
+          last_name?: string | null
           lead_name?: string
           microsite_submitted?: boolean | null
           notes?: string | null
+          phone?: string | null
+          processing_services?: string[] | null
           processor?: string | null
           processor_name?: string | null
           referral_type?: string | null
@@ -102,8 +147,14 @@ export type Database = {
           sent_to_admin?: boolean | null
           signed?: boolean | null
           stage?: string
+          state?: string | null
+          timezone?: string | null
           updated_at?: string
           user_id?: string | null
+          username?: string | null
+          value_services?: string | null
+          website?: string | null
+          zip?: string | null
         }
         Relationships: []
       }
