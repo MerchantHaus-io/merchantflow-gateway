@@ -39,19 +39,23 @@ const PipelineColumn = ({
       onDragOver={onDragOver}
       onDrop={(e) => onDrop(e, stage)}
     >
-      <div className="p-4 border-b border-border/50">
+      <div className={`p-4 border-b border-border/50 border-t-4 rounded-t-xl ${config.colorClass}`}>
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
-            <div className={`w-2.5 h-2.5 rounded-full ${config.colorClass}`} />
             <h2 className="font-semibold text-sm text-foreground">{config.label}</h2>
           </div>
           <span className="bg-card text-muted-foreground text-xs font-medium px-2 py-0.5 rounded-full">
             {merchants.length}
           </span>
         </div>
-        <p className="text-xs text-muted-foreground">
-          {formatCurrency(totalVolume)} monthly volume
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">
+            {formatCurrency(totalVolume)} monthly volume
+          </p>
+          <span className="text-xs text-foreground/80 font-medium">
+            {config.defaultOwner}
+          </span>
+        </div>
       </div>
       
       <div className="flex-1 p-3 space-y-3 overflow-y-auto min-h-0">

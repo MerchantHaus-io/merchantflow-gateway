@@ -1,9 +1,10 @@
 export type PipelineStage = 
   | 'lead'
   | 'contacted'
-  | 'proposal'
+  | 'application'
   | 'underwriting'
-  | 'approved'
+  | 'approval'
+  | 'live'
   | 'declined';
 
 export interface Merchant {
@@ -31,20 +32,31 @@ export const TEAM_MEMBERS = [
 
 export type TeamMember = typeof TEAM_MEMBERS[number];
 
-export const STAGE_CONFIG: Record<PipelineStage, { label: string; colorClass: string }> = {
-  lead: { label: 'Lead', colorClass: 'bg-stage-lead' },
-  contacted: { label: 'Contacted', colorClass: 'bg-stage-contacted' },
-  proposal: { label: 'Proposal', colorClass: 'bg-stage-proposal' },
-  underwriting: { label: 'Underwriting', colorClass: 'bg-stage-underwriting' },
-  approved: { label: 'Approved', colorClass: 'bg-stage-approved' },
-  declined: { label: 'Declined', colorClass: 'bg-stage-declined' },
+export const TEAM_MEMBER_COLORS: Record<string, string> = {
+  'Wesley': 'border-team-wesley',
+  'Leo': 'border-team-leo',
+  'Jamie': 'border-team-jamie',
+  'Darryn': 'border-team-darryn',
+  'Taryn': 'border-team-taryn',
+  'Yaseen': 'border-team-yaseen',
+};
+
+export const STAGE_CONFIG: Record<PipelineStage, { label: string; colorClass: string; defaultOwner: TeamMember }> = {
+  lead: { label: 'Lead', colorClass: 'bg-team-wesley', defaultOwner: 'Wesley' },
+  contacted: { label: 'Contacted', colorClass: 'bg-team-wesley', defaultOwner: 'Wesley' },
+  application: { label: 'Application', colorClass: 'bg-team-leo', defaultOwner: 'Leo' },
+  underwriting: { label: 'Underwriting', colorClass: 'bg-team-leo', defaultOwner: 'Leo' },
+  approval: { label: 'Approval', colorClass: 'bg-team-jamie', defaultOwner: 'Jamie' },
+  live: { label: 'Live', colorClass: 'bg-team-darryn', defaultOwner: 'Darryn' },
+  declined: { label: 'Declined', colorClass: 'bg-destructive', defaultOwner: 'Taryn' },
 };
 
 export const PIPELINE_STAGES: PipelineStage[] = [
   'lead',
   'contacted', 
-  'proposal',
+  'application',
   'underwriting',
-  'approved',
+  'approval',
+  'live',
   'declined',
 ];

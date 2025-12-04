@@ -44,12 +44,21 @@ All colors MUST be HSL.
 
     --radius: 0.5rem;
 
-    /* Pipeline stage colors */
-    --stage-lead: 215 20% 65%;
-    --stage-contacted: 199 89% 48%;
-    --stage-proposal: 262 83% 58%;
-    --stage-underwriting: 38 92% 50%;
-    --stage-approved: 142 76% 36%;
+    /* Team member colors */
+    --team-wesley: 199 89% 48%;
+    --team-leo: 38 92% 50%;
+    --team-jamie: 262 83% 58%;
+    --team-darryn: 142 76% 36%;
+    --team-taryn: 328 85% 58%;
+    --team-yaseen: 15 90% 55%;
+    
+    /* Pipeline stage colors (mapped to team owners) */
+    --stage-lead: var(--team-wesley);
+    --stage-contacted: var(--team-wesley);
+    --stage-application: var(--team-leo);
+    --stage-underwriting: var(--team-leo);
+    --stage-approval: var(--team-jamie);
+    --stage-live: var(--team-darryn);
     --stage-declined: 0 84% 60%;
 
     --sidebar-background: 222 47% 11%;
@@ -98,11 +107,21 @@ All colors MUST be HSL.
     --input: 217 33% 25%;
     --ring: 239 84% 67%;
 
-    --stage-lead: 215 20% 65%;
-    --stage-contacted: 199 89% 48%;
-    --stage-proposal: 262 83% 58%;
-    --stage-underwriting: 38 92% 50%;
-    --stage-approved: 142 76% 36%;
+    /* Team member colors */
+    --team-wesley: 199 89% 48%;
+    --team-leo: 38 92% 50%;
+    --team-jamie: 262 83% 58%;
+    --team-darryn: 142 76% 36%;
+    --team-taryn: 328 85% 58%;
+    --team-yaseen: 15 90% 55%;
+    
+    /* Pipeline stage colors (mapped to team owners) */
+    --stage-lead: var(--team-wesley);
+    --stage-contacted: var(--team-wesley);
+    --stage-application: var(--team-leo);
+    --stage-underwriting: var(--team-leo);
+    --stage-approval: var(--team-jamie);
+    --stage-live: var(--team-darryn);
     --stage-declined: 0 84% 60%;
 
     --sidebar-background: 222 47% 11%;

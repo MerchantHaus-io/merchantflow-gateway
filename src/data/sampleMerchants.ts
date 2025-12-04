@@ -12,6 +12,7 @@ export const sampleMerchants: Merchant[] = [
     stage: 'lead',
     createdAt: new Date('2024-01-15'),
     notes: 'High-volume Italian restaurant, interested in lower rates.',
+    assignedTo: 'Wesley',
   },
   {
     id: '2',
@@ -23,6 +24,7 @@ export const sampleMerchants: Merchant[] = [
     businessType: 'Retail',
     stage: 'contacted',
     createdAt: new Date('2024-01-18'),
+    assignedTo: 'Wesley',
   },
   {
     id: '3',
@@ -32,9 +34,10 @@ export const sampleMerchants: Merchant[] = [
     phone: '(555) 456-7890',
     monthlyVolume: 45000,
     businessType: 'Salon/Spa',
-    stage: 'proposal',
+    stage: 'application',
     createdAt: new Date('2024-01-20'),
     notes: 'Looking for integrated POS system.',
+    assignedTo: 'Leo',
   },
   {
     id: '4',
@@ -46,6 +49,7 @@ export const sampleMerchants: Merchant[] = [
     businessType: 'Auto Repair',
     stage: 'underwriting',
     createdAt: new Date('2024-01-22'),
+    assignedTo: 'Leo',
   },
   {
     id: '5',
@@ -55,9 +59,10 @@ export const sampleMerchants: Merchant[] = [
     phone: '(555) 678-9012',
     monthlyVolume: 250000,
     businessType: 'E-commerce',
-    stage: 'approved',
+    stage: 'live',
     createdAt: new Date('2024-01-10'),
     notes: 'High-volume e-commerce, needs payment gateway integration.',
+    assignedTo: 'Darryn',
   },
   {
     id: '6',
@@ -69,6 +74,7 @@ export const sampleMerchants: Merchant[] = [
     businessType: 'Healthcare',
     stage: 'lead',
     createdAt: new Date('2024-01-25'),
+    assignedTo: 'Wesley',
   },
   {
     id: '7',
@@ -80,6 +86,7 @@ export const sampleMerchants: Merchant[] = [
     businessType: 'Restaurant',
     stage: 'contacted',
     createdAt: new Date('2024-01-24'),
+    assignedTo: 'Wesley',
   },
   {
     id: '8',
@@ -89,7 +96,8 @@ export const sampleMerchants: Merchant[] = [
     phone: '(555) 901-2345',
     monthlyVolume: 95000,
     businessType: 'Professional Services',
-    stage: 'proposal',
+    stage: 'approval',
     createdAt: new Date('2024-01-19'),
+    assignedTo: 'Jamie',
   },
 ];

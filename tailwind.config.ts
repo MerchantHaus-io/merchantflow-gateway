@@ -68,10 +68,19 @@ export default {
         stage: {
           lead: "hsl(var(--stage-lead))",
           contacted: "hsl(var(--stage-contacted))",
-          proposal: "hsl(var(--stage-proposal))",
+          application: "hsl(var(--stage-application))",
           underwriting: "hsl(var(--stage-underwriting))",
-          approved: "hsl(var(--stage-approved))",
+          approval: "hsl(var(--stage-approval))",
+          live: "hsl(var(--stage-live))",
           declined: "hsl(var(--stage-declined))",
+        },
+        team: {
+          wesley: "hsl(var(--team-wesley))",
+          leo: "hsl(var(--team-leo))",
+          jamie: "hsl(var(--team-jamie))",
+          darryn: "hsl(var(--team-darryn))",
+          taryn: "hsl(var(--team-taryn))",
+          yaseen: "hsl(var(--team-yaseen))",
         },
       },
       borderRadius: {

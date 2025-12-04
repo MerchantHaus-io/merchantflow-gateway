@@ -1,6 +1,6 @@
 import { Building2, DollarSign, Phone, Mail, GripVertical, User } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Merchant, TEAM_MEMBERS } from "@/types/merchant";
+import { Merchant, TEAM_MEMBERS, TEAM_MEMBER_COLORS } from "@/types/merchant";
 import {
   Select,
   SelectContent,
@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 interface MerchantCardProps {
   merchant: Merchant;
@@ -32,12 +33,19 @@ const MerchantCard = ({ merchant, onDragStart, onClick, onAssign }: MerchantCard
     }
   };
 
+  const borderColorClass = merchant.assignedTo 
+    ? TEAM_MEMBER_COLORS[merchant.assignedTo] 
+    : 'border-border/60';
+
   return (
     <Card 
       draggable
       onDragStart={(e) => onDragStart(e, merchant)}
       onClick={onClick}
-      className="cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-200 group border-border/60 bg-card"
+      className={cn(
+        "cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-200 group bg-card border-l-4",
+        borderColorClass
+      )}
     >
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-3">
