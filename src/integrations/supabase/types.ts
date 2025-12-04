@@ -20,6 +20,7 @@ export type Database = {
           application_form_received: boolean | null
           application_form_sent: boolean | null
           application_status: string | null
+          assigned_to: string | null
           banking_info_received: boolean | null
           banking_info_requested: boolean | null
           call_scheduled: boolean | null
@@ -49,6 +50,7 @@ export type Database = {
           application_form_received?: boolean | null
           application_form_sent?: boolean | null
           application_status?: string | null
+          assigned_to?: string | null
           banking_info_received?: boolean | null
           banking_info_requested?: boolean | null
           call_scheduled?: boolean | null
@@ -78,6 +80,7 @@ export type Database = {
           application_form_received?: boolean | null
           application_form_sent?: boolean | null
           application_status?: string | null
+          assigned_to?: string | null
           banking_info_received?: boolean | null
           banking_info_requested?: boolean | null
           call_scheduled?: boolean | null

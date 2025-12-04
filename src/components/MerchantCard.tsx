@@ -1,11 +1,19 @@
-import { Building2, DollarSign, Phone, Mail, GripVertical } from "lucide-react";
+import { Building2, DollarSign, Phone, Mail, GripVertical, User } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Merchant } from "@/types/merchant";
+import { Merchant, TEAM_MEMBERS } from "@/types/merchant";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface MerchantCardProps {
   merchant: Merchant;
   onDragStart: (e: React.DragEvent, merchant: Merchant) => void;
   onClick: () => void;
+  onAssign?: (merchantId: string, assignedTo: string) => void;
 }
 
 const formatCurrency = (amount: number) => {
@@ -17,13 +25,19 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
-const MerchantCard = ({ merchant, onDragStart, onClick }: MerchantCardProps) => {
+const MerchantCard = ({ merchant, onDragStart, onClick, onAssign }: MerchantCardProps) => {
+  const handleAssignChange = (value: string) => {
+    if (onAssign) {
+      onAssign(merchant.id, value);
+    }
+  };
+
   return (
     <Card 
       draggable
       onDragStart={(e) => onDragStart(e, merchant)}
       onClick={onClick}
-      className="cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-200 group border-border/60"
+      className="cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-200 group border-border/60 bg-card"
     >
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-3">
@@ -55,10 +69,32 @@ const MerchantCard = ({ merchant, onDragStart, onClick }: MerchantCardProps) => 
           </div>
         </div>
         
-        <div className="mt-3 pt-3 border-t border-border/50">
+        <div className="mt-3 pt-3 border-t border-border/50 space-y-2">
           <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
             {merchant.businessType}
           </span>
+          
+          <div 
+            className="flex items-center gap-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <User className="h-3.5 w-3.5 text-muted-foreground" />
+            <Select
+              value={merchant.assignedTo || ""}
+              onValueChange={handleAssignChange}
+            >
+              <SelectTrigger className="h-7 text-xs flex-1 bg-secondary border-border">
+                <SelectValue placeholder="Assign to..." />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border-border z-50">
+                {TEAM_MEMBERS.map((member) => (
+                  <SelectItem key={member} value={member} className="text-xs">
+                    {member}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </CardContent>
     </Card>

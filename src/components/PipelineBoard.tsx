@@ -34,6 +34,10 @@ const PipelineBoard = ({ merchants, onUpdateMerchant }: PipelineBoardProps) => {
     return merchants.filter((m) => m.stage === stage);
   };
 
+  const handleAssign = (merchantId: string, assignedTo: string) => {
+    onUpdateMerchant(merchantId, { assignedTo });
+  };
+
   return (
     <>
       <div className="flex-1 overflow-x-auto p-6">
@@ -47,6 +51,7 @@ const PipelineBoard = ({ merchants, onUpdateMerchant }: PipelineBoardProps) => {
               onDragOver={handleDragOver}
               onDrop={handleDrop}
               onCardClick={setSelectedMerchant}
+              onAssign={handleAssign}
             />
           ))}
         </div>

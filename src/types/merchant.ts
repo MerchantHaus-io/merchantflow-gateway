@@ -17,7 +17,19 @@ export interface Merchant {
   stage: PipelineStage;
   createdAt: Date;
   notes?: string;
+  assignedTo?: string;
 }
+
+export const TEAM_MEMBERS = [
+  'Taryn',
+  'Darryn',
+  'Jamie',
+  'Yaseen',
+  'Wesley',
+  'Leo',
+] as const;
+
+export type TeamMember = typeof TEAM_MEMBERS[number];
 
 export const STAGE_CONFIG: Record<PipelineStage, { label: string; colorClass: string }> = {
   lead: { label: 'Lead', colorClass: 'bg-stage-lead' },

@@ -8,6 +8,7 @@ interface PipelineColumnProps {
   onDragOver: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent, stage: PipelineStage) => void;
   onCardClick: (merchant: Merchant) => void;
+  onAssign: (merchantId: string, assignedTo: string) => void;
 }
 
 const formatCurrency = (amount: number) => {
@@ -26,7 +27,8 @@ const PipelineColumn = ({
   onDragStart, 
   onDragOver, 
   onDrop,
-  onCardClick 
+  onCardClick,
+  onAssign
 }: PipelineColumnProps) => {
   const config = STAGE_CONFIG[stage];
   const totalVolume = merchants.reduce((sum, m) => sum + m.monthlyVolume, 0);
@@ -59,6 +61,7 @@ const PipelineColumn = ({
             merchant={merchant}
             onDragStart={onDragStart}
             onClick={() => onCardClick(merchant)}
+            onAssign={onAssign}
           />
         ))}
         
