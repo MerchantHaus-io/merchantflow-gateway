@@ -1,34 +1,131 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import PipelineBoard from "@/components/PipelineBoard";
 import NewApplicationModal from "@/components/NewApplicationModal";
-import { Merchant } from "@/types/merchant";
-import { sampleMerchants } from "@/data/sampleMerchants";
+import { Merchant, PipelineStage } from "@/types/merchant";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
-  const [merchants, setMerchants] = useState<Merchant[]>(sampleMerchants);
+  const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const handleNewApplication = (merchantData: Omit<Merchant, 'id' | 'createdAt'>) => {
+  useEffect(() => {
+    fetchMerchants();
+  }, []);
+
+  const fetchMerchants = async () => {
+    const { data, error } = await supabase
+      .from('merchants')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load merchants",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const mapped: Merchant[] = (data || []).map((m) => ({
+      id: m.id,
+      businessName: m.company || m.lead_name,
+      contactName: m.lead_name,
+      email: m.email || '',
+      phone: m.phone || '',
+      monthlyVolume: 0,
+      businessType: 'General',
+      stage: m.stage as PipelineStage,
+      createdAt: new Date(m.created_at),
+      notes: m.notes || undefined,
+      assignedTo: m.assigned_to || undefined,
+    }));
+
+    setMerchants(mapped);
+    setLoading(false);
+  };
+
+  const handleNewApplication = async (merchantData: Omit<Merchant, 'id' | 'createdAt'>) => {
+    const { data, error } = await supabase
+      .from('merchants')
+      .insert({
+        lead_name: merchantData.contactName,
+        company: merchantData.businessName,
+        email: merchantData.email,
+        phone: merchantData.phone,
+        stage: merchantData.stage,
+        notes: merchantData.notes,
+        assigned_to: merchantData.assignedTo,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add application",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const newMerchant: Merchant = {
-      ...merchantData,
-      id: crypto.randomUUID(),
-      createdAt: new Date(),
+      id: data.id,
+      businessName: data.company || data.lead_name,
+      contactName: data.lead_name,
+      email: data.email || '',
+      phone: data.phone || '',
+      monthlyVolume: 0,
+      businessType: 'General',
+      stage: data.stage as PipelineStage,
+      createdAt: new Date(data.created_at),
+      notes: data.notes || undefined,
+      assignedTo: data.assigned_to || undefined,
     };
-    setMerchants([...merchants, newMerchant]);
+
+    setMerchants([newMerchant, ...merchants]);
     toast({
       title: "Application Added",
       description: `${newMerchant.businessName} has been added to the pipeline.`,
     });
   };
 
-  const handleUpdateMerchant = (id: string, updates: Partial<Merchant>) => {
+  const handleUpdateMerchant = async (id: string, updates: Partial<Merchant>) => {
+    const dbUpdates: Record<string, unknown> = {};
+    if (updates.stage) dbUpdates.stage = updates.stage;
+    if (updates.assignedTo !== undefined) dbUpdates.assigned_to = updates.assignedTo;
+    if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
+
+    const { error } = await supabase
+      .from('merchants')
+      .update(dbUpdates)
+      .eq('id', id);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update merchant",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setMerchants(
       merchants.map((m) => (m.id === id ? { ...m, ...updates } : m))
     );
   };
+
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-background">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
