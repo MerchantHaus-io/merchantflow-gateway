@@ -32,7 +32,9 @@ const PipelineBoard = ({ opportunities, onUpdateOpportunity, onAssignmentChange 
   };
 
   const getOpportunitiesByStage = (stage: OpportunityStage) => {
-    return opportunities.filter((o) => o.stage === stage);
+    return opportunities
+      .filter((o) => o.stage === stage)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   };
 
   return (
