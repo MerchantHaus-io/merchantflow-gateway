@@ -4,6 +4,12 @@ import { Contact, Account } from "@/types/opportunity";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Pencil } from "lucide-react";
+import { toast } from "sonner";
 
 interface ContactWithAccount extends Contact {
   account?: Account;
@@ -12,20 +18,64 @@ interface ContactWithAccount extends Contact {
 const Contacts = () => {
   const [contacts, setContacts] = useState<ContactWithAccount[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingContact, setEditingContact] = useState<ContactWithAccount | null>(null);
+  const [formData, setFormData] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    fax: ''
+  });
 
   useEffect(() => {
-    const fetchContacts = async () => {
-      const { data, error } = await supabase
-        .from('contacts')
-        .select(`*, account:accounts(name)`) // join to get account name
-        .order('created_at', { ascending: false });
-      if (!error && data) {
-        setContacts(data as unknown as ContactWithAccount[]);
-      }
-      setLoading(false);
-    };
     fetchContacts();
   }, []);
+
+  const fetchContacts = async () => {
+    const { data, error } = await supabase
+      .from('contacts')
+      .select(`*, account:accounts(name)`)
+      .order('created_at', { ascending: false });
+    if (!error && data) {
+      setContacts(data as unknown as ContactWithAccount[]);
+    }
+    setLoading(false);
+  };
+
+  const openEditDialog = (contact: ContactWithAccount) => {
+    setEditingContact(contact);
+    setFormData({
+      first_name: contact.first_name || '',
+      last_name: contact.last_name || '',
+      email: contact.email || '',
+      phone: contact.phone || '',
+      fax: contact.fax || ''
+    });
+  };
+
+  const handleSave = async () => {
+    if (!editingContact) return;
+    
+    const { error } = await supabase
+      .from('contacts')
+      .update({
+        first_name: formData.first_name || null,
+        last_name: formData.last_name || null,
+        email: formData.email || null,
+        phone: formData.phone || null,
+        fax: formData.fax || null
+      })
+      .eq('id', editingContact.id);
+
+    if (error) {
+      toast.error('Failed to update contact');
+      return;
+    }
+
+    toast.success('Contact updated');
+    setEditingContact(null);
+    fetchContacts();
+  };
 
   if (loading) {
     return (
@@ -52,6 +102,7 @@ const Contacts = () => {
                   <TableHead>Email</TableHead>
                   <TableHead>Phone</TableHead>
                   <TableHead>Account</TableHead>
+                  <TableHead className="w-16">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -62,6 +113,15 @@ const Contacts = () => {
                     <TableCell>{contact.email || '-'}</TableCell>
                     <TableCell>{contact.phone || '-'}</TableCell>
                     <TableCell>{contact.account?.name || '-'}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openEditDialog(contact)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -69,6 +129,64 @@ const Contacts = () => {
           </main>
         </SidebarInset>
       </div>
+
+      <Dialog open={!!editingContact} onOpenChange={() => setEditingContact(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Contact</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>First Name</Label>
+                <Input
+                  value={formData.first_name}
+                  onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Last Name</Label>
+                <Input
+                  value={formData.last_name}
+                  onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Phone</Label>
+                <Input
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Fax</Label>
+                <Input
+                  value={formData.fax}
+                  onChange={(e) => setFormData({ ...formData, fax: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => setEditingContact(null)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSave}>
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </SidebarProvider>
   );
 };

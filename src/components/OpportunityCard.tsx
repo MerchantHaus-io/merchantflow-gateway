@@ -93,7 +93,7 @@ const OpportunityCard = ({
             <div className="bg-primary/10 text-primary p-1.5 rounded">
               <Building2 className="h-3.5 w-3.5" />
             </div>
-            <h3 className="font-semibold text-sm text-foreground truncate">
+            <h3 className="font-bold text-base text-foreground truncate tracking-tight">
               {account?.name || 'Unknown Business'}
             </h3>
           </div>
