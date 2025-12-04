@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import PipelineBoard from "@/components/PipelineBoard";
-import NewApplicationModal from "@/components/NewApplicationModal";
+import NewApplicationModal, { ApplicationFormData } from "@/components/NewApplicationModal";
 import { Merchant, PipelineStage } from "@/types/merchant";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -49,17 +49,33 @@ const Index = () => {
     setLoading(false);
   };
 
-  const handleNewApplication = async (merchantData: Omit<Merchant, 'id' | 'createdAt'>) => {
+  const handleNewApplication = async (formData: ApplicationFormData) => {
+    const leadName = `${formData.firstName} ${formData.lastName}`.trim();
+    
     const { data, error } = await supabase
       .from('merchants')
       .insert({
-        lead_name: merchantData.contactName,
-        company: merchantData.businessName,
-        email: merchantData.email,
-        phone: merchantData.phone,
-        stage: merchantData.stage,
-        notes: merchantData.notes,
-        assigned_to: merchantData.assignedTo,
+        lead_name: leadName,
+        company: formData.companyName,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        fax: formData.fax || null,
+        address: formData.address || null,
+        address2: formData.address2 || null,
+        city: formData.city || null,
+        state: formData.state || null,
+        zip: formData.zip || null,
+        country: formData.country || null,
+        website: formData.website || null,
+        username: formData.username || null,
+        processing_services: formData.processingServices.length > 0 ? formData.processingServices : null,
+        value_services: formData.valueServices || null,
+        timezone: formData.timezone || null,
+        language: formData.language || null,
+        stage: 'lead',
+        assigned_to: 'Wesley',
       })
       .select()
       .single();
