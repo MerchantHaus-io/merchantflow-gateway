@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Pencil } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 interface ContactWithAccount extends Contact {
@@ -17,6 +17,11 @@ interface ContactWithAccount extends Contact {
   assigned_to?: string | null;
   stage?: string | null;
   opportunity_id?: string | null;
+}
+
+interface AccountOption {
+  id: string;
+  name: string;
 }
 
 const TEAM_BG_COLORS: Record<string, string> = {
@@ -43,8 +48,10 @@ const STAGE_LABELS: Record<string, string> = {
 
 const Contacts = () => {
   const [contacts, setContacts] = useState<ContactWithAccount[]>([]);
+  const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingContact, setEditingContact] = useState<ContactWithAccount | null>(null);
+  const [isNewDialogOpen, setIsNewDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -52,10 +59,12 @@ const Contacts = () => {
     phone: '',
     fax: '',
     assigned_to: '',
+    account_id: '',
   });
 
   useEffect(() => {
     fetchContacts();
+    fetchAccounts();
   }, []);
 
   const fetchContacts = async () => {
@@ -75,6 +84,16 @@ const Contacts = () => {
     setLoading(false);
   };
 
+  const fetchAccounts = async () => {
+    const { data, error } = await supabase
+      .from('accounts')
+      .select('id, name')
+      .order('name', { ascending: true });
+    if (!error && data) {
+      setAccounts(data);
+    }
+  };
+
   const openEditDialog = (contact: ContactWithAccount) => {
     setEditingContact(contact);
     setFormData({
@@ -84,13 +103,26 @@ const Contacts = () => {
       phone: contact.phone || '',
       fax: contact.fax || '',
       assigned_to: contact.assigned_to || '',
+      account_id: contact.account_id || '',
     });
+  };
+
+  const openNewDialog = () => {
+    setFormData({
+      first_name: '',
+      last_name: '',
+      email: '',
+      phone: '',
+      fax: '',
+      assigned_to: '',
+      account_id: '',
+    });
+    setIsNewDialogOpen(true);
   };
 
   const handleSave = async () => {
     if (!editingContact) return;
     
-    // Update contact info
     const { error: contactError } = await supabase
       .from('contacts')
       .update({
@@ -107,7 +139,6 @@ const Contacts = () => {
       return;
     }
 
-    // Update assignment on opportunity if there's one
     if (editingContact.opportunity_id) {
       const { error: oppError } = await supabase
         .from('opportunities')
@@ -122,6 +153,38 @@ const Contacts = () => {
 
     toast.success('Contact updated');
     setEditingContact(null);
+    fetchContacts();
+  };
+
+  const handleCreateContact = async () => {
+    if (!formData.account_id) {
+      toast.error('Please select an account');
+      return;
+    }
+
+    if (!formData.first_name && !formData.last_name) {
+      toast.error('Please enter a name');
+      return;
+    }
+
+    const { error } = await supabase
+      .from('contacts')
+      .insert({
+        account_id: formData.account_id,
+        first_name: formData.first_name || null,
+        last_name: formData.last_name || null,
+        email: formData.email || null,
+        phone: formData.phone || null,
+        fax: formData.fax || null,
+      });
+
+    if (error) {
+      toast.error('Failed to create contact');
+      return;
+    }
+
+    toast.success('Contact created');
+    setIsNewDialogOpen(false);
     fetchContacts();
   };
 
@@ -141,6 +204,14 @@ const Contacts = () => {
           <header className="h-14 flex items-center px-4 md:px-6 border-b border-border gap-2">
             <SidebarTrigger className="md:hidden" />
             <h1 className="text-lg font-semibold text-foreground">Contacts</h1>
+            <Button 
+              size="sm" 
+              className="ml-auto"
+              onClick={openNewDialog}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              New Contact
+            </Button>
           </header>
           <main className="flex-1 overflow-auto p-6">
             <Table>
@@ -183,6 +254,7 @@ const Contacts = () => {
         </SidebarInset>
       </div>
 
+      {/* Edit Contact Dialog */}
       <Dialog open={!!editingContact} onOpenChange={() => setEditingContact(null)}>
         <DialogContent>
           <DialogHeader>
@@ -254,6 +326,83 @@ const Contacts = () => {
               </Button>
               <Button onClick={handleSave}>
                 Save Changes
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Contact Dialog */}
+      <Dialog open={isNewDialogOpen} onOpenChange={setIsNewDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New Contact</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Account *</Label>
+              <Select
+                value={formData.account_id}
+                onValueChange={(value) => setFormData({ ...formData, account_id: value })}
+              >
+                <SelectTrigger className="bg-secondary">
+                  <SelectValue placeholder="Select account" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover">
+                  {accounts.map((account) => (
+                    <SelectItem key={account.id} value={account.id}>
+                      {account.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>First Name</Label>
+                <Input
+                  value={formData.first_name}
+                  onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Last Name</Label>
+                <Input
+                  value={formData.last_name}
+                  onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Phone</Label>
+                <Input
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Fax</Label>
+                <Input
+                  value={formData.fax}
+                  onChange={(e) => setFormData({ ...formData, fax: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => setIsNewDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreateContact}>
+                Create Contact
               </Button>
             </div>
           </div>
