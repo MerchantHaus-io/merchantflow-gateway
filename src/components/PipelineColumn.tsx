@@ -53,48 +53,48 @@ const PipelineColumn = ({
 
   return (
     <div
-      className="flex-shrink-0 w-72 flex flex-col bg-muted/30 rounded-lg border border-border/50"
+      className="flex-1 min-w-[160px] max-w-[220px] flex flex-col bg-muted/30 rounded-lg border border-border/50"
       onDragOver={onDragOver}
       onDrop={(e) => onDrop(e, stage)}
     >
-      <div className="p-4 border-b border-border/50">
-        <div className="flex items-center gap-2">
-          <div className={`w-3 h-3 rounded-full ${config.colorClass}`} />
-          <h2 className="font-semibold text-sm text-foreground">{config.label}</h2>
-          <span className="ml-auto text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+      <div className="p-2 border-b border-border/50">
+        <div className="flex items-center gap-1.5">
+          <div className={`w-2.5 h-2.5 rounded-full ${config.colorClass}`} />
+          <h2 className="font-semibold text-xs text-foreground truncate">{config.label}</h2>
+          <span className="ml-auto text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
             {opportunities.length}
           </span>
           {stage === 'application_started' && onAddNew && (
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-6 w-6 text-primary hover:text-primary hover:bg-primary/10"
+              className="h-5 w-5 text-primary hover:text-primary hover:bg-primary/10"
               onClick={onAddNew}
               title="Add new application"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-3 w-3" />
             </Button>
           )}
           {opportunities.length > 0 && (
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-6 w-6"
+              className="h-5 w-5"
               onClick={toggleAllCards}
               title={allCollapsed ? "Expand all" : "Collapse all"}
             >
               {allCollapsed ? (
-                <ChevronsUpDown className="h-3.5 w-3.5" />
+                <ChevronsUpDown className="h-3 w-3" />
               ) : (
-                <ChevronsDownUp className="h-3.5 w-3.5" />
+                <ChevronsDownUp className="h-3 w-3" />
               )}
             </Button>
           )}
         </div>
       </div>
 
-      <ScrollArea className="flex-1 p-3">
-        <div className="space-y-3">
+      <ScrollArea className="flex-1 p-1.5">
+        <div className="space-y-1.5">
           {opportunities.map((opportunity) => (
             <OpportunityCard
               key={opportunity.id}
@@ -108,8 +108,8 @@ const PipelineColumn = ({
           ))}
           
           {opportunities.length === 0 && (
-            <div className="flex items-center justify-center h-32 border-2 border-dashed border-border/50 rounded-lg">
-              <p className="text-xs text-muted-foreground">Drop applications here</p>
+            <div className="flex items-center justify-center h-20 border-2 border-dashed border-border/50 rounded-lg">
+              <p className="text-[10px] text-muted-foreground">Drop here</p>
             </div>
           )}
         </div>

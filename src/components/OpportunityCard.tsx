@@ -73,78 +73,69 @@ const OpportunityCard = ({
       onDragStart={(e) => onDragStart(e, opportunity)}
       onClick={onClick}
       className={cn(
-        "cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-200 group bg-card border-l-4",
+        "cursor-grab active:cursor-grabbing hover:shadow-sm transition-all duration-200 group bg-card border-l-3",
         borderClass
       )}
     >
-      <CardContent className={cn("p-3", isCollapsed ? "py-2" : "p-4")}>
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <button 
-              onClick={handleCollapseClick}
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {isCollapsed ? (
-                <ChevronRight className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
-              )}
-            </button>
-            <div className="bg-primary/10 text-primary p-1.5 rounded">
-              <Building2 className="h-3.5 w-3.5" />
-            </div>
-            <h3 className="font-bold text-base text-foreground truncate tracking-tight">
-              {account?.name || 'Unknown Business'}
-            </h3>
-          </div>
-          <div className="flex items-center gap-2">
-            {opportunity.assigned_to && (
-              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
-                {opportunity.assigned_to}
-              </span>
+      <CardContent className={cn("p-2", isCollapsed ? "py-1.5" : "p-2")}>
+        <div className="flex items-center gap-1.5">
+          <button 
+            onClick={handleCollapseClick}
+            className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+          >
+            {isCollapsed ? (
+              <ChevronRight className="h-3 w-3" />
+            ) : (
+              <ChevronDown className="h-3 w-3" />
             )}
-            <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-          </div>
+          </button>
+          <h3 className="font-semibold text-xs text-foreground truncate flex-1">
+            {account?.name || 'Unknown'}
+          </h3>
+          {opportunity.assigned_to && (
+            <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded flex-shrink-0">
+              {opportunity.assigned_to}
+            </span>
+          )}
+          <GripVertical className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
         </div>
         
         {!isCollapsed && (
-          <>
-            <div className="flex items-center gap-2 mb-3 mt-3 ml-6">
-              <User className="h-3.5 w-3.5 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">{contactName}</p>
+          <div className="mt-2 ml-4 space-y-1.5">
+            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <User className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">{contactName}</span>
             </div>
             
-            <div className="space-y-2 text-xs ml-6">
-              {contact?.email && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Mail className="h-3.5 w-3.5" />
-                  <span className="truncate">{contact.email}</span>
-                </div>
-              )}
-              {contact?.phone && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Phone className="h-3.5 w-3.5" />
-                  <span>{contact.phone}</span>
-                </div>
-              )}
-            </div>
+            {contact?.email && (
+              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                <Mail className="h-3 w-3 flex-shrink-0" />
+                <span className="truncate">{contact.email}</span>
+              </div>
+            )}
+            
+            {contact?.phone && (
+              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                <Phone className="h-3 w-3 flex-shrink-0" />
+                <span className="truncate">{contact.phone}</span>
+              </div>
+            )}
 
-            {/* Assigned To Dropdown */}
-            <div className="mt-3 pt-3 border-t border-border/50">
+            <div className="pt-1.5 border-t border-border/50">
               <Select 
                 value={opportunity.assigned_to || 'unassigned'} 
                 onValueChange={handleAssignmentChange}
               >
                 <SelectTrigger 
-                  className="h-8 text-xs bg-background"
+                  className="h-6 text-[10px] bg-background"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <SelectValue placeholder="Assign to..." />
+                  <SelectValue placeholder="Assign..." />
                 </SelectTrigger>
                 <SelectContent className="bg-popover z-50">
-                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  <SelectItem value="unassigned" className="text-xs">Unassigned</SelectItem>
                   {TEAM_MEMBERS.map((member) => (
-                    <SelectItem key={member} value={member}>
+                    <SelectItem key={member} value={member} className="text-xs">
                       {member}
                     </SelectItem>
                   ))}
@@ -153,18 +144,18 @@ const OpportunityCard = ({
             </div>
             
             {opportunity.processing_services && opportunity.processing_services.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-border/50 flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-0.5 pt-1">
                 {opportunity.processing_services.map((service) => (
                   <span 
                     key={service}
-                    className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded"
+                    className="text-[9px] text-muted-foreground bg-muted px-1 py-0.5 rounded"
                   >
                     {service}
                   </span>
                 ))}
               </div>
             )}
-          </>
+          </div>
         )}
       </CardContent>
     </Card>

@@ -40,8 +40,8 @@ const PipelineBoard = ({ opportunities, onUpdateOpportunity, onAssignmentChange,
 
   return (
     <>
-      <div className="flex-1 overflow-x-auto p-6">
-        <div className="flex gap-4 h-full min-w-max">
+      <div className="flex-1 overflow-x-auto p-3">
+        <div className="flex gap-2 h-full">
           {PIPELINE_STAGES.map((stage) => (
             <PipelineColumn
               key={stage}
