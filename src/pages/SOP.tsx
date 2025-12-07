@@ -14,6 +14,8 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { AppSidebar } from "@/components/AppSidebar";
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 
 const SOP = () => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -95,38 +97,44 @@ Sales Support`
   };
 
   return (
-    <div className="flex h-full">
-      {/* Sidebar Navigation */}
-      <aside className="w-64 border-r border-border bg-card hidden lg:block">
-        <div className="p-6 border-b border-border">
-          <h1 className="text-xl font-bold text-primary">MerchantHaus</h1>
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mt-1">Operating Procedures</p>
-        </div>
-        <ScrollArea className="h-[calc(100vh-200px)]">
-          <nav className="p-4 space-y-1">
-            <a href="#index" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors">Document Index</a>
-            <a href="#principles" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors">1. Principles</a>
-            
-            <div className="pt-4 pb-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sales Ops</div>
-            <a href="#step1" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors">2.1 Intro & Discovery</a>
-            <a href="#step1-2" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors">2.2 Call Scheduling</a>
-            <a href="#step2" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors">2.3 Request Docs</a>
-            <a href="#step3" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors">2.4 App in Process</a>
-            
-            <div className="pt-4 pb-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Internal Ops</div>
-            <a href="#step4" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors">3.1 Processing Setup</a>
-            <a href="#action-items" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors">3.2 Action Items</a>
-            
-            <div className="pt-4 pb-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Reference</div>
-            <a href="#appendix" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors">4. Appendices</a>
-            <a href="#tech-stack" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors">Systems & Tech</a>
-          </nav>
-        </ScrollArea>
-      </aside>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full">
+        <AppSidebar />
+        <SidebarInset className="flex-1 flex flex-col overflow-hidden">
+          <header className="h-14 flex items-center px-4 md:px-6 border-b border-border gap-2">
+            <SidebarTrigger className="md:hidden" />
+            <h1 className="text-lg font-semibold text-foreground">Standard Operating Procedures</h1>
+          </header>
+          
+          <div className="flex-1 flex overflow-hidden">
+            {/* SOP Navigation Sidebar */}
+            <aside className="w-64 border-r border-border bg-card hidden lg:block overflow-y-auto">
+              <div className="p-4 border-b border-border">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">Quick Navigation</p>
+              </div>
+              <nav className="p-4 space-y-1">
+                <a href="#index" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors">Document Index</a>
+                <a href="#principles" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors">1. Principles</a>
+                
+                <div className="pt-4 pb-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sales Ops</div>
+                <a href="#step1" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors">2.1 Intro & Discovery</a>
+                <a href="#step1-2" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors">2.2 Call Scheduling</a>
+                <a href="#step2" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors">2.3 Request Docs</a>
+                <a href="#step3" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors">2.4 App in Process</a>
+                
+                <div className="pt-4 pb-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Internal Ops</div>
+                <a href="#step4" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors">3.1 Processing Setup</a>
+                <a href="#action-items" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors">3.2 Action Items</a>
+                
+                <div className="pt-4 pb-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Reference</div>
+                <a href="#appendix" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors">4. Appendices</a>
+                <a href="#tech-stack" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors">Systems & Tech</a>
+              </nav>
+            </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto p-6 md:p-12 space-y-10">
+            {/* Main Content */}
+            <main className="flex-1 overflow-y-auto">
+              <div className="max-w-4xl mx-auto p-6 md:p-12 space-y-10">
           
           {/* Document Index */}
           <section id="index" className="bg-card rounded-xl border border-border shadow-sm p-8">
@@ -378,9 +386,12 @@ Sales Support`
           <footer className="text-center text-muted-foreground text-sm pb-10">
             <p>MerchantHaus Internal SOP — Confidential</p>
           </footer>
-        </div>
-      </main>
-    </div>
+              </div>
+            </main>
+          </div>
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
   );
 };
 

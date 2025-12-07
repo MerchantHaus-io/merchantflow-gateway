@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import logoIcon from "@/assets/logo-icon.png";
+import brandLogo from "@/assets/brand-logo.png";
 
 const mainMenuItems = [
   { title: "Pipeline", url: "/", icon: LayoutDashboard },
@@ -54,7 +54,7 @@ export function AppSidebar({ onNewApplication }: AppSidebarProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <img 
-              src={logoIcon} 
+              src={brandLogo} 
               alt="MerchantFlow" 
               className="h-8 w-8 rounded-md"
             />
