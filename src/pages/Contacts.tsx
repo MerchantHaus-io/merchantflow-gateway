@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Pencil, Plus } from "lucide-react";
+import { Pencil, Plus, Search } from "lucide-react";
 import { toast } from "sonner";
 
 interface ContactWithAccount extends Contact {
@@ -54,6 +54,7 @@ const Contacts = () => {
   const [isNewDialogOpen, setIsNewDialogOpen] = useState(false);
   const [isNewAccount, setIsNewAccount] = useState(false);
   const [newAccountName, setNewAccountName] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -62,6 +63,20 @@ const Contacts = () => {
     fax: '',
     assigned_to: '',
     account_id: '',
+  });
+
+  const filteredContacts = contacts.filter((contact) => {
+    const query = searchQuery.toLowerCase();
+    const firstName = (contact.first_name || '').toLowerCase();
+    const lastName = (contact.last_name || '').toLowerCase();
+    const email = (contact.email || '').toLowerCase();
+    const accountName = (contact.account?.name || '').toLowerCase();
+    return (
+      firstName.includes(query) ||
+      lastName.includes(query) ||
+      email.includes(query) ||
+      accountName.includes(query)
+    );
   });
 
   useEffect(() => {
@@ -228,14 +243,21 @@ const Contacts = () => {
           <header className="h-14 flex items-center px-4 md:px-6 border-b border-border gap-2">
             <SidebarTrigger className="md:hidden" />
             <h1 className="text-lg font-semibold text-foreground">Contacts</h1>
-            <Button 
-              size="sm" 
-              className="ml-auto"
-              onClick={openNewDialog}
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              New Contact
-            </Button>
+            <div className="ml-auto flex items-center gap-2">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search contacts..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8 w-64"
+                />
+              </div>
+              <Button size="sm" onClick={openNewDialog}>
+                <Plus className="h-4 w-4 mr-1" />
+                New Contact
+              </Button>
+            </div>
           </header>
           <main className="flex-1 overflow-auto p-6">
             <Table>
@@ -252,7 +274,7 @@ const Contacts = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {contacts.map((contact) => (
+                {filteredContacts.map((contact) => (
                   <TableRow key={contact.id} className={`hover:bg-muted/50 ${contact.assigned_to ? TEAM_BG_COLORS[contact.assigned_to] || '' : ''}`}>
                     <TableCell>{contact.first_name || '-'}</TableCell>
                     <TableCell>{contact.last_name || '-'}</TableCell>
