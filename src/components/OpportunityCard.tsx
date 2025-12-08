@@ -1,11 +1,12 @@
-import { useState } from "react";
-import { Building2, Phone, Mail, GripVertical, User, ChevronDown, ChevronRight } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Building2, Phone, Mail, GripVertical, User, ChevronDown, ChevronRight, AlertTriangle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Opportunity, TEAM_MEMBERS } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { differenceInHours } from "date-fns";
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
@@ -43,6 +44,13 @@ const OpportunityCard = ({
     ? TEAM_BORDER_COLORS[opportunity.assigned_to] || 'border-l-primary/50'
     : 'border-l-muted-foreground/30';
 
+  // SLA warning: check if card has been in the same stage for > 24 hours
+  const slaWarning = useMemo(() => {
+    if (!opportunity.stage_entered_at) return false;
+    const hoursInStage = differenceInHours(new Date(), new Date(opportunity.stage_entered_at));
+    return hoursInStage >= 24;
+  }, [opportunity.stage_entered_at]);
+
   const handleAssignmentChange = async (value: string) => {
     const newValue = value === 'unassigned' ? null : value;
     
@@ -73,8 +81,10 @@ const OpportunityCard = ({
       onDragStart={(e) => onDragStart(e, opportunity)}
       onClick={onClick}
       className={cn(
-        "cursor-grab active:cursor-grabbing hover:shadow-sm transition-all duration-200 group bg-card border-l-3",
-        borderClass
+        "cursor-grab active:cursor-grabbing transition-all duration-200 group bg-card border-l-3",
+        borderClass,
+        // SLA warning styles - red border glow, background tint
+        slaWarning && "ring-2 ring-destructive/50 bg-destructive/5 animate-pulse"
       )}
     >
       <CardContent className={cn("p-2", isCollapsed ? "py-1.5" : "p-2")}>
@@ -92,6 +102,12 @@ const OpportunityCard = ({
           <h3 className="font-semibold text-xs text-foreground truncate flex-1">
             {account?.name || 'Unknown'}
           </h3>
+          {/* SLA warning badge */}
+          {slaWarning && (
+            <span className="flex items-center gap-0.5 text-[9px] text-destructive bg-destructive/10 px-1 py-0.5 rounded flex-shrink-0" title="In stage > 24 hours">
+              <AlertTriangle className="h-3 w-3" />
+            </span>
+          )}
           {opportunity.assigned_to && (
             <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded flex-shrink-0">
               {opportunity.assigned_to}

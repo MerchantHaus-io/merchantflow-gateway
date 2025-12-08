@@ -8,9 +8,11 @@ interface PipelineBoardProps {
   onUpdateOpportunity: (id: string, updates: Partial<Opportunity>) => void;
   onAssignmentChange?: (opportunityId: string, assignedTo: string | null) => void;
   onAddNew?: () => void;
+  onMarkAsDead?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
-const PipelineBoard = ({ opportunities, onUpdateOpportunity, onAssignmentChange, onAddNew }: PipelineBoardProps) => {
+const PipelineBoard = ({ opportunities, onUpdateOpportunity, onAssignmentChange, onAddNew, onMarkAsDead, onDelete }: PipelineBoardProps) => {
   const [draggedOpportunity, setDraggedOpportunity] = useState<Opportunity | null>(null);
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
 
@@ -66,6 +68,8 @@ const PipelineBoard = ({ opportunities, onUpdateOpportunity, onAssignmentChange,
             onUpdateOpportunity(selectedOpportunity.id, updates);
           }
         }}
+        onMarkAsDead={onMarkAsDead}
+        onDelete={onDelete}
       />
     </>
   );

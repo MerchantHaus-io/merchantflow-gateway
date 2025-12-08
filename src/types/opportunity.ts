@@ -13,6 +13,7 @@ export type OpportunityStage =
 export interface Account {
   id: string;
   name: string;
+  status?: 'active' | 'dead';
   address1?: string;
   address2?: string;
   city?: string;
@@ -41,6 +42,7 @@ export interface Opportunity {
   account_id: string;
   contact_id: string;
   stage: OpportunityStage;
+  status?: 'active' | 'dead';
   referral_source?: string;
   username?: string;
   processing_services?: string[];
@@ -49,6 +51,7 @@ export interface Opportunity {
   timezone?: string;
   language?: string;
   assigned_to?: string;
+  stage_entered_at?: string;
   created_at: string;
   updated_at: string;
   // Joined data

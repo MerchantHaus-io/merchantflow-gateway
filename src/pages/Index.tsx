@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import PipelineBoard from "@/components/PipelineBoard";
 import NewApplicationModal, { ApplicationFormData } from "@/components/NewApplicationModal";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -6,11 +6,18 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/s
 import { Opportunity, OpportunityStage } from "@/types/opportunity";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import DateRangeFilter from "@/components/DateRangeFilter";
+import { DateRange } from "react-day-picker";
+import { isWithinInterval, startOfDay, endOfDay } from "date-fns";
 
 const Index = () => {
+  const { user } = useAuth();
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [filterBy, setFilterBy] = useState<'created_at' | 'updated_at'>('created_at');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -25,6 +32,7 @@ const Index = () => {
         account:accounts(*),
         contact:contacts(*)
       `)
+      .eq('status', 'active')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -40,11 +48,28 @@ const Index = () => {
     const typedData = (data || []).map(item => ({
       ...item,
       stage: item.stage as OpportunityStage,
+      status: item.status as 'active' | 'dead' | undefined,
+      account: item.account ? {
+        ...item.account,
+        status: item.account.status as 'active' | 'dead' | undefined,
+      } : undefined,
     }));
 
     setOpportunities(typedData);
     setLoading(false);
   };
+
+  // Filter opportunities by date range
+  const filteredOpportunities = useMemo(() => {
+    if (!dateRange?.from) return opportunities;
+    
+    return opportunities.filter(opp => {
+      const dateValue = new Date(opp[filterBy]);
+      const from = startOfDay(dateRange.from!);
+      const to = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from!);
+      return isWithinInterval(dateValue, { start: from, end: to });
+    });
+  }, [opportunities, dateRange, filterBy]);
 
   const handleNewApplication = async (formData: ApplicationFormData) => {
     try {
@@ -102,7 +127,11 @@ const Index = () => {
       const newOpportunity: Opportunity = {
         ...opportunity,
         stage: opportunity.stage as OpportunityStage,
-        account,
+        status: opportunity.status as 'active' | 'dead' | undefined,
+        account: {
+          ...account,
+          status: account.status as 'active' | 'dead' | undefined,
+        },
         contact,
       };
 
@@ -122,6 +151,7 @@ const Index = () => {
   };
 
   const handleUpdateOpportunity = async (id: string, updates: Partial<Opportunity>) => {
+    const opportunity = opportunities.find(o => o.id === id);
     const dbUpdates: Record<string, unknown> = {};
     if (updates.stage) dbUpdates.stage = updates.stage;
 
@@ -139,6 +169,17 @@ const Index = () => {
       return;
     }
 
+    // Log stage change activity
+    if (updates.stage && opportunity && opportunity.stage !== updates.stage) {
+      await supabase.from('activities').insert({
+        opportunity_id: id,
+        type: 'stage_change',
+        description: `Moved from ${opportunity.stage} to ${updates.stage}`,
+        user_id: user?.id,
+        user_email: user?.email,
+      });
+    }
+
     setOpportunities(
       opportunities.map((o) => (o.id === id ? { ...o, ...updates } : o))
     );
@@ -150,6 +191,14 @@ const Index = () => {
         o.id === opportunityId ? { ...o, assigned_to: assignedTo || undefined } : o
       )
     );
+  };
+
+  const handleMarkAsDead = (id: string) => {
+    setOpportunities(opportunities.filter(o => o.id !== id));
+  };
+
+  const handleDelete = (id: string) => {
+    setOpportunities(opportunities.filter(o => o.id !== id));
   };
 
   if (loading) {
@@ -168,13 +217,23 @@ const Index = () => {
           <header className="h-14 flex items-center px-4 md:px-6 border-b border-border gap-2">
             <SidebarTrigger className="md:hidden" />
             <h1 className="text-lg font-semibold text-foreground">Pipeline</h1>
+            <div className="ml-auto">
+              <DateRangeFilter
+                dateRange={dateRange}
+                onDateRangeChange={setDateRange}
+                filterBy={filterBy}
+                onFilterByChange={setFilterBy}
+              />
+            </div>
           </header>
           <main className="flex-1 overflow-hidden">
             <PipelineBoard 
-              opportunities={opportunities} 
+              opportunities={filteredOpportunities} 
               onUpdateOpportunity={handleUpdateOpportunity}
               onAssignmentChange={handleAssignmentChange}
               onAddNew={() => setIsModalOpen(true)}
+              onMarkAsDead={handleMarkAsDead}
+              onDelete={handleDelete}
             />
           </main>
         </SidebarInset>
