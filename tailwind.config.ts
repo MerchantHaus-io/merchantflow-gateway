@@ -85,6 +85,17 @@ export default {
           taryn: "hsl(var(--team-taryn))",
           yaseen: "hsl(var(--team-yaseen))",
         },
+        // Custom MerchantHaus Calculator Colors
+        merchant: {
+          black: '#0f0f0f',
+          dark: '#1a1a1a',
+          red: '#8B0000',
+          redLight: '#dc2626',
+          gray: '#2d2d2d',
+          text: '#e5e5e5',
+          blue: '#3b82f6',
+          blueDark: '#1e3a8a'
+        }
       },
       borderRadius: {
         lg: "var(--radius)",
