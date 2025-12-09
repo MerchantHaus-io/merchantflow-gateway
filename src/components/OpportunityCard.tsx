@@ -87,7 +87,8 @@ const OpportunityCard = ({
       onClick={onClick}
       className={cn(
         "cursor-grab active:cursor-grabbing transition-all duration-200 group bg-card border-l-3",
-        borderClass,
+        // Override border color when SLA critical, otherwise use team color
+        slaStatus === 'critical' ? 'border-l-destructive' : borderClass,
         // SLA tiered styles
         slaStatus === 'warning' && "ring-2 ring-amber-500/50 bg-amber-500/5",
         slaStatus === 'critical' && "ring-2 ring-destructive/50 bg-destructive/5 animate-pulse"
@@ -108,15 +109,15 @@ const OpportunityCard = ({
           <h3 className="font-semibold text-xs text-foreground truncate flex-1">
             {account?.name || 'Unknown'}
           </h3>
-          {/* SLA tiered badges */}
+          {/* SLA tiered badges - Clock icon, amber at 12h, red at 24h */}
           {slaStatus === 'warning' && (
             <span className="flex items-center gap-0.5 text-[9px] text-amber-600 bg-amber-500/10 px-1 py-0.5 rounded flex-shrink-0" title="In stage > 12 hours">
               <Clock className="h-3 w-3" />
             </span>
           )}
           {slaStatus === 'critical' && (
-            <span className="flex items-center gap-0.5 text-[9px] text-destructive bg-destructive/10 px-1 py-0.5 rounded flex-shrink-0" title="In stage > 24 hours">
-              <AlertTriangle className="h-3 w-3" />
+            <span className="flex items-center gap-0.5 text-[9px] text-destructive bg-destructive/10 px-1 py-0.5 rounded flex-shrink-0" title="In stage > 24 hours - SLA breached">
+              <Clock className="h-3 w-3" />
             </span>
           )}
           {opportunity.assigned_to && (
