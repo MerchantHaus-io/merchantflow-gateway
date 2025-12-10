@@ -82,7 +82,7 @@ export function AppSidebar({
           <div className="flex items-center gap-2 text-primary-foreground">
             <img src={brandLogo} alt="Ops Terminal" className="h-8 w-8 rounded-md" />
             {!isCollapsed && <div className="flex flex-col">
-                <span className="text-lg font-bold font-bauhaus gradient-text tracking-tight leading-tight text-primary-foreground">
+                <span className="text-lg font-bold font-bauhaus gradient-text tracking-tight leading-tight text-white">
                   Ops Terminal
                 </span>
                 <span className="text-[10px] font-red-hat text-muted-foreground leading-tight">
