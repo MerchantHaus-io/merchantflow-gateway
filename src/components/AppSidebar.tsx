@@ -90,20 +90,25 @@ export function AppSidebar({ onNewApplication }: AppSidebarProps) {
       <SidebarHeader className="p-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img 
-              src={brandLogo} 
-              alt="MerchantFlow" 
+            <img
+              src={brandLogo}
+              alt="Ops Terminal"
               className="h-8 w-8 rounded-md"
             />
             {!isCollapsed && (
-              <span className="text-lg font-bold gradient-text tracking-tight">
-                MerchantFlow
-              </span>
+              <div className="flex flex-col">
+                <span className="text-lg font-bold font-bauhaus gradient-text tracking-tight leading-tight">
+                  Ops Terminal
+                </span>
+                <span className="text-[10px] font-red-hat text-muted-foreground leading-tight">
+                  by Merchanthaus.io
+                </span>
+              </div>
             )}
           </div>
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={toggleSidebar}
             className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
           >

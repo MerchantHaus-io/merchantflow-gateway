@@ -112,10 +112,13 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <img src={brandLogo} alt="MerchantFlow" className="h-12 w-12 rounded-lg" />
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <img src={brandLogo} alt="Ops Terminal" className="h-12 w-12 rounded-lg" />
+            <div className="flex flex-col items-start">
+              <span className="text-2xl font-bold font-bauhaus gradient-text tracking-tight">Ops Terminal</span>
+              <span className="text-xs font-red-hat text-muted-foreground">by Merchanthaus.io</span>
+            </div>
           </div>
-          <CardTitle className="text-2xl gradient-text">MerchantFlow</CardTitle>
           <CardDescription>Sign in to access your pipeline</CardDescription>
         </CardHeader>
         <CardContent>

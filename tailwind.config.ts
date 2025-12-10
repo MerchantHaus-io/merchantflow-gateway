@@ -15,6 +15,8 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+        bauhaus: ['Fredoka', 'system-ui', 'sans-serif'],
+        'red-hat': ['Red Hat Display', 'system-ui', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
