@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -13,7 +14,7 @@ All colors MUST be HSL.
 
     --card: 217 33% 17%;
     --card-foreground: 210 40% 98%;
-    
+
     /* Semi-transparent card for floating panels */
     --card-glass: 217 33% 17% / 0.85;
 
@@ -24,7 +25,7 @@ All colors MUST be HSL.
     --primary-foreground: 0 0% 100%;
 
     --secondary: 217 33% 22%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary-foreground: 171 76.9231% 64.3137%;
 
     --muted: 217 33% 17%;
     --muted-foreground: 215 20% 65%;
@@ -45,7 +46,7 @@ All colors MUST be HSL.
     --input: 217 33% 25%;
     --ring: 348 83% 47%;
 
-    --radius: 0.5rem;
+    --radius: 0.875rem;
 
     /* Team member colors - Chakra spectrum */
     --team-wesley: 0 84% 60%;      /* Red - Root */
@@ -54,7 +55,7 @@ All colors MUST be HSL.
     --team-darryn: 142 71% 45%;    /* Green - Heart */
     --team-taryn: 199 89% 48%;     /* Blue - Throat */
     --team-yaseen: 262 83% 58%;    /* Violet - Crown */
-    
+
     /* Pipeline stage colors (mapped to team owners) */
     --stage-lead: var(--team-wesley);
     --stage-contacted: var(--team-wesley);
@@ -72,6 +73,10 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 217 33% 30%;
     --sidebar-ring: 348 83% 47%;
+    --shadow-sm: 0px 1px 1.5px 0px hsla(215, 25%, 27%, 0.1);
+    --shadow: 0px 1px 3px 0px hsla(215, 25%, 27%, 0.1);
+    --shadow-md: 0px 1px 4.5px 0px hsla(215, 25%, 27%, 0.1);
+    --shadow-lg: 0px 1px 7.5px 0px hsla(215, 25%, 27%, 0.1);
   }
 
   /* Dark class kept for compatibility but same as root */
@@ -81,7 +86,7 @@ All colors MUST be HSL.
 
     --card: 217 33% 17%;
     --card-foreground: 210 40% 98%;
-    
+
     /* Semi-transparent card for floating panels */
     --card-glass: 217 33% 17% / 0.85;
 
@@ -120,7 +125,7 @@ All colors MUST be HSL.
     --team-darryn: 142 71% 45%;    /* Green - Heart */
     --team-taryn: 199 89% 48%;     /* Blue - Throat */
     --team-yaseen: 262 83% 58%;    /* Violet - Crown */
-    
+
     /* Pipeline stage colors (mapped to team owners) */
     --stage-lead: var(--team-wesley);
     --stage-contacted: var(--team-wesley);
@@ -138,6 +143,11 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 217 33% 30%;
     --sidebar-ring: 348 83% 47%;
+    --radius: 0.875rem;
+    --shadow-sm: 0px 1px 1.5px 0px hsla(215, 25%, 27%, 0.1);
+    --shadow: 0px 1px 3px 0px hsla(215, 25%, 27%, 0.1);
+    --shadow-md: 0px 1px 4.5px 0px hsla(215, 25%, 27%, 0.1);
+    --shadow-lg: 0px 1px 7.5px 0px hsla(215, 25%, 27%, 0.1);
   }
 }
 
@@ -160,14 +170,14 @@ All colors MUST be HSL.
   .gradient-primary {
     background: linear-gradient(135deg, hsl(348 83% 47%) 0%, hsl(348 83% 60%) 100%);
   }
-  
+
   .gradient-text {
     background: linear-gradient(135deg, hsl(348 83% 47%) 0%, hsl(348 83% 60%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
-  
+
   .glow-primary {
     box-shadow: 0 0 20px hsl(348 83% 47% / 0.3), 0 0 40px hsl(348 83% 60% / 0.2);
   }
