@@ -211,12 +211,12 @@ const Index = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full p-4 gap-4 pt-4">
+      <div className="h-screen flex w-full p-4 gap-4 pb-20">
         <AppSidebar onNewApplication={() => setIsModalOpen(true)} />
-        <div className="flex-1 flex flex-col overflow-hidden gap-3">
+        <div className="flex-1 flex flex-col overflow-hidden gap-3 max-h-[calc(100vh-7rem)]">
           <header 
-            className="h-12 flex items-center px-4 rounded-lg border border-border shadow-lg backdrop-blur-md gap-2"
-            style={{ backgroundColor: 'hsl(217 33% 17% / 0.85)' }}
+            className="h-12 flex items-center px-4 rounded-lg border border-border/50 shadow-lg backdrop-blur-md gap-2 flex-shrink-0"
+            style={{ backgroundColor: 'hsl(217 33% 17% / 0.7)' }}
           >
             <SidebarTrigger className="md:hidden" />
             <h1 className="text-lg font-semibold text-foreground">Pipeline</h1>
@@ -230,8 +230,8 @@ const Index = () => {
             </div>
           </header>
           <main 
-            className="flex-1 overflow-hidden rounded-lg border border-border shadow-lg backdrop-blur-md"
-            style={{ backgroundColor: 'hsl(217 33% 17% / 0.85)' }}
+            className="flex-1 overflow-hidden rounded-lg border border-border/50 shadow-lg backdrop-blur-md min-h-0"
+            style={{ backgroundColor: 'hsl(217 33% 17% / 0.7)' }}
           >
             <PipelineBoard 
               opportunities={filteredOpportunities} 
