@@ -211,9 +211,12 @@ const Index = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="min-h-screen flex w-full p-3 gap-3">
         <AppSidebar onNewApplication={() => setIsModalOpen(true)} />
-        <SidebarInset className="flex-1 flex flex-col overflow-hidden">
+        <div 
+          className="flex-1 flex flex-col overflow-hidden backdrop-blur-md rounded-lg border border-border shadow-lg"
+          style={{ backgroundColor: 'hsl(217 33% 17% / 0.85)' }}
+        >
           <header className="h-14 flex items-center px-4 md:px-6 border-b border-border gap-2">
             <SidebarTrigger className="md:hidden" />
             <h1 className="text-lg font-semibold text-foreground">Pipeline</h1>
@@ -236,7 +239,7 @@ const Index = () => {
               onDelete={handleDelete}
             />
           </main>
-        </SidebarInset>
+        </div>
       </div>
       
       <NewApplicationModal

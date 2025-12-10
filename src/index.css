@@ -13,6 +13,9 @@ All colors MUST be HSL.
 
     --card: 217 33% 17%;
     --card-foreground: 210 40% 98%;
+    
+    /* Semi-transparent card for floating panels */
+    --card-glass: 217 33% 17% / 0.85;
 
     --popover: 217 33% 17%;
     --popover-foreground: 210 40% 98%;
@@ -61,13 +64,13 @@ All colors MUST be HSL.
     --stage-live: var(--team-darryn);
     --stage-declined: 0 0% 45%;
 
-    --sidebar-background: 0 0% 0%;
+    --sidebar-background: 217 33% 17% / 0.85;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 348 83% 47%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent: 217 33% 22%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 33% 25%;
+    --sidebar-border: 217 33% 30%;
     --sidebar-ring: 348 83% 47%;
   }
 
@@ -78,6 +81,9 @@ All colors MUST be HSL.
 
     --card: 217 33% 17%;
     --card-foreground: 210 40% 98%;
+    
+    /* Semi-transparent card for floating panels */
+    --card-glass: 217 33% 17% / 0.85;
 
     --popover: 217 33% 17%;
     --popover-foreground: 210 40% 98%;
@@ -124,13 +130,13 @@ All colors MUST be HSL.
     --stage-live: var(--team-darryn);
     --stage-declined: 0 0% 45%;
 
-    --sidebar-background: 0 0% 0%;
+    --sidebar-background: 217 33% 17% / 0.85;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 348 83% 47%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent: 217 33% 22%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 33% 25%;
+    --sidebar-border: 217 33% 30%;
     --sidebar-ring: 348 83% 47%;
   }
 }

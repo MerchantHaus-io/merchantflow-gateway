@@ -86,7 +86,7 @@ export function AppSidebar({ onNewApplication }: AppSidebarProps) {
   const isCollapsed = state === "collapsed";
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-sidebar-border">
+    <Sidebar collapsible="icon" variant="floating" className="border-0">
       <SidebarHeader className="p-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
