@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Pencil } from "lucide-react";
+import { Pencil, Search } from "lucide-react";
 import { toast } from "sonner";
 
 const Accounts = () => {
@@ -25,6 +25,8 @@ const Accounts = () => {
     country: '',
     website: ''
   });
+  // Search query for filtering accounts
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchAccounts();
@@ -90,6 +92,18 @@ const Accounts = () => {
     );
   }
 
+  // Filter accounts based on search query across several fields
+  const filteredAccounts = accounts.filter((account) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      account.name.toLowerCase().includes(query) ||
+      (account.city ?? '').toLowerCase().includes(query) ||
+      (account.state ?? '').toLowerCase().includes(query) ||
+      (account.country ?? '').toLowerCase().includes(query) ||
+      (account.website ?? '').toLowerCase().includes(query)
+    );
+  });
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -98,6 +112,17 @@ const Accounts = () => {
           <header className="h-14 flex items-center px-4 md:px-6 border-b border-border gap-2">
             <SidebarTrigger className="md:hidden" />
             <h1 className="text-lg font-semibold text-foreground">Accounts</h1>
+            <div className="ml-auto">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search accounts..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8 w-64"
+                />
+              </div>
+            </div>
           </header>
           <main className="flex-1 overflow-auto p-6">
             <Table>
@@ -112,7 +137,7 @@ const Accounts = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {accounts.map((account) => (
+                {filteredAccounts.map((account) => (
                   <TableRow key={account.id} className="hover:bg-muted/50">
                     <TableCell className="font-medium">{account.name}</TableCell>
                     <TableCell>{account.city || '-'}</TableCell>
@@ -142,7 +167,13 @@ const Accounts = () => {
         </SidebarInset>
       </div>
 
-      <Dialog open={!!editingAccount} onOpenChange={() => setEditingAccount(null)}>
+      <Dialog
+        open={!!editingAccount}
+        onOpenChange={(open) => {
+          // Only clear editingAccount state when the dialog is closed
+          if (!open) setEditingAccount(null);
+        }}
+      >
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Edit Account</DialogTitle>
