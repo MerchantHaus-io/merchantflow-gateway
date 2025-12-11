@@ -4,8 +4,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import { Opportunity, STAGE_CONFIG, Account, Contact } from "@/types/opportunity";
-import { Building2, User, Briefcase, FileText, Activity, Pencil, Save, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle } from "lucide-react";
+import { Building2, User, Briefcase, FileText, Activity, Pencil, Save, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -33,6 +34,18 @@ interface Document {
   uploaded_by: string | null;
   created_at: string;
 }
+
+const wizardBadgeClasses = (value: number) => {
+  if (value >= 100) return "bg-emerald-500/10 text-emerald-500 border border-emerald-500/40";
+  if (value >= 10) return "bg-amber-500/10 text-amber-500 border border-amber-500/40";
+  return "bg-destructive/10 text-destructive border border-destructive/40";
+};
+
+const wizardProgressColor = (value: number) => {
+  if (value >= 100) return "bg-emerald-500";
+  if (value >= 10) return "bg-amber-500";
+  return "bg-destructive";
+};
 
 interface OpportunityDetailModalProps {
   opportunity: Opportunity | null;
@@ -78,6 +91,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   const account = opportunity.account;
   const contact = opportunity.contact;
   const stageConfig = STAGE_CONFIG[opportunity.stage];
+  const wizardState = opportunity.wizard_state;
 
   const startEditing = () => {
     // Populate form with current values
@@ -315,7 +329,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
           </DialogHeader>
 
           <Tabs defaultValue="account" className="mt-4">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="account" className="flex items-center gap-1">
                 <Building2 className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Account</span>
@@ -327,6 +341,10 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
               <TabsTrigger value="opportunity" className="flex items-center gap-1">
                 <Briefcase className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Opportunity</span>
+              </TabsTrigger>
+              <TabsTrigger value="wizard" className="flex items-center gap-1">
+                <ClipboardList className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Wizard</span>
               </TabsTrigger>
               <TabsTrigger value="comments" className="flex items-center gap-1">
                 <MessageSquare className="h-3.5 w-3.5" />
@@ -433,6 +451,47 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                     </div>
                   </div>
                 )}
+              </TabsContent>
+
+              <TabsContent value="wizard" className="mt-4 space-y-4">
+                <div className="rounded-lg border bg-muted/10 border-border/60 p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className={cn("inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs", wizardBadgeClasses(wizardState?.progress ?? 0))}>
+                        <span className="h-2 w-2 rounded-full bg-current" />
+                        <span>{wizardState ? `${wizardState.progress}% complete` : "Not started"}</span>
+                      </div>
+                      <span className="text-sm text-muted-foreground">Status window</span>
+                    </div>
+                    <a
+                      className="text-sm font-semibold text-primary hover:underline"
+                      href={`/tools/preboarding-wizard?opportunityId=${opportunity.id}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Open wizard
+                    </a>
+                  </div>
+
+                  {wizardState ? (
+                    <div className="space-y-2">
+                      <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                        <div
+                          className={cn("h-full transition-all", wizardProgressColor(wizardState.progress))}
+                          style={{ width: `${Math.min(wizardState.progress, 100)}%` }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between text-sm text-muted-foreground">
+                        <span>Wizard progress saved for this application.</span>
+                        <span>Step {wizardState.step_index + 1}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">
+                      No wizard data saved yet. Attach the preboarding wizard to this account and save progress to surface the status here.
+                    </div>
+                  )}
+                </div>
               </TabsContent>
 
               <TabsContent value="comments" className="mt-4">

@@ -1,4 +1,4 @@
-import { useMemo, useState, type ChangeEvent, type InputHTMLAttributes, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent, type InputHTMLAttributes, type ReactNode } from "react";
 import {
   AppSidebar
 } from "@/components/AppSidebar";
@@ -8,6 +8,9 @@ import {
   SidebarTrigger
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useSearchParams } from "react-router-dom";
 import {
   BadgeCheck,
   CheckCircle2,
@@ -17,6 +20,7 @@ import {
   Upload,
   Users
 } from "lucide-react";
+import { OnboardingWizardState } from "@/types/opportunity";
 
 const STEPS = [
   "Business Profile",
@@ -156,9 +160,99 @@ const initialState: PreboardingForm = {
   notes: ""
 };
 
+interface OpportunityOption {
+  id: string;
+  accountName: string;
+  stage?: string | null;
+}
+
+interface WizardStateRecord extends OnboardingWizardState {
+  form_state: Partial<PreboardingForm>;
+}
+
+const wizardStatusClasses = (value: number) => {
+  if (value >= 100) return "bg-emerald-500/10 text-emerald-400 border border-emerald-500/40";
+  if (value >= 10) return "bg-amber-500/10 text-amber-400 border border-amber-500/40";
+  return "bg-destructive/10 text-destructive border border-destructive/40";
+};
+
 export default function PreboardingWizard() {
   const [stepIndex, setStepIndex] = useState<number>(0);
   const [form, setForm] = useState<PreboardingForm>(initialState);
+  const [opportunityOptions, setOpportunityOptions] = useState<OpportunityOption[]>([]);
+  const [selectedOpportunityId, setSelectedOpportunityId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingState, setIsLoadingState] = useState(false);
+  const [searchParams] = useSearchParams();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchOpportunities();
+    const initialOpportunityId = searchParams.get("opportunityId");
+    if (initialOpportunityId) {
+      setSelectedOpportunityId(initialOpportunityId);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (selectedOpportunityId) {
+      loadWizardState(selectedOpportunityId);
+    } else {
+      setForm(initialState);
+      setStepIndex(0);
+    }
+  }, [selectedOpportunityId]);
+
+  const fetchOpportunities = async () => {
+    const { data, error } = await supabase
+      .from('opportunities')
+      .select(`id, stage, account:accounts(id, name)`)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      toast({ title: "Could not load accounts", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    const mapped = (data || []).map(item => ({
+      id: item.id,
+      accountName: item.account?.name ?? "Unknown account",
+      stage: item.stage
+    }));
+
+    setOpportunityOptions(mapped);
+  };
+
+  const loadWizardState = async (opportunityId: string) => {
+    setIsLoadingState(true);
+    const { data, error } = await supabase
+      .from('onboarding_wizard_states')
+      .select("*, form_state")
+      .eq('opportunity_id', opportunityId)
+      .single<WizardStateRecord>();
+
+    if (error && error.code !== "PGRST116") {
+      toast({ title: "Could not load wizard state", description: error.message, variant: "destructive" });
+      setIsLoadingState(false);
+      return;
+    }
+
+    if (data) {
+      const restoredForm: PreboardingForm = {
+        ...initialState,
+        ...(data.form_state as Partial<PreboardingForm>),
+        documents: []
+      };
+      setForm(restoredForm);
+      setStepIndex(data.step_index ?? 0);
+    } else {
+      setForm(initialState);
+      setStepIndex(0);
+    }
+
+    setIsLoadingState(false);
+  };
 
   const handleChange = <K extends keyof PreboardingForm>(field: K, value: PreboardingForm[K]) => {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -198,6 +292,38 @@ export default function PreboardingWizard() {
 
   const progress = Math.round((completedRequiredFields / totalRequiredFields) * 100);
 
+  const saveWizardState = async () => {
+    if (!selectedOpportunityId) {
+      toast({
+        title: "Select an account",
+        description: "Attach the wizard to an account before saving progress.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    const { documents: _docs, ...restForm } = form;
+    const serializableForm: Partial<PreboardingForm> = { ...restForm, documents: [] };
+
+    const { error } = await supabase
+      .from('onboarding_wizard_states')
+      .upsert({
+        opportunity_id: selectedOpportunityId,
+        progress,
+        step_index: stepIndex,
+        form_state: serializableForm
+      }, { onConflict: 'opportunity_id' });
+
+    if (error) {
+      toast({ title: "Could not save wizard", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Wizard saved", description: "Progress is now available on the account card." });
+    }
+
+    setIsSaving(false);
+  };
+
   const nextDisabled = () => {
     switch (stepIndex) {
       case 0:
@@ -213,7 +339,8 @@ export default function PreboardingWizard() {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    await saveWizardState();
     console.log("Preboarding payload", form);
     alert("Preboarding checklist complete! You can now move to the formal merchant app.");
   };
@@ -236,38 +363,74 @@ export default function PreboardingWizard() {
 
           <main className="flex-1 overflow-auto p-4 md:p-8">
             <div className="max-w-6xl mx-auto space-y-6">
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div>
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div className="space-y-2">
                   <p className="text-sm text-gray-400">Use this preboarding checklist before the formal application.</p>
-                  <div className="flex items-center gap-2 mt-2">
+                  <div className="flex items-center gap-2">
                     <div className="h-2 w-48 rounded-full bg-merchant-gray overflow-hidden">
                       <div className="h-full bg-merchant-redLight transition-all" style={{ width: `${progress}%` }} />
                     </div>
                     <span className="text-sm font-semibold text-white">{progress}% complete</span>
                   </div>
+                  {selectedOpportunityId && (
+                    <div className={cn("inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs", wizardStatusClasses(progress))}>
+                      <span className="h-2 w-2 rounded-full bg-current" />
+                      <span>Attached to dashboard account • {progress}%</span>
+                    </div>
+                  )}
                 </div>
 
-                <ol className="flex flex-wrap gap-2 text-xs font-medium text-gray-400">
-                  {STEPS.map((label, index) => (
-                    <li
-                      key={label}
-                      className={cn(
-                        "flex items-center gap-2 rounded-full border px-3 py-1",
-                        index === stepIndex
-                          ? "border-merchant-redLight/70 bg-merchant-red/10 text-white"
-                          : index < stepIndex
-                            ? "border-merchant-gray bg-merchant-gray/20 text-white"
-                            : "border-merchant-gray text-gray-400"
-                      )}
+                <div className="rounded-2xl border border-merchant-gray bg-merchant-dark px-4 py-3 shadow-xl w-full md:w-[360px] space-y-2">
+                  <div className="flex items-center justify-between text-sm text-white">
+                    <span>Attach to dashboard account</span>
+                    {isLoadingState && <span className="text-xs text-gray-400">Loading…</span>}
+                  </div>
+                  <select
+                    value={selectedOpportunityId ?? ""}
+                    onChange={event => setSelectedOpportunityId(event.target.value || null)}
+                    className="w-full rounded-xl border border-merchant-gray bg-merchant-black px-3 py-2 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-merchant-red"
+                  >
+                    <option value="">Select an account to sync</option>
+                    {opportunityOptions.map(option => (
+                      <option key={option.id} value={option.id}>
+                        {option.accountName} {option.stage ? `• ${option.stage.replace(/_/g, ' ')}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-400">
+                    <span>Saving links the wizard to the application card.</span>
+                    <button
+                      type="button"
+                      className="ml-auto rounded-lg bg-merchant-red px-3 py-1 text-xs font-semibold text-white disabled:opacity-60"
+                      onClick={saveWizardState}
+                      disabled={!selectedOpportunityId || isSaving}
                     >
-                      <span className="h-5 w-5 rounded-full border border-merchant-gray text-center text-[11px] leading-5">
-                        {index + 1}
-                      </span>
-                      <span>{label}</span>
-                    </li>
-                  ))}
-                </ol>
+                      {isSaving ? "Saving..." : "Save wizard state"}
+                    </button>
+                  </div>
+                </div>
               </div>
+
+              <ol className="flex flex-wrap gap-2 text-xs font-medium text-gray-400">
+                {STEPS.map((label, index) => (
+                  <li
+                    key={label}
+                    className={cn(
+                      "flex items-center gap-2 rounded-full border px-3 py-1",
+                      index === stepIndex
+                        ? "border-merchant-redLight/70 bg-merchant-red/10 text-white"
+                        : index < stepIndex
+                          ? "border-merchant-gray bg-merchant-gray/20 text-white"
+                          : "border-merchant-gray text-gray-400"
+                    )}
+                  >
+                    <span className="h-5 w-5 rounded-full border border-merchant-gray text-center text-[11px] leading-5">
+                      {index + 1}
+                    </span>
+                    <span>{label}</span>
+                  </li>
+                ))}
+              </ol>
 
               <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(280px,1fr)]">
                 <section className="space-y-4 rounded-2xl border border-merchant-gray bg-merchant-dark p-5 shadow-xl">

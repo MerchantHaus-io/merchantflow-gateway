@@ -32,7 +32,8 @@ const Index = () => {
     } = await supabase.from('opportunities').select(`
         *,
         account:accounts(*),
-        contact:contacts(*)
+        contact:contacts(*),
+        wizard_state:onboarding_wizard_states(*)
       `).eq('status', 'active').order('created_at', {
       ascending: false
     });
@@ -52,7 +53,8 @@ const Index = () => {
       account: item.account ? {
         ...item.account,
         status: item.account.status as 'active' | 'dead' | undefined
-      } : undefined
+      } : undefined,
+      wizard_state: Array.isArray(item.wizard_state) ? item.wizard_state[0] : item.wizard_state
     }));
     setOpportunities(typedData);
     setLoading(false);

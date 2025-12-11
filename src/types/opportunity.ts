@@ -58,6 +58,9 @@ export interface Opportunity {
   account?: Account;
   contact?: Contact;
 
+  /** Optional wizard state saved from the onboarding/preboarding flow */
+  wizard_state?: OnboardingWizardState;
+
   /** Related documents belonging to this opportunity */
   documents?: Document[];
   /** Related activities logged for this opportunity */
@@ -81,6 +84,16 @@ export interface Activity {
   type: string;
   description: string | null;
   created_at: string;
+}
+
+export interface OnboardingWizardState {
+  id: string;
+  opportunity_id: string;
+  progress: number;
+  step_index: number;
+  form_state: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
 }
 
 export const TEAM_MEMBERS = [
