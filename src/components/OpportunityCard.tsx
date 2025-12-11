@@ -106,7 +106,7 @@ const OpportunityCard = ({
               <ChevronDown className="h-3 w-3" />
             )}
           </button>
-          <h3 className="font-semibold text-xs text-foreground truncate flex-1">
+          <h3 className="font-semibold text-xs text-teal truncate flex-1">
             {account?.name || 'Unknown'}
           </h3>
           {/* SLA tiered badges - Clock icon, amber at 12h, red at 24h */}
@@ -145,7 +145,16 @@ const OpportunityCard = ({
             {contact?.phone && (
               <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                 <Phone className="h-3 w-3 flex-shrink-0" />
-                <span className="truncate">{contact.phone}</span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigator.clipboard.writeText(contact.phone!);
+                    toast.success('Phone number copied to clipboard');
+                  }}
+                  className="truncate hover:text-teal transition-colors cursor-pointer underline-offset-2 hover:underline"
+                >
+                  {contact.phone}
+                </button>
               </div>
             )}
 

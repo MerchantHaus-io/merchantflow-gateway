@@ -25,7 +25,10 @@ All colors MUST be HSL.
     --primary-foreground: 0 0% 100%;
 
     --secondary: 217 33% 22%;
-    --secondary-foreground: 171 76.9231% 64.3137%;
+    --secondary-foreground: 210 40% 98%;
+
+    --teal: 174 72% 46%;
+    --teal-foreground: 0 0% 100%;
 
     --muted: 217 33% 17%;
     --muted-foreground: 215 20% 65%;
@@ -67,12 +70,12 @@ All colors MUST be HSL.
 
     --sidebar-background: 217 33% 17% / 0.85;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 348 83% 47%;
+    --sidebar-primary: 174 72% 46%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 217 33% 22%;
-    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-accent-foreground: 174 72% 56%;
     --sidebar-border: 217 33% 30%;
-    --sidebar-ring: 348 83% 47%;
+    --sidebar-ring: 174 72% 46%;
     --shadow-sm: 0px 1px 1.5px 0px hsla(215, 25%, 27%, 0.1);
     --shadow: 0px 1px 3px 0px hsla(215, 25%, 27%, 0.1);
     --shadow-md: 0px 1px 4.5px 0px hsla(215, 25%, 27%, 0.1);
@@ -98,6 +101,9 @@ All colors MUST be HSL.
 
     --secondary: 217 33% 22%;
     --secondary-foreground: 210 40% 98%;
+
+    --teal: 174 72% 46%;
+    --teal-foreground: 0 0% 100%;
 
     --muted: 217 33% 17%;
     --muted-foreground: 215 20% 65%;
@@ -137,12 +143,12 @@ All colors MUST be HSL.
 
     --sidebar-background: 217 33% 17% / 0.85;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 348 83% 47%;
+    --sidebar-primary: 174 72% 46%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 217 33% 22%;
-    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-accent-foreground: 174 72% 56%;
     --sidebar-border: 217 33% 30%;
-    --sidebar-ring: 348 83% 47%;
+    --sidebar-ring: 174 72% 46%;
     --radius: 0.875rem;
     --shadow-sm: 0px 1px 1.5px 0px hsla(215, 25%, 27%, 0.1);
     --shadow: 0px 1px 3px 0px hsla(215, 25%, 27%, 0.1);

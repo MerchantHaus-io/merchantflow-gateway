@@ -57,6 +57,10 @@ export default {
   				DEFAULT: 'hsl(var(--secondary))',
   				foreground: 'hsl(var(--secondary-foreground))'
   			},
+  			teal: {
+  				DEFAULT: 'hsl(var(--teal))',
+  				foreground: 'hsl(var(--teal-foreground))'
+  			},
   			destructive: {
   				DEFAULT: 'hsl(var(--destructive))',
   				foreground: 'hsl(var(--destructive-foreground))'
