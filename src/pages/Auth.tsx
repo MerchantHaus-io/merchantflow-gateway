@@ -114,7 +114,7 @@ const Auth = () => {
         <CardHeader className="text-center">
           <div className="flex items-center justify-center mb-4">
             {/* Logo includes its own text, so we only display the image */}
-            <img src={brandLogo} alt="Ops Terminal" className="h-12 w-12 rounded-lg" />
+            <img src={brandLogo} alt="Merchant Haus" className="h-12 w-auto" />
           </div>
           <CardDescription>Sign in to access your pipeline</CardDescription>
         </CardHeader>

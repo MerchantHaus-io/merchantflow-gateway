@@ -81,7 +81,7 @@ export function AppSidebar({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-primary-foreground">
             {/* Logo already includes text; remove separate title/text */}
-            <img src={brandLogo} alt="Ops Terminal" className="h-8 w-8 rounded-md" />
+            <img src={brandLogo} alt="Merchant Haus" className="h-8 w-auto" />
           </div>
           <Button variant="ghost" size="icon" onClick={toggleSidebar} className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent">
             {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
