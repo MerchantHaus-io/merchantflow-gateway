@@ -1,4 +1,4 @@
-import { LayoutDashboard, Building2, Users, FileText, BarChart3, Settings, Plus, ChevronLeft, ChevronRight, BookOpen, Wrench, ChevronDown, Calculator, Activity, User, LogOut, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Building2, Users, FileText, BarChart3, Settings, Plus, ChevronLeft, ChevronRight, BookOpen, Wrench, ChevronDown, Calculator, Activity, User, LogOut, ClipboardList, type LucideIcon } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -53,6 +53,10 @@ const navMain: NavItem[] = [{
     title: "SOP",
     url: "/sop",
     icon: BookOpen
+  }, {
+    title: "Preboarding Wizard",
+    url: "/tools/preboarding-wizard",
+    icon: ClipboardList
   }, {
     title: "Revenue Calc",
     url: "/tools/revenue-calculator",
