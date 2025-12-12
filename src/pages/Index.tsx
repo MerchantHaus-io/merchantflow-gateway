@@ -25,6 +25,11 @@ const Index = () => {
   useEffect(() => {
     fetchOpportunities();
   }, []);
+  /**
+   * Retrieves active opportunities with their related account, contact, and
+   * onboarding wizard state data. The result is normalized to match the
+   * Opportunity TypeScript interface before being stored in component state.
+   */
   const fetchOpportunities = async () => {
     setLoading(true);
 
@@ -32,9 +37,23 @@ const Index = () => {
       data,
       error
     } = await supabase.from('opportunities').select(`
-        *,
-        account:accounts(*),
-        contact:contacts(*)
+        id,
+        account_id,
+        contact_id,
+        stage,
+        status,
+        referral_source,
+        username,
+        processing_services,
+        value_services,
+        timezone,
+        language,
+        assigned_to,
+        stage_entered_at,
+        created_at,
+        updated_at,
+        account:accounts(id, name, status, address1, address2, city, state, zip, country, website, created_at, updated_at),
+        contact:contacts(id, account_id, first_name, last_name, email, phone, fax, created_at, updated_at)
       `).eq('status', 'active').order('created_at', {
       ascending: false
     });
@@ -63,7 +82,7 @@ const Index = () => {
       const {
         data: wizardStates,
         error: wizardStateError
-      } = await supabase.from('onboarding_wizard_states').select('*').in('opportunity_id', opportunityIds);
+      } = await supabase.from('onboarding_wizard_states').select('id, opportunity_id, progress, step_index, form_state, created_at, updated_at').in('opportunity_id', opportunityIds);
 
       if (wizardStateError) {
         console.error('Error loading wizard states:', wizardStateError);
@@ -116,7 +135,7 @@ const Index = () => {
           zip: formData.zip || null,
           country: formData.country || null,
           website: formData.website || null
-        }).select().single();
+        }).select('id').single();
         if (accountError) throw accountError;
         accountId = account.id;
       }
@@ -135,7 +154,7 @@ const Index = () => {
           email: formData.email,
           phone: formData.phone,
           fax: formData.fax || null
-        }).select().single();
+        }).select('id').single();
         if (contactError) throw contactError;
         contactId = contact.id;
       }
@@ -152,7 +171,7 @@ const Index = () => {
         timezone: formData.timezone || null,
         language: formData.language || null,
         agree_to_terms: true
-      }).select().single();
+      }).select('id').single();
       if (opportunityError) throw opportunityError;
       await fetchOpportunities();
       toast({

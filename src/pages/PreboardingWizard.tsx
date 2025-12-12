@@ -228,7 +228,7 @@ export default function PreboardingWizard() {
     setIsLoadingState(true);
     const { data, error } = await supabase
       .from('onboarding_wizard_states')
-      .select("*, form_state")
+      .select('id, opportunity_id, progress, step_index, form_state, created_at, updated_at')
       .eq('opportunity_id', opportunityId)
       .single<WizardStateRecord>();
 

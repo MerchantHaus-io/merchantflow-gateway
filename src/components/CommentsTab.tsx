@@ -59,7 +59,7 @@ const CommentsTab = ({ opportunityId }: CommentsTabProps) => {
   const fetchComments = async () => {
     const { data, error } = await supabase
       .from('comments')
-      .select('*')
+      .select('id, opportunity_id, user_id, user_email, content, created_at, updated_at')
       .eq('opportunity_id', opportunityId)
       .order('created_at', { ascending: false });
 

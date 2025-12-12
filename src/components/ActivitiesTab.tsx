@@ -49,7 +49,7 @@ const ActivitiesTab = ({ opportunityId }: ActivitiesTabProps) => {
   const fetchActivities = async () => {
     const { data, error } = await supabase
       .from('activities')
-      .select('*')
+      .select('id, opportunity_id, type, description, user_email, created_at')
       .eq('opportunity_id', opportunityId)
       .order('created_at', { ascending: false });
 

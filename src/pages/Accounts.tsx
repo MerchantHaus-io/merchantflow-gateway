@@ -41,7 +41,7 @@ const Accounts = () => {
   const fetchAccounts = async () => {
     const { data, error } = await supabase
       .from('accounts')
-      .select('*, contacts(*)')
+      .select('id, name, status, address1, address2, city, state, zip, country, website, created_at, contacts(id, first_name, last_name, email)')
       .order('created_at', { ascending: false });
     if (!error && data) {
       setAccounts(data as AccountWithContacts[]);

@@ -598,7 +598,7 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
   const fetchDocuments = async () => {
     const { data, error } = await supabase
       .from('documents')
-      .select('*')
+      .select('id, opportunity_id, file_name, file_path, file_size, content_type, uploaded_by, created_at')
       .eq('opportunity_id', opportunityId)
       .order('created_at', { ascending: false });
     
@@ -667,12 +667,17 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
     }
   };
 
-  const handleDownload = (doc: Document) => {
-    const { data } = supabase.storage
+  const handleDownload = async (doc: Document) => {
+    const { data, error } = await supabase.storage
       .from('opportunity-documents')
-      .getPublicUrl(doc.file_path);
-    
-    window.open(data.publicUrl, '_blank');
+      .createSignedUrl(doc.file_path, 60 * 10);
+
+    if (error || !data?.signedUrl) {
+      toast.error('Unable to generate download link');
+      return;
+    }
+
+    window.open(data.signedUrl, '_blank');
   };
 
   const formatFileSize = (bytes: number | null) => {

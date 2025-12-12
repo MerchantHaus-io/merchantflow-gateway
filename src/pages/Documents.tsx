@@ -35,7 +35,7 @@ const DocumentsPage = () => {
   const fetchDocuments = async () => {
     const { data, error } = await supabase
       .from("documents")
-      .select("*")
+      .select("id, opportunity_id, file_name, file_path, file_size, content_type, uploaded_by, created_at")
       .order("created_at", { ascending: false });
 
     if (!error && data) {
@@ -59,15 +59,21 @@ const DocumentsPage = () => {
   };
 
   /**
-   * Generates a public URL for a document and opens it in a new tab. If the
-   * storage API fails to return a URL nothing happens.
+   * Generates a short-lived signed URL for the document to avoid exposing
+   * public storage URLs. Opens the link in a new tab when available.
    */
-  const handleDownload = (doc: Document) => {
-    const { data } = supabase.storage
+  const handleDownload = async (doc: Document) => {
+    const { data, error } = await supabase.storage
       .from("opportunity-documents")
-      .getPublicUrl(doc.file_path);
-    if (data?.publicUrl) {
-      window.open(data.publicUrl, "_blank");
+      .createSignedUrl(doc.file_path, 60 * 10); // 10 minute expiry
+
+    if (error) {
+      toast.error("Failed to generate download link");
+      return;
+    }
+
+    if (data?.signedUrl) {
+      window.open(data.signedUrl, "_blank");
     }
   };
 

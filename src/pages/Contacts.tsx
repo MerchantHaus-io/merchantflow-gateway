@@ -24,6 +24,10 @@ interface AccountOption {
   name: string;
 }
 
+type ContactQueryResult = ContactWithAccount & {
+  opportunities?: { id: string; assigned_to: string | null; stage: string | null }[];
+};
+
 const TEAM_BG_COLORS: Record<string, string> = {
   'Wesley': 'bg-team-wesley/20',
   'Jamie': 'bg-team-jamie/20',
@@ -84,13 +88,18 @@ const Contacts = () => {
     fetchAccounts();
   }, []);
 
+  /**
+   * Loads contacts along with their account name and the first linked
+   * opportunity so assignment and stage data can be shown in the list without
+   * additional queries.
+   */
   const fetchContacts = async () => {
     const { data, error } = await supabase
       .from('contacts')
-      .select(`*, account:accounts(name), opportunities(id, assigned_to, stage)`)
+      .select(`id, account_id, first_name, last_name, email, phone, fax, created_at, account:accounts(name), opportunities(id, assigned_to, stage)`)
       .order('created_at', { ascending: false });
     if (!error && data) {
-      const contactsWithAssignment = data.map((contact: any) => ({
+      const contactsWithAssignment = (data as ContactQueryResult[]).map((contact) => ({
         ...contact,
         assigned_to: contact.opportunities?.[0]?.assigned_to || null,
         stage: contact.opportunities?.[0]?.stage || null,
@@ -194,7 +203,7 @@ const Contacts = () => {
         const { data: newAccount, error: accountError } = await supabase
           .from('accounts')
           .insert({ name: newAccountName.trim() })
-          .select()
+          .select('id')
           .single();
 
         if (accountError || !newAccount) {
