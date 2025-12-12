@@ -62,8 +62,8 @@ All colors MUST be HSL.
     /* Pipeline stage colors (mapped to team owners) */
     --stage-lead: var(--team-wesley);
     --stage-contacted: var(--team-wesley);
-    --stage-application: var(--team-leo);
-    --stage-underwriting: var(--team-leo);
+    --stage-application: var(--team-sales);
+    --stage-underwriting: var(--team-sales);
     --stage-approval: var(--team-jamie);
     --stage-live: var(--team-darryn);
     --stage-declined: 0 0% 45%;
@@ -135,8 +135,8 @@ All colors MUST be HSL.
     /* Pipeline stage colors (mapped to team owners) */
     --stage-lead: var(--team-wesley);
     --stage-contacted: var(--team-wesley);
-    --stage-application: var(--team-leo);
-    --stage-underwriting: var(--team-leo);
+    --stage-application: var(--team-sales);
+    --stage-underwriting: var(--team-sales);
     --stage-approval: var(--team-jamie);
     --stage-live: var(--team-darryn);
     --stage-declined: 0 0% 45%;
