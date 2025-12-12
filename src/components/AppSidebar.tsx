@@ -1,4 +1,4 @@
-import { LayoutDashboard, Building2, Users, FileText, BarChart3, Settings, Plus, ChevronLeft, ChevronRight, BookOpen, Wrench, ChevronDown, Calculator, Activity, User, LogOut, ClipboardList, ListChecks, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Building2, Users, FileText, BarChart3, Settings, Plus, ChevronLeft, ChevronRight, BookOpen, Wrench, ChevronDown, Calculator, Activity, User, LogOut, ClipboardList, ListChecks, FileSpreadsheet, type LucideIcon } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,10 @@ const navMain: NavItem[] = [{
   title: "Pipeline",
   url: "/",
   icon: LayoutDashboard
+}, {
+  title: "Tasks",
+  url: "/tasks",
+  icon: ListChecks
 }, {
   title: "Accounts",
   url: "/accounts",
@@ -61,6 +65,10 @@ const navMain: NavItem[] = [{
     title: "Revenue Calc",
     url: "/tools/revenue-calculator",
     icon: Calculator
+  }, {
+    title: "CSV Import",
+    url: "/tools/csv-import",
+    icon: FileSpreadsheet
   }, {
     title: "NMI Status",
     url: "https://statusgator.com/services/nmi",
@@ -179,24 +187,7 @@ export function AppSidebar({
       </SidebarContent>
 
       <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <SidebarMenuButton asChild>
-                  <NavLink
-                    to="/tasks"
-                    className="hover:bg-sidebar-accent"
-                    activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
-                  >
-                    <ListChecks className="h-4 w-4" />
-                    {!isCollapsed && <span>My Tasks</span>}
-                  </NavLink>
-                </SidebarMenuButton>
-              </TooltipTrigger>
-              {isCollapsed && <TooltipContent side="right">My Tasks</TooltipContent>}
-            </Tooltip>
-          </SidebarMenuItem>
+      <SidebarMenu>
           {/* Profile Menu */}
           <SidebarMenuItem>
             <DropdownMenu>

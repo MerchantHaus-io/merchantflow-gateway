@@ -17,7 +17,8 @@ import Auth from "./pages/Auth";
 import SOP from "./pages/SOP";
 import RevenueCalculator from "./pages/RevenueCalculator";
 import PreboardingWizard from "./pages/PreboardingWizard";
-import MyTasks from "./pages/MyTasks";
+import Tasks from "./pages/Tasks";
+import CsvImport from "./pages/CsvImport";
 
 const queryClient = new QueryClient();
 
@@ -39,7 +40,8 @@ const App = () => (
               <Route path="/sop" element={<ProtectedRoute><SOP /></ProtectedRoute>} />
               <Route path="/tools/revenue-calculator" element={<ProtectedRoute><RevenueCalculator /></ProtectedRoute>} />
               <Route path="/tools/preboarding-wizard" element={<ProtectedRoute><PreboardingWizard /></ProtectedRoute>} />
-              <Route path="/tasks" element={<ProtectedRoute><MyTasks /></ProtectedRoute>} />
+              <Route path="/tools/csv-import" element={<ProtectedRoute><CsvImport /></ProtectedRoute>} />
+              <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
