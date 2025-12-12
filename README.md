@@ -12,7 +12,7 @@ React + Vite + TypeScript dashboard backed by Supabase. The app manages opportun
    ```sh
    npm install
    ```
-2. Copy the example environment file and add your Supabase values:
+2. Copy the example environment file and add your Supabase values (the checked-in defaults point at the hosted demo backend so the app still works out of the box):
    ```sh
    cp .env.example .env
    ```
@@ -29,10 +29,10 @@ React + Vite + TypeScript dashboard backed by Supabase. The app manages opportun
 ### Environment Variables
 | Name | Description |
 | --- | --- |
-| `VITE_SUPABASE_URL` | Supabase project URL |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase anon (public) API key |
+| `VITE_SUPABASE_URL` | Supabase project URL. Defaults to the hosted demo URL if unset. |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase anon (public) API key. Defaults to the hosted demo key if unset. |
 
-Store these values only in local `.env` files or in your hosting provider. For Netlify, configure them under **Site settings → Environment variables** so they are injected at build time without committing secrets.
+Store production credentials only in local `.env` files or your hosting provider. For Netlify, configure them under **Site settings → Environment variables** so they override the bundled demo defaults and are injected at build time without committing secrets.
 
 ## Supabase Notes
 - Storage downloads now use short-lived signed URLs (`createSignedUrl`) to avoid exposing public file links.
