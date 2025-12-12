@@ -9,8 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Pencil, Plus, Search, ArrowRightCircle } from "lucide-react";
+import { Pencil, Plus, Search, ArrowRightCircle, Eye } from "lucide-react";
 import { toast } from "sonner";
+import CommentsTab from "@/components/CommentsTab";
 
 interface ContactWithAccount extends Contact {
   account?: Account;
@@ -68,6 +69,7 @@ const Contacts = () => {
     assigned_to: '',
     account_id: '',
   });
+  const [selectedContact, setSelectedContact] = useState<ContactWithAccount | null>(null);
 
   const filteredContacts = contacts.filter((contact) => {
     const query = searchQuery.toLowerCase();
@@ -337,6 +339,14 @@ const Contacts = () => {
                         <Button
                           variant="ghost"
                           size="icon"
+                          onClick={() => setSelectedContact(contact)}
+                          title="View Contact Details"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => openEditDialog(contact)}
                         >
                           <Pencil className="h-4 w-4" />
@@ -360,6 +370,88 @@ const Contacts = () => {
           </main>
         </SidebarInset>
       </div>
+
+      {/* Contact Details Dialog */}
+      <Dialog
+        open={!!selectedContact}
+        onOpenChange={(open) => {
+          if (!open) setSelectedContact(null);
+        }}
+      >
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedContact?.first_name || selectedContact?.last_name
+                ? `${selectedContact?.first_name || ''} ${selectedContact?.last_name || ''}`.trim()
+                : 'Contact Details'}
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedContact && (
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm text-muted-foreground">Account</p>
+                  <p className="font-medium">{selectedContact.account?.name || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Email</p>
+                  <p className="font-medium">{selectedContact.email || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Phone</p>
+                  <p className="font-medium">{selectedContact.phone || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Fax</p>
+                  <p className="font-medium">{selectedContact.fax || '—'}</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm text-muted-foreground">Assigned To</p>
+                  <p className="font-medium">{selectedContact.assigned_to || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Stage</p>
+                  <p className="font-medium">
+                    {selectedContact.stage
+                      ? STAGE_LABELS[selectedContact.stage] || selectedContact.stage
+                      : '—'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Created</p>
+                  <p className="font-medium">
+                    {selectedContact.created_at
+                      ? new Date(selectedContact.created_at).toLocaleDateString()
+                      : '—'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="md:col-span-2 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold">Comments</p>
+                  {!selectedContact.opportunity_id && (
+                    <span className="text-xs text-muted-foreground">
+                      Link the contact to an opportunity to enable comments.
+                    </span>
+                  )}
+                </div>
+                {selectedContact.opportunity_id ? (
+                  <CommentsTab opportunityId={selectedContact.opportunity_id} />
+                ) : (
+                  <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                    No opportunity linked to this contact.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Contact Dialog */}
       <Dialog
