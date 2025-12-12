@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -6,11 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Opportunity, STAGE_CONFIG, Account, Contact } from "@/types/opportunity";
-import { Building2, User, Briefcase, FileText, Activity, Pencil, Save, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList } from "lucide-react";
+import { Building2, User, Briefcase, FileText, Activity, Pencil, Save, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, ListChecks } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTasks } from "@/contexts/TasksContext";
 import CommentsTab from "./CommentsTab";
 import ActivitiesTab from "./ActivitiesTab";
 import {
@@ -23,6 +24,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Task } from "@/types/task";
 
 interface Document {
   id: string;
@@ -58,10 +63,14 @@ interface OpportunityDetailModalProps {
 const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, onDelete }: OpportunityDetailModalProps) => {
   const { isAdmin } = useUserRole();
   const { user } = useAuth();
+  const { getTasksForOpportunity, addTask, updateTaskStatus } = useTasks();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showDeadDialog, setShowDeadDialog] = useState(false);
+  const [taskTitle, setTaskTitle] = useState("");
+  const [taskAssignee, setTaskAssignee] = useState("Unassigned");
+  const [taskComments, setTaskComments] = useState("");
   
   // Account fields
   const [accountName, setAccountName] = useState("");
@@ -86,12 +95,45 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   const [timezone, setTimezone] = useState("");
   const [language, setLanguage] = useState("");
 
-  if (!opportunity) return null;
+  const account = opportunity?.account;
+  const contact = opportunity?.contact;
+  const stageConfig = opportunity ? STAGE_CONFIG[opportunity.stage] : STAGE_CONFIG.application_started;
+  const wizardState = opportunity?.wizard_state;
+  const relatedTasks = useMemo(
+    () => (opportunity ? getTasksForOpportunity(opportunity.id) : []),
+    [getTasksForOpportunity, opportunity],
+  );
+  const assigneeOptions = useMemo(
+    () =>
+      Array.from(
+        new Set([opportunity?.assigned_to, user?.email, "Onboarding", "Operations", "Support", "Unassigned"].filter(Boolean)),
+      ) as string[],
+    [opportunity?.assigned_to, user?.email],
+  );
 
-  const account = opportunity.account;
-  const contact = opportunity.contact;
-  const stageConfig = STAGE_CONFIG[opportunity.stage];
-  const wizardState = opportunity.wizard_state;
+  useEffect(() => {
+    if (!opportunity) return;
+    setTaskAssignee(opportunity.assigned_to || user?.email || "Unassigned");
+    setTaskTitle(`Follow up on ${opportunity.account?.name || "this application"}`);
+    setTaskComments("");
+  }, [opportunity, user?.email]);
+
+  const handleTaskSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!opportunity) return;
+    addTask({
+      title: taskTitle || "Application follow-up",
+      assignee: taskAssignee,
+      comments: taskComments,
+      description: taskComments,
+      relatedOpportunityId: opportunity.id,
+      createdBy: user?.email || "System",
+      source: "manual",
+    });
+    setTaskComments("");
+  };
+
+  if (!opportunity) return null;
 
   const startEditing = () => {
     // Populate form with current values
@@ -329,7 +371,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
           </DialogHeader>
 
           <Tabs defaultValue="account" className="mt-4">
-            <TabsList className="grid w-full grid-cols-7">
+            <TabsList className="grid w-full grid-cols-8">
               <TabsTrigger value="account" className="flex items-center gap-1">
                 <Building2 className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Account</span>
@@ -357,6 +399,10 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
               <TabsTrigger value="activities" className="flex items-center gap-1">
                 <Activity className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Activity</span>
+              </TabsTrigger>
+              <TabsTrigger value="tasks" className="flex items-center gap-1">
+                <ListChecks className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Tasks</span>
               </TabsTrigger>
             </TabsList>
 
@@ -504,6 +550,82 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
 
               <TabsContent value="activities" className="mt-4">
                 <ActivitiesTab opportunityId={opportunity.id} />
+              </TabsContent>
+
+              <TabsContent value="tasks" className="mt-4 space-y-4">
+                <form onSubmit={handleTaskSubmit} className="grid gap-3 rounded-lg border p-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="task-title">Task title</Label>
+                    <Input
+                      id="task-title"
+                      value={taskTitle}
+                      onChange={(e) => setTaskTitle(e.target.value)}
+                      placeholder="Follow up on application"
+                    />
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="task-assignee">Assign to</Label>
+                      <Select value={taskAssignee} onValueChange={setTaskAssignee}>
+                        <SelectTrigger id="task-assignee">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {assigneeOptions.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="task-comments">Comments</Label>
+                      <Textarea
+                        id="task-comments"
+                        value={taskComments}
+                        onChange={(e) => setTaskComments(e.target.value)}
+                        placeholder="What needs to happen next?"
+                      />
+                    </div>
+                  </div>
+                  <Button type="submit" className="justify-self-start">
+                    Add task
+                  </Button>
+                </form>
+
+                <div className="space-y-3">
+                  {relatedTasks.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No tasks yet. Create one to track follow-ups.</p>
+                  )}
+                  {relatedTasks.map((task) => (
+                    <div key={task.id} className="rounded-lg border p-3 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium leading-none">{task.title}</p>
+                            {task.source === "sla" && <Badge variant="destructive">24h SLA</Badge>}
+                          </div>
+                          {task.comments && <p className="text-sm text-muted-foreground">{task.comments}</p>}
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                            <Badge variant="outline">Assignee: {task.assignee}</Badge>
+                            <span>Created: {new Date(task.createdAt).toLocaleString()}</span>
+                          </div>
+                        </div>
+                        <Select value={task.status} onValueChange={(value) => updateTaskStatus(task.id, value as Task["status"])}>
+                          <SelectTrigger className="w-[140px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="open">Open</SelectItem>
+                            <SelectItem value="in_progress">In Progress</SelectItem>
+                            <SelectItem value="done">Done</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </TabsContent>
             </div>
           </Tabs>

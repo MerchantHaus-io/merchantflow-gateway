@@ -7,6 +7,7 @@ import { OnboardingWizardState, Opportunity, OpportunityStage } from "@/types/op
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTasks } from "@/contexts/TasksContext";
 import DateRangeFilter from "@/components/DateRangeFilter";
 import { DateRange } from "react-day-picker";
 import { isWithinInterval, startOfDay, endOfDay } from "date-fns";
@@ -22,6 +23,7 @@ const Index = () => {
   const {
     toast
   } = useToast();
+  const { ensureSlaTask } = useTasks();
   useEffect(() => {
     fetchOpportunities();
   }, []);
@@ -100,6 +102,25 @@ const Index = () => {
     setOpportunities(typedData);
     setLoading(false);
   };
+
+  useEffect(() => {
+    const now = Date.now();
+    opportunities.forEach(opportunity => {
+      if (opportunity.stage === 'application_started') {
+        const createdAt = new Date(opportunity.created_at).getTime();
+        const ageInHours = (now - createdAt) / (1000 * 60 * 60);
+        if (ageInHours >= 24) {
+          ensureSlaTask({
+            relatedOpportunityId: opportunity.id,
+            title: `24h follow-up: ${opportunity.account?.name || 'Application'}`,
+            description: 'Application has been waiting for review for 24 hours',
+            assignee: opportunity.assigned_to || user?.email || 'Unassigned',
+            source: 'sla'
+          });
+        }
+      }
+    });
+  }, [ensureSlaTask, opportunities, user?.email]);
 
   // Filter opportunities by date range
   const filteredOpportunities = useMemo(() => {
