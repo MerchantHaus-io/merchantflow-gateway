@@ -2,32 +2,18 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const DEFAULT_SUPABASE_URL = 'https://cuqjaddtmkotgvfsgcol.supabase.co';
+const DEFAULT_SUPABASE_PUBLISHABLE_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1cWphZGR0bWtvdGd2ZnNnY29sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NTM3NjUsImV4cCI6MjA4MDQyOTc2NX0.u1m_nORZsJ3Law0y3-xIIoNUoiRcrTXukJyW14y-AoA';
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY =
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || DEFAULT_SUPABASE_PUBLISHABLE_KEY;
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
 function createSupabaseClient(): SupabaseClient<Database> {
-  if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-    console.error(
-      'Supabase configuration error: VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY environment variables are required.'
-    );
-    // Return a mock client that won't crash the app but will fail gracefully
-    // This allows the login screen to render and show appropriate error messages
-    return createClient<Database>(
-      'https://placeholder.supabase.co',
-      'placeholder-key',
-      {
-        auth: {
-          storage: localStorage,
-          persistSession: true,
-          autoRefreshToken: true,
-        }
-      }
-    );
-  }
-
   return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {
       storage: localStorage,
