@@ -17,21 +17,6 @@ interface PipelineColumnProps {
   onAddNew?: () => void;
 }
 
-// Saturated, solid background colors for column headers (no transparency)
-const STAGE_HEADER_COLORS: Record<OpportunityStage, string> = {
-  application_started: 'bg-blue-600',
-  discovery: 'bg-indigo-600',
-  qualified: 'bg-cyan-600',
-  opportunities: 'bg-teal-600',
-  underwriting_review: 'bg-purple-600',
-  processor_approval: 'bg-pink-600',
-  integration_setup: 'bg-orange-600',
-  gateway_submitted: 'bg-amber-500',
-  live_activated: 'bg-green-600',
-  closed_won: 'bg-emerald-700',
-  closed_lost: 'bg-red-700',
-};
-
 const PipelineColumn = ({
   stage,
   opportunities,
@@ -75,12 +60,17 @@ const PipelineColumn = ({
     >
       {/* Column Header with solid saturated background */}
       <div className={cn(
-        "px-3 py-2.5",
-        STAGE_HEADER_COLORS[stage]
+        "px-3 py-2.5 border-b border-white/10 shadow-inner",
+        config.headerClass
       )}>
         <div className="flex items-center gap-2">
           <h2 className="font-semibold text-xs text-white truncate flex-1">{config.label}</h2>
-          <span className="text-[10px] text-white/90 bg-white/20 px-1.5 py-0.5 rounded-full font-medium">
+          <span
+            className={cn(
+              "text-[10px] px-1.5 py-0.5 rounded-full font-medium border",
+              config.badgeClass
+            )}
+          >
             {opportunities.length}
           </span>
           {stage === 'application_started' && onAddNew && (

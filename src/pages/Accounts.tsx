@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Pencil, Search, Users } from "lucide-react";
 import { toast } from "sonner";
 
@@ -115,14 +117,22 @@ const Accounts = () => {
     );
   });
 
+  const totalAccounts = accounts.length;
+  const accountsWithContacts = accounts.filter((account) => (account.contacts?.length || 0) > 0).length;
+  const accountsWithWebsites = accounts.filter((account) => !!account.website).length;
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <SidebarInset className="flex-1 flex flex-col overflow-hidden">
-          <header className="h-14 flex items-center px-4 md:px-6 border-b border-border gap-2">
+          <header className="h-20 flex items-center px-4 md:px-6 border-b border-border gap-2">
             <SidebarTrigger className="md:hidden" />
-            <h1 className="text-lg font-semibold text-foreground">Accounts</h1>
+            <div className="space-y-1">
+              <p className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground font-medium">Company records</p>
+              <h1 className="text-lg md:text-xl font-semibold text-foreground">Accounts</h1>
+              <p className="text-sm text-muted-foreground hidden sm:block">Keep every merchant profile organized and ready for outreach.</p>
+            </div>
             <div className="ml-auto">
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -136,74 +146,110 @@ const Accounts = () => {
             </div>
           </header>
           <main className="flex-1 overflow-auto p-6">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Contacts</TableHead>
-                  <TableHead>City</TableHead>
-                  <TableHead>State</TableHead>
-                  <TableHead>Country</TableHead>
-                  <TableHead>Website</TableHead>
-                  <TableHead className="w-16">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAccounts.map((account) => (
-                  <TableRow key={account.id} className="hover:bg-muted/50">
-                    <TableCell className="font-medium">{account.name}</TableCell>
-                    <TableCell>
-                      {account.contacts && account.contacts.length > 0 ? (
-                        <Select
-                          value="placeholder"
-                          onValueChange={() => {}}
-                        >
-                          <SelectTrigger className="w-48 bg-secondary">
-                            <div className="flex items-center gap-2">
-                              <Users className="h-4 w-4 text-muted-foreground" />
-                              <span>{account.contacts.length} contact{account.contacts.length !== 1 ? 's' : ''}</span>
-                            </div>
-                          </SelectTrigger>
-                          <SelectContent className="bg-popover">
-                            {account.contacts.map((contact) => (
-                              <SelectItem key={contact.id} value={contact.id} disabled>
-                                <div className="flex flex-col">
-                                  <span>{contact.first_name} {contact.last_name}</span>
-                                  {contact.email && (
-                                    <span className="text-xs text-muted-foreground">{contact.email}</span>
-                                  )}
+            <div className="grid gap-4 md:grid-cols-3 mb-6">
+              <Card className="border-muted/70">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm text-muted-foreground">Total accounts</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="text-2xl font-semibold">{totalAccounts}</div>
+                  <p className="text-xs text-muted-foreground mt-1">Merchant profiles captured</p>
+                </CardContent>
+              </Card>
+              <Card className="border-muted/70">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm text-muted-foreground">With contacts</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="text-2xl font-semibold">{accountsWithContacts}</div>
+                  <p className="text-xs text-muted-foreground mt-1">Linked to at least one contact</p>
+                </CardContent>
+              </Card>
+              <Card className="border-muted/70">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm text-muted-foreground">With websites</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="text-2xl font-semibold">{accountsWithWebsites}</div>
+                  <p className="text-xs text-muted-foreground mt-1">Ready for research</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Account directory</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Contacts</TableHead>
+                      <TableHead>City</TableHead>
+                      <TableHead>State</TableHead>
+                      <TableHead>Country</TableHead>
+                      <TableHead>Website</TableHead>
+                      <TableHead className="w-16">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredAccounts.map((account) => (
+                      <TableRow key={account.id} className="hover:bg-muted/50">
+                        <TableCell className="font-medium">{account.name}</TableCell>
+                        <TableCell>
+                          {account.contacts && account.contacts.length > 0 ? (
+                            <Select value="placeholder" onValueChange={() => {}}>
+                              <SelectTrigger className="w-48 bg-secondary">
+                                <div className="flex items-center gap-2">
+                                  <Users className="h-4 w-4 text-muted-foreground" />
+                                  <span>{account.contacts.length} contact{account.contacts.length !== 1 ? 's' : ''}</span>
                                 </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <span className="text-muted-foreground">No contacts</span>
-                      )}
-                    </TableCell>
-                    <TableCell>{account.city || '-'}</TableCell>
-                    <TableCell>{account.state || '-'}</TableCell>
-                    <TableCell>{account.country || '-'}</TableCell>
-                    <TableCell>
-                      {account.website ? (
-                        <a href={account.website} target="_blank" rel="noopener noreferrer" className="text-primary underline">
-                          {account.website}
-                        </a>
-                      ) : '-'}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openEditDialog(account)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                              </SelectTrigger>
+                              <SelectContent className="bg-popover">
+                                {account.contacts.map((contact) => (
+                                  <SelectItem key={contact.id} value={contact.id} disabled>
+                                    <div className="flex flex-col">
+                                      <span>{contact.first_name} {contact.last_name}</span>
+                                      {contact.email && (
+                                        <span className="text-xs text-muted-foreground">{contact.email}</span>
+                                      )}
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Badge variant="outline" className="bg-muted/40 text-muted-foreground">No contacts</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>{account.city || '-'}</TableCell>
+                        <TableCell>{account.state || '-'}</TableCell>
+                        <TableCell>{account.country || '-'}</TableCell>
+                        <TableCell>
+                          {account.website ? (
+                            <a href={account.website} target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                              {account.website}
+                            </a>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openEditDialog(account)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
           </main>
         </SidebarInset>
       </div>
