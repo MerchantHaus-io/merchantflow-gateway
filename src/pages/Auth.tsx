@@ -68,11 +68,15 @@ const Auth = () => {
     setIsLoading(false);
 
     if (error) {
+      let description = error.message;
+      if (error.message === 'Invalid login credentials') {
+        description = 'Invalid email or password. Please try again.';
+      } else if (error.message.toLowerCase().includes('fetch')) {
+        description = 'Network error. Please check your connection and try again.';
+      }
       toast({
         title: 'Sign In Failed',
-        description: error.message === 'Invalid login credentials'
-          ? 'Invalid email or password. Please try again.'
-          : error.message,
+        description,
         variant: 'destructive',
       });
     }
@@ -87,19 +91,17 @@ const Auth = () => {
     setIsLoading(false);
 
     if (error) {
+      let description = error.message;
       if (error.message.includes('already registered')) {
-        toast({
-          title: 'Account Exists',
-          description: 'This email is already registered. Please sign in instead.',
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'Sign Up Failed',
-          description: error.message,
-          variant: 'destructive',
-        });
+        description = 'This email is already registered. Please sign in instead.';
+      } else if (error.message.toLowerCase().includes('fetch')) {
+        description = 'Network error. Please check your connection and try again.';
       }
+      toast({
+        title: error.message.includes('already registered') ? 'Account Exists' : 'Sign Up Failed',
+        description,
+        variant: 'destructive',
+      });
     } else {
       toast({
         title: 'Account Created',
