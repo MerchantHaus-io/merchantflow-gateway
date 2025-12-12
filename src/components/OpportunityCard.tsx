@@ -26,21 +26,28 @@ const TEAM_BORDER_COLORS: Record<string, string> = {
   'Sales': 'border-l-team-sales',
 };
 
-const OpportunityCard = ({ 
-  opportunity, 
-  onDragStart, 
-  onClick, 
+// Header background colors for SLA states (solid, saturated, no transparency)
+const HEADER_STYLES = {
+  normal: 'bg-secondary',
+  warning: 'bg-amber-500',
+  critical: 'bg-red-600',
+};
+
+const OpportunityCard = ({
+  opportunity,
+  onDragStart,
+  onClick,
   onAssignmentChange,
   isCollapsed = false,
   onToggleCollapse
 }: OpportunityCardProps) => {
   const account = opportunity.account;
   const contact = opportunity.contact;
-  const contactName = contact 
-    ? `${contact.first_name || ''} ${contact.last_name || ''}`.trim() 
+  const contactName = contact
+    ? `${contact.first_name || ''} ${contact.last_name || ''}`.trim()
     : 'Unknown';
 
-  const borderClass = opportunity.assigned_to 
+  const borderClass = opportunity.assigned_to
     ? TEAM_BORDER_COLORS[opportunity.assigned_to] || 'border-l-primary/50'
     : 'border-l-muted-foreground/30';
 
@@ -58,15 +65,15 @@ const OpportunityCard = ({
 
   const handleAssignmentChange = async (value: string) => {
     const newValue = value === 'unassigned' ? null : value;
-    
+
     try {
       const { error } = await supabase
         .from('opportunities')
         .update({ assigned_to: newValue })
         .eq('id', opportunity.id);
-      
+
       if (error) throw error;
-      
+
       onAssignmentChange?.(opportunity.id, newValue);
       toast.success(newValue ? `Assigned to ${newValue}` : 'Unassigned');
     } catch (error) {
@@ -80,68 +87,76 @@ const OpportunityCard = ({
     onToggleCollapse?.();
   };
 
+  // Determine header style based on SLA status
+  const headerBgClass = slaStatus === 'critical'
+    ? HEADER_STYLES.critical
+    : slaStatus === 'warning'
+      ? HEADER_STYLES.warning
+      : HEADER_STYLES.normal;
+
   return (
-    <Card 
+    <Card
       draggable
       onDragStart={(e) => onDragStart(e, opportunity)}
       onClick={onClick}
       className={cn(
-        "cursor-grab active:cursor-grabbing transition-all duration-200 group bg-card border-l-3",
-        // Override border color when SLA critical, otherwise use team color
-        slaStatus === 'critical' ? 'border-l-destructive' : borderClass,
-        // SLA tiered styles - subtle background tints only, no animation
-        slaStatus === 'warning' && "bg-amber-500/10",
-        slaStatus === 'critical' && "bg-destructive/15"
+        "cursor-grab active:cursor-grabbing transition-all duration-200 group border-l-3 overflow-hidden rounded-lg shadow-sm hover:shadow-md",
+        borderClass
       )}
     >
-      <CardContent className={cn("p-2", isCollapsed ? "py-1.5" : "p-2")}>
-        <div className="flex items-center gap-1.5">
-          <button 
-            onClick={handleCollapseClick}
-            className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
-          >
-            {isCollapsed ? (
-              <ChevronRight className="h-3 w-3" />
-            ) : (
-              <ChevronDown className="h-3 w-3" />
-            )}
-          </button>
-          <h3 className="font-semibold text-xs text-teal truncate flex-1">
-            {account?.name || 'Unknown'}
-          </h3>
-          {/* SLA tiered badges - Clock icon, amber at 12h, red at 24h */}
-          {slaStatus === 'warning' && (
-            <span className="flex items-center gap-0.5 text-[9px] text-amber-600 bg-amber-500/10 px-1 py-0.5 rounded flex-shrink-0" title="In stage > 12 hours">
-              <Clock className="h-3 w-3" />
-            </span>
+      {/* Card Header with solid background color */}
+      <div className={cn(
+        "px-2 py-1.5 flex items-center gap-1.5",
+        headerBgClass
+      )}>
+        <button
+          onClick={handleCollapseClick}
+          className="text-white/70 hover:text-white transition-colors flex-shrink-0"
+        >
+          {isCollapsed ? (
+            <ChevronRight className="h-3 w-3" />
+          ) : (
+            <ChevronDown className="h-3 w-3" />
           )}
-          {slaStatus === 'critical' && (
-            <span className="flex items-center gap-0.5 text-[9px] text-destructive bg-destructive/10 px-1 py-0.5 rounded flex-shrink-0" title="In stage > 24 hours - SLA breached">
-              <Clock className="h-3 w-3" />
-            </span>
-          )}
-          {opportunity.assigned_to && (
-            <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded flex-shrink-0">
-              {opportunity.assigned_to}
-            </span>
-          )}
-          <GripVertical className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-        </div>
-        
-        {!isCollapsed && (
-          <div className="mt-2 ml-4 space-y-1.5">
+        </button>
+        <h3 className="font-semibold text-xs text-white truncate flex-1">
+          {account?.name || 'Unknown'}
+        </h3>
+        {/* SLA indicator icons */}
+        {slaStatus === 'warning' && (
+          <span className="flex items-center text-white/90 flex-shrink-0" title="In stage > 12 hours">
+            <Clock className="h-3 w-3" />
+          </span>
+        )}
+        {slaStatus === 'critical' && (
+          <span className="flex items-center text-white/90 flex-shrink-0" title="In stage > 24 hours - SLA breached">
+            <Clock className="h-3 w-3" />
+          </span>
+        )}
+        {opportunity.assigned_to && (
+          <span className="text-[9px] text-white/90 bg-white/20 px-1.5 py-0.5 rounded font-medium flex-shrink-0">
+            {opportunity.assigned_to}
+          </span>
+        )}
+        <GripVertical className="h-3 w-3 text-white/50 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+      </div>
+
+      {/* Card Content */}
+      {!isCollapsed && (
+        <CardContent className="p-2 pt-2 bg-card">
+          <div className="space-y-1.5">
             <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
               <User className="h-3 w-3 flex-shrink-0" />
               <span className="truncate">{contactName}</span>
             </div>
-            
+
             {contact?.email && (
               <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                 <Mail className="h-3 w-3 flex-shrink-0" />
                 <span className="truncate">{contact.email}</span>
               </div>
             )}
-            
+
             {contact?.phone && (
               <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                 <Phone className="h-3 w-3 flex-shrink-0" />
@@ -158,13 +173,13 @@ const OpportunityCard = ({
               </div>
             )}
 
-            <div className="pt-1.5 border-t border-border/50">
-              <Select 
-                value={opportunity.assigned_to || 'unassigned'} 
+            <div className="pt-1.5 border-t border-border/30">
+              <Select
+                value={opportunity.assigned_to || 'unassigned'}
                 onValueChange={handleAssignmentChange}
               >
-                <SelectTrigger 
-                  className="h-6 text-[10px] bg-background"
+                <SelectTrigger
+                  className="h-6 text-[10px] bg-background/50 border-border/50"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <SelectValue placeholder="Assign..." />
@@ -179,13 +194,13 @@ const OpportunityCard = ({
                 </SelectContent>
               </Select>
             </div>
-            
+
             {opportunity.processing_services && opportunity.processing_services.length > 0 && (
               <div className="flex flex-wrap gap-0.5 pt-1">
                 {opportunity.processing_services.map((service) => (
-                  <span 
+                  <span
                     key={service}
-                    className="text-[9px] text-muted-foreground bg-muted px-1 py-0.5 rounded"
+                    className="text-[9px] text-muted-foreground bg-muted/50 px-1 py-0.5 rounded"
                   >
                     {service}
                   </span>
@@ -193,8 +208,8 @@ const OpportunityCard = ({
               </div>
             )}
           </div>
-        )}
-      </CardContent>
+        </CardContent>
+      )}
     </Card>
   );
 };

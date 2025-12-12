@@ -1,7 +1,8 @@
-export type OpportunityStage = 
+export type OpportunityStage =
   | 'application_started'
   | 'discovery'
   | 'qualified'
+  | 'opportunities'
   | 'underwriting_review'
   | 'processor_approval'
   | 'integration_setup'
@@ -129,6 +130,7 @@ export const STAGE_CONFIG: Record<OpportunityStage, { label: string; colorClass:
   application_started: { label: 'New', colorClass: 'bg-blue-500' },
   discovery: { label: 'Discovery', colorClass: 'bg-indigo-500' },
   qualified: { label: 'Qualified', colorClass: 'bg-cyan-500' },
+  opportunities: { label: 'Opportunities', colorClass: 'bg-teal-500' },
   underwriting_review: { label: 'Underwriting Review', colorClass: 'bg-purple-500' },
   processor_approval: { label: 'Processor Approval', colorClass: 'bg-pink-500' },
   integration_setup: { label: 'Integration Setup', colorClass: 'bg-orange-500' },
@@ -140,8 +142,9 @@ export const STAGE_CONFIG: Record<OpportunityStage, { label: string; colorClass:
 
 export const PIPELINE_STAGES: OpportunityStage[] = [
   'application_started',
-  'discovery', 
+  'discovery',
   'qualified',
+  'opportunities',
   'underwriting_review',
   'processor_approval',
   'integration_setup',
