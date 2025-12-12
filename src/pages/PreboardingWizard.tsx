@@ -170,6 +170,54 @@ interface WizardStateRecord extends OnboardingWizardState {
   form_state: Partial<PreboardingForm>;
 }
 
+interface OpportunityWithRelations {
+  account?: {
+    name?: string;
+    address1?: string | null;
+    address2?: string | null;
+    city?: string | null;
+    state?: string | null;
+    zip?: string | null;
+    country?: string | null;
+    website?: string | null;
+  } | null;
+  contact?: {
+    first_name?: string | null;
+    last_name?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    fax?: string | null;
+  } | null;
+}
+
+const createFormFromOpportunity = (opportunity?: OpportunityWithRelations | null): PreboardingForm => {
+  const account = opportunity?.account;
+  const contact = opportunity?.contact;
+
+  return {
+    ...initialState,
+    dbaName: account?.name || "",
+    dbaContactFirst: contact?.first_name || "",
+    dbaContactLast: contact?.last_name || "",
+    dbaPhone: contact?.phone || "",
+    dbaEmail: contact?.email || "",
+    dbaAddress: account?.address1 || "",
+    dbaAddress2: account?.address2 || "",
+    dbaCity: account?.city || "",
+    dbaState: account?.state || "",
+    dbaZip: account?.zip || "",
+    website: account?.website || "",
+    legalEntityName: account?.name || "",
+    legalPhone: contact?.phone || "",
+    legalEmail: contact?.email || "",
+    legalAddress: account?.address1 || "",
+    legalAddress2: account?.address2 || "",
+    legalCity: account?.city || "",
+    legalState: account?.state || "",
+    legalZip: account?.zip || "",
+  };
+};
+
 const wizardStatusClasses = (value: number) => {
   if (value >= 100) return "bg-emerald-500/10 text-emerald-400 border border-emerald-500/40";
   if (value >= 10) return "bg-amber-500/10 text-amber-400 border border-amber-500/40";
@@ -226,6 +274,21 @@ export default function PreboardingWizard() {
 
   const loadWizardState = async (opportunityId: string) => {
     setIsLoadingState(true);
+    const { data: opportunity, error: opportunityError } = await supabase
+      .from('opportunities')
+      .select(`
+        id,
+        account:accounts(name, address1, address2, city, state, zip, country, website),
+        contact:contacts(first_name, last_name, email, phone, fax)
+      `)
+      .eq('id', opportunityId)
+      .single<OpportunityWithRelations>();
+
+    if (opportunityError && opportunityError.code !== "PGRST116") {
+      toast({ title: "Could not load account", description: opportunityError.message, variant: "destructive" });
+    }
+
+    const prefilledForm = createFormFromOpportunity(opportunity);
     const { data, error } = await supabase
       .from('onboarding_wizard_states')
       .select('id, opportunity_id, progress, step_index, form_state, created_at, updated_at')
@@ -240,14 +303,14 @@ export default function PreboardingWizard() {
 
     if (data) {
       const restoredForm: PreboardingForm = {
-        ...initialState,
+        ...prefilledForm,
         ...(data.form_state as Partial<PreboardingForm>),
         documents: []
       };
       setForm(restoredForm);
       setStepIndex(data.step_index ?? 0);
     } else {
-      setForm(initialState);
+      setForm(prefilledForm);
       setStepIndex(0);
     }
 
