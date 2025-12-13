@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Task, TaskInput } from "@/types/task";
-
+import { useAuth } from "@/contexts/AuthContext";
 interface TasksContextValue {
   tasks: Task[];
   addTask: (input: TaskInput) => Task;
@@ -22,6 +22,7 @@ const generateId = () => {
 };
 
 export const TasksProvider = ({ children }: { children: React.ReactNode }) => {
+  const { user } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
 
   const refreshTasks = useCallback(async () => {
@@ -51,6 +52,11 @@ export const TasksProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   useEffect(() => {
+    if (!user) {
+      setTasks([]);
+      return;
+    }
+
     refreshTasks();
 
     const channel = supabase
@@ -96,7 +102,7 @@ export const TasksProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [refreshTasks]);
+  }, [user, refreshTasks]);
 
   const addTask = useCallback((input: TaskInput) => {
     const newTask: Task = {
