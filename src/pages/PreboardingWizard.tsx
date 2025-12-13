@@ -387,21 +387,6 @@ export default function PreboardingWizard() {
     setIsSaving(false);
   };
 
-  const nextDisabled = () => {
-    switch (stepIndex) {
-      case 0:
-        return missingBySection.business.length > 0;
-      case 1:
-        return missingBySection.legal.length > 0;
-      case 2:
-        return missingBySection.processing.length > 0;
-      case 3:
-        return missingBySection.documents.length > 0;
-      default:
-        return false;
-    }
-  };
-
   const handleSubmit = async () => {
     await saveWizardState();
     console.log("Preboarding payload", form);
@@ -478,8 +463,9 @@ export default function PreboardingWizard() {
                 {STEPS.map((label, index) => (
                   <li
                     key={label}
+                    onClick={() => setStepIndex(index)}
                     className={cn(
-                      "flex items-center gap-2 rounded-full border px-3 py-1",
+                      "flex items-center gap-2 rounded-full border px-3 py-1 cursor-pointer transition-colors hover:bg-merchant-gray/30",
                       index === stepIndex
                         ? "border-merchant-redLight/70 bg-merchant-red/10 text-white"
                         : index < stepIndex
@@ -526,9 +512,8 @@ export default function PreboardingWizard() {
                     {stepIndex < STEPS.length - 1 ? (
                       <button
                         type="button"
-                        className="rounded-xl bg-merchant-red px-4 py-2 text-sm font-semibold text-white shadow hover:bg-merchant-redLight disabled:bg-merchant-gray disabled:text-gray-500"
+                        className="rounded-xl bg-merchant-red px-4 py-2 text-sm font-semibold text-white shadow hover:bg-merchant-redLight"
                         onClick={() => setStepIndex(prev => Math.min(STEPS.length - 1, prev + 1))}
-                        disabled={nextDisabled()}
                       >
                         Next →
                       </button>
