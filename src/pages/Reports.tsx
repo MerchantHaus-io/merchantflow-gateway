@@ -5,6 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { STAGE_CONFIG, TEAM_MEMBERS, OpportunityStage } from "@/types/opportunity";
 import { useTasks } from "@/contexts/TasksContext";
+import DateRangeFilter from "@/components/DateRangeFilter";
+import { DateRange } from "react-day-picker";
+import { isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import {
   BarChart,
   Bar,
@@ -64,6 +67,30 @@ const Reports = () => {
   const [opportunities, setOpportunities] = useState<OpportunityData[]>([]);
   const [activities, setActivities] = useState<ActivityData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [filterBy, setFilterBy] = useState<'created_at' | 'updated_at'>('created_at');
+
+  // Filter helper
+  const isInDateRange = (dateStr: string) => {
+    if (!dateRange?.from) return true;
+    const date = new Date(dateStr);
+    const from = startOfDay(dateRange.from);
+    const to = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from);
+    return isWithinInterval(date, { start: from, end: to });
+  };
+
+  // Filtered data
+  const filteredOpportunities = useMemo(() => {
+    return opportunities.filter((opp) => isInDateRange(opp.created_at));
+  }, [opportunities, dateRange]);
+
+  const filteredActivities = useMemo(() => {
+    return activities.filter((act) => isInDateRange(act.created_at));
+  }, [activities, dateRange]);
+
+  const filteredTasks = useMemo(() => {
+    return tasks.filter((task) => isInDateRange(task.createdAt));
+  }, [tasks, dateRange]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -83,7 +110,7 @@ const Reports = () => {
   // Pipeline stage distribution
   const stageData = useMemo(() => {
     const counts: Record<string, number> = {};
-    opportunities.forEach((opp) => {
+    filteredOpportunities.forEach((opp) => {
       if (opp.status !== "dead") {
         counts[opp.stage] = (counts[opp.stage] || 0) + 1;
       }
@@ -92,12 +119,12 @@ const Reports = () => {
       stage: STAGE_CONFIG[stage as OpportunityStage]?.label || stage,
       count,
     }));
-  }, [opportunities]);
+  }, [filteredOpportunities]);
 
   // Team workload distribution
   const teamData = useMemo(() => {
     const counts: Record<string, number> = {};
-    opportunities.forEach((opp) => {
+    filteredOpportunities.forEach((opp) => {
       if (opp.status !== "dead" && opp.assigned_to) {
         counts[opp.assigned_to] = (counts[opp.assigned_to] || 0) + 1;
       }
@@ -106,12 +133,12 @@ const Reports = () => {
       name,
       count,
     }));
-  }, [opportunities]);
+  }, [filteredOpportunities]);
 
   // Task status breakdown
   const taskStatusData = useMemo(() => {
     const counts = { open: 0, in_progress: 0, done: 0 };
-    tasks.forEach((task) => {
+    filteredTasks.forEach((task) => {
       counts[task.status] = (counts[task.status] || 0) + 1;
     });
     return [
@@ -119,7 +146,7 @@ const Reports = () => {
       { name: "In Progress", value: counts.in_progress, color: "hsl(var(--chart-4))" },
       { name: "Done", value: counts.done, color: "hsl(var(--primary))" },
     ];
-  }, [tasks]);
+  }, [filteredTasks]);
 
   // Weekly activity trend (last 4 weeks)
   const activityTrend = useMemo(() => {
@@ -133,7 +160,7 @@ const Reports = () => {
       weeks[weekLabel] = 0;
     }
 
-    activities.forEach((act) => {
+    filteredActivities.forEach((act) => {
       const actDate = new Date(act.created_at);
       const diffDays = Math.floor((now.getTime() - actDate.getTime()) / (1000 * 60 * 60 * 24));
       const weekIndex = Math.floor(diffDays / 7);
@@ -144,7 +171,7 @@ const Reports = () => {
     });
 
     return Object.entries(weeks).map(([week, count]) => ({ week, activities: count }));
-  }, [activities]);
+  }, [filteredActivities]);
 
   // Team task performance
   const teamTaskData = useMemo(() => {
@@ -153,7 +180,7 @@ const Reports = () => {
       data[member] = { open: 0, done: 0 };
     });
 
-    tasks.forEach((task) => {
+    filteredTasks.forEach((task) => {
       if (task.assignee && data[task.assignee]) {
         if (task.status === "done") {
           data[task.assignee].done++;
@@ -170,20 +197,20 @@ const Reports = () => {
         open: counts.open,
         done: counts.done,
       }));
-  }, [tasks]);
+  }, [filteredTasks]);
 
   // Summary stats
   const stats = useMemo(() => {
-    const activeOpps = opportunities.filter((o) => o.status !== "dead").length;
-    const closedWon = opportunities.filter((o) => o.stage === "closed_won").length;
-    const openTasks = tasks.filter((t) => t.status !== "done").length;
-    const overdueTasks = tasks.filter((t) => {
+    const activeOpps = filteredOpportunities.filter((o) => o.status !== "dead").length;
+    const closedWon = filteredOpportunities.filter((o) => o.stage === "closed_won").length;
+    const openTasks = filteredTasks.filter((t) => t.status !== "done").length;
+    const overdueTasks = filteredTasks.filter((t) => {
       if (!t.dueAt || t.status === "done") return false;
       return new Date(t.dueAt) < new Date();
     }).length;
 
     return { activeOpps, closedWon, openTasks, overdueTasks };
-  }, [opportunities, tasks]);
+  }, [filteredOpportunities, filteredTasks]);
 
   if (loading) {
     return (
@@ -209,15 +236,23 @@ const Reports = () => {
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <SidebarInset className="flex-1 flex flex-col overflow-hidden">
-          <header className="h-14 flex items-center px-4 md:px-6 border-b border-border gap-2">
-            <SidebarTrigger className="md:hidden" />
-            <div>
-              <p className="text-sm text-muted-foreground">Analytics</p>
-              <h1 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-primary" />
-                Reports
-              </h1>
+          <header className="h-14 flex items-center px-4 md:px-6 border-b border-border gap-2 justify-between">
+            <div className="flex items-center gap-2">
+              <SidebarTrigger className="md:hidden" />
+              <div>
+                <p className="text-sm text-muted-foreground">Analytics</p>
+                <h1 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-primary" />
+                  Reports
+                </h1>
+              </div>
             </div>
+            <DateRangeFilter
+              dateRange={dateRange}
+              onDateRangeChange={setDateRange}
+              filterBy={filterBy}
+              onFilterByChange={setFilterBy}
+            />
           </header>
 
           <main className="flex-1 overflow-auto p-4 md:p-6 space-y-6">
