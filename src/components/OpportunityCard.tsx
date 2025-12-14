@@ -28,7 +28,7 @@ const TEAM_BORDER_COLORS: Record<string, string> = {
 
 // Header background colors for SLA states (solid, saturated, no transparency)
 const HEADER_STYLES = {
-  normal: 'bg-secondary',
+  normal: 'bg-black',
   warning: 'bg-amber-500',
   critical: 'bg-red-600',
 };
@@ -145,7 +145,7 @@ const OpportunityCard = ({
       {!isCollapsed && (
         <CardContent className="p-2 pt-2 bg-card">
           <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <div className="flex items-center gap-1.5 text-[11px] text-white">
               <User className="h-3 w-3 flex-shrink-0" />
               <span className="truncate">{contactName}</span>
             </div>
