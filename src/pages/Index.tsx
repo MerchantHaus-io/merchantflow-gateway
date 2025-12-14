@@ -11,6 +11,167 @@ import { useTasks } from "@/contexts/TasksContext";
 import DateRangeFilter from "@/components/DateRangeFilter";
 import { DateRange } from "react-day-picker";
 import { isWithinInterval, startOfDay, endOfDay } from "date-fns";
+
+type WizardPrefillForm = {
+  dbaName: string;
+  products: string;
+  natureOfBusiness: string;
+  dbaContactFirst: string;
+  dbaContactLast: string;
+  dbaPhone: string;
+  dbaEmail: string;
+  dbaAddress: string;
+  dbaAddress2: string;
+  dbaCity: string;
+  dbaState: string;
+  dbaZip: string;
+  legalEntityName: string;
+  legalPhone: string;
+  legalEmail: string;
+  tin: string;
+  ownershipType: string;
+  formationDate: string;
+  stateIncorporated: string;
+  legalAddress: string;
+  legalAddress2: string;
+  legalCity: string;
+  legalState: string;
+  legalZip: string;
+  monthlyVolume: string;
+  avgTicket: string;
+  highTicket: string;
+  swipedPct: string;
+  keyedPct: string;
+  motoPct: string;
+  ecomPct: string;
+  b2cPct: string;
+  b2bPct: string;
+  sicMcc: string;
+  website: string;
+  documents: unknown[];
+  notes: string;
+};
+
+const WIZARD_REQUIRED_FIELDS: Record<
+  "business" | "legal" | "processing" | "documents",
+  (keyof WizardPrefillForm)[]
+> = {
+  business: [
+    "dbaName",
+    "products",
+    "natureOfBusiness",
+    "dbaContactFirst",
+    "dbaContactLast",
+    "dbaPhone",
+    "dbaEmail",
+    "dbaAddress",
+    "dbaCity",
+    "dbaState",
+    "dbaZip",
+  ],
+  legal: [
+    "legalEntityName",
+    "legalPhone",
+    "legalEmail",
+    "tin",
+    "ownershipType",
+    "formationDate",
+    "stateIncorporated",
+    "legalAddress",
+    "legalCity",
+    "legalState",
+    "legalZip",
+  ],
+  processing: [
+    "monthlyVolume",
+    "avgTicket",
+    "highTicket",
+    "swipedPct",
+    "keyedPct",
+    "motoPct",
+    "ecomPct",
+    "b2cPct",
+    "b2bPct",
+  ],
+  documents: ["documents"],
+};
+
+const createWizardFormFromOpportunity = (opportunity: Opportunity): WizardPrefillForm => {
+  const account = opportunity.account;
+  const contact = opportunity.contact;
+
+  return {
+    dbaName: account?.name || "",
+    products: "",
+    natureOfBusiness: "",
+    dbaContactFirst: contact?.first_name || "",
+    dbaContactLast: contact?.last_name || "",
+    dbaPhone: contact?.phone || "",
+    dbaEmail: contact?.email || "",
+    dbaAddress: account?.address1 || "",
+    dbaAddress2: account?.address2 || "",
+    dbaCity: account?.city || "",
+    dbaState: account?.state || "",
+    dbaZip: account?.zip || "",
+    legalEntityName: account?.name || "",
+    legalPhone: contact?.phone || "",
+    legalEmail: contact?.email || "",
+    tin: "",
+    ownershipType: "",
+    formationDate: "",
+    stateIncorporated: account?.state || "",
+    legalAddress: account?.address1 || "",
+    legalAddress2: account?.address2 || "",
+    legalCity: account?.city || "",
+    legalState: account?.state || "",
+    legalZip: account?.zip || "",
+    monthlyVolume: "",
+    avgTicket: "",
+    highTicket: "",
+    swipedPct: "",
+    keyedPct: "",
+    motoPct: "",
+    ecomPct: "",
+    b2cPct: "",
+    b2bPct: "",
+    sicMcc: "",
+    website: account?.website || "",
+    documents: [],
+    notes: "",
+  };
+};
+
+const calculateWizardProgress = (form: WizardPrefillForm) => {
+  const getMissingFieldsForSection = (section: keyof typeof WIZARD_REQUIRED_FIELDS) =>
+    WIZARD_REQUIRED_FIELDS[section].filter((field) => {
+      const value = form[field];
+      if (Array.isArray(value)) {
+        return value.length === 0;
+      }
+      return `${value}`.trim() === "";
+    });
+
+  const missingBySection = {
+    business: getMissingFieldsForSection("business"),
+    legal: getMissingFieldsForSection("legal"),
+    processing: getMissingFieldsForSection("processing"),
+    documents: getMissingFieldsForSection("documents"),
+  };
+
+  const totalRequiredFields =
+    WIZARD_REQUIRED_FIELDS.business.length +
+    WIZARD_REQUIRED_FIELDS.legal.length +
+    WIZARD_REQUIRED_FIELDS.processing.length +
+    1;
+
+  const completedRequiredFields =
+    (WIZARD_REQUIRED_FIELDS.business.length - missingBySection.business.length) +
+    (WIZARD_REQUIRED_FIELDS.legal.length - missingBySection.legal.length) +
+    (WIZARD_REQUIRED_FIELDS.processing.length - missingBySection.processing.length) +
+    (missingBySection.documents.length === 0 ? 1 : 0);
+
+  return Math.round((completedRequiredFields / totalRequiredFields) * 100);
+};
 const Index = () => {
   const {
     user
@@ -91,6 +252,32 @@ const Index = () => {
       } else {
         const wizardStateMap = new Map<string, OnboardingWizardState>();
         (wizardStates || []).forEach((state) => wizardStateMap.set(state.opportunity_id, state as unknown as OnboardingWizardState));
+
+        const opportunitiesWithoutWizard = typedData.filter((opportunity) => !wizardStateMap.has(opportunity.id));
+
+        if (opportunitiesWithoutWizard.length) {
+          const prefilledStates = opportunitiesWithoutWizard.map((opportunity) => {
+            const formState = createWizardFormFromOpportunity(opportunity);
+
+            return {
+              opportunity_id: opportunity.id,
+              progress: calculateWizardProgress(formState),
+              step_index: 0,
+              form_state: formState,
+            };
+          });
+
+          const { data: insertedStates, error: createError } = await supabase
+            .from('onboarding_wizard_states')
+            .upsert(prefilledStates as never, { onConflict: 'opportunity_id' })
+            .select('id, opportunity_id, progress, step_index, form_state, created_at, updated_at');
+
+          if (createError) {
+            console.error('Error creating wizard states:', createError);
+          } else {
+            (insertedStates || []).forEach((state) => wizardStateMap.set(state.opportunity_id, state as unknown as OnboardingWizardState));
+          }
+        }
 
         typedData = typedData.map(opportunity => ({
           ...opportunity,
