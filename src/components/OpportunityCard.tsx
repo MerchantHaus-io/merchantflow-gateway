@@ -26,11 +26,11 @@ const TEAM_BORDER_COLORS: Record<string, string> = {
   'Sales': 'border-l-team-sales',
 };
 
-// Header background - always black with white text
+// Header background colors for SLA states (solid, saturated, no transparency)
 const HEADER_STYLES = {
-  normal: 'bg-black text-white',
-  warning: 'bg-black text-white',
-  critical: 'bg-black text-white',
+  normal: 'bg-secondary',
+  warning: 'bg-amber-500',
+  critical: 'bg-red-600',
 };
 
 const OpportunityCard = ({
