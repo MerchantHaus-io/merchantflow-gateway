@@ -55,6 +55,9 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import DateRangeFilter from "@/components/DateRangeFilter";
+import { DateRange } from "react-day-picker";
+import { isWithinInterval, startOfDay, endOfDay } from "date-fns";
 
 const statusLabels: Record<Task["status"], string> = {
   open: "Open",
@@ -79,6 +82,8 @@ const storageKey = {
   sortDir: "tasks:sortDir",
 };
 
+type StatusFilter = 'all' | 'open' | 'in_progress' | 'done';
+
 const Tasks = () => {
   const { user } = useAuth();
   const displayName = EMAIL_TO_USER[user?.email?.toLowerCase() || ""] || user?.email || "Me";
@@ -94,6 +99,9 @@ const Tasks = () => {
   const [dueAt, setDueAt] = useState<string>("");
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const [showOnlyActive, setShowOnlyActive] = useState(true);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [filterBy, setFilterBy] = useState<'created_at' | 'updated_at'>('created_at');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
 
   useEffect(() => {
     refreshTasks();
@@ -135,9 +143,27 @@ const Tasks = () => {
     return Array.from(names);
   }, [tasks]);
 
+  const isInDateRange = (dateStr: string | undefined) => {
+    if (!dateRange?.from || !dateStr) return true;
+    const date = new Date(dateStr);
+    const start = startOfDay(dateRange.from);
+    const end = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from);
+    return isWithinInterval(date, { start, end });
+  };
+
   const filteredTasks = useMemo(() => {
     let result = tasks;
-    if (showOnlyActive) {
+    
+    // Date range filter
+    result = result.filter((task) => {
+      const dateToCheck = filterBy === 'created_at' ? task.createdAt : task.createdAt;
+      return isInDateRange(dateToCheck);
+    });
+
+    // Status filter
+    if (statusFilter !== 'all') {
+      result = result.filter((task) => task.status === statusFilter);
+    } else if (showOnlyActive) {
       result = result.filter((task) => task.status !== "done");
     }
 
@@ -162,7 +188,7 @@ const Tasks = () => {
     });
 
     return result;
-  }, [tasks, showOnlyActive, view, displayName, user?.email, selectedAssignee, sortKey, sortAsc]);
+  }, [tasks, dateRange, filterBy, statusFilter, showOnlyActive, view, displayName, user?.email, selectedAssignee, sortKey, sortAsc]);
 
   const totalsByAssignee = useMemo(
     () =>
@@ -213,15 +239,23 @@ const Tasks = () => {
       <SidebarInset>
         <AppSidebar />
         <div className="flex flex-1 flex-col">
-          <header className="flex h-16 items-center gap-2 border-b px-4">
-            <SidebarTrigger />
-            <div>
-              <p className="text-sm text-muted-foreground">Collaboration</p>
-              <h1 className="text-xl font-semibold flex items-center gap-2">
-                <ListChecks className="h-5 w-5 text-primary" />
-                Tasks
-              </h1>
+          <header className="flex h-16 items-center gap-2 border-b px-4 justify-between">
+            <div className="flex items-center gap-2">
+              <SidebarTrigger />
+              <div>
+                <p className="text-sm text-muted-foreground">Collaboration</p>
+                <h1 className="text-xl font-semibold flex items-center gap-2">
+                  <ListChecks className="h-5 w-5 text-primary" />
+                  Tasks
+                </h1>
+              </div>
             </div>
+            <DateRangeFilter
+              dateRange={dateRange}
+              onDateRangeChange={setDateRange}
+              filterBy={filterBy}
+              onFilterByChange={setFilterBy}
+            />
           </header>
 
           <main className="flex flex-1 flex-col gap-4 p-4 lg:p-6">
@@ -232,7 +266,7 @@ const Tasks = () => {
                   <CardDescription>
                     Sort and filter every task across the team. Click a bar to jump straight to an assignee.
                   </CardDescription>
-                  <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+                  <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
                     <div className="space-y-1">
                       <Label>View</Label>
                       <Select value={view} onValueChange={(value) => setView(value as ViewOption)}>
@@ -273,6 +307,21 @@ const Tasks = () => {
                     </div>
 
                     <div className="space-y-1">
+                      <Label>Status</Label>
+                      <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilter)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Statuses</SelectItem>
+                          <SelectItem value="open">Open</SelectItem>
+                          <SelectItem value="in_progress">In Progress</SelectItem>
+                          <SelectItem value="done">Done</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1">
                       <Label>Sort by</Label>
                       <Select value={sortKey} onValueChange={(value) => setSortKey(value as SortKey)}>
                         <SelectTrigger>
@@ -301,10 +350,6 @@ const Tasks = () => {
                           {sortAsc ? <ArrowUpAZ className="h-4 w-4" /> : <ArrowDownAZ className="h-4 w-4" />}
                         </Button>
                       </Label>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Switch checked={showOnlyActive} onCheckedChange={setShowOnlyActive} id="active-only" />
-                        <Label htmlFor="active-only">Hide done</Label>
-                      </div>
                     </div>
                   </div>
                 </CardHeader>
