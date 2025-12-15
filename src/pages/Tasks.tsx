@@ -90,7 +90,7 @@ const Tasks = () => {
   const { tasks, addTask, updateTaskStatus, updateTask, refreshTasks } = useTasks();
 
   const [view, setView] = useState<ViewOption>("all");
-  const [selectedAssignee, setSelectedAssignee] = useState<string>("");
+  const [selectedAssignee, setSelectedAssignee] = useState<string>("_all");
   const [sortKey, setSortKey] = useState<SortKey>("createdAt");
   const [sortAsc, setSortAsc] = useState(false);
   const [title, setTitle] = useState("");
@@ -109,7 +109,7 @@ const Tasks = () => {
 
   useEffect(() => {
     const savedView = (localStorage.getItem(storageKey.view) as ViewOption | null) || "all";
-    const savedAssignee = localStorage.getItem(storageKey.assignee) || "";
+    const savedAssignee = localStorage.getItem(storageKey.assignee) || "_all";
     const savedSortKey = (localStorage.getItem(storageKey.sortKey) as SortKey | null) || "createdAt";
     const savedSortDir = localStorage.getItem(storageKey.sortDir) === "asc";
 
@@ -171,7 +171,7 @@ const Tasks = () => {
       result = result.filter(
         (task) => task.assignee === displayName || task.assignee === user?.email,
       );
-    } else if (view === "team" && selectedAssignee) {
+    } else if (view === "team" && selectedAssignee && selectedAssignee !== "_all") {
       result = result.filter((task) => task.assignee === selectedAssignee);
     }
 
@@ -294,7 +294,7 @@ const Tasks = () => {
                           <SelectValue placeholder="Pick a teammate" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">All</SelectItem>
+                          <SelectItem value="_all">All</SelectItem>
                           {[...TEAM_MEMBERS, ...uniqueAssignees]
                             .filter((name, index, arr) => arr.indexOf(name) === index)
                             .map((name) => (
