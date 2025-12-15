@@ -26,11 +26,22 @@ const TEAM_BORDER_COLORS: Record<string, string> = {
   'Sales': 'border-l-team-sales',
 };
 
-// Header background colors for SLA states (solid, saturated, no transparency)
+// Header background colors for SLA states
+// SLA colors (warning/critical) take precedence over theme
 const HEADER_STYLES = {
-  normal: 'bg-secondary',
+  // Normal: theme-aware - dark in dark mode, light gray in light mode
+  normal: 'bg-secondary dark:bg-secondary',
+  // SLA Warning (12h): Amber - always takes precedence
   warning: 'bg-amber-500',
+  // SLA Critical (24h): Red - always takes precedence
   critical: 'bg-red-600',
+};
+
+// Text colors for headers based on background
+const HEADER_TEXT_STYLES = {
+  normal: 'text-secondary-foreground',
+  warning: 'text-white', // White text on amber for readability
+  critical: 'text-white', // White text on red for readability
 };
 
 const OpportunityCard = ({
@@ -87,12 +98,24 @@ const OpportunityCard = ({
     onToggleCollapse?.();
   };
 
-  // Determine header style based on SLA status
+  // Determine header style based on SLA status (SLA colors always take precedence)
   const headerBgClass = slaStatus === 'critical'
     ? HEADER_STYLES.critical
     : slaStatus === 'warning'
       ? HEADER_STYLES.warning
       : HEADER_STYLES.normal;
+
+  // Determine text style based on SLA status
+  const headerTextClass = slaStatus === 'critical'
+    ? HEADER_TEXT_STYLES.critical
+    : slaStatus === 'warning'
+      ? HEADER_TEXT_STYLES.warning
+      : HEADER_TEXT_STYLES.normal;
+
+  // Button/icon colors for header (needs to be visible on both theme backgrounds and SLA backgrounds)
+  const headerIconClass = slaStatus !== 'none'
+    ? 'text-white/70 hover:text-white'
+    : 'text-secondary-foreground/70 hover:text-secondary-foreground';
 
   return (
     <Card
@@ -100,18 +123,20 @@ const OpportunityCard = ({
       onDragStart={(e) => onDragStart(e, opportunity)}
       onClick={onClick}
       className={cn(
-        "cursor-grab active:cursor-grabbing transition-all duration-200 group border-l-3 overflow-hidden rounded-lg shadow-sm hover:shadow-md",
+        "cursor-grab active:cursor-grabbing transition-all duration-200 group border-l-3 overflow-hidden rounded-lg",
+        // Light mode: white background with shadow per spec
+        "bg-card shadow-[0_1px_3px_rgba(0,0,0,0.1)] hover:shadow-[0_4px_6px_rgba(0,0,0,0.1)]",
         borderClass
       )}
     >
-      {/* Card Header with solid background color */}
+      {/* Card Header - SLA colors take precedence over theme */}
       <div className={cn(
         "px-2 py-1.5 flex items-center gap-1.5",
         headerBgClass
       )}>
         <button
           onClick={handleCollapseClick}
-          className="text-white/70 hover:text-white transition-colors flex-shrink-0"
+          className={cn("transition-colors flex-shrink-0", headerIconClass)}
         >
           {isCollapsed ? (
             <ChevronRight className="h-3 w-3" />
@@ -119,7 +144,7 @@ const OpportunityCard = ({
             <ChevronDown className="h-3 w-3" />
           )}
         </button>
-        <h3 className="font-semibold text-xs text-white truncate flex-1">
+        <h3 className={cn("font-semibold text-xs truncate flex-1", headerTextClass)}>
           {account?.name || 'Unknown'}
         </h3>
         {/* SLA indicator icons */}
@@ -134,18 +159,26 @@ const OpportunityCard = ({
           </span>
         )}
         {opportunity.assigned_to && (
-          <span className="text-[9px] text-white/90 bg-white/20 px-1.5 py-0.5 rounded font-medium flex-shrink-0">
+          <span className={cn(
+            "text-[9px] px-1.5 py-0.5 rounded font-medium flex-shrink-0",
+            slaStatus !== 'none'
+              ? "text-white/90 bg-white/20"
+              : "text-secondary-foreground/90 bg-secondary-foreground/10"
+          )}>
             {opportunity.assigned_to}
           </span>
         )}
-        <GripVertical className="h-3 w-3 text-white/50 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+        <GripVertical className={cn(
+          "h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0",
+          slaStatus !== 'none' ? "text-white/50" : "text-secondary-foreground/50"
+        )} />
       </div>
 
-      {/* Card Content */}
+      {/* Card Content - theme-aware with proper text colors */}
       {!isCollapsed && (
         <CardContent className="p-2 pt-2 bg-card">
           <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5 text-[11px] text-white">
+            <div className="flex items-center gap-1.5 text-[11px] text-card-foreground">
               <User className="h-3 w-3 flex-shrink-0" />
               <span className="truncate">{contactName}</span>
             </div>

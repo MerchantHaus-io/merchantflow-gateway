@@ -2,7 +2,7 @@ export type OpportunityStage =
   | 'application_started'
   | 'discovery'
   | 'qualified'
-  | 'opportunities'
+  | 'application_prep'
   | 'underwriting_review'
   | 'processor_approval'
   | 'integration_setup'
@@ -10,6 +10,9 @@ export type OpportunityStage =
   | 'live_activated'
   | 'closed_won'
   | 'closed_lost';
+
+// Service type determines which pipeline an opportunity belongs to
+export type ServiceType = 'processing' | 'gateway_only';
 
 export interface Account {
   id: string;
@@ -44,6 +47,7 @@ export interface Opportunity {
   contact_id: string;
   stage: OpportunityStage;
   status?: 'active' | 'dead';
+  service_type?: ServiceType;
   referral_source?: string;
   username?: string;
   processing_services?: string[];
@@ -148,38 +152,38 @@ export const STAGE_CONFIG: Record<
     headerClass: 'bg-black text-white',
     badgeClass: 'bg-white/20 text-white border-white/30',
   },
-  opportunities: {
-    label: 'Opportunities',
+  application_prep: {
+    label: 'Application Prep',
     colorClass: 'bg-teal-500',
     headerClass: 'bg-black text-white',
     badgeClass: 'bg-white/20 text-white border-white/30',
   },
   underwriting_review: {
-    label: 'Underwriting Review',
+    label: 'Underwriting',
     colorClass: 'bg-purple-500',
     headerClass: 'bg-black text-white',
     badgeClass: 'bg-white/20 text-white border-white/30',
   },
   processor_approval: {
-    label: 'Processor Approval',
+    label: 'Approved',
     colorClass: 'bg-pink-500',
     headerClass: 'bg-black text-white',
     badgeClass: 'bg-white/20 text-white border-white/30',
   },
   integration_setup: {
-    label: 'Integration Setup',
+    label: 'Integration',
     colorClass: 'bg-orange-500',
     headerClass: 'bg-black text-white',
     badgeClass: 'bg-white/20 text-white border-white/30',
   },
   gateway_submitted: {
-    label: 'Gateway Submitted',
+    label: 'Gateway Submission',
     colorClass: 'bg-yellow-500',
     headerClass: 'bg-black text-white',
     badgeClass: 'bg-white/20 text-white border-white/30',
   },
   live_activated: {
-    label: 'Live / Activated',
+    label: 'Live',
     colorClass: 'bg-green-500',
     headerClass: 'bg-black text-white',
     badgeClass: 'bg-white/20 text-white border-white/30',
@@ -198,11 +202,35 @@ export const STAGE_CONFIG: Record<
   },
 };
 
+// Processing Pipeline stages (full flow)
+export const PROCESSING_PIPELINE_STAGES: OpportunityStage[] = [
+  'application_started',
+  'discovery',
+  'qualified',
+  'application_prep',
+  'underwriting_review',
+  'processor_approval',
+  'integration_setup',
+  'live_activated',
+  'closed_won',
+];
+
+// Gateway Only Pipeline stages (simplified flow)
+export const GATEWAY_ONLY_PIPELINE_STAGES: OpportunityStage[] = [
+  'application_started',
+  'discovery',
+  'qualified',
+  'gateway_submitted',
+  'closed_won',
+  'live_activated',
+];
+
+// Legacy: All stages for backwards compatibility
 export const PIPELINE_STAGES: OpportunityStage[] = [
   'application_started',
   'discovery',
   'qualified',
-  'opportunities',
+  'application_prep',
   'underwriting_review',
   'processor_approval',
   'integration_setup',
@@ -211,3 +239,41 @@ export const PIPELINE_STAGES: OpportunityStage[] = [
   'closed_won',
   'closed_lost',
 ];
+
+/**
+ * Migration helper: Maps old 'opportunities' stage to new 'application_prep' stage
+ * This ensures no data is lost during the stage rename
+ */
+export const migrateStage = (stage: string): OpportunityStage => {
+  if (stage === 'opportunities') {
+    return 'application_prep';
+  }
+  return stage as OpportunityStage;
+};
+
+/**
+ * Determines the service type (pipeline) for an opportunity based on its attributes
+ * - If service_type is explicitly set, use that
+ * - If processing_services has items, it's a Processing opportunity
+ * - If value_services includes gateway-only items, it's Gateway Only
+ * - Default to Processing pipeline
+ */
+export const getServiceType = (opportunity: Opportunity): ServiceType => {
+  // Explicit service_type takes precedence
+  if (opportunity.service_type) {
+    return opportunity.service_type;
+  }
+
+  // If processing_services is populated with any items, it's Processing
+  if (opportunity.processing_services && opportunity.processing_services.length > 0) {
+    return 'processing';
+  }
+
+  // If only value_services (gateway-only services) are present, it's Gateway Only
+  if (opportunity.value_services && opportunity.value_services.length > 0) {
+    return 'gateway_only';
+  }
+
+  // Default to processing
+  return 'processing';
+};

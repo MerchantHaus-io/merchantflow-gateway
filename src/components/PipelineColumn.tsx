@@ -54,7 +54,11 @@ const PipelineColumn = ({
 
   return (
     <div
-      className="flex-1 min-w-[160px] max-w-[220px] flex flex-col bg-card/50 rounded-xl border border-border/40 shadow-sm overflow-hidden"
+      className={cn(
+        "flex-1 min-w-[160px] max-w-[220px] flex flex-col rounded-xl border border-border/40 shadow-sm overflow-hidden",
+        // Light mode: #E5E7EB column background per spec
+        "bg-secondary/50 dark:bg-card/50"
+      )}
       onDragOver={onDragOver}
       onDrop={(e) => onDrop(e, stage)}
     >

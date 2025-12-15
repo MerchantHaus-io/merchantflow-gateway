@@ -82,7 +82,7 @@ All colors MUST be HSL.
     --shadow-lg: 0px 1px 7.5px 0px hsla(215, 25%, 27%, 0.1);
   }
 
-  /* Dark class kept for compatibility but same as root */
+  /* Dark class - same as root for dark mode */
   .dark {
     --background: 0 0% 0%;
     --foreground: 210 40% 98%;
@@ -155,6 +155,80 @@ All colors MUST be HSL.
     --shadow-md: 0px 1px 4.5px 0px hsla(215, 25%, 27%, 0.1);
     --shadow-lg: 0px 1px 7.5px 0px hsla(215, 25%, 27%, 0.1);
   }
+
+  /* Light Theme - Enterprise Professional Style (Salesforce/Microsoft 365 inspired) */
+  .light {
+    --background: 220 14% 96%;          /* #F3F4F6 - Soft Blue-Grey/Off-white */
+    --foreground: 221 39% 11%;          /* #1F2937 - Dark Slate for readability */
+
+    --card: 0 0% 100%;                  /* #FFFFFF - Pure White */
+    --card-foreground: 221 39% 11%;     /* #1F2937 - Dark Slate */
+
+    /* Semi-transparent card for floating panels in light mode */
+    --card-glass: 0 0% 100% / 0.95;
+
+    --popover: 0 0% 100%;               /* White */
+    --popover-foreground: 221 39% 11%;  /* Dark Slate */
+
+    --primary: 348 83% 47%;             /* Keep brand pink */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 13% 91%;           /* #E5E7EB - Column backgrounds */
+    --secondary-foreground: 221 39% 11%;
+
+    --teal: 174 72% 46%;
+    --teal-foreground: 0 0% 100%;
+
+    --muted: 220 14% 96%;               /* Light muted */
+    --muted-foreground: 215 16% 47%;    /* Medium gray for secondary text */
+
+    --accent: 348 83% 47%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;           /* Brighter red for light mode */
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 221 39% 11%;  /* Dark text on amber for readability */
+
+    --border: 220 13% 84%;              /* Light gray borders */
+    --input: 220 13% 84%;
+    --ring: 348 83% 47%;
+
+    /* Team member colors - same as dark mode for consistency */
+    --team-wesley: 0 84% 60%;
+    --team-jamie: 48 96% 53%;
+    --team-darryn: 142 71% 45%;
+    --team-taryn: 199 89% 48%;
+    --team-yaseen: 262 83% 58%;
+    --team-sales: 25 95% 53%;
+
+    /* Pipeline stage colors */
+    --stage-lead: var(--team-wesley);
+    --stage-contacted: var(--team-wesley);
+    --stage-application: var(--team-sales);
+    --stage-underwriting: var(--team-sales);
+    --stage-approval: var(--team-jamie);
+    --stage-live: var(--team-darryn);
+    --stage-declined: 0 0% 45%;
+
+    --sidebar-background: 0 0% 100% / 0.95;
+    --sidebar-foreground: 221 39% 11%;
+    --sidebar-primary: 348 83% 47%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent-foreground: 348 83% 47%;
+    --sidebar-border: 220 13% 84%;
+    --sidebar-ring: 348 83% 47%;
+    --radius: 0.875rem;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
 }
 
 @layer base {
@@ -164,11 +238,21 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  /* Dark mode: use background image */
+  .dark body {
     background-image: url('/src/assets/Background.webp');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
     background-attachment: fixed;
+  }
+
+  /* Light mode: solid background color (no image) */
+  .light body {
+    background-color: hsl(220 14% 96%);
+    background-image: none;
   }
 }
 
