@@ -52,6 +52,92 @@ const wizardProgressColor = (value: number) => {
   return "bg-destructive";
 };
 
+type WizardSectionKey = "business" | "legal" | "processing" | "documents";
+
+const WIZARD_SECTIONS: { key: WizardSectionKey; label: string; fields: string[] }[] = [
+  {
+    key: "business",
+    label: "Business profile",
+    fields: [
+      "dbaName",
+      "products",
+      "natureOfBusiness",
+      "dbaContactFirst",
+      "dbaContactLast",
+      "dbaPhone",
+      "dbaEmail",
+      "dbaAddress",
+      "dbaCity",
+      "dbaState",
+      "dbaZip",
+    ],
+  },
+  {
+    key: "legal",
+    label: "Legal info",
+    fields: [
+      "legalEntityName",
+      "legalPhone",
+      "legalEmail",
+      "tin",
+      "ownershipType",
+      "formationDate",
+      "stateIncorporated",
+      "legalAddress",
+      "legalCity",
+      "legalState",
+      "legalZip",
+    ],
+  },
+  {
+    key: "processing",
+    label: "Processing",
+    fields: [
+      "monthlyVolume",
+      "avgTicket",
+      "highTicket",
+      "swipedPct",
+      "keyedPct",
+      "motoPct",
+      "ecomPct",
+      "b2cPct",
+      "b2bPct",
+    ],
+  },
+  {
+    key: "documents",
+    label: "Documents",
+    fields: ["documents"],
+  },
+];
+
+const isWizardFieldComplete = (formState: Record<string, unknown>, field: string) => {
+  const value = formState[field];
+
+  if (field === "documents") {
+    return Array.isArray(value) && value.length > 0;
+  }
+
+  if (value === undefined || value === null) return false;
+  if (typeof value === "string") return value.trim().length > 0;
+  return Boolean(value);
+};
+
+const computeWizardSectionProgress = (formState: Record<string, unknown>) =>
+  WIZARD_SECTIONS.map((section) => {
+    const completed = section.fields.filter((field) => isWizardFieldComplete(formState, field)).length;
+    const total = section.fields.length;
+    const percent = Math.round((completed / total) * 100);
+
+    return {
+      ...section,
+      completed,
+      total,
+      percent,
+      done: completed === total,
+    };
+  });
+
 interface OpportunityDetailModalProps {
   opportunity: Opportunity | null;
   onClose: () => void;
@@ -99,6 +185,14 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   const contact = opportunity?.contact;
   const stageConfig = opportunity ? STAGE_CONFIG[opportunity.stage] : STAGE_CONFIG.application_started;
   const wizardState = opportunity?.wizard_state;
+  const wizardFormState = useMemo(
+    () => (wizardState?.form_state as Record<string, unknown> | undefined) ?? {},
+    [wizardState?.form_state],
+  );
+  const wizardSectionProgress = useMemo(
+    () => computeWizardSectionProgress(wizardFormState),
+    [wizardFormState],
+  );
   const relatedTasks = useMemo(
     () => (opportunity ? getTasksForOpportunity(opportunity.id) : []),
     [getTasksForOpportunity, opportunity],
@@ -530,6 +624,24 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                       <div className="flex items-center justify-between text-sm text-muted-foreground">
                         <span>Wizard progress saved for this application.</span>
                         <span>Step {wizardState.step_index + 1}</span>
+                      </div>
+                      <div className="mt-3 space-y-2">
+                        {wizardSectionProgress.map((section) => (
+                          <div key={section.key} className="space-y-1">
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                              <span className="font-medium text-foreground">{section.label}</span>
+                              <span>
+                                {section.completed}/{section.total} · {section.percent}% {section.done ? "✓" : ""}
+                              </span>
+                            </div>
+                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                              <div
+                                className={cn("h-full", section.done ? "bg-emerald-500" : "bg-amber-500")}
+                                style={{ width: `${section.percent}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   ) : (
