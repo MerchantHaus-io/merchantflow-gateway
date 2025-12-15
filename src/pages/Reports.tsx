@@ -31,7 +31,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { BarChart3, PieChartIcon, TrendingUp, Users, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
+import {
+  BarChart3,
+  PieChartIcon,
+  TrendingUp,
+  Users,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+} from "lucide-react";
 
 interface OpportunityData {
   id: string;
@@ -68,9 +76,11 @@ const Reports = () => {
   const [activities, setActivities] = useState<ActivityData[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  // Use 'updated_at' to represent filtering by the task due date. Opportunities and activities
+  // do not have an updated field, so they always filter by created_at.
   const [filterBy, setFilterBy] = useState<'created_at' | 'updated_at'>('created_at');
 
-  // Filter helper
+  // Helper: determine if a date falls within the selected range
   const isInDateRange = (dateStr: string) => {
     if (!dateRange?.from) return true;
     const date = new Date(dateStr);
@@ -79,31 +89,31 @@ const Reports = () => {
     return isWithinInterval(date, { start: from, end: to });
   };
 
-  // Filtered data
+  // Filtered data. Opportunities and activities only support filtering on created_at.
   const filteredOpportunities = useMemo(() => {
     return opportunities.filter((opp) => isInDateRange(opp.created_at));
   }, [opportunities, dateRange]);
-
   const filteredActivities = useMemo(() => {
     return activities.filter((act) => isInDateRange(act.created_at));
   }, [activities, dateRange]);
-
   const filteredTasks = useMemo(() => {
-    return tasks.filter((task) => isInDateRange(task.createdAt));
-  }, [tasks, dateRange]);
+    return tasks.filter((task) => {
+      const dateToCheck = filterBy === 'created_at' ? task.createdAt : task.dueAt ?? task.createdAt;
+      return isInDateRange(dateToCheck);
+    });
+  }, [tasks, dateRange, filterBy]);
 
+  // Fetch opportunities and activities
   useEffect(() => {
     const fetchData = async () => {
       const [oppRes, actRes] = await Promise.all([
-        supabase.from("opportunities").select("id, stage, assigned_to, created_at, status"),
-        supabase.from("activities").select("id, type, created_at, opportunity_id").order("created_at", { ascending: false }).limit(500),
+        supabase.from('opportunities').select('id, stage, assigned_to, created_at, status'),
+        supabase.from('activities').select('id, type, created_at, opportunity_id').order('created_at', { ascending: false }).limit(500),
       ]);
-
       if (oppRes.data) setOpportunities(oppRes.data as OpportunityData[]);
       if (actRes.data) setActivities(actRes.data as ActivityData[]);
       setLoading(false);
     };
-
     fetchData();
   }, []);
 
@@ -111,7 +121,7 @@ const Reports = () => {
   const stageData = useMemo(() => {
     const counts: Record<string, number> = {};
     filteredOpportunities.forEach((opp) => {
-      if (opp.status !== "dead") {
+      if (opp.status !== 'dead') {
         counts[opp.stage] = (counts[opp.stage] || 0) + 1;
       }
     });
@@ -125,14 +135,11 @@ const Reports = () => {
   const teamData = useMemo(() => {
     const counts: Record<string, number> = {};
     filteredOpportunities.forEach((opp) => {
-      if (opp.status !== "dead" && opp.assigned_to) {
+      if (opp.status !== 'dead' && opp.assigned_to) {
         counts[opp.assigned_to] = (counts[opp.assigned_to] || 0) + 1;
       }
     });
-    return Object.entries(counts).map(([name, count]) => ({
-      name,
-      count,
-    }));
+    return Object.entries(counts).map(([name, count]) => ({ name, count }));
   }, [filteredOpportunities]);
 
   // Task status breakdown
@@ -142,9 +149,9 @@ const Reports = () => {
       counts[task.status] = (counts[task.status] || 0) + 1;
     });
     return [
-      { name: "Open", value: counts.open, color: "hsl(var(--destructive))" },
-      { name: "In Progress", value: counts.in_progress, color: "hsl(var(--chart-4))" },
-      { name: "Done", value: counts.done, color: "hsl(var(--primary))" },
+      { name: 'Open', value: counts.open, color: 'hsl(var(--destructive))' },
+      { name: 'In Progress', value: counts.in_progress, color: 'hsl(var(--chart-4))' },
+      { name: 'Done', value: counts.done, color: 'hsl(var(--primary))' },
     ];
   }, [filteredTasks]);
 
@@ -152,14 +159,13 @@ const Reports = () => {
   const activityTrend = useMemo(() => {
     const weeks: Record<string, number> = {};
     const now = new Date();
-    
+    // Initialize buckets for the last 4 weeks
     for (let i = 3; i >= 0; i--) {
       const weekStart = new Date(now);
       weekStart.setDate(now.getDate() - (i * 7 + now.getDay()));
       const weekLabel = `Week ${4 - i}`;
       weeks[weekLabel] = 0;
     }
-
     filteredActivities.forEach((act) => {
       const actDate = new Date(act.created_at);
       const diffDays = Math.floor((now.getTime() - actDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -169,8 +175,7 @@ const Reports = () => {
         weeks[weekLabel] = (weeks[weekLabel] || 0) + 1;
       }
     });
-
-    return Object.entries(weeks).map(([week, count]) => ({ week, activities: count }));
+    return Object.entries(weeks).map(([week, activities]) => ({ week, activities }));
   }, [filteredActivities]);
 
   // Team task performance
@@ -179,36 +184,29 @@ const Reports = () => {
     TEAM_MEMBERS.forEach((member) => {
       data[member] = { open: 0, done: 0 };
     });
-
     filteredTasks.forEach((task) => {
       if (task.assignee && data[task.assignee]) {
-        if (task.status === "done") {
+        if (task.status === 'done') {
           data[task.assignee].done++;
         } else {
           data[task.assignee].open++;
         }
       }
     });
-
     return Object.entries(data)
       .filter(([, counts]) => counts.open > 0 || counts.done > 0)
-      .map(([name, counts]) => ({
-        name,
-        open: counts.open,
-        done: counts.done,
-      }));
+      .map(([name, counts]) => ({ name, open: counts.open, done: counts.done }));
   }, [filteredTasks]);
 
   // Summary stats
   const stats = useMemo(() => {
-    const activeOpps = filteredOpportunities.filter((o) => o.status !== "dead").length;
-    const closedWon = filteredOpportunities.filter((o) => o.stage === "closed_won").length;
-    const openTasks = filteredTasks.filter((t) => t.status !== "done").length;
+    const activeOpps = filteredOpportunities.filter((o) => o.status !== 'dead').length;
+    const closedWon = filteredOpportunities.filter((o) => o.stage === 'closed_won').length;
+    const openTasks = filteredTasks.filter((t) => t.status !== 'done').length;
     const overdueTasks = filteredTasks.filter((t) => {
-      if (!t.dueAt || t.status === "done") return false;
+      if (!t.dueAt || t.status === 'done') return false;
       return new Date(t.dueAt) < new Date();
     }).length;
-
     return { activeOpps, closedWon, openTasks, overdueTasks };
   }, [filteredOpportunities, filteredTasks]);
 
@@ -254,7 +252,6 @@ const Reports = () => {
               onFilterByChange={setFilterBy}
             />
           </header>
-
           <main className="flex-1 overflow-auto p-4 md:p-6 space-y-6">
             {/* KPI Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -268,7 +265,6 @@ const Reports = () => {
                   <p className="text-xs text-muted-foreground">opportunities in progress</p>
                 </CardContent>
               </Card>
-
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">Closed Won</CardTitle>
@@ -279,7 +275,6 @@ const Reports = () => {
                   <p className="text-xs text-muted-foreground">successfully closed deals</p>
                 </CardContent>
               </Card>
-
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">Open Tasks</CardTitle>
@@ -290,7 +285,6 @@ const Reports = () => {
                   <p className="text-xs text-muted-foreground">tasks pending completion</p>
                 </CardContent>
               </Card>
-
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
                   <CardTitle className="text-sm font-medium">Overdue Tasks</CardTitle>
@@ -302,7 +296,6 @@ const Reports = () => {
                 </CardContent>
               </Card>
             </div>
-
             {/* Charts Row 1 */}
             <div className="grid gap-6 lg:grid-cols-2">
               <Card>
@@ -331,7 +324,6 @@ const Reports = () => {
                   )}
                 </CardContent>
               </Card>
-
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -359,7 +351,6 @@ const Reports = () => {
                 </CardContent>
               </Card>
             </div>
-
             {/* Charts Row 2 */}
             <div className="grid gap-6 lg:grid-cols-3">
               <Card>
@@ -399,7 +390,6 @@ const Reports = () => {
                   )}
                 </CardContent>
               </Card>
-
               <Card className="lg:col-span-2">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -420,14 +410,13 @@ const Reports = () => {
                         dataKey="activities"
                         stroke="hsl(var(--primary))"
                         strokeWidth={2}
-                        dot={{ fill: "hsl(var(--primary))" }}
+                        dot={{ fill: 'hsl(var(--primary))' }}
                       />
                     </LineChart>
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
             </div>
-
             {/* Team Task Performance */}
             <Card>
               <CardHeader>
@@ -454,7 +443,6 @@ const Reports = () => {
                 )}
               </CardContent>
             </Card>
-
             {/* Summary Tables */}
             <div className="grid gap-6 lg:grid-cols-2">
               <Card>
@@ -489,7 +477,6 @@ const Reports = () => {
                   </Table>
                 </CardContent>
               </Card>
-
               <Card>
                 <CardHeader>
                   <CardTitle>Team Summary</CardTitle>

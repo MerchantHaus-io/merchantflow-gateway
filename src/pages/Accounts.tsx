@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Search, Users } from "lucide-react";
+import { Pencil, Search, Users, Trash } from "lucide-react";
 import { toast } from "sonner";
 
 interface AccountWithContacts extends Account {
@@ -75,6 +75,27 @@ const Accounts = () => {
       country: account.country || '',
       website: account.website || ''
     });
+  };
+
+  // Delete an account after confirmation. Removes the record from Supabase and updates local state
+  const handleDeleteAccount = async (accountId: string) => {
+    const confirmDelete = window.confirm(
+      'Are you sure you want to delete this account? This will remove any linked contacts.'
+    );
+    if (!confirmDelete) return;
+    try {
+      const { error } = await supabase.from('accounts').delete().eq('id', accountId);
+      if (error) {
+        toast.error('Failed to delete account');
+        return;
+      }
+      // Optimistically update the client state
+      setAccounts((prev) => prev.filter((acc) => acc.id !== accountId));
+      toast.success('Account deleted');
+    } catch (err) {
+      console.error(err);
+      toast.error('An unexpected error occurred');
+    }
   };
 
   const handleSave = async () => {
@@ -247,13 +268,22 @@ const Accounts = () => {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openEditDialog(account)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openEditDialog(account)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteAccount(account.id)}
+                            >
+                              <Trash className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

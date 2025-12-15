@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Plus, Search, ArrowRightCircle, Eye, Filter } from "lucide-react";
+import { Pencil, Plus, Search, ArrowRightCircle, Eye, Filter, Trash } from "lucide-react";
 import { toast } from "sonner";
 import CommentsTab from "@/components/CommentsTab";
 import { cn } from "@/lib/utils";
@@ -183,6 +183,24 @@ const Contacts = () => {
     setNewAccountName('');
     setIsNewDialogOpen(true);
   };
+
+      // Delete a contact with confirmation and update state
+      const handleDeleteContact = async (contactId: string) => {
+        const confirmDelete = window.confirm('Are you sure you want to delete this contact?');
+        if (!confirmDelete) return;
+        try {
+          const { error } = await supabase.from('contacts').delete().eq('id', contactId);
+          if (error) {
+            toast.error('Failed to delete contact');
+            return;
+          }
+          setContacts((prev) => prev.filter((c) => c.id !== contactId));
+          toast.success('Contact deleted');
+        } catch (err) {
+          console.error(err);
+          toast.error('An unexpected error occurred');
+        }
+      };
 
   const handleSave = async () => {
     if (!editingContact) return;
@@ -477,6 +495,15 @@ const Contacts = () => {
                                     <ArrowRightCircle className="h-4 w-4 text-primary" />
                                   </Button>
                                 )}
+                                {/* Delete contact button */}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDeleteContact(contact.id)}
+                                  title="Delete Contact"
+                                >
+                                  <Trash className="h-4 w-4 text-destructive" />
+                                </Button>
                               </div>
                             </TableCell>
                           </TableRow>

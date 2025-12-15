@@ -40,7 +40,6 @@ import { cn } from "@/lib/utils";
 import {
   ArrowDownAZ,
   ArrowUpAZ,
-  BarChart3,
   CalendarClock,
   CheckCircle2,
   CircleDot,
@@ -59,12 +58,14 @@ import DateRangeFilter from "@/components/DateRangeFilter";
 import { DateRange } from "react-day-picker";
 import { isWithinInterval, startOfDay, endOfDay } from "date-fns";
 
+// Mapping of status keys to human-friendly labels
 const statusLabels: Record<Task["status"], string> = {
   open: "Open",
   in_progress: "In Progress",
   done: "Done",
 };
 
+// Options for the main view filter
 const viewOptions = [
   { value: "all", label: "All Tasks" },
   { value: "mine", label: "My Tasks" },
@@ -72,9 +73,9 @@ const viewOptions = [
 ] as const;
 
 type ViewOption = (typeof viewOptions)[number]["value"];
-
 type SortKey = "createdAt" | "dueAt" | "assignee" | "status";
 
+// Keys used for storing preferences in localStorage
 const storageKey = {
   view: "tasks:view",
   assignee: "tasks:assignee",
@@ -87,8 +88,9 @@ type StatusFilter = 'all' | 'open' | 'in_progress' | 'done';
 const Tasks = () => {
   const { user } = useAuth();
   const displayName = EMAIL_TO_USER[user?.email?.toLowerCase() || ""] || user?.email || "Me";
-  const { tasks, addTask, updateTaskStatus, updateTask, refreshTasks } = useTasks();
+  const { tasks, addTask, updateTaskStatus, refreshTasks } = useTasks();
 
+  // Local state for filters and form fields
   const [view, setView] = useState<ViewOption>("all");
   const [selectedAssignee, setSelectedAssignee] = useState<string>("_all");
   const [sortKey, setSortKey] = useState<SortKey>("createdAt");
@@ -100,13 +102,20 @@ const Tasks = () => {
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const [showOnlyActive, setShowOnlyActive] = useState(true);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
-  const [filterBy, setFilterBy] = useState<'created_at' | 'updated_at'>('created_at');
+  // 'updated_at' is repurposed to mean filtering by due date. Tasks don't have
+  // an updatedAt field, so dueAt serves as the alternate date for the
+  // DateRangeFilter component.
+  const [filterBy, setFilterBy] = useState<'created_at' | 'updated_at'>(
+    'created_at',
+  );
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
 
+  // Refresh tasks on mount
   useEffect(() => {
     refreshTasks();
   }, [refreshTasks]);
 
+  // Load saved preferences from localStorage on mount
   useEffect(() => {
     const savedView = (localStorage.getItem(storageKey.view) as ViewOption | null) || "all";
     const savedAssignee = localStorage.getItem(storageKey.assignee) || "_all";
@@ -119,22 +128,21 @@ const Tasks = () => {
     setSortAsc(savedSortDir);
   }, []);
 
+  // Persist preference changes
   useEffect(() => {
     localStorage.setItem(storageKey.view, view);
   }, [view]);
-
   useEffect(() => {
     localStorage.setItem(storageKey.assignee, selectedAssignee);
   }, [selectedAssignee]);
-
   useEffect(() => {
     localStorage.setItem(storageKey.sortKey, sortKey);
   }, [sortKey]);
-
   useEffect(() => {
     localStorage.setItem(storageKey.sortDir, sortAsc ? "asc" : "desc");
   }, [sortAsc]);
 
+  // Compute a list of unique assignee names from tasks
   const uniqueAssignees = useMemo(() => {
     const names = new Set<string>();
     tasks.forEach((task) => {
@@ -143,6 +151,7 @@ const Tasks = () => {
     return Array.from(names);
   }, [tasks]);
 
+  // Helper to determine if a date string falls within the selected range
   const isInDateRange = (dateStr: string | undefined) => {
     if (!dateRange?.from || !dateStr) return true;
     const date = new Date(dateStr);
@@ -151,45 +160,48 @@ const Tasks = () => {
     return isWithinInterval(date, { start, end });
   };
 
+  // Build a filtered/sorted array of tasks based on UI controls
   const filteredTasks = useMemo(() => {
     let result = tasks;
-    
-    // Date range filter
+
+    // Apply date range filter. When filterBy is 'created_at', use createdAt; otherwise
+    // use dueAt (falling back to createdAt when dueAt is missing).
     result = result.filter((task) => {
-      const dateToCheck = filterBy === 'created_at' ? task.createdAt : task.createdAt;
+      const dateToCheck = filterBy === 'created_at' ? task.createdAt : task.dueAt ?? task.createdAt;
       return isInDateRange(dateToCheck);
     });
 
-    // Status filter
+    // Filter by status or show only active tasks
     if (statusFilter !== 'all') {
       result = result.filter((task) => task.status === statusFilter);
     } else if (showOnlyActive) {
-      result = result.filter((task) => task.status !== "done");
+      result = result.filter((task) => task.status !== 'done');
     }
 
-    if (view === "mine") {
-      result = result.filter(
-        (task) => task.assignee === displayName || task.assignee === user?.email,
-      );
-    } else if (view === "team" && selectedAssignee && selectedAssignee !== "_all") {
+    // Filter by assignee based on view
+    if (view === 'mine') {
+      result = result.filter((task) => task.assignee === displayName || task.assignee === user?.email);
+    } else if (view === 'team' && selectedAssignee && selectedAssignee !== '_all') {
       result = result.filter((task) => task.assignee === selectedAssignee);
     }
 
+    // Sort tasks based on the selected sort key/direction
     result = [...result].sort((a, b) => {
       const dir = sortAsc ? 1 : -1;
-      if (sortKey === "createdAt" || sortKey === "dueAt") {
+      if (sortKey === 'createdAt' || sortKey === 'dueAt') {
         const aDate = a[sortKey] ? new Date(a[sortKey] as string).getTime() : 0;
         const bDate = b[sortKey] ? new Date(b[sortKey] as string).getTime() : 0;
         return (aDate - bDate) * dir;
       }
-      const aValue = (a[sortKey] || "").toString().toLowerCase();
-      const bValue = (b[sortKey] || "").toString().toLowerCase();
+      const aValue = (a[sortKey] || '').toString().toLowerCase();
+      const bValue = (b[sortKey] || '').toString().toLowerCase();
       return aValue.localeCompare(bValue) * dir;
     });
 
     return result;
   }, [tasks, dateRange, filterBy, statusFilter, showOnlyActive, view, displayName, user?.email, selectedAssignee, sortKey, sortAsc]);
 
+  // Totals for bar chart by assignee
   const totalsByAssignee = useMemo(
     () =>
       filteredTasks.reduce<Record<string, number>>((acc, task) => {
@@ -199,6 +211,7 @@ const Tasks = () => {
     [filteredTasks],
   );
 
+  // Convert totals to chart-friendly data
   const chartData = useMemo(
     () =>
       Object.entries(totalsByAssignee).map(([name, total]) => ({
@@ -223,16 +236,17 @@ const Tasks = () => {
       dueAt: dueAt || undefined,
       createdBy: displayName,
       comments: description,
-      source: "manual",
+      source: 'manual',
     });
 
-    setTitle("");
-    setDescription("");
-    setDueAt("");
+    setTitle('');
+    setDescription('');
+    setDueAt('');
   };
 
+  // Format dates as short month/day strings
   const formatDate = (date?: string) =>
-    date ? new Date(date).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "-";
+    date ? new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '-';
 
   return (
     <SidebarProvider>
@@ -260,7 +274,8 @@ const Tasks = () => {
 
           <main className="flex flex-1 flex-col gap-4 p-4 lg:p-6">
             <section className="grid gap-4 lg:grid-cols-[2fr_1fr]">
-              <Card className="order-2 lg:order-1">
+              {/* Tasks list card. Removed order classes so this always appears first. */}
+              <Card>
                 <CardHeader className="flex flex-col gap-2">
                   <CardTitle>All tasks</CardTitle>
                   <CardDescription>
@@ -288,7 +303,7 @@ const Tasks = () => {
                       <Select
                         value={selectedAssignee}
                         onValueChange={setSelectedAssignee}
-                        disabled={view !== "team"}
+                        disabled={view !== 'team'}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Pick a teammate" />
@@ -375,7 +390,7 @@ const Tasks = () => {
                             <TableCell className="max-w-md">
                               {task.description ? (
                                 <div className="text-sm text-muted-foreground space-y-1">
-                                  <p className={cn(!expandedRows[task.id] && "line-clamp-2")}>{task.description}</p>
+                                  <p className={cn(!expandedRows[task.id] && 'line-clamp-2')}>{task.description}</p>
                                   {task.description.length > 120 && (
                                     <Button
                                       variant="link"
@@ -383,7 +398,7 @@ const Tasks = () => {
                                       className="h-auto p-0"
                                       onClick={() => toggleExpand(task.id)}
                                     >
-                                      {expandedRows[task.id] ? "Show less" : "Expand"}
+                                      {expandedRows[task.id] ? 'Show less' : 'Expand'}
                                     </Button>
                                   )}
                                 </div>
@@ -392,18 +407,18 @@ const Tasks = () => {
                               )}
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground">
-                              {task.createdBy || "System"}
+                              {task.createdBy || 'System'}
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2 text-sm">
                                 <UserRound className="h-4 w-4 text-muted-foreground" />
-                                {task.assignee || "Unassigned"}
+                                {task.assignee || 'Unassigned'}
                               </div>
                             </TableCell>
                             <TableCell>
                               <Select
                                 value={task.status}
-                                onValueChange={(value) => updateTaskStatus(task.id, value as Task["status"])}
+                                onValueChange={(value) => updateTaskStatus(task.id, value as Task['status'])}
                               >
                                 <SelectTrigger className="w-[140px]">
                                   <SelectValue />
@@ -441,7 +456,9 @@ const Tasks = () => {
                 </CardContent>
               </Card>
 
-              <div className="order-1 lg:order-2 space-y-4">
+              {/* Right-hand column containing analytics and form. Order classes removed to prevent
+                  this column from jumping above the task list on smaller screens. */}
+              <div className="space-y-4">
                 <Card>
                   <CardHeader>
                     <CardTitle>Task analytics</CardTitle>
@@ -463,7 +480,7 @@ const Tasks = () => {
                             fill="hsl(var(--primary))"
                             radius={[4, 4, 0, 0]}
                             onClick={(data) => {
-                              setView("team");
+                              setView('team');
                               setSelectedAssignee(data.name);
                             }}
                           />
