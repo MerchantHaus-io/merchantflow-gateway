@@ -1,4 +1,4 @@
-import { LayoutDashboard, Building2, Users, FileText, BarChart3, Settings, Plus, ChevronLeft, ChevronRight, BookOpen, Wrench, ChevronDown, Calculator, Activity, User, LogOut, ClipboardList, ListChecks, FileSpreadsheet, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Building2, Users, FileText, BarChart3, Settings, Plus, ChevronLeft, ChevronRight, BookOpen, Wrench, ChevronDown, Calculator, Activity, User, LogOut, ClipboardList, ListChecks, FileSpreadsheet, Trash2, type LucideIcon } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -6,9 +6,11 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useNavigate } from "react-router-dom";
 import { EMAIL_TO_USER } from "@/types/opportunity";
 import brandLogo from "@/assets/brand-logo.png";
+import { NotificationBell } from "@/components/NotificationBell";
 
 // Define the Navigation Tree Structure
 interface NavItem {
@@ -92,6 +94,7 @@ export function AppSidebar({
     toggleSidebar
   } = useSidebar();
   const { user, signOut } = useAuth();
+  const { isAdmin } = useUserRole();
   const navigate = useNavigate();
   const isCollapsed = state === "collapsed";
 
@@ -111,9 +114,12 @@ export function AppSidebar({
             {/* Logo already includes text; remove separate title/text */}
             <img src={brandLogo} alt="Merchant Haus" className="h-8 w-auto" />
           </div>
-          <Button variant="ghost" size="icon" onClick={toggleSidebar} className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent">
-            {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          </Button>
+          <div className="flex items-center gap-1">
+            {!isCollapsed && <NotificationBell />}
+            <Button variant="ghost" size="icon" onClick={toggleSidebar} className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent">
+              {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </Button>
+          </div>
         </div>
       </SidebarHeader>
 
@@ -188,6 +194,22 @@ export function AppSidebar({
 
       <SidebarFooter>
       <SidebarMenu>
+          {/* Admin: Deletion Requests */}
+          {isAdmin && (
+            <SidebarMenuItem>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <SidebarMenuButton asChild>
+                    <NavLink to="/admin/deletion-requests" className="hover:bg-sidebar-accent" activeClassName="bg-sidebar-accent text-sidebar-primary font-medium">
+                      <Trash2 className="h-4 w-4" />
+                      {!isCollapsed && <span>Deletion Requests</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </TooltipTrigger>
+                {isCollapsed && <TooltipContent side="right">Deletion Requests</TooltipContent>}
+              </Tooltip>
+            </SidebarMenuItem>
+          )}
           {/* Profile Menu */}
           <SidebarMenuItem>
             <DropdownMenu>

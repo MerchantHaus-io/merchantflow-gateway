@@ -436,6 +436,26 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     setShowDeleteDialog(false);
   };
 
+  const handleRequestDeletion = async () => {
+    try {
+      const { error } = await supabase.from('deletion_requests').insert({
+        requester_id: user?.id,
+        requester_email: user?.email || '',
+        entity_type: 'opportunity',
+        entity_id: opportunity.id,
+        entity_name: account?.name || 'Unknown Opportunity',
+      });
+
+      if (error) throw error;
+
+      toast.success("Deletion request sent to admin");
+      onClose();
+    } catch (error) {
+      console.error('Error requesting deletion:', error);
+      toast.error("Failed to send deletion request");
+    }
+  };
+
   return (
     <>
       <Dialog open={!!opportunity} onOpenChange={onClose}>
@@ -519,8 +539,8 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                         Mark Dead
                       </Button>
                     )}
-                    {/* Delete - admin only */}
-                    {isAdmin && (
+                    {/* Delete - admin only, Request Deletion for others */}
+                    {isAdmin ? (
                       <Button 
                         variant="destructive" 
                         size="sm"
@@ -528,6 +548,16 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                       >
                         <Trash2 className="h-4 w-4 mr-1" />
                         Delete
+                      </Button>
+                    ) : (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="text-destructive border-destructive hover:bg-destructive/10"
+                        onClick={handleRequestDeletion}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Request Deletion
                       </Button>
                     )}
                   </>
