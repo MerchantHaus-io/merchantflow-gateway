@@ -15,11 +15,12 @@ const passwordSchema = z.string().min(6, 'Password must be at least 6 characters
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { user, signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
+  const { user, signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword } = useAuth();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -110,6 +111,38 @@ const Auth = () => {
     }
   };
 
+  const handlePasswordReset = async () => {
+    try {
+      emailSchema.parse(email);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({
+          title: 'Validation Error',
+          description: error.errors[0].message,
+          variant: 'destructive',
+        });
+      }
+      return;
+    }
+
+    setIsResetting(true);
+    const { error } = await resetPassword(email);
+    setIsResetting(false);
+
+    if (error) {
+      toast({
+        title: 'Password Reset Failed',
+        description: error.message || 'Unable to send reset email. Please try again.',
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Check your email',
+        description: 'We sent a password reset link to your inbox.',
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
@@ -185,6 +218,17 @@ const Auth = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                   />
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="px-0 text-sm"
+                      onClick={handlePasswordReset}
+                      disabled={isResetting || isLoading}
+                    >
+                      {isResetting ? 'Sending reset link...' : 'Forgot password?'}
+                    </Button>
+                  </div>
                 </div>
                 <Button type="submit" className="w-full gradient-primary" disabled={isLoading}>
                   {isLoading ? 'Signing in...' : 'Sign In'}

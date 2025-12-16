@@ -9,6 +9,7 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUpWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
+  resetPassword: (email: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -89,6 +90,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error };
   };
 
+  const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/`,
+    });
+    return { error };
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
   };
@@ -102,6 +110,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         signInWithGoogle,
         signInWithEmail,
         signUpWithEmail,
+        resetPassword,
         signOut,
       }}
     >

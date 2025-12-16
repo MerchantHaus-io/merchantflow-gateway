@@ -1,11 +1,12 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { FileText } from "lucide-react";
+import { Download, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Document } from "@/types/opportunity";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 
 /**
@@ -19,12 +20,13 @@ const DocumentsPage = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(new Set());
+  const [isDownloading, setIsDownloading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // Fetch documents on mount
     fetchDocuments();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
@@ -40,6 +42,7 @@ const DocumentsPage = () => {
 
     if (!error && data) {
       setDocuments(data);
+      setSelectedDocuments(new Set());
     } else {
       toast.error("Failed to fetch documents");
     }
@@ -75,6 +78,34 @@ const DocumentsPage = () => {
     if (data?.signedUrl) {
       window.open(data.signedUrl, "_blank");
     }
+  };
+
+  const handleBulkDownload = async () => {
+    const docsToDownload = documents.filter((doc) => selectedDocuments.has(doc.id));
+    if (docsToDownload.length === 0) return;
+
+    setIsDownloading(true);
+
+    for (const doc of docsToDownload) {
+      const { data, error } = await supabase.storage
+        .from("opportunity-documents")
+        .createSignedUrl(doc.file_path, 60 * 10);
+
+      if (error || !data?.signedUrl) {
+        toast.error(`Failed to generate download link for ${doc.file_name}`);
+        continue;
+      }
+
+      const link = document.createElement("a");
+      link.href = data.signedUrl;
+      link.download = doc.file_name;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.click();
+    }
+
+    setIsDownloading(false);
+    toast.success("Download links generated for selected documents");
   };
 
   /**
@@ -115,10 +146,44 @@ const DocumentsPage = () => {
   };
 
   // Filter documents based on the search query
-  const filteredDocs = documents.filter((doc) => {
-    const q = searchQuery.toLowerCase();
-    return doc.file_name.toLowerCase().includes(q);
-  });
+  const filteredDocs = useMemo(
+    () =>
+      documents.filter((doc) => {
+        const q = searchQuery.toLowerCase();
+        return doc.file_name.toLowerCase().includes(q);
+      }),
+    [documents, searchQuery]
+  );
+
+  useEffect(() => {
+    setSelectedDocuments((prev) => {
+      const validSelections = documents.filter((doc) => prev.has(doc.id)).map((doc) => doc.id);
+      return new Set(validSelections);
+    });
+  }, [documents]);
+
+  const toggleSelection = (id: string, checked: boolean | string) => {
+    setSelectedDocuments((prev) => {
+      const next = new Set(prev);
+      if (checked) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAll = (checked: boolean | string) => {
+    if (checked) {
+      setSelectedDocuments(new Set(filteredDocs.map((doc) => doc.id)));
+    } else {
+      setSelectedDocuments(new Set());
+    }
+  };
+
+  const allSelected = filteredDocs.length > 0 && filteredDocs.every((doc) => selectedDocuments.has(doc.id));
+  const partiallySelected = selectedDocuments.size > 0 && !allSelected;
 
   return (
     <SidebarProvider>
@@ -137,6 +202,13 @@ const DocumentsPage = () => {
                   className="pl-3 w-64"
                 />
               </div>
+              <Button
+                onClick={handleBulkDownload}
+                disabled={selectedDocuments.size === 0 || isDownloading}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {isDownloading ? "Preparing..." : "Download selected"}
+              </Button>
             </div>
           </header>
           <main className="flex-1 overflow-auto p-6">
@@ -154,12 +226,25 @@ const DocumentsPage = () => {
                   </div>
                 ) : (
                   <div className="space-y-2">
+                    <div className="flex items-center gap-3 px-3 py-2 rounded-md bg-muted/40">
+                      <Checkbox
+                        checked={allSelected ? true : partiallySelected ? "indeterminate" : false}
+                        onCheckedChange={toggleSelectAll}
+                        aria-label="Select all documents"
+                      />
+                      <span className="text-sm text-muted-foreground">Select all</span>
+                    </div>
                     {filteredDocs.map((doc) => (
                       <div
                         key={doc.id}
                         className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
                       >
                         <div className="flex items-center gap-3 min-w-0">
+                          <Checkbox
+                            checked={selectedDocuments.has(doc.id)}
+                            onCheckedChange={(checked) => toggleSelection(doc.id, checked)}
+                            aria-label={`Select ${doc.file_name}`}
+                          />
                           <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
                           <div className="min-w-0">
                             <p className="text-sm font-medium truncate">{doc.file_name}</p>
