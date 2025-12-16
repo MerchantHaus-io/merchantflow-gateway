@@ -216,11 +216,11 @@ const CsvImport = () => {
 
   return (
     <SidebarProvider>
-      <SidebarInset>
+      <div className="min-h-screen flex w-full">
         <AppSidebar />
-        <div className="flex flex-1 flex-col">
-          <header className="flex h-16 items-center gap-2 border-b px-4">
-            <SidebarTrigger />
+        <SidebarInset className="flex-1 flex flex-col overflow-hidden">
+          <header className="flex h-16 items-center gap-2 border-b px-4 flex-shrink-0">
+            <SidebarTrigger className="md:hidden" />
             <div>
               <p className="text-sm text-muted-foreground">Tools</p>
               <h1 className="text-xl font-semibold flex items-center gap-2">
@@ -230,7 +230,7 @@ const CsvImport = () => {
             </div>
           </header>
 
-          <main className="flex flex-1 flex-col gap-4 p-4 lg:p-6">
+          <main className="flex-1 overflow-auto p-4 lg:p-6">
             <section className="grid gap-4 lg:grid-cols-[2fr_1fr]">
               <Card>
                 <CardHeader>
@@ -476,8 +476,8 @@ const CsvImport = () => {
               </div>
             </section>
           </main>
-        </div>
-      </SidebarInset>
+        </SidebarInset>
+      </div>
     </SidebarProvider>
   );
 };

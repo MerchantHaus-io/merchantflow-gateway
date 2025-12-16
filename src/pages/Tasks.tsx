@@ -250,12 +250,12 @@ const Tasks = () => {
 
   return (
     <SidebarProvider>
-      <SidebarInset>
+      <div className="min-h-screen flex w-full">
         <AppSidebar />
-        <div className="flex flex-1 flex-col">
-          <header className="flex h-16 items-center gap-2 border-b px-4 justify-between">
+        <SidebarInset className="flex-1 flex flex-col overflow-hidden">
+          <header className="flex h-16 items-center gap-2 border-b px-4 justify-between flex-shrink-0">
             <div className="flex items-center gap-2">
-              <SidebarTrigger />
+              <SidebarTrigger className="md:hidden" />
               <div>
                 <p className="text-sm text-muted-foreground">Collaboration</p>
                 <h1 className="text-xl font-semibold flex items-center gap-2">
@@ -272,7 +272,7 @@ const Tasks = () => {
             />
           </header>
 
-          <main className="flex flex-1 flex-col gap-4 p-4 lg:p-6">
+          <main className="flex-1 overflow-auto p-4 lg:p-6">
             <section className="grid gap-4 lg:grid-cols-[2fr_1fr]">
               {/* Tasks list card. Removed order classes so this always appears first. */}
               <Card>
@@ -578,8 +578,8 @@ const Tasks = () => {
               </div>
             </section>
           </main>
-        </div>
-      </SidebarInset>
+        </SidebarInset>
+      </div>
     </SidebarProvider>
   );
 };
