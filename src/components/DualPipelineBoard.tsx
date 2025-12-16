@@ -30,7 +30,7 @@ interface PipelineSectionProps {
   opportunities: Opportunity[];
   onDragStart: (e: React.DragEvent, opportunity: Opportunity) => void;
   onDragOver: (e: React.DragEvent) => void;
-  onDrop: (e: React.DragEvent, stage: OpportunityStage) => void;
+  onDrop: (e: React.DragEvent, stage: OpportunityStage, pipelineType: 'processing' | 'gateway') => void;
   onCardClick: (opportunity: Opportunity) => void;
   onAssignmentChange?: (opportunityId: string, assignedTo: string | null) => void;
   onAddNew?: () => void;
@@ -158,7 +158,7 @@ const PipelineSection = ({
                 opportunities={getOpportunitiesByStage(stage)}
                 onDragStart={onDragStart}
                 onDragOver={onDragOver}
-                onDrop={onDrop}
+                onDrop={(e, s) => onDrop(e, s, pipelineType)}
                 onCardClick={onCardClick}
                 onAssignmentChange={onAssignmentChange}
                 onAddNew={stage === 'application_started' ? onAddNew : undefined}
@@ -222,11 +222,10 @@ const DualPipelineBoard = ({
     e.dataTransfer.dropEffect = 'move';
   };
 
-  const handleDrop = (e: React.DragEvent, stage: OpportunityStage) => {
+  const handleDrop = (e: React.DragEvent, stage: OpportunityStage, targetPipeline: 'processing' | 'gateway') => {
     e.preventDefault();
-    if (draggedOpportunity && draggedOpportunity.stage !== stage) {
-      // Determine target pipeline from the stage
-      const targetIsGateway = GATEWAY_ONLY_PIPELINE_STAGES.includes(stage);
+    if (draggedOpportunity) {
+      const targetIsGateway = targetPipeline === 'gateway';
       const sourceIsGateway = getServiceType(draggedOpportunity) === 'gateway_only';
       
       const updates: Partial<Opportunity> = { stage };
@@ -238,13 +237,16 @@ const DualPipelineBoard = ({
           updates.processing_services = [];
         } else {
           // Moving to processing pipeline - add default processing service if empty
-          if (!draggedOpportunity.processing_services?.length) {
-            updates.processing_services = ['Credit Card'];
-          }
+          updates.processing_services = draggedOpportunity.processing_services?.length 
+            ? draggedOpportunity.processing_services 
+            : ['Credit Card'];
         }
       }
       
-      onUpdateOpportunity(draggedOpportunity.id, updates);
+      // Only update if something changed
+      if (draggedOpportunity.stage !== stage || targetIsGateway !== sourceIsGateway) {
+        onUpdateOpportunity(draggedOpportunity.id, updates);
+      }
     }
     setDraggedOpportunity(null);
   };
