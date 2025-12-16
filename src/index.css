@@ -45,6 +45,9 @@ All colors MUST be HSL.
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
+    --toxic: 120 100% 35%;
+    --toxic-foreground: 0 0% 100%;
+
     --border: 217 33% 25%;
     --input: 217 33% 25%;
     --ring: 348 83% 47%;
@@ -120,6 +123,9 @@ All colors MUST be HSL.
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
+    --toxic: 120 100% 35%;
+    --toxic-foreground: 0 0% 100%;
+
     --border: 217 33% 25%;
     --input: 217 33% 25%;
     --ring: 348 83% 47%;
@@ -193,6 +199,9 @@ All colors MUST be HSL.
 
     --warning: 38 92% 50%;
     --warning-foreground: 221 39% 11%;  /* Dark text on amber for readability */
+
+    --toxic: 120 100% 35%;
+    --toxic-foreground: 0 0% 100%;
 
     --border: 220 13% 84%;              /* Light gray borders */
     --input: 220 13% 84%;

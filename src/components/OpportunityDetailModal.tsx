@@ -173,6 +173,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   const [showDeadDialog, setShowDeadDialog] = useState(false);
   const [showMoveDialog, setShowMoveDialog] = useState(false);
   const [showRequestDeleteDialog, setShowRequestDeleteDialog] = useState(false);
+  const [showDeathSplash, setShowDeathSplash] = useState(false);
   const [taskTitle, setTaskTitle] = useState("");
   const [taskAssignee, setTaskAssignee] = useState("Unassigned");
   const [taskComments, setTaskComments] = useState("");
@@ -411,14 +412,20 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
         user_email: user?.email,
       });
 
-      toast.success("Opportunity marked as dead");
-      onMarkAsDead?.(opportunity.id);
-      onClose();
+      setShowDeadDialog(false);
+      setShowDeathSplash(true);
+      
+      // Show splash for 2 seconds then close
+      setTimeout(() => {
+        setShowDeathSplash(false);
+        onMarkAsDead?.(opportunity.id);
+        onClose();
+      }, 2000);
     } catch (error) {
       console.error('Error marking as dead:', error);
       toast.error("Failed to mark as dead");
+      setShowDeadDialog(false);
     }
-    setShowDeadDialog(false);
   };
 
   const handleDelete = async () => {
@@ -557,7 +564,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                           <Button
                             variant="outline" 
                             size="icon"
-                            className="h-8 w-8 text-amber-600 border-amber-600 hover:bg-amber-50"
+                            className="h-8 w-8 text-[hsl(var(--toxic))] border-[hsl(var(--toxic))] hover:bg-[hsl(var(--toxic))]/10"
                             onClick={() => setShowDeadDialog(true)}
                           >
                             <Skull className="h-4 w-4" />
@@ -906,7 +913,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              <Skull className="h-5 w-5 text-[hsl(var(--toxic))]" />
               Mark as Dead?
             </AlertDialogTitle>
             <AlertDialogDescription>
@@ -916,12 +923,31 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleMarkAsDead} className="bg-amber-600 hover:bg-amber-700">
+            <AlertDialogAction onClick={handleMarkAsDead} className="bg-[hsl(var(--toxic))] hover:bg-[hsl(120,100%,30%)]">
               Mark as Dead
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* YOU DIED! Splash Screen */}
+      {showDeathSplash && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 animate-fade-in">
+          <div className="text-center animate-scale-in">
+            <h1 
+              className="text-8xl md:text-9xl font-black tracking-wider animate-pulse"
+              style={{
+                color: '#ff0000',
+                textShadow: '0 0 20px #ff0000, 0 0 40px #ff0000, 0 0 60px #ff0000, 0 0 80px #ff0000',
+                fontFamily: 'serif',
+                letterSpacing: '0.1em',
+              }}
+            >
+              YOU DIED
+            </h1>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation (Admin Only) */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
