@@ -22,16 +22,32 @@ interface ThemeProviderProps {
   children: ReactNode;
 }
 
-export const ThemeProvider = ({ children }: ThemeProviderProps) => {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    // Check localStorage for saved preference
-    const savedTheme = localStorage.getItem('merchantflow-theme') as Theme;
+const STORAGE_KEY = 'merchantflow-theme';
+
+const getStoredTheme = (): Theme => {
+  try {
+    const savedTheme = localStorage.getItem(STORAGE_KEY) as Theme | null;
     if (savedTheme === 'light' || savedTheme === 'dark') {
       return savedTheme;
     }
-    // Default to dark mode
-    return 'dark';
-  });
+  } catch (error) {
+    // localStorage can be disabled (e.g., in private browsing). Fall back to dark mode.
+    console.warn('Theme preference unavailable, falling back to dark mode.', error);
+  }
+  return 'dark';
+};
+
+const persistTheme = (theme: Theme) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, theme);
+  } catch (error) {
+    // If storage is unavailable, we still continue rendering with the chosen theme
+    console.warn('Unable to persist theme preference.', error);
+  }
+};
+
+export const ThemeProvider = ({ children }: ThemeProviderProps) => {
+  const [theme, setThemeState] = useState<Theme>(getStoredTheme);
 
   useEffect(() => {
     // Apply theme class to document root
@@ -43,8 +59,8 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
       root.classList.remove('light');
       root.classList.add('dark');
     }
-    // Save preference
-    localStorage.setItem('merchantflow-theme', theme);
+    // Save preference without breaking rendering if storage is unavailable
+    persistTheme(theme);
   }, [theme]);
 
   const toggleTheme = () => {
