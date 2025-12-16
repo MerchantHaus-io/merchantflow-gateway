@@ -7,6 +7,7 @@ import type { Document } from "@/types/opportunity";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
 /**
@@ -15,13 +16,33 @@ import { toast } from "sonner";
  * performed from within an opportunity's detail modal and is not supported
  * directly on this page.
  */
+type DocumentWithOpportunity = Document & {
+  opportunity?: {
+    id: string;
+    account?: {
+      id: string;
+      name: string | null;
+    } | null;
+  } | null;
+};
+
+const DOCUMENT_NAME_OPTIONS = [
+  "Articles of Organization",
+  "Voided Check",
+  "Bank confirmation letter",
+  "Transaction History",
+  "Bank Statement",
+  "Passport/ Drivers License",
+];
+
 const DocumentsPage = () => {
   // State for all documents
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [documents, setDocuments] = useState<DocumentWithOpportunity[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(new Set());
   const [isDownloading, setIsDownloading] = useState(false);
+  const [selectedDocName, setSelectedDocName] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -37,7 +58,9 @@ const DocumentsPage = () => {
   const fetchDocuments = async () => {
     const { data, error } = await supabase
       .from("documents")
-      .select("id, opportunity_id, file_name, file_path, file_size, content_type, uploaded_by, created_at")
+      .select(
+        "id, opportunity_id, file_name, file_path, file_size, content_type, uploaded_by, created_at, opportunity:opportunities (id, account:accounts (id, name))"
+      )
       .order("created_at", { ascending: false });
 
     if (!error && data) {
@@ -150,10 +173,28 @@ const DocumentsPage = () => {
     () =>
       documents.filter((doc) => {
         const q = searchQuery.toLowerCase();
-        return doc.file_name.toLowerCase().includes(q);
+        const matchesSearch = doc.file_name.toLowerCase().includes(q);
+        const matchesSelectedDoc = selectedDocName
+          ? doc.file_name.toLowerCase().includes(selectedDocName.toLowerCase())
+          : true;
+        return matchesSearch && matchesSelectedDoc;
       }),
-    [documents, searchQuery]
+    [documents, searchQuery, selectedDocName]
   );
+
+  const groupedDocs = useMemo(() => {
+    const groups: Record<string, { label: string; docs: DocumentWithOpportunity[] }> = {};
+    filteredDocs.forEach((doc) => {
+      const accountId = doc.opportunity?.account?.id ?? "unassigned";
+      const accountLabel = doc.opportunity?.account?.name ?? "Unassigned account";
+      const key = `${accountId}-${accountLabel}`;
+      if (!groups[key]) {
+        groups[key] = { label: accountLabel, docs: [] };
+      }
+      groups[key].docs.push(doc);
+    });
+    return groups;
+  }, [filteredDocs]);
 
   useEffect(() => {
     setSelectedDocuments((prev) => {
@@ -185,6 +226,21 @@ const DocumentsPage = () => {
   const allSelected = filteredDocs.length > 0 && filteredDocs.every((doc) => selectedDocuments.has(doc.id));
   const partiallySelected = selectedDocuments.size > 0 && !allSelected;
 
+  const toggleSelectAccount = (groupKey: string, checked: boolean | string) => {
+    const docsInGroup = groupedDocs[groupKey]?.docs ?? [];
+    setSelectedDocuments((prev) => {
+      const next = new Set(prev);
+      docsInGroup.forEach((doc) => {
+        if (checked) {
+          next.add(doc.id);
+        } else {
+          next.delete(doc.id);
+        }
+      });
+      return next;
+    });
+  };
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
@@ -194,6 +250,19 @@ const DocumentsPage = () => {
             <SidebarTrigger className="md:hidden" />
             <h1 className="text-lg font-semibold text-foreground">Documents</h1>
             <div className="ml-auto flex items-center gap-2">
+              <Select value={selectedDocName} onValueChange={setSelectedDocName}>
+                <SelectTrigger className="w-64">
+                  <SelectValue placeholder="Filter by document name" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All document names</SelectItem>
+                  {DOCUMENT_NAME_OPTIONS.map((name) => (
+                    <SelectItem key={name} value={name}>
+                      {name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <div className="relative">
                 <Input
                   placeholder="Search documents..."
@@ -225,7 +294,7 @@ const DocumentsPage = () => {
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-4">
                     <div className="flex items-center gap-3 px-3 py-2 rounded-md bg-muted/40">
                       <Checkbox
                         checked={allSelected ? true : partiallySelected ? "indeterminate" : false}
@@ -234,58 +303,87 @@ const DocumentsPage = () => {
                       />
                       <span className="text-sm text-muted-foreground">Select all</span>
                     </div>
-                    {filteredDocs.map((doc) => (
-                      <div
-                        key={doc.id}
-                        className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <Checkbox
-                            checked={selectedDocuments.has(doc.id)}
-                            onCheckedChange={(checked) => toggleSelection(doc.id, checked)}
-                            aria-label={`Select ${doc.file_name}`}
-                          />
-                          <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium truncate">{doc.file_name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {formatFileSize(doc.file_size)}
-                            </p>
+                    {Object.entries(groupedDocs).map(([key, group]) => {
+                      const accountAllSelected =
+                        group.docs.length > 0 && group.docs.every((doc) => selectedDocuments.has(doc.id));
+                      const accountPartiallySelected =
+                        group.docs.some((doc) => selectedDocuments.has(doc.id)) && !accountAllSelected;
+
+                      return (
+                        <div key={key} className="border border-border/60 rounded-lg overflow-hidden">
+                          <div className="flex items-center justify-between px-3 py-2 bg-muted/50 border-b border-border/60">
+                            <div className="flex items-center gap-3">
+                              <Checkbox
+                                checked={accountAllSelected ? true : accountPartiallySelected ? "indeterminate" : false}
+                                onCheckedChange={(checked) => toggleSelectAccount(key, checked)}
+                                aria-label={`Select all documents for ${group.label}`}
+                              />
+                              <div>
+                                <p className="text-sm font-semibold leading-tight">{group.label}</p>
+                                <p className="text-xs text-muted-foreground">Account/Card grouping</p>
+                              </div>
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              {group.docs.length} document{group.docs.length === 1 ? "" : "s"}
+                            </span>
+                          </div>
+                          <div className="space-y-2 p-2">
+                            {group.docs.map((doc) => (
+                              <div
+                                key={doc.id}
+                                className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <Checkbox
+                                    checked={selectedDocuments.has(doc.id)}
+                                    onCheckedChange={(checked) => toggleSelection(doc.id, checked)}
+                                    aria-label={`Select ${doc.file_name}`}
+                                  />
+                                  <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-medium truncate">{doc.file_name}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {group.label} • {formatFileSize(doc.file_size)}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleDownload(doc)}
+                                  >
+                                    <FileText className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleDelete(doc)}
+                                  >
+                                    <span className="sr-only">Delete</span>
+                                    {/* Inline SVG for trash icon to avoid extra dependency */}
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      className="h-4 w-4 text-destructive"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
+                                      />
+                                    </svg>
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDownload(doc)}
-                          >
-                            <FileText className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(doc)}
-                          >
-                            <span className="sr-only">Delete</span>
-                            {/* Inline SVG for trash icon to avoid extra dependency */}
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-4 w-4 text-destructive"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
-                              />
-                            </svg>
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
