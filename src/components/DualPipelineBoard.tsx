@@ -1,6 +1,5 @@
 import { useState, useMemo } from "react";
-import { ChevronDown, ChevronRight, CreditCard, Zap } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { CreditCard, Zap } from "lucide-react";
 import {
   Opportunity,
   OpportunityStage,
@@ -27,8 +26,6 @@ interface PipelineSectionProps {
   icon: React.ReactNode;
   stages: OpportunityStage[];
   opportunities: Opportunity[];
-  isExpanded: boolean;
-  onToggle: () => void;
   onDragStart: (e: React.DragEvent, opportunity: Opportunity) => void;
   onDragOver: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent, stage: OpportunityStage) => void;
@@ -43,8 +40,6 @@ const PipelineSection = ({
   icon,
   stages,
   opportunities,
-  isExpanded,
-  onToggle,
   onDragStart,
   onDragOver,
   onDrop,
@@ -62,52 +57,44 @@ const PipelineSection = ({
   };
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col flex-1 min-h-0">
       {/* Section Header */}
-      <button
-        onClick={onToggle}
+      <div
         className={cn(
-          "flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors",
-          "bg-card/50 hover:bg-card/70 border border-border/40",
-          "dark:bg-card/50 dark:hover:bg-card/70"
+          "flex items-center gap-3 px-4 py-2 rounded-t-lg flex-shrink-0",
+          "bg-card/50 border border-b-0 border-border/40",
+          "dark:bg-card/50"
         )}
       >
         <span className={cn("p-1.5 rounded-md", colorAccent)}>
           {icon}
         </span>
-        <span className="font-semibold text-sm text-foreground flex-1 text-left">
+        <span className="font-semibold text-sm text-foreground">
           {title}
         </span>
         <span className="text-xs text-muted-foreground bg-secondary/50 px-2 py-0.5 rounded-full">
           {totalCount} {totalCount === 1 ? 'deal' : 'deals'}
         </span>
-        {isExpanded ? (
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-        ) : (
-          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-        )}
-      </button>
+      </div>
 
       {/* Pipeline Columns */}
-      {isExpanded && (
-        <div className="flex-1 overflow-x-auto pb-2">
-          <div className="flex gap-3 min-h-[300px]">
-            {stages.map((stage) => (
-              <PipelineColumn
-                key={stage}
-                stage={stage}
-                opportunities={getOpportunitiesByStage(stage)}
-                onDragStart={onDragStart}
-                onDragOver={onDragOver}
-                onDrop={onDrop}
-                onCardClick={onCardClick}
-                onAssignmentChange={onAssignmentChange}
-                onAddNew={stage === 'application_started' ? onAddNew : undefined}
-              />
-            ))}
-          </div>
+      <div className="flex-1 min-h-0 overflow-x-auto border border-t-0 border-border/40 rounded-b-lg bg-card/30">
+        <div className="flex gap-3 h-full p-2">
+          {stages.map((stage) => (
+            <PipelineColumn
+              key={stage}
+              stage={stage}
+              opportunities={getOpportunitiesByStage(stage)}
+              onDragStart={onDragStart}
+              onDragOver={onDragOver}
+              onDrop={onDrop}
+              onCardClick={onCardClick}
+              onAssignmentChange={onAssignmentChange}
+              onAddNew={stage === 'application_started' ? onAddNew : undefined}
+            />
+          ))}
         </div>
-      )}
+      </div>
     </div>
   );
 };
@@ -122,8 +109,6 @@ const DualPipelineBoard = ({
 }: DualPipelineBoardProps) => {
   const [draggedOpportunity, setDraggedOpportunity] = useState<Opportunity | null>(null);
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
-  const [processingExpanded, setProcessingExpanded] = useState(true);
-  const [gatewayExpanded, setGatewayExpanded] = useState(true);
 
   // Migrate stages and split opportunities by service type
   const { processingOpportunities, gatewayOpportunities } = useMemo(() => {
@@ -170,15 +155,13 @@ const DualPipelineBoard = ({
 
   return (
     <>
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {/* Processing Pipeline Section */}
+      <div className="flex-1 flex flex-col p-4 gap-2 overflow-hidden">
+        {/* NMI Payments Pipeline Section */}
         <PipelineSection
-          title="Processing Pipeline"
+          title="NMI Payments Pipeline"
           icon={<CreditCard className="h-4 w-4 text-white" />}
           stages={PROCESSING_PIPELINE_STAGES}
           opportunities={processingOpportunities}
-          isExpanded={processingExpanded}
-          onToggle={() => setProcessingExpanded(!processingExpanded)}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDrop={handleDrop}
@@ -188,14 +171,12 @@ const DualPipelineBoard = ({
           colorAccent="bg-primary"
         />
 
-        {/* Gateway Only Pipeline Section */}
+        {/* NMI Gateway Pipeline Section */}
         <PipelineSection
-          title="Gateway Only Pipeline"
+          title="NMI Gateway Pipeline"
           icon={<Zap className="h-4 w-4 text-white" />}
           stages={GATEWAY_ONLY_PIPELINE_STAGES}
           opportunities={gatewayOpportunities}
-          isExpanded={gatewayExpanded}
-          onToggle={() => setGatewayExpanded(!gatewayExpanded)}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDrop={handleDrop}

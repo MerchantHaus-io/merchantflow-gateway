@@ -55,7 +55,7 @@ const PipelineColumn = ({
   return (
     <div
       className={cn(
-        "flex-1 min-w-[160px] max-w-[220px] flex flex-col rounded-xl border border-border/40 shadow-sm overflow-hidden",
+        "flex-shrink-0 min-w-[160px] max-w-[220px] w-[180px] h-full flex flex-col rounded-xl border border-border/40 shadow-sm overflow-hidden",
         // Light mode: #E5E7EB column background per spec
         "bg-secondary/50 dark:bg-card/50"
       )}
@@ -106,7 +106,7 @@ const PipelineColumn = ({
         </div>
       </div>
 
-      <ScrollArea className="flex-1 p-2">
+      <ScrollArea className="flex-1 min-h-0 p-2">
         <div className="space-y-2">
           {opportunities.map((opportunity) => (
             <OpportunityCard
