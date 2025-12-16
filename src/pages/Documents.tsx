@@ -42,7 +42,7 @@ const DocumentsPage = () => {
   const [loading, setLoading] = useState(true);
   const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(new Set());
   const [isDownloading, setIsDownloading] = useState(false);
-  const [selectedDocName, setSelectedDocName] = useState<string>("");
+  const [selectedDocName, setSelectedDocName] = useState<string>("all");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -174,7 +174,7 @@ const DocumentsPage = () => {
       documents.filter((doc) => {
         const q = searchQuery.toLowerCase();
         const matchesSearch = doc.file_name.toLowerCase().includes(q);
-        const matchesSelectedDoc = selectedDocName
+        const matchesSelectedDoc = selectedDocName && selectedDocName !== "all"
           ? doc.file_name.toLowerCase().includes(selectedDocName.toLowerCase())
           : true;
         return matchesSearch && matchesSelectedDoc;
@@ -255,7 +255,7 @@ const DocumentsPage = () => {
                   <SelectValue placeholder="Filter by document name" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All document names</SelectItem>
+                  <SelectItem value="all">All document names</SelectItem>
                   {DOCUMENT_NAME_OPTIONS.map((name) => (
                     <SelectItem key={name} value={name}>
                       {name}
