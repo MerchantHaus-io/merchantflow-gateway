@@ -23,6 +23,29 @@ export const useAuth = () => {
   return context;
 };
 
+const DEFAULT_REDIRECT_URL = 'https://ops-terminal.merchant.haus/';
+
+const formatRedirectUrl = (url: string) => (url.endsWith('/') ? url : `${url}/`);
+
+const getRedirectUrl = () => {
+  const envRedirect = import.meta.env.VITE_AUTH_REDIRECT_URL;
+
+  if (envRedirect) {
+    return formatRedirectUrl(envRedirect);
+  }
+
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    const isLocalHost = host === 'localhost' || host === '127.0.0.1';
+
+    if (isLocalHost) {
+      return formatRedirectUrl(window.location.origin);
+    }
+  }
+
+  return DEFAULT_REDIRECT_URL;
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -65,7 +88,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/`,
+        redirectTo: getRedirectUrl(),
       },
     });
     if (error) throw error;
@@ -84,7 +107,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/`,
+        emailRedirectTo: getRedirectUrl(),
       },
     });
     return { error };
@@ -92,7 +115,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const resetPassword = async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/`,
+      redirectTo: getRedirectUrl(),
     });
     return { error };
   };
