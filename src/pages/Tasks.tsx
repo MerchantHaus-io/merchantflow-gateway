@@ -375,8 +375,8 @@ const Tasks = () => {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Title</TableHead>
-                          <TableHead>Description</TableHead>
-                          <TableHead>Assigned by</TableHead>
+                          <TableHead>Account</TableHead>
+                          <TableHead>Contact</TableHead>
                           <TableHead>Assigned to</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Due</TableHead>
@@ -386,28 +386,19 @@ const Tasks = () => {
                       <TableBody>
                         {filteredTasks.map((task) => (
                           <TableRow key={task.id} className="align-top">
-                            <TableCell className="font-medium min-w-[180px]">{task.title}</TableCell>
-                            <TableCell className="max-w-md">
-                              {task.description ? (
-                                <div className="text-sm text-muted-foreground space-y-1">
-                                  <p className={cn(!expandedRows[task.id] && 'line-clamp-2')}>{task.description}</p>
-                                  {task.description.length > 120 && (
-                                    <Button
-                                      variant="link"
-                                      size="sm"
-                                      className="h-auto p-0"
-                                      onClick={() => toggleExpand(task.id)}
-                                    >
-                                      {expandedRows[task.id] ? 'Show less' : 'Expand'}
-                                    </Button>
-                                  )}
+                            <TableCell className="font-medium min-w-[180px]">
+                              <div>{task.title}</div>
+                              {task.description && (
+                                <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                  {task.description}
                                 </div>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">No description</span>
                               )}
                             </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                              {task.createdBy || 'System'}
+                            <TableCell className="text-sm">
+                              {task.accountName || <span className="text-muted-foreground">-</span>}
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {task.contactName || <span className="text-muted-foreground">-</span>}
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2 text-sm">

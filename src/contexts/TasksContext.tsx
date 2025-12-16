@@ -4,10 +4,10 @@ import { Task, TaskInput } from "@/types/task";
 import { useAuth } from "@/contexts/AuthContext";
 interface TasksContextValue {
   tasks: Task[];
-  addTask: (input: TaskInput) => Task;
+  addTask: (input: TaskInput) => Promise<Task>;
   updateTask: (taskId: string, update: Partial<Task>) => void;
   updateTaskStatus: (taskId: string, status: Task["status"]) => void;
-  ensureSlaTask: (input: TaskInput & { relatedOpportunityId: string }) => Task | undefined;
+  ensureSlaTask: (input: TaskInput & { relatedOpportunityId: string }) => Promise<Task | undefined>;
   getTasksForOpportunity: (opportunityId: string) => Task[];
   refreshTasks: () => Promise<void>;
 }
@@ -26,27 +26,50 @@ export const TasksProvider = ({ children }: { children: React.ReactNode }) => {
   const [tasks, setTasks] = useState<Task[]>([]);
 
   const refreshTasks = useCallback(async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("tasks")
-      .select("id, title, description, assignee, created_by, created_at, status, due_at, related_opportunity_id, related_contact_id, comments, source")
+      .select(`
+        id, title, description, assignee, created_by, created_at, status, due_at, 
+        related_opportunity_id, related_contact_id, comments, source,
+        opportunities:related_opportunity_id (
+          account_id,
+          accounts:account_id ( name )
+        ),
+        contacts:related_contact_id ( first_name, last_name )
+      `)
       .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error('Error fetching tasks:', error);
+      return;
+    }
 
     if (data) {
       setTasks(
-        data.map((task) => ({
-          id: task.id,
-          title: task.title,
-          description: task.description || undefined,
-          assignee: task.assignee || "",
-          createdBy: task.created_by || undefined,
-          createdAt: task.created_at,
-          status: task.status as Task["status"],
-          dueAt: task.due_at || undefined,
-          relatedOpportunityId: task.related_opportunity_id || undefined,
-          relatedContactId: task.related_contact_id || undefined,
-          comments: task.comments || undefined,
-          source: (task.source as Task["source"]) || undefined,
-        })),
+        data.map((task: any) => {
+          const accountName = task.opportunities?.accounts?.name;
+          const contact = task.contacts;
+          const contactName = contact 
+            ? `${contact.first_name || ''} ${contact.last_name || ''}`.trim() 
+            : undefined;
+
+          return {
+            id: task.id,
+            title: task.title,
+            description: task.description || undefined,
+            assignee: task.assignee || "",
+            createdBy: task.created_by || undefined,
+            createdAt: task.created_at,
+            status: task.status as Task["status"],
+            dueAt: task.due_at || undefined,
+            relatedOpportunityId: task.related_opportunity_id || undefined,
+            relatedContactId: task.related_contact_id || undefined,
+            comments: task.comments || undefined,
+            source: (task.source as Task["source"]) || undefined,
+            accountName,
+            contactName,
+          };
+        }),
       );
     }
   }, []);
@@ -104,7 +127,7 @@ export const TasksProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, [user, refreshTasks]);
 
-  const addTask = useCallback((input: TaskInput) => {
+  const addTask = useCallback(async (input: TaskInput) => {
     const newTask: Task = {
       id: generateId(),
       status: "open",
@@ -112,8 +135,10 @@ export const TasksProvider = ({ children }: { children: React.ReactNode }) => {
       ...input,
     };
 
+    // Optimistically add task to state
     setTasks((prev) => [newTask, ...prev]);
-    supabase.from("tasks").upsert({
+
+    const { error } = await supabase.from("tasks").insert({
       id: newTask.id,
       title: newTask.title,
       description: newTask.description,
@@ -127,8 +152,18 @@ export const TasksProvider = ({ children }: { children: React.ReactNode }) => {
       comments: newTask.comments,
       source: newTask.source || "manual",
     });
+
+    if (error) {
+      console.error('Error adding task:', error);
+      // Remove optimistically added task on error
+      setTasks((prev) => prev.filter((t) => t.id !== newTask.id));
+    } else {
+      // Refresh to get account/contact names
+      refreshTasks();
+    }
+
     return newTask;
-  }, []);
+  }, [refreshTasks]);
 
   const updateTask = useCallback((taskId: string, update: Partial<Task>) => {
     setTasks((prev) => prev.map((task) => (task.id === taskId ? { ...task, ...update } : task)));
@@ -158,7 +193,7 @@ export const TasksProvider = ({ children }: { children: React.ReactNode }) => {
   );
 
   const ensureSlaTask = useCallback(
-    (input: TaskInput & { relatedOpportunityId: string }) => {
+    async (input: TaskInput & { relatedOpportunityId: string }) => {
       const alreadyExists = tasks.some(
         (task) =>
           task.relatedOpportunityId === input.relatedOpportunityId &&
@@ -167,7 +202,7 @@ export const TasksProvider = ({ children }: { children: React.ReactNode }) => {
       );
 
       if (alreadyExists) return undefined;
-      return addTask({ ...input, source: "sla" });
+      return await addTask({ ...input, source: "sla" });
     },
     [addTask, tasks],
   );

@@ -11,6 +11,9 @@ export interface Task {
   relatedContactId?: string;
   comments?: string;
   source?: "manual" | "sla";
+  // Related entity info
+  accountName?: string;
+  contactName?: string;
 }
 
 export type TaskInput = {
