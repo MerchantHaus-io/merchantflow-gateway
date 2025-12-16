@@ -3,7 +3,7 @@ import DualPipelineBoard from "@/components/DualPipelineBoard";
 import NewApplicationModal, { ApplicationFormData } from "@/components/NewApplicationModal";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { OnboardingWizardState, Opportunity, OpportunityStage, migrateStage } from "@/types/opportunity";
+import { getServiceType, OnboardingWizardState, Opportunity, OpportunityStage, migrateStage } from "@/types/opportunity";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -187,9 +187,97 @@ const Index = () => {
     toast
   } = useToast();
   const { ensureSlaTask } = useTasks();
+
+  const hasGatewayForAccount = (accountId: string) =>
+    opportunities.some((opportunity) =>
+      opportunity.account_id === accountId && getServiceType(opportunity) === 'gateway_only'
+    );
   useEffect(() => {
     fetchOpportunities();
   }, []);
+
+  const createGatewayOpportunity = async (baseOpportunity: Opportunity) => {
+    const { data, error } = await supabase
+      .from('opportunities')
+      .insert({
+        account_id: baseOpportunity.account_id,
+        contact_id: baseOpportunity.contact_id,
+        stage: 'application_started',
+        status: 'active',
+        service_type: 'gateway_only',
+        referral_source: baseOpportunity.referral_source || null,
+        username: baseOpportunity.username || null,
+        processing_services: null,
+        value_services: baseOpportunity.value_services?.length ? baseOpportunity.value_services : ['Gateway'],
+        timezone: baseOpportunity.timezone || null,
+        language: baseOpportunity.language || null,
+        agree_to_terms: true,
+      })
+      .select(`
+        id,
+        account_id,
+        contact_id,
+        stage,
+        status,
+        service_type,
+        referral_source,
+        username,
+        processing_services,
+        value_services,
+        timezone,
+        language,
+        assigned_to,
+        stage_entered_at,
+        created_at,
+        updated_at,
+        account:accounts(id, name, status, address1, address2, city, state, zip, country, website, created_at, updated_at),
+        contact:contacts(id, account_id, first_name, last_name, email, phone, fax, created_at, updated_at)
+      `)
+      .single();
+
+    if (error) throw error;
+
+    const typedOpportunity: Opportunity = {
+      ...data,
+      stage: migrateStage(data.stage) as OpportunityStage,
+      status: data.status as 'active' | 'dead' | undefined,
+      account: data.account
+        ? {
+            ...data.account,
+            status: data.account.status as 'active' | 'dead' | undefined,
+          }
+        : undefined,
+      contact: data.contact || undefined,
+    };
+
+    setOpportunities((prev) => [typedOpportunity, ...prev]);
+    return typedOpportunity;
+  };
+
+  const handleConvertToGatewayTrack = async (opportunity: Opportunity) => {
+    if (hasGatewayForAccount(opportunity.account_id)) {
+      toast({
+        title: "Gateway card already exists",
+        description: "This account already has an opportunity on the gateway pipeline.",
+      });
+      return;
+    }
+
+    try {
+      await createGatewayOpportunity(opportunity);
+      toast({
+        title: "Gateway card created",
+        description: "A new gateway application was added to the pipeline.",
+      });
+    } catch (error) {
+      console.error('Error creating gateway opportunity:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create gateway application",
+        variant: "destructive",
+      });
+    }
+  };
   /**
    * Retrieves active opportunities with their related account, contact, and
    * onboarding wizard state data. The result is normalized to match the
@@ -207,6 +295,7 @@ const Index = () => {
         contact_id,
         stage,
         status,
+        service_type,
         referral_source,
         username,
         processing_services,
@@ -375,10 +464,17 @@ const Index = () => {
         account_id: accountId,
         contact_id: contactId,
         stage: 'application_started',
+        service_type: formData.serviceType,
         referral_source: formData.referralSource || null,
         username: formData.username || null,
-        processing_services: formData.processingServices.length > 0 ? formData.processingServices : null,
-        value_services: formData.valueServices ? [formData.valueServices] : null,
+        processing_services: formData.serviceType === 'processing' && formData.processingServices.length > 0
+          ? formData.processingServices
+          : null,
+        value_services: formData.valueServices
+          ? [formData.valueServices]
+          : formData.serviceType === 'gateway_only'
+            ? ['Gateway']
+            : null,
         timezone: formData.timezone || null,
         language: formData.language || null,
         agree_to_terms: true
@@ -402,6 +498,9 @@ const Index = () => {
     const opportunity = opportunities.find(o => o.id === id);
     const dbUpdates: Record<string, unknown> = {};
     if (updates.stage) dbUpdates.stage = updates.stage;
+    if (updates.service_type) dbUpdates.service_type = updates.service_type;
+    if (updates.processing_services !== undefined) dbUpdates.processing_services = updates.processing_services;
+    if (updates.value_services !== undefined) dbUpdates.value_services = updates.value_services;
     const {
       error
     } = await supabase.from('opportunities').update(dbUpdates).eq('id', id);
@@ -423,6 +522,27 @@ const Index = () => {
         user_id: user?.id,
         user_email: user?.email
       });
+    }
+
+    if (
+      updates.stage === 'processor_approval' &&
+      opportunity &&
+      !hasGatewayForAccount(opportunity.account_id)
+    ) {
+      try {
+        await createGatewayOpportunity(opportunity);
+        toast({
+          title: "Gateway card created",
+          description: "Approved processing deals now start in the gateway pipeline.",
+        });
+      } catch (creationError) {
+        console.error('Error auto-creating gateway opportunity:', creationError);
+        toast({
+          title: "Gateway card not created",
+          description: "Failed to add the gateway application for this approval.",
+          variant: "destructive",
+        });
+      }
     }
     setOpportunities(opportunities.map(o => o.id === id ? {
       ...o,
@@ -459,7 +579,15 @@ const Index = () => {
             </div>
           </header>
           <main className="flex-1 overflow-hidden rounded-lg border border-border/50 shadow-lg backdrop-blur-md min-h-0 bg-card/70 dark:bg-card/70">
-            <DualPipelineBoard opportunities={filteredOpportunities} onUpdateOpportunity={handleUpdateOpportunity} onAssignmentChange={handleAssignmentChange} onAddNew={() => setIsModalOpen(true)} onMarkAsDead={handleMarkAsDead} onDelete={handleDelete} />
+            <DualPipelineBoard
+              opportunities={filteredOpportunities}
+              onUpdateOpportunity={handleUpdateOpportunity}
+              onAssignmentChange={handleAssignmentChange}
+              onAddNew={() => setIsModalOpen(true)}
+              onMarkAsDead={handleMarkAsDead}
+              onDelete={handleDelete}
+              onConvertToGateway={handleConvertToGatewayTrack}
+            />
           </main>
         </div>
       </div>

@@ -20,6 +20,7 @@ interface DualPipelineBoardProps {
   onAddNew?: () => void;
   onMarkAsDead?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onConvertToGateway?: (opportunity: Opportunity) => Promise<void> | void;
 }
 
 interface PipelineSectionProps {
@@ -178,6 +179,7 @@ const DualPipelineBoard = ({
   onAddNew,
   onMarkAsDead,
   onDelete,
+  onConvertToGateway,
 }: DualPipelineBoardProps) => {
   const [draggedOpportunity, setDraggedOpportunity] = useState<Opportunity | null>(null);
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
@@ -247,6 +249,12 @@ const DualPipelineBoard = ({
     setDraggedOpportunity(null);
   };
 
+  const hasGatewayOpportunity = selectedOpportunity
+    ? opportunities.some(
+        (opp) => opp.account_id === selectedOpportunity.account_id && getServiceType(opp) === 'gateway_only'
+      )
+    : false;
+
   return (
     <>
       <div className="flex-1 flex flex-col p-3 gap-3 overflow-hidden h-full min-h-0">
@@ -293,6 +301,8 @@ const DualPipelineBoard = ({
         }}
         onMarkAsDead={onMarkAsDead}
         onDelete={onDelete}
+        onConvertToGateway={onConvertToGateway}
+        hasGatewayOpportunity={hasGatewayOpportunity}
       />
     </>
   );

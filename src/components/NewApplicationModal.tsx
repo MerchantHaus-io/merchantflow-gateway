@@ -18,6 +18,7 @@ export interface ApplicationFormData {
   // Selection mode
   existingAccountId?: string;
   existingContactId?: string;
+  serviceType: 'processing' | 'gateway_only';
   // Account fields
   companyName: string;
   address: string;
@@ -70,8 +71,10 @@ const NewApplicationModal = ({ open, onClose, onSubmit }: NewApplicationModalPro
   const [useExistingContact, setUseExistingContact] = useState(false);
   const [selectedAccountId, setSelectedAccountId] = useState('');
   const [selectedContactId, setSelectedContactId] = useState('');
+  const isGatewayApplication = formData.serviceType === 'gateway_only';
 
   const [formData, setFormData] = useState<ApplicationFormData>({
+    serviceType: 'processing',
     companyName: '',
     address: '',
     address2: '',
@@ -171,6 +174,7 @@ const NewApplicationModal = ({ open, onClose, onSubmit }: NewApplicationModalPro
 
   const resetForm = () => {
     setFormData({
+      serviceType: 'processing',
       companyName: '',
       address: '',
       address2: '',
@@ -215,6 +219,29 @@ const NewApplicationModal = ({ open, onClose, onSubmit }: NewApplicationModalPro
         
         <ScrollArea className="max-h-[70vh] pr-4">
           <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Application Type</Label>
+                <span className="text-xs text-muted-foreground">
+                  Choose whether this is a processing or gateway-only submission
+                </span>
+              </div>
+              <Select
+                value={formData.serviceType}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, serviceType: value as 'processing' | 'gateway_only' }))
+                }
+              >
+                <SelectTrigger className="bg-secondary">
+                  <SelectValue placeholder="Select application type" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="processing">Processing Application</SelectItem>
+                  <SelectItem value="gateway_only">Gateway Application</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Account Information */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -469,20 +496,26 @@ const NewApplicationModal = ({ open, onClose, onSubmit }: NewApplicationModalPro
               
               <div className="space-y-2">
                 <Label>Processing Services</Label>
-                <div className="grid grid-cols-2 gap-3">
-                  {PROCESSING_SERVICES.map((service) => (
-                    <div key={service} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={service}
-                        checked={formData.processingServices.includes(service)}
-                        onCheckedChange={() => toggleProcessingService(service)}
-                      />
-                      <Label htmlFor={service} className="text-sm font-normal cursor-pointer">
-                        {service}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
+                {isGatewayApplication ? (
+                  <p className="text-sm text-muted-foreground">
+                    Gateway applications skip processing services by default.
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    {PROCESSING_SERVICES.map((service) => (
+                      <div key={service} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={service}
+                          checked={formData.processingServices.includes(service)}
+                          onCheckedChange={() => toggleProcessingService(service)}
+                        />
+                        <Label htmlFor={service} className="text-sm font-normal cursor-pointer">
+                          {service}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               
               <div className="space-y-2">

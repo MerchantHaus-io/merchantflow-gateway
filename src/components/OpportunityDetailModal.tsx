@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { Opportunity, STAGE_CONFIG, Account, Contact } from "@/types/opportunity";
-import { Building2, User, Briefcase, FileText, Activity, Pencil, Save, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, ListChecks } from "lucide-react";
+import { Opportunity, STAGE_CONFIG, Account, Contact, getServiceType } from "@/types/opportunity";
+import { Building2, User, Briefcase, FileText, Activity, Pencil, Save, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, ListChecks, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -144,14 +144,17 @@ interface OpportunityDetailModalProps {
   onUpdate: (updates: Partial<Opportunity>) => void;
   onMarkAsDead?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onConvertToGateway?: (opportunity: Opportunity) => Promise<void> | void;
+  hasGatewayOpportunity?: boolean;
 }
 
-const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, onDelete }: OpportunityDetailModalProps) => {
+const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, onDelete, onConvertToGateway, hasGatewayOpportunity }: OpportunityDetailModalProps) => {
   const { isAdmin } = useUserRole();
   const { user } = useAuth();
   const { getTasksForOpportunity, addTask, updateTaskStatus } = useTasks();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isConverting, setIsConverting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showDeadDialog, setShowDeadDialog] = useState(false);
   const [taskTitle, setTaskTitle] = useState("");
@@ -256,6 +259,18 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
 
   const cancelEditing = () => {
     setIsEditing(false);
+  };
+
+  const handleConvertToGateway = async () => {
+    if (!opportunity || !onConvertToGateway || hasGatewayOpportunity) return;
+    setIsConverting(true);
+    try {
+      await onConvertToGateway(opportunity);
+    } catch (error) {
+      console.error('Error converting opportunity to gateway:', error);
+      toast.error("Failed to create gateway card");
+    }
+    setIsConverting(false);
   };
 
   const saveChanges = async () => {
@@ -435,9 +450,24 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                       <Pencil className="h-4 w-4 mr-1" />
                       Edit
                     </Button>
+                    {onConvertToGateway && getServiceType(opportunity) !== 'gateway_only' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleConvertToGateway}
+                        disabled={isConverting || hasGatewayOpportunity}
+                      >
+                        <Zap className="h-4 w-4 mr-1" />
+                        {hasGatewayOpportunity
+                          ? 'Gateway Added'
+                          : isConverting
+                            ? 'Creating...'
+                            : 'Add to Gateway'}
+                      </Button>
+                    )}
                     {/* Mark as Dead - available to all users */}
                     {opportunity.status !== 'dead' && (
-                      <Button 
+                      <Button
                         variant="outline" 
                         size="sm" 
                         className="text-amber-600 border-amber-600 hover:bg-amber-50"
