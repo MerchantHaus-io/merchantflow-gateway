@@ -19,6 +19,7 @@ import { format } from "date-fns";
  * directly on this page.
  */
 type DocumentWithOpportunity = Document & {
+  document_type?: string | null;
   opportunity?: {
     id: string;
     account?: {
@@ -28,13 +29,14 @@ type DocumentWithOpportunity = Document & {
   } | null;
 };
 
-const DOCUMENT_NAME_OPTIONS = [
-  "Articles of Organization",
-  "Voided Check",
-  "Bank confirmation letter",
-  "Transaction History",
+const DOCUMENT_TYPE_OPTIONS = [
+  "Passport/Drivers License",
   "Bank Statement",
-  "Passport/ Drivers License",
+  "Transaction History",
+  "Articles of Organisation",
+  "Voided Check / Bank Confirmation Letter",
+  "Tax Confirmation",
+  "Unassigned",
 ];
 
 const DocumentsPage = () => {
@@ -62,7 +64,7 @@ const DocumentsPage = () => {
     const { data, error } = await supabase
       .from("documents")
       .select(
-        "id, opportunity_id, file_name, file_path, file_size, content_type, uploaded_by, created_at, opportunity:opportunities (id, account:accounts (id, name))"
+        "id, opportunity_id, file_name, file_path, file_size, content_type, uploaded_by, created_at, document_type, opportunity:opportunities (id, account:accounts (id, name))"
       )
       .order("created_at", { ascending: false });
 
@@ -188,19 +190,36 @@ const DocumentsPage = () => {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  // Filter documents based on the search query
+  // Filter documents based on the search query and selected document type
   const filteredDocs = useMemo(
     () =>
       documents.filter((doc) => {
         const q = searchQuery.toLowerCase();
         const matchesSearch = doc.file_name.toLowerCase().includes(q);
-        const matchesSelectedDoc = selectedDocName && selectedDocName !== "all"
-          ? doc.file_name.toLowerCase().includes(selectedDocName.toLowerCase())
+        const matchesSelectedDocType = selectedDocName && selectedDocName !== "all"
+          ? (doc.document_type || "Unassigned") === selectedDocName
           : true;
-        return matchesSearch && matchesSelectedDoc;
+        return matchesSearch && matchesSelectedDocType;
       }),
     [documents, searchQuery, selectedDocName]
   );
+
+  const handleUpdateDocType = async (docId: string, newType: string) => {
+    const { error } = await supabase
+      .from("documents")
+      .update({ document_type: newType })
+      .eq("id", docId);
+
+    if (error) {
+      toast.error("Failed to update document type");
+      return;
+    }
+
+    setDocuments((prev) =>
+      prev.map((doc) => (doc.id === docId ? { ...doc, document_type: newType } : doc))
+    );
+    toast.success("Document type updated");
+  };
 
   const groupedDocs = useMemo(() => {
     const groups: Record<string, { label: string; docs: DocumentWithOpportunity[] }> = {};
@@ -288,13 +307,13 @@ const DocumentsPage = () => {
             <div className="ml-auto flex items-center gap-2">
               <Select value={selectedDocName} onValueChange={setSelectedDocName}>
                 <SelectTrigger className="w-64">
-                  <SelectValue placeholder="Filter by document name" />
+                  <SelectValue placeholder="Filter by document type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All document names</SelectItem>
-                  {DOCUMENT_NAME_OPTIONS.map((name) => (
-                    <SelectItem key={name} value={name}>
-                      {name}
+                  <SelectItem value="all">All document types</SelectItem>
+                  {DOCUMENT_TYPE_OPTIONS.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -381,6 +400,7 @@ const DocumentsPage = () => {
                                     <tr className="text-xs text-muted-foreground border-b border-border/40">
                                       <th className="text-left py-2 px-2 w-8"></th>
                                       <th className="text-left py-2 px-2">File Name</th>
+                                      <th className="text-left py-2 px-2 w-[180px]">Document Type</th>
                                       <th className="text-left py-2 px-2 w-32">Date Created</th>
                                       <th className="text-left py-2 px-2 w-20">Size</th>
                                       <th className="text-right py-2 px-2 w-24">Actions</th>
@@ -404,6 +424,23 @@ const DocumentsPage = () => {
                                             <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
                                             <span className="text-sm font-medium truncate">{doc.file_name}</span>
                                           </div>
+                                        </td>
+                                        <td className="py-2 px-2">
+                                          <Select
+                                            value={doc.document_type || "Unassigned"}
+                                            onValueChange={(value) => handleUpdateDocType(doc.id, value)}
+                                          >
+                                            <SelectTrigger className="h-8 text-xs">
+                                              <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              {DOCUMENT_TYPE_OPTIONS.map((type) => (
+                                                <SelectItem key={type} value={type}>
+                                                  {type}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
                                         </td>
                                         <td className="py-2 px-2 text-sm text-muted-foreground">
                                           {format(new Date(doc.created_at), "MMM d, yyyy")}
