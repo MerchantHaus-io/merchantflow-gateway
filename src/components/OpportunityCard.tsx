@@ -157,16 +157,6 @@ const OpportunityCard = ({
             <Clock className="h-3 w-3" />
           </span>
         )}
-        {opportunity.assigned_to && (
-          <span className={cn(
-            "text-[9px] px-1.5 py-0.5 rounded font-medium flex-shrink-0",
-            slaStatus !== 'none'
-              ? "text-white/90 bg-white/20"
-              : "text-secondary-foreground/90 bg-secondary-foreground/10"
-          )}>
-            {opportunity.assigned_to}
-          </span>
-        )}
         <GripVertical className={cn(
           "h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0",
           slaStatus !== 'none' ? "text-white/50" : "text-secondary-foreground/50"
