@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Opportunity, STAGE_CONFIG, Account, Contact, getServiceType } from "@/types/opportunity";
-import { Building2, User, Briefcase, FileText, Activity, Pencil, Save, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, ListChecks, Zap, CreditCard } from "lucide-react";
+import { Building2, User, Briefcase, FileText, Activity, Pencil, Save, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, ListChecks, Zap, CreditCard, Maximize2, Minimize2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -27,6 +27,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Task } from "@/types/task";
 
 interface Document {
@@ -167,8 +168,11 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showDeadDialog, setShowDeadDialog] = useState(false);
+  const [showMoveDialog, setShowMoveDialog] = useState(false);
+  const [showRequestDeleteDialog, setShowRequestDeleteDialog] = useState(false);
   const [taskTitle, setTaskTitle] = useState("");
   const [taskAssignee, setTaskAssignee] = useState("Unassigned");
   const [taskComments, setTaskComments] = useState("");
@@ -459,7 +463,12 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   return (
     <>
       <Dialog open={!!opportunity} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden">
+        <DialogContent className={cn(
+          "overflow-hidden transition-all duration-200",
+          isMaximized 
+            ? "sm:max-w-[95vw] max-h-[95vh]" 
+            : "sm:max-w-2xl max-h-[90vh]"
+        )}>
           <DialogHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -479,7 +488,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 {isEditing ? (
                   <>
                     <Button variant="ghost" size="sm" onClick={cancelEditing} disabled={isSaving}>
@@ -493,73 +502,116 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                   </>
                 ) : (
                   <>
-                    <Button variant="outline" size="sm" onClick={startEditing}>
-                      <Pencil className="h-4 w-4 mr-1" />
-                      Edit
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={startEditing}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Edit</TooltipContent>
+                    </Tooltip>
+                    
                     {/* Pipeline toggle button */}
                     {isGatewayCard ? (
                       onMoveToProcessing && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleMoveToProcessing}
-                          disabled={isConverting}
-                        >
-                          <CreditCard className="h-4 w-4 mr-1" />
-                          {isConverting ? 'Moving...' : 'Move to Processing'}
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => setShowMoveDialog(true)}
+                              disabled={isConverting}
+                            >
+                              <CreditCard className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Move to Processing</TooltipContent>
+                        </Tooltip>
                       )
                     ) : (
                       onConvertToGateway && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleConvertToGateway}
-                          disabled={isConverting || hasGatewayOpportunity}
-                        >
-                          <Zap className="h-4 w-4 mr-1" />
-                          {hasGatewayOpportunity
-                            ? 'Gateway Added'
-                            : isConverting
-                              ? 'Creating...'
-                              : 'Add to Gateway'}
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={handleConvertToGateway}
+                              disabled={isConverting || hasGatewayOpportunity}
+                            >
+                              <Zap className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {hasGatewayOpportunity ? 'Gateway Added' : 'Add to Gateway'}
+                          </TooltipContent>
+                        </Tooltip>
                       )
                     )}
+                    
                     {/* Mark as Dead - available to all users */}
                     {opportunity.status !== 'dead' && (
-                      <Button
-                        variant="outline" 
-                        size="sm" 
-                        className="text-amber-600 border-amber-600 hover:bg-amber-50"
-                        onClick={() => setShowDeadDialog(true)}
-                      >
-                        <Skull className="h-4 w-4 mr-1" />
-                        Mark Dead
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline" 
+                            size="icon"
+                            className="h-8 w-8 text-amber-600 border-amber-600 hover:bg-amber-50"
+                            onClick={() => setShowDeadDialog(true)}
+                          >
+                            <Skull className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Mark as Dead</TooltipContent>
+                      </Tooltip>
                     )}
+                    
                     {/* Delete - admin only, Request Deletion for others */}
                     {isAdmin ? (
-                      <Button 
-                        variant="destructive" 
-                        size="sm"
-                        onClick={() => setShowDeleteDialog(true)}
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Delete
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            variant="destructive" 
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => setShowDeleteDialog(true)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Delete Permanently</TooltipContent>
+                      </Tooltip>
                     ) : (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="text-destructive border-destructive hover:bg-destructive/10"
-                        onClick={handleRequestDeletion}
-                      >
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Request Deletion
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="icon"
+                            className="h-8 w-8 text-destructive border-destructive hover:bg-destructive/10"
+                            onClick={() => setShowRequestDeleteDialog(true)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Request Deletion</TooltipContent>
+                      </Tooltip>
                     )}
+                    
+                    {/* Maximize/Minimize */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => setIsMaximized(!isMaximized)}
+                        >
+                          {isMaximized ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>{isMaximized ? 'Minimize' : 'Maximize'}</TooltipContent>
+                    </Tooltip>
                   </>
                 )}
               </div>
@@ -602,7 +654,10 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
               </TabsTrigger>
             </TabsList>
 
-            <div className="overflow-y-auto max-h-[50vh] pr-2">
+            <div className={cn(
+              "overflow-y-auto pr-2",
+              isMaximized ? "max-h-[75vh]" : "max-h-[60vh]"
+            )}>
               <TabsContent value="account" className="mt-4 space-y-4">
                 {isEditing ? (
                   <div className="grid grid-cols-2 gap-4">
@@ -885,6 +940,51 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
               Delete Permanently
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Move to Processing Confirmation */}
+      <AlertDialog open={showMoveDialog} onOpenChange={setShowMoveDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-primary" />
+              Move to Processing Pipeline?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will move the opportunity from the Gateway pipeline to the Processing pipeline.
+              The opportunity will be assigned default processing services (Credit Card).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { handleMoveToProcessing(); setShowMoveDialog(false); }}>
+              Move to Processing
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Request Deletion Confirmation */}
+      <AlertDialog open={showRequestDeleteDialog} onOpenChange={setShowRequestDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              Request Deletion?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will send a deletion request to the admin for review. 
+              The admin will be notified and can approve or reject the request.
+              You will be notified once a decision is made.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { handleRequestDeletion(); setShowRequestDeleteDialog(false); }} className="bg-destructive hover:bg-destructive/90">
+              Request Deletion
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
