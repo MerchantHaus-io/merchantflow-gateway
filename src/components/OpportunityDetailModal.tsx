@@ -932,7 +932,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
 
       {/* YOU DIED! Splash Screen */}
       {showDeathSplash && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 animate-fade-in">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 animate-fade-in">
           <div className="text-center animate-scale-in">
             <h1 
               className="text-8xl md:text-9xl font-black tracking-wider animate-pulse"
