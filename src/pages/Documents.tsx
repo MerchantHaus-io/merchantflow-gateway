@@ -88,21 +88,29 @@ const DocumentsPage = () => {
   };
 
   /**
-   * Generates a short-lived signed URL for the document to avoid exposing
-   * public storage URLs. Opens the link in a new tab when available.
+   * Downloads a document using fetch + blob to avoid ad blocker issues.
    */
   const handleDownload = async (doc: Document) => {
-    const { data, error } = await supabase.storage
-      .from("opportunity-documents")
-      .createSignedUrl(doc.file_path, 60 * 10); // 10 minute expiry
+    try {
+      const { data, error } = await supabase.storage
+        .from("opportunity-documents")
+        .download(doc.file_path);
 
-    if (error) {
-      toast.error("Failed to generate download link");
-      return;
-    }
+      if (error || !data) {
+        toast.error("Failed to download file");
+        return;
+      }
 
-    if (data?.signedUrl) {
-      window.open(data.signedUrl, "_blank");
+      const url = URL.createObjectURL(data);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = doc.file_name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("Failed to download file");
     }
   };
 
@@ -113,25 +121,34 @@ const DocumentsPage = () => {
     setIsDownloading(true);
 
     for (const doc of docsToDownload) {
-      const { data, error } = await supabase.storage
-        .from("opportunity-documents")
-        .createSignedUrl(doc.file_path, 60 * 10);
+      try {
+        const { data, error } = await supabase.storage
+          .from("opportunity-documents")
+          .download(doc.file_path);
 
-      if (error || !data?.signedUrl) {
-        toast.error(`Failed to generate download link for ${doc.file_name}`);
-        continue;
+        if (error || !data) {
+          toast.error(`Failed to download ${doc.file_name}`);
+          continue;
+        }
+
+        const url = URL.createObjectURL(data);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = doc.file_name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        // Small delay between downloads
+        await new Promise((r) => setTimeout(r, 300));
+      } catch {
+        toast.error(`Failed to download ${doc.file_name}`);
       }
-
-      const link = document.createElement("a");
-      link.href = data.signedUrl;
-      link.download = doc.file_name;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      link.click();
     }
 
     setIsDownloading(false);
-    toast.success("Download links generated for selected documents");
+    toast.success("Downloads complete");
   };
 
   /**
