@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import DualPipelineBoard from "@/components/DualPipelineBoard";
 import NewApplicationModal, { ApplicationFormData } from "@/components/NewApplicationModal";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { User } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { isWithinInterval, startOfDay, endOfDay } from "date-fns";
+import GameSplash from "@/components/GameSplash";
 
 type WizardPrefillForm = {
   dbaName: string;
@@ -186,6 +187,7 @@ const Index = () => {
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [filterBy, setFilterBy] = useState<'created_at' | 'updated_at'>('created_at');
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
+  const [splashType, setSplashType] = useState<"1up" | "level-up" | null>(null);
   const {
     toast
   } = useToast();
@@ -498,6 +500,7 @@ const Index = () => {
       }).select('id').single();
       if (opportunityError) throw opportunityError;
       await fetchOpportunities();
+      setSplashType("1up");
       toast({
         title: "Application Added",
         description: `Application has been added to the pipeline.`
@@ -530,8 +533,9 @@ const Index = () => {
       return;
     }
 
-    // Log stage change activity
+    // Log stage change activity and show level up splash
     if (updates.stage && opportunity && opportunity.stage !== updates.stage) {
+      setSplashType("level-up");
       await supabase.from('activities').insert({
         opportunity_id: id,
         type: 'stage_change',
@@ -668,6 +672,12 @@ const Index = () => {
       </div>
 
       <NewApplicationModal open={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleNewApplication} />
+      
+      <GameSplash
+        type={splashType || "1up"}
+        show={splashType !== null}
+        onComplete={() => setSplashType(null)}
+      />
     </SidebarProvider>;
 };
 export default Index;
