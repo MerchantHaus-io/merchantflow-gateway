@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Opportunity, STAGE_CONFIG, Account, Contact, getServiceType } from "@/types/opportunity";
-import { Building2, User, Briefcase, FileText, Activity, Pencil, Save, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, ListChecks, Zap } from "lucide-react";
+import { Building2, User, Briefcase, FileText, Activity, Pencil, Save, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, ListChecks, Zap, CreditCard } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -145,10 +145,11 @@ interface OpportunityDetailModalProps {
   onMarkAsDead?: (id: string) => void;
   onDelete?: (id: string) => void;
   onConvertToGateway?: (opportunity: Opportunity) => Promise<void> | void;
+  onMoveToProcessing?: (opportunity: Opportunity) => Promise<void> | void;
   hasGatewayOpportunity?: boolean;
 }
 
-const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, onDelete, onConvertToGateway, hasGatewayOpportunity }: OpportunityDetailModalProps) => {
+const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, onDelete, onConvertToGateway, onMoveToProcessing, hasGatewayOpportunity }: OpportunityDetailModalProps) => {
   const { isAdmin } = useUserRole();
   const { user } = useAuth();
   const { getTasksForOpportunity, addTask, updateTaskStatus } = useTasks();
@@ -272,6 +273,21 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     }
     setIsConverting(false);
   };
+
+  const handleMoveToProcessing = async () => {
+    if (!opportunity || !onMoveToProcessing) return;
+    setIsConverting(true);
+    try {
+      await onMoveToProcessing(opportunity);
+      toast.success("Moved to Processing pipeline");
+    } catch (error) {
+      console.error('Error moving opportunity to processing:', error);
+      toast.error("Failed to move to processing");
+    }
+    setIsConverting(false);
+  };
+
+  const isGatewayCard = opportunity ? getServiceType(opportunity) === 'gateway_only' : false;
 
   const saveChanges = async () => {
     setIsSaving(true);
@@ -450,20 +466,35 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                       <Pencil className="h-4 w-4 mr-1" />
                       Edit
                     </Button>
-                    {onConvertToGateway && getServiceType(opportunity) !== 'gateway_only' && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleConvertToGateway}
-                        disabled={isConverting || hasGatewayOpportunity}
-                      >
-                        <Zap className="h-4 w-4 mr-1" />
-                        {hasGatewayOpportunity
-                          ? 'Gateway Added'
-                          : isConverting
-                            ? 'Creating...'
-                            : 'Add to Gateway'}
-                      </Button>
+                    {/* Pipeline toggle button */}
+                    {isGatewayCard ? (
+                      onMoveToProcessing && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleMoveToProcessing}
+                          disabled={isConverting}
+                        >
+                          <CreditCard className="h-4 w-4 mr-1" />
+                          {isConverting ? 'Moving...' : 'Move to Processing'}
+                        </Button>
+                      )
+                    ) : (
+                      onConvertToGateway && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleConvertToGateway}
+                          disabled={isConverting || hasGatewayOpportunity}
+                        >
+                          <Zap className="h-4 w-4 mr-1" />
+                          {hasGatewayOpportunity
+                            ? 'Gateway Added'
+                            : isConverting
+                              ? 'Creating...'
+                              : 'Add to Gateway'}
+                        </Button>
+                      )
                     )}
                     {/* Mark as Dead - available to all users */}
                     {opportunity.status !== 'dead' && (

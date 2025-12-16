@@ -576,6 +576,41 @@ const Index = () => {
   const handleDelete = (id: string) => {
     setOpportunities(opportunities.filter(o => o.id !== id));
   };
+  
+  const handleMoveToProcessing = async (opportunity: Opportunity) => {
+    try {
+      // Update to processing pipeline by setting processing_services
+      const { error } = await supabase
+        .from('opportunities')
+        .update({ processing_services: ['Credit Card'] })
+        .eq('id', opportunity.id);
+      
+      if (error) throw error;
+      
+      // Log activity
+      await supabase.from('activities').insert({
+        opportunity_id: opportunity.id,
+        type: 'pipeline_change',
+        description: 'Moved from Gateway to Processing pipeline',
+        user_id: user?.id,
+        user_email: user?.email,
+      });
+      
+      // Update local state
+      setOpportunities(opportunities.map(o => 
+        o.id === opportunity.id 
+          ? { ...o, processing_services: ['Credit Card'] }
+          : o
+      ));
+    } catch (error) {
+      console.error('Error moving to processing:', error);
+      toast({
+        title: "Error",
+        description: "Failed to move to processing pipeline",
+        variant: "destructive",
+      });
+    }
+  };
   if (loading) {
     return <div className="h-screen flex items-center justify-center">
         <div className="text-muted-foreground">Loading...</div>
@@ -617,6 +652,7 @@ const Index = () => {
               onMarkAsDead={handleMarkAsDead}
               onDelete={handleDelete}
               onConvertToGateway={handleConvertToGatewayTrack}
+              onMoveToProcessing={handleMoveToProcessing}
             />
           </main>
         </div>
