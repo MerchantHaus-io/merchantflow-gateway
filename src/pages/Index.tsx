@@ -572,6 +572,12 @@ const Index = () => {
       assigned_to: assignedTo || undefined
     } : o));
   };
+  const handleSlaStatusChange = (opportunityId: string, slaStatus: string | null) => {
+    setOpportunities(opportunities.map(o => o.id === opportunityId ? {
+      ...o,
+      sla_status: slaStatus as 'green' | 'amber' | 'red' | null
+    } : o));
+  };
   const handleMarkAsDead = (id: string) => {
     setOpportunities(opportunities.filter(o => o.id !== id));
   };
@@ -650,6 +656,7 @@ const Index = () => {
               opportunities={filteredOpportunities}
               onUpdateOpportunity={handleUpdateOpportunity}
               onAssignmentChange={handleAssignmentChange}
+              onSlaStatusChange={handleSlaStatusChange}
               onAddNew={() => setIsModalOpen(true)}
               onMarkAsDead={handleMarkAsDead}
               onDelete={handleDelete}

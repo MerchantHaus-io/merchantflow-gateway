@@ -17,6 +17,7 @@ interface DualPipelineBoardProps {
   opportunities: Opportunity[];
   onUpdateOpportunity: (id: string, updates: Partial<Opportunity>) => void;
   onAssignmentChange?: (opportunityId: string, assignedTo: string | null) => void;
+  onSlaStatusChange?: (opportunityId: string, slaStatus: string | null) => void;
   onAddNew?: () => void;
   onMarkAsDead?: (id: string) => void;
   onDelete?: (id: string) => void;
@@ -34,6 +35,7 @@ interface PipelineSectionProps {
   onDrop: (e: React.DragEvent, stage: OpportunityStage, pipelineType: 'processing' | 'gateway') => void;
   onCardClick: (opportunity: Opportunity) => void;
   onAssignmentChange?: (opportunityId: string, assignedTo: string | null) => void;
+  onSlaStatusChange?: (opportunityId: string, slaStatus: string | null) => void;
   onAddNew?: () => void;
   colorAccent: string;
   pipelineType: 'processing' | 'gateway';
@@ -49,6 +51,7 @@ const PipelineSection = ({
   onDrop,
   onCardClick,
   onAssignmentChange,
+  onSlaStatusChange,
   onAddNew,
   colorAccent,
   pipelineType,
@@ -162,6 +165,7 @@ const PipelineSection = ({
                 onDrop={(e, s) => onDrop(e, s, pipelineType)}
                 onCardClick={onCardClick}
                 onAssignmentChange={onAssignmentChange}
+                onSlaStatusChange={onSlaStatusChange}
                 onAddNew={stage === 'application_started' ? onAddNew : undefined}
                 hideHeader={true}
               />
@@ -177,6 +181,7 @@ const DualPipelineBoard = ({
   opportunities,
   onUpdateOpportunity,
   onAssignmentChange,
+  onSlaStatusChange,
   onAddNew,
   onMarkAsDead,
   onDelete,
@@ -273,6 +278,7 @@ const DualPipelineBoard = ({
           onDrop={handleDrop}
           onCardClick={setSelectedOpportunity}
           onAssignmentChange={onAssignmentChange}
+          onSlaStatusChange={onSlaStatusChange}
           onAddNew={onAddNew}
           colorAccent="bg-primary"
           pipelineType="processing"
@@ -289,6 +295,7 @@ const DualPipelineBoard = ({
           onDrop={handleDrop}
           onCardClick={setSelectedOpportunity}
           onAssignmentChange={onAssignmentChange}
+          onSlaStatusChange={onSlaStatusChange}
           onAddNew={onAddNew}
           colorAccent="bg-teal"
           pipelineType="gateway"

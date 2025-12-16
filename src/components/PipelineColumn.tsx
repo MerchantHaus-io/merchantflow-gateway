@@ -13,6 +13,7 @@ interface PipelineColumnProps {
   onDrop: (e: React.DragEvent, stage: OpportunityStage) => void;
   onCardClick: (opportunity: Opportunity) => void;
   onAssignmentChange?: (opportunityId: string, assignedTo: string | null) => void;
+  onSlaStatusChange?: (opportunityId: string, slaStatus: string | null) => void;
   onAddNew?: () => void;
   hideHeader?: boolean;
 }
@@ -25,6 +26,7 @@ const PipelineColumn = ({
   onDrop,
   onCardClick,
   onAssignmentChange,
+  onSlaStatusChange,
   onAddNew,
   hideHeader = false,
 }: PipelineColumnProps) => {
@@ -154,6 +156,7 @@ const PipelineColumn = ({
               onDragStart={onDragStart}
               onClick={() => onCardClick(opportunity)}
               onAssignmentChange={onAssignmentChange}
+              onSlaStatusChange={onSlaStatusChange}
               isCollapsed={collapsedCards.has(opportunity.id)}
               onToggleCollapse={() => toggleCardCollapse(opportunity.id)}
             />
