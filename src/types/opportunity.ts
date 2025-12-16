@@ -124,11 +124,34 @@ export const TEAM_MEMBER_COLORS: Record<string, string> = {
 
 // Map user emails to display names
 export const EMAIL_TO_USER: Record<string, string> = {
-  'dyan@merchanthaus.io': 'Wesley',
+  'darryn@merchanthaus.io': 'Darryn',
   'admin@merchanthaus.io': 'Jamie',
   'support@merchanthaus.io': 'Yaseen',
+  'dylan@merchanthaus.io': 'Wesley',
+  'sales@merchanthaus.io': 'Wesley',
   'taryn@merchanthaus.io': 'Taryn',
-  'sales@merchanthaus.io': 'Sales',
+};
+
+// Allowed emails that can access the dashboard
+export const ALLOWED_EMAILS = [
+  'darryn@merchanthaus.io',
+  'admin@merchanthaus.io',
+  'support@merchanthaus.io',
+  'dylan@merchanthaus.io',
+  'sales@merchanthaus.io',
+  'taryn@merchanthaus.io',
+];
+
+// Helper to get team member name from email
+export const getTeamMemberFromEmail = (email: string | undefined | null): string | null => {
+  if (!email) return null;
+  return EMAIL_TO_USER[email.toLowerCase()] || null;
+};
+
+// Helper to check if email is allowed
+export const isEmailAllowed = (email: string | undefined | null): boolean => {
+  if (!email) return false;
+  return ALLOWED_EMAILS.includes(email.toLowerCase());
 };
 
 export const STAGE_CONFIG: Record<

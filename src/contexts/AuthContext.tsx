@@ -1,15 +1,19 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { isEmailAllowed, getTeamMemberFromEmail } from '@/types/opportunity';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  mustChangePassword: boolean;
+  teamMemberName: string | null;
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUpWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
+  updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -50,6 +54,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mustChangePassword, setMustChangePassword] = useState(false);
+
+  const teamMemberName = getTeamMemberFromEmail(user?.email);
 
   useEffect(() => {
     let isMounted = true;
@@ -59,6 +66,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (isMounted) {
         setSession(session);
         setUser(session?.user ?? null);
+        
+        // Check if password change is required
+        const needsPasswordChange = session?.user?.user_metadata?.must_change_password === true;
+        setMustChangePassword(needsPasswordChange);
+        
         setLoading(false);
       }
     }).catch(() => {
@@ -69,10 +81,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Set up auth state listener for future changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
         if (isMounted) {
           setSession(session);
           setUser(session?.user ?? null);
+          
+          // Check if password change is required
+          const needsPasswordChange = session?.user?.user_metadata?.must_change_password === true;
+          setMustChangePassword(needsPasswordChange);
+          
+          // If user just changed password, clear the flag
+          if (event === 'PASSWORD_RECOVERY') {
+            setMustChangePassword(true);
+          }
+          
           setLoading(false);
         }
       }
@@ -95,6 +117,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signInWithEmail = async (email: string, password: string) => {
+    // Check if email is allowed before signing in
+    if (!isEmailAllowed(email)) {
+      return { error: new Error('Access denied. Your email is not authorized to access this dashboard.') };
+    }
+    
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -103,6 +130,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signUpWithEmail = async (email: string, password: string) => {
+    // Check if email is allowed before signing up
+    if (!isEmailAllowed(email)) {
+      return { error: new Error('Access denied. Your email is not authorized to access this dashboard.') };
+    }
+    
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -120,6 +152,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error };
   };
 
+  const updatePassword = async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+      data: { must_change_password: false }
+    });
+    
+    if (!error) {
+      setMustChangePassword(false);
+    }
+    
+    return { error };
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
   };
@@ -130,10 +175,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         user,
         session,
         loading,
+        mustChangePassword,
+        teamMemberName,
         signInWithGoogle,
         signInWithEmail,
         signUpWithEmail,
         resetPassword,
+        updatePassword,
         signOut,
       }}
     >

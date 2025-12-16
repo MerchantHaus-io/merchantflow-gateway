@@ -9,24 +9,40 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
 import brandLogo from '@/assets/brand-logo.png';
+import { isEmailAllowed } from '@/types/opportunity';
+import ForcePasswordChange from '@/components/ForcePasswordChange';
+import { supabase } from '@/integrations/supabase/client';
 
 const emailSchema = z.string().email('Please enter a valid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { user, signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword } = useAuth();
+  const { user, signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, mustChangePassword } = useAuth();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      navigate('/', { replace: true });
+    // Check if this is a password recovery flow
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const type = hashParams.get('type');
+    if (type === 'recovery') {
+      setIsRecoveryMode(true);
     }
-  }, [user, navigate]);
+  }, []);
+
+  useEffect(() => {
+    if (user && !isRecoveryMode && !mustChangePassword) {
+      // Verify user email is allowed before redirecting
+      if (isEmailAllowed(user.email)) {
+        navigate('/', { replace: true });
+      }
+    }
+  }, [user, navigate, isRecoveryMode, mustChangePassword]);
 
   const validateInputs = () => {
     try {
@@ -142,6 +158,11 @@ const Auth = () => {
       });
     }
   };
+
+  // If in recovery mode or must change password, show the password change screen
+  if (isRecoveryMode || mustChangePassword) {
+    return <ForcePasswordChange />;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
