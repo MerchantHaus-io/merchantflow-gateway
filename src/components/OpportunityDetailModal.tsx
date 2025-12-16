@@ -13,6 +13,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTasks } from "@/contexts/TasksContext";
 import CommentsTab from "./CommentsTab";
+import GameSplash from "./GameSplash";
 import ActivitiesTab from "./ActivitiesTab";
 import {
   AlertDialog,
@@ -931,23 +932,11 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
       </AlertDialog>
 
       {/* YOU DIED! Splash Screen */}
-      {showDeathSplash && (
-        <div className="fixed bottom-8 right-8 z-[9999] animate-fade-in">
-          <div className="text-center animate-scale-in">
-            <h1 
-              className="text-8xl md:text-9xl font-black tracking-wider animate-pulse"
-              style={{
-                color: '#ff0000',
-                textShadow: '0 0 20px #ff0000, 0 0 40px #ff0000, 0 0 60px #ff0000, 0 0 80px #ff0000',
-                fontFamily: 'serif',
-                letterSpacing: '0.1em',
-              }}
-            >
-              YOU DIED
-            </h1>
-          </div>
-        </div>
-      )}
+      <GameSplash
+        type="death"
+        show={showDeathSplash}
+        onComplete={() => setShowDeathSplash(false)}
+      />
 
       {/* Delete Confirmation (Admin Only) */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
