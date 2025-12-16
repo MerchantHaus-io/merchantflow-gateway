@@ -271,4 +271,13 @@ All colors MUST be HSL.
   .glow-primary {
     box-shadow: 0 0 20px hsl(348 83% 47% / 0.3), 0 0 40px hsl(348 83% 60% / 0.2);
   }
+
+  /* Hide scrollbar while maintaining scroll functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari, Opera */
+  }
 }

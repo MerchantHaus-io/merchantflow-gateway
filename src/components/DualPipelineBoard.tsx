@@ -1,10 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { CreditCard, Zap } from "lucide-react";
 import {
   Opportunity,
   OpportunityStage,
   PROCESSING_PIPELINE_STAGES,
   GATEWAY_ONLY_PIPELINE_STAGES,
+  STAGE_CONFIG,
   getServiceType,
   migrateStage,
 } from "@/types/opportunity";
@@ -51,6 +52,36 @@ const PipelineSection = ({
   pipelineType,
 }: PipelineSectionProps) => {
   const totalCount = opportunities.length;
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const headerScrollRef = useRef<HTMLDivElement>(null);
+
+  // Sync horizontal scroll between header and content
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    const headerScroll = headerScrollRef.current;
+
+    if (!scrollContainer || !headerScroll) return;
+
+    const syncHeaderToContent = () => {
+      if (headerScroll) {
+        headerScroll.scrollLeft = scrollContainer.scrollLeft;
+      }
+    };
+
+    const syncContentToHeader = () => {
+      if (scrollContainer) {
+        scrollContainer.scrollLeft = headerScroll.scrollLeft;
+      }
+    };
+
+    scrollContainer.addEventListener('scroll', syncHeaderToContent);
+    headerScroll.addEventListener('scroll', syncContentToHeader);
+
+    return () => {
+      scrollContainer.removeEventListener('scroll', syncHeaderToContent);
+      headerScroll.removeEventListener('scroll', syncContentToHeader);
+    };
+  }, []);
 
   const getOpportunitiesByStage = (stage: OpportunityStage) => {
     return opportunities
@@ -60,14 +91,14 @@ const PipelineSection = ({
 
   return (
     <div className="flex flex-1 min-h-0 border border-border/40 rounded-lg overflow-hidden bg-card/30">
-      {/* Vertical Title Sidebar */}
+      {/* Vertical Title Sidebar - Persistent */}
       <div className={cn(
-        "flex flex-col items-center justify-center w-10 flex-shrink-0 border-r border-border/40",
+        "flex flex-col items-center justify-center w-10 flex-shrink-0 border-r border-border/40 sticky left-0 z-10",
         colorAccent
       )}>
         <div className="flex flex-col items-center gap-2 py-3">
           {icon}
-          <span 
+          <span
             className="text-white font-semibold text-xs whitespace-nowrap"
             style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
           >
@@ -79,25 +110,61 @@ const PipelineSection = ({
         </div>
       </div>
 
-      {/* Scrollable Pipeline Area */}
-      <div 
-        className="flex-1 overflow-auto"
-        data-pipeline={pipelineType}
-      >
-        <div className="flex gap-2 p-2 min-w-max h-full">
-          {stages.map((stage) => (
-            <PipelineColumn
-              key={stage}
-              stage={stage}
-              opportunities={getOpportunitiesByStage(stage)}
-              onDragStart={onDragStart}
-              onDragOver={onDragOver}
-              onDrop={onDrop}
-              onCardClick={onCardClick}
-              onAssignmentChange={onAssignmentChange}
-              onAddNew={stage === 'application_started' ? onAddNew : undefined}
-            />
-          ))}
+      {/* Pipeline Content Area */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden" data-pipeline={pipelineType}>
+        {/* Sticky Column Headers Row - scrolls horizontally but stays at top */}
+        <div
+          ref={headerScrollRef}
+          className="flex-shrink-0 overflow-x-auto overflow-y-hidden scrollbar-hide border-b border-border/30"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+          <div className="flex gap-2 p-2 pb-0 min-w-max">
+            {stages.map((stage) => {
+              const config = STAGE_CONFIG[stage];
+              const count = getOpportunitiesByStage(stage).length;
+              return (
+                <div
+                  key={stage}
+                  className={cn(
+                    "flex-shrink-0 w-[150px] px-2 py-1.5 rounded-t-md",
+                    config.headerClass
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-[10px] font-semibold text-white truncate">
+                      {config.label}
+                    </span>
+                    <span className="text-[9px] text-white/90 bg-white/20 px-1 py-0.5 rounded">
+                      {count}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Scrollable Columns Content Area - vertical and horizontal scroll */}
+        <div
+          ref={scrollContainerRef}
+          className="flex-1 overflow-auto"
+        >
+          <div className="flex gap-2 p-2 pt-0 min-w-max h-full">
+            {stages.map((stage) => (
+              <PipelineColumn
+                key={stage}
+                stage={stage}
+                opportunities={getOpportunitiesByStage(stage)}
+                onDragStart={onDragStart}
+                onDragOver={onDragOver}
+                onDrop={onDrop}
+                onCardClick={onCardClick}
+                onAssignmentChange={onAssignmentChange}
+                onAddNew={stage === 'application_started' ? onAddNew : undefined}
+                hideHeader={true}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </div>
