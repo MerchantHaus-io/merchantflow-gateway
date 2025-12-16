@@ -147,7 +147,7 @@ const PipelineSection = ({
         {/* Scrollable Columns Content Area - vertical and horizontal scroll */}
         <div
           ref={scrollContainerRef}
-          className="flex-1 overflow-auto"
+          className="flex-1 overflow-x-auto overflow-y-hidden min-h-0"
         >
           <div className="flex gap-2 p-2 pt-0 min-w-max h-full">
             {stages.map((stage) => (
@@ -249,7 +249,7 @@ const DualPipelineBoard = ({
 
   return (
     <>
-      <div className="flex-1 flex flex-col p-3 gap-2 overflow-hidden">
+      <div className="flex-1 flex flex-col p-3 gap-3 overflow-hidden h-full min-h-0">
         {/* NMI Payments Pipeline Section */}
         <PipelineSection
           title="NMI Payments Pipeline"
