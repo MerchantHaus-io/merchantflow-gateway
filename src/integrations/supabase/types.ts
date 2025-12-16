@@ -183,6 +183,7 @@ export type Database = {
         Row: {
           content_type: string | null
           created_at: string
+          document_type: string | null
           file_name: string
           file_path: string
           file_size: number | null
@@ -193,6 +194,7 @@ export type Database = {
         Insert: {
           content_type?: string | null
           created_at?: string
+          document_type?: string | null
           file_name: string
           file_path: string
           file_size?: number | null
@@ -203,6 +205,7 @@ export type Database = {
         Update: {
           content_type?: string | null
           created_at?: string
+          document_type?: string | null
           file_name?: string
           file_path?: string
           file_size?: number | null

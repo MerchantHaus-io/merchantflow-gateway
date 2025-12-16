@@ -38,7 +38,18 @@ interface Document {
   content_type: string | null;
   uploaded_by: string | null;
   created_at: string;
+  document_type: string | null;
 }
+
+const DOCUMENT_TYPE_OPTIONS = [
+  "Passport/Drivers License",
+  "Bank Statement",
+  "Transaction History",
+  "Articles of Organisation",
+  "Voided Check / Bank Confirmation Letter",
+  "Tax Confirmation",
+  "Unassigned",
+];
 
 const wizardBadgeClasses = (value: number) => {
   if (value >= 100) return "bg-emerald-500/10 text-emerald-500 border border-emerald-500/40";
@@ -884,6 +895,9 @@ const EditField = ({
 const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [selectedDocType, setSelectedDocType] = useState("Unassigned");
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -893,7 +907,7 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
   const fetchDocuments = async () => {
     const { data, error } = await supabase
       .from('documents')
-      .select('id, opportunity_id, file_name, file_path, file_size, content_type, uploaded_by, created_at')
+      .select('id, opportunity_id, file_name, file_path, file_size, content_type, uploaded_by, created_at, document_type')
       .eq('opportunity_id', opportunityId)
       .order('created_at', { ascending: false });
     
@@ -905,10 +919,18 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
+    setPendingFiles(Array.from(files));
+    setSelectedDocType("Unassigned");
+    setShowUploadDialog(true);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
+  const confirmUpload = async () => {
+    if (pendingFiles.length === 0) return;
     setIsUploading(true);
+    setShowUploadDialog(false);
     
-    for (const file of Array.from(files)) {
+    for (const file of pendingFiles) {
       const filePath = `${opportunityId}/${Date.now()}_${file.name}`;
       
       const { error: uploadError } = await supabase.storage
@@ -928,6 +950,7 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
           file_path: filePath,
           file_size: file.size,
           content_type: file.type,
+          document_type: selectedDocType,
         });
 
       if (dbError) {
@@ -938,7 +961,29 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
     toast.success('Documents uploaded');
     fetchDocuments();
     setIsUploading(false);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    setPendingFiles([]);
+  };
+
+  const cancelUpload = () => {
+    setShowUploadDialog(false);
+    setPendingFiles([]);
+  };
+
+  const handleUpdateDocType = async (docId: string, newType: string) => {
+    const { error } = await supabase
+      .from('documents')
+      .update({ document_type: newType })
+      .eq('id', docId);
+
+    if (error) {
+      toast.error('Failed to update document type');
+      return;
+    }
+
+    setDocuments((prev) =>
+      prev.map((doc) => (doc.id === docId ? { ...doc, document_type: newType } : doc))
+    );
+    toast.success('Document type updated');
   };
 
   const handleDelete = async (doc: Document) => {
@@ -963,16 +1008,27 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
   };
 
   const handleDownload = async (doc: Document) => {
-    const { data, error } = await supabase.storage
-      .from('opportunity-documents')
-      .createSignedUrl(doc.file_path, 60 * 10);
+    try {
+      const { data, error } = await supabase.storage
+        .from('opportunity-documents')
+        .download(doc.file_path);
 
-    if (error || !data?.signedUrl) {
-      toast.error('Unable to generate download link');
-      return;
+      if (error || !data) {
+        toast.error('Unable to download file');
+        return;
+      }
+
+      const url = URL.createObjectURL(data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = doc.file_name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Unable to download file');
     }
-
-    window.open(data.signedUrl, '_blank');
   };
 
   const formatFileSize = (bytes: number | null) => {
@@ -1002,6 +1058,37 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
         </Button>
       </div>
 
+      {/* Upload Dialog */}
+      <AlertDialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Select Document Type</AlertDialogTitle>
+            <AlertDialogDescription>
+              Choose a document type for {pendingFiles.length} file{pendingFiles.length > 1 ? 's' : ''}: {pendingFiles.map((f) => f.name).join(', ')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Label htmlFor="doc-type">Document Type</Label>
+            <Select value={selectedDocType} onValueChange={setSelectedDocType}>
+              <SelectTrigger id="doc-type" className="mt-2">
+                <SelectValue placeholder="Select document type" />
+              </SelectTrigger>
+              <SelectContent>
+                {DOCUMENT_TYPE_OPTIONS.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelUpload}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmUpload}>Upload</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {documents.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
@@ -1012,17 +1099,32 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
           {documents.map((doc) => (
             <div 
               key={doc.id} 
-              className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+              className="flex items-center justify-between p-3 bg-muted/50 rounded-lg gap-2"
             >
-              <div className="flex items-center gap-3 min-w-0">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
                 <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium truncate">{doc.file_name}</p>
                   <p className="text-xs text-muted-foreground">
                     {formatFileSize(doc.file_size)}
                   </p>
                 </div>
               </div>
+              <Select
+                value={doc.document_type || "Unassigned"}
+                onValueChange={(value) => handleUpdateDocType(doc.id, value)}
+              >
+                <SelectTrigger className="w-[180px] h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {DOCUMENT_TYPE_OPTIONS.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <div className="flex items-center gap-1">
                 <Button variant="ghost" size="icon" onClick={() => handleDownload(doc)}>
                   <Download className="h-4 w-4" />
