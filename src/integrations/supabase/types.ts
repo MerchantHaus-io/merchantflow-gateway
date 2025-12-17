@@ -59,6 +59,48 @@ export type Database = {
         }
         Relationships: []
       }
+      applications: {
+        Row: {
+          id: string
+          full_name: string
+          email: string
+          phone: string | null
+          company_name: string | null
+          business_type: string | null
+          monthly_volume: string | null
+          message: string | null
+          status: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          full_name: string
+          email: string
+          phone?: string | null
+          company_name?: string | null
+          business_type?: string | null
+          monthly_volume?: string | null
+          message?: string | null
+          status?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          full_name?: string
+          email?: string
+          phone?: string | null
+          company_name?: string | null
+          business_type?: string | null
+          monthly_volume?: string | null
+          message?: string | null
+          status?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       activities: {
         Row: {
           created_at: string

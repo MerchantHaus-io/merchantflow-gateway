@@ -31,23 +31,30 @@ const DEFAULT_REDIRECT_URL = 'https://ops-terminal.merchant.haus/';
 
 const formatRedirectUrl = (url: string) => (url.endsWith('/') ? url : `${url}/`);
 
-const getRedirectUrl = () => {
+const getRedirectUrl = (path?: string) => {
   const envRedirect = import.meta.env.VITE_AUTH_REDIRECT_URL;
+  let baseUrl: string;
 
   if (envRedirect) {
-    return formatRedirectUrl(envRedirect);
-  }
-
-  if (typeof window !== 'undefined') {
+    baseUrl = formatRedirectUrl(envRedirect);
+  } else if (typeof window !== 'undefined') {
     const host = window.location.hostname;
     const isLocalHost = host === 'localhost' || host === '127.0.0.1';
 
     if (isLocalHost) {
-      return formatRedirectUrl(window.location.origin);
+      baseUrl = formatRedirectUrl(window.location.origin);
+    } else {
+      baseUrl = DEFAULT_REDIRECT_URL;
     }
+  } else {
+    baseUrl = DEFAULT_REDIRECT_URL;
   }
 
-  return DEFAULT_REDIRECT_URL;
+  // Append path if provided (e.g., for password reset redirecting to /update-password)
+  if (path) {
+    return `${baseUrl.replace(/\/$/, '')}${path}`;
+  }
+  return baseUrl;
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -147,7 +154,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const resetPassword = async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: getRedirectUrl(),
+      redirectTo: getRedirectUrl('/update-password'),
     });
     return { error };
   };
