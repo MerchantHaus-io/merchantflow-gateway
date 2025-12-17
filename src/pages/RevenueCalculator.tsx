@@ -238,16 +238,15 @@ const RevenueCalculator = () => {
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-blue-200 mb-1">Split / Rev Share (%)</label>
-                          <div className="flex items-center gap-2">
-                            <input 
-                              type="range" 
-                              min="0" max="100" 
-                              value={splitPercent}
-                              onChange={(e) => setSplitPercent(Number(e.target.value))}
-                              className="w-full h-1 bg-blue-900 rounded-lg appearance-none cursor-pointer"
-                            />
-                            <span className="text-xs font-mono text-blue-300 w-10 text-right">{splitPercent}%</span>
-                          </div>
+                          <input 
+                            type="number" 
+                            step="1"
+                            min="0"
+                            max="100"
+                            value={splitPercent}
+                            onChange={(e) => setSplitPercent(Math.min(100, Math.max(0, Number(e.target.value))))}
+                            className="w-full bg-black/40 border border-blue-900/50 rounded-lg py-1.5 px-3 text-sm text-blue-100 focus:outline-none focus:border-blue-500"
+                          />
                         </div>
                       </div>
                     </div>
