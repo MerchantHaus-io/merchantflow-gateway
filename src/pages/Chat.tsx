@@ -1,16 +1,15 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 /**
  * ChatBox component renders a scrollable list of messages along with an input
  * and send button.  Messages sent by the current user are aligned to the
- * right; messages from others are aligned to the left.  This is a local
- * implementation—persisting messages to a backend is outside the scope of
- * this demo.
+ * right; messages from others are aligned to the left.
  */
-type Message = { user: string; text: string };
+type Message = { user: string; text: string; timestamp: number };
 
 interface ChatBoxProps {
   messages: Message[];
@@ -127,44 +126,134 @@ const ChannelList: React.FC<ChannelListProps> = ({ channels, current, onSelect, 
 /**
  * Main Chat page component.  This component glues together the ChannelList
  * and ChatBox components and manages the state of channels, the active
- * channel, the message history and the current user name.  Messages are
- * stored in local state and are not persisted between sessions.
+ * channel, the message history and the current user name.  Messages and
+ * channels are persisted to localStorage, and user identity is synced with
+ * the authenticated user profile.
  */
-const Chat: React.FC = () => {
-  const [channels, setChannels] = useState<string[]>(["general"]);
-  const [currentChannel, setCurrentChannel] = useState<string>("general");
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [userName, setUserName] = useState<string>("");
 
-  useEffect(() => {
-    let storedUser = localStorage.getItem("merchantflow-chat-user");
-    if (!storedUser) {
-      storedUser = `User${Math.floor(Math.random() * 10000)}`;
-      localStorage.setItem("merchantflow-chat-user", storedUser);
+// LocalStorage keys for chat state persistence
+const STORAGE_KEYS = {
+  CHANNELS: "merchantflow-chat-channels",
+  MESSAGES: "merchantflow-chat-messages",
+} as const;
+
+// Type for stored messages organized by channel
+type ChannelMessages = Record<string, Message[]>;
+
+const Chat: React.FC = () => {
+  const { user, teamMemberName, loading } = useAuth();
+
+  // Derive display name from user profile
+  const userName = teamMemberName || user?.email?.split("@")[0] || "";
+
+  // Initialize channels from localStorage or default to ["general"]
+  const [channels, setChannels] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.CHANNELS);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch {
+      // Ignore parse errors, use default
     }
-    setUserName(storedUser);
+    return ["general"];
+  });
+
+  const [currentChannel, setCurrentChannel] = useState<string>("general");
+
+  // Initialize all channel messages from localStorage
+  const [allMessages, setAllMessages] = useState<ChannelMessages>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.MESSAGES);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch {
+      // Ignore parse errors, use default
+    }
+    return {};
+  });
+
+  // Get messages for the current channel
+  const messages = allMessages[currentChannel] || [];
+
+  // Persist channels to localStorage whenever they change
+  const saveChannels = useCallback((newChannels: string[]) => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.CHANNELS, JSON.stringify(newChannels));
+    } catch {
+      // Ignore storage errors (e.g., quota exceeded)
+    }
+  }, []);
+
+  // Persist messages to localStorage whenever they change
+  const saveMessages = useCallback((newMessages: ChannelMessages) => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(newMessages));
+    } catch {
+      // Ignore storage errors (e.g., quota exceeded)
+    }
   }, []);
 
   const handleSelectChannel = (name: string) => {
     setCurrentChannel(name);
-    setMessages([]);
   };
 
   const handleCreateChannel = (name: string) => {
     if (!channels.includes(name)) {
-      setChannels((prev) => [...prev, name]);
+      const newChannels = [...channels, name];
+      setChannels(newChannels);
+      saveChannels(newChannels);
     }
   };
 
   const handleSendMessage = (text: string) => {
-    setMessages((prev) => [...prev, { user: userName || "Unknown", text }]);
+    if (!userName) return;
+
+    const newMessage: Message = {
+      user: userName,
+      text,
+      timestamp: Date.now(),
+    };
+
+    setAllMessages((prev) => {
+      const channelMessages = prev[currentChannel] || [];
+      const updated = {
+        ...prev,
+        [currentChannel]: [...channelMessages, newMessage],
+      };
+      saveMessages(updated);
+      return updated;
+    });
   };
+
+  // Redirect to login if not authenticated
+  if (!loading && !user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Show loading state while checking authentication
+  if (loading) {
+    return (
+      <div className="p-4 flex items-center justify-center h-[70vh]">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 space-y-4">
       {/* Header with home navigation */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Chat</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-semibold">Chat</h1>
+          <span className="text-sm text-muted-foreground">
+            Signed in as <span className="font-medium text-foreground">{userName}</span>
+          </span>
+        </div>
         {/* Navigate back to the dashboard/home */}
         <Button variant="outline" asChild>
           <Link to="/">Home</Link>
