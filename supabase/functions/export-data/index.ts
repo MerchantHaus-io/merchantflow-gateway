@@ -45,6 +45,7 @@ Deno.serve(async (req) => {
     // Fetch all tables
     const tables = [
       "accounts",
+      "applications",
       "contacts", 
       "opportunities",
       "tasks",
