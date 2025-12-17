@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { Building2, Phone, Mail, GripVertical, User, ChevronDown, ChevronRight, Bell } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -53,8 +53,9 @@ const OpportunityCard = ({
     ? TEAM_BORDER_COLORS[opportunity.assigned_to] || 'border-l-primary/50'
     : 'border-l-muted-foreground/30';
 
-  // Track dragging state to prevent accidental clicks opening the modal
-  const [isDragging, setIsDragging] = useState(false);
+  // Use a ref to track dragging state for synchronous access in event handlers
+  // This avoids stale closure issues that occur with useState
+  const isDraggingRef = useRef(false);
 
   // Calculate auto SLA status based on time in stage
   const autoSlaStatus = useMemo((): 'green' | 'amber' | 'red' => {
@@ -119,13 +120,19 @@ const OpportunityCard = ({
     <Card
       draggable
       onDragStart={(e) => {
-        setIsDragging(true);
+        isDraggingRef.current = true;
         onDragStart(e, opportunity);
       }}
-      onDragEnd={() => setIsDragging(false)}
+      onDragEnd={() => {
+        // Use setTimeout to ensure the click handler sees the dragging state
+        // before we reset it (click fires after dragend)
+        setTimeout(() => {
+          isDraggingRef.current = false;
+        }, 0);
+      }}
       onClick={() => {
         // Only trigger click if not in a drag interaction
-        if (!isDragging) onClick();
+        if (!isDraggingRef.current) onClick();
       }}
       className={cn(
         'cursor-grab active:cursor-grabbing transition-all duration-200 group border-l-2 overflow-hidden rounded',
