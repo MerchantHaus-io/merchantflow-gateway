@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Opportunity, STAGE_CONFIG, Account, Contact, getServiceType } from "@/types/opportunity";
-import { Building2, User, Briefcase, FileText, Activity, Pencil, Save, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, ListChecks, Zap, CreditCard, Maximize2, Minimize2 } from "lucide-react";
+import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, ListChecks, Zap, CreditCard, Maximize2, Minimize2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -30,6 +30,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Task } from "@/types/task";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { AutoSaveIndicator } from "./AutoSaveIndicator";
 
 interface Document {
   id: string;
@@ -167,7 +169,6 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   const { user } = useAuth();
   const { getTasksForOpportunity, addTask, updateTaskStatus } = useTasks();
   const [isEditing, setIsEditing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -201,6 +202,14 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   const [referralSource, setReferralSource] = useState("");
   const [timezone, setTimezone] = useState("");
   const [language, setLanguage] = useState("");
+
+  // Combined form data for auto-save
+  const formData = useMemo(() => ({
+    accountName, website, address1, address2, city, state, zip, country,
+    firstName, lastName, email, phone, fax,
+    username, referralSource, timezone, language,
+  }), [accountName, website, address1, address2, city, state, zip, country,
+      firstName, lastName, email, phone, fax, username, referralSource, timezone, language]);
 
   const account = opportunity?.account;
   const contact = opportunity?.contact;
@@ -306,94 +315,100 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
 
   const isGatewayCard = opportunity ? getServiceType(opportunity) === 'gateway_only' : false;
 
-  const saveChanges = async () => {
-    setIsSaving(true);
-    try {
-      // Update account
-      if (account) {
-        const { error: accountError } = await supabase
-          .from('accounts')
-          .update({
-            name: accountName,
-            website: website || null,
-            address1: address1 || null,
-            address2: address2 || null,
-            city: city || null,
-            state: state || null,
-            zip: zip || null,
-            country: country || null,
-          })
-          .eq('id', account.id);
-        
-        if (accountError) throw accountError;
-      }
-
-      // Update contact
-      if (contact) {
-        const { error: contactError } = await supabase
-          .from('contacts')
-          .update({
-            first_name: firstName || null,
-            last_name: lastName || null,
-            email: email || null,
-            phone: phone || null,
-            fax: fax || null,
-          })
-          .eq('id', contact.id);
-        
-        if (contactError) throw contactError;
-      }
-
-      // Update opportunity
-      const { error: oppError } = await supabase
-        .from('opportunities')
+  // Auto-save callback
+  const handleAutoSave = useCallback(async (data: typeof formData) => {
+    if (!opportunity) return;
+    
+    // Update account
+    if (account) {
+      const { error: accountError } = await supabase
+        .from('accounts')
         .update({
-          username: username || null,
-          referral_source: referralSource || null,
-          timezone: timezone || null,
-          language: language || null,
+          name: data.accountName,
+          website: data.website || null,
+          address1: data.address1 || null,
+          address2: data.address2 || null,
+          city: data.city || null,
+          state: data.state || null,
+          zip: data.zip || null,
+          country: data.country || null,
         })
-        .eq('id', opportunity.id);
+        .eq('id', account.id);
       
-      if (oppError) throw oppError;
-
-      // Update local state
-      onUpdate({
-        ...opportunity,
-        username: username || undefined,
-        referral_source: referralSource || undefined,
-        timezone: timezone || undefined,
-        language: language || undefined,
-        account: account ? {
-          ...account,
-          name: accountName,
-          website: website || undefined,
-          address1: address1 || undefined,
-          address2: address2 || undefined,
-          city: city || undefined,
-          state: state || undefined,
-          zip: zip || undefined,
-          country: country || undefined,
-        } : undefined,
-        contact: contact ? {
-          ...contact,
-          first_name: firstName || undefined,
-          last_name: lastName || undefined,
-          email: email || undefined,
-          phone: phone || undefined,
-          fax: fax || undefined,
-        } : undefined,
-      });
-
-      toast.success("Changes saved successfully");
-      setIsEditing(false);
-    } catch (error) {
-      console.error('Error saving changes:', error);
-      toast.error("Failed to save changes");
-    } finally {
-      setIsSaving(false);
+      if (accountError) throw accountError;
     }
-  };
+
+    // Update contact
+    if (contact) {
+      const { error: contactError } = await supabase
+        .from('contacts')
+        .update({
+          first_name: data.firstName || null,
+          last_name: data.lastName || null,
+          email: data.email || null,
+          phone: data.phone || null,
+          fax: data.fax || null,
+        })
+        .eq('id', contact.id);
+      
+      if (contactError) throw contactError;
+    }
+
+    // Update opportunity
+    const { error: oppError } = await supabase
+      .from('opportunities')
+      .update({
+        username: data.username || null,
+        referral_source: data.referralSource || null,
+        timezone: data.timezone || null,
+        language: data.language || null,
+      })
+      .eq('id', opportunity.id);
+    
+    if (oppError) throw oppError;
+
+    // Update local state
+    onUpdate({
+      ...opportunity,
+      username: data.username || undefined,
+      referral_source: data.referralSource || undefined,
+      timezone: data.timezone || undefined,
+      language: data.language || undefined,
+      account: account ? {
+        ...account,
+        name: data.accountName,
+        website: data.website || undefined,
+        address1: data.address1 || undefined,
+        address2: data.address2 || undefined,
+        city: data.city || undefined,
+        state: data.state || undefined,
+        zip: data.zip || undefined,
+        country: data.country || undefined,
+      } : undefined,
+      contact: contact ? {
+        ...contact,
+        first_name: data.firstName || undefined,
+        last_name: data.lastName || undefined,
+        email: data.email || undefined,
+        phone: data.phone || undefined,
+        fax: data.fax || undefined,
+      } : undefined,
+    });
+  }, [opportunity, account, contact, onUpdate]);
+
+  const { status: saveStatus, resetInitialData } = useAutoSave({
+    data: formData,
+    onSave: handleAutoSave,
+    delay: 800,
+    enabled: isEditing && !!opportunity,
+  });
+
+  // Reset auto-save state when entering edit mode
+  useEffect(() => {
+    if (isEditing) {
+      resetInitialData();
+    }
+  }, [isEditing, resetInitialData]);
 
   const handleMarkAsDead = async () => {
     try {
@@ -499,13 +514,10 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
               <div className="flex items-center gap-1">
                 {isEditing ? (
                   <>
-                    <Button variant="ghost" size="sm" onClick={cancelEditing} disabled={isSaving}>
+                    <AutoSaveIndicator status={saveStatus} />
+                    <Button variant="ghost" size="sm" onClick={cancelEditing}>
                       <X className="h-4 w-4 mr-1" />
-                      Cancel
-                    </Button>
-                    <Button size="sm" onClick={saveChanges} disabled={isSaving}>
-                      <Save className="h-4 w-4 mr-1" />
-                      {isSaving ? "Saving..." : "Save"}
+                      Close
                     </Button>
                   </>
                 ) : (
