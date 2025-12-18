@@ -257,8 +257,6 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     setTaskComments("");
   };
 
-  if (!opportunity) return null;
-
   const startEditing = () => {
     // Populate form with current values
     setAccountName(account?.name || "");
@@ -482,6 +480,8 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
       toast.error("Failed to send deletion request");
     }
   };
+
+  if (!opportunity) return null;
 
   return (
     <>
