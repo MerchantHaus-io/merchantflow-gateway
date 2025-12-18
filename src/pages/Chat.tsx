@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import { Reply, X } from "lucide-react";
 
 type Message = {
   id: string;
@@ -15,7 +16,7 @@ type Message = {
   user_name: string | null;
   content: string;
   created_at: string;
-  avatar_url?: string | null;
+  reply_to_id: string | null;
 };
 
 type Channel = {
@@ -30,15 +31,30 @@ type Profile = {
   full_name: string | null;
 };
 
+type TypingUser = {
+  id: string;
+  name: string;
+};
+
 interface ChatBoxProps {
   messages: Message[];
   currentUserId: string;
-  onSendMessage: (text: string) => void;
+  onSendMessage: (text: string, replyToId?: string) => void;
   profiles: Record<string, Profile>;
+  typingUsers: TypingUser[];
+  onTyping: () => void;
 }
 
-const ChatBox: React.FC<ChatBoxProps> = ({ messages, currentUserId, onSendMessage, profiles }) => {
+const ChatBox: React.FC<ChatBoxProps> = ({ 
+  messages, 
+  currentUserId, 
+  onSendMessage, 
+  profiles, 
+  typingUsers,
+  onTyping 
+}) => {
   const [input, setInput] = useState("");
+  const [replyTo, setReplyTo] = useState<Message | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -48,8 +64,9 @@ const ChatBox: React.FC<ChatBoxProps> = ({ messages, currentUserId, onSendMessag
   const handleSend = () => {
     const trimmed = input.trim();
     if (trimmed) {
-      onSendMessage(trimmed);
+      onSendMessage(trimmed, replyTo?.id);
       setInput("");
+      setReplyTo(null);
     }
   };
 
@@ -58,6 +75,11 @@ const ChatBox: React.FC<ChatBoxProps> = ({ messages, currentUserId, onSendMessag
       e.preventDefault();
       handleSend();
     }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value);
+    onTyping();
   };
 
   const getInitials = (name: string | null, email: string) => {
@@ -71,6 +93,19 @@ const ChatBox: React.FC<ChatBoxProps> = ({ messages, currentUserId, onSendMessag
     return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  const getReplyMessage = (replyToId: string | null) => {
+    if (!replyToId) return null;
+    return messages.find(m => m.id === replyToId);
+  };
+
+  const getDisplayName = (msg: Message) => {
+    const profile = profiles[msg.user_id];
+    return profile?.full_name || msg.user_name || msg.user_email.split("@")[0];
+  };
+
+  // Filter out current user from typing users
+  const otherTypingUsers = typingUsers.filter(u => u.id !== currentUserId);
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex-grow overflow-y-auto space-y-3 border rounded-md p-4 mb-4 bg-background">
@@ -80,8 +115,9 @@ const ChatBox: React.FC<ChatBoxProps> = ({ messages, currentUserId, onSendMessag
           messages.map((msg) => {
             const isOwn = msg.user_id === currentUserId;
             const profile = profiles[msg.user_id];
-            const displayName = profile?.full_name || msg.user_name || msg.user_email.split("@")[0];
+            const displayName = getDisplayName(msg);
             const avatarUrl = profile?.avatar_url;
+            const replyMessage = getReplyMessage(msg.reply_to_id);
 
             return (
               <div
@@ -96,14 +132,31 @@ const ChatBox: React.FC<ChatBoxProps> = ({ messages, currentUserId, onSendMessag
                     </AvatarFallback>
                   </Avatar>
                 )}
-                <div className={`max-w-xs ${isOwn ? "bg-primary text-primary-foreground" : "bg-muted"} p-3 rounded-lg`}>
-                  {!isOwn && (
-                    <p className="text-xs font-semibold mb-1 opacity-80">{displayName}</p>
+                <div className="max-w-xs">
+                  {/* Reply preview */}
+                  {replyMessage && (
+                    <div className={`text-xs px-2 py-1 mb-1 rounded border-l-2 border-primary/50 bg-muted/50 ${isOwn ? "ml-auto" : ""}`}>
+                      <span className="font-medium text-primary/70">{getDisplayName(replyMessage)}</span>
+                      <p className="text-muted-foreground truncate">{replyMessage.content}</p>
+                    </div>
                   )}
-                  <p className="text-sm">{msg.content}</p>
-                  <p className={`text-xs mt-1 ${isOwn ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                    {formatTime(msg.created_at)}
-                  </p>
+                  <div className={`${isOwn ? "bg-primary text-primary-foreground" : "bg-muted"} p-3 rounded-lg group relative`}>
+                    {!isOwn && (
+                      <p className="text-xs font-semibold mb-1 opacity-80">{displayName}</p>
+                    )}
+                    <p className="text-sm">{msg.content}</p>
+                    <p className={`text-xs mt-1 ${isOwn ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                      {formatTime(msg.created_at)}
+                    </p>
+                    {/* Reply button */}
+                    <button
+                      onClick={() => setReplyTo(msg)}
+                      className={`absolute top-1 ${isOwn ? "left-1" : "right-1"} opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-black/10`}
+                      title="Reply"
+                    >
+                      <Reply className="h-3 w-3" />
+                    </button>
+                  </div>
                 </div>
                 {isOwn && (
                   <Avatar className="h-8 w-8 shrink-0">
@@ -119,13 +172,46 @@ const ChatBox: React.FC<ChatBoxProps> = ({ messages, currentUserId, onSendMessag
         )}
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Typing indicator */}
+      {otherTypingUsers.length > 0 && (
+        <div className="text-xs text-muted-foreground px-2 pb-2 flex items-center gap-1">
+          <span className="flex gap-1">
+            <span className="animate-bounce" style={{ animationDelay: "0ms" }}>•</span>
+            <span className="animate-bounce" style={{ animationDelay: "150ms" }}>•</span>
+            <span className="animate-bounce" style={{ animationDelay: "300ms" }}>•</span>
+          </span>
+          <span>
+            {otherTypingUsers.length === 1 
+              ? `${otherTypingUsers[0].name} is typing...`
+              : `${otherTypingUsers.length} people are typing...`
+            }
+          </span>
+        </div>
+      )}
+
+      {/* Reply preview */}
+      {replyTo && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-t-md border-l-2 border-primary">
+          <Reply className="h-4 w-4 text-muted-foreground" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-primary">{getDisplayName(replyTo)}</p>
+            <p className="text-xs text-muted-foreground truncate">{replyTo.content}</p>
+          </div>
+          <button onClick={() => setReplyTo(null)} className="p-1 hover:bg-muted rounded">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       <div className="flex items-center gap-2">
         <Input
           type="text"
-          placeholder="Type a message..."
+          placeholder={replyTo ? "Type your reply..." : "Type a message..."}
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={handleInputChange}
           onKeyDown={handleKeyDown}
+          className={replyTo ? "rounded-t-none" : ""}
         />
         <Button onClick={handleSend}>Send</Button>
       </div>
@@ -188,6 +274,9 @@ const Chat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [loadingData, setLoadingData] = useState(true);
+  const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const presenceChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const userName = teamMemberName || user?.email?.split("@")[0] || "";
 
@@ -320,9 +409,63 @@ const Chat: React.FC = () => {
     };
   }, []);
 
+  // Setup presence for typing indicators
+  useEffect(() => {
+    if (!currentChannelId || !user) return;
+
+    const presenceChannel = supabase.channel(`typing-${currentChannelId}`, {
+      config: { presence: { key: user.id } }
+    });
+
+    presenceChannel
+      .on('presence', { event: 'sync' }, () => {
+        const state = presenceChannel.presenceState();
+        const typing: TypingUser[] = [];
+        
+        Object.entries(state).forEach(([userId, presences]) => {
+          const presence = presences[0] as { typing?: boolean; name?: string };
+          if (presence?.typing) {
+            typing.push({ id: userId, name: presence.name || 'Someone' });
+          }
+        });
+        
+        setTypingUsers(typing);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await presenceChannel.track({ typing: false, name: userName });
+        }
+      });
+
+    presenceChannelRef.current = presenceChannel;
+
+    return () => {
+      supabase.removeChannel(presenceChannel);
+      presenceChannelRef.current = null;
+    };
+  }, [currentChannelId, user, userName]);
+
+  const handleTyping = useCallback(() => {
+    if (!presenceChannelRef.current) return;
+
+    // Set typing to true
+    presenceChannelRef.current.track({ typing: true, name: userName });
+
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Set timeout to stop typing indicator after 2 seconds
+    typingTimeoutRef.current = setTimeout(() => {
+      presenceChannelRef.current?.track({ typing: false, name: userName });
+    }, 2000);
+  }, [userName]);
+
   const handleSelectChannel = (id: string) => {
     setCurrentChannelId(id);
     setMessages([]);
+    setTypingUsers([]);
   };
 
   const handleCreateChannel = async (name: string) => {
@@ -341,8 +484,11 @@ const Chat: React.FC = () => {
     }
   };
 
-  const handleSendMessage = async (text: string) => {
+  const handleSendMessage = async (text: string, replyToId?: string) => {
     if (!user || !currentChannelId) return;
+
+    // Stop typing indicator when sending
+    presenceChannelRef.current?.track({ typing: false, name: userName });
 
     const { error } = await supabase
       .from("chat_messages")
@@ -351,7 +497,8 @@ const Chat: React.FC = () => {
         user_id: user.id,
         user_email: user.email || "",
         user_name: userName,
-        content: text
+        content: text,
+        reply_to_id: replyToId || null
       });
 
     if (error) {
@@ -403,6 +550,8 @@ const Chat: React.FC = () => {
             currentUserId={user?.id || ""}
             onSendMessage={handleSendMessage}
             profiles={profiles}
+            typingUsers={typingUsers}
+            onTyping={handleTyping}
           />
         </div>
       </div>

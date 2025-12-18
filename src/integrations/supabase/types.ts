@@ -166,6 +166,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          reply_to_id: string | null
           user_email: string
           user_id: string
           user_name: string | null
@@ -175,6 +176,7 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          reply_to_id?: string | null
           user_email: string
           user_id: string
           user_name?: string | null
@@ -184,6 +186,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          reply_to_id?: string | null
           user_email?: string
           user_id?: string
           user_name?: string | null
@@ -194,6 +197,13 @@ export type Database = {
             columns: ["channel_id"]
             isOneToOne: false
             referencedRelation: "chat_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
             referencedColumns: ["id"]
           },
         ]
