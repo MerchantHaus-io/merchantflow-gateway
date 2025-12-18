@@ -3,21 +3,41 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "sonner";
 
-/**
- * ChatBox component renders a scrollable list of messages along with an input
- * and send button.  Messages sent by the current user are aligned to the
- * right; messages from others are aligned to the left.
- */
-type Message = { user: string; text: string; timestamp: number };
+type Message = {
+  id: string;
+  channel_id: string;
+  user_id: string;
+  user_email: string;
+  user_name: string | null;
+  content: string;
+  created_at: string;
+  avatar_url?: string | null;
+};
+
+type Channel = {
+  id: string;
+  name: string;
+  created_at: string;
+};
+
+type Profile = {
+  id: string;
+  avatar_url: string | null;
+  full_name: string | null;
+};
 
 interface ChatBoxProps {
   messages: Message[];
-  userName: string;
+  currentUserId: string;
   onSendMessage: (text: string) => void;
+  profiles: Record<string, Profile>;
 }
 
-const ChatBox: React.FC<ChatBoxProps> = ({ messages, userName, onSendMessage }) => {
+const ChatBox: React.FC<ChatBoxProps> = ({ messages, currentUserId, onSendMessage, profiles }) => {
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -40,20 +60,63 @@ const ChatBox: React.FC<ChatBoxProps> = ({ messages, userName, onSendMessage }) 
     }
   };
 
+  const getInitials = (name: string | null, email: string) => {
+    if (name) {
+      return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+    }
+    return email.split("@")[0].slice(0, 2).toUpperCase();
+  };
+
+  const formatTime = (timestamp: string) => {
+    return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-grow overflow-y-auto space-y-2 border rounded-md p-4 mb-4 bg-background">
-        {messages.map((msg, idx) => (
-          <div
-            key={idx}
-            className={`flex ${msg.user === userName ? "justify-end" : "justify-start"}`}
-          >
-            <div className="max-w-xs p-2 rounded-md bg-muted">
-              <span className="font-semibold mr-1">{msg.user}:</span>
-              <span>{msg.text}</span>
-            </div>
-          </div>
-        ))}
+      <div className="flex-grow overflow-y-auto space-y-3 border rounded-md p-4 mb-4 bg-background">
+        {messages.length === 0 ? (
+          <p className="text-center text-muted-foreground text-sm">No messages yet. Start the conversation!</p>
+        ) : (
+          messages.map((msg) => {
+            const isOwn = msg.user_id === currentUserId;
+            const profile = profiles[msg.user_id];
+            const displayName = profile?.full_name || msg.user_name || msg.user_email.split("@")[0];
+            const avatarUrl = profile?.avatar_url;
+
+            return (
+              <div
+                key={msg.id}
+                className={`flex gap-2 ${isOwn ? "justify-end" : "justify-start"}`}
+              >
+                {!isOwn && (
+                  <Avatar className="h-8 w-8 shrink-0">
+                    <AvatarImage src={avatarUrl || undefined} alt={displayName} />
+                    <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                      {getInitials(displayName, msg.user_email)}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+                <div className={`max-w-xs ${isOwn ? "bg-primary text-primary-foreground" : "bg-muted"} p-3 rounded-lg`}>
+                  {!isOwn && (
+                    <p className="text-xs font-semibold mb-1 opacity-80">{displayName}</p>
+                  )}
+                  <p className="text-sm">{msg.content}</p>
+                  <p className={`text-xs mt-1 ${isOwn ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                    {formatTime(msg.created_at)}
+                  </p>
+                </div>
+                {isOwn && (
+                  <Avatar className="h-8 w-8 shrink-0">
+                    <AvatarImage src={avatarUrl || undefined} alt={displayName} />
+                    <AvatarFallback className="text-xs bg-primary text-primary-foreground">
+                      {getInitials(displayName, msg.user_email)}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+              </div>
+            );
+          })
+        )}
         <div ref={messagesEndRef} />
       </div>
       <div className="flex items-center gap-2">
@@ -70,15 +133,10 @@ const ChatBox: React.FC<ChatBoxProps> = ({ messages, userName, onSendMessage }) 
   );
 };
 
-/**
- * ChannelList displays available channels and allows creating new ones.  It
- * does not maintain any chat state—it simply informs the parent which
- * channel is active and when to create a new one.
- */
 interface ChannelListProps {
-  channels: string[];
+  channels: Channel[];
   current: string;
-  onSelect: (name: string) => void;
+  onSelect: (id: string) => void;
   onCreate: (name: string) => void;
 }
 
@@ -97,15 +155,15 @@ const ChannelList: React.FC<ChannelListProps> = ({ channels, current, onSelect, 
     <div className="space-y-2">
       <ul className="space-y-1">
         {channels.map((ch) => (
-          <li key={ch}>
+          <li key={ch.id}>
             <button
               type="button"
-              onClick={() => onSelect(ch)}
+              onClick={() => onSelect(ch.id)}
               className={`w-full text-left px-2 py-1 rounded-md ${
-                current === ch ? "bg-accent text-accent-foreground font-medium" : "hover:bg-muted"
+                current === ch.id ? "bg-accent text-accent-foreground font-medium" : "hover:bg-muted"
               }`}
             >
-              # {ch}
+              # {ch.name}
             </button>
           </li>
         ))}
@@ -117,126 +175,197 @@ const ChannelList: React.FC<ChannelListProps> = ({ channels, current, onSelect, 
           value={newChannel}
           onChange={(e) => setNewChannel(e.target.value)}
         />
-        <Button onClick={handleCreate}>Create</Button>
+        <Button onClick={handleCreate} size="sm">Create</Button>
       </div>
     </div>
   );
 };
 
-/**
- * Main Chat page component.  This component glues together the ChannelList
- * and ChatBox components and manages the state of channels, the active
- * channel, the message history and the current user name.  Messages and
- * channels are persisted to localStorage, and user identity is synced with
- * the authenticated user profile.
- */
-
-// LocalStorage keys for chat state persistence
-const STORAGE_KEYS = {
-  CHANNELS: "merchantflow-chat-channels",
-  MESSAGES: "merchantflow-chat-messages",
-} as const;
-
-// Type for stored messages organized by channel
-type ChannelMessages = Record<string, Message[]>;
-
 const Chat: React.FC = () => {
   const { user, teamMemberName, loading } = useAuth();
+  const [channels, setChannels] = useState<Channel[]>([]);
+  const [currentChannelId, setCurrentChannelId] = useState<string>("");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [profiles, setProfiles] = useState<Record<string, Profile>>({});
+  const [loadingData, setLoadingData] = useState(true);
 
-  // Derive display name from user profile
   const userName = teamMemberName || user?.email?.split("@")[0] || "";
 
-  // Initialize channels from localStorage or default to ["general"]
-  const [channels, setChannels] = useState<string[]>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEYS.CHANNELS);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+  // Fetch channels
+  const fetchChannels = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("chat_channels")
+      .select("*")
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      toast.error("Failed to load channels");
+      return;
+    }
+
+    setChannels(data || []);
+    if (data && data.length > 0 && !currentChannelId) {
+      setCurrentChannelId(data[0].id);
+    }
+  }, [currentChannelId]);
+
+  // Fetch messages for current channel
+  const fetchMessages = useCallback(async () => {
+    if (!currentChannelId) return;
+
+    const { data, error } = await supabase
+      .from("chat_messages")
+      .select("*")
+      .eq("channel_id", currentChannelId)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      toast.error("Failed to load messages");
+      return;
+    }
+
+    setMessages(data || []);
+
+    // Fetch profiles for all unique user_ids
+    const userIds = [...new Set((data || []).map(m => m.user_id))];
+    if (userIds.length > 0) {
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("id, avatar_url, full_name")
+        .in("id", userIds);
+
+      if (profilesData) {
+        const profileMap: Record<string, Profile> = {};
+        profilesData.forEach(p => {
+          profileMap[p.id] = p;
+        });
+        setProfiles(prev => ({ ...prev, ...profileMap }));
+      }
+    }
+  }, [currentChannelId]);
+
+  // Initial data load
+  useEffect(() => {
+    if (user) {
+      fetchChannels().finally(() => setLoadingData(false));
+    }
+  }, [user, fetchChannels]);
+
+  // Fetch messages when channel changes
+  useEffect(() => {
+    if (currentChannelId) {
+      fetchMessages();
+    }
+  }, [currentChannelId, fetchMessages]);
+
+  // Subscribe to realtime messages
+  useEffect(() => {
+    if (!currentChannelId) return;
+
+    const channel = supabase
+      .channel(`chat-messages-${currentChannelId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `channel_id=eq.${currentChannelId}`
+        },
+        async (payload) => {
+          const newMsg = payload.new as Message;
+          
+          // Fetch profile if not already cached
+          if (!profiles[newMsg.user_id]) {
+            const { data: profileData } = await supabase
+              .from("profiles")
+              .select("id, avatar_url, full_name")
+              .eq("id", newMsg.user_id)
+              .single();
+
+            if (profileData) {
+              setProfiles(prev => ({ ...prev, [profileData.id]: profileData }));
+            }
+          }
+
+          setMessages(prev => [...prev, newMsg]);
         }
-      }
-    } catch {
-      // Ignore parse errors, use default
-    }
-    return ["general"];
-  });
+      )
+      .subscribe();
 
-  const [currentChannel, setCurrentChannel] = useState<string>("general");
-
-  // Initialize all channel messages from localStorage
-  const [allMessages, setAllMessages] = useState<ChannelMessages>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEYS.MESSAGES);
-      if (stored) {
-        return JSON.parse(stored);
-      }
-    } catch {
-      // Ignore parse errors, use default
-    }
-    return {};
-  });
-
-  // Get messages for the current channel
-  const messages = allMessages[currentChannel] || [];
-
-  // Persist channels to localStorage whenever they change
-  const saveChannels = useCallback((newChannels: string[]) => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.CHANNELS, JSON.stringify(newChannels));
-    } catch {
-      // Ignore storage errors (e.g., quota exceeded)
-    }
-  }, []);
-
-  // Persist messages to localStorage whenever they change
-  const saveMessages = useCallback((newMessages: ChannelMessages) => {
-    try {
-      localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(newMessages));
-    } catch {
-      // Ignore storage errors (e.g., quota exceeded)
-    }
-  }, []);
-
-  const handleSelectChannel = (name: string) => {
-    setCurrentChannel(name);
-  };
-
-  const handleCreateChannel = (name: string) => {
-    if (!channels.includes(name)) {
-      const newChannels = [...channels, name];
-      setChannels(newChannels);
-      saveChannels(newChannels);
-    }
-  };
-
-  const handleSendMessage = (text: string) => {
-    if (!userName) return;
-
-    const newMessage: Message = {
-      user: userName,
-      text,
-      timestamp: Date.now(),
+    return () => {
+      supabase.removeChannel(channel);
     };
+  }, [currentChannelId, profiles]);
 
-    setAllMessages((prev) => {
-      const channelMessages = prev[currentChannel] || [];
-      const updated = {
-        ...prev,
-        [currentChannel]: [...channelMessages, newMessage],
-      };
-      saveMessages(updated);
-      return updated;
-    });
+  // Subscribe to new channels
+  useEffect(() => {
+    const channel = supabase
+      .channel('chat-channels')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_channels'
+        },
+        (payload) => {
+          setChannels(prev => [...prev, payload.new as Channel]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const handleSelectChannel = (id: string) => {
+    setCurrentChannelId(id);
+    setMessages([]);
   };
 
-  // Redirect to login if not authenticated
+  const handleCreateChannel = async (name: string) => {
+    const exists = channels.some(ch => ch.name.toLowerCase() === name.toLowerCase());
+    if (exists) {
+      toast.error("Channel already exists");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("chat_channels")
+      .insert({ name, created_by: user?.id });
+
+    if (error) {
+      toast.error("Failed to create channel");
+    }
+  };
+
+  const handleSendMessage = async (text: string) => {
+    if (!user || !currentChannelId) return;
+
+    const { error } = await supabase
+      .from("chat_messages")
+      .insert({
+        channel_id: currentChannelId,
+        user_id: user.id,
+        user_email: user.email || "",
+        user_name: userName,
+        content: text
+      });
+
+    if (error) {
+      toast.error("Failed to send message");
+    }
+  };
+
+  const currentChannel = channels.find(ch => ch.id === currentChannelId);
+
   if (!loading && !user) {
     return <Navigate to="/login" replace />;
   }
 
-  // Show loading state while checking authentication
-  if (loading) {
+  if (loading || loadingData) {
     return (
       <div className="p-4 flex items-center justify-center h-[70vh]">
         <p className="text-muted-foreground">Loading...</p>
@@ -246,7 +375,6 @@ const Chat: React.FC = () => {
 
   return (
     <div className="p-4 space-y-4">
-      {/* Header with home navigation */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <h1 className="text-2xl font-semibold">Chat</h1>
@@ -254,7 +382,6 @@ const Chat: React.FC = () => {
             Signed in as <span className="font-medium text-foreground">{userName}</span>
           </span>
         </div>
-        {/* Navigate back to the dashboard/home */}
         <Button variant="outline" asChild>
           <Link to="/">Home</Link>
         </Button>
@@ -264,17 +391,18 @@ const Chat: React.FC = () => {
           <h2 className="mb-2 font-semibold">Channels</h2>
           <ChannelList
             channels={channels}
-            current={currentChannel}
+            current={currentChannelId}
             onSelect={handleSelectChannel}
             onCreate={handleCreateChannel}
           />
         </aside>
         <div className="flex-grow border rounded-md p-4 bg-background flex flex-col">
-          <h2 className="mb-2 font-semibold capitalize">{currentChannel}</h2>
+          <h2 className="mb-2 font-semibold capitalize">{currentChannel?.name || "Select a channel"}</h2>
           <ChatBox
             messages={messages}
-            userName={userName || ""}
+            currentUserId={user?.id || ""}
             onSendMessage={handleSendMessage}
+            profiles={profiles}
           />
         </div>
       </div>
