@@ -7,12 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Shield, RefreshCw } from "lucide-react";
+import { Shield, RefreshCw, LogOut } from "lucide-react";
 
 const Settings = () => {
   const { user } = useAuth();
-  const isAdmin = user?.email === "admin@merchanthaus.io";
+  const isAdmin = user?.email === "admin@merchanthaus.io" || user?.email === "darryn@merchanthaus.io";
   const [isResetting, setIsResetting] = useState(false);
+  const [isSigningOutAll, setIsSigningOutAll] = useState(false);
 
   const handleForcePasswordReset = async () => {
     setIsResetting(true);
@@ -36,6 +37,31 @@ const Settings = () => {
       toast.error("Failed to force password reset");
     } finally {
       setIsResetting(false);
+    }
+  };
+
+  const handleSignOutAllUsers = async () => {
+    setIsSigningOutAll(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const response = await supabase.functions.invoke("sign-out-all-users", {
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      toast.success(response.data.message || "All users have been signed out");
+      console.log("Sign out all users results:", response.data);
+    } catch (error) {
+      console.error("Failed to sign out all users:", error);
+      toast.error("Failed to sign out all users");
+    } finally {
+      setIsSigningOutAll(false);
     }
   };
 
@@ -87,6 +113,37 @@ const Settings = () => {
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction onClick={handleForcePasswordReset}>
                               Confirm Reset
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                      <div>
+                        <h3 className="font-medium">Sign Out All Users</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Force all users to re-authenticate (use for switching to Google login)
+                        </p>
+                      </div>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive" disabled={isSigningOutAll}>
+                            <LogOut className={`h-4 w-4 mr-2 ${isSigningOutAll ? "animate-spin" : ""}`} />
+                            Sign Out All
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Sign Out All Users?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will immediately sign out ALL users, including yourself. Everyone will need to log in again. This is useful for forcing users to switch to Google authentication.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleSignOutAllUsers}>
+                              Sign Out Everyone
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>

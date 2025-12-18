@@ -148,10 +148,10 @@ export const getTeamMemberFromEmail = (email: string | undefined | null): string
   return EMAIL_TO_USER[email.toLowerCase()] || null;
 };
 
-// Helper to check if email is allowed
+// Helper to check if email is allowed - domain-based check for merchanthaus.io
 export const isEmailAllowed = (email: string | undefined | null): boolean => {
   if (!email) return false;
-  return ALLOWED_EMAILS.includes(email.toLowerCase());
+  return email.toLowerCase().endsWith('@merchanthaus.io');
 };
 
 export const STAGE_CONFIG: Record<
