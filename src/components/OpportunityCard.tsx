@@ -53,10 +53,9 @@ const OpportunityCard = ({
     ? TEAM_BORDER_COLORS[opportunity.assigned_to] || 'border-l-primary/50'
     : 'border-l-muted-foreground/30';
 
-  // Use a ref to track dragging state for synchronous access in event handlers
-  // This avoids stale closure issues that occur with useState
+  // Track if actual dragging occurred (mouse moved during drag)
   const isDraggingRef = useRef(false);
-
+  const dragStartPosRef = useRef<{ x: number; y: number } | null>(null);
   // Calculate auto SLA status based on time in stage
   const autoSlaStatus = useMemo((): 'green' | 'amber' | 'red' => {
     if (!opportunity.stage_entered_at) return 'green';
@@ -120,15 +119,26 @@ const OpportunityCard = ({
     <Card
       draggable
       onDragStart={(e) => {
-        isDraggingRef.current = true;
+        dragStartPosRef.current = { x: e.clientX, y: e.clientY };
+        isDraggingRef.current = false; // Will be set true only if drag actually moves
         onDragStart(e, opportunity);
       }}
+      onDrag={(e) => {
+        // Check if mouse actually moved during drag
+        if (dragStartPosRef.current && e.clientX !== 0 && e.clientY !== 0) {
+          const dx = Math.abs(e.clientX - dragStartPosRef.current.x);
+          const dy = Math.abs(e.clientY - dragStartPosRef.current.y);
+          if (dx > 5 || dy > 5) {
+            isDraggingRef.current = true;
+          }
+        }
+      }}
       onDragEnd={() => {
-        // Use setTimeout to ensure the click handler sees the dragging state
-        // before we reset it (click fires after dragend)
+        dragStartPosRef.current = null;
+        // Reset after a brief delay to allow click to check the flag
         setTimeout(() => {
           isDraggingRef.current = false;
-        }, 0);
+        }, 100);
       }}
       onClick={() => {
         // Only trigger click if not in a drag interaction
