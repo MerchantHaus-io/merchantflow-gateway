@@ -4,11 +4,14 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/s
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { Shield, RefreshCw, LogOut, Camera, User, Loader2 } from "lucide-react";
+import { Shield, RefreshCw, LogOut, Camera, User, Loader2, Save, Bell } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 const Settings = () => {
   const { user, teamMemberName } = useAuth();
@@ -16,10 +19,13 @@ const Settings = () => {
   const [isResetting, setIsResetting] = useState(false);
   const [isSigningOutAll, setIsSigningOutAll] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [fullName, setFullName] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const displayName = teamMemberName || user?.email?.split("@")[0] || "User";
+  const displayName = fullName || teamMemberName || user?.email?.split("@")[0] || "User";
 
   useEffect(() => {
     if (user) {
@@ -31,12 +37,13 @@ const Settings = () => {
     if (!user) return;
     const { data } = await supabase
       .from("profiles")
-      .select("avatar_url")
+      .select("avatar_url, full_name")
       .eq("id", user.id)
       .single();
     
-    if (data?.avatar_url) {
+    if (data) {
       setAvatarUrl(data.avatar_url);
+      setFullName(data.full_name || "");
     }
   };
 
@@ -94,6 +101,26 @@ const Settings = () => {
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ full_name: fullName })
+        .eq("id", user.id);
+
+      if (error) throw error;
+      toast.success("Profile saved successfully!");
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      toast.error("Failed to save profile");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -160,7 +187,7 @@ const Settings = () => {
           </header>
           <main className="flex-1 overflow-auto p-6">
             <div className="space-y-6 max-w-2xl">
-              {/* Profile Settings - Available to all users */}
+              {/* Profile Settings */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -168,10 +195,11 @@ const Settings = () => {
                     Profile Settings
                   </CardTitle>
                   <CardDescription>
-                    Manage your profile picture and display settings
+                    Manage your profile picture and display name
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-6">
+                  {/* Avatar Section */}
                   <div className="flex items-center gap-6">
                     <div className="relative group">
                       <Avatar className="h-24 w-24 cursor-pointer" onClick={handleAvatarClick}>
@@ -199,14 +227,73 @@ const Settings = () => {
                         className="hidden"
                       />
                     </div>
-                    <div>
-                      <h3 className="font-medium text-lg">{displayName}</h3>
-                      <p className="text-sm text-muted-foreground">{user?.email}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Click on the avatar to upload a new profile picture
+                    <div className="flex-1">
+                      <p className="text-sm text-muted-foreground mb-1">{user?.email}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Click the avatar to upload a new profile picture (max 5MB)
                       </p>
                     </div>
                   </div>
+
+                  {/* Name Setting */}
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName">Display Name</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="fullName"
+                        placeholder="Enter your full name"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                      />
+                      <Button onClick={handleSaveProfile} disabled={isSaving}>
+                        {isSaving ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Save className="h-4 w-4" />
+                        )}
+                        <span className="ml-2 hidden sm:inline">Save</span>
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      This name will be displayed in chat and throughout the app
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Notification Settings */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Bell className="h-5 w-5" />
+                    Notification Settings
+                  </CardTitle>
+                  <CardDescription>
+                    Manage how you receive notifications
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div>
+                      <h3 className="font-medium">Task Assignments</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Get notified when a task is assigned to you
+                      </p>
+                    </div>
+                    <Switch checked={notificationsEnabled} onCheckedChange={setNotificationsEnabled} />
+                  </div>
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div>
+                      <h3 className="font-medium">Opportunity Assignments</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Get notified when an opportunity is assigned to you
+                      </p>
+                    </div>
+                    <Switch checked={notificationsEnabled} onCheckedChange={setNotificationsEnabled} />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Notifications appear in the bell icon at the top of the sidebar
+                  </p>
                 </CardContent>
               </Card>
 
