@@ -118,6 +118,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       provider: 'google',
       options: {
         redirectTo: getRedirectUrl(),
+        queryParams: {
+          hd: 'merchanthaus.io', // Restrict to merchanthaus.io domain only
+        },
       },
     });
     if (error) throw error;

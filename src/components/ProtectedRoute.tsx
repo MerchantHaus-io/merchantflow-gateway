@@ -1,7 +1,9 @@
+import { useEffect, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { isEmailAllowed } from '@/types/opportunity';
 import ForcePasswordChange from './ForcePasswordChange';
+import { toast } from 'sonner';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -9,6 +11,16 @@ interface ProtectedRouteProps {
 
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading, mustChangePassword, signOut } = useAuth();
+  const hasShownToast = useRef(false);
+
+  // Handle unauthorized email sign out with feedback
+  useEffect(() => {
+    if (user && !isEmailAllowed(user.email) && !hasShownToast.current) {
+      hasShownToast.current = true;
+      toast.error('Access denied. Only @merchanthaus.io emails are allowed.');
+      signOut();
+    }
+  }, [user, signOut]);
 
   if (loading) {
     return (
@@ -22,10 +34,8 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     return <Navigate to="/auth" replace />;
   }
 
-  // Check if user's email is allowed
+  // Check if user's email is allowed (also handled in useEffect for feedback)
   if (!isEmailAllowed(user.email)) {
-    // Sign out unauthorized user
-    signOut();
     return <Navigate to="/auth" replace />;
   }
 
