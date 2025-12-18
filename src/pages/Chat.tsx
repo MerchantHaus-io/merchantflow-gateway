@@ -333,12 +333,28 @@ const Chat: React.FC = () => {
     }
   }, [currentChannelId]);
 
+  // Fetch current user's profile
+  const fetchCurrentUserProfile = useCallback(async () => {
+    if (!user) return;
+    
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, avatar_url, full_name")
+      .eq("id", user.id)
+      .single();
+
+    if (data) {
+      setProfiles(prev => ({ ...prev, [data.id]: data }));
+    }
+  }, [user]);
+
   // Initial data load
   useEffect(() => {
     if (user) {
-      fetchChannels().finally(() => setLoadingData(false));
+      Promise.all([fetchChannels(), fetchCurrentUserProfile()])
+        .finally(() => setLoadingData(false));
     }
-  }, [user, fetchChannels]);
+  }, [user, fetchChannels, fetchCurrentUserProfile]);
 
   // Fetch messages when channel changes
   useEffect(() => {
