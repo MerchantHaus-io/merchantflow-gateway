@@ -172,8 +172,8 @@ const Auth = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center mb-4">
-            {/* Logo switches based on theme */}
-            <img src={theme === 'dark' ? logoLight : logoDark} alt="Ops Terminal" className="h-12 w-auto" />
+            {/* Logo switches based on theme - dark mode uses white text logo, light mode uses dark text logo */}
+            <img src={theme === 'dark' ? logoDark : logoLight} alt="Ops Terminal" className="h-12 w-auto" />
           </div>
           <CardDescription>Sign in to access your pipeline</CardDescription>
         </CardHeader>
