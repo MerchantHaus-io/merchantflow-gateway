@@ -10,7 +10,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-type Message = {
+type DirectMessage = {
+  id: string;
+  sender_id: string;
+  receiver_id: string;
+  content: string;
+  created_at: string;
+  read_at: string | null;
+  reply_to_id: string | null;
+};
+
+type ChannelMessage = {
   id: string;
   channel_id: string;
   user_id: string;
@@ -40,6 +50,7 @@ type OnlineUser = {
   email: string;
   avatarUrl: string | null;
   isOnline: boolean;
+  unreadCount?: number;
 };
 
 type TypingUser = {
@@ -56,12 +67,13 @@ const FloatingChat: React.FC = () => {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [currentChannelId, setCurrentChannelId] = useState<string>("");
   const [currentDMUserId, setCurrentDMUserId] = useState<string>("");
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [channelMessages, setChannelMessages] = useState<ChannelMessage[]>([]);
+  const [directMessages, setDirectMessages] = useState<DirectMessage[]>([]);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const [input, setInput] = useState("");
-  const [replyTo, setReplyTo] = useState<Message | null>(null);
+  const [replyTo, setReplyTo] = useState<DirectMessage | ChannelMessage | null>(null);
   const [newChannelName, setNewChannelName] = useState("");
   const [showNewChannel, setShowNewChannel] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -70,6 +82,7 @@ const FloatingChat: React.FC = () => {
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const presenceChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const globalPresenceRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const dmChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const userName = teamMemberName || user?.email?.split("@")[0] || "";
 
@@ -98,10 +111,40 @@ const FloatingChat: React.FC = () => {
         name: p.full_name || p.email?.split("@")[0] || "User",
         email: p.email || "",
         avatarUrl: p.avatar_url,
-        isOnline: false
+        isOnline: false,
+        unreadCount: 0
       }));
     setOnlineUsers(users);
   }, [user?.id]);
+
+  // Fetch unread DM counts for each user
+  const fetchUnreadCounts = useCallback(async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("direct_messages")
+      .select("sender_id")
+      .eq("receiver_id", user.id)
+      .is("read_at", null);
+
+    if (error) {
+      console.error("Failed to fetch unread counts:", error);
+      return;
+    }
+
+    const counts: Record<string, number> = {};
+    (data || []).forEach(msg => {
+      counts[msg.sender_id] = (counts[msg.sender_id] || 0) + 1;
+    });
+
+    setOnlineUsers(prev => prev.map(u => ({
+      ...u,
+      unreadCount: counts[u.id] || 0
+    })));
+
+    // Total unread
+    setUnreadCount((data || []).length);
+  }, [user]);
 
   // Fetch channels
   const fetchChannels = useCallback(async () => {
@@ -118,8 +161,8 @@ const FloatingChat: React.FC = () => {
     setChannels(data || []);
   }, []);
 
-  // Fetch messages for current channel
-  const fetchMessages = useCallback(async () => {
+  // Fetch channel messages
+  const fetchChannelMessages = useCallback(async () => {
     if (!currentChannelId) return;
 
     const { data, error } = await supabase
@@ -133,28 +176,68 @@ const FloatingChat: React.FC = () => {
       return;
     }
 
-    setMessages(data || []);
+    setChannelMessages(data || []);
   }, [currentChannelId]);
+
+  // Fetch direct messages for a conversation
+  const fetchDirectMessages = useCallback(async () => {
+    if (!currentDMUserId || !user) return;
+
+    const { data, error } = await supabase
+      .from("direct_messages")
+      .select("*")
+      .or(`and(sender_id.eq.${user.id},receiver_id.eq.${currentDMUserId}),and(sender_id.eq.${currentDMUserId},receiver_id.eq.${user.id})`)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.error("Failed to load direct messages:", error);
+      return;
+    }
+
+    setDirectMessages(data || []);
+
+    // Mark received messages as read
+    const unreadIds = (data || [])
+      .filter(msg => msg.receiver_id === user.id && !msg.read_at)
+      .map(msg => msg.id);
+
+    if (unreadIds.length > 0) {
+      await supabase
+        .from("direct_messages")
+        .update({ read_at: new Date().toISOString() })
+        .in("id", unreadIds);
+
+      fetchUnreadCounts();
+    }
+  }, [currentDMUserId, user, fetchUnreadCounts]);
 
   // Initial load
   useEffect(() => {
     if (user) {
       fetchProfiles();
       fetchChannels();
+      fetchUnreadCounts();
     }
-  }, [user, fetchProfiles, fetchChannels]);
+  }, [user, fetchProfiles, fetchChannels, fetchUnreadCounts]);
 
   // Fetch messages when channel changes
   useEffect(() => {
-    if (currentChannelId) {
-      fetchMessages();
+    if (currentChannelId && view === "chat") {
+      fetchChannelMessages();
     }
-  }, [currentChannelId, fetchMessages]);
+  }, [currentChannelId, view, fetchChannelMessages]);
+
+  // Fetch DMs when DM user changes
+  useEffect(() => {
+    if (currentDMUserId && view === "dm") {
+      fetchDirectMessages();
+    }
+  }, [currentDMUserId, view, fetchDirectMessages]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [channelMessages, directMessages]);
 
   // Global presence tracking for online/offline status
   useEffect(() => {
@@ -194,9 +277,9 @@ const FloatingChat: React.FC = () => {
     };
   }, [user, userName]);
 
-  // Subscribe to realtime messages
+  // Subscribe to realtime channel messages
   useEffect(() => {
-    if (!currentChannelId) return;
+    if (!currentChannelId || view !== "chat") return;
 
     const channel = supabase
       .channel(`chat-messages-${currentChannelId}`)
@@ -209,13 +292,8 @@ const FloatingChat: React.FC = () => {
           filter: `channel_id=eq.${currentChannelId}`
         },
         (payload) => {
-          const newMsg = payload.new as Message;
-          setMessages(prev => [...prev, newMsg]);
-          
-          // Increment unread if chat is closed and message is from someone else
-          if (!isOpen && newMsg.user_id !== user?.id) {
-            setUnreadCount(prev => prev + 1);
-          }
+          const newMsg = payload.new as ChannelMessage;
+          setChannelMessages(prev => [...prev, newMsg]);
         }
       )
       .subscribe();
@@ -223,11 +301,68 @@ const FloatingChat: React.FC = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentChannelId, isOpen, user?.id]);
+  }, [currentChannelId, view]);
+
+  // Subscribe to realtime direct messages
+  useEffect(() => {
+    if (!user) return;
+
+    const dmChannel = supabase
+      .channel(`dm-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "direct_messages"
+        },
+        (payload) => {
+          const newMsg = payload.new as DirectMessage;
+          
+          // Check if this message is part of current conversation
+          if (view === "dm" && currentDMUserId) {
+            const isPartOfConversation = 
+              (newMsg.sender_id === user.id && newMsg.receiver_id === currentDMUserId) ||
+              (newMsg.sender_id === currentDMUserId && newMsg.receiver_id === user.id);
+            
+            if (isPartOfConversation) {
+              setDirectMessages(prev => [...prev, newMsg]);
+              
+              // Mark as read if we received it
+              if (newMsg.receiver_id === user.id) {
+                supabase
+                  .from("direct_messages")
+                  .update({ read_at: new Date().toISOString() })
+                  .eq("id", newMsg.id);
+              }
+              return;
+            }
+          }
+          
+          // Update unread count if message is for us
+          if (newMsg.receiver_id === user.id) {
+            setOnlineUsers(prev => prev.map(u => 
+              u.id === newMsg.sender_id 
+                ? { ...u, unreadCount: (u.unreadCount || 0) + 1 }
+                : u
+            ));
+            setUnreadCount(prev => prev + 1);
+          }
+        }
+      )
+      .subscribe();
+
+    dmChannelRef.current = dmChannel;
+
+    return () => {
+      supabase.removeChannel(dmChannel);
+      dmChannelRef.current = null;
+    };
+  }, [user, view, currentDMUserId]);
 
   // Typing presence for current channel
   useEffect(() => {
-    if (!currentChannelId || !user) return;
+    if (!currentChannelId || !user || view !== "chat") return;
 
     const presenceChannel = supabase.channel(`typing-${currentChannelId}`, {
       config: { presence: { key: user.id } }
@@ -259,7 +394,44 @@ const FloatingChat: React.FC = () => {
       supabase.removeChannel(presenceChannel);
       presenceChannelRef.current = null;
     };
-  }, [currentChannelId, user, userName]);
+  }, [currentChannelId, user, userName, view]);
+
+  // Typing presence for DM
+  useEffect(() => {
+    if (!currentDMUserId || !user || view !== "dm") return;
+
+    const conversationKey = [user.id, currentDMUserId].sort().join("-");
+    const presenceChannel = supabase.channel(`dm-typing-${conversationKey}`, {
+      config: { presence: { key: user.id } }
+    });
+
+    presenceChannel
+      .on("presence", { event: "sync" }, () => {
+        const state = presenceChannel.presenceState();
+        const typing: TypingUser[] = [];
+
+        Object.entries(state).forEach(([userId, presences]) => {
+          const presence = presences[0] as { typing?: boolean; name?: string };
+          if (presence?.typing && userId !== user.id) {
+            typing.push({ id: userId, name: presence.name || "Someone" });
+          }
+        });
+
+        setTypingUsers(typing);
+      })
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          await presenceChannel.track({ typing: false, name: userName });
+        }
+      });
+
+    presenceChannelRef.current = presenceChannel;
+
+    return () => {
+      supabase.removeChannel(presenceChannel);
+      presenceChannelRef.current = null;
+    };
+  }, [currentDMUserId, user, userName, view]);
 
   const handleTyping = useCallback(() => {
     if (!presenceChannelRef.current) return;
@@ -275,7 +447,7 @@ const FloatingChat: React.FC = () => {
     }, 2000);
   }, [userName]);
 
-  const handleSendMessage = async () => {
+  const handleSendChannelMessage = async () => {
     const text = input.trim();
     if (!text || !user || !currentChannelId) return;
 
@@ -299,6 +471,38 @@ const FloatingChat: React.FC = () => {
 
     setInput("");
     setReplyTo(null);
+  };
+
+  const handleSendDirectMessage = async () => {
+    const text = input.trim();
+    if (!text || !user || !currentDMUserId) return;
+
+    presenceChannelRef.current?.track({ typing: false, name: userName });
+
+    const { error } = await supabase
+      .from("direct_messages")
+      .insert({
+        sender_id: user.id,
+        receiver_id: currentDMUserId,
+        content: text,
+        reply_to_id: replyTo?.id || null
+      });
+
+    if (error) {
+      toast.error("Failed to send message");
+      return;
+    }
+
+    setInput("");
+    setReplyTo(null);
+  };
+
+  const handleSendMessage = () => {
+    if (view === "dm") {
+      handleSendDirectMessage();
+    } else {
+      handleSendChannelMessage();
+    }
   };
 
   const handleCreateChannel = async () => {
@@ -331,30 +535,30 @@ const FloatingChat: React.FC = () => {
 
   const handleSelectChannel = (channelId: string) => {
     setCurrentChannelId(channelId);
-    setMessages([]);
+    setCurrentDMUserId("");
+    setChannelMessages([]);
     setTypingUsers([]);
+    setReplyTo(null);
     setView("chat");
   };
 
   const handleSelectContact = (userId: string) => {
-    // For now, create or find a DM channel (using general channel as fallback)
-    // In a full implementation, you'd create user-to-user DM channels
     setCurrentDMUserId(userId);
+    setCurrentChannelId("");
+    setDirectMessages([]);
+    setTypingUsers([]);
+    setReplyTo(null);
     
-    // Find or create a DM channel - for now use general channel
-    const generalChannel = channels.find(ch => ch.name.toLowerCase() === "general");
-    if (generalChannel) {
-      setCurrentChannelId(generalChannel.id);
-      setView("chat");
-    } else if (channels.length > 0) {
-      setCurrentChannelId(channels[0].id);
-      setView("chat");
-    }
+    // Clear unread count for this user
+    setOnlineUsers(prev => prev.map(u => 
+      u.id === userId ? { ...u, unreadCount: 0 } : u
+    ));
+    
+    setView("dm");
   };
 
   const handleOpenChat = () => {
     setIsOpen(true);
-    setUnreadCount(0);
   };
 
   const getInitials = (name: string | null, email: string) => {
@@ -368,17 +572,21 @@ const FloatingChat: React.FC = () => {
     return new Date(timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
-  const getDisplayName = (msg: Message) => {
-    const profile = profiles[msg.user_id];
-    return profile?.full_name || msg.user_name || msg.user_email.split("@")[0];
+  const getDisplayName = (userId: string) => {
+    const profile = profiles[userId];
+    return profile?.full_name || profile?.email?.split("@")[0] || "User";
   };
 
   const getReplyMessage = (replyToId: string | null) => {
     if (!replyToId) return null;
-    return messages.find(m => m.id === replyToId);
+    if (view === "dm") {
+      return directMessages.find(m => m.id === replyToId);
+    }
+    return channelMessages.find(m => m.id === replyToId);
   };
 
   const currentChannel = channels.find(ch => ch.id === currentChannelId);
+  const currentDMUser = onlineUsers.find(u => u.id === currentDMUserId);
 
   if (!user) return null;
 
@@ -417,7 +625,7 @@ const FloatingChat: React.FC = () => {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 bg-teal text-teal-foreground">
             <div className="flex items-center gap-2">
-              {view !== "contacts" && view !== "channels" && (
+              {(view === "chat" || view === "dm") && (
                 <button
                   onClick={() => setView("contacts")}
                   className="hover:bg-teal-foreground/10 p-1 rounded"
@@ -429,8 +637,14 @@ const FloatingChat: React.FC = () => {
                 {view === "contacts" && "Contacts"}
                 {view === "channels" && "Channels"}
                 {view === "chat" && `# ${currentChannel?.name || "Chat"}`}
-                {view === "dm" && "Direct Message"}
+                {view === "dm" && (currentDMUser?.name || "Direct Message")}
               </h3>
+              {view === "dm" && currentDMUser && (
+                <span className={cn(
+                  "w-2 h-2 rounded-full",
+                  currentDMUser.isOnline ? "bg-success" : "bg-muted-foreground"
+                )} />
+              )}
             </div>
             <div className="flex items-center gap-2">
               {view === "contacts" && (
@@ -495,6 +709,11 @@ const FloatingChat: React.FC = () => {
                             {u.isOnline ? "Online" : "Offline"}
                           </p>
                         </div>
+                        {(u.unreadCount || 0) > 0 && (
+                          <Badge variant="destructive" className="text-xs">
+                            {u.unreadCount}
+                          </Badge>
+                        )}
                       </button>
                     ))
                   )}
@@ -511,27 +730,34 @@ const FloatingChat: React.FC = () => {
                       key={ch.id}
                       onClick={() => handleSelectChannel(ch.id)}
                       className={cn(
-                        "w-full flex items-center gap-2 p-2 rounded-lg hover:bg-muted transition-colors text-left",
-                        currentChannelId === ch.id && "bg-muted"
+                        "w-full flex items-center gap-2 p-2 rounded-lg transition-colors text-left",
+                        currentChannelId === ch.id 
+                          ? "bg-teal/20 text-teal" 
+                          : "hover:bg-muted"
                       )}
                     >
-                      <Hash className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm font-medium">{ch.name}</span>
+                      <Hash className="h-4 w-4 shrink-0" />
+                      <span className="font-medium text-sm">{ch.name}</span>
                     </button>
                   ))}
 
                   {showNewChannel ? (
-                    <div className="flex gap-2 p-2">
+                    <div className="p-2 space-y-2">
                       <Input
+                        placeholder="Channel name"
                         value={newChannelName}
                         onChange={(e) => setNewChannelName(e.target.value)}
-                        placeholder="Channel name"
-                        className="h-8 text-sm"
                         onKeyDown={(e) => e.key === "Enter" && handleCreateChannel()}
+                        autoFocus
                       />
-                      <Button size="sm" onClick={handleCreateChannel} className="h-8 bg-teal hover:bg-teal/90">
-                        Add
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={handleCreateChannel} className="flex-1">
+                          Create
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => setShowNewChannel(false)}>
+                          Cancel
+                        </Button>
+                      </div>
                     </div>
                   ) : (
                     <button
@@ -546,21 +772,21 @@ const FloatingChat: React.FC = () => {
               </ScrollArea>
             )}
 
-            {/* Chat View */}
-            {(view === "chat" || view === "dm") && (
+            {/* Channel Chat View */}
+            {view === "chat" && (
               <>
                 <ScrollArea className="flex-1 p-3">
                   <div className="space-y-3">
-                    {messages.length === 0 ? (
+                    {channelMessages.length === 0 ? (
                       <p className="text-center text-muted-foreground text-sm py-4">
-                        No messages yet
+                        No messages yet. Start the conversation!
                       </p>
                     ) : (
-                      messages.map((msg) => {
+                      channelMessages.map((msg) => {
                         const isOwn = msg.user_id === user.id;
                         const profile = profiles[msg.user_id];
-                        const displayName = getDisplayName(msg);
-                        const replyMessage = getReplyMessage(msg.reply_to_id);
+                        const displayName = profile?.full_name || msg.user_name || msg.user_email.split("@")[0];
+                        const replyMessage = getReplyMessage(msg.reply_to_id) as ChannelMessage | undefined;
 
                         return (
                           <div
@@ -568,53 +794,45 @@ const FloatingChat: React.FC = () => {
                             className={cn("flex gap-2", isOwn ? "justify-end" : "justify-start")}
                           >
                             {!isOwn && (
-                              <Avatar className="h-7 w-7 shrink-0">
+                              <Avatar className="h-8 w-8 shrink-0">
                                 <AvatarImage src={profile?.avatar_url || undefined} />
-                                <AvatarFallback className="text-xs bg-teal/20 text-teal">
+                                <AvatarFallback className="bg-teal/20 text-teal text-xs">
                                   {getInitials(displayName, msg.user_email)}
                                 </AvatarFallback>
                               </Avatar>
                             )}
-                            <div className="max-w-[70%] group">
+                            <div className="max-w-[75%]">
                               {replyMessage && (
-                                <div
-                                  className={cn(
-                                    "text-xs px-2 py-1 mb-1 rounded border-l-2 border-teal/50 bg-muted/50",
-                                    isOwn && "ml-auto"
-                                  )}
-                                >
+                                <div className={cn(
+                                  "text-xs px-2 py-1 mb-1 rounded border-l-2 border-teal/50 bg-muted/50",
+                                  isOwn && "ml-auto"
+                                )}>
                                   <span className="font-medium text-teal/70">
-                                    {getDisplayName(replyMessage)}
+                                    {profiles[replyMessage.user_id]?.full_name || replyMessage.user_name}
                                   </span>
-                                  <p className="text-muted-foreground truncate">
-                                    {replyMessage.content}
-                                  </p>
+                                  <p className="text-muted-foreground truncate">{replyMessage.content}</p>
                                 </div>
                               )}
                               <div
                                 className={cn(
-                                  "p-2 rounded-lg relative",
+                                  "p-2.5 rounded-lg group relative",
                                   isOwn ? "bg-teal text-teal-foreground" : "bg-muted"
                                 )}
                               >
                                 {!isOwn && (
-                                  <p className="text-xs font-semibold mb-0.5 opacity-80">
-                                    {displayName}
-                                  </p>
+                                  <p className="text-xs font-semibold mb-1 opacity-80">{displayName}</p>
                                 )}
                                 <p className="text-sm">{msg.content}</p>
-                                <p
-                                  className={cn(
-                                    "text-xs mt-1",
-                                    isOwn ? "text-teal-foreground/70" : "text-muted-foreground"
-                                  )}
-                                >
+                                <p className={cn(
+                                  "text-xs mt-1",
+                                  isOwn ? "text-teal-foreground/70" : "text-muted-foreground"
+                                )}>
                                   {formatTime(msg.created_at)}
                                 </p>
                                 <button
                                   onClick={() => setReplyTo(msg)}
                                   className={cn(
-                                    "absolute top-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-foreground/10",
+                                    "absolute top-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-black/10",
                                     isOwn ? "left-1" : "right-1"
                                   )}
                                   title="Reply"
@@ -633,7 +851,7 @@ const FloatingChat: React.FC = () => {
 
                 {/* Typing indicator */}
                 {typingUsers.length > 0 && (
-                  <div className="px-3 py-1 text-xs text-muted-foreground flex items-center gap-1">
+                  <div className="text-xs text-muted-foreground px-3 pb-1 flex items-center gap-1">
                     <span className="flex gap-0.5">
                       <span className="animate-bounce" style={{ animationDelay: "0ms" }}>•</span>
                       <span className="animate-bounce" style={{ animationDelay: "150ms" }}>•</span>
@@ -652,7 +870,12 @@ const FloatingChat: React.FC = () => {
                   <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 border-t border-l-2 border-l-teal">
                     <Reply className="h-4 w-4 text-muted-foreground shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-teal">{getDisplayName(replyTo)}</p>
+                      <p className="text-xs font-medium text-teal">
+                        {view === "chat" 
+                          ? profiles[(replyTo as ChannelMessage).user_id]?.full_name || (replyTo as ChannelMessage).user_name
+                          : getDisplayName((replyTo as DirectMessage).sender_id)
+                        }
+                      </p>
                       <p className="text-xs text-muted-foreground truncate">{replyTo.content}</p>
                     </div>
                     <button onClick={() => setReplyTo(null)} className="p-1 hover:bg-muted rounded">
@@ -662,26 +885,142 @@ const FloatingChat: React.FC = () => {
                 )}
 
                 {/* Input */}
-                <div className="p-3 border-t border-border">
-                  <div className="flex gap-2">
-                    <Input
-                      value={input}
-                      onChange={(e) => {
-                        setInput(e.target.value);
-                        handleTyping();
-                      }}
-                      onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                      placeholder="Type a message..."
-                      className="flex-1 h-9 text-sm"
-                    />
-                    <Button
-                      onClick={handleSendMessage}
-                      size="icon"
-                      className="h-9 w-9 bg-teal hover:bg-teal/90"
-                    >
-                      <Send className="h-4 w-4" />
-                    </Button>
+                <div className="p-3 border-t flex gap-2">
+                  <Input
+                    placeholder="Type a message..."
+                    value={input}
+                    onChange={(e) => {
+                      setInput(e.target.value);
+                      handleTyping();
+                    }}
+                    onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                    className="flex-1"
+                  />
+                  <Button size="icon" onClick={handleSendMessage} className="bg-teal hover:bg-teal/90">
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+              </>
+            )}
+
+            {/* Direct Message View */}
+            {view === "dm" && (
+              <>
+                <ScrollArea className="flex-1 p-3">
+                  <div className="space-y-3">
+                    {directMessages.length === 0 ? (
+                      <p className="text-center text-muted-foreground text-sm py-4">
+                        No messages yet. Start the conversation!
+                      </p>
+                    ) : (
+                      directMessages.map((msg) => {
+                        const isOwn = msg.sender_id === user.id;
+                        const senderId = msg.sender_id;
+                        const profile = profiles[senderId];
+                        const displayName = profile?.full_name || profile?.email?.split("@")[0] || "User";
+                        const replyMessage = getReplyMessage(msg.reply_to_id) as DirectMessage | undefined;
+
+                        return (
+                          <div
+                            key={msg.id}
+                            className={cn("flex gap-2", isOwn ? "justify-end" : "justify-start")}
+                          >
+                            {!isOwn && (
+                              <Avatar className="h-8 w-8 shrink-0">
+                                <AvatarImage src={profile?.avatar_url || undefined} />
+                                <AvatarFallback className="bg-teal/20 text-teal text-xs">
+                                  {getInitials(displayName, profile?.email || "")}
+                                </AvatarFallback>
+                              </Avatar>
+                            )}
+                            <div className="max-w-[75%]">
+                              {replyMessage && (
+                                <div className={cn(
+                                  "text-xs px-2 py-1 mb-1 rounded border-l-2 border-teal/50 bg-muted/50",
+                                  isOwn && "ml-auto"
+                                )}>
+                                  <span className="font-medium text-teal/70">
+                                    {getDisplayName(replyMessage.sender_id)}
+                                  </span>
+                                  <p className="text-muted-foreground truncate">{replyMessage.content}</p>
+                                </div>
+                              )}
+                              <div
+                                className={cn(
+                                  "p-2.5 rounded-lg group relative",
+                                  isOwn ? "bg-teal text-teal-foreground" : "bg-muted"
+                                )}
+                              >
+                                <p className="text-sm">{msg.content}</p>
+                                <p className={cn(
+                                  "text-xs mt-1",
+                                  isOwn ? "text-teal-foreground/70" : "text-muted-foreground"
+                                )}>
+                                  {formatTime(msg.created_at)}
+                                </p>
+                                <button
+                                  onClick={() => setReplyTo(msg)}
+                                  className={cn(
+                                    "absolute top-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-black/10",
+                                    isOwn ? "left-1" : "right-1"
+                                  )}
+                                  title="Reply"
+                                >
+                                  <Reply className="h-3 w-3" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                    <div ref={messagesEndRef} />
                   </div>
+                </ScrollArea>
+
+                {/* Typing indicator */}
+                {typingUsers.length > 0 && (
+                  <div className="text-xs text-muted-foreground px-3 pb-1 flex items-center gap-1">
+                    <span className="flex gap-0.5">
+                      <span className="animate-bounce" style={{ animationDelay: "0ms" }}>•</span>
+                      <span className="animate-bounce" style={{ animationDelay: "150ms" }}>•</span>
+                      <span className="animate-bounce" style={{ animationDelay: "300ms" }}>•</span>
+                    </span>
+                    <span>{currentDMUser?.name} is typing...</span>
+                  </div>
+                )}
+
+                {/* Reply preview */}
+                {replyTo && (
+                  <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 border-t border-l-2 border-l-teal">
+                    <Reply className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-teal">
+                        {getDisplayName((replyTo as DirectMessage).sender_id)}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">{replyTo.content}</p>
+                    </div>
+                    <button onClick={() => setReplyTo(null)} className="p-1 hover:bg-muted rounded">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Input */}
+                <div className="p-3 border-t flex gap-2">
+                  <Input
+                    placeholder={`Message ${currentDMUser?.name || ""}...`}
+                    value={input}
+                    onChange={(e) => {
+                      setInput(e.target.value);
+                      handleTyping();
+                    }}
+                    onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                    className="flex-1"
+                  />
+                  <Button size="icon" onClick={handleSendMessage} className="bg-teal hover:bg-teal/90">
+                    <Send className="h-4 w-4" />
+                  </Button>
                 </div>
               </>
             )}
