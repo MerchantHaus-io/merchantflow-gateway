@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { MessageCircle, X, Send, Users, Hash, Reply, ChevronLeft, Plus } from "lucide-react";
+import { MessageCircle, X, Send, Users, Hash, Reply, ChevronLeft, Plus, Check, CheckCheck, Smile, Search, Edit2, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { formatDistanceToNow } from "date-fns";
 
 type DirectMessage = {
   id: string;
@@ -18,6 +21,7 @@ type DirectMessage = {
   created_at: string;
   read_at: string | null;
   reply_to_id: string | null;
+  edited_at?: string | null;
 };
 
 type ChannelMessage = {
@@ -29,6 +33,7 @@ type ChannelMessage = {
   content: string;
   created_at: string;
   reply_to_id: string | null;
+  edited_at?: string | null;
 };
 
 type Channel = {
@@ -42,6 +47,7 @@ type Profile = {
   avatar_url: string | null;
   full_name: string | null;
   email: string | null;
+  last_seen?: string | null;
 };
 
 type OnlineUser = {
@@ -51,6 +57,7 @@ type OnlineUser = {
   avatarUrl: string | null;
   isOnline: boolean;
   unreadCount?: number;
+  lastSeen?: string | null;
 };
 
 type TypingUser = {
@@ -58,7 +65,18 @@ type TypingUser = {
   name: string;
 };
 
+type Reaction = {
+  id: string;
+  message_id: string;
+  message_type: 'channel' | 'direct';
+  user_id: string;
+  user_email: string;
+  emoji: string;
+};
+
 type ChatView = "contacts" | "channels" | "chat" | "dm";
+
+const COMMON_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🎉', '🔥', '👏'];
 
 const FloatingChat: React.FC = () => {
   const { user, teamMemberName } = useAuth();
@@ -77,20 +95,45 @@ const FloatingChat: React.FC = () => {
   const [newChannelName, setNewChannelName] = useState("");
   const [showNewChannel, setShowNewChannel] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [reactions, setReactions] = useState<Record<string, Reaction[]>>({});
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const presenceChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const globalPresenceRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const dmChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const lastSeenIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const userName = teamMemberName || user?.email?.split("@")[0] || "";
+
+  // Update last_seen periodically
+  useEffect(() => {
+    if (!user) return;
+
+    const updateLastSeen = async () => {
+      await supabase
+        .from("profiles")
+        .update({ last_seen: new Date().toISOString() })
+        .eq("id", user.id);
+    };
+
+    updateLastSeen();
+    lastSeenIntervalRef.current = setInterval(updateLastSeen, 30000);
+
+    return () => {
+      if (lastSeenIntervalRef.current) clearInterval(lastSeenIntervalRef.current);
+    };
+  }, [user]);
 
   // Fetch all registered users for contacts
   const fetchProfiles = useCallback(async () => {
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, avatar_url, full_name, email");
+      .select("id, avatar_url, full_name, email, last_seen");
 
     if (error) {
       console.error("Failed to load profiles:", error);
@@ -103,17 +146,23 @@ const FloatingChat: React.FC = () => {
     });
     setProfiles(profileMap);
 
-    // Initialize online users with all profiles (offline by default)
+    // Initialize online users with all profiles
+    const now = new Date();
     const users: OnlineUser[] = (data || [])
       .filter(p => p.id !== user?.id)
-      .map(p => ({
-        id: p.id,
-        name: p.full_name || p.email?.split("@")[0] || "User",
-        email: p.email || "",
-        avatarUrl: p.avatar_url,
-        isOnline: false,
-        unreadCount: 0
-      }));
+      .map(p => {
+        const lastSeen = p.last_seen ? new Date(p.last_seen) : null;
+        const isOnline = lastSeen ? (now.getTime() - lastSeen.getTime()) < 120000 : false;
+        return {
+          id: p.id,
+          name: p.full_name || p.email?.split("@")[0] || "User",
+          email: p.email || "",
+          avatarUrl: p.avatar_url,
+          isOnline,
+          unreadCount: 0,
+          lastSeen: p.last_seen
+        };
+      });
     setOnlineUsers(users);
   }, [user?.id]);
 
@@ -142,7 +191,6 @@ const FloatingChat: React.FC = () => {
       unreadCount: counts[u.id] || 0
     })));
 
-    // Total unread
     setUnreadCount((data || []).length);
   }, [user]);
 
@@ -177,6 +225,7 @@ const FloatingChat: React.FC = () => {
     }
 
     setChannelMessages(data || []);
+    fetchReactions((data || []).map(m => m.id), 'channel');
   }, [currentChannelId]);
 
   // Fetch direct messages for a conversation
@@ -195,6 +244,7 @@ const FloatingChat: React.FC = () => {
     }
 
     setDirectMessages(data || []);
+    fetchReactions((data || []).map(m => m.id), 'direct');
 
     // Mark received messages as read
     const unreadIds = (data || [])
@@ -211,6 +261,26 @@ const FloatingChat: React.FC = () => {
     }
   }, [currentDMUserId, user, fetchUnreadCounts]);
 
+  // Fetch reactions for messages
+  const fetchReactions = async (messageIds: string[], messageType: 'channel' | 'direct') => {
+    if (messageIds.length === 0) return;
+
+    const { data } = await supabase
+      .from("message_reactions")
+      .select("*")
+      .in("message_id", messageIds)
+      .eq("message_type", messageType);
+
+    if (data) {
+      const grouped: Record<string, Reaction[]> = {};
+      data.forEach(r => {
+        if (!grouped[r.message_id]) grouped[r.message_id] = [];
+        grouped[r.message_id].push(r as Reaction);
+      });
+      setReactions(prev => ({ ...prev, ...grouped }));
+    }
+  };
+
   // Initial load
   useEffect(() => {
     if (user) {
@@ -219,6 +289,13 @@ const FloatingChat: React.FC = () => {
       fetchUnreadCounts();
     }
   }, [user, fetchProfiles, fetchChannels, fetchUnreadCounts]);
+
+  // Refresh profiles periodically for online status
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(fetchProfiles, 30000);
+    return () => clearInterval(interval);
+  }, [user, fetchProfiles]);
 
   // Fetch messages when channel changes
   useEffect(() => {
@@ -286,22 +363,19 @@ const FloatingChat: React.FC = () => {
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "*",
           schema: "public",
           table: "chat_messages",
           filter: `channel_id=eq.${currentChannelId}`
         },
-        (payload) => {
-          const newMsg = payload.new as ChannelMessage;
-          setChannelMessages(prev => [...prev, newMsg]);
-        }
+        () => fetchChannelMessages()
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentChannelId, view]);
+  }, [currentChannelId, view, fetchChannelMessages]);
 
   // Subscribe to realtime direct messages
   useEffect(() => {
@@ -312,35 +386,25 @@ const FloatingChat: React.FC = () => {
       .on(
         "postgres_changes",
         {
-          event: "INSERT",
+          event: "*",
           schema: "public",
           table: "direct_messages"
         },
         (payload) => {
           const newMsg = payload.new as DirectMessage;
           
-          // Check if this message is part of current conversation
           if (view === "dm" && currentDMUserId) {
             const isPartOfConversation = 
               (newMsg.sender_id === user.id && newMsg.receiver_id === currentDMUserId) ||
               (newMsg.sender_id === currentDMUserId && newMsg.receiver_id === user.id);
             
             if (isPartOfConversation) {
-              setDirectMessages(prev => [...prev, newMsg]);
-              
-              // Mark as read if we received it
-              if (newMsg.receiver_id === user.id) {
-                supabase
-                  .from("direct_messages")
-                  .update({ read_at: new Date().toISOString() })
-                  .eq("id", newMsg.id);
-              }
+              fetchDirectMessages();
               return;
             }
           }
           
-          // Update unread count if message is for us
-          if (newMsg.receiver_id === user.id) {
+          if (payload.eventType === 'INSERT' && newMsg.receiver_id === user.id) {
             setOnlineUsers(prev => prev.map(u => 
               u.id === newMsg.sender_id 
                 ? { ...u, unreadCount: (u.unreadCount || 0) + 1 }
@@ -358,7 +422,41 @@ const FloatingChat: React.FC = () => {
       supabase.removeChannel(dmChannel);
       dmChannelRef.current = null;
     };
-  }, [user, view, currentDMUserId]);
+  }, [user, view, currentDMUserId, fetchDirectMessages]);
+
+  // Subscribe to reactions
+  useEffect(() => {
+    const channel = supabase
+      .channel('reactions-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'message_reactions',
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newReaction = payload.new as Reaction;
+            setReactions(prev => ({
+              ...prev,
+              [newReaction.message_id]: [...(prev[newReaction.message_id] || []), newReaction]
+            }));
+          } else if (payload.eventType === 'DELETE') {
+            const oldReaction = payload.old as Reaction;
+            setReactions(prev => ({
+              ...prev,
+              [oldReaction.message_id]: (prev[oldReaction.message_id] || []).filter(r => r.id !== oldReaction.id)
+            }));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   // Typing presence for current channel
   useEffect(() => {
@@ -539,6 +637,8 @@ const FloatingChat: React.FC = () => {
     setChannelMessages([]);
     setTypingUsers([]);
     setReplyTo(null);
+    setSearchQuery("");
+    setShowSearch(false);
     setView("chat");
   };
 
@@ -548,8 +648,9 @@ const FloatingChat: React.FC = () => {
     setDirectMessages([]);
     setTypingUsers([]);
     setReplyTo(null);
+    setSearchQuery("");
+    setShowSearch(false);
     
-    // Clear unread count for this user
     setOnlineUsers(prev => prev.map(u => 
       u.id === userId ? { ...u, unreadCount: 0 } : u
     ));
@@ -559,6 +660,47 @@ const FloatingChat: React.FC = () => {
 
   const handleOpenChat = () => {
     setIsOpen(true);
+  };
+
+  const handleReaction = async (messageId: string, emoji: string, messageType: 'channel' | 'direct') => {
+    if (!user) return;
+
+    const existingReaction = reactions[messageId]?.find(
+      r => r.user_id === user.id && r.emoji === emoji
+    );
+
+    if (existingReaction) {
+      await supabase
+        .from("message_reactions")
+        .delete()
+        .eq("id", existingReaction.id);
+    } else {
+      await supabase.from("message_reactions").insert({
+        message_id: messageId,
+        message_type: messageType,
+        user_id: user.id,
+        user_email: user.email || "",
+        emoji,
+      });
+    }
+  };
+
+  const handleEditMessage = async (messageId: string, isChannel: boolean) => {
+    if (!editContent.trim()) return;
+
+    const table = isChannel ? "chat_messages" : "direct_messages";
+    const { error } = await supabase
+      .from(table)
+      .update({ content: editContent.trim(), edited_at: new Date().toISOString() })
+      .eq("id", messageId);
+
+    if (error) {
+      toast.error("Failed to edit message");
+      return;
+    }
+
+    setEditingMessageId(null);
+    setEditContent("");
   };
 
   const getInitials = (name: string | null, email: string) => {
@@ -585,13 +727,77 @@ const FloatingChat: React.FC = () => {
     return channelMessages.find(m => m.id === replyToId);
   };
 
+  const renderReadReceipt = (msg: DirectMessage) => {
+    if (!user || msg.sender_id !== user.id) return null;
+    
+    if (msg.read_at) {
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <CheckCheck className="h-3 w-3 text-teal inline-block ml-1" />
+          </TooltipTrigger>
+          <TooltipContent>
+            Read {formatDistanceToNow(new Date(msg.read_at), { addSuffix: true })}
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+    return <Check className="h-3 w-3 text-muted-foreground inline-block ml-1" />;
+  };
+
+  const renderReactions = (messageId: string, messageType: 'channel' | 'direct') => {
+    const msgReactions = reactions[messageId] || [];
+    if (msgReactions.length === 0) return null;
+
+    const grouped: Record<string, { count: number; users: string[]; hasOwn: boolean }> = {};
+    msgReactions.forEach(r => {
+      if (!grouped[r.emoji]) grouped[r.emoji] = { count: 0, users: [], hasOwn: false };
+      grouped[r.emoji].count++;
+      grouped[r.emoji].users.push(r.user_email);
+      if (r.user_id === user?.id) grouped[r.emoji].hasOwn = true;
+    });
+
+    return (
+      <div className="flex flex-wrap gap-1 mt-1">
+        {Object.entries(grouped).map(([emoji, data]) => (
+          <Tooltip key={emoji}>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => handleReaction(messageId, emoji, messageType)}
+                className={cn(
+                  "text-xs px-1.5 py-0.5 rounded-full border transition-colors",
+                  data.hasOwn 
+                    ? "bg-teal/20 border-teal/50 text-teal" 
+                    : "bg-muted/50 border-border hover:bg-muted"
+                )}
+              >
+                {emoji} {data.count}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {data.users.join(', ')}
+            </TooltipContent>
+          </Tooltip>
+        ))}
+      </div>
+    );
+  };
+
   const currentChannel = channels.find(ch => ch.id === currentChannelId);
   const currentDMUser = onlineUsers.find(u => u.id === currentDMUserId);
+
+  const filteredChannelMessages = searchQuery
+    ? channelMessages.filter(m => m.content.toLowerCase().includes(searchQuery.toLowerCase()))
+    : channelMessages;
+
+  const filteredDirectMessages = searchQuery
+    ? directMessages.filter(m => m.content.toLowerCase().includes(searchQuery.toLowerCase()))
+    : directMessages;
 
   if (!user) return null;
 
   return (
-    <>
+    <TooltipProvider>
       {/* Floating Button */}
       <button
         onClick={handleOpenChat}
@@ -646,7 +852,16 @@ const FloatingChat: React.FC = () => {
                 )} />
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              {(view === "chat" || view === "dm") && (
+                <button
+                  onClick={() => setShowSearch(!showSearch)}
+                  className="hover:bg-teal-foreground/10 p-1.5 rounded"
+                  title="Search"
+                >
+                  <Search className="h-4 w-4" />
+                </button>
+              )}
               {view === "contacts" && (
                 <button
                   onClick={() => setView("channels")}
@@ -673,6 +888,19 @@ const FloatingChat: React.FC = () => {
               </button>
             </div>
           </div>
+
+          {/* Search Bar */}
+          {showSearch && (view === "chat" || view === "dm") && (
+            <div className="p-2 border-b">
+              <Input
+                placeholder="Search messages..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-8 text-sm"
+                autoFocus
+              />
+            </div>
+          )}
 
           {/* Content */}
           <div className="flex-1 overflow-hidden flex flex-col">
@@ -706,7 +934,10 @@ const FloatingChat: React.FC = () => {
                         <div className="flex-1 text-left">
                           <p className="font-medium text-sm">{u.name}</p>
                           <p className="text-xs text-muted-foreground">
-                            {u.isOnline ? "Online" : "Offline"}
+                            {u.isOnline ? "Online" : u.lastSeen 
+                              ? `Last seen ${formatDistanceToNow(new Date(u.lastSeen), { addSuffix: true })}`
+                              : "Offline"
+                            }
                           </p>
                         </div>
                         {(u.unreadCount || 0) > 0 && (
@@ -777,12 +1008,12 @@ const FloatingChat: React.FC = () => {
               <>
                 <ScrollArea className="flex-1 p-3">
                   <div className="space-y-3">
-                    {channelMessages.length === 0 ? (
+                    {filteredChannelMessages.length === 0 ? (
                       <p className="text-center text-muted-foreground text-sm py-4">
-                        No messages yet. Start the conversation!
+                        {searchQuery ? "No messages found" : "No messages yet. Start the conversation!"}
                       </p>
                     ) : (
-                      channelMessages.map((msg) => {
+                      filteredChannelMessages.map((msg) => {
                         const isOwn = msg.user_id === user.id;
                         const profile = profiles[msg.user_id];
                         const displayName = profile?.full_name || msg.user_name || msg.user_email.split("@")[0];
@@ -822,23 +1053,88 @@ const FloatingChat: React.FC = () => {
                                 {!isOwn && (
                                   <p className="text-xs font-semibold mb-1 opacity-80">{displayName}</p>
                                 )}
-                                <p className="text-sm">{msg.content}</p>
-                                <p className={cn(
-                                  "text-xs mt-1",
-                                  isOwn ? "text-teal-foreground/70" : "text-muted-foreground"
-                                )}>
-                                  {formatTime(msg.created_at)}
-                                </p>
-                                <button
-                                  onClick={() => setReplyTo(msg)}
-                                  className={cn(
-                                    "absolute top-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-black/10",
-                                    isOwn ? "left-1" : "right-1"
+                                {editingMessageId === msg.id ? (
+                                  <div className="space-y-2">
+                                    <Input
+                                      value={editContent}
+                                      onChange={(e) => setEditContent(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter") handleEditMessage(msg.id, true);
+                                        if (e.key === "Escape") setEditingMessageId(null);
+                                      }}
+                                      className="h-7 text-sm"
+                                      autoFocus
+                                    />
+                                    <div className="flex gap-1">
+                                      <Button size="sm" className="h-6 text-xs" onClick={() => handleEditMessage(msg.id, true)}>
+                                        Save
+                                      </Button>
+                                      <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setEditingMessageId(null)}>
+                                        Cancel
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <p className="text-sm">{msg.content}</p>
+                                )}
+                                <div className="flex items-center gap-1 mt-1">
+                                  <span className={cn(
+                                    "text-xs",
+                                    isOwn ? "text-teal-foreground/70" : "text-muted-foreground"
+                                  )}>
+                                    {formatTime(msg.created_at)}
+                                  </span>
+                                  {msg.edited_at && (
+                                    <span className="text-xs text-muted-foreground">(edited)</span>
                                   )}
-                                  title="Reply"
-                                >
-                                  <Reply className="h-3 w-3" />
-                                </button>
+                                </div>
+                                {renderReactions(msg.id, 'channel')}
+                                
+                                {/* Message actions */}
+                                <div className={cn(
+                                  "absolute -top-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5 bg-card border rounded-md shadow-sm p-0.5",
+                                  isOwn ? "left-0" : "right-0"
+                                )}>
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <button className="p-1 hover:bg-muted rounded" title="React">
+                                        <Smile className="h-3 w-3" />
+                                      </button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-2" align="end">
+                                      <div className="flex gap-1">
+                                        {COMMON_EMOJIS.map(emoji => (
+                                          <button
+                                            key={emoji}
+                                            onClick={() => handleReaction(msg.id, emoji, 'channel')}
+                                            className="text-lg hover:scale-125 transition-transform"
+                                          >
+                                            {emoji}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </PopoverContent>
+                                  </Popover>
+                                  <button
+                                    onClick={() => setReplyTo(msg)}
+                                    className="p-1 hover:bg-muted rounded"
+                                    title="Reply"
+                                  >
+                                    <Reply className="h-3 w-3" />
+                                  </button>
+                                  {isOwn && (
+                                    <button
+                                      onClick={() => {
+                                        setEditingMessageId(msg.id);
+                                        setEditContent(msg.content);
+                                      }}
+                                      className="p-1 hover:bg-muted rounded"
+                                      title="Edit"
+                                    >
+                                      <Edit2 className="h-3 w-3" />
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -908,12 +1204,12 @@ const FloatingChat: React.FC = () => {
               <>
                 <ScrollArea className="flex-1 p-3">
                   <div className="space-y-3">
-                    {directMessages.length === 0 ? (
+                    {filteredDirectMessages.length === 0 ? (
                       <p className="text-center text-muted-foreground text-sm py-4">
-                        No messages yet. Start the conversation!
+                        {searchQuery ? "No messages found" : "No messages yet. Start the conversation!"}
                       </p>
                     ) : (
-                      directMessages.map((msg) => {
+                      filteredDirectMessages.map((msg) => {
                         const isOwn = msg.sender_id === user.id;
                         const senderId = msg.sender_id;
                         const profile = profiles[senderId];
@@ -951,23 +1247,89 @@ const FloatingChat: React.FC = () => {
                                   isOwn ? "bg-teal text-teal-foreground" : "bg-muted"
                                 )}
                               >
-                                <p className="text-sm">{msg.content}</p>
-                                <p className={cn(
-                                  "text-xs mt-1",
-                                  isOwn ? "text-teal-foreground/70" : "text-muted-foreground"
-                                )}>
-                                  {formatTime(msg.created_at)}
-                                </p>
-                                <button
-                                  onClick={() => setReplyTo(msg)}
-                                  className={cn(
-                                    "absolute top-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-black/10",
-                                    isOwn ? "left-1" : "right-1"
+                                {editingMessageId === msg.id ? (
+                                  <div className="space-y-2">
+                                    <Input
+                                      value={editContent}
+                                      onChange={(e) => setEditContent(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter") handleEditMessage(msg.id, false);
+                                        if (e.key === "Escape") setEditingMessageId(null);
+                                      }}
+                                      className="h-7 text-sm"
+                                      autoFocus
+                                    />
+                                    <div className="flex gap-1">
+                                      <Button size="sm" className="h-6 text-xs" onClick={() => handleEditMessage(msg.id, false)}>
+                                        Save
+                                      </Button>
+                                      <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setEditingMessageId(null)}>
+                                        Cancel
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <p className="text-sm">{msg.content}</p>
+                                )}
+                                <div className="flex items-center gap-1 mt-1">
+                                  <span className={cn(
+                                    "text-xs",
+                                    isOwn ? "text-teal-foreground/70" : "text-muted-foreground"
+                                  )}>
+                                    {formatTime(msg.created_at)}
+                                  </span>
+                                  {msg.edited_at && (
+                                    <span className="text-xs text-muted-foreground">(edited)</span>
                                   )}
-                                  title="Reply"
-                                >
-                                  <Reply className="h-3 w-3" />
-                                </button>
+                                  {renderReadReceipt(msg)}
+                                </div>
+                                {renderReactions(msg.id, 'direct')}
+                                
+                                {/* Message actions */}
+                                <div className={cn(
+                                  "absolute -top-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5 bg-card border rounded-md shadow-sm p-0.5",
+                                  isOwn ? "left-0" : "right-0"
+                                )}>
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <button className="p-1 hover:bg-muted rounded" title="React">
+                                        <Smile className="h-3 w-3" />
+                                      </button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-2" align="end">
+                                      <div className="flex gap-1">
+                                        {COMMON_EMOJIS.map(emoji => (
+                                          <button
+                                            key={emoji}
+                                            onClick={() => handleReaction(msg.id, emoji, 'direct')}
+                                            className="text-lg hover:scale-125 transition-transform"
+                                          >
+                                            {emoji}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </PopoverContent>
+                                  </Popover>
+                                  <button
+                                    onClick={() => setReplyTo(msg)}
+                                    className="p-1 hover:bg-muted rounded"
+                                    title="Reply"
+                                  >
+                                    <Reply className="h-3 w-3" />
+                                  </button>
+                                  {isOwn && (
+                                    <button
+                                      onClick={() => {
+                                        setEditingMessageId(msg.id);
+                                        setEditContent(msg.content);
+                                      }}
+                                      className="p-1 hover:bg-muted rounded"
+                                      title="Edit"
+                                    >
+                                      <Edit2 className="h-3 w-3" />
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -1027,7 +1389,7 @@ const FloatingChat: React.FC = () => {
           </div>
         </div>
       )}
-    </>
+    </TooltipProvider>
   );
 };
 

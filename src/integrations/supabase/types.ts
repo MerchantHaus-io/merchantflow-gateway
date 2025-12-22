@@ -165,6 +165,7 @@ export type Database = {
           channel_id: string
           content: string
           created_at: string
+          edited_at: string | null
           id: string
           reply_to_id: string | null
           user_email: string
@@ -175,6 +176,7 @@ export type Database = {
           channel_id: string
           content: string
           created_at?: string
+          edited_at?: string | null
           id?: string
           reply_to_id?: string | null
           user_email: string
@@ -185,6 +187,7 @@ export type Database = {
           channel_id?: string
           content?: string
           created_at?: string
+          edited_at?: string | null
           id?: string
           reply_to_id?: string | null
           user_email?: string
@@ -336,6 +339,7 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          edited_at: string | null
           id: string
           read_at: string | null
           receiver_id: string
@@ -345,6 +349,7 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string
+          edited_at?: string | null
           id?: string
           read_at?: string | null
           receiver_id: string
@@ -354,6 +359,7 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string
+          edited_at?: string | null
           id?: string
           read_at?: string | null
           receiver_id?: string
@@ -413,6 +419,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      message_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          message_id: string
+          message_type: string
+          user_email: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          message_id: string
+          message_type: string
+          user_email: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          message_id?: string
+          message_type?: string
+          user_email?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       notifications: {
         Row: {
@@ -570,6 +606,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          last_seen: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -577,6 +614,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          last_seen?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -584,6 +622,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          last_seen?: string | null
         }
         Relationships: []
       }
