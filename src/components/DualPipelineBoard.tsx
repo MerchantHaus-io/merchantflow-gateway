@@ -60,7 +60,6 @@ const PipelineSection = ({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const headerScrollRef = useRef<HTMLDivElement>(null);
 
-  // Sync horizontal scroll between header and content
   useEffect(() => {
     const scrollContainer = scrollContainerRef.current;
     const headerScroll = headerScrollRef.current;
@@ -95,51 +94,59 @@ const PipelineSection = ({
   };
 
   return (
-    <div className="flex flex-1 min-h-0 border border-border/40 rounded-lg overflow-hidden bg-card/30">
-      {/* Vertical Title Sidebar - Persistent */}
+    <div className="flex flex-1 min-h-0 border border-border/40 rounded-xl overflow-hidden bg-card/50 shadow-sm">
+      {/* Vertical Title Sidebar */}
       <div className={cn(
-        "flex flex-col items-center justify-center w-10 flex-shrink-0 border-r border-border/40 sticky left-0 z-10",
+        "flex flex-col items-center justify-center w-12 flex-shrink-0 border-r border-border/40",
         colorAccent
       )}>
-        <div className="flex flex-col items-center gap-2 py-3">
+        <div className="flex flex-col items-center gap-3 py-4">
           {icon}
           <span
-            className="text-white font-semibold text-xs whitespace-nowrap"
+            className="text-white font-semibold text-xs whitespace-nowrap tracking-wide"
             style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
           >
             {title}
           </span>
-          <span className="text-white/80 text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full">
+          <span className="text-white/90 text-xs font-medium bg-white/20 px-2 py-1 rounded-full">
             {totalCount}
           </span>
         </div>
       </div>
 
       {/* Pipeline Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden" data-pipeline={pipelineType}>
-        {/* Sticky Column Headers Row - scrolls horizontally but stays at top */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-background/50" data-pipeline={pipelineType}>
+        {/* Sticky Column Headers Row */}
         <div
           ref={headerScrollRef}
-          className="flex-shrink-0 overflow-x-auto overflow-y-hidden scrollbar-hide border-b border-border/30"
+          className="flex-shrink-0 overflow-x-auto overflow-y-hidden scrollbar-hide bg-muted/30"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          <div className="flex gap-2 p-2 pb-0 min-w-max">
+          <div className="flex gap-3 p-3 pb-0 min-w-max">
             {stages.map((stage) => {
               const config = STAGE_CONFIG[stage];
               const count = getOpportunitiesByStage(stage).length;
               return (
                 <div
                   key={stage}
-                  className={cn(
-                    "flex-shrink-0 w-[150px] px-2 py-1.5 rounded-t-md",
-                    config.headerClass
-                  )}
+                  className="flex-shrink-0 w-[220px] pb-2 border-b-2"
+                  style={{ borderColor: config.color || 'hsl(var(--primary))' }}
                 >
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-[10px] font-semibold text-white truncate">
-                      {config.label}
-                    </span>
-                    <span className="text-[9px] text-white/90 bg-white/20 px-1 py-0.5 rounded">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-6 h-6 rounded flex items-center justify-center"
+                        style={{ backgroundColor: `${config.color}15` || 'hsl(var(--primary) / 0.1)' }}
+                      >
+                        <span className="text-xs font-bold" style={{ color: config.color || 'hsl(var(--primary))' }}>
+                          {config.icon || '●'}
+                        </span>
+                      </div>
+                      <span className="text-sm font-semibold text-foreground">
+                        {config.label}
+                      </span>
+                    </div>
+                    <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
                       {count}
                     </span>
                   </div>
@@ -149,12 +156,12 @@ const PipelineSection = ({
           </div>
         </div>
 
-        {/* Scrollable Columns Content Area - vertical and horizontal scroll */}
+        {/* Scrollable Columns Content Area */}
         <div
           ref={scrollContainerRef}
           className="flex-1 overflow-x-auto overflow-y-hidden min-h-0"
         >
-          <div className="flex gap-2 p-2 pt-0 min-w-max h-full">
+          <div className="flex gap-3 p-3 pt-2 min-w-max h-full">
             {stages.map((stage) => (
               <PipelineColumn
                 key={stage}
@@ -191,19 +198,16 @@ const DualPipelineBoard = ({
   const [draggedOpportunity, setDraggedOpportunity] = useState<Opportunity | null>(null);
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
 
-  // Migrate stages and split opportunities by service type
   const { processingOpportunities, gatewayOpportunities } = useMemo(() => {
     const processing: Opportunity[] = [];
     const gateway: Opportunity[] = [];
 
     opportunities.forEach((opp) => {
-      // Apply stage migration (opportunities -> application_prep)
       const migratedStage = migrateStage(opp.stage);
       const migratedOpp = migratedStage !== opp.stage
         ? { ...opp, stage: migratedStage }
         : opp;
 
-      // Determine service type
       const serviceType = getServiceType(migratedOpp);
 
       if (serviceType === 'gateway_only') {
@@ -219,7 +223,6 @@ const DualPipelineBoard = ({
   const handleDragStart = (e: React.DragEvent, opportunity: Opportunity) => {
     setDraggedOpportunity(opportunity);
     e.dataTransfer.effectAllowed = 'move';
-    // Store which pipeline the card came from
     const serviceType = getServiceType(opportunity);
     e.dataTransfer.setData('text/plain', serviceType);
   };
@@ -237,20 +240,16 @@ const DualPipelineBoard = ({
       
       const updates: Partial<Opportunity> = { stage };
       
-      // If moving between pipelines, update processing_services to reflect the change
       if (targetIsGateway !== sourceIsGateway) {
         if (targetIsGateway) {
-          // Moving to gateway pipeline - remove processing services
           updates.processing_services = [];
         } else {
-          // Moving to processing pipeline - add default processing service if empty
           updates.processing_services = draggedOpportunity.processing_services?.length 
             ? draggedOpportunity.processing_services 
             : ['Credit Card'];
         }
       }
       
-      // Only update if something changed
       if (draggedOpportunity.stage !== stage || targetIsGateway !== sourceIsGateway) {
         onUpdateOpportunity(draggedOpportunity.id, updates);
       }
@@ -266,11 +265,11 @@ const DualPipelineBoard = ({
 
   return (
     <>
-      <div className="flex-1 flex flex-col p-3 gap-3 overflow-hidden h-full min-h-0">
+      <div className="flex-1 flex flex-col p-4 gap-4 overflow-hidden h-full min-h-0">
         {/* NMI Payments Pipeline Section */}
         <PipelineSection
           title="NMI Payments Pipeline"
-          icon={<CreditCard className="h-4 w-4 text-white" />}
+          icon={<CreditCard className="h-5 w-5 text-white" />}
           stages={PROCESSING_PIPELINE_STAGES}
           opportunities={processingOpportunities}
           onDragStart={handleDragStart}
@@ -287,7 +286,7 @@ const DualPipelineBoard = ({
         {/* NMI Gateway Pipeline Section */}
         <PipelineSection
           title="NMI Gateway Pipeline"
-          icon={<Zap className="h-4 w-4 text-white" />}
+          icon={<Zap className="h-5 w-5 text-white" />}
           stages={GATEWAY_ONLY_PIPELINE_STAGES}
           opportunities={gatewayOpportunities}
           onDragStart={handleDragStart}

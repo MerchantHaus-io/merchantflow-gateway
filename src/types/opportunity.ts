@@ -156,73 +156,95 @@ export const isEmailAllowed = (email: string | undefined | null): boolean => {
 
 export const STAGE_CONFIG: Record<
   OpportunityStage,
-  { label: string; colorClass: string; headerClass: string; badgeClass: string }
+  { label: string; colorClass: string; headerClass: string; badgeClass: string; color: string; icon: string }
 > = {
   application_started: {
     label: 'New',
     colorClass: 'bg-blue-500',
     headerClass: 'bg-black text-white',
     badgeClass: 'bg-white/20 text-white border-white/30',
+    color: '#3b82f6',
+    icon: '📋',
   },
   discovery: {
     label: 'Discovery',
     colorClass: 'bg-indigo-500',
     headerClass: 'bg-black text-white',
     badgeClass: 'bg-white/20 text-white border-white/30',
+    color: '#6366f1',
+    icon: '🔍',
   },
   qualified: {
     label: 'Qualified',
     colorClass: 'bg-cyan-500',
     headerClass: 'bg-black text-white',
     badgeClass: 'bg-white/20 text-white border-white/30',
+    color: '#06b6d4',
+    icon: '✓',
   },
   application_prep: {
-    label: 'Application Prep',
+    label: 'App Prep',
     colorClass: 'bg-teal-500',
     headerClass: 'bg-black text-white',
     badgeClass: 'bg-white/20 text-white border-white/30',
+    color: '#14b8a6',
+    icon: '📝',
   },
   underwriting_review: {
     label: 'Underwriting',
     colorClass: 'bg-purple-500',
     headerClass: 'bg-black text-white',
     badgeClass: 'bg-white/20 text-white border-white/30',
+    color: '#a855f7',
+    icon: '📊',
   },
   processor_approval: {
     label: 'Approved',
     colorClass: 'bg-pink-500',
     headerClass: 'bg-black text-white',
     badgeClass: 'bg-white/20 text-white border-white/30',
+    color: '#ec4899',
+    icon: '✅',
   },
   integration_setup: {
     label: 'Integration',
     colorClass: 'bg-orange-500',
     headerClass: 'bg-black text-white',
     badgeClass: 'bg-white/20 text-white border-white/30',
+    color: '#f97316',
+    icon: '⚙️',
   },
   gateway_submitted: {
-    label: 'Gateway Submission',
+    label: 'Gateway',
     colorClass: 'bg-yellow-500',
     headerClass: 'bg-black text-white',
     badgeClass: 'bg-white/20 text-white border-white/30',
+    color: '#eab308',
+    icon: '🚀',
   },
   live_activated: {
     label: 'Live',
     colorClass: 'bg-green-500',
     headerClass: 'bg-black text-white',
     badgeClass: 'bg-white/20 text-white border-white/30',
+    color: '#22c55e',
+    icon: '🎉',
   },
   closed_won: {
     label: 'Closed Won',
     colorClass: 'bg-emerald-600',
     headerClass: 'bg-black text-white',
     badgeClass: 'bg-white/20 text-white border-white/30',
+    color: '#059669',
+    icon: '🏆',
   },
   closed_lost: {
     label: 'Closed Lost',
     colorClass: 'bg-destructive',
     headerClass: 'bg-black text-white',
     badgeClass: 'bg-white/20 text-white border-white/30',
+    color: '#ef4444',
+    icon: '✗',
   },
 };
 

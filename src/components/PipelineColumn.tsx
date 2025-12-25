@@ -59,50 +59,51 @@ const PipelineColumn = ({
   return (
     <div
       className={cn(
-        "flex-shrink-0 w-[150px] flex flex-col h-full min-h-0 rounded-md border border-border/30 bg-background/50 overflow-hidden",
-        hideHeader && "rounded-t-none border-t-0"
+        "flex-shrink-0 w-[220px] flex flex-col h-full min-h-0 rounded-lg bg-muted/30 overflow-hidden"
       )}
       onDragOver={onDragOver}
       onDrop={(e) => onDrop(e, stage)}
     >
-      {/* Column Header - Only shown when not hidden */}
+      {/* Column Header */}
       {!hideHeader && (
-        <div className={cn(
-          "px-2 py-1.5 border-b border-white/10 flex-shrink-0",
-          config.headerClass
-        )}>
-          <div className="flex items-center justify-between gap-1">
-            <div className="flex items-center gap-1 min-w-0 flex-1">
-              <span className="text-[10px] font-semibold text-white truncate">
+        <div className="px-3 py-2.5 flex-shrink-0 border-b-2" style={{ borderColor: config.color || 'hsl(var(--primary))' }}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div 
+                className="w-5 h-5 rounded flex items-center justify-center"
+                style={{ backgroundColor: `${config.color}20` || 'hsl(var(--primary) / 0.1)' }}
+              >
+                <span className="text-[10px] font-bold" style={{ color: config.color || 'hsl(var(--primary))' }}>
+                  {config.icon || '●'}
+                </span>
+              </div>
+              <span className="text-sm font-semibold text-foreground">
                 {config.label}
               </span>
             </div>
-            <div className="flex items-center gap-0.5 flex-shrink-0">
-              <span className="text-[9px] text-white/90 bg-white/20 px-1 py-0.5 rounded">
-                {count}
-              </span>
+            <div className="flex items-center gap-1">
               {stage === 'application_started' && onAddNew && (
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-5 w-5 text-white hover:text-white hover:bg-white/20"
+                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
                   onClick={onAddNew}
                 >
-                  <Plus className="h-3 w-3" />
+                  <Plus className="h-4 w-4" />
                 </Button>
               )}
               {count > 0 && (
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-5 w-5 text-white/80 hover:text-white hover:bg-white/20"
+                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
                   onClick={toggleAllCards}
                   title={allCollapsed ? "Expand all" : "Collapse all"}
                 >
                   {allCollapsed ? (
-                    <ChevronsUpDown className="h-3 w-3" />
+                    <ChevronsUpDown className="h-4 w-4" />
                   ) : (
-                    <ChevronsDownUp className="h-3 w-3" />
+                    <ChevronsDownUp className="h-4 w-4" />
                   )}
                 </Button>
               )}
@@ -111,31 +112,31 @@ const PipelineColumn = ({
         </div>
       )}
 
-      {/* Column Action Bar - shown when header is hidden */}
+      {/* Action Bar when header is hidden */}
       {hideHeader && (
-        <div className="px-1.5 py-1 border-b border-border/30 flex items-center justify-end gap-0.5 bg-secondary/30">
+        <div className="px-2 py-1.5 flex items-center justify-end gap-1 bg-muted/20">
           {stage === 'application_started' && onAddNew && (
             <Button
               variant="ghost"
               size="icon"
-              className="h-5 w-5 text-muted-foreground hover:text-foreground hover:bg-secondary"
+              className="h-6 w-6 text-muted-foreground hover:text-foreground"
               onClick={onAddNew}
             >
-              <Plus className="h-3 w-3" />
+              <Plus className="h-4 w-4" />
             </Button>
           )}
           {count > 0 && (
             <Button
               variant="ghost"
               size="icon"
-              className="h-5 w-5 text-muted-foreground hover:text-foreground hover:bg-secondary"
+              className="h-6 w-6 text-muted-foreground hover:text-foreground"
               onClick={toggleAllCards}
               title={allCollapsed ? "Expand all" : "Collapse all"}
             >
               {allCollapsed ? (
-                <ChevronsUpDown className="h-3 w-3" />
+                <ChevronsUpDown className="h-4 w-4" />
               ) : (
-                <ChevronsDownUp className="h-3 w-3" />
+                <ChevronsDownUp className="h-4 w-4" />
               )}
             </Button>
           )}
@@ -143,9 +144,9 @@ const PipelineColumn = ({
       )}
 
       {/* Scrollable Cards Area */}
-      <div className="flex-1 overflow-y-auto p-1.5 space-y-1.5 min-h-0 bg-secondary/30">
+      <div className="flex-1 overflow-y-auto p-2 space-y-2 min-h-0">
         {opportunities.length === 0 ? (
-          <div className="flex items-center justify-center h-14 text-[10px] text-muted-foreground/60 border border-dashed border-border/30 rounded">
+          <div className="flex items-center justify-center h-20 text-xs text-muted-foreground/60 border-2 border-dashed border-border/30 rounded-lg">
             Drop here
           </div>
         ) : (
