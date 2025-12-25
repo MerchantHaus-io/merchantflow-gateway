@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { MessageCircle, X, Send, Users, Hash, Reply, ChevronLeft, Plus, Check, CheckCheck, Smile, Search, Edit2, MoreVertical } from "lucide-react";
+import { MessageCircle, X, Send, Users, Hash, Reply, ChevronLeft, Plus, Check, CheckCheck, Smile, Search, Edit2, MoreVertical, Bell, BellOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
+import { useChatNotifications } from "@/hooks/useChatNotifications";
 
 type DirectMessage = {
   id: string;
@@ -110,7 +111,12 @@ const FloatingChat: React.FC = () => {
 
   const userName = teamMemberName || user?.email?.split("@")[0] || "";
 
-  // Update last_seen periodically
+  // Chat notifications hook
+  const { requestPermission, isSupported, permissionStatus } = useChatNotifications({
+    isChatOpen: isOpen,
+    currentChannelId,
+    currentDMUserId,
+  });
   useEffect(() => {
     if (!user) return;
 
@@ -853,6 +859,41 @@ const FloatingChat: React.FC = () => {
               )}
             </div>
             <div className="flex items-center gap-1">
+              {isSupported && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={async () => {
+                        if (permissionStatus === 'granted') {
+                          toast.info("Notifications are enabled");
+                        } else {
+                          const granted = await requestPermission();
+                          if (granted) {
+                            toast.success("Notifications enabled");
+                          } else {
+                            toast.error("Notifications blocked by browser");
+                          }
+                        }
+                      }}
+                      className="hover:bg-teal-foreground/10 p-1.5 rounded"
+                      title="Notifications"
+                    >
+                      {permissionStatus === 'granted' ? (
+                        <Bell className="h-4 w-4" />
+                      ) : (
+                        <BellOff className="h-4 w-4 opacity-60" />
+                      )}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {permissionStatus === 'granted' 
+                      ? "Notifications enabled" 
+                      : permissionStatus === 'denied'
+                      ? "Notifications blocked"
+                      : "Enable notifications"}
+                  </TooltipContent>
+                </Tooltip>
+              )}
               {(view === "chat" || view === "dm") && (
                 <button
                   onClick={() => setShowSearch(!showSearch)}
