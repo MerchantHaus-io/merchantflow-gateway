@@ -129,7 +129,7 @@ const PipelineSection = ({
               return (
                 <div
                   key={stage}
-                  className="flex-shrink-0 w-[calc((100%-96px)/9)] min-w-[100px] sm:min-w-[110px] md:min-w-[120px] lg:min-w-[130px] xl:min-w-[145px] 2xl:min-w-[160px] pb-2 border-b-2"
+                  className="flex-shrink-0 w-[120px] sm:w-[130px] md:w-[140px] lg:w-[160px] xl:w-[180px] 2xl:w-[200px] pb-2 border-b-2"
                   style={{ borderColor: config.color || 'hsl(var(--primary))' }}
                 >
                   <div className="flex items-center justify-between">
