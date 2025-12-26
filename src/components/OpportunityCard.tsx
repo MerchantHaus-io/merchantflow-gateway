@@ -150,12 +150,23 @@ const OpportunityCard = ({
           {contactLastName || 'No contact'}
         </p>
 
-        {/* Footer: Date + Assignment Avatar */}
+        {/* Footer: Date + SLA + Assignment Avatar */}
         <div className="flex items-center justify-between pt-1 border-t border-border/30">
-          {/* Date Created */}
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+          {/* Date Created + SLA Dot */}
+          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
             <Calendar className="h-2.5 w-2.5" />
             <span>{format(new Date(opportunity.created_at), 'MM/dd/yy')}</span>
+            {/* SLA Status Dot */}
+            <span 
+              className={cn(
+                "h-2 w-2 rounded-full flex-shrink-0",
+                opportunity.sla_status === 'red' && "bg-red-500",
+                opportunity.sla_status === 'amber' && "bg-amber-500",
+                opportunity.sla_status === 'green' && "bg-green-500",
+                !opportunity.sla_status && "bg-green-500" // Default to green
+              )}
+              title={`SLA: ${opportunity.sla_status || 'green'}`}
+            />
           </div>
 
           {/* Assignment Avatar with Dropdown */}
