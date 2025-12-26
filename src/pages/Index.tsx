@@ -629,9 +629,9 @@ const Index = () => {
       </div>;
   }
   return <SidebarProvider>
-      <div className="h-screen flex w-full p-4 gap-4 pb-20">
+      <div className="h-screen min-h-0 flex w-full p-4 gap-4 pb-20 overflow-hidden">
         <AppSidebar onNewApplication={() => setIsModalOpen(true)} />
-        <div className="flex-1 flex flex-col overflow-auto gap-3 max-h-[calc(100vh-7rem)]">
+        <div className="flex-1 flex flex-col gap-3 min-h-0 h-[calc(100vh-7rem)] overflow-hidden">
           <header className="h-12 flex items-center px-4 rounded-lg border shadow-lg backdrop-blur-md gap-2 flex-shrink-0 sticky top-0 z-20 border-primary bg-card/70 dark:bg-card/70">
             <SidebarTrigger className="md:hidden" />
             <h1 className="text-lg font-semibold text-foreground">Pipeline</h1>
@@ -655,7 +655,7 @@ const Index = () => {
               <ThemeToggle />
             </div>
           </header>
-          <main className="flex-1 overflow-hidden rounded-lg border border-border/50 shadow-lg backdrop-blur-md min-h-0 bg-card/70 dark:bg-card/70">
+          <main className="flex-1 flex flex-col overflow-hidden rounded-lg border border-border/50 shadow-lg backdrop-blur-md min-h-0 bg-card/70 dark:bg-card/70">
             <DualPipelineBoard
               opportunities={filteredOpportunities}
               onUpdateOpportunity={handleUpdateOpportunity}
