@@ -94,7 +94,7 @@ const PipelineSection = ({
   };
 
   return (
-    <div className="flex flex-1 min-h-0 min-w-0 border border-border/40 rounded-xl overflow-hidden bg-card/50 shadow-sm">
+    <div className="flex h-full min-h-0 min-w-0 border border-border/40 rounded-xl overflow-hidden bg-card/50 shadow-sm">
       {/* Vertical Title Sidebar */}
       <div className={cn(
         "flex flex-col items-center justify-center w-8 sm:w-10 lg:w-12 flex-shrink-0 border-r border-border/40",
@@ -267,7 +267,7 @@ const DualPipelineBoard = ({
     <>
       <div className="flex-1 flex flex-col lg:flex-row p-4 gap-4 overflow-hidden h-full min-h-0">
         {/* NMI Payments Pipeline Section */}
-        <div className="flex-1 min-w-0 min-h-0">
+        <div className="flex-1 min-w-0 min-h-0 h-full flex flex-col">
           <PipelineSection
             title="NMI Payments Pipeline"
             icon={<CreditCard className="h-5 w-5 text-white" />}
@@ -286,7 +286,7 @@ const DualPipelineBoard = ({
         </div>
 
         {/* NMI Gateway Pipeline Section */}
-        <div className="flex-1 min-w-0 min-h-0">
+        <div className="flex-1 min-w-0 min-h-0 h-full flex flex-col">
           <PipelineSection
             title="NMI Gateway Pipeline"
             icon={<Zap className="h-5 w-5 text-white" />}

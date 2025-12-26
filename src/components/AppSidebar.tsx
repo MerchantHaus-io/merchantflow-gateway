@@ -140,21 +140,18 @@ export function AppSidebar({ onNewApplication }: AppSidebarProps) {
           <div className="flex items-center gap-2 text-primary-foreground">
             <img src={theme === 'dark' ? logoDark : logoLight} alt="Ops Terminal" className="h-8 w-auto" />
           </div>
-          <div className="flex items-center gap-1">
-            {!isCollapsed && <NotificationBell />}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleSidebar}
-              className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
-            >
-              {isCollapsed ? (
-                <ChevronRight className="h-4 w-4" />
-              ) : (
-                <ChevronLeft className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleSidebar}
+            className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
+          >
+            {isCollapsed ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronLeft className="h-4 w-4" />
+            )}
+          </Button>
         </div>
       </SidebarHeader>
 
@@ -162,20 +159,23 @@ export function AppSidebar({ onNewApplication }: AppSidebarProps) {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {/* New Application Button */}
+              {/* New Application Button + Notifications */}
               <SidebarMenuItem>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <SidebarMenuButton
-                      onClick={onNewApplication}
-                      className="gradient-primary text-primary-foreground hover:opacity-90 mb-2 transition-opacity"
-                    >
-                      <Plus className="h-4 w-4" />
-                      {!isCollapsed && <span className="font-semibold">New Application</span>}
-                    </SidebarMenuButton>
-                  </TooltipTrigger>
-                  {isCollapsed && <TooltipContent side="right">New Application</TooltipContent>}
-                </Tooltip>
+                <div className="flex items-center gap-1 mb-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <SidebarMenuButton
+                        onClick={onNewApplication}
+                        className="gradient-primary text-primary-foreground hover:opacity-90 transition-opacity flex-1"
+                      >
+                        <Plus className="h-4 w-4" />
+                        {!isCollapsed && <span className="font-semibold">New</span>}
+                      </SidebarMenuButton>
+                    </TooltipTrigger>
+                    {isCollapsed && <TooltipContent side="right">New Application</TooltipContent>}
+                  </Tooltip>
+                  {!isCollapsed && <NotificationBell />}
+                </div>
               </SidebarMenuItem>
 
               {/* Dynamic Navigation Loop */}
