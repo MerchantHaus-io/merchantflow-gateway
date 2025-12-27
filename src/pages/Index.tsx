@@ -499,6 +499,27 @@ const Index = () => {
         agree_to_terms: true
       }).select('id').single();
       if (opportunityError) throw opportunityError;
+      
+      // Log opportunity creation activity
+      const { data: oppData } = await supabase
+        .from('opportunities')
+        .select('id')
+        .eq('account_id', accountId)
+        .eq('contact_id', contactId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (oppData) {
+        await supabase.from('activities').insert({
+          opportunity_id: oppData.id,
+          type: 'opportunity_created',
+          description: `Opportunity created for ${formData.companyName}`,
+          user_id: user?.id,
+          user_email: user?.email,
+        });
+      }
+      
       await fetchOpportunities();
       setSplashType("1up");
       toast({
