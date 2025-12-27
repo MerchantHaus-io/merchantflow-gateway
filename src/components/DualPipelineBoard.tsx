@@ -132,11 +132,35 @@ const PipelineSection = ({
       </div>
 
       {/* Pipeline Content Area */}
-      <div className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden bg-background/50" data-pipeline={pipelineType}>
+      <div 
+        className={cn(
+          "flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden relative",
+          pipelineType === 'processing' 
+            ? "bg-gradient-to-br from-rose-500/5 via-background to-amber-500/5 dark:from-rose-500/10 dark:via-background dark:to-amber-500/10"
+            : "bg-gradient-to-br from-teal-500/5 via-background to-cyan-500/5 dark:from-teal-500/10 dark:via-background dark:to-cyan-500/10"
+        )} 
+        data-pipeline={pipelineType}
+      >
+        {/* Decorative gradient orbs */}
+        <div className={cn(
+          "absolute inset-0 overflow-hidden pointer-events-none",
+        )}>
+          {pipelineType === 'processing' ? (
+            <>
+              <div className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-rose-500/10 to-transparent rounded-full blur-3xl dark:from-rose-500/20" />
+              <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-gradient-to-tr from-amber-500/10 to-transparent rounded-full blur-3xl dark:from-amber-500/20" />
+            </>
+          ) : (
+            <>
+              <div className="absolute -top-20 -right-20 w-40 h-40 bg-gradient-to-br from-teal-500/10 to-transparent rounded-full blur-3xl dark:from-teal-500/20" />
+              <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-gradient-to-tr from-cyan-500/10 to-transparent rounded-full blur-3xl dark:from-cyan-500/20" />
+            </>
+          )}
+        </div>
         {/* Sticky Column Headers Row */}
         <div
           ref={headerScrollRef}
-          className="flex-shrink-0 overflow-x-auto overflow-y-hidden scrollbar-hide bg-muted/30"
+          className="flex-shrink-0 overflow-x-auto overflow-y-hidden scrollbar-hide bg-muted/20 backdrop-blur-sm relative z-10"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           <div className={cn(
@@ -184,7 +208,7 @@ const PipelineSection = ({
         {/* Scrollable Columns Content Area */}
         <div
           ref={scrollContainerRef}
-          className="flex-1 overflow-x-auto overflow-y-hidden min-h-0"
+          className="flex-1 overflow-x-auto overflow-y-hidden min-h-0 relative z-10"
         >
           <div className={cn(
             "flex items-stretch min-w-max min-h-0 pt-1",
