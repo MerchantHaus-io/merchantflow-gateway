@@ -16,6 +16,7 @@ interface PipelineColumnProps {
   onSlaStatusChange?: (opportunityId: string, slaStatus: string | null) => void;
   onAddNew?: () => void;
   hideHeader?: boolean;
+  isCompact?: boolean;
 }
 
 const PipelineColumn = ({
@@ -29,6 +30,7 @@ const PipelineColumn = ({
   onSlaStatusChange,
   onAddNew,
   hideHeader = false,
+  isCompact = false,
 }: PipelineColumnProps) => {
   const [collapsedCards, setCollapsedCards] = useState<Set<string>>(new Set());
   const [allCollapsed, setAllCollapsed] = useState(false);
@@ -59,8 +61,10 @@ const PipelineColumn = ({
   return (
     <div
       className={cn(
-        "flex-shrink-0 flex flex-col min-h-0 self-stretch rounded-lg landscape:rounded-md bg-muted/30 overflow-hidden",
-        "w-[100px] landscape:w-[90px] sm:w-[130px] md:w-[150px] lg:w-[180px]"
+        "flex-shrink-0 flex flex-col min-h-0 self-stretch bg-muted/30 overflow-hidden",
+        isCompact 
+          ? "rounded-md w-[90px] sm:w-[110px] md:w-[130px] lg:w-[150px] landscape:w-[90px]" 
+          : "rounded-lg w-[100px] sm:w-[130px] md:w-[150px] lg:w-[180px]"
       )}
       onDragOver={onDragOver}
       onDrop={(e) => onDrop(e, stage)}
@@ -115,29 +119,38 @@ const PipelineColumn = ({
 
       {/* Action Bar when header is hidden */}
       {hideHeader && (
-        <div className="px-1 py-0.5 landscape:py-0 flex items-center justify-end gap-0.5 bg-muted/20">
+        <div className={cn(
+          "px-1 flex items-center justify-end gap-0.5 bg-muted/20",
+          isCompact ? "py-0" : "py-0.5"
+        )}>
           {stage === 'application_started' && onAddNew && (
             <Button
               variant="ghost"
               size="icon"
-              className="h-5 w-5 landscape:h-4 landscape:w-4 text-muted-foreground hover:text-foreground"
+              className={cn(
+                "text-muted-foreground hover:text-foreground",
+                isCompact ? "h-4 w-4" : "h-5 w-5"
+              )}
               onClick={onAddNew}
             >
-              <Plus className="h-3 w-3 landscape:h-2.5 landscape:w-2.5" />
+              <Plus className={isCompact ? "h-2.5 w-2.5" : "h-3 w-3"} />
             </Button>
           )}
           {count > 0 && (
             <Button
               variant="ghost"
               size="icon"
-              className="h-5 w-5 landscape:h-4 landscape:w-4 text-muted-foreground hover:text-foreground"
+              className={cn(
+                "text-muted-foreground hover:text-foreground",
+                isCompact ? "h-4 w-4" : "h-5 w-5"
+              )}
               onClick={toggleAllCards}
               title={allCollapsed ? "Expand all" : "Collapse all"}
             >
               {allCollapsed ? (
-                <ChevronsUpDown className="h-3 w-3 landscape:h-2.5 landscape:w-2.5" />
+                <ChevronsUpDown className={isCompact ? "h-2.5 w-2.5" : "h-3 w-3"} />
               ) : (
-                <ChevronsDownUp className="h-3 w-3 landscape:h-2.5 landscape:w-2.5" />
+                <ChevronsDownUp className={isCompact ? "h-2.5 w-2.5" : "h-3 w-3"} />
               )}
             </Button>
           )}
@@ -145,9 +158,15 @@ const PipelineColumn = ({
       )}
 
       {/* Scrollable Cards Area */}
-      <div className="flex-1 overflow-y-auto overscroll-contain p-1 landscape:p-0.5 space-y-1 landscape:space-y-0.5 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div className={cn(
+        "flex-1 overflow-y-auto overscroll-contain min-h-0",
+        isCompact ? "p-0.5 space-y-0.5" : "p-1 space-y-1"
+      )} style={{ WebkitOverflowScrolling: 'touch' }}>
         {opportunities.length === 0 ? (
-          <div className="flex items-center justify-center h-12 landscape:h-8 text-[10px] landscape:text-[8px] text-muted-foreground/60 border border-dashed border-border/30 rounded">
+          <div className={cn(
+            "flex items-center justify-center text-muted-foreground/60 border border-dashed border-border/30 rounded",
+            isCompact ? "h-8 text-[8px]" : "h-12 text-[10px]"
+          )}>
             Drop here
           </div>
         ) : (

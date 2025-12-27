@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from "react";
-import { CreditCard, Zap } from "lucide-react";
+import { CreditCard, Zap, Minimize2, Maximize2 } from "lucide-react";
 import {
   Opportunity,
   OpportunityStage,
@@ -12,6 +12,8 @@ import {
 import PipelineColumn from "./PipelineColumn";
 import OpportunityDetailModal from "./OpportunityDetailModal";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface DualPipelineBoardProps {
   opportunities: Opportunity[];
@@ -39,6 +41,7 @@ interface PipelineSectionProps {
   onAddNew?: () => void;
   colorAccent: string;
   pipelineType: 'processing' | 'gateway';
+  isCompact: boolean;
 }
 
 const PipelineSection = ({
@@ -55,6 +58,7 @@ const PipelineSection = ({
   onAddNew,
   colorAccent,
   pipelineType,
+  isCompact,
 }: PipelineSectionProps) => {
   const totalCount = opportunities.length;
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -94,22 +98,34 @@ const PipelineSection = ({
   };
 
   return (
-    <div className="flex flex-1 min-h-0 min-w-0 border border-border/40 rounded-lg landscape:rounded-md overflow-hidden bg-card/50 shadow-sm">
+    <div className={cn(
+      "flex flex-1 min-h-0 min-w-0 border border-border/40 rounded-lg overflow-hidden bg-card/50 shadow-sm",
+      isCompact && "landscape:rounded-md"
+    )}>
       {/* Vertical Title Sidebar */}
       <div className={cn(
         "flex flex-col items-center justify-center flex-shrink-0 border-r border-border/40",
-        "w-8 sm:w-10 lg:w-12 landscape:w-6",
+        isCompact ? "w-6 sm:w-8 lg:w-10 landscape:w-6" : "w-8 sm:w-10 lg:w-12",
         colorAccent
       )}>
-        <div className="flex flex-col items-center gap-1 landscape:gap-0.5 py-2 sm:py-4 landscape:py-1">
-          <span className="hidden sm:block landscape:hidden">{icon}</span>
+        <div className={cn(
+          "flex flex-col items-center py-2 sm:py-4",
+          isCompact ? "gap-0.5 landscape:gap-0.5 landscape:py-1" : "gap-1"
+        )}>
+          <span className={cn("hidden sm:block", isCompact && "landscape:hidden")}>{icon}</span>
           <span
-            className="text-white font-semibold text-[10px] sm:text-xs landscape:text-[8px] whitespace-nowrap tracking-wide"
+            className={cn(
+              "text-white font-semibold whitespace-nowrap tracking-wide",
+              isCompact ? "text-[8px] sm:text-[10px] landscape:text-[8px]" : "text-[10px] sm:text-xs"
+            )}
             style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
           >
             {title}
           </span>
-          <span className="text-white/90 text-[10px] sm:text-xs landscape:text-[8px] font-medium bg-white/20 px-1 landscape:px-0.5 py-0.5 landscape:py-0 rounded-full">
+          <span className={cn(
+            "text-white/90 font-medium bg-white/20 rounded-full",
+            isCompact ? "text-[8px] px-0.5 py-0 landscape:text-[8px]" : "text-[10px] sm:text-xs px-1 py-0.5"
+          )}>
             {totalCount}
           </span>
         </div>
@@ -123,23 +139,39 @@ const PipelineSection = ({
           className="flex-shrink-0 overflow-x-auto overflow-y-hidden scrollbar-hide bg-muted/30"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          <div className="flex gap-1 landscape:gap-0.5 p-1 landscape:p-0.5 pb-0 min-w-max">
+          <div className={cn(
+            "flex min-w-max pb-0",
+            isCompact ? "gap-0.5 p-0.5 landscape:gap-0.5 landscape:p-0.5" : "gap-1 p-1"
+          )}>
             {stages.map((stage) => {
               const config = STAGE_CONFIG[stage];
               const count = getOpportunitiesByStage(stage).length;
               return (
                 <div
                   key={stage}
-                  className="flex-shrink-0 w-[100px] landscape:w-[90px] sm:w-[130px] md:w-[150px] lg:w-[180px] pb-1 border-b-2"
+                  className={cn(
+                    "flex-shrink-0 pb-1 border-b-2",
+                    isCompact 
+                      ? "w-[90px] sm:w-[110px] md:w-[130px] lg:w-[150px] landscape:w-[90px]" 
+                      : "w-[100px] sm:w-[130px] md:w-[150px] lg:w-[180px]"
+                  )}
                   style={{ borderColor: config.color || 'hsl(var(--primary))' }}
                 >
                   <div className="flex items-center justify-between px-1">
                     <div className="flex items-center gap-1">
-                      <span className="text-[10px] landscape:text-[9px] font-semibold text-foreground truncate max-w-[60px] landscape:max-w-[55px]">
+                      <span className={cn(
+                        "font-semibold text-foreground truncate",
+                        isCompact 
+                          ? "text-[9px] max-w-[55px] landscape:text-[9px] landscape:max-w-[55px]" 
+                          : "text-[10px] max-w-[60px]"
+                      )}>
                         {config.label}
                       </span>
                     </div>
-                    <span className="text-[9px] landscape:text-[8px] text-muted-foreground bg-muted px-1 py-0 rounded-full">
+                    <span className={cn(
+                      "text-muted-foreground bg-muted px-1 py-0 rounded-full",
+                      isCompact ? "text-[8px] landscape:text-[8px]" : "text-[9px]"
+                    )}>
                       {count}
                     </span>
                   </div>
@@ -154,7 +186,10 @@ const PipelineSection = ({
           ref={scrollContainerRef}
           className="flex-1 overflow-x-auto overflow-y-hidden min-h-0"
         >
-          <div className="flex items-stretch gap-1 landscape:gap-0.5 p-1 landscape:p-0.5 pt-1 min-w-max min-h-0">
+          <div className={cn(
+            "flex items-stretch min-w-max min-h-0 pt-1",
+            isCompact ? "gap-0.5 p-0.5 landscape:gap-0.5 landscape:p-0.5" : "gap-1 p-1"
+          )}>
             {stages.map((stage) => (
               <PipelineColumn
                 key={stage}
@@ -168,6 +203,7 @@ const PipelineSection = ({
                 onSlaStatusChange={onSlaStatusChange}
                 onAddNew={stage === 'application_started' ? onAddNew : undefined}
                 hideHeader={true}
+                isCompact={isCompact}
               />
             ))}
           </div>
@@ -190,7 +226,7 @@ const DualPipelineBoard = ({
 }: DualPipelineBoardProps) => {
   const [draggedOpportunity, setDraggedOpportunity] = useState<Opportunity | null>(null);
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
-
+  const [isCompact, setIsCompact] = useState(false);
   const { processingOpportunities, gatewayOpportunities } = useMemo(() => {
     const processing: Opportunity[] = [];
     const gateway: Opportunity[] = [];
@@ -258,12 +294,44 @@ const DualPipelineBoard = ({
 
   return (
     <>
-      <div className="flex-1 min-h-0 w-full flex flex-col lg:flex-row p-2 landscape:p-1 gap-2 landscape:gap-1 overflow-hidden">
+      {/* Compact Toggle Header */}
+      <div className="flex-shrink-0 px-2 py-1 flex justify-end">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsCompact(!isCompact)}
+              className="h-7 px-2 gap-1 text-xs"
+            >
+              {isCompact ? (
+                <>
+                  <Maximize2 className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Regular</span>
+                </>
+              ) : (
+                <>
+                  <Minimize2 className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Compact</span>
+                </>
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            {isCompact ? "Switch to regular view" : "Switch to compact view"}
+          </TooltipContent>
+        </Tooltip>
+      </div>
+
+      <div className={cn(
+        "flex-1 min-h-0 w-full flex flex-col lg:flex-row gap-2 overflow-hidden",
+        isCompact ? "p-1 gap-1 landscape:p-1 landscape:gap-1" : "p-2"
+      )}>
         {/* NMI Payments Pipeline Section */}
         <div className="flex-1 min-w-0 min-h-0 flex flex-col">
           <PipelineSection
             title="NMI Payments Pipeline"
-            icon={<CreditCard className="h-5 w-5 text-white" />}
+            icon={<CreditCard className={cn("text-white", isCompact ? "h-4 w-4" : "h-5 w-5")} />}
             stages={PROCESSING_PIPELINE_STAGES}
             opportunities={processingOpportunities}
             onDragStart={handleDragStart}
@@ -275,6 +343,7 @@ const DualPipelineBoard = ({
             onAddNew={onAddNew}
             colorAccent="bg-primary"
             pipelineType="processing"
+            isCompact={isCompact}
           />
         </div>
 
@@ -282,7 +351,7 @@ const DualPipelineBoard = ({
         <div className="flex-1 min-w-0 min-h-0 flex flex-col">
           <PipelineSection
             title="NMI Gateway Pipeline"
-            icon={<Zap className="h-5 w-5 text-white" />}
+            icon={<Zap className={cn("text-white", isCompact ? "h-4 w-4" : "h-5 w-5")} />}
             stages={GATEWAY_ONLY_PIPELINE_STAGES}
             opportunities={gatewayOpportunities}
             onDragStart={handleDragStart}
@@ -294,6 +363,7 @@ const DualPipelineBoard = ({
             onAddNew={onAddNew}
             colorAccent="bg-teal"
             pipelineType="gateway"
+            isCompact={isCompact}
           />
         </div>
       </div>
