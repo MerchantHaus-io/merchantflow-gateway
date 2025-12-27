@@ -5,16 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { Opportunity, STAGE_CONFIG, Account, Contact, getServiceType } from "@/types/opportunity";
-import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, ListChecks, Zap, CreditCard, Maximize2, Minimize2, Loader2 } from "lucide-react";
+import { Opportunity, STAGE_CONFIG, Account, Contact, getServiceType, EMAIL_TO_USER } from "@/types/opportunity";
+import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, ListChecks, Zap, CreditCard, Maximize2, Minimize2, Loader2, Wand2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTasks } from "@/contexts/TasksContext";
-import CommentsTab from "./CommentsTab";
-import GameSplash from "./GameSplash";
 import ActivitiesTab from "./ActivitiesTab";
 import {
   AlertDialog,
@@ -30,9 +28,16 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Task } from "@/types/task";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "./AutoSaveIndicator";
+import { StatusBlockerPanel } from "./opportunity-detail/StatusBlockerPanel";
+import { StagePath } from "./opportunity-detail/StagePath";
+import { ApplicationProgress } from "./opportunity-detail/ApplicationProgress";
+import { OpportunityTasks } from "./opportunity-detail/OpportunityTasks";
+import { NotesSection } from "./opportunity-detail/NotesSection";
+import GameSplash from "./GameSplash";
+import CommentsTab from "./CommentsTab";
+import { Task } from "@/types/task";
 
 interface Document {
   id: string;
