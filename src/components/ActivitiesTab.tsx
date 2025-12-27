@@ -1,8 +1,20 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Activity, ArrowRight } from "lucide-react";
-import { format } from "date-fns";
-import { STAGE_CONFIG, OpportunityStage } from "@/types/opportunity";
+import { 
+  Activity, 
+  ArrowRight, 
+  UserPlus, 
+  Clock, 
+  CheckCircle2, 
+  Plus, 
+  FileText,
+  MessageSquare,
+  Zap,
+  Skull,
+  ListChecks
+} from "lucide-react";
+import { format, formatDistanceToNow } from "date-fns";
+import { STAGE_CONFIG, OpportunityStage, EMAIL_TO_USER } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
 
 interface ActivityItem {
@@ -18,6 +30,75 @@ interface ActivitiesTabProps {
   opportunityId: string;
   compact?: boolean;
 }
+
+// Activity type configuration
+const ACTIVITY_CONFIG: Record<string, { 
+  icon: React.ElementType; 
+  color: string; 
+  bgColor: string;
+  label: string;
+}> = {
+  stage_change: { 
+    icon: ArrowRight, 
+    color: "text-blue-500", 
+    bgColor: "bg-blue-500/10",
+    label: "Stage Change"
+  },
+  assignment_change: { 
+    icon: UserPlus, 
+    color: "text-purple-500", 
+    bgColor: "bg-purple-500/10",
+    label: "Assignment"
+  },
+  status_change: { 
+    icon: Activity, 
+    color: "text-amber-500", 
+    bgColor: "bg-amber-500/10",
+    label: "Status Change"
+  },
+  task_created: { 
+    icon: Plus, 
+    color: "text-green-500", 
+    bgColor: "bg-green-500/10",
+    label: "Task Created"
+  },
+  task_completed: { 
+    icon: CheckCircle2, 
+    color: "text-emerald-500", 
+    bgColor: "bg-emerald-500/10",
+    label: "Task Completed"
+  },
+  document_uploaded: { 
+    icon: FileText, 
+    color: "text-cyan-500", 
+    bgColor: "bg-cyan-500/10",
+    label: "Document"
+  },
+  note_added: { 
+    icon: MessageSquare, 
+    color: "text-indigo-500", 
+    bgColor: "bg-indigo-500/10",
+    label: "Note"
+  },
+  opportunity_created: { 
+    icon: Zap, 
+    color: "text-primary", 
+    bgColor: "bg-primary/10",
+    label: "Created"
+  },
+  marked_dead: { 
+    icon: Skull, 
+    color: "text-destructive", 
+    bgColor: "bg-destructive/10",
+    label: "Archived"
+  },
+  wizard_progress: { 
+    icon: ListChecks, 
+    color: "text-teal-500", 
+    bgColor: "bg-teal-500/10",
+    label: "Wizard Progress"
+  },
+};
 
 const ActivitiesTab = ({ opportunityId, compact = false }: ActivitiesTabProps) => {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
@@ -74,9 +155,23 @@ const ActivitiesTab = ({ opportunityId, compact = false }: ActivitiesTabProps) =
     return null;
   };
 
+  const getDisplayName = (email: string | null) => {
+    if (!email) return null;
+    return EMAIL_TO_USER[email.toLowerCase()] || email.split('@')[0];
+  };
+
+  const getActivityConfig = (type: string) => {
+    return ACTIVITY_CONFIG[type] || { 
+      icon: Activity, 
+      color: "text-muted-foreground", 
+      bgColor: "bg-muted",
+      label: type 
+    };
+  };
+
   if (loading) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
+      <div className={cn("text-center text-muted-foreground", compact ? "py-4" : "py-8")}>
         <div className="animate-pulse">Loading activities...</div>
       </div>
     );
@@ -84,58 +179,77 @@ const ActivitiesTab = ({ opportunityId, compact = false }: ActivitiesTabProps) =
 
   if (activities.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        <Activity className="h-12 w-12 mx-auto mb-2 opacity-50" />
-        <p>No activities yet</p>
+      <div className={cn("text-center text-muted-foreground", compact ? "py-4" : "py-8")}>
+        <Activity className={cn("mx-auto mb-2 opacity-50", compact ? "h-8 w-8" : "h-12 w-12")} />
+        <p className={compact ? "text-xs" : ""}>No activities yet</p>
       </div>
     );
   }
 
   return (
-    <div className={compact ? "space-y-2" : "space-y-3"}>
+    <div className={compact ? "space-y-1.5" : "space-y-3"}>
       {(compact ? activities.slice(0, 5) : activities).map((activity) => {
         const stageMovement = activity.type === 'stage_change' ? parseStageMovement(activity.description) : null;
+        const config = getActivityConfig(activity.type);
+        const Icon = config.icon;
+        const displayName = getDisplayName(activity.user_email);
 
         return (
           <div 
             key={activity.id} 
             className={cn(
-              "flex items-start gap-3 bg-muted/50 rounded-lg",
+              "flex items-start gap-2 bg-muted/50 rounded-lg",
               compact ? "p-2" : "p-3"
             )}
           >
-            {!compact && (
-              <div className="bg-primary/10 p-2 rounded">
-                <Activity className="h-4 w-4 text-primary" />
-              </div>
-            )}
+            <div className={cn(
+              "shrink-0 rounded p-1.5",
+              config.bgColor
+            )}>
+              <Icon className={cn(
+                config.color,
+                compact ? "h-3 w-3" : "h-4 w-4"
+              )} />
+            </div>
+            
             <div className="flex-1 min-w-0">
-              <div className={cn("flex items-center gap-2", compact ? "text-xs" : "text-sm")}>
+              <div className={cn("flex items-center gap-2 flex-wrap", compact ? "text-xs" : "text-sm")}>
                 {stageMovement ? (
-                  <div className="flex items-center gap-2 flex-wrap">
+                  <>
                     <span className="font-medium">{getStageLabel(stageMovement.from)}</span>
-                    <ArrowRight className={cn("text-muted-foreground", compact ? "h-3 w-3" : "h-4 w-4")} />
+                    <ArrowRight className={cn("text-muted-foreground shrink-0", compact ? "h-3 w-3" : "h-4 w-4")} />
                     <span className="font-medium text-primary">{getStageLabel(stageMovement.to)}</span>
-                  </div>
+                  </>
                 ) : (
-                  <span>{activity.description || activity.type}</span>
+                  <span className="line-clamp-1">{activity.description || config.label}</span>
                 )}
               </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                {activity.user_email && !compact && (
+              
+              <div className={cn(
+                "flex items-center gap-1.5 text-muted-foreground mt-0.5",
+                compact ? "text-[10px]" : "text-xs"
+              )}>
+                {displayName && (
                   <>
-                    <span>{activity.user_email}</span>
+                    <span className="font-medium">{displayName}</span>
                     <span>•</span>
                   </>
                 )}
-                <span>{format(new Date(activity.created_at), compact ? 'MMM d, h:mm a' : 'MMM d, yyyy h:mm a')}</span>
+                <Clock className={cn(compact ? "h-2.5 w-2.5" : "h-3 w-3")} />
+                <span>
+                  {compact 
+                    ? formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })
+                    : format(new Date(activity.created_at), 'MMM d, yyyy h:mm a')
+                  }
+                </span>
               </div>
             </div>
           </div>
         );
       })}
+      
       {compact && activities.length > 5 && (
-        <p className="text-xs text-muted-foreground text-center">
+        <p className="text-[10px] text-muted-foreground text-center pt-1">
           +{activities.length - 5} more activities
         </p>
       )}

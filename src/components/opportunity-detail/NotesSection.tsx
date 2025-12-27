@@ -62,7 +62,7 @@ export const NotesSection = ({ opportunityId }: NotesSectionProps) => {
       // Also log as activity
       await supabase.from("activities").insert({
         opportunity_id: opportunityId,
-        type: "note",
+        type: "note_added",
         description: `Note added: ${newNote.trim().substring(0, 100)}${newNote.length > 100 ? "..." : ""}`,
         user_id: user.id,
         user_email: user.email,

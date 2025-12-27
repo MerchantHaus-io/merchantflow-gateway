@@ -159,14 +159,27 @@ export const TasksProvider = ({ children }: { children: React.ReactNode }) => {
       // Remove optimistically added task on error
       setTasks((prev) => prev.filter((t) => t.id !== newTask.id));
     } else {
+      // Log activity if related to an opportunity
+      if (newTask.relatedOpportunityId) {
+        await supabase.from('activities').insert({
+          opportunity_id: newTask.relatedOpportunityId,
+          type: 'task_created',
+          description: `Task created: ${newTask.title}`,
+          user_id: user?.id,
+          user_email: user?.email,
+        });
+      }
       // Refresh to get account/contact names
       refreshTasks();
     }
 
     return newTask;
-  }, [refreshTasks]);
+  }, [refreshTasks, user]);
 
   const updateTask = useCallback(async (taskId: string, update: Partial<Task>) => {
+    // Get current task for activity logging
+    const currentTask = tasks.find(t => t.id === taskId);
+    
     // Optimistically update local state first
     setTasks((prev) => prev.map((task) => (task.id === taskId ? { ...task, ...update } : task)));
 
@@ -190,13 +203,24 @@ export const TasksProvider = ({ children }: { children: React.ReactNode }) => {
         .eq("id", taskId);
 
       if (error) throw error;
+      
+      // Log activity for task completion
+      if (update.status === 'done' && currentTask?.status !== 'done' && currentTask?.relatedOpportunityId) {
+        await supabase.from('activities').insert({
+          opportunity_id: currentTask.relatedOpportunityId,
+          type: 'task_completed',
+          description: `Task completed: ${currentTask.title}`,
+          user_id: user?.id,
+          user_email: user?.email,
+        });
+      }
     } catch (error) {
       console.error('Error updating task:', error);
       toast.error('Failed to update task');
       // Refresh tasks to revert to the actual database state
       refreshTasks();
     }
-  }, [refreshTasks]);
+  }, [refreshTasks, tasks, user]);
 
   const updateTaskStatus = useCallback(
     (taskId: string, status: Task["status"]) => {

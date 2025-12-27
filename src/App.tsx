@@ -28,6 +28,7 @@ import CsvImport from "./pages/CsvImport";
 import Notifications from "./pages/Notifications";
 import DeletionRequests from "./pages/DeletionRequests";
 import DataExport from "./pages/DataExport";
+import Opportunities from "./pages/Opportunities";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,7 @@ const App = () => (
                 <Route path="/apply" element={<Apply />} />
                 <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
                 <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                <Route path="/opportunities" element={<ProtectedRoute><Opportunities /></ProtectedRoute>} />
                 <Route path="/accounts" element={<ProtectedRoute><Accounts /></ProtectedRoute>} />
                 <Route path="/contacts" element={<ProtectedRoute><Contacts /></ProtectedRoute>} />
                 <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
