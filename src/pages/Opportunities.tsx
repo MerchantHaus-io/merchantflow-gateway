@@ -249,33 +249,23 @@ const Opportunities = () => {
         </header>
 
         <main className="flex-1 overflow-auto p-4 lg:p-6 space-y-6">
-          {/* Stats Pills - Compact horizontal layout */}
-          <div className="flex flex-wrap gap-2">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50 border text-sm">
-              <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-muted-foreground">Active:</span>
-              <span className="font-semibold">{stats.total}</span>
-            </div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-sm">
-              <Plus className="h-3.5 w-3.5 text-blue-500" />
-              <span className="text-muted-foreground">New:</span>
-              <span className="font-semibold text-blue-500">{stats.new}</span>
-            </div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-sm">
-              <AlertCircle className="h-3.5 w-3.5 text-amber-500" />
-              <span className="text-muted-foreground">In Progress:</span>
-              <span className="font-semibold text-amber-500">{stats.inProgress}</span>
-            </div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-sm">
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-              <span className="text-muted-foreground">Won:</span>
-              <span className="font-semibold text-emerald-500">{stats.won}</span>
-            </div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-destructive/10 border border-destructive/20 text-sm">
-              <XCircle className="h-3.5 w-3.5 text-destructive" />
-              <span className="text-muted-foreground">Closed:</span>
-              <span className="font-semibold text-destructive">{stats.lost}</span>
-            </div>
+          {/* Stats - Compact header-style badges */}
+          <div className="flex items-center gap-1.5">
+            <Badge variant="secondary" className="h-6 px-2 text-xs font-medium gap-1">
+              <TrendingUp className="h-3 w-3" />{stats.total}
+            </Badge>
+            <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-blue-500/30 text-blue-500">
+              <Plus className="h-3 w-3" />{stats.new}
+            </Badge>
+            <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-amber-500/30 text-amber-500">
+              <AlertCircle className="h-3 w-3" />{stats.inProgress}
+            </Badge>
+            <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-emerald-500/30 text-emerald-500">
+              <CheckCircle2 className="h-3 w-3" />{stats.won}
+            </Badge>
+            <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-destructive/30 text-destructive">
+              <XCircle className="h-3 w-3" />{stats.lost}
+            </Badge>
           </div>
 
           {/* Filters */}
