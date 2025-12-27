@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { supabase } from "@/integrations/supabase/client";
@@ -61,6 +62,7 @@ const Opportunities = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const { tasks } = useTasks();
+  const navigate = useNavigate();
   
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,7 +73,6 @@ const Opportunities = () => {
   const [statusFilter, setStatusFilter] = useState<string>("active");
   const [sortField, setSortField] = useState<SortField>('updated');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
   const [showNewModal, setShowNewModal] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
 
@@ -211,25 +212,8 @@ const Opportunities = () => {
     };
   }, [opportunities]);
 
-  const handleUpdateOpportunity = async (updates: Partial<Opportunity>) => {
-    if (!selectedOpportunity) return;
-    
-    // Update local state optimistically
-    setOpportunities(prev => prev.map(opp => 
-      opp.id === selectedOpportunity.id ? { ...opp, ...updates } : opp
-    ));
-    setSelectedOpportunity(prev => prev ? { ...prev, ...updates } : null);
-  };
-
-  const handleMarkAsDead = (id: string) => {
-    setOpportunities(prev => prev.map(opp => 
-      opp.id === id ? { ...opp, status: 'dead' as const } : opp
-    ));
-  };
-
-  const handleDelete = (id: string) => {
-    setOpportunities(prev => prev.filter(opp => opp.id !== id));
-    setSelectedOpportunity(null);
+  const navigateToOpportunity = (opp: Opportunity) => {
+    navigate(`/opportunities/${opp.id}`);
   };
 
   const SortableHeader = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
@@ -432,7 +416,7 @@ const Opportunities = () => {
                           <TableRow 
                             key={opp.id} 
                             className="cursor-pointer hover:bg-muted/50"
-                            onClick={() => setSelectedOpportunity(opp)}
+                            onClick={() => navigateToOpportunity(opp)}
                           >
                             <TableCell>
                               <div className="flex items-center gap-2">
@@ -516,7 +500,7 @@ const Opportunities = () => {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="bg-popover">
-                                  <DropdownMenuItem onClick={() => setSelectedOpportunity(opp)}>
+                                  <DropdownMenuItem onClick={() => navigateToOpportunity(opp)}>
                                     <Eye className="h-4 w-4 mr-2" />
                                     View Details
                                   </DropdownMenuItem>
@@ -547,7 +531,7 @@ const Opportunities = () => {
                       <Card 
                         key={opp.id} 
                         className="cursor-pointer hover:shadow-md transition-shadow"
-                        onClick={() => setSelectedOpportunity(opp)}
+                        onClick={() => navigateToOpportunity(opp)}
                       >
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between mb-3">
@@ -606,15 +590,6 @@ const Opportunities = () => {
           </Card>
         </main>
       </SidebarInset>
-
-      {/* Detail Modal */}
-      <OpportunityDetailModal
-        opportunity={selectedOpportunity}
-        onClose={() => setSelectedOpportunity(null)}
-        onUpdate={handleUpdateOpportunity}
-        onMarkAsDead={handleMarkAsDead}
-        onDelete={handleDelete}
-      />
 
       {/* New Application Modal */}
       <NewApplicationModal
