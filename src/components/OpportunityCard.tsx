@@ -131,35 +131,35 @@ const OpportunityCard = ({
       }}
       className={cn(
         'cursor-grab active:cursor-grabbing transition-all duration-200 group',
-        'bg-card hover:shadow-lg border border-border/50 rounded-lg overflow-hidden',
-        'border-l-4',
+        'bg-card hover:shadow-lg border border-border/50 rounded-md landscape:rounded overflow-hidden',
+        'border-l-2 landscape:border-l-2',
         teamColors.border
       )}
     >
-      <CardContent className="p-2.5 space-y-1.5">
+      <CardContent className="p-1.5 landscape:p-1 space-y-0.5 landscape:space-y-0">
         {/* Account Name */}
-        <div className="flex items-start justify-between gap-1">
-          <h3 className="font-semibold text-xs text-foreground truncate leading-tight flex-1">
+        <div className="flex items-start justify-between gap-0.5">
+          <h3 className="font-semibold text-[10px] landscape:text-[9px] text-foreground truncate leading-tight flex-1">
             {account?.name || 'Unknown'}
           </h3>
-          <GripVertical className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity flex-shrink-0 text-muted-foreground" />
+          <GripVertical className="h-2.5 w-2.5 landscape:h-2 landscape:w-2 opacity-0 group-hover:opacity-50 transition-opacity flex-shrink-0 text-muted-foreground" />
         </div>
 
         {/* Contact Last Name */}
-        <p className="text-[11px] text-muted-foreground truncate">
+        <p className="text-[9px] landscape:text-[8px] text-muted-foreground truncate">
           {contactLastName || 'No contact'}
         </p>
 
         {/* Footer: Date + SLA + Assignment Avatar */}
-        <div className="flex items-center justify-between pt-1 border-t border-border/30">
+        <div className="flex items-center justify-between pt-0.5 landscape:pt-0 border-t border-border/30">
           {/* Date Created + SLA Dot */}
-          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-            <Calendar className="h-2.5 w-2.5" />
-            <span>{format(new Date(opportunity.created_at), 'MM/dd/yy')}</span>
+          <div className="flex items-center gap-1 text-[9px] landscape:text-[8px] text-muted-foreground">
+            <Calendar className="h-2 w-2 landscape:h-1.5 landscape:w-1.5" />
+            <span>{format(new Date(opportunity.created_at), 'MM/dd')}</span>
             {/* SLA Status Dot */}
             <span 
               className={cn(
-                "h-2 w-2 rounded-full flex-shrink-0",
+                "h-1.5 w-1.5 landscape:h-1 landscape:w-1 rounded-full flex-shrink-0",
                 opportunity.sla_status === 'red' && "bg-red-500",
                 opportunity.sla_status === 'amber' && "bg-amber-500",
                 opportunity.sla_status === 'green' && "bg-green-500",
@@ -173,11 +173,11 @@ const OpportunityCard = ({
           <Popover>
             <PopoverTrigger asChild>
               <button onClick={(e) => e.stopPropagation()}>
-                <Avatar className="h-6 w-6 border-2 border-background shadow-sm hover:ring-2 hover:ring-primary/20 transition-all">
+                <Avatar className="h-5 w-5 landscape:h-4 landscape:w-4 border border-background shadow-sm hover:ring-1 hover:ring-primary/20 transition-all">
                   {avatarUrl && (
                     <AvatarImage src={avatarUrl} alt={opportunity.assigned_to || 'Unassigned'} />
                   )}
-                  <AvatarFallback className={cn("text-[9px] font-medium", teamColors.bg, teamColors.text)}>
+                  <AvatarFallback className={cn("text-[8px] landscape:text-[7px] font-medium", teamColors.bg, teamColors.text)}>
                     {opportunity.assigned_to ? getInitials(opportunity.assigned_to) : '?'}
                   </AvatarFallback>
                 </Avatar>

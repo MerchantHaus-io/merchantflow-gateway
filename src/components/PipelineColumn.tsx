@@ -59,8 +59,8 @@ const PipelineColumn = ({
   return (
     <div
       className={cn(
-        "flex-shrink-0 flex flex-col min-h-0 self-stretch rounded-lg bg-muted/30 overflow-hidden",
-        "w-[140px] sm:w-[150px] md:w-[160px] lg:w-[180px] xl:w-[200px] 2xl:w-[220px]"
+        "flex-shrink-0 flex flex-col min-h-0 self-stretch rounded-lg landscape:rounded-md bg-muted/30 overflow-hidden",
+        "w-[100px] landscape:w-[90px] sm:w-[130px] md:w-[150px] lg:w-[180px]"
       )}
       onDragOver={onDragOver}
       onDrop={(e) => onDrop(e, stage)}
@@ -115,29 +115,29 @@ const PipelineColumn = ({
 
       {/* Action Bar when header is hidden */}
       {hideHeader && (
-        <div className="px-2 py-1.5 flex items-center justify-end gap-1 bg-muted/20">
+        <div className="px-1 py-0.5 landscape:py-0 flex items-center justify-end gap-0.5 bg-muted/20">
           {stage === 'application_started' && onAddNew && (
             <Button
               variant="ghost"
               size="icon"
-              className="h-6 w-6 text-muted-foreground hover:text-foreground"
+              className="h-5 w-5 landscape:h-4 landscape:w-4 text-muted-foreground hover:text-foreground"
               onClick={onAddNew}
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-3 w-3 landscape:h-2.5 landscape:w-2.5" />
             </Button>
           )}
           {count > 0 && (
             <Button
               variant="ghost"
               size="icon"
-              className="h-6 w-6 text-muted-foreground hover:text-foreground"
+              className="h-5 w-5 landscape:h-4 landscape:w-4 text-muted-foreground hover:text-foreground"
               onClick={toggleAllCards}
               title={allCollapsed ? "Expand all" : "Collapse all"}
             >
               {allCollapsed ? (
-                <ChevronsUpDown className="h-4 w-4" />
+                <ChevronsUpDown className="h-3 w-3 landscape:h-2.5 landscape:w-2.5" />
               ) : (
-                <ChevronsDownUp className="h-4 w-4" />
+                <ChevronsDownUp className="h-3 w-3 landscape:h-2.5 landscape:w-2.5" />
               )}
             </Button>
           )}
@@ -145,9 +145,9 @@ const PipelineColumn = ({
       )}
 
       {/* Scrollable Cards Area */}
-      <div className="flex-1 overflow-y-auto overscroll-contain p-2 space-y-2 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div className="flex-1 overflow-y-auto overscroll-contain p-1 landscape:p-0.5 space-y-1 landscape:space-y-0.5 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
         {opportunities.length === 0 ? (
-          <div className="flex items-center justify-center h-20 text-xs text-muted-foreground/60 border-2 border-dashed border-border/30 rounded-lg">
+          <div className="flex items-center justify-center h-12 landscape:h-8 text-[10px] landscape:text-[8px] text-muted-foreground/60 border border-dashed border-border/30 rounded">
             Drop here
           </div>
         ) : (

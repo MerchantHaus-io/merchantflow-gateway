@@ -94,21 +94,22 @@ const PipelineSection = ({
   };
 
   return (
-    <div className="flex flex-1 min-h-0 min-w-0 border border-border/40 rounded-xl overflow-hidden bg-card/50 shadow-sm">
+    <div className="flex flex-1 min-h-0 min-w-0 border border-border/40 rounded-lg landscape:rounded-md overflow-hidden bg-card/50 shadow-sm">
       {/* Vertical Title Sidebar */}
       <div className={cn(
-        "flex flex-col items-center justify-center w-8 sm:w-10 lg:w-12 flex-shrink-0 border-r border-border/40",
+        "flex flex-col items-center justify-center flex-shrink-0 border-r border-border/40",
+        "w-8 sm:w-10 lg:w-12 landscape:w-6",
         colorAccent
       )}>
-        <div className="flex flex-col items-center gap-2 sm:gap-3 py-2 sm:py-4">
-          <span className="hidden sm:block">{icon}</span>
+        <div className="flex flex-col items-center gap-1 landscape:gap-0.5 py-2 sm:py-4 landscape:py-1">
+          <span className="hidden sm:block landscape:hidden">{icon}</span>
           <span
-            className="text-white font-semibold text-[10px] sm:text-xs whitespace-nowrap tracking-wide"
+            className="text-white font-semibold text-[10px] sm:text-xs landscape:text-[8px] whitespace-nowrap tracking-wide"
             style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
           >
             {title}
           </span>
-          <span className="text-white/90 text-[10px] sm:text-xs font-medium bg-white/20 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
+          <span className="text-white/90 text-[10px] sm:text-xs landscape:text-[8px] font-medium bg-white/20 px-1 landscape:px-0.5 py-0.5 landscape:py-0 rounded-full">
             {totalCount}
           </span>
         </div>
@@ -122,31 +123,23 @@ const PipelineSection = ({
           className="flex-shrink-0 overflow-x-auto overflow-y-hidden scrollbar-hide bg-muted/30"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          <div className="flex gap-2 sm:gap-3 p-2 sm:p-3 pb-0 min-w-max">
+          <div className="flex gap-1 landscape:gap-0.5 p-1 landscape:p-0.5 pb-0 min-w-max">
             {stages.map((stage) => {
               const config = STAGE_CONFIG[stage];
               const count = getOpportunitiesByStage(stage).length;
               return (
                 <div
                   key={stage}
-                  className="flex-shrink-0 w-[140px] sm:w-[150px] md:w-[160px] lg:w-[180px] xl:w-[200px] 2xl:w-[220px] pb-2 border-b-2"
+                  className="flex-shrink-0 w-[100px] landscape:w-[90px] sm:w-[130px] md:w-[150px] lg:w-[180px] pb-1 border-b-2"
                   style={{ borderColor: config.color || 'hsl(var(--primary))' }}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-6 h-6 rounded flex items-center justify-center"
-                        style={{ backgroundColor: `${config.color}15` || 'hsl(var(--primary) / 0.1)' }}
-                      >
-                        <span className="text-xs font-bold" style={{ color: config.color || 'hsl(var(--primary))' }}>
-                          {config.icon || '●'}
-                        </span>
-                      </div>
-                      <span className="text-sm font-semibold text-foreground">
+                  <div className="flex items-center justify-between px-1">
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] landscape:text-[9px] font-semibold text-foreground truncate max-w-[60px] landscape:max-w-[55px]">
                         {config.label}
                       </span>
                     </div>
-                    <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                    <span className="text-[9px] landscape:text-[8px] text-muted-foreground bg-muted px-1 py-0 rounded-full">
                       {count}
                     </span>
                   </div>
@@ -161,7 +154,7 @@ const PipelineSection = ({
           ref={scrollContainerRef}
           className="flex-1 overflow-x-auto overflow-y-hidden min-h-0"
         >
-          <div className="flex items-stretch gap-2 sm:gap-3 p-2 sm:p-3 pt-2 min-w-max min-h-0">
+          <div className="flex items-stretch gap-1 landscape:gap-0.5 p-1 landscape:p-0.5 pt-1 min-w-max min-h-0">
             {stages.map((stage) => (
               <PipelineColumn
                 key={stage}
@@ -265,7 +258,7 @@ const DualPipelineBoard = ({
 
   return (
     <>
-      <div className="flex-1 min-h-0 w-full flex flex-col lg:flex-row p-4 gap-4 overflow-hidden">
+      <div className="flex-1 min-h-0 w-full flex flex-col lg:flex-row p-2 landscape:p-1 gap-2 landscape:gap-1 overflow-hidden">
         {/* NMI Payments Pipeline Section */}
         <div className="flex-1 min-w-0 min-h-0 flex flex-col">
           <PipelineSection
