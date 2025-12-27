@@ -712,6 +712,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_or_create_general_channel: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -720,6 +721,14 @@ export type Database = {
         Returns: boolean
       }
       is_admin_email: { Args: never; Returns: boolean }
+      post_system_chat_message: {
+        Args: { p_channel_name?: string; p_content: string }
+        Returns: undefined
+      }
+      send_system_dm: {
+        Args: { p_content: string; p_receiver_email: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"
