@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { Opportunity, STAGE_CONFIG, Account, Contact, getServiceType, EMAIL_TO_USER } from "@/types/opportunity";
+import { Opportunity, STAGE_CONFIG, Account, Contact, getServiceType, EMAIL_TO_USER, TEAM_MEMBERS } from "@/types/opportunity";
 import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, ListChecks, Zap, CreditCard, Maximize2, Minimize2, Loader2, Wand2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
@@ -515,6 +515,48 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                         Archived
                       </span>
                     )}
+                    <span className="text-muted-foreground">•</span>
+                    {/* Primary Owner Dropdown */}
+                    <Select
+                      value={opportunity.assigned_to || "unassigned"}
+                      onValueChange={async (value) => {
+                        const newAssignee = value === "unassigned" ? null : value;
+                        const { error } = await supabase
+                          .from('opportunities')
+                          .update({ assigned_to: newAssignee })
+                          .eq('id', opportunity.id);
+                        
+                        if (error) {
+                          toast.error("Failed to reassign owner");
+                          return;
+                        }
+                        
+                        // Log activity
+                        await supabase.from('activities').insert({
+                          opportunity_id: opportunity.id,
+                          type: 'assignment_change',
+                          description: `Reassigned to ${newAssignee || 'Unassigned'}`,
+                          user_id: user?.id,
+                          user_email: user?.email,
+                        });
+                        
+                        onUpdate({ ...opportunity, assigned_to: newAssignee || undefined });
+                        toast.success(`Assigned to ${newAssignee || 'Unassigned'}`);
+                      }}
+                    >
+                      <SelectTrigger className="h-6 w-auto border-0 bg-transparent hover:bg-muted/50 px-2 text-xs font-medium">
+                        <User className="h-3 w-3 mr-1" />
+                        <SelectValue placeholder="Assign owner" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover z-50">
+                        <SelectItem value="unassigned" className="text-xs">Unassigned</SelectItem>
+                        {TEAM_MEMBERS.map((member) => (
+                          <SelectItem key={member} value={member} className="text-xs">
+                            {member}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>
@@ -538,7 +580,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                       <TooltipContent>Edit</TooltipContent>
                     </Tooltip>
                     
-                    {/* Pipeline toggle button */}
+                    {/* Pipeline toggle button - Lightning bolt for conversion */}
                     {isGatewayCard ? (
                       onMoveToProcessing && (
                         <Tooltip>
@@ -546,7 +588,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-8 w-8"
+                              className="h-8 w-8 text-amber-500 border-amber-500 hover:bg-amber-500/10"
                               onClick={() => setShowMoveDialog(true)}
                               disabled={isConverting}
                             >
@@ -563,7 +605,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-8 w-8"
+                              className="h-8 w-8 text-amber-500 border-amber-500 hover:bg-amber-500/10"
                               onClick={handleConvertToGateway}
                               disabled={isConverting || hasGatewayOpportunity}
                             >
@@ -577,7 +619,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                       )
                     )}
                     
-                    {/* Mark as Dead - available to all users */}
+                    {/* Mark as Dead - Skull icon */}
                     {opportunity.status !== 'dead' && (
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -658,7 +700,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
           </div>
 
           <Tabs defaultValue="overview" className="mt-4">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="overview" className="flex items-center gap-1">
                 <ClipboardList className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Overview</span>
@@ -674,10 +716,6 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
               <TabsTrigger value="documents" className="flex items-center gap-1">
                 <FileText className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Docs</span>
-              </TabsTrigger>
-              <TabsTrigger value="activities" className="flex items-center gap-1">
-                <Activity className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Activity</span>
               </TabsTrigger>
               <TabsTrigger value="details" className="flex items-center gap-1">
                 <Building2 className="h-3.5 w-3.5" />
@@ -717,10 +755,6 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
 
               <TabsContent value="documents" className="mt-4">
                 <DocumentsTab opportunityId={opportunity.id} />
-              </TabsContent>
-
-              <TabsContent value="activities" className="mt-4">
-                <ActivitiesTab opportunityId={opportunity.id} />
               </TabsContent>
 
               {/* Details Tab - Account, Contact, Opportunity info */}
@@ -805,6 +839,19 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
               </TabsContent>
             </div>
           </Tabs>
+
+          {/* Activity Section - Always visible below tabs */}
+          <div className="mt-4 border-t pt-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Activity className="h-4 w-4 text-muted-foreground" />
+              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                Activity Feed
+              </h3>
+            </div>
+            <div className="max-h-[150px] overflow-y-auto pr-2">
+              <ActivitiesTab opportunityId={opportunity.id} compact />
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

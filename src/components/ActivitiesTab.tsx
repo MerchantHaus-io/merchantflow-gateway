@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Activity, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
 import { STAGE_CONFIG, OpportunityStage } from "@/types/opportunity";
+import { cn } from "@/lib/utils";
 
 interface ActivityItem {
   id: string;
@@ -15,9 +16,10 @@ interface ActivityItem {
 
 interface ActivitiesTabProps {
   opportunityId: string;
+  compact?: boolean;
 }
 
-const ActivitiesTab = ({ opportunityId }: ActivitiesTabProps) => {
+const ActivitiesTab = ({ opportunityId, compact = false }: ActivitiesTabProps) => {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -90,43 +92,53 @@ const ActivitiesTab = ({ opportunityId }: ActivitiesTabProps) => {
   }
 
   return (
-    <div className="space-y-3">
-      {activities.map((activity) => {
+    <div className={compact ? "space-y-2" : "space-y-3"}>
+      {(compact ? activities.slice(0, 5) : activities).map((activity) => {
         const stageMovement = activity.type === 'stage_change' ? parseStageMovement(activity.description) : null;
 
         return (
           <div 
             key={activity.id} 
-            className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg"
+            className={cn(
+              "flex items-start gap-3 bg-muted/50 rounded-lg",
+              compact ? "p-2" : "p-3"
+            )}
           >
-            <div className="bg-primary/10 p-2 rounded">
-              <Activity className="h-4 w-4 text-primary" />
-            </div>
+            {!compact && (
+              <div className="bg-primary/10 p-2 rounded">
+                <Activity className="h-4 w-4 text-primary" />
+              </div>
+            )}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 text-sm">
+              <div className={cn("flex items-center gap-2", compact ? "text-xs" : "text-sm")}>
                 {stageMovement ? (
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-medium">{getStageLabel(stageMovement.from)}</span>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                    <ArrowRight className={cn("text-muted-foreground", compact ? "h-3 w-3" : "h-4 w-4")} />
                     <span className="font-medium text-primary">{getStageLabel(stageMovement.to)}</span>
                   </div>
                 ) : (
                   <span>{activity.description || activity.type}</span>
                 )}
               </div>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                {activity.user_email && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                {activity.user_email && !compact && (
                   <>
                     <span>{activity.user_email}</span>
                     <span>•</span>
                   </>
                 )}
-                <span>{format(new Date(activity.created_at), 'MMM d, yyyy h:mm a')}</span>
+                <span>{format(new Date(activity.created_at), compact ? 'MMM d, h:mm a' : 'MMM d, yyyy h:mm a')}</span>
               </div>
             </div>
           </div>
         );
       })}
+      {compact && activities.length > 5 && (
+        <p className="text-xs text-muted-foreground text-center">
+          +{activities.length - 5} more activities
+        </p>
+      )}
     </div>
   );
 };
