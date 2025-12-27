@@ -250,21 +250,21 @@ const Opportunities = () => {
 
         <main className="flex-1 overflow-auto p-4 lg:p-6 space-y-6">
           {/* Stats - Compact header-style badges */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <Badge variant="secondary" className="h-6 px-2 text-xs font-medium gap-1">
-              <TrendingUp className="h-3 w-3" />{stats.total}
+              <TrendingUp className="h-3 w-3" />Active {stats.total}
             </Badge>
             <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-blue-500/30 text-blue-500">
-              <Plus className="h-3 w-3" />{stats.new}
+              <Plus className="h-3 w-3" />New {stats.new}
             </Badge>
             <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-amber-500/30 text-amber-500">
-              <AlertCircle className="h-3 w-3" />{stats.inProgress}
+              <AlertCircle className="h-3 w-3" />In Progress {stats.inProgress}
             </Badge>
             <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-emerald-500/30 text-emerald-500">
-              <CheckCircle2 className="h-3 w-3" />{stats.won}
+              <CheckCircle2 className="h-3 w-3" />Won {stats.won}
             </Badge>
             <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-destructive/30 text-destructive">
-              <XCircle className="h-3 w-3" />{stats.lost}
+              <XCircle className="h-3 w-3" />Closed {stats.lost}
             </Badge>
           </div>
 
