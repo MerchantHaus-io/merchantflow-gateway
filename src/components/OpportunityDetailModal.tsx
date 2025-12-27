@@ -645,27 +645,31 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
             </div>
           </DialogHeader>
 
-          <Tabs defaultValue="account" className="mt-4">
-            <TabsList className="grid w-full grid-cols-8">
-              <TabsTrigger value="account" className="flex items-center gap-1">
-                <Building2 className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Account</span>
-              </TabsTrigger>
-              <TabsTrigger value="contact" className="flex items-center gap-1">
-                <User className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Contact</span>
-              </TabsTrigger>
-              <TabsTrigger value="opportunity" className="flex items-center gap-1">
-                <Briefcase className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Opportunity</span>
-              </TabsTrigger>
-              <TabsTrigger value="wizard" className="flex items-center gap-1">
+          {/* MVP: Status & Blockers Panel - Always visible at top */}
+          <div className="mt-4 space-y-4">
+            <StatusBlockerPanel 
+              opportunity={opportunity} 
+              wizardProgress={wizardState?.progress ?? 0}
+              onUpdate={onUpdate}
+            />
+            
+            {/* Stage Path */}
+            <StagePath opportunity={opportunity} />
+          </div>
+
+          <Tabs defaultValue="overview" className="mt-4">
+            <TabsList className="grid w-full grid-cols-6">
+              <TabsTrigger value="overview" className="flex items-center gap-1">
                 <ClipboardList className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Wizard</span>
+                <span className="hidden sm:inline">Overview</span>
               </TabsTrigger>
-              <TabsTrigger value="comments" className="flex items-center gap-1">
+              <TabsTrigger value="tasks" className="flex items-center gap-1">
+                <ListChecks className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Tasks</span>
+              </TabsTrigger>
+              <TabsTrigger value="notes" className="flex items-center gap-1">
                 <MessageSquare className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Comments</span>
+                <span className="hidden sm:inline">Notes</span>
               </TabsTrigger>
               <TabsTrigger value="documents" className="flex items-center gap-1">
                 <FileText className="h-3.5 w-3.5" />
@@ -675,169 +679,40 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                 <Activity className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Activity</span>
               </TabsTrigger>
-              <TabsTrigger value="tasks" className="flex items-center gap-1">
-                <ListChecks className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Tasks</span>
+              <TabsTrigger value="details" className="flex items-center gap-1">
+                <Building2 className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Details</span>
               </TabsTrigger>
             </TabsList>
 
             <div className={cn(
               "overflow-y-auto pr-2",
-              isMaximized ? "max-h-[75vh]" : "max-h-[60vh]"
+              isMaximized ? "max-h-[65vh]" : "max-h-[50vh]"
             )}>
-              <TabsContent value="account" className="mt-4 space-y-4">
-                {isEditing ? (
-                  <div className="grid grid-cols-2 gap-4">
-                    <EditField label="Company Name" value={accountName} onChange={setAccountName} />
-                    <EditField label="Website" value={website} onChange={setWebsite} />
-                    <EditField label="Address" value={address1} onChange={setAddress1} />
-                    <EditField label="Address 2" value={address2} onChange={setAddress2} />
-                    <EditField label="City" value={city} onChange={setCity} />
-                    <EditField label="State" value={state} onChange={setState} />
-                    <EditField label="Zip" value={zip} onChange={setZip} />
-                    <EditField label="Country" value={country} onChange={setCountry} />
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-4">
-                    <InfoItem label="Company Name" value={account?.name} />
-                    <InfoItem label="Website" value={account?.website} />
-                    <InfoItem label="Address" value={account?.address1} />
-                    <InfoItem label="Address 2" value={account?.address2} />
-                    <InfoItem label="City" value={account?.city} />
-                    <InfoItem label="State" value={account?.state} />
-                    <InfoItem label="Zip" value={account?.zip} />
-                    <InfoItem label="Country" value={account?.country} />
-                  </div>
-                )}
+              {/* Overview Tab - Application Progress */}
+              <TabsContent value="overview" className="mt-4 space-y-4">
+                <ApplicationProgress 
+                  opportunity={opportunity} 
+                  wizardState={wizardState ? {
+                    progress: wizardState.progress,
+                    step_index: wizardState.step_index,
+                    form_state: wizardState.form_state as Record<string, unknown>,
+                    updated_at: wizardState.updated_at
+                  } : null}
+                />
               </TabsContent>
 
-              <TabsContent value="contact" className="mt-4 space-y-4">
-                {isEditing ? (
-                  <div className="grid grid-cols-2 gap-4">
-                    <EditField label="First Name" value={firstName} onChange={setFirstName} />
-                    <EditField label="Last Name" value={lastName} onChange={setLastName} />
-                    <EditField label="Email" value={email} onChange={setEmail} type="email" />
-                    <EditField label="Phone" value={phone} onChange={setPhone} type="tel" />
-                    <EditField label="Fax" value={fax} onChange={setFax} />
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-4">
-                    <InfoItem label="First Name" value={contact?.first_name} />
-                    <InfoItem label="Last Name" value={contact?.last_name} />
-                    <InfoItem label="Email" value={contact?.email} />
-                    <InfoItem label="Phone" value={contact?.phone} />
-                    <InfoItem label="Fax" value={contact?.fax} />
-                  </div>
-                )}
+              {/* Tasks Tab */}
+              <TabsContent value="tasks" className="mt-4">
+                <OpportunityTasks 
+                  opportunityId={opportunity.id} 
+                  tasks={relatedTasks}
+                />
               </TabsContent>
 
-              <TabsContent value="opportunity" className="mt-4 space-y-4">
-                {isEditing ? (
-                  <div className="grid grid-cols-2 gap-4">
-                    <InfoItem label="Stage" value={stageConfig.label} />
-                    <EditField label="Username" value={username} onChange={setUsername} />
-                    <EditField label="Referral Source" value={referralSource} onChange={setReferralSource} />
-                    <EditField label="Timezone" value={timezone} onChange={setTimezone} />
-                    <EditField label="Language" value={language} onChange={setLanguage} />
-                    <div className="col-span-2">
-                      <span className="text-xs text-muted-foreground uppercase tracking-wide">Processing Services</span>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {opportunity.processing_services?.map((service) => (
-                          <span 
-                            key={service}
-                            className="text-sm bg-muted px-2 py-1 rounded"
-                          >
-                            {service}
-                          </span>
-                        )) || <span className="text-sm text-muted-foreground">None</span>}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-4">
-                    <InfoItem label="Stage" value={stageConfig.label} />
-                    <InfoItem label="Username" value={opportunity.username} />
-                    <InfoItem label="Referral Source" value={opportunity.referral_source} />
-                    <InfoItem label="Timezone" value={opportunity.timezone} />
-                    <InfoItem label="Language" value={opportunity.language} />
-                    <div className="col-span-2">
-                      <span className="text-xs text-muted-foreground uppercase tracking-wide">Processing Services</span>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {opportunity.processing_services?.map((service) => (
-                          <span 
-                            key={service}
-                            className="text-sm bg-muted px-2 py-1 rounded"
-                          >
-                            {service}
-                          </span>
-                        )) || <span className="text-sm text-muted-foreground">None</span>}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="wizard" className="mt-4 space-y-4">
-                <div className="rounded-lg border bg-muted/10 border-border/60 p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className={cn("inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs", wizardBadgeClasses(wizardState?.progress ?? 0))}>
-                        <span className="h-2 w-2 rounded-full bg-current" />
-                        <span>{wizardState ? `${wizardState.progress}% complete` : "Not started"}</span>
-                      </div>
-                      <span className="text-sm text-muted-foreground">Status window</span>
-                    </div>
-                    <a
-                      className="text-sm font-semibold text-primary hover:underline"
-                      href={`/tools/preboarding-wizard?opportunityId=${opportunity.id}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Open wizard
-                    </a>
-                  </div>
-
-                  {wizardState ? (
-                    <div className="space-y-2">
-                      <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                        <div
-                          className={cn("h-full transition-all", wizardProgressColor(wizardState.progress))}
-                          style={{ width: `${Math.min(wizardState.progress, 100)}%` }}
-                        />
-                      </div>
-                      <div className="flex items-center justify-between text-sm text-muted-foreground">
-                        <span>Wizard progress saved for this application.</span>
-                        <span>Step {wizardState.step_index + 1}</span>
-                      </div>
-                      <div className="mt-3 space-y-2">
-                        {wizardSectionProgress.map((section) => (
-                          <div key={section.key} className="space-y-1">
-                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              <span className="font-medium text-foreground">{section.label}</span>
-                              <span>
-                                {section.completed}/{section.total} · {section.percent}% {section.done ? "✓" : ""}
-                              </span>
-                            </div>
-                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                              <div
-                                className={cn("h-full", section.done ? "bg-emerald-500" : "bg-amber-500")}
-                                style={{ width: `${section.percent}%` }}
-                              />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-sm text-muted-foreground">
-                      No wizard data saved yet. Attach the preboarding wizard to this account and save progress to surface the status here.
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="comments" className="mt-4">
-                <CommentsTab opportunityId={opportunity.id} />
+              {/* Notes Tab */}
+              <TabsContent value="notes" className="mt-4">
+                <NotesSection opportunityId={opportunity.id} />
               </TabsContent>
 
               <TabsContent value="documents" className="mt-4">
@@ -848,79 +723,84 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                 <ActivitiesTab opportunityId={opportunity.id} />
               </TabsContent>
 
-              <TabsContent value="tasks" className="mt-4 space-y-4">
-                <form onSubmit={handleTaskSubmit} className="grid gap-3 rounded-lg border p-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="task-title">Task title</Label>
-                    <Input
-                      id="task-title"
-                      value={taskTitle}
-                      onChange={(e) => setTaskTitle(e.target.value)}
-                      placeholder="Follow up on application"
-                    />
-                  </div>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="task-assignee">Assign to</Label>
-                      <Select value={taskAssignee} onValueChange={setTaskAssignee}>
-                        <SelectTrigger id="task-assignee">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {assigneeOptions.map((option) => (
-                            <SelectItem key={option} value={option}>
-                              {option}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+              {/* Details Tab - Account, Contact, Opportunity info */}
+              <TabsContent value="details" className="mt-4 space-y-6">
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    Account
+                  </h3>
+                  {isEditing ? (
+                    <div className="grid grid-cols-2 gap-4">
+                      <EditField label="Company Name" value={accountName} onChange={setAccountName} />
+                      <EditField label="Website" value={website} onChange={setWebsite} />
+                      <EditField label="Address" value={address1} onChange={setAddress1} />
+                      <EditField label="Address 2" value={address2} onChange={setAddress2} />
+                      <EditField label="City" value={city} onChange={setCity} />
+                      <EditField label="State" value={state} onChange={setState} />
+                      <EditField label="Zip" value={zip} onChange={setZip} />
+                      <EditField label="Country" value={country} onChange={setCountry} />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="task-comments">Comments</Label>
-                      <Textarea
-                        id="task-comments"
-                        value={taskComments}
-                        onChange={(e) => setTaskComments(e.target.value)}
-                        placeholder="What needs to happen next?"
-                      />
+                  ) : (
+                    <div className="grid grid-cols-2 gap-4">
+                      <InfoItem label="Company Name" value={account?.name} />
+                      <InfoItem label="Website" value={account?.website} />
+                      <InfoItem label="Address" value={account?.address1} />
+                      <InfoItem label="Address 2" value={account?.address2} />
+                      <InfoItem label="City" value={account?.city} />
+                      <InfoItem label="State" value={account?.state} />
+                      <InfoItem label="Zip" value={account?.zip} />
+                      <InfoItem label="Country" value={account?.country} />
                     </div>
-                  </div>
-                  <Button type="submit" className="justify-self-start">
-                    Add task
-                  </Button>
-                </form>
-
-                <div className="space-y-3">
-                  {relatedTasks.length === 0 && (
-                    <p className="text-sm text-muted-foreground">No tasks yet. Create one to track follow-ups.</p>
                   )}
-                  {relatedTasks.map((task) => (
-                    <div key={task.id} className="rounded-lg border p-3 space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium leading-none">{task.title}</p>
-                            {task.source === "sla" && <Badge variant="destructive">24h SLA</Badge>}
-                          </div>
-                          {task.comments && <p className="text-sm text-muted-foreground">{task.comments}</p>}
-                          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                            <Badge variant="outline">Assignee: {task.assignee}</Badge>
-                            <span>Created: {new Date(task.createdAt).toLocaleString()}</span>
-                          </div>
-                        </div>
-                        <Select value={task.status} onValueChange={(value) => updateTaskStatus(task.id, value as Task["status"])}>
-                          <SelectTrigger className="w-[140px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="open">Open</SelectItem>
-                            <SelectItem value="in_progress">In Progress</SelectItem>
-                            <SelectItem value="done">Done</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Contact
+                  </h3>
+                  {isEditing ? (
+                    <div className="grid grid-cols-2 gap-4">
+                      <EditField label="First Name" value={firstName} onChange={setFirstName} />
+                      <EditField label="Last Name" value={lastName} onChange={setLastName} />
+                      <EditField label="Email" value={email} onChange={setEmail} type="email" />
+                      <EditField label="Phone" value={phone} onChange={setPhone} type="tel" />
+                      <EditField label="Fax" value={fax} onChange={setFax} />
                     </div>
-                  ))}
+                  ) : (
+                    <div className="grid grid-cols-2 gap-4">
+                      <InfoItem label="First Name" value={contact?.first_name} />
+                      <InfoItem label="Last Name" value={contact?.last_name} />
+                      <InfoItem label="Email" value={contact?.email} />
+                      <InfoItem label="Phone" value={contact?.phone} />
+                      <InfoItem label="Fax" value={contact?.fax} />
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                    <Briefcase className="h-4 w-4" />
+                    Opportunity
+                  </h3>
+                  {isEditing ? (
+                    <div className="grid grid-cols-2 gap-4">
+                      <InfoItem label="Stage" value={stageConfig.label} />
+                      <EditField label="Username" value={username} onChange={setUsername} />
+                      <EditField label="Referral Source" value={referralSource} onChange={setReferralSource} />
+                      <EditField label="Timezone" value={timezone} onChange={setTimezone} />
+                      <EditField label="Language" value={language} onChange={setLanguage} />
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-4">
+                      <InfoItem label="Stage" value={stageConfig.label} />
+                      <InfoItem label="Username" value={opportunity.username} />
+                      <InfoItem label="Referral Source" value={opportunity.referral_source} />
+                      <InfoItem label="Timezone" value={opportunity.timezone} />
+                      <InfoItem label="Language" value={opportunity.language} />
+                    </div>
+                  )}
                 </div>
               </TabsContent>
             </div>
