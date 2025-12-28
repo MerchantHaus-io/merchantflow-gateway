@@ -44,6 +44,7 @@ const OpportunityCard = ({
   onDragStart,
   onClick,
   onAssignmentChange,
+  isCollapsed = false,
 }: OpportunityCardProps) => {
   const account = opportunity.account;
   const contact = opportunity.contact;
@@ -136,7 +137,10 @@ const OpportunityCard = ({
         teamColors.border
       )}
     >
-      <CardContent className="p-1.5 landscape:p-1 space-y-0.5 landscape:space-y-0">
+      <CardContent className={cn(
+        "p-1.5 landscape:p-1 space-y-0.5 landscape:space-y-0",
+        isCollapsed && "py-0.5"
+      )}>
         {/* Account Name */}
         <div className="flex items-start justify-between gap-0.5">
           <h3 className="font-semibold text-[10px] landscape:text-[9px] text-foreground truncate leading-tight flex-1">
@@ -145,71 +149,75 @@ const OpportunityCard = ({
           <GripVertical className="h-2.5 w-2.5 landscape:h-2 landscape:w-2 opacity-0 group-hover:opacity-50 transition-opacity flex-shrink-0 text-muted-foreground" />
         </div>
 
-        {/* Contact Last Name */}
-        <p className="text-[9px] landscape:text-[8px] text-muted-foreground truncate">
-          {contactLastName || 'No contact'}
-        </p>
+        {/* Contact Last Name - hidden when collapsed */}
+        {!isCollapsed && (
+          <p className="text-[9px] landscape:text-[8px] text-muted-foreground truncate">
+            {contactLastName || 'No contact'}
+          </p>
+        )}
 
-        {/* Footer: Date + SLA + Assignment Avatar */}
-        <div className="flex items-center justify-between pt-0.5 landscape:pt-0 border-t border-border/30">
-          {/* Date Created + SLA Dot */}
-          <div className="flex items-center gap-1 text-[9px] landscape:text-[8px] text-muted-foreground">
-            <Calendar className="h-2 w-2 landscape:h-1.5 landscape:w-1.5" />
-            <span>{format(new Date(opportunity.created_at), 'MM/dd')}</span>
-            {/* SLA Status Dot */}
-            <span 
-              className={cn(
-                "h-1.5 w-1.5 landscape:h-1 landscape:w-1 rounded-full flex-shrink-0",
-                opportunity.sla_status === 'red' && "bg-red-500",
-                opportunity.sla_status === 'amber' && "bg-amber-500",
-                opportunity.sla_status === 'green' && "bg-green-500",
-                !opportunity.sla_status && "bg-green-500" // Default to green
-              )}
-              title={`SLA: ${opportunity.sla_status || 'green'}`}
-            />
+        {/* Footer: Date + SLA + Assignment Avatar - hidden when collapsed */}
+        {!isCollapsed && (
+          <div className="flex items-center justify-between pt-0.5 landscape:pt-0 border-t border-border/30">
+            {/* Date Created + SLA Dot */}
+            <div className="flex items-center gap-1 text-[9px] landscape:text-[8px] text-muted-foreground">
+              <Calendar className="h-2 w-2 landscape:h-1.5 landscape:w-1.5" />
+              <span>{format(new Date(opportunity.created_at), 'MM/dd')}</span>
+              {/* SLA Status Dot */}
+              <span 
+                className={cn(
+                  "h-1.5 w-1.5 landscape:h-1 landscape:w-1 rounded-full flex-shrink-0",
+                  opportunity.sla_status === 'red' && "bg-red-500",
+                  opportunity.sla_status === 'amber' && "bg-amber-500",
+                  opportunity.sla_status === 'green' && "bg-green-500",
+                  !opportunity.sla_status && "bg-green-500" // Default to green
+                )}
+                title={`SLA: ${opportunity.sla_status || 'green'}`}
+              />
+            </div>
+
+            {/* Assignment Avatar with Dropdown */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button onClick={(e) => e.stopPropagation()}>
+                  <Avatar className="h-5 w-5 landscape:h-4 landscape:w-4 border border-background shadow-sm hover:ring-1 hover:ring-primary/20 transition-all">
+                    {avatarUrl && (
+                      <AvatarImage src={avatarUrl} alt={opportunity.assigned_to || 'Unassigned'} />
+                    )}
+                    <AvatarFallback className={cn("text-[8px] landscape:text-[7px] font-medium", teamColors.bg, teamColors.text)}>
+                      {opportunity.assigned_to ? getInitials(opportunity.assigned_to) : '?'}
+                    </AvatarFallback>
+                  </Avatar>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-36 p-2 bg-popover z-50"
+                onClick={(e) => e.stopPropagation()}
+                align="end"
+              >
+                <div className="space-y-1">
+                  <p className="text-xs font-medium mb-2">Assign To</p>
+                  <Select
+                    value={opportunity.assigned_to || 'unassigned'}
+                    onValueChange={handleAssignmentChange}
+                  >
+                    <SelectTrigger className="h-7 text-xs">
+                      <SelectValue placeholder="Assign..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="unassigned" className="text-xs">Unassigned</SelectItem>
+                      {TEAM_MEMBERS.map((member) => (
+                        <SelectItem key={member} value={member} className="text-xs">
+                          {member}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
-
-          {/* Assignment Avatar with Dropdown */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <button onClick={(e) => e.stopPropagation()}>
-                <Avatar className="h-5 w-5 landscape:h-4 landscape:w-4 border border-background shadow-sm hover:ring-1 hover:ring-primary/20 transition-all">
-                  {avatarUrl && (
-                    <AvatarImage src={avatarUrl} alt={opportunity.assigned_to || 'Unassigned'} />
-                  )}
-                  <AvatarFallback className={cn("text-[8px] landscape:text-[7px] font-medium", teamColors.bg, teamColors.text)}>
-                    {opportunity.assigned_to ? getInitials(opportunity.assigned_to) : '?'}
-                  </AvatarFallback>
-                </Avatar>
-              </button>
-            </PopoverTrigger>
-            <PopoverContent
-              className="w-36 p-2 bg-popover z-50"
-              onClick={(e) => e.stopPropagation()}
-              align="end"
-            >
-              <div className="space-y-1">
-                <p className="text-xs font-medium mb-2">Assign To</p>
-                <Select
-                  value={opportunity.assigned_to || 'unassigned'}
-                  onValueChange={handleAssignmentChange}
-                >
-                  <SelectTrigger className="h-7 text-xs">
-                    <SelectValue placeholder="Assign..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover z-50">
-                    <SelectItem value="unassigned" className="text-xs">Unassigned</SelectItem>
-                    {TEAM_MEMBERS.map((member) => (
-                      <SelectItem key={member} value={member} className="text-xs">
-                        {member}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </PopoverContent>
-          </Popover>
-        </div>
+        )}
       </CardContent>
     </Card>
   );
