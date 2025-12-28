@@ -247,7 +247,21 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background text-foreground font-sans antialiased tracking-tight;
+  }
+
+  /* Typography refinements */
+  h1, h2, h3 {
+    @apply font-display tracking-tighter;
+  }
+
+  h4, h5, h6 {
+    @apply tracking-tight;
+  }
+
+  /* Small caps and labels */
+  .label-caps {
+    @apply uppercase tracking-caps text-xs font-medium;
   }
 
   /* Dark mode: use background image */

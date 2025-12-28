@@ -74,6 +74,16 @@ export default {
           'monospace'
         ]
       },
+      letterSpacing: {
+        'tightest': '-0.04em',
+        'tighter': '-0.02em',
+        'tight': '-0.01em',
+        'normal': '0',
+        'wide': '0.02em',
+        'wider': '0.04em',
+        'widest': '0.08em',
+        'caps': '0.12em'
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
