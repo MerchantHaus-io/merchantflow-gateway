@@ -39,7 +39,7 @@ export default {
     extend: {
       fontFamily: {
         sans: [
-          'Plus Jakarta Sans',
+          'Geist',
           'ui-sans-serif',
           'system-ui',
           'sans-serif',
@@ -47,6 +47,13 @@ export default {
           'Segoe UI Emoji',
           'Segoe UI Symbol',
           'Noto Color Emoji'
+        ],
+        display: [
+          'General Sans',
+          'Geist',
+          'ui-sans-serif',
+          'system-ui',
+          'sans-serif'
         ],
         serif: [
           'ui-serif',
