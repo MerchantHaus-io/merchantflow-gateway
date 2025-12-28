@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Pencil, 
   Plus, 
@@ -26,7 +27,10 @@ import {
   Building2,
   Mail,
   Phone,
-  MoreHorizontal
+  MoreHorizontal,
+  ChevronLeft,
+  ChevronRight,
+  UserPlus
 } from "lucide-react";
 import { toast } from "sonner";
 import CommentsTab from "@/components/CommentsTab";
@@ -42,6 +46,8 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+
+const ITEMS_PER_PAGE = 25;
 
 interface ContactWithAccount extends Contact {
   account?: Account;
@@ -99,6 +105,13 @@ const Contacts = () => {
     account_id: '',
   });
   const [selectedContact, setSelectedContact] = useState<ContactWithAccount | null>(null);
+  
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkAssignee, setBulkAssignee] = useState<string>('');
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     if (isNewDialogOpen && !isNewAccount && accounts.length > 0 && !formData.account_id) {
@@ -222,6 +235,105 @@ const Contacts = () => {
     const linked = contacts.filter((c) => !!c.opportunity_id).length;
     return { total, assigned, linked };
   }, [contacts]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredContacts.length / ITEMS_PER_PAGE);
+  const paginatedContacts = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredContacts.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredContacts, currentPage]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, assignmentFilter, accountFilter]);
+
+  // Clear selection when filters/page change
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [currentPage, searchQuery, assignmentFilter, accountFilter]);
+
+  // Bulk selection helpers
+  const allOnPageSelected = paginatedContacts.length > 0 && paginatedContacts.every(c => selectedIds.has(c.id));
+  const someOnPageSelected = paginatedContacts.some(c => selectedIds.has(c.id));
+
+  const toggleSelectAll = () => {
+    if (allOnPageSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(paginatedContacts.map(c => c.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    const newSet = new Set(selectedIds);
+    if (newSet.has(id)) {
+      newSet.delete(id);
+    } else {
+      newSet.add(id);
+    }
+    setSelectedIds(newSet);
+  };
+
+  // Bulk delete handler
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    const confirmDelete = window.confirm(`Are you sure you want to delete ${selectedIds.size} contact(s)?`);
+    if (!confirmDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from('contacts')
+        .delete()
+        .in('id', Array.from(selectedIds));
+
+      if (error) {
+        toast.error('Failed to delete contacts');
+        return;
+      }
+
+      setContacts(prev => prev.filter(c => !selectedIds.has(c.id)));
+      setSelectedIds(new Set());
+      toast.success(`${selectedIds.size} contact(s) deleted`);
+    } catch (err) {
+      console.error(err);
+      toast.error('An unexpected error occurred');
+    }
+  };
+
+  // Bulk assign handler
+  const handleBulkAssign = async () => {
+    if (selectedIds.size === 0 || !bulkAssignee) return;
+
+    try {
+      // Get opportunity IDs for selected contacts
+      const selectedContacts = contacts.filter(c => selectedIds.has(c.id) && c.opportunity_id);
+      const opportunityIds = selectedContacts.map(c => c.opportunity_id).filter(Boolean) as string[];
+
+      if (opportunityIds.length === 0) {
+        toast.error('No linked opportunities found for selected contacts');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('opportunities')
+        .update({ assigned_to: bulkAssignee === 'unassigned' ? null : bulkAssignee })
+        .in('id', opportunityIds);
+
+      if (error) {
+        toast.error('Failed to assign contacts');
+        return;
+      }
+
+      fetchContacts();
+      setSelectedIds(new Set());
+      setBulkAssignee('');
+      toast.success(`${opportunityIds.length} contact(s) assigned to ${bulkAssignee === 'unassigned' ? 'nobody' : bulkAssignee}`);
+    } catch (err) {
+      console.error(err);
+      toast.error('An unexpected error occurred');
+    }
+  };
 
   const openEditDialog = (contact: ContactWithAccount) => {
     setEditingContact(contact);
@@ -475,12 +587,68 @@ const Contacts = () => {
             </CardContent>
           </Card>
 
+          {/* Bulk Actions Bar */}
+          {selectedIds.size > 0 && viewMode === 'table' && (
+            <Card className="border-primary/50 bg-primary/5">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-4 flex-wrap">
+                  <span className="text-sm font-medium">
+                    {selectedIds.size} selected
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Select value={bulkAssignee} onValueChange={setBulkAssignee}>
+                      <SelectTrigger className="w-[160px] h-8">
+                        <SelectValue placeholder="Assign to..." />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover">
+                        <SelectItem value="unassigned">Unassigned</SelectItem>
+                        {TEAM_MEMBERS.map(member => (
+                          <SelectItem key={member} value={member}>{member}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      size="sm" 
+                      variant="secondary"
+                      onClick={handleBulkAssign}
+                      disabled={!bulkAssignee}
+                    >
+                      <UserPlus className="h-4 w-4 mr-1" />
+                      Assign
+                    </Button>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="destructive"
+                    onClick={handleBulkDelete}
+                  >
+                    <Trash className="h-4 w-4 mr-1" />
+                    Delete
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={() => setSelectedIds(new Set())}
+                    className="ml-auto"
+                  >
+                    Clear Selection
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Results */}
           <Card>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base">
                   {filteredContacts.length} Contacts
+                  {totalPages > 1 && (
+                    <span className="text-muted-foreground font-normal ml-2">
+                      (Page {currentPage} of {totalPages})
+                    </span>
+                  )}
                 </CardTitle>
                 <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'table' | 'cards')}>
                   <TabsList className="h-8">
@@ -490,7 +658,7 @@ const Contacts = () => {
                 </Tabs>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               {loading ? (
                 <div className="space-y-3">
                   {[1, 2, 3, 4, 5].map(i => (
@@ -502,6 +670,14 @@ const Contacts = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-12">
+                          <Checkbox 
+                            checked={allOnPageSelected}
+                            onCheckedChange={toggleSelectAll}
+                            aria-label="Select all"
+                            className={someOnPageSelected && !allOnPageSelected ? "data-[state=checked]:bg-primary/50" : ""}
+                          />
+                        </TableHead>
                         <TableHead className="w-12">#</TableHead>
                         <SortableTableHead field="first_name" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>First Name</SortableTableHead>
                         <SortableTableHead field="last_name" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Last Name</SortableTableHead>
@@ -514,19 +690,30 @@ const Contacts = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredContacts.length ? (
-                        filteredContacts.map((contact, index) => {
+                      {paginatedContacts.length ? (
+                        paginatedContacts.map((contact, index) => {
                           const stageConfig = contact.stage
                             ? STAGE_CONFIG[contact.stage as OpportunityStage]
                             : null;
+                          const globalIndex = (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
 
                           return (
                             <TableRow
                               key={contact.id}
-                              className="cursor-pointer hover:bg-muted/50"
+                              className={cn(
+                                "cursor-pointer hover:bg-muted/50",
+                                selectedIds.has(contact.id) && "bg-primary/10"
+                              )}
                               onClick={() => setSelectedContact(contact)}
                             >
-                              <TableCell className="text-muted-foreground text-sm">{index + 1}</TableCell>
+                              <TableCell onClick={(e) => e.stopPropagation()}>
+                                <Checkbox 
+                                  checked={selectedIds.has(contact.id)}
+                                  onCheckedChange={() => toggleSelect(contact.id)}
+                                  aria-label={`Select ${contact.first_name || contact.last_name || 'contact'}`}
+                                />
+                              </TableCell>
+                              <TableCell className="text-muted-foreground text-sm">{globalIndex}</TableCell>
                               <TableCell className="font-medium">{contact.first_name || '-'}</TableCell>
                               <TableCell>{contact.last_name || '-'}</TableCell>
                               <TableCell className="text-sm text-muted-foreground">{contact.email || '-'}</TableCell>
@@ -597,7 +784,7 @@ const Contacts = () => {
                         })
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                          <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                             No contacts found
                           </TableCell>
                         </TableRow>
@@ -607,7 +794,7 @@ const Contacts = () => {
                 </div>
               ) : (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {filteredContacts.map(contact => {
+                  {paginatedContacts.map(contact => {
                     const stageConfig = contact.stage
                       ? STAGE_CONFIG[contact.stage as OpportunityStage]
                       : null;
@@ -685,6 +872,60 @@ const Contacts = () => {
                       </Card>
                     );
                   })}
+                </div>
+              )}
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between pt-4 border-t">
+                  <p className="text-sm text-muted-foreground">
+                    Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredContacts.length)} of {filteredContacts.length}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4 mr-1" />
+                      Previous
+                    </Button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum: number;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = currentPage - 2 + i;
+                        }
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={currentPage === pageNum ? "default" : "ghost"}
+                            size="sm"
+                            className="w-8 h-8 p-0"
+                            onClick={() => setCurrentPage(pageNum)}
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>
