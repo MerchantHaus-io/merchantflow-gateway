@@ -57,6 +57,7 @@ import {
 import DateRangeFilter from "@/components/DateRangeFilter";
 import { DateRange } from "react-day-picker";
 import { isWithinInterval, startOfDay, endOfDay } from "date-fns";
+import { SortableTableHead } from "@/components/SortableTableHead";
 
 // Mapping of status keys to human-friendly labels
 const statusLabels: Record<Task["status"], string> = {
@@ -73,7 +74,8 @@ const viewOptions = [
 ] as const;
 
 type ViewOption = (typeof viewOptions)[number]["value"];
-type SortKey = "createdAt" | "dueAt" | "assignee" | "status";
+type SortKey = "title" | "account" | "contact" | "createdAt" | "dueAt" | "assignee" | "status";
+type SortDirection = 'asc' | 'desc';
 
 // Keys used for storing preferences in localStorage
 const storageKey = {
@@ -95,6 +97,7 @@ const Tasks = () => {
   const [selectedAssignee, setSelectedAssignee] = useState<string>("_all");
   const [sortKey, setSortKey] = useState<SortKey>("createdAt");
   const [sortAsc, setSortAsc] = useState(false);
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [assignee, setAssignee] = useState<string>(displayName);
@@ -139,8 +142,19 @@ const Tasks = () => {
     localStorage.setItem(storageKey.sortKey, sortKey);
   }, [sortKey]);
   useEffect(() => {
-    localStorage.setItem(storageKey.sortDir, sortAsc ? "asc" : "desc");
-  }, [sortAsc]);
+    localStorage.setItem(storageKey.sortDir, sortDirection);
+  }, [sortDirection]);
+
+  const handleSort = (field: string) => {
+    if (sortKey === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+      setSortAsc(prev => !prev);
+    } else {
+      setSortKey(field as SortKey);
+      setSortDirection('asc');
+      setSortAsc(true);
+    }
+  };
 
   // Compute a list of unique assignee names from tasks
   const uniqueAssignees = useMemo(() => {
@@ -187,19 +201,30 @@ const Tasks = () => {
 
     // Sort tasks based on the selected sort key/direction
     result = [...result].sort((a, b) => {
-      const dir = sortAsc ? 1 : -1;
-      if (sortKey === 'createdAt' || sortKey === 'dueAt') {
-        const aDate = a[sortKey] ? new Date(a[sortKey] as string).getTime() : 0;
-        const bDate = b[sortKey] ? new Date(b[sortKey] as string).getTime() : 0;
-        return (aDate - bDate) * dir;
+      const dir = sortDirection === 'asc' ? 1 : -1;
+      switch (sortKey) {
+        case 'title':
+          return (a.title || '').localeCompare(b.title || '') * dir;
+        case 'account':
+          return (a.accountName || '').localeCompare(b.accountName || '') * dir;
+        case 'contact':
+          return (a.contactName || '').localeCompare(b.contactName || '') * dir;
+        case 'createdAt':
+        case 'dueAt':
+          const aDate = a[sortKey] ? new Date(a[sortKey] as string).getTime() : 0;
+          const bDate = b[sortKey] ? new Date(b[sortKey] as string).getTime() : 0;
+          return (aDate - bDate) * dir;
+        case 'assignee':
+          return (a.assignee || '').localeCompare(b.assignee || '') * dir;
+        case 'status':
+          return (a.status || '').localeCompare(b.status || '') * dir;
+        default:
+          return 0;
       }
-      const aValue = (a[sortKey] || '').toString().toLowerCase();
-      const bValue = (b[sortKey] || '').toString().toLowerCase();
-      return aValue.localeCompare(bValue) * dir;
     });
 
     return result;
-  }, [tasks, dateRange, filterBy, statusFilter, showOnlyActive, view, displayName, user?.email, selectedAssignee, sortKey, sortAsc]);
+  }, [tasks, dateRange, filterBy, statusFilter, showOnlyActive, view, displayName, user?.email, selectedAssignee, sortKey, sortDirection]);
 
   // Totals for bar chart by assignee
   const totalsByAssignee = useMemo(
@@ -374,18 +399,20 @@ const Tasks = () => {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Title</TableHead>
-                          <TableHead>Account</TableHead>
-                          <TableHead>Contact</TableHead>
-                          <TableHead>Assigned to</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Due</TableHead>
-                          <TableHead>Created</TableHead>
+                          <TableHead className="w-12">#</TableHead>
+                          <SortableTableHead field="title" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Title</SortableTableHead>
+                          <SortableTableHead field="account" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Account</SortableTableHead>
+                          <SortableTableHead field="contact" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Contact</SortableTableHead>
+                          <SortableTableHead field="assignee" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Assigned to</SortableTableHead>
+                          <SortableTableHead field="status" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Status</SortableTableHead>
+                          <SortableTableHead field="dueAt" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Due</SortableTableHead>
+                          <SortableTableHead field="createdAt" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Created</SortableTableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredTasks.map((task) => (
+                        {filteredTasks.map((task, index) => (
                           <TableRow key={task.id} className="align-top">
+                            <TableCell className="text-muted-foreground text-sm">{index + 1}</TableCell>
                             <TableCell className="font-medium min-w-[180px]">
                               <div>{task.title}</div>
                               {task.description && (
@@ -436,7 +463,7 @@ const Tasks = () => {
                         ))}
                         {filteredTasks.length === 0 && (
                           <TableRow>
-                            <TableCell colSpan={7} className="text-center text-sm text-muted-foreground">
+                            <TableCell colSpan={8} className="text-center text-sm text-muted-foreground">
                               No tasks match this view yet.
                             </TableCell>
                           </TableRow>

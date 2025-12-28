@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Account, Contact } from "@/types/opportunity";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -15,6 +15,10 @@ import { Pencil, Search, Users, Trash } from "lucide-react";
 import { toast } from "sonner";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
+import { SortableTableHead } from "@/components/SortableTableHead";
+
+type SortField = 'name' | 'contacts' | 'city' | 'state' | 'country' | 'website';
+type SortDirection = 'asc' | 'desc';
 
 interface AccountWithContacts extends Account {
   contacts?: Contact[];
@@ -48,6 +52,17 @@ const Accounts = () => {
   });
   // Search query for filtering accounts
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field as SortField);
+      setSortDirection('asc');
+    }
+  };
 
   useEffect(() => {
     fetchAccounts();
@@ -147,17 +162,47 @@ const Accounts = () => {
     );
   }
 
-  // Filter accounts based on search query across several fields
-  const filteredAccounts = accounts.filter((account) => {
-    const query = searchQuery.toLowerCase();
-    return (
-      account.name.toLowerCase().includes(query) ||
-      (account.city ?? '').toLowerCase().includes(query) ||
-      (account.state ?? '').toLowerCase().includes(query) ||
-      (account.country ?? '').toLowerCase().includes(query) ||
-      (account.website ?? '').toLowerCase().includes(query)
-    );
-  });
+  // Filter and sort accounts based on search query and sort settings
+  const filteredAccounts = useMemo(() => {
+    let result = accounts.filter((account) => {
+      const query = searchQuery.toLowerCase();
+      return (
+        account.name.toLowerCase().includes(query) ||
+        (account.city ?? '').toLowerCase().includes(query) ||
+        (account.state ?? '').toLowerCase().includes(query) ||
+        (account.country ?? '').toLowerCase().includes(query) ||
+        (account.website ?? '').toLowerCase().includes(query)
+      );
+    });
+
+    // Sort
+    result.sort((a, b) => {
+      let comparison = 0;
+      switch (sortField) {
+        case 'name':
+          comparison = (a.name || '').localeCompare(b.name || '');
+          break;
+        case 'contacts':
+          comparison = (a.contacts?.length || 0) - (b.contacts?.length || 0);
+          break;
+        case 'city':
+          comparison = (a.city || '').localeCompare(b.city || '');
+          break;
+        case 'state':
+          comparison = (a.state || '').localeCompare(b.state || '');
+          break;
+        case 'country':
+          comparison = (a.country || '').localeCompare(b.country || '');
+          break;
+        case 'website':
+          comparison = (a.website || '').localeCompare(b.website || '');
+          break;
+      }
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+
+    return result;
+  }, [accounts, searchQuery, sortField, sortDirection]);
 
   const totalAccounts = accounts.length;
   const accountsWithContacts = accounts.filter((account) => (account.contacts?.length || 0) > 0).length;
@@ -226,18 +271,20 @@ const Accounts = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Contacts</TableHead>
-                      <TableHead>City</TableHead>
-                      <TableHead>State</TableHead>
-                      <TableHead>Country</TableHead>
-                      <TableHead>Website</TableHead>
+                      <TableHead className="w-12">#</TableHead>
+                      <SortableTableHead field="name" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Name</SortableTableHead>
+                      <SortableTableHead field="contacts" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Contacts</SortableTableHead>
+                      <SortableTableHead field="city" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>City</SortableTableHead>
+                      <SortableTableHead field="state" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>State</SortableTableHead>
+                      <SortableTableHead field="country" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Country</SortableTableHead>
+                      <SortableTableHead field="website" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Website</SortableTableHead>
                       <TableHead className="w-16">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredAccounts.map((account) => (
+                    {filteredAccounts.map((account, index) => (
                       <TableRow key={account.id} className="hover:bg-muted/50">
+                        <TableCell className="text-muted-foreground text-sm">{index + 1}</TableCell>
                         <TableCell className="font-medium">{account.name}</TableCell>
                         <TableCell>
                           {account.contacts && account.contacts.length > 0 ? (
