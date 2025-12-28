@@ -10,9 +10,8 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { useNavigate } from "react-router-dom";
 import { EMAIL_TO_USER } from "@/types/opportunity";
-import { useTheme } from "@/contexts/ThemeContext";
-import logoDark from "@/assets/logo-dark.png";
-import logoLight from "@/assets/logo-light.png";
+
+import sidebarIcon from "@/assets/sidebar-icon.webp";
 import { NotificationBell } from "@/components/NotificationBell";
 import { cn } from "@/lib/utils";
 
@@ -125,7 +124,7 @@ export function AppSidebar({ onNewApplication }: AppSidebarProps) {
   const { user, signOut } = useAuth();
   const { isAdmin } = useUserRole();
   const { unreadCount: unreadMessages } = useUnreadMessages();
-  const { theme } = useTheme();
+  
   const navigate = useNavigate();
   const isCollapsed = state === "collapsed";
 
@@ -143,7 +142,7 @@ export function AppSidebar({ onNewApplication }: AppSidebarProps) {
       <SidebarHeader className="p-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-primary-foreground">
-            <img src={theme === 'dark' ? logoDark : logoLight} alt="Ops Terminal" className="h-8 w-auto" />
+            <img src={sidebarIcon} alt="Ops Terminal" className="h-8 w-8 object-contain" />
           </div>
           <Button
             variant="ghost"
