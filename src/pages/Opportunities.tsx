@@ -54,8 +54,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import ThemeToggle from "@/components/ThemeToggle";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SortableTableHead } from "@/components/SortableTableHead";
 
-type SortField = 'name' | 'stage' | 'owner' | 'created' | 'updated';
+type SortField = 'name' | 'stage' | 'pipeline' | 'owner' | 'tasks' | 'progress' | 'created' | 'updated';
 type SortDirection = 'asc' | 'desc';
 
 const Opportunities = () => {
@@ -120,13 +121,17 @@ const Opportunities = () => {
     };
   }, [fetchOpportunities]);
 
-  const handleSort = (field: SortField) => {
+  const handleSort = (field: string) => {
     if (sortField === field) {
       setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
     } else {
-      setSortField(field);
+      setSortField(field as SortField);
       setSortDirection('asc');
     }
+  };
+
+  const getTaskCount = (opportunityId: string) => {
+    return tasks.filter(t => t.relatedOpportunityId === opportunityId && t.status === 'open').length;
   };
 
   const filteredOpportunities = useMemo(() => {
@@ -179,8 +184,17 @@ const Opportunities = () => {
         case 'stage':
           comparison = a.stage.localeCompare(b.stage);
           break;
+        case 'pipeline':
+          comparison = getServiceType(a).localeCompare(getServiceType(b));
+          break;
         case 'owner':
           comparison = (a.assigned_to || 'zzz').localeCompare(b.assigned_to || 'zzz');
+          break;
+        case 'tasks':
+          comparison = getTaskCount(a.id) - getTaskCount(b.id);
+          break;
+        case 'progress':
+          comparison = (a.wizard_state?.progress || 0) - (b.wizard_state?.progress || 0);
           break;
         case 'created':
           comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
@@ -193,7 +207,7 @@ const Opportunities = () => {
     });
 
     return filtered;
-  }, [opportunities, searchQuery, stageFilter, ownerFilter, pipelineFilter, statusFilter, sortField, sortDirection]);
+  }, [opportunities, searchQuery, stageFilter, ownerFilter, pipelineFilter, statusFilter, sortField, sortDirection, tasks]);
 
   // Stats
   const stats = useMemo(() => {
@@ -214,25 +228,6 @@ const Opportunities = () => {
 
   const navigateToOpportunity = (opp: Opportunity) => {
     navigate(`/opportunities/${opp.id}`);
-  };
-
-  const SortableHeader = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
-    <TableHead 
-      className="cursor-pointer hover:bg-muted/50 transition-colors"
-      onClick={() => handleSort(field)}
-    >
-      <div className="flex items-center gap-1">
-        {children}
-        <ArrowUpDown className={cn(
-          "h-3 w-3 transition-colors",
-          sortField === field ? "text-primary" : "text-muted-foreground"
-        )} />
-      </div>
-    </TableHead>
-  );
-
-  const getTaskCount = (opportunityId: string) => {
-    return tasks.filter(t => t.relatedOpportunityId === opportunityId && t.status === 'open').length;
   };
 
   return (
@@ -364,19 +359,20 @@ const Opportunities = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <SortableHeader field="name">Account</SortableHeader>
-                        <SortableHeader field="stage">Stage</SortableHeader>
-                        <TableHead>Pipeline</TableHead>
-                        <SortableHeader field="owner">Owner</SortableHeader>
-                        <TableHead>Tasks</TableHead>
-                        <TableHead>Progress</TableHead>
-                        <SortableHeader field="created">Created</SortableHeader>
-                        <SortableHeader field="updated">Updated</SortableHeader>
+                        <TableHead className="w-12">#</TableHead>
+                        <SortableTableHead field="name" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Account</SortableTableHead>
+                        <SortableTableHead field="stage" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Stage</SortableTableHead>
+                        <SortableTableHead field="pipeline" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Pipeline</SortableTableHead>
+                        <SortableTableHead field="owner" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Owner</SortableTableHead>
+                        <SortableTableHead field="tasks" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Tasks</SortableTableHead>
+                        <SortableTableHead field="progress" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Progress</SortableTableHead>
+                        <SortableTableHead field="created" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Created</SortableTableHead>
+                        <SortableTableHead field="updated" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Updated</SortableTableHead>
                         <TableHead className="w-[50px]"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredOpportunities.map(opp => {
+                      {filteredOpportunities.map((opp, index) => {
                         const stageConfig = STAGE_CONFIG[opp.stage as OpportunityStage];
                         const serviceType = getServiceType(opp);
                         const taskCount = getTaskCount(opp.id);
@@ -388,6 +384,7 @@ const Opportunities = () => {
                             className="cursor-pointer hover:bg-muted/50"
                             onClick={() => navigateToOpportunity(opp)}
                           >
+                            <TableCell className="text-muted-foreground text-sm">{index + 1}</TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 <Building2 className="h-4 w-4 text-muted-foreground" />
