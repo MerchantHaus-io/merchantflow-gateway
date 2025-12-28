@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from "react";
-import { GripVertical, Calendar } from "lucide-react";
+import { GripVertical, Calendar, CreditCard, Zap } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Opportunity, TEAM_MEMBERS } from "@/types/opportunity";
+import { Opportunity, TEAM_MEMBERS, getServiceType } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -141,11 +141,33 @@ const OpportunityCard = ({
         "p-1.5 landscape:p-1 space-y-0.5 landscape:space-y-0",
         isCollapsed && "py-0.5"
       )}>
-        {/* Account Name */}
+        {/* Account Name + Pipeline Type */}
         <div className="flex items-start justify-between gap-0.5">
-          <h3 className="font-semibold text-[10px] landscape:text-[9px] text-foreground truncate leading-tight flex-1">
-            {account?.name || 'Unknown'}
-          </h3>
+          <div className="flex items-center gap-1 min-w-0 flex-1">
+            <h3 className="font-semibold text-[10px] landscape:text-[9px] text-foreground truncate leading-tight">
+              {account?.name || 'Unknown'}
+            </h3>
+            {!isCollapsed && (
+              <span className={cn(
+                "flex items-center gap-0.5 text-[10px] landscape:text-[9px] font-semibold flex-shrink-0",
+                getServiceType(opportunity) === 'gateway_only' 
+                  ? "text-teal-600 dark:text-teal-400" 
+                  : "text-primary"
+              )}>
+                {getServiceType(opportunity) === 'gateway_only' ? (
+                  <>
+                    <Zap className="h-2.5 w-2.5 landscape:h-2 landscape:w-2" />
+                    <span className="hidden sm:inline">Gateway</span>
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="h-2.5 w-2.5 landscape:h-2 landscape:w-2" />
+                    <span className="hidden sm:inline">Processing</span>
+                  </>
+                )}
+              </span>
+            )}
+          </div>
           <GripVertical className="h-2.5 w-2.5 landscape:h-2 landscape:w-2 opacity-0 group-hover:opacity-50 transition-opacity flex-shrink-0 text-muted-foreground" />
         </div>
 
