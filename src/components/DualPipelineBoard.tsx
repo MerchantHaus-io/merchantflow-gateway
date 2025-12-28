@@ -348,7 +348,7 @@ const DualPipelineBoard = ({
       </div>
 
       <div className={cn(
-        "flex-1 min-h-0 w-full flex flex-col lg:flex-row gap-2 overflow-hidden",
+        "flex-1 min-h-0 w-full flex flex-col gap-2 overflow-auto",
         isCompact ? "p-1 gap-1 landscape:p-1 landscape:gap-1" : "p-2"
       )}>
         {/* NMI Payments Pipeline Section */}
