@@ -1,50 +1,33 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTasks } from "@/contexts/TasksContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { Task } from "@/types/task";
 import { EMAIL_TO_USER, TEAM_MEMBERS } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
 import {
-  ArrowDownAZ,
-  ArrowUpAZ,
+  Search,
+  Plus,
   CalendarClock,
   CheckCircle2,
   CircleDot,
   ListChecks,
   UserRound,
+  Clock,
+  AlertCircle,
+  Building2,
+  User,
 } from "lucide-react";
 import {
   Bar,
@@ -56,8 +39,17 @@ import {
 } from "recharts";
 import DateRangeFilter from "@/components/DateRangeFilter";
 import { DateRange } from "react-day-picker";
-import { isWithinInterval, startOfDay, endOfDay } from "date-fns";
+import { isWithinInterval, startOfDay, endOfDay, format } from "date-fns";
 import { SortableTableHead } from "@/components/SortableTableHead";
+import ThemeToggle from "@/components/ThemeToggle";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 // Mapping of status keys to human-friendly labels
 const statusLabels: Record<Task["status"], string> = {
@@ -66,97 +58,44 @@ const statusLabels: Record<Task["status"], string> = {
   done: "Done",
 };
 
-// Options for the main view filter
-const viewOptions = [
-  { value: "all", label: "All Tasks" },
-  { value: "mine", label: "My Tasks" },
-  { value: "team", label: "By Team Member" },
-] as const;
-
-type ViewOption = (typeof viewOptions)[number]["value"];
 type SortKey = "title" | "account" | "contact" | "createdAt" | "dueAt" | "assignee" | "status";
 type SortDirection = 'asc' | 'desc';
-
-// Keys used for storing preferences in localStorage
-const storageKey = {
-  view: "tasks:view",
-  assignee: "tasks:assignee",
-  sortKey: "tasks:sortKey",
-  sortDir: "tasks:sortDir",
-};
-
 type StatusFilter = 'all' | 'open' | 'in_progress' | 'done';
+type ViewFilter = 'all' | 'mine' | 'team';
 
 const Tasks = () => {
   const { user } = useAuth();
   const displayName = EMAIL_TO_USER[user?.email?.toLowerCase() || ""] || user?.email || "Me";
   const { tasks, addTask, updateTaskStatus, refreshTasks } = useTasks();
 
-  // Local state for filters and form fields
-  const [view, setView] = useState<ViewOption>("all");
-  const [selectedAssignee, setSelectedAssignee] = useState<string>("_all");
+  // Local loading state
+  const [loading, setLoading] = useState(true);
+
+  // Filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [viewFilter, setViewFilter] = useState<ViewFilter>("all");
+  const [assigneeFilter, setAssigneeFilter] = useState<string>("all");
   const [sortKey, setSortKey] = useState<SortKey>("createdAt");
-  const [sortAsc, setSortAsc] = useState(false);
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [filterBy, setFilterBy] = useState<'created_at' | 'updated_at'>('created_at');
+
+  // Form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [assignee, setAssignee] = useState<string>(displayName);
   const [dueAt, setDueAt] = useState<string>("");
-  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
-  const [showOnlyActive, setShowOnlyActive] = useState(true);
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
-  // 'updated_at' is repurposed to mean filtering by due date. Tasks don't have
-  // an updatedAt field, so dueAt serves as the alternate date for the
-  // DateRangeFilter component.
-  const [filterBy, setFilterBy] = useState<'created_at' | 'updated_at'>(
-    'created_at',
-  );
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [showNewModal, setShowNewModal] = useState(false);
 
   // Refresh tasks on mount
   useEffect(() => {
-    refreshTasks();
+    setLoading(true);
+    refreshTasks().finally(() => setLoading(false));
   }, [refreshTasks]);
 
-  // Load saved preferences from localStorage on mount
-  useEffect(() => {
-    const savedView = (localStorage.getItem(storageKey.view) as ViewOption | null) || "all";
-    const savedAssignee = localStorage.getItem(storageKey.assignee) || "_all";
-    const savedSortKey = (localStorage.getItem(storageKey.sortKey) as SortKey | null) || "createdAt";
-    const savedSortDir = localStorage.getItem(storageKey.sortDir) === "asc";
-
-    setView(savedView);
-    setSelectedAssignee(savedAssignee);
-    setSortKey(savedSortKey);
-    setSortAsc(savedSortDir);
-  }, []);
-
-  // Persist preference changes
-  useEffect(() => {
-    localStorage.setItem(storageKey.view, view);
-  }, [view]);
-  useEffect(() => {
-    localStorage.setItem(storageKey.assignee, selectedAssignee);
-  }, [selectedAssignee]);
-  useEffect(() => {
-    localStorage.setItem(storageKey.sortKey, sortKey);
-  }, [sortKey]);
-  useEffect(() => {
-    localStorage.setItem(storageKey.sortDir, sortDirection);
-  }, [sortDirection]);
-
-  const handleSort = (field: string) => {
-    if (sortKey === field) {
-      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
-      setSortAsc(prev => !prev);
-    } else {
-      setSortKey(field as SortKey);
-      setSortDirection('asc');
-      setSortAsc(true);
-    }
-  };
-
-  // Compute a list of unique assignee names from tasks
+  // Compute unique assignees
   const uniqueAssignees = useMemo(() => {
     const names = new Set<string>();
     tasks.forEach((task) => {
@@ -165,7 +104,11 @@ const Tasks = () => {
     return Array.from(names);
   }, [tasks]);
 
-  // Helper to determine if a date string falls within the selected range
+  const allAssignees = useMemo(() => {
+    return [...new Set([...TEAM_MEMBERS, ...uniqueAssignees])];
+  }, [uniqueAssignees]);
+
+  // Date range helper
   const isInDateRange = (dateStr: string | undefined) => {
     if (!dateRange?.from || !dateStr) return true;
     const date = new Date(dateStr);
@@ -174,32 +117,50 @@ const Tasks = () => {
     return isWithinInterval(date, { start, end });
   };
 
-  // Build a filtered/sorted array of tasks based on UI controls
+  const handleSort = (field: string) => {
+    if (sortKey === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(field as SortKey);
+      setSortDirection('asc');
+    }
+  };
+
+  // Filtered and sorted tasks
   const filteredTasks = useMemo(() => {
     let result = tasks;
 
-    // Apply date range filter. When filterBy is 'created_at', use createdAt; otherwise
-    // use dueAt (falling back to createdAt when dueAt is missing).
+    // Date range filter
     result = result.filter((task) => {
       const dateToCheck = filterBy === 'created_at' ? task.createdAt : task.dueAt ?? task.createdAt;
       return isInDateRange(dateToCheck);
     });
 
-    // Filter by status or show only active tasks
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(task =>
+        task.title?.toLowerCase().includes(query) ||
+        task.description?.toLowerCase().includes(query) ||
+        task.assignee?.toLowerCase().includes(query) ||
+        task.accountName?.toLowerCase().includes(query) ||
+        task.contactName?.toLowerCase().includes(query)
+      );
+    }
+
+    // Status filter
     if (statusFilter !== 'all') {
       result = result.filter((task) => task.status === statusFilter);
-    } else if (showOnlyActive) {
-      result = result.filter((task) => task.status !== 'done');
     }
 
-    // Filter by assignee based on view
-    if (view === 'mine') {
+    // View filter
+    if (viewFilter === 'mine') {
       result = result.filter((task) => task.assignee === displayName || task.assignee === user?.email);
-    } else if (view === 'team' && selectedAssignee && selectedAssignee !== '_all') {
-      result = result.filter((task) => task.assignee === selectedAssignee);
+    } else if (viewFilter === 'team' && assigneeFilter !== 'all') {
+      result = result.filter((task) => task.assignee === assigneeFilter);
     }
 
-    // Sort tasks based on the selected sort key/direction
+    // Sort
     result = [...result].sort((a, b) => {
       const dir = sortDirection === 'asc' ? 1 : -1;
       switch (sortKey) {
@@ -224,31 +185,27 @@ const Tasks = () => {
     });
 
     return result;
-  }, [tasks, dateRange, filterBy, statusFilter, showOnlyActive, view, displayName, user?.email, selectedAssignee, sortKey, sortDirection]);
+  }, [tasks, dateRange, filterBy, searchQuery, statusFilter, viewFilter, displayName, user?.email, assigneeFilter, sortKey, sortDirection]);
 
-  // Totals for bar chart by assignee
-  const totalsByAssignee = useMemo(
-    () =>
-      filteredTasks.reduce<Record<string, number>>((acc, task) => {
-        acc[task.assignee] = (acc[task.assignee] || 0) + 1;
-        return acc;
-      }, {}),
-    [filteredTasks],
-  );
+  // Stats
+  const stats = useMemo(() => {
+    return {
+      total: tasks.length,
+      open: tasks.filter(t => t.status === 'open').length,
+      inProgress: tasks.filter(t => t.status === 'in_progress').length,
+      done: tasks.filter(t => t.status === 'done').length,
+    };
+  }, [tasks]);
 
-  // Convert totals to chart-friendly data
-  const chartData = useMemo(
-    () =>
-      Object.entries(totalsByAssignee).map(([name, total]) => ({
-        name,
-        total,
-      })),
-    [totalsByAssignee],
-  );
-
-  const toggleExpand = (taskId: string) => {
-    setExpandedRows((prev) => ({ ...prev, [taskId]: !prev[taskId] }));
-  };
+  // Chart data
+  const chartData = useMemo(() => {
+    const totals = filteredTasks.reduce<Record<string, number>>((acc, task) => {
+      const name = task.assignee || 'Unassigned';
+      acc[name] = (acc[name] || 0) + 1;
+      return acc;
+    }, {});
+    return Object.entries(totals).map(([name, total]) => ({ name, total }));
+  }, [filteredTasks]);
 
   const submitTask = (event: React.FormEvent) => {
     event.preventDefault();
@@ -267,255 +224,123 @@ const Tasks = () => {
     setTitle('');
     setDescription('');
     setDueAt('');
+    setShowNewModal(false);
   };
 
-  // Format dates as short month/day strings
   const formatDate = (date?: string) =>
-    date ? new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '-';
+    date ? format(new Date(date), 'MMM d') : '-';
+
+  const getStatusIcon = (status: Task['status']) => {
+    switch (status) {
+      case 'open': return <CircleDot className="h-3 w-3 text-blue-500" />;
+      case 'in_progress': return <Clock className="h-3 w-3 text-amber-500" />;
+      case 'done': return <CheckCircle2 className="h-3 w-3 text-emerald-500" />;
+    }
+  };
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <AppSidebar />
-        <SidebarInset className="flex-1 flex flex-col overflow-hidden">
-          <header className="flex h-16 items-center gap-2 border-b px-4 justify-between flex-shrink-0">
-            <div className="flex items-center gap-2">
-              <SidebarTrigger className="md:hidden" />
-              <div>
-                <p className="text-sm text-muted-foreground">Collaboration</p>
-                <h1 className="text-xl font-semibold flex items-center gap-2">
-                  <ListChecks className="h-5 w-5 text-primary" />
-                  Tasks
-                </h1>
-              </div>
-            </div>
-            <DateRangeFilter
-              dateRange={dateRange}
-              onDateRangeChange={setDateRange}
-              filterBy={filterBy}
-              onFilterByChange={setFilterBy}
-            />
-          </header>
+      <AppSidebar />
+      <SidebarInset className="flex flex-col h-screen">
+        {/* Header */}
+        <header className="flex h-14 items-center gap-4 border-b bg-background px-4 lg:px-6">
+          <SidebarTrigger />
+          <div className="flex-1">
+            <h1 className="text-lg font-semibold">Tasks</h1>
+          </div>
+          <DateRangeFilter
+            dateRange={dateRange}
+            onDateRangeChange={setDateRange}
+            filterBy={filterBy}
+            onFilterByChange={setFilterBy}
+          />
+          <ThemeToggle />
+        </header>
 
-          <main className="flex-1 overflow-auto p-4 lg:p-6">
-            <section className="grid gap-4 lg:grid-cols-[2fr_1fr]">
-              {/* Tasks list card. Removed order classes so this always appears first. */}
-              <Card>
-                <CardHeader className="flex flex-col gap-2">
-                  <CardTitle>All tasks</CardTitle>
-                  <CardDescription>
-                    Sort and filter every task across the team. Click a bar to jump straight to an assignee.
-                  </CardDescription>
-                  <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
-                    <div className="space-y-1">
-                      <Label>View</Label>
-                      <Select value={view} onValueChange={(value) => setView(value as ViewOption)}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {viewOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+        <main className="flex-1 overflow-auto p-4 lg:p-6 space-y-6">
+          {/* Stats badges */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Badge variant="secondary" className="h-6 px-2 text-xs font-medium gap-1">
+              <ListChecks className="h-3 w-3" />Total {stats.total}
+            </Badge>
+            <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-blue-500/30 text-blue-500">
+              <CircleDot className="h-3 w-3" />Open {stats.open}
+            </Badge>
+            <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-amber-500/30 text-amber-500">
+              <Clock className="h-3 w-3" />In Progress {stats.inProgress}
+            </Badge>
+            <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-emerald-500/30 text-emerald-500">
+              <CheckCircle2 className="h-3 w-3" />Done {stats.done}
+            </Badge>
+          </div>
 
-                    <div className="space-y-1">
-                      <Label>Team member</Label>
-                      <Select
-                        value={selectedAssignee}
-                        onValueChange={setSelectedAssignee}
-                        disabled={view !== 'team'}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Pick a teammate" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="_all">All</SelectItem>
-                          {[...TEAM_MEMBERS, ...uniqueAssignees]
-                            .filter((name, index, arr) => arr.indexOf(name) === index)
-                            .map((name) => (
-                              <SelectItem key={name} value={name}>
-                                {name}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+          {/* Filters */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex flex-wrap gap-4 items-center">
+                <div className="relative flex-1 min-w-[200px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search tasks..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
 
-                    <div className="space-y-1">
-                      <Label>Status</Label>
-                      <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as StatusFilter)}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Statuses</SelectItem>
-                          <SelectItem value="open">Open</SelectItem>
-                          <SelectItem value="in_progress">In Progress</SelectItem>
-                          <SelectItem value="done">Done</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="open">Open</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="done">Done</SelectItem>
+                  </SelectContent>
+                </Select>
 
-                    <div className="space-y-1">
-                      <Label>Sort by</Label>
-                      <Select value={sortKey} onValueChange={(value) => setSortKey(value as SortKey)}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="createdAt">Created date</SelectItem>
-                          <SelectItem value="dueAt">Due date</SelectItem>
-                          <SelectItem value="assignee">Assignee</SelectItem>
-                          <SelectItem value="status">Status</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                <Select value={viewFilter} onValueChange={(v) => setViewFilter(v as ViewFilter)}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="View" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover">
+                    <SelectItem value="all">All Tasks</SelectItem>
+                    <SelectItem value="mine">My Tasks</SelectItem>
+                    <SelectItem value="team">By Assignee</SelectItem>
+                  </SelectContent>
+                </Select>
 
-                    <div className="space-y-1">
-                      <Label className="flex items-center justify-between gap-2">
-                        Sort direction
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setSortAsc((prev) => !prev)}
-                          className="h-9 w-9"
-                          aria-label="Toggle sort direction"
-                        >
-                          {sortAsc ? <ArrowUpAZ className="h-4 w-4" /> : <ArrowDownAZ className="h-4 w-4" />}
-                        </Button>
-                      </Label>
-                    </div>
-                  </div>
-                </CardHeader>
+                {viewFilter === 'team' && (
+                  <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue placeholder="Assignee" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover">
+                      <SelectItem value="all">All Assignees</SelectItem>
+                      {allAssignees.map(name => (
+                        <SelectItem key={name} value={name}>{name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
 
-                <CardContent>
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-12">#</TableHead>
-                          <SortableTableHead field="title" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Title</SortableTableHead>
-                          <SortableTableHead field="account" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Account</SortableTableHead>
-                          <SortableTableHead field="contact" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Contact</SortableTableHead>
-                          <SortableTableHead field="assignee" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Assigned to</SortableTableHead>
-                          <SortableTableHead field="status" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Status</SortableTableHead>
-                          <SortableTableHead field="dueAt" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Due</SortableTableHead>
-                          <SortableTableHead field="createdAt" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Created</SortableTableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredTasks.map((task, index) => (
-                          <TableRow key={task.id} className="align-top">
-                            <TableCell className="text-muted-foreground text-sm">{index + 1}</TableCell>
-                            <TableCell className="font-medium min-w-[180px]">
-                              <div>{task.title}</div>
-                              {task.description && (
-                                <div className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                                  {task.description}
-                                </div>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-sm">
-                              {task.accountName || <span className="text-muted-foreground">-</span>}
-                            </TableCell>
-                            <TableCell className="text-sm">
-                              {task.contactName || <span className="text-muted-foreground">-</span>}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2 text-sm">
-                                <UserRound className="h-4 w-4 text-muted-foreground" />
-                                {task.assignee || 'Unassigned'}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Select
-                                value={task.status}
-                                onValueChange={(value) => updateTaskStatus(task.id, value as Task['status'])}
-                              >
-                                <SelectTrigger className="w-[140px]">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {Object.entries(statusLabels).map(([key, label]) => (
-                                    <SelectItem key={key} value={key}>
-                                      {label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap">
-                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                <CalendarClock className="h-4 w-4" />
-                                {formatDate(task.dueAt)}
-                              </div>
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
-                              {formatDate(task.createdAt)}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                        {filteredTasks.length === 0 && (
-                          <TableRow>
-                            <TableCell colSpan={8} className="text-center text-sm text-muted-foreground">
-                              No tasks match this view yet.
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Right-hand column containing analytics and form. Order classes removed to prevent
-                  this column from jumping above the task list on smaller screens. */}
-              <div className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Task analytics</CardTitle>
-                    <CardDescription>Click a bar to filter the list to that teammate.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="h-[260px]">
-                    {chartData.length === 0 ? (
-                      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                        No tasks to chart yet.
-                      </div>
-                    ) : (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData}>
-                          <XAxis dataKey="name" tickLine={false} axisLine={false} />
-                          <YAxis allowDecimals={false} width={32} />
-                          <RechartsTooltip />
-                          <Bar
-                            dataKey="total"
-                            fill="hsl(var(--primary))"
-                            radius={[4, 4, 0, 0]}
-                            onClick={(data) => {
-                              setView('team');
-                              setSelectedAssignee(data.name);
-                            }}
-                          />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    )}
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Create task</CardTitle>
-                    <CardDescription>Capture follow-ups with due dates and ownership.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <form className="space-y-3" onSubmit={submitTask}>
-                      <div className="space-y-1">
+                <Dialog open={showNewModal} onOpenChange={setShowNewModal}>
+                  <DialogTrigger asChild>
+                    <Button className="ml-auto">
+                      <Plus className="h-4 w-4 mr-1" />
+                      New Task
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Create Task</DialogTitle>
+                      <DialogDescription>
+                        Add a new task with due dates and ownership.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <form className="space-y-4" onSubmit={submitTask}>
+                      <div className="space-y-2">
                         <Label htmlFor="title">Title</Label>
                         <Input
                           id="title"
@@ -526,7 +351,7 @@ const Tasks = () => {
                         />
                       </div>
 
-                      <div className="space-y-1">
+                      <div className="space-y-2">
                         <Label htmlFor="description">Description</Label>
                         <Textarea
                           id="description"
@@ -536,8 +361,8 @@ const Tasks = () => {
                         />
                       </div>
 
-                      <div className="grid gap-3 md:grid-cols-2">
-                        <div className="space-y-1">
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div className="space-y-2">
                           <Label>Assign to</Label>
                           <Select value={assignee} onValueChange={setAssignee}>
                             <SelectTrigger>
@@ -545,17 +370,15 @@ const Tasks = () => {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value={displayName}>{displayName} (you)</SelectItem>
-                              {[...TEAM_MEMBERS, ...uniqueAssignees]
-                                .filter((name, index, arr) => arr.indexOf(name) === index)
-                                .map((name) => (
-                                  <SelectItem key={name} value={name}>
-                                    {name}
-                                  </SelectItem>
-                                ))}
+                              {allAssignees.map((name) => (
+                                <SelectItem key={name} value={name}>
+                                  {name}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
-                        <div className="space-y-1">
+                        <div className="space-y-2">
                           <Label htmlFor="due">Due date</Label>
                           <Input
                             id="due"
@@ -567,37 +390,233 @@ const Tasks = () => {
                       </div>
 
                       <Button type="submit" className="w-full">
-                        Create task
+                        Create Task
                       </Button>
                     </form>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Status legend</CardTitle>
-                    <CardDescription>Quick glance at status meanings.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <CircleDot className="h-4 w-4 text-blue-500" />
-                      <span>Open</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <CalendarClock className="h-4 w-4 text-amber-500" />
-                      <span>In progress</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                      <span>Done</span>
-                    </div>
-                  </CardContent>
-                </Card>
+                  </DialogContent>
+                </Dialog>
               </div>
-            </section>
-          </main>
-        </SidebarInset>
-      </div>
+            </CardContent>
+          </Card>
+
+          {/* Main Content Grid */}
+          <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+            {/* Results */}
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">
+                    {filteredTasks.length} Tasks
+                  </CardTitle>
+                  <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'table' | 'cards')}>
+                    <TabsList className="h-8">
+                      <TabsTrigger value="table" className="text-xs px-3">Table</TabsTrigger>
+                      <TabsTrigger value="cards" className="text-xs px-3">Cards</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3, 4, 5].map(i => (
+                      <Skeleton key={i} className="h-12 w-full" />
+                    ))}
+                  </div>
+                ) : viewMode === 'table' ? (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-12">#</TableHead>
+                          <SortableTableHead field="title" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Title</SortableTableHead>
+                          <SortableTableHead field="account" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Account</SortableTableHead>
+                          <SortableTableHead field="assignee" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Assignee</SortableTableHead>
+                          <SortableTableHead field="status" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Status</SortableTableHead>
+                          <SortableTableHead field="dueAt" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Due</SortableTableHead>
+                          <SortableTableHead field="createdAt" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Created</SortableTableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredTasks.map((task, index) => (
+                          <TableRow key={task.id} className="hover:bg-muted/50">
+                            <TableCell className="text-muted-foreground text-sm">{index + 1}</TableCell>
+                            <TableCell>
+                              <div>
+                                <p className="font-medium">{task.title}</p>
+                                {task.description && (
+                                  <p className="text-xs text-muted-foreground line-clamp-1">{task.description}</p>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              {task.accountName ? (
+                                <div className="flex items-center gap-1.5">
+                                  <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                                  <span className="text-sm">{task.accountName}</span>
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground text-sm">-</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1.5">
+                                <UserRound className="h-3.5 w-3.5 text-muted-foreground" />
+                                <span className="text-sm">{task.assignee || 'Unassigned'}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Select
+                                value={task.status}
+                                onValueChange={(value) => updateTaskStatus(task.id, value as Task['status'])}
+                              >
+                                <SelectTrigger className="h-8 w-[130px]">
+                                  <div className="flex items-center gap-1.5">
+                                    {getStatusIcon(task.status)}
+                                    <SelectValue />
+                                  </div>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {Object.entries(statusLabels).map(([key, label]) => (
+                                    <SelectItem key={key} value={key}>
+                                      <div className="flex items-center gap-1.5">
+                                        {getStatusIcon(key as Task['status'])}
+                                        {label}
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                <CalendarClock className="h-3.5 w-3.5" />
+                                {formatDate(task.dueAt)}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {formatDate(task.createdAt)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {filteredTasks.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                              No tasks found.
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {filteredTasks.map((task) => (
+                      <Card key={task.id} className="p-3">
+                        <div className="space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <h4 className="font-medium text-sm leading-tight">{task.title}</h4>
+                            <Badge variant="outline" className={cn(
+                              "text-xs flex-shrink-0",
+                              task.status === 'open' && "border-blue-500/30 text-blue-500",
+                              task.status === 'in_progress' && "border-amber-500/30 text-amber-500",
+                              task.status === 'done' && "border-emerald-500/30 text-emerald-500"
+                            )}>
+                              {statusLabels[task.status]}
+                            </Badge>
+                          </div>
+                          {task.description && (
+                            <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
+                          )}
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                            {task.accountName && (
+                              <div className="flex items-center gap-1">
+                                <Building2 className="h-3 w-3" />
+                                {task.accountName}
+                              </div>
+                            )}
+                            <div className="flex items-center gap-1">
+                              <UserRound className="h-3 w-3" />
+                              {task.assignee || 'Unassigned'}
+                            </div>
+                            {task.dueAt && (
+                              <div className="flex items-center gap-1">
+                                <CalendarClock className="h-3 w-3" />
+                                {formatDate(task.dueAt)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                    {filteredTasks.length === 0 && (
+                      <div className="col-span-2 py-12 text-center text-muted-foreground">
+                        No tasks found.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Analytics Sidebar */}
+            <div className="space-y-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Task Analytics</CardTitle>
+                </CardHeader>
+                <CardContent className="h-[200px]">
+                  {chartData.length === 0 ? (
+                    <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                      No tasks to chart.
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={chartData} layout="vertical">
+                        <XAxis type="number" allowDecimals={false} tickLine={false} axisLine={false} />
+                        <YAxis type="category" dataKey="name" width={80} tickLine={false} axisLine={false} />
+                        <RechartsTooltip />
+                        <Bar
+                          dataKey="total"
+                          fill="hsl(var(--primary))"
+                          radius={[0, 4, 4, 0]}
+                          onClick={(data) => {
+                            setViewFilter('team');
+                            setAssigneeFilter(data.name);
+                          }}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">Status Legend</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <CircleDot className="h-4 w-4 text-blue-500" />
+                    <span>Open</span>
+                    <span className="ml-auto text-muted-foreground">{stats.open}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Clock className="h-4 w-4 text-amber-500" />
+                    <span>In Progress</span>
+                    <span className="ml-auto text-muted-foreground">{stats.inProgress}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    <span>Done</span>
+                    <span className="ml-auto text-muted-foreground">{stats.done}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </main>
+      </SidebarInset>
     </SidebarProvider>
   );
 };
