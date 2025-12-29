@@ -66,7 +66,72 @@ const Accounts = () => {
 
   useEffect(() => {
     fetchAccounts();
+
+    // Subscribe to real-time changes on accounts table
+    const channel = supabase
+      .channel('accounts-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'accounts'
+        },
+        (payload) => {
+          console.log('Real-time account update:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            fetchSingleAccount(payload.new.id);
+          } else if (payload.eventType === 'UPDATE') {
+            setAccounts(prev => prev.map(acc => {
+              if (acc.id === payload.new.id) {
+                return {
+                  ...acc,
+                  name: payload.new.name,
+                  status: payload.new.status,
+                  address1: payload.new.address1,
+                  address2: payload.new.address2,
+                  city: payload.new.city,
+                  state: payload.new.state,
+                  zip: payload.new.zip,
+                  country: payload.new.country,
+                  website: payload.new.website,
+                };
+              }
+              return acc;
+            }));
+          } else if (payload.eventType === 'DELETE') {
+            setAccounts(prev => prev.filter(acc => acc.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
+
+  // Fetch a single account with contacts for real-time inserts
+  const fetchSingleAccount = async (accountId: string) => {
+    const { data, error } = await supabase
+      .from('accounts')
+      .select('id, name, status, address1, address2, city, state, zip, country, website, created_at, contacts(id, first_name, last_name, email)')
+      .eq('id', accountId)
+      .single();
+
+    if (error || !data) {
+      console.error('Error fetching single account:', error);
+      return;
+    }
+
+    setAccounts(prev => {
+      if (prev.some(acc => acc.id === accountId)) {
+        return prev;
+      }
+      return [data as AccountWithContacts, ...prev];
+    });
+  };
 
   const fetchAccounts = async () => {
     const { data, error } = await supabase

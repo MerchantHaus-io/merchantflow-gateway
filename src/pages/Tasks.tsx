@@ -154,10 +154,32 @@ const Tasks = () => {
     }
   }, []);
 
-  // Refresh tasks on mount
+  // Refresh tasks on mount and subscribe to real-time updates
   useEffect(() => {
     setLoading(true);
     Promise.all([refreshTasks(), fetchLinkData()]).finally(() => setLoading(false));
+
+    // Subscribe to real-time changes on tasks table
+    const channel = supabase
+      .channel('tasks-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tasks'
+        },
+        (payload) => {
+          console.log('Real-time task update:', payload);
+          // Refresh tasks when any change occurs
+          refreshTasks();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [refreshTasks, fetchLinkData]);
 
   // Compute unique assignees
