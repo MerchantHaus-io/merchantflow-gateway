@@ -200,8 +200,107 @@ const Index = () => {
     opportunities.some((opportunity) =>
       opportunity.account_id === accountId && getServiceType(opportunity) === 'gateway_only'
     );
+
+  // Fetch a single opportunity with all relations for real-time updates
+  const fetchSingleOpportunity = async (opportunityId: string) => {
+    const { data, error } = await supabase
+      .from('opportunities')
+      .select(`
+        id,
+        account_id,
+        contact_id,
+        stage,
+        status,
+        referral_source,
+        username,
+        processing_services,
+        value_services,
+        timezone,
+        language,
+        assigned_to,
+        stage_entered_at,
+        sla_status,
+        created_at,
+        updated_at,
+        account:accounts(id, name, status, address1, address2, city, state, zip, country, website, created_at, updated_at),
+        contact:contacts(id, account_id, first_name, last_name, email, phone, fax, created_at, updated_at)
+      `)
+      .eq('id', opportunityId)
+      .single();
+
+    if (error || !data) {
+      console.error('Error fetching single opportunity:', error);
+      return;
+    }
+
+    const typedOpportunity: Opportunity = {
+      ...data,
+      stage: migrateStage(data.stage) as OpportunityStage,
+      status: data.status as 'active' | 'dead' | undefined,
+      sla_status: data.sla_status as 'green' | 'amber' | 'red' | null | undefined,
+      account: data.account ? {
+        ...data.account,
+        status: data.account.status as 'active' | 'dead' | undefined
+      } : undefined,
+      contact: data.contact || undefined,
+    };
+
+    // Only add if status is active
+    if (typedOpportunity.status === 'active') {
+      setOpportunities(prev => {
+        // Check if already exists (avoid duplicates)
+        if (prev.some(opp => opp.id === opportunityId)) {
+          return prev;
+        }
+        return [typedOpportunity, ...prev];
+      });
+    }
+  };
   useEffect(() => {
     fetchOpportunities();
+
+    // Subscribe to real-time changes on opportunities table
+    const channel = supabase
+      .channel('opportunities-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'opportunities'
+        },
+        (payload) => {
+          console.log('Real-time opportunity update:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            // Fetch the full opportunity with relations
+            fetchSingleOpportunity(payload.new.id);
+          } else if (payload.eventType === 'UPDATE') {
+            // Update the existing opportunity in state
+            setOpportunities(prev => prev.map(opp => {
+              if (opp.id === payload.new.id) {
+                return {
+                  ...opp,
+                  stage: migrateStage(payload.new.stage) as OpportunityStage,
+                  status: payload.new.status as 'active' | 'dead' | undefined,
+                  assigned_to: payload.new.assigned_to,
+                  sla_status: payload.new.sla_status as 'green' | 'amber' | 'red' | null | undefined,
+                  stage_entered_at: payload.new.stage_entered_at,
+                  updated_at: payload.new.updated_at,
+                };
+              }
+              return opp;
+            }));
+          } else if (payload.eventType === 'DELETE') {
+            setOpportunities(prev => prev.filter(opp => opp.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const createGatewayOpportunity = async (baseOpportunity: Opportunity) => {
