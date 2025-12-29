@@ -3,7 +3,7 @@ import * as React from "react";
 const MOBILE_BREAKPOINT = 768;
 
 export function useIsMobile() {
-  // Initialize with actual value to prevent hydration issues and unnecessary re-renders
+  // Initialize state directly
   const [isMobile, setIsMobile] = React.useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       return window.innerWidth < MOBILE_BREAKPOINT;
@@ -11,23 +11,44 @@ export function useIsMobile() {
     return false;
   });
 
+  // Use ref to track current value without causing re-renders
+  const isMobileRef = React.useRef<boolean>(isMobile);
+
   React.useEffect(() => {
-    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+    // Debounce resize handler to prevent rapid state updates during orientation change
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
     
-    const onChange = () => {
-      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+    const handleResize = () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      
+      timeoutId = setTimeout(() => {
+        const newIsMobile = window.innerWidth < MOBILE_BREAKPOINT;
+        if (isMobileRef.current !== newIsMobile) {
+          isMobileRef.current = newIsMobile;
+          setIsMobile(newIsMobile);
+        }
+      }, 100); // Debounce for 100ms to let orientation change settle
     };
     
-    mql.addEventListener("change", onChange);
+    // Listen to resize events which fire during orientation changes
+    window.addEventListener("resize", handleResize);
     
-    // Only update if different from initial value
-    const currentIsMobile = window.innerWidth < MOBILE_BREAKPOINT;
-    if (currentIsMobile !== isMobile) {
-      setIsMobile(currentIsMobile);
+    // Also set initial value correctly
+    const initialValue = window.innerWidth < MOBILE_BREAKPOINT;
+    if (isMobileRef.current !== initialValue) {
+      isMobileRef.current = initialValue;
+      setIsMobile(initialValue);
     }
     
-    return () => mql.removeEventListener("change", onChange);
-  }, []); // Empty deps - only run once on mount
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
   return isMobile;
 }

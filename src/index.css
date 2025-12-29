@@ -304,4 +304,35 @@ All colors MUST be HSL.
   .scrollbar-hide::-webkit-scrollbar {
     display: none;  /* Chrome, Safari, Opera */
   }
+
+  /* Stable layout during orientation changes */
+  .orientation-stable {
+    contain: layout style;
+    will-change: auto;
+  }
+
+  /* Prevent layout thrashing on resize/orientation change */
+  .resize-stable {
+    contain: size layout;
+  }
+}
+
+/* Smooth transitions during orientation changes */
+@media (orientation: landscape) {
+  .landscape-optimized {
+    transition: none !important;
+  }
+}
+
+/* Prevent flickering during orientation change animation */
+@media screen and (orientation: portrait) {
+  html, body {
+    overflow-x: hidden;
+  }
+}
+
+@media screen and (orientation: landscape) {
+  html, body {
+    overflow-x: hidden;
+  }
 }
