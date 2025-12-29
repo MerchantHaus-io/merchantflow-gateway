@@ -122,6 +122,28 @@ const Contacts = () => {
   useEffect(() => {
     fetchContacts();
     fetchAccounts();
+
+    // Subscribe to real-time changes on contacts table
+    const channel = supabase
+      .channel('contacts-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'contacts'
+        },
+        (payload) => {
+          console.log('Real-time contact update:', payload);
+          // Refresh contacts when any change occurs
+          fetchContacts();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchContacts = async () => {

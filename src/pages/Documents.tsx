@@ -54,6 +54,28 @@ const DocumentsPage = () => {
   useEffect(() => {
     // Fetch documents on mount
     fetchDocuments();
+
+    // Subscribe to real-time changes on documents table
+    const channel = supabase
+      .channel('documents-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'documents'
+        },
+        (payload) => {
+          console.log('Real-time document update:', payload);
+          // Refresh documents when any change occurs
+          fetchDocuments();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   /**
