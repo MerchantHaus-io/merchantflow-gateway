@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Task } from "@/types/task";
 import { EMAIL_TO_USER, TEAM_MEMBERS } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Search,
   Plus,
@@ -28,6 +29,7 @@ import {
   AlertCircle,
   Building2,
   User,
+  Link2,
 } from "lucide-react";
 import {
   Bar,
@@ -50,6 +52,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+
+// Lightweight types for linking
+interface LightweightOpportunity {
+  id: string;
+  accountName: string;
+}
+
+interface LightweightContact {
+  id: string;
+  name: string;
+  accountId: string;
+}
 
 // Mapping of status keys to human-friendly labels
 const statusLabels: Record<Task["status"], string> = {
@@ -88,12 +102,47 @@ const Tasks = () => {
   const [assignee, setAssignee] = useState<string>(displayName);
   const [dueAt, setDueAt] = useState<string>("");
   const [showNewModal, setShowNewModal] = useState(false);
+  const [relatedOpportunityId, setRelatedOpportunityId] = useState<string>("");
+  const [relatedContactId, setRelatedContactId] = useState<string>("");
+
+  // Data for linking
+  const [opportunities, setOpportunities] = useState<LightweightOpportunity[]>([]);
+  const [contacts, setContacts] = useState<LightweightContact[]>([]);
+
+  // Fetch opportunities and contacts for linking
+  const fetchLinkData = useCallback(async () => {
+    const [oppsResult, contactsResult] = await Promise.all([
+      supabase
+        .from('opportunities')
+        .select('id, account:accounts(name)')
+        .order('updated_at', { ascending: false }),
+      supabase
+        .from('contacts')
+        .select('id, first_name, last_name, account_id')
+        .order('first_name', { ascending: true })
+    ]);
+
+    if (oppsResult.data) {
+      setOpportunities(oppsResult.data.map((o: any) => ({
+        id: o.id,
+        accountName: o.account?.name || 'Unknown Account'
+      })));
+    }
+
+    if (contactsResult.data) {
+      setContacts(contactsResult.data.map((c: any) => ({
+        id: c.id,
+        name: `${c.first_name || ''} ${c.last_name || ''}`.trim() || 'Unnamed',
+        accountId: c.account_id
+      })));
+    }
+  }, []);
 
   // Refresh tasks on mount
   useEffect(() => {
     setLoading(true);
-    refreshTasks().finally(() => setLoading(false));
-  }, [refreshTasks]);
+    Promise.all([refreshTasks(), fetchLinkData()]).finally(() => setLoading(false));
+  }, [refreshTasks, fetchLinkData]);
 
   // Compute unique assignees
   const uniqueAssignees = useMemo(() => {
@@ -219,11 +268,15 @@ const Tasks = () => {
       createdBy: displayName,
       comments: description,
       source: 'manual',
+      relatedOpportunityId: relatedOpportunityId || undefined,
+      relatedContactId: relatedContactId || undefined,
     });
 
     setTitle('');
     setDescription('');
     setDueAt('');
+    setRelatedOpportunityId('');
+    setRelatedContactId('');
     setShowNewModal(false);
   };
 
@@ -387,6 +440,52 @@ const Tasks = () => {
                             onChange={(e) => setDueAt(e.target.value)}
                           />
                         </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-1.5">
+                          <Link2 className="h-3.5 w-3.5" />
+                          Link to Opportunity
+                        </Label>
+                        <Select value={relatedOpportunityId} onValueChange={setRelatedOpportunityId}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select opportunity (optional)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">None</SelectItem>
+                            {opportunities.map((opp) => (
+                              <SelectItem key={opp.id} value={opp.id}>
+                                <div className="flex items-center gap-1.5">
+                                  <Building2 className="h-3 w-3 text-muted-foreground" />
+                                  {opp.accountName}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-1.5">
+                          <User className="h-3.5 w-3.5" />
+                          Link to Contact
+                        </Label>
+                        <Select value={relatedContactId} onValueChange={setRelatedContactId}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select contact (optional)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">None</SelectItem>
+                            {contacts.map((contact) => (
+                              <SelectItem key={contact.id} value={contact.id}>
+                                <div className="flex items-center gap-1.5">
+                                  <User className="h-3 w-3 text-muted-foreground" />
+                                  {contact.name}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       <Button type="submit" className="w-full">
