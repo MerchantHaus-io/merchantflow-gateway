@@ -34,6 +34,8 @@ import {
   ArrowUp,
   ArrowDown,
   Minus,
+  AlertTriangle,
+  Bell,
 } from "lucide-react";
 import {
   Bar,
@@ -45,7 +47,7 @@ import {
 } from "recharts";
 import DateRangeFilter from "@/components/DateRangeFilter";
 import { DateRange } from "react-day-picker";
-import { isWithinInterval, startOfDay, endOfDay, format } from "date-fns";
+import { isWithinInterval, startOfDay, endOfDay, format, isPast, isToday, isTomorrow, differenceInDays } from "date-fns";
 import { SortableTableHead } from "@/components/SortableTableHead";
 import ThemeToggle from "@/components/ThemeToggle";
 import {
@@ -309,6 +311,46 @@ const Tasks = () => {
   const formatDate = (date?: string) =>
     date ? format(new Date(date), 'MMM d') : '-';
 
+  // Due date status helpers
+  const getDueDateStatus = (dueAt?: string, status?: Task['status']) => {
+    if (!dueAt || status === 'done') return null;
+    const dueDate = startOfDay(new Date(dueAt));
+    const today = startOfDay(new Date());
+    
+    if (isPast(dueDate) && !isToday(new Date(dueAt))) {
+      return 'overdue';
+    }
+    if (isToday(new Date(dueAt))) {
+      return 'due-today';
+    }
+    if (isTomorrow(new Date(dueAt))) {
+      return 'due-tomorrow';
+    }
+    if (differenceInDays(dueDate, today) <= 3) {
+      return 'due-soon';
+    }
+    return null;
+  };
+
+  const getDueDateLabel = (dueAt?: string, status?: Task['status']) => {
+    const dueStatus = getDueDateStatus(dueAt, status);
+    if (!dueStatus) return formatDate(dueAt);
+    
+    switch (dueStatus) {
+      case 'overdue':
+        const daysOverdue = differenceInDays(new Date(), new Date(dueAt!));
+        return `${daysOverdue}d overdue`;
+      case 'due-today':
+        return 'Due today';
+      case 'due-tomorrow':
+        return 'Due tomorrow';
+      case 'due-soon':
+        return formatDate(dueAt);
+      default:
+        return formatDate(dueAt);
+    }
+  };
+
   const getStatusIcon = (status: Task['status']) => {
     switch (status) {
       case 'open': return <CircleDot className="h-3 w-3 text-blue-500" />;
@@ -316,6 +358,18 @@ const Tasks = () => {
       case 'done': return <CheckCircle2 className="h-3 w-3 text-emerald-500" />;
     }
   };
+
+  // Overdue and due soon counts
+  const overdueCount = useMemo(() => {
+    return tasks.filter(t => getDueDateStatus(t.dueAt, t.status) === 'overdue').length;
+  }, [tasks]);
+
+  const dueSoonCount = useMemo(() => {
+    return tasks.filter(t => {
+      const status = getDueDateStatus(t.dueAt, t.status);
+      return status === 'due-today' || status === 'due-tomorrow' || status === 'due-soon';
+    }).length;
+  }, [tasks]);
 
   return (
     <SidebarProvider>
@@ -351,6 +405,16 @@ const Tasks = () => {
             <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-emerald-500/30 text-emerald-500">
               <CheckCircle2 className="h-3 w-3" />Done {stats.done}
             </Badge>
+            {overdueCount > 0 && (
+              <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-red-500/30 text-red-500 bg-red-500/10">
+                <AlertTriangle className="h-3 w-3" />Overdue {overdueCount}
+              </Badge>
+            )}
+            {dueSoonCount > 0 && (
+              <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-orange-500/30 text-orange-500 bg-orange-500/10">
+                <Bell className="h-3 w-3" />Due Soon {dueSoonCount}
+              </Badge>
+            )}
           </div>
 
           {/* Filters */}
@@ -622,15 +686,30 @@ const Tasks = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredTasks.map((task, index) => (
-                          <TableRow key={task.id} className="hover:bg-muted/50">
+                        {filteredTasks.map((task, index) => {
+                          const dueStatus = getDueDateStatus(task.dueAt, task.status);
+                          return (
+                          <TableRow 
+                            key={task.id} 
+                            className={cn(
+                              "hover:bg-muted/50",
+                              dueStatus === 'overdue' && "bg-red-500/5 border-l-2 border-l-red-500",
+                              dueStatus === 'due-today' && "bg-orange-500/5 border-l-2 border-l-orange-500",
+                              dueStatus === 'due-tomorrow' && "bg-amber-500/5 border-l-2 border-l-amber-500"
+                            )}
+                          >
                             <TableCell className="text-muted-foreground text-sm">{index + 1}</TableCell>
                             <TableCell>
-                              <div>
-                                <p className="font-medium">{task.title}</p>
-                                {task.description && (
-                                  <p className="text-xs text-muted-foreground line-clamp-1">{task.description}</p>
+                              <div className="flex items-center gap-2">
+                                {dueStatus === 'overdue' && (
+                                  <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
                                 )}
+                                <div>
+                                  <p className="font-medium">{task.title}</p>
+                                  {task.description && (
+                                    <p className="text-xs text-muted-foreground line-clamp-1">{task.description}</p>
+                                  )}
+                                </div>
                               </div>
                             </TableCell>
                             <TableCell>
@@ -686,13 +765,27 @@ const Tasks = () => {
                               </Select>
                             </TableCell>
                             <TableCell>
-                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                <CalendarClock className="h-3.5 w-3.5" />
-                                {formatDate(task.dueAt)}
+                              <div className={cn(
+                                "flex items-center gap-1 text-sm",
+                                dueStatus === 'overdue' && "text-red-500 font-medium",
+                                dueStatus === 'due-today' && "text-orange-500 font-medium",
+                                dueStatus === 'due-tomorrow' && "text-amber-500",
+                                dueStatus === 'due-soon' && "text-amber-500/80",
+                                !dueStatus && "text-muted-foreground"
+                              )}>
+                                {dueStatus === 'overdue' ? (
+                                  <AlertTriangle className="h-3.5 w-3.5" />
+                                ) : dueStatus === 'due-today' || dueStatus === 'due-tomorrow' ? (
+                                  <Bell className="h-3.5 w-3.5" />
+                                ) : (
+                                  <CalendarClock className="h-3.5 w-3.5" />
+                                )}
+                                {getDueDateLabel(task.dueAt, task.status)}
                               </div>
                             </TableCell>
                           </TableRow>
-                        ))}
+                          );
+                        })}
                         {filteredTasks.length === 0 && (
                           <TableRow>
                             <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
@@ -709,12 +802,25 @@ const Tasks = () => {
                       const taskPriority = task.priority || 'medium';
                       const priorityConf = priorityConfig[taskPriority];
                       const PriorityIcon = priorityConf.icon;
+                      const dueStatus = getDueDateStatus(task.dueAt, task.status);
                       return (
-                        <Card key={task.id} className="p-3">
+                        <Card 
+                          key={task.id} 
+                          className={cn(
+                            "p-3",
+                            dueStatus === 'overdue' && "border-red-500/50 bg-red-500/5",
+                            dueStatus === 'due-today' && "border-orange-500/50 bg-orange-500/5",
+                            dueStatus === 'due-tomorrow' && "border-amber-500/30 bg-amber-500/5"
+                          )}
+                        >
                           <div className="space-y-2">
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex items-center gap-1.5 min-w-0">
-                                <PriorityIcon className={cn("h-3.5 w-3.5 flex-shrink-0", priorityConf.color.split(' ')[0])} />
+                                {dueStatus === 'overdue' ? (
+                                  <AlertTriangle className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
+                                ) : (
+                                  <PriorityIcon className={cn("h-3.5 w-3.5 flex-shrink-0", priorityConf.color.split(' ')[0])} />
+                                )}
                                 <h4 className="font-medium text-sm leading-tight truncate">{task.title}</h4>
                               </div>
                               <Badge variant="outline" className={cn(
@@ -745,9 +851,21 @@ const Tasks = () => {
                                 {task.assignee || 'Unassigned'}
                               </div>
                               {task.dueAt && (
-                                <div className="flex items-center gap-1">
-                                  <CalendarClock className="h-3 w-3" />
-                                  {formatDate(task.dueAt)}
+                                <div className={cn(
+                                  "flex items-center gap-1",
+                                  dueStatus === 'overdue' && "text-red-500 font-medium",
+                                  dueStatus === 'due-today' && "text-orange-500 font-medium",
+                                  dueStatus === 'due-tomorrow' && "text-amber-500",
+                                  dueStatus === 'due-soon' && "text-amber-500/80"
+                                )}>
+                                  {dueStatus === 'overdue' ? (
+                                    <AlertTriangle className="h-3 w-3" />
+                                  ) : dueStatus === 'due-today' || dueStatus === 'due-tomorrow' ? (
+                                    <Bell className="h-3 w-3" />
+                                  ) : (
+                                    <CalendarClock className="h-3 w-3" />
+                                  )}
+                                  {getDueDateLabel(task.dueAt, task.status)}
                                 </div>
                               )}
                             </div>
