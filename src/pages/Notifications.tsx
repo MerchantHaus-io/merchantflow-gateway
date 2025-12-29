@@ -73,22 +73,22 @@ const Notifications = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar />
-        <main className="flex-1 p-6">
-          <div className="flex items-center gap-4 mb-6">
-            <SidebarTrigger />
-            <div className="flex items-center gap-2">
-              <Bell className="h-6 w-6 text-primary" />
-              <h1 className="text-2xl font-bold">Notifications</h1>
-            </div>
-            <div className="ml-auto">
-              <Button variant="outline" onClick={markAllAsRead}>
-                <Check className="h-4 w-4 mr-2" />
-                Mark all as read
-              </Button>
-            </div>
+      <AppSidebar />
+      <div className="flex-1 flex flex-col h-screen">
+        {/* Header - standardized h-14 */}
+        <header className="flex h-14 items-center gap-4 border-b bg-background px-4 lg:px-6">
+          <SidebarTrigger />
+          <div className="flex items-center gap-2 flex-1">
+            <Bell className="h-5 w-5 text-primary" />
+            <h1 className="text-lg font-semibold">Notifications</h1>
           </div>
+          <Button variant="outline" size="sm" onClick={markAllAsRead}>
+            <Check className="h-4 w-4 mr-2" />
+            Mark all as read
+          </Button>
+        </header>
+
+        <main className="flex-1 overflow-auto p-4 lg:p-6">
 
           {loading ? (
             <div className="flex items-center justify-center h-64">
