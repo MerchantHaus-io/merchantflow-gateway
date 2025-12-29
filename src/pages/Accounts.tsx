@@ -154,14 +154,6 @@ const Accounts = () => {
   }, [editingAccount, resetInitialData]);
 
 
-  if (loading) {
-    return (
-      <div className="h-screen flex items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    );
-  }
-
   // Filter and sort accounts based on search query and sort settings
   const filteredAccounts = useMemo(() => {
     let result = accounts.filter((account) => {
@@ -207,6 +199,14 @@ const Accounts = () => {
   const totalAccounts = accounts.length;
   const accountsWithContacts = accounts.filter((account) => (account.contacts?.length || 0) > 0).length;
   const accountsWithWebsites = accounts.filter((account) => !!account.website).length;
+
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider>
