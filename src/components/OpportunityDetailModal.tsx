@@ -506,7 +506,27 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                   <Building2 className="h-5 w-5" />
                 </div>
                 <div>
-                  <DialogTitle>{account?.name || 'Unknown Business'}</DialogTitle>
+                  <div className="flex items-center gap-2">
+                    <DialogTitle>{account?.name || 'Unknown Business'}</DialogTitle>
+                    <span className={cn(
+                      "flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full",
+                      getServiceType(opportunity) === 'gateway_only' 
+                        ? "bg-teal/10 text-teal" 
+                        : "bg-primary/10 text-primary"
+                    )}>
+                      {getServiceType(opportunity) === 'gateway_only' ? (
+                        <>
+                          <Zap className="h-3 w-3" />
+                          Gateway
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="h-3 w-3" />
+                          Processing
+                        </>
+                      )}
+                    </span>
+                  </div>
                   <div className="flex items-center gap-2 mt-1">
                     <div className={`w-2 h-2 rounded-full ${stageConfig.colorClass}`} />
                     <span className="text-sm text-muted-foreground">{stageConfig.label}</span>
