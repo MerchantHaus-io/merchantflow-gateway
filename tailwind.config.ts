@@ -20,8 +20,12 @@ export default {
   theme: {
     container: {
       center: true,
-      // Increase default padding from 2rem to 3rem to allow content to breathe
-      padding: '3rem',
+      // Use moderate padding - 2rem on desktop, 1rem on mobile
+      padding: {
+        DEFAULT: '1rem',
+        sm: '1.5rem',
+        lg: '2rem',
+      },
       screens: {
         '2xl': '1400px'
       }
@@ -33,7 +37,9 @@ export default {
       'lg': '1024px',
       'xl': '1280px',
       '2xl': '1536px',
-      // Landscape mobile: narrow height + wider than tall
+      // Mobile landscape: narrow height + landscape orientation (targets phones rotated, not desktop)
+      'mobile-landscape': { 'raw': '(orientation: landscape) and (max-height: 500px)' },
+      // Keep legacy 'landscape' for backwards compatibility but prefer mobile-landscape
       'landscape': { 'raw': '(orientation: landscape) and (max-height: 500px)' },
     },
     extend: {

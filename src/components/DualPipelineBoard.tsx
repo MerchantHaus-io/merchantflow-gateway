@@ -154,26 +154,26 @@ const PipelineSection = ({
   return (
     <div className={cn(
       "flex flex-1 min-h-0 min-w-0 border border-border/40 rounded-lg overflow-hidden bg-card/50 shadow-sm",
-      "landscape:rounded-md landscape:min-h-[120px]"
+      "mobile-landscape:rounded-md mobile-landscape:min-h-[120px]"
     )}>
       {/* Vertical Title Sidebar */}
       <div className={cn(
         "flex flex-col items-center justify-center flex-shrink-0 border-r border-border/40",
         isCompact ? "w-6 sm:w-8 lg:w-10" : "w-8 sm:w-10 lg:w-12",
-        "landscape:w-5",
+        "mobile-landscape:w-5",
         colorAccent
       )}>
         <div className={cn(
-          "flex flex-col items-center py-2 sm:py-4 landscape:py-1",
+          "flex flex-col items-center py-2 sm:py-4 mobile-landscape:py-1",
           isCompact ? "gap-0.5" : "gap-1",
-          "landscape:gap-0.5"
+          "mobile-landscape:gap-0.5"
         )}>
-          <span className="hidden sm:block landscape:hidden">{icon}</span>
+          <span className="hidden sm:block mobile-landscape:hidden">{icon}</span>
           <span
             className={cn(
               "text-white font-semibold whitespace-nowrap tracking-wide",
               isCompact ? "text-[8px] sm:text-[10px]" : "text-[10px] sm:text-xs",
-              "landscape:text-[7px]"
+              "mobile-landscape:text-[7px]"
             )}
             style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
           >
@@ -182,7 +182,7 @@ const PipelineSection = ({
           <span className={cn(
             "text-white/90 font-medium bg-white/20 rounded-full",
             isCompact ? "text-[8px] px-0.5 py-0" : "text-[10px] sm:text-xs px-1 py-0.5",
-            "landscape:text-[8px] landscape:px-0.5"
+            "mobile-landscape:text-[8px] mobile-landscape:px-0.5"
           )}>
             {totalCount}
           </span>
@@ -224,7 +224,7 @@ const PipelineSection = ({
           <div className={cn(
             "flex min-w-max pb-0",
             isCompact ? "gap-0.5 p-0.5" : "gap-1 p-1",
-            "landscape:gap-1 landscape:p-0.5"
+            "mobile-landscape:gap-1 mobile-landscape:p-0.5"
           )}>
             {stages.map((stage) => {
               const config = STAGE_CONFIG[stage];
@@ -235,8 +235,8 @@ const PipelineSection = ({
                   className={cn(
                     "flex-shrink-0 pb-1 border-b-2",
                     isCompact 
-                      ? "w-[90px] sm:w-[110px] md:w-[130px] lg:w-[150px] landscape:w-[140px]" 
-                      : "w-[100px] sm:w-[130px] md:w-[150px] lg:w-[180px] landscape:w-[160px]"
+                      ? "w-[90px] sm:w-[110px] md:w-[130px] lg:w-[150px] mobile-landscape:w-[140px]" 
+                      : "w-[100px] sm:w-[130px] md:w-[150px] lg:w-[180px] mobile-landscape:w-[160px]"
                   )}
                   style={{ borderColor: config.color || 'hsl(var(--primary))' }}
                 >
@@ -245,8 +245,8 @@ const PipelineSection = ({
                       <span className={cn(
                         "font-semibold text-foreground truncate",
                         isCompact 
-                          ? "text-[9px] max-w-[55px] landscape:text-[10px] landscape:max-w-[100px]" 
-                          : "text-[10px] max-w-[60px] landscape:text-[10px] landscape:max-w-[120px]"
+                          ? "text-[9px] max-w-[55px] mobile-landscape:text-[10px] mobile-landscape:max-w-[100px]" 
+                          : "text-[10px] max-w-[60px] mobile-landscape:text-[10px] mobile-landscape:max-w-[120px]"
                       )}>
                         {config.label}
                       </span>
@@ -254,7 +254,7 @@ const PipelineSection = ({
                     <span className={cn(
                       "text-muted-foreground bg-muted px-1 py-0 rounded-full",
                       isCompact ? "text-[8px]" : "text-[9px]",
-                      "landscape:text-[9px]"
+                      "mobile-landscape:text-[9px]"
                     )}>
                       {count}
                     </span>
@@ -277,7 +277,7 @@ const PipelineSection = ({
           <div className={cn(
             "flex items-stretch min-w-max min-h-0 pt-1",
             isCompact ? "gap-0.5 p-0.5" : "gap-1 p-1",
-            "landscape:gap-1 landscape:p-0.5"
+            "mobile-landscape:gap-1 mobile-landscape:p-0.5"
           )}>
             {stages.map((stage) => (
               <PipelineColumn
@@ -298,9 +298,9 @@ const PipelineSection = ({
           </div>
         </div>
 
-        {/* Mobile Navigation Indicators - hidden in landscape to save vertical space */}
+        {/* Mobile Navigation Indicators - hidden in mobile landscape to save vertical space */}
         {isMobile && (
-          <div className="flex-shrink-0 flex items-center justify-center gap-2 py-1.5 bg-muted/30 landscape:hidden">
+          <div className="flex-shrink-0 flex items-center justify-center gap-2 py-1.5 bg-muted/30 mobile-landscape:hidden">
             <Button
               variant="ghost"
               size="icon"
@@ -425,7 +425,7 @@ const DualPipelineBoard = ({
   return (
     <>
       {/* Compact Toggle Header */}
-      <div className="flex-shrink-0 px-2 py-1 flex justify-end landscape:hidden">
+      <div className="flex-shrink-0 px-2 py-1 flex justify-end mobile-landscape:hidden">
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -454,8 +454,9 @@ const DualPipelineBoard = ({
       </div>
 
       <div className={cn(
-        "flex-1 min-h-0 w-full flex flex-col gap-2 overflow-auto orientation-stable landscape:flex-row landscape:overflow-hidden",
-        isCompact ? "p-1 gap-1 landscape:p-1 landscape:gap-1" : "p-2 landscape:p-1"
+        "flex-1 min-h-0 w-full flex flex-col gap-2 overflow-auto orientation-stable",
+        "mobile-landscape:flex-row mobile-landscape:overflow-hidden",
+        isCompact ? "p-1 gap-1 mobile-landscape:p-1 mobile-landscape:gap-1" : "p-2 mobile-landscape:p-1"
       )}>
         {/* NMI Payments Pipeline Section */}
         <div className="flex-1 min-w-0 min-h-0 flex flex-col">
