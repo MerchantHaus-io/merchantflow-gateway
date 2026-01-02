@@ -69,26 +69,37 @@ interface NavGroup {
 }
 
 const navMain: NavGroup[] = [
-  { title: "Pipeline", url: "/", icon: LayoutDashboard },
-  { title: "Opportunities", url: "/opportunities", icon: Briefcase },
-  { title: "Tasks", url: "/tasks", icon: ListChecks },
-  { title: "Accounts", url: "/accounts", icon: Building2 },
-  { title: "Contacts", url: "/contacts", icon: Users },
-  { title: "Documents", url: "/documents", icon: FileText },
-  { title: "Reports", url: "/reports", icon: BarChart3 },
   {
-    title: "Tools",
-    url: "#",
-    icon: Wrench,
+    title: "Pipeline",
+    url: "/",
+    icon: LayoutDashboard,
     items: [
-      { title: "SOP", url: "/sop", icon: BookOpen, description: "Standard operating procedures" },
-      { title: "Preboarding Wizard", url: "/tools/preboarding-wizard", icon: ClipboardList, description: "Application readiness form" },
-      { title: "Revenue Calculator", url: "/tools/revenue-calculator", icon: Calculator, description: "Estimate processing revenue" },
-      { title: "CSV Import", url: "/tools/csv-import", icon: FileSpreadsheet, description: "Bulk import data" },
-      { title: "Data Export", url: "/admin/data-export", icon: Download, description: "Export opportunity data" },
-      { title: "NMI Status", url: "https://statusgator.com/services/nmi", icon: Activity, description: "System status page", external: true },
+      { title: "Pipeline Board", url: "/", icon: LayoutDashboard, description: "View opportunity pipeline" },
+      { title: "Tasks", url: "/tasks", icon: ListChecks, description: "Manage your tasks" },
+      { title: "My Tasks", url: "/my-tasks", icon: ClipboardList, description: "Tasks assigned to you" },
     ],
   },
+  {
+    title: "Opportunities",
+    url: "/opportunities",
+    icon: Briefcase,
+    items: [
+      { title: "All Opportunities", url: "/opportunities", icon: Briefcase, description: "Browse all opportunities" },
+      { title: "Accounts", url: "/accounts", icon: Building2, description: "Manage business accounts" },
+      { title: "Contacts", url: "/contacts", icon: Users, description: "Manage contacts" },
+    ],
+  },
+  { title: "Documents", url: "/documents", icon: FileText },
+  { title: "Reports", url: "/reports", icon: BarChart3 },
+];
+
+const toolsItems: NavItem[] = [
+  { title: "SOP", url: "/sop", icon: BookOpen, description: "Standard operating procedures" },
+  { title: "Preboarding Wizard", url: "/tools/preboarding-wizard", icon: ClipboardList, description: "Application readiness form" },
+  { title: "Revenue Calculator", url: "/tools/revenue-calculator", icon: Calculator, description: "Estimate processing revenue" },
+  { title: "CSV Import", url: "/tools/csv-import", icon: FileSpreadsheet, description: "Bulk import data" },
+  { title: "Data Export", url: "/admin/data-export", icon: Download, description: "Export opportunity data" },
+  { title: "NMI Status", url: "https://statusgator.com/services/nmi", icon: Activity, description: "System status page", external: true },
 ];
 
 interface MegaMenuHeaderProps {
@@ -242,7 +253,7 @@ export function MegaMenuHeader({ onNewApplication }: MegaMenuHeaderProps) {
                 <ChevronDown className="h-3 w-3 hidden md:inline" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem asChild>
                 <RouterNavLink to="/settings" className="cursor-pointer">
                   <Settings className="h-4 w-4 mr-2" />
@@ -257,6 +268,41 @@ export function MegaMenuHeader({ onNewApplication }: MegaMenuHeaderProps) {
                   </RouterNavLink>
                 </DropdownMenuItem>
               )}
+              <DropdownMenuSeparator />
+              {/* Tools submenu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <div className="flex items-center gap-2 px-2 py-1.5 text-sm cursor-pointer hover:bg-accent rounded-sm">
+                    <Wrench className="h-4 w-4" />
+                    Tools
+                    <ChevronDown className="h-3 w-3 ml-auto" />
+                  </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="left" align="start" className="w-56">
+                  {toolsItems.map((tool) =>
+                    tool.external ? (
+                      <DropdownMenuItem key={tool.title} asChild>
+                        <a
+                          href={tool.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="cursor-pointer"
+                        >
+                          <tool.icon className="h-4 w-4 mr-2" />
+                          {tool.title}
+                        </a>
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem key={tool.title} asChild>
+                        <RouterNavLink to={tool.url} className="cursor-pointer">
+                          <tool.icon className="h-4 w-4 mr-2" />
+                          {tool.title}
+                        </RouterNavLink>
+                      </DropdownMenuItem>
+                    )
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive">
                 <LogOut className="h-4 w-4 mr-2" />
@@ -345,6 +391,46 @@ export function MegaMenuHeader({ onNewApplication }: MegaMenuHeaderProps) {
                       </SheetClose>
                     );
                   })}
+                  
+                  {/* Tools section in mobile */}
+                  <div className="space-y-1 pt-4 border-t border-border mt-4">
+                    <div className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground">
+                      <Wrench className="h-4 w-4" />
+                      Tools
+                    </div>
+                    <div className="pl-6 space-y-1">
+                      {toolsItems.map((tool) =>
+                        tool.external ? (
+                          <a
+                            key={tool.title}
+                            href={tool.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-accent"
+                            onClick={() => setMobileOpen(false)}
+                          >
+                            <tool.icon className="h-4 w-4" />
+                            {tool.title}
+                          </a>
+                        ) : (
+                          <SheetClose key={tool.title} asChild>
+                            <RouterNavLink
+                              to={tool.url}
+                              className={({ isActive }) =>
+                                cn(
+                                  "flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-accent",
+                                  isActive && "bg-accent text-accent-foreground"
+                                )
+                              }
+                            >
+                              <tool.icon className="h-4 w-4" />
+                              {tool.title}
+                            </RouterNavLink>
+                          </SheetClose>
+                        )
+                      )}
+                    </div>
+                  </div>
                 </nav>
               </div>
             </SheetContent>
