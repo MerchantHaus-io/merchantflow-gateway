@@ -45,6 +45,7 @@ import {
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -247,8 +248,13 @@ export function MegaMenuHeader({ onNewApplication }: MegaMenuHeaderProps) {
           {/* Profile dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-2">
-                <User className="h-4 w-4" />
+              <Button variant="ghost" size="sm" className="gap-2 pl-1">
+                <Avatar className="h-7 w-7">
+                  <AvatarImage src={user?.user_metadata?.avatar_url} alt={displayName} />
+                  <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                    {displayName.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
                 <span className="hidden md:inline">{displayName}</span>
                 <ChevronDown className="h-3 w-3 hidden md:inline" />
               </Button>
