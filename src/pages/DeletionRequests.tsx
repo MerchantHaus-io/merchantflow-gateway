@@ -7,8 +7,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
-import { AppSidebar } from '@/components/AppSidebar';
+import { AppLayout } from '@/components/AppLayout';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -135,19 +134,9 @@ const DeletionRequests = () => {
   }
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar />
-        <main className="flex-1 p-6">
-          <div className="flex items-center gap-4 mb-6">
-            <SidebarTrigger />
-            <div className="flex items-center gap-2">
-              <Trash2 className="h-6 w-6 text-destructive" />
-              <h1 className="text-2xl font-bold">Deletion Requests</h1>
-            </div>
-          </div>
-
-          {loading ? (
+    <AppLayout pageTitle="Deletion Requests">
+      <main className="flex-1 p-6">
+        {loading ? (
             <div className="flex items-center justify-center h-64">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
             </div>
@@ -230,7 +219,6 @@ const DeletionRequests = () => {
             </div>
           )}
         </main>
-      </div>
 
       <AlertDialog
         open={confirmDialog.open}
@@ -264,7 +252,7 @@ const DeletionRequests = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </SidebarProvider>
+    </AppLayout>
   );
 };
 

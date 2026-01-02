@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Contact, Account, TEAM_MEMBERS, STAGE_CONFIG, OpportunityStage } from "@/types/opportunity";
-import { AppSidebar } from "@/components/AppSidebar";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppLayout } from "@/components/AppLayout";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +36,6 @@ import CommentsTab from "@/components/CommentsTab";
 import { cn } from "@/lib/utils";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
-import ThemeToggle from "@/components/ThemeToggle";
 import { SortableTableHead } from "@/components/SortableTableHead";
 import {
   DropdownMenu,
@@ -534,20 +532,17 @@ const Contacts = () => {
   };
 
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset className="flex flex-col h-screen">
-        {/* Header */}
-        <header className="flex h-14 items-center gap-4 border-b bg-background px-4 lg:px-6">
-          <SidebarTrigger />
-          <div className="flex-1">
-            <h1 className="text-lg font-semibold">Contacts</h1>
-          </div>
-          <ThemeToggle />
-        </header>
-
-        <main className="flex-1 overflow-auto p-4 lg:p-6 space-y-6">
-          {/* Stats - Compact header-style badges */}
+    <AppLayout
+      pageTitle="Contacts"
+      headerActions={
+        <Button onClick={openNewDialog}>
+          <UserPlus className="h-4 w-4 mr-1" />
+          New Contact
+        </Button>
+      }
+    >
+      <main className="flex-1 overflow-auto p-4 lg:p-6 space-y-6">
+        {/* Stats - Compact header-style badges */}
           <div className="flex items-center gap-1.5 flex-wrap">
             <Badge variant="secondary" className="h-6 px-2 text-xs font-medium gap-1">
               <Users className="h-3 w-3" />Total {stats.total}
@@ -953,7 +948,6 @@ const Contacts = () => {
             </CardContent>
           </Card>
         </main>
-      </SidebarInset>
 
       {/* Contact Details Dialog */}
       <Dialog
@@ -1237,7 +1231,7 @@ const Contacts = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </SidebarProvider>
+    </AppLayout>
   );
 };
 

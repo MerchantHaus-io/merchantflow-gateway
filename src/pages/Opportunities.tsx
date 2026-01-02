@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { AppSidebar } from "@/components/AppSidebar";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppLayout } from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -52,7 +51,6 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import ThemeToggle from "@/components/ThemeToggle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SortableTableHead } from "@/components/SortableTableHead";
 
@@ -241,20 +239,18 @@ const Opportunities = () => {
   };
 
   return (
-    <SidebarProvider>
-      <AppSidebar onNewApplication={() => setShowNewModal(true)} />
-      <SidebarInset className="flex flex-col h-screen">
-        {/* Header */}
-        <header className="flex h-14 items-center gap-4 border-b bg-background px-4 lg:px-6">
-          <SidebarTrigger />
-          <div className="flex-1">
-            <h1 className="text-lg font-semibold">Opportunities</h1>
-          </div>
-          <ThemeToggle />
-        </header>
-
-        <main className="flex-1 overflow-auto p-4 lg:p-6 space-y-6">
-          {/* Stats - Compact header-style badges */}
+    <AppLayout
+      onNewApplication={() => setShowNewModal(true)}
+      pageTitle="Opportunities"
+      headerActions={
+        <Button onClick={() => setShowNewModal(true)}>
+          <Plus className="h-4 w-4 mr-1" />
+          New Opportunity
+        </Button>
+      }
+    >
+      <main className="flex-1 overflow-auto p-4 lg:p-6 space-y-6">
+        {/* Stats - Compact header-style badges */}
           <div className="flex items-center gap-1.5 flex-wrap">
             <Badge variant="secondary" className="h-6 px-2 text-xs font-medium gap-1">
               <TrendingUp className="h-3 w-3" />Active {stats.total}
@@ -566,15 +562,14 @@ const Opportunities = () => {
             </CardContent>
           </Card>
         </main>
-      </SidebarInset>
 
-      {/* New Application Modal */}
-      <NewApplicationModal
-        open={showNewModal}
-        onClose={() => setShowNewModal(false)}
-        onSubmit={fetchOpportunities}
-      />
-    </SidebarProvider>
+        {/* New Application Modal */}
+        <NewApplicationModal
+          open={showNewModal}
+          onClose={() => setShowNewModal(false)}
+          onSubmit={fetchOpportunities}
+        />
+    </AppLayout>
   );
 };
 

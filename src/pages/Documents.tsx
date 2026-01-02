@@ -1,6 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from "react";
-import { AppSidebar } from "@/components/AppSidebar";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppLayout } from "@/components/AppLayout";
 import { Download, FileText, ChevronDown, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Document } from "@/types/opportunity";
@@ -320,48 +319,45 @@ const DocumentsPage = () => {
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <AppSidebar />
-        <SidebarInset className="flex-1 flex flex-col min-h-0">
-          <header className="h-14 flex items-center px-4 md:px-6 border-b border-border gap-2">
-            <SidebarTrigger className="md:hidden" />
-            <h1 className="text-lg font-semibold text-foreground">Documents</h1>
-            <div className="ml-auto flex items-center gap-2">
-              <Select value={selectedDocName} onValueChange={setSelectedDocName}>
-                <SelectTrigger className="w-64">
-                  <SelectValue placeholder="Filter by document type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All document types</SelectItem>
-                  {DOCUMENT_TYPE_OPTIONS.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <div className="relative">
-                <Input
-                  placeholder="Search documents..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-3 w-64"
-                />
-              </div>
-              <Button
-                onClick={handleBulkDownload}
-                disabled={selectedDocuments.size === 0 || isDownloading}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                {isDownloading ? "Preparing..." : "Download selected"}
-              </Button>
-            </div>
-          </header>
-          <main className="flex-1 overflow-auto p-4 lg:p-6">
-            {loading ? (
-              <div className="text-center py-16 text-muted-foreground">Loading documents...</div>
-            ) : (
+    <AppLayout
+      pageTitle="Documents"
+      headerActions={
+        <>
+          <Select value={selectedDocName} onValueChange={setSelectedDocName}>
+            <SelectTrigger className="w-64">
+              <SelectValue placeholder="Filter by document type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All document types</SelectItem>
+              {DOCUMENT_TYPE_OPTIONS.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {type}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="relative">
+            <Input
+              placeholder="Search documents..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-3 w-64"
+            />
+          </div>
+          <Button
+            onClick={handleBulkDownload}
+            disabled={selectedDocuments.size === 0 || isDownloading}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {isDownloading ? "Preparing..." : "Download selected"}
+          </Button>
+        </>
+      }
+    >
+      <main className="flex-1 overflow-auto p-4 lg:p-6">
+        {loading ? (
+          <div className="text-center py-16 text-muted-foreground">Loading documents...</div>
+        ) : (
               <div className="space-y-2">
                 {filteredDocs.length === 0 ? (
                   <div className="text-center py-16 text-muted-foreground">
@@ -516,13 +512,11 @@ const DocumentsPage = () => {
                       );
                     })}
                   </div>
-                )}
-              </div>
             )}
-          </main>
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
+          </div>
+        )}
+      </main>
+    </AppLayout>
   );
 };
 
