@@ -1,16 +1,13 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import DualPipelineBoard from "@/components/DualPipelineBoard";
 import NewApplicationModal, { ApplicationFormData } from "@/components/NewApplicationModal";
-import { AppSidebar } from "@/components/AppSidebar";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppLayout } from "@/components/AppLayout";
 import { getServiceType, OnboardingWizardState, Opportunity, OpportunityStage, migrateStage, EMAIL_TO_USER, TEAM_MEMBERS } from "@/types/opportunity";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTasks } from "@/contexts/TasksContext";
-import { useTheme } from "@/contexts/ThemeContext";
 import DateRangeFilter from "@/components/DateRangeFilter";
-import ThemeToggle from "@/components/ThemeToggle";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { User } from "lucide-react";
 import { DateRange } from "react-day-picker";
@@ -748,47 +745,43 @@ const Index = () => {
         <div className="text-muted-foreground">Loading...</div>
       </div>;
   }
-  return <SidebarProvider>
-      <div className="h-screen min-h-0 flex w-full p-2 sm:p-3 lg:p-4 gap-2 sm:gap-3 lg:gap-4 overflow-hidden orientation-stable mobile-landscape:p-2 mobile-landscape:gap-2">
-        <AppSidebar onNewApplication={() => setIsModalOpen(true)} />
-        <div className="flex-1 flex flex-col gap-2 sm:gap-3 min-h-0 overflow-hidden mobile-landscape:gap-2">
-          <header className="h-12 flex items-center px-4 rounded-lg border shadow-lg backdrop-blur-md gap-2 flex-shrink-0 sticky top-0 z-20 border-primary bg-card/70 dark:bg-card/70">
-            <SidebarTrigger className="md:hidden" />
-            <h1 className="text-lg font-semibold text-foreground">Pipeline</h1>
-            <div className="ml-auto flex items-center gap-2">
-              <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
-                <SelectTrigger className="w-[140px] h-8 text-xs bg-background border-border">
-                  <User className="h-3 w-3 mr-1" />
-                  <SelectValue placeholder="Filter by..." />
-                </SelectTrigger>
-                <SelectContent className="bg-popover z-50">
-                  <SelectItem value="all">All Cards</SelectItem>
-                  <SelectItem value="mine">My Cards</SelectItem>
-                  {TEAM_MEMBERS.map((member) => (
-                    <SelectItem key={member} value={member}>
-                      {member}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} filterBy={filterBy} onFilterByChange={setFilterBy} />
-              <ThemeToggle />
-            </div>
-          </header>
-          <main className="flex-1 flex flex-col overflow-hidden rounded-lg border border-border/50 shadow-lg backdrop-blur-md min-h-0 bg-card/70 dark:bg-card/70">
-            <DualPipelineBoard
-              opportunities={filteredOpportunities}
-              onUpdateOpportunity={handleUpdateOpportunity}
-              onAssignmentChange={handleAssignmentChange}
-              onSlaStatusChange={handleSlaStatusChange}
-              onAddNew={() => setIsModalOpen(true)}
-              onMarkAsDead={handleMarkAsDead}
-              onDelete={handleDelete}
-              onConvertToGateway={handleConvertToGatewayTrack}
-              onMoveToProcessing={handleMoveToProcessing}
-            />
-          </main>
-        </div>
+  return (
+    <AppLayout onNewApplication={() => setIsModalOpen(true)}>
+      <div className="flex-1 flex flex-col gap-2 sm:gap-3 p-2 sm:p-3 lg:p-4 min-h-0 overflow-hidden mobile-landscape:gap-2">
+        <header className="h-12 flex items-center px-4 rounded-lg border shadow-lg backdrop-blur-md gap-2 flex-shrink-0 sticky top-0 z-20 border-primary bg-card/70 dark:bg-card/70">
+          <h1 className="text-lg font-semibold text-foreground">Pipeline</h1>
+          <div className="ml-auto flex items-center gap-2">
+            <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
+              <SelectTrigger className="w-[140px] h-8 text-xs bg-background border-border">
+                <User className="h-3 w-3 mr-1" />
+                <SelectValue placeholder="Filter by..." />
+              </SelectTrigger>
+              <SelectContent className="bg-popover z-50">
+                <SelectItem value="all">All Cards</SelectItem>
+                <SelectItem value="mine">My Cards</SelectItem>
+                {TEAM_MEMBERS.map((member) => (
+                  <SelectItem key={member} value={member}>
+                    {member}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} filterBy={filterBy} onFilterByChange={setFilterBy} />
+          </div>
+        </header>
+        <main className="flex-1 flex flex-col overflow-hidden rounded-lg border border-border/50 shadow-lg backdrop-blur-md min-h-0 bg-card/70 dark:bg-card/70">
+          <DualPipelineBoard
+            opportunities={filteredOpportunities}
+            onUpdateOpportunity={handleUpdateOpportunity}
+            onAssignmentChange={handleAssignmentChange}
+            onSlaStatusChange={handleSlaStatusChange}
+            onAddNew={() => setIsModalOpen(true)}
+            onMarkAsDead={handleMarkAsDead}
+            onDelete={handleDelete}
+            onConvertToGateway={handleConvertToGatewayTrack}
+            onMoveToProcessing={handleMoveToProcessing}
+          />
+        </main>
       </div>
 
       <NewApplicationModal open={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleNewApplication} />
@@ -798,6 +791,7 @@ const Index = () => {
         show={splashType !== null}
         onComplete={() => setSplashType(null)}
       />
-    </SidebarProvider>;
+    </AppLayout>
+  );
 };
 export default Index;
