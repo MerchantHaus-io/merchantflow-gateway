@@ -1,11 +1,37 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-type Theme = 'dark' | 'light';
+// Theme variants - base mode + style variant
+export type ThemeMode = 'dark' | 'light';
+export type ThemeVariant = 
+  | 'dark-default' 
+  | 'dark-midnight' 
+  | 'dark-forest'
+  | 'light-default' 
+  | 'light-ocean' 
+  | 'light-warm';
+
+export interface ThemeOption {
+  id: ThemeVariant;
+  name: string;
+  mode: ThemeMode;
+  description: string;
+}
+
+export const THEME_OPTIONS: ThemeOption[] = [
+  { id: 'dark-default', name: 'Default Dark', mode: 'dark', description: 'Standard dark theme' },
+  { id: 'dark-midnight', name: 'Midnight', mode: 'dark', description: 'Deep blue tones' },
+  { id: 'dark-forest', name: 'Forest', mode: 'dark', description: 'Dark green accents' },
+  { id: 'light-default', name: 'Default Light', mode: 'light', description: 'Standard light theme' },
+  { id: 'light-ocean', name: 'Ocean', mode: 'light', description: 'Cool blue tones' },
+  { id: 'light-warm', name: 'Warm', mode: 'light', description: 'Warm sepia tones' },
+];
 
 interface ThemeContextType {
-  theme: Theme;
+  theme: ThemeMode;
+  variant: ThemeVariant;
   toggleTheme: () => void;
-  setTheme: (theme: Theme) => void;
+  setTheme: (theme: ThemeMode) => void;
+  setVariant: (variant: ThemeVariant) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -23,56 +49,91 @@ interface ThemeProviderProps {
 }
 
 const STORAGE_KEY = 'merchantflow-theme';
+const VARIANT_STORAGE_KEY = 'merchantflow-theme-variant';
 
-const getStoredTheme = (): Theme => {
+const getStoredTheme = (): ThemeMode => {
   try {
-    const savedTheme = localStorage.getItem(STORAGE_KEY) as Theme | null;
+    const savedTheme = localStorage.getItem(STORAGE_KEY) as ThemeMode | null;
     if (savedTheme === 'light' || savedTheme === 'dark') {
       return savedTheme;
     }
   } catch (error) {
-    // localStorage can be disabled (e.g., in private browsing). Fall back to dark mode.
     console.warn('Theme preference unavailable, falling back to dark mode.', error);
   }
   return 'dark';
 };
 
-const persistTheme = (theme: Theme) => {
+const getStoredVariant = (): ThemeVariant => {
+  try {
+    const savedVariant = localStorage.getItem(VARIANT_STORAGE_KEY) as ThemeVariant | null;
+    if (savedVariant && THEME_OPTIONS.some(opt => opt.id === savedVariant)) {
+      return savedVariant;
+    }
+  } catch (error) {
+    console.warn('Theme variant unavailable, falling back to default.', error);
+  }
+  return 'dark-default';
+};
+
+const persistTheme = (theme: ThemeMode) => {
   try {
     localStorage.setItem(STORAGE_KEY, theme);
   } catch (error) {
-    // If storage is unavailable, we still continue rendering with the chosen theme
     console.warn('Unable to persist theme preference.', error);
   }
 };
 
+const persistVariant = (variant: ThemeVariant) => {
+  try {
+    localStorage.setItem(VARIANT_STORAGE_KEY, variant);
+  } catch (error) {
+    console.warn('Unable to persist theme variant.', error);
+  }
+};
+
 export const ThemeProvider = ({ children }: ThemeProviderProps) => {
-  const [theme, setThemeState] = useState<Theme>(getStoredTheme);
+  const [theme, setThemeState] = useState<ThemeMode>(getStoredTheme);
+  const [variant, setVariantState] = useState<ThemeVariant>(getStoredVariant);
 
   useEffect(() => {
     // Apply theme class to document root
     const root = document.documentElement;
-    if (theme === 'light') {
-      root.classList.remove('dark');
-      root.classList.add('light');
-    } else {
-      root.classList.remove('light');
-      root.classList.add('dark');
-    }
-    // Save preference without breaking rendering if storage is unavailable
+    
+    // Remove all theme classes
+    root.classList.remove('dark', 'light', 'dark-default', 'dark-midnight', 'dark-forest', 'light-default', 'light-ocean', 'light-warm');
+    
+    // Add base mode and variant
+    root.classList.add(theme);
+    root.classList.add(variant);
+    
     persistTheme(theme);
-  }, [theme]);
+    persistVariant(variant);
+  }, [theme, variant]);
 
   const toggleTheme = () => {
-    setThemeState(prev => prev === 'dark' ? 'light' : 'dark');
+    setThemeState(prev => {
+      const newMode = prev === 'dark' ? 'light' : 'dark';
+      // Also update variant to match mode
+      const defaultVariant = newMode === 'dark' ? 'dark-default' : 'light-default';
+      setVariantState(defaultVariant);
+      return newMode;
+    });
   };
 
-  const setTheme = (newTheme: Theme) => {
+  const setTheme = (newTheme: ThemeMode) => {
     setThemeState(newTheme);
   };
 
+  const setVariant = (newVariant: ThemeVariant) => {
+    const option = THEME_OPTIONS.find(opt => opt.id === newVariant);
+    if (option) {
+      setThemeState(option.mode);
+      setVariantState(newVariant);
+    }
+  };
+
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, variant, toggleTheme, setTheme, setVariant }}>
       {children}
     </ThemeContext.Provider>
   );

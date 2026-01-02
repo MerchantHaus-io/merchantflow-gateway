@@ -86,7 +86,7 @@ All colors MUST be HSL.
     --shadow-lg: 0px 1px 7.5px 0px hsla(215, 25%, 27%, 0.1);
   }
 
-  /* Dark class - same as root for dark mode */
+  /* Dark class - same as root for dark mode (dark-default) */
   .dark {
     --background: 0 0% 0%;
     --foreground: 210 40% 98%;
@@ -161,6 +161,78 @@ All colors MUST be HSL.
     --shadow: 0px 1px 3px 0px hsla(215, 25%, 27%, 0.1);
     --shadow-md: 0px 1px 4.5px 0px hsla(215, 25%, 27%, 0.1);
     --shadow-lg: 0px 1px 7.5px 0px hsla(215, 25%, 27%, 0.1);
+  }
+
+  /* Dark Midnight - Deep blue tones */
+  .dark-midnight.dark {
+    --background: 222 47% 5%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 12%;
+    --card-foreground: 210 40% 98%;
+    --card-glass: 222 47% 12% / 0.85;
+
+    --popover: 222 47% 12%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 222 47% 18%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 222 47% 15%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 217 91% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --border: 222 47% 22%;
+    --input: 222 47% 22%;
+    --ring: 217 91% 60%;
+
+    --sidebar-background: 222 47% 12% / 0.85;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-accent: 222 47% 18%;
+    --sidebar-accent-foreground: 217 91% 70%;
+    --sidebar-border: 222 47% 25%;
+    --sidebar-ring: 217 91% 60%;
+  }
+
+  /* Dark Forest - Green accents */
+  .dark-forest.dark {
+    --background: 150 20% 4%;
+    --foreground: 120 10% 95%;
+
+    --card: 150 20% 10%;
+    --card-foreground: 120 10% 95%;
+    --card-glass: 150 20% 10% / 0.85;
+
+    --popover: 150 20% 10%;
+    --popover-foreground: 120 10% 95%;
+
+    --primary: 142 71% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 150 20% 15%;
+    --secondary-foreground: 120 10% 95%;
+
+    --muted: 150 20% 12%;
+    --muted-foreground: 140 15% 60%;
+
+    --accent: 142 71% 45%;
+    --accent-foreground: 0 0% 100%;
+
+    --border: 150 20% 20%;
+    --input: 150 20% 20%;
+    --ring: 142 71% 45%;
+
+    --sidebar-background: 150 20% 10% / 0.85;
+    --sidebar-primary: 142 71% 45%;
+    --sidebar-accent: 150 20% 15%;
+    --sidebar-accent-foreground: 142 71% 55%;
+    --sidebar-border: 150 20% 22%;
+    --sidebar-ring: 142 71% 45%;
   }
 
   /* Light Theme - Enterprise Professional Style (Salesforce/Microsoft 365 inspired) */
@@ -238,6 +310,82 @@ All colors MUST be HSL.
     --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+
+  /* Light Ocean - Cool blue tones */
+  .light-ocean.light {
+    --background: 200 25% 96%;
+    --foreground: 200 50% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 200 50% 10%;
+    --card-glass: 0 0% 100% / 0.95;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 200 50% 10%;
+
+    --primary: 199 89% 48%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 200 20% 90%;
+    --secondary-foreground: 200 50% 10%;
+
+    --muted: 200 20% 95%;
+    --muted-foreground: 200 20% 40%;
+
+    --accent: 199 89% 48%;
+    --accent-foreground: 0 0% 100%;
+
+    --border: 200 20% 82%;
+    --input: 200 20% 82%;
+    --ring: 199 89% 48%;
+
+    --sidebar-background: 0 0% 100% / 0.95;
+    --sidebar-foreground: 200 50% 10%;
+    --sidebar-primary: 199 89% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 200 20% 95%;
+    --sidebar-accent-foreground: 199 89% 48%;
+    --sidebar-border: 200 20% 82%;
+    --sidebar-ring: 199 89% 48%;
+  }
+
+  /* Light Warm - Warm sepia tones */
+  .light-warm.light {
+    --background: 40 30% 96%;
+    --foreground: 25 30% 12%;
+
+    --card: 40 20% 99%;
+    --card-foreground: 25 30% 12%;
+    --card-glass: 40 20% 99% / 0.95;
+
+    --popover: 40 20% 99%;
+    --popover-foreground: 25 30% 12%;
+
+    --primary: 25 95% 53%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 40 20% 90%;
+    --secondary-foreground: 25 30% 12%;
+
+    --muted: 40 20% 94%;
+    --muted-foreground: 30 15% 45%;
+
+    --accent: 25 95% 53%;
+    --accent-foreground: 0 0% 100%;
+
+    --border: 35 20% 82%;
+    --input: 35 20% 82%;
+    --ring: 25 95% 53%;
+
+    --sidebar-background: 40 20% 99% / 0.95;
+    --sidebar-foreground: 25 30% 12%;
+    --sidebar-primary: 25 95% 53%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 40 20% 94%;
+    --sidebar-accent-foreground: 25 95% 53%;
+    --sidebar-border: 35 20% 82%;
+    --sidebar-ring: 25 95% 53%;
   }
 }
 

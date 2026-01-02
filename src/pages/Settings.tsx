@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme, THEME_OPTIONS, ThemeVariant } from "@/contexts/ThemeContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,12 +10,24 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Shield, RefreshCw, LogOut, Camera, User, Loader2, Save, Bell } from "lucide-react";
+import { Shield, RefreshCw, LogOut, Camera, User, Loader2, Save, Bell, Palette, Sun, Moon, Trees, Waves, Flame, Stars } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+
+// Theme variant icons mapping
+const VARIANT_ICONS: Record<ThemeVariant, React.ReactNode> = {
+  'dark-default': <Moon className="h-4 w-4" />,
+  'dark-midnight': <Stars className="h-4 w-4" />,
+  'dark-forest': <Trees className="h-4 w-4" />,
+  'light-default': <Sun className="h-4 w-4" />,
+  'light-ocean': <Waves className="h-4 w-4" />,
+  'light-warm': <Flame className="h-4 w-4" />,
+};
 
 const Settings = () => {
   const { user, teamMemberName } = useAuth();
+  const { variant, setVariant } = useTheme();
   const isAdmin = user?.email === "admin@merchanthaus.io" || user?.email === "darryn@merchanthaus.io";
   const [isResetting, setIsResetting] = useState(false);
   const [isSigningOutAll, setIsSigningOutAll] = useState(false);
@@ -256,6 +269,54 @@ const Settings = () => {
                     </div>
                     <p className="text-xs text-muted-foreground">
                       This name will be displayed in chat and throughout the app
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Appearance Settings */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Palette className="h-5 w-5" />
+                    Appearance
+                  </CardTitle>
+                  <CardDescription>
+                    Customize the look and feel of the application
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="theme">Theme Style</Label>
+                    <Select value={variant} onValueChange={(value) => setVariant(value as ThemeVariant)}>
+                      <SelectTrigger id="theme" className="w-full">
+                        <SelectValue placeholder="Select a theme" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Dark Themes</div>
+                        {THEME_OPTIONS.filter(opt => opt.mode === 'dark').map((option) => (
+                          <SelectItem key={option.id} value={option.id}>
+                            <div className="flex items-center gap-2">
+                              {VARIANT_ICONS[option.id]}
+                              <span>{option.name}</span>
+                              <span className="text-xs text-muted-foreground">- {option.description}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t mt-1 pt-2">Light Themes</div>
+                        {THEME_OPTIONS.filter(opt => opt.mode === 'light').map((option) => (
+                          <SelectItem key={option.id} value={option.id}>
+                            <div className="flex items-center gap-2">
+                              {VARIANT_ICONS[option.id]}
+                              <span>{option.name}</span>
+                              <span className="text-xs text-muted-foreground">- {option.description}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Choose from multiple dark and light theme variants. You can also toggle between dark/light mode using the button in the sidebar.
                     </p>
                   </div>
                 </CardContent>

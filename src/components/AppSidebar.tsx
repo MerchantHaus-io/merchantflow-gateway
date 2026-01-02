@@ -1,4 +1,4 @@
-import { LayoutDashboard, Building2, Users, FileText, BarChart3, Settings, Plus, ChevronLeft, ChevronRight, BookOpen, Wrench, ChevronDown, Calculator, Activity, User, LogOut, ClipboardList, ListChecks, FileSpreadsheet, Trash2, type LucideIcon, Download, Briefcase } from "lucide-react";
+import { LayoutDashboard, Building2, Users, FileText, BarChart3, Settings, Plus, ChevronLeft, ChevronRight, BookOpen, Wrench, ChevronDown, Calculator, Activity, User, LogOut, ClipboardList, ListChecks, FileSpreadsheet, Trash2, type LucideIcon, Download, Briefcase, Sun, Moon } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { EMAIL_TO_USER } from "@/types/opportunity";
+import { useTheme } from "@/contexts/ThemeContext";
 
 import sidebarIcon from "@/assets/sidebar-icon.webp";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -124,9 +125,21 @@ export function AppSidebar({ onNewApplication }: AppSidebarProps) {
   const { user, signOut } = useAuth();
   const { isAdmin } = useUserRole();
   const { unreadCount: unreadMessages } = useUnreadMessages();
+  const { theme, toggleTheme } = useTheme();
   
   const navigate = useNavigate();
+  const location = useLocation();
   const isCollapsed = state === "collapsed";
+
+  // Handle +New button - navigate to opportunities with modal trigger if not already there
+  const handleNewClick = () => {
+    if (onNewApplication) {
+      onNewApplication();
+    } else {
+      // Fallback: navigate to opportunities page and trigger modal via query param
+      navigate('/opportunities?new=true');
+    }
+  };
 
   const handleLogout = async () => {
     await signOut();
@@ -172,10 +185,10 @@ export function AppSidebar({ onNewApplication }: AppSidebarProps) {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <SidebarMenuButton
-                        onClick={onNewApplication}
-                        className="gradient-primary text-primary-foreground hover:opacity-90 transition-opacity flex-1"
+                        onClick={handleNewClick}
+                        className="gradient-primary text-primary-foreground hover:opacity-90 transition-opacity px-3 w-auto min-w-0"
                       >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="h-4 w-4 shrink-0" />
                         {!isCollapsed && <span className="font-semibold">New</span>}
                       </SidebarMenuButton>
                     </TooltipTrigger>
@@ -321,6 +334,25 @@ export function AppSidebar({ onNewApplication }: AppSidebarProps) {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+          </SidebarMenuItem>
+          {/* Theme Toggle */}
+          <SidebarMenuItem>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <SidebarMenuButton
+                  onClick={toggleTheme}
+                  className="hover:bg-sidebar-accent"
+                >
+                  {theme === 'dark' ? (
+                    <Sun className="h-4 w-4" />
+                  ) : (
+                    <Moon className="h-4 w-4" />
+                  )}
+                  {!isCollapsed && <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
+                </SidebarMenuButton>
+              </TooltipTrigger>
+              {isCollapsed && <TooltipContent side="right">{theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}</TooltipContent>}
+            </Tooltip>
           </SidebarMenuItem>
           {bottomMenuItems.map((item) => (
             <SidebarMenuItem key={item.title}>

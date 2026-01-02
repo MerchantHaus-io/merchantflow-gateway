@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { supabase } from "@/integrations/supabase/client";
@@ -64,6 +64,7 @@ const Opportunities = () => {
   const { user } = useAuth();
   const { tasks } = useTasks();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,6 +77,15 @@ const Opportunities = () => {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [showNewModal, setShowNewModal] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
+
+  // Handle ?new=true query param from sidebar navigation
+  useEffect(() => {
+    if (searchParams.get('new') === 'true') {
+      setShowNewModal(true);
+      // Clear the query param
+      setSearchParams({});
+    }
+  }, [searchParams, setSearchParams]);
 
   const fetchOpportunities = useCallback(async () => {
     setLoading(true);
