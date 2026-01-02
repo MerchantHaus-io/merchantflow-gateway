@@ -28,8 +28,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { AppSidebar } from "@/components/AppSidebar";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppLayout } from "@/components/AppLayout";
 
 const SOP = () => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -236,18 +235,8 @@ Sales Support`,
   ];
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <AppSidebar />
-        <SidebarInset className="flex-1 flex flex-col min-h-0">
-          <header className="h-14 flex items-center px-4 md:px-6 border-b border-border gap-2">
-            <SidebarTrigger className="md:hidden" />
-            <h1 className="text-lg font-semibold text-foreground">
-              Standard Operating Procedures
-            </h1>
-          </header>
-
-          <div className="flex-1 flex overflow-hidden">
+    <AppLayout pageTitle="Standard Operating Procedures">
+      <div className="flex-1 flex overflow-hidden">
             {/* SOP Navigation Sidebar */}
             <aside className="w-64 border-r border-border bg-card hidden lg:block overflow-y-auto">
               <div className="p-4 border-b border-border">
@@ -1827,9 +1816,7 @@ Sales Support`,
               </div>
             </main>
           </div>
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
+    </AppLayout>
   );
 };
 

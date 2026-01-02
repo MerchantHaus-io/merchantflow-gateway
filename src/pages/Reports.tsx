@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AppSidebar } from "@/components/AppSidebar";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppLayout } from "@/components/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { STAGE_CONFIG, TEAM_MEMBERS, OpportunityStage } from "@/types/opportunity";
@@ -283,47 +282,27 @@ const Reports = () => {
 
   if (loading) {
     return (
-      <SidebarProvider>
-        <div className="min-h-screen flex w-full">
-          <AppSidebar />
-          <SidebarInset className="flex-1 flex flex-col min-h-0">
-            <header className="h-14 flex items-center px-4 md:px-6 border-b border-border gap-2">
-              <SidebarTrigger className="md:hidden" />
-              <h1 className="text-lg font-semibold text-foreground">Reports</h1>
-            </header>
-            <main className="flex-1 flex items-center justify-center">
-              <p className="text-muted-foreground">Loading reports...</p>
-            </main>
-          </SidebarInset>
-        </div>
-      </SidebarProvider>
+      <AppLayout pageTitle="Reports">
+        <main className="flex-1 flex items-center justify-center">
+          <p className="text-muted-foreground">Loading reports...</p>
+        </main>
+      </AppLayout>
     );
   }
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <AppSidebar />
-        <SidebarInset className="flex-1 flex flex-col min-h-0">
-          <header className="h-14 flex items-center px-4 md:px-6 border-b border-border gap-2 justify-between">
-            <div className="flex items-center gap-2">
-              <SidebarTrigger className="md:hidden" />
-              <div>
-                <p className="text-sm text-muted-foreground">Analytics</p>
-                <h1 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-primary" />
-                  Reports
-                </h1>
-              </div>
-            </div>
-            <DateRangeFilter
-              dateRange={dateRange}
-              onDateRangeChange={setDateRange}
-              filterBy={filterBy}
-              onFilterByChange={setFilterBy}
-            />
-          </header>
-          <main className="flex-1 overflow-auto p-4 md:p-6 space-y-6">
+    <AppLayout
+      pageTitle="Reports"
+      headerActions={
+        <DateRangeFilter
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
+          filterBy={filterBy}
+          onFilterByChange={setFilterBy}
+        />
+      }
+    >
+      <main className="flex-1 overflow-auto p-4 md:p-6 space-y-6">
             {/* KPI Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <Card>
@@ -622,8 +601,6 @@ const Reports = () => {
               </Card>
             </div>
           </main>
-        </SidebarInset>
-      </div>
 
       {/* Detail Modal */}
       <ReportDetailModal
@@ -635,7 +612,7 @@ const Reports = () => {
         opportunities={modalState.opportunities}
         tasks={modalState.tasks}
       />
-    </SidebarProvider>
+    </AppLayout>
   );
 };
 

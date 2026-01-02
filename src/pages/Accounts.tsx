@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Account, Contact } from "@/types/opportunity";
-import { AppSidebar } from "@/components/AppSidebar";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppLayout } from "@/components/AppLayout";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -274,27 +273,21 @@ const Accounts = () => {
   }
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <AppSidebar />
-        <SidebarInset className="flex-1 flex flex-col min-h-0">
-          <header className="h-14 flex items-center px-4 lg:px-6 border-b border-border gap-4">
-            <SidebarTrigger className="md:hidden" />
-            <div className="flex-1">
-              <h1 className="text-lg font-semibold text-foreground">Accounts</h1>
-              <p className="text-xs text-muted-foreground hidden sm:block">Merchant profiles and company records</p>
-            </div>
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search accounts..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 w-48 lg:w-64"
-              />
-            </div>
-          </header>
-          <main className="flex-1 overflow-auto p-4 lg:p-6 space-y-6">
+    <AppLayout
+      pageTitle="Accounts"
+      headerActions={
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search accounts..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-8 w-48 lg:w-64"
+          />
+        </div>
+      }
+    >
+      <main className="flex-1 overflow-auto p-4 lg:p-6 space-y-6">
             <div className="grid gap-4 md:grid-cols-3 mb-6">
               <Card className="border-muted/70">
                 <CardHeader className="pb-2">
@@ -411,9 +404,6 @@ const Accounts = () => {
               </CardContent>
             </Card>
           </main>
-        </SidebarInset>
-      </div>
-
       <Dialog
         open={!!editingAccount}
         onOpenChange={(open) => {
@@ -498,7 +488,7 @@ const Accounts = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </SidebarProvider>
+    </AppLayout>
   );
 };
 

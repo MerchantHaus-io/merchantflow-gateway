@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/AppSidebar";
+import { AppLayout } from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -394,25 +393,20 @@ const Tasks = () => {
   }, [tasks]);
 
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset className="flex flex-col h-screen">
-        {/* Header */}
-        <header className="flex h-14 items-center gap-4 border-b bg-background px-4 lg:px-6">
-          <SidebarTrigger />
-          <div className="flex-1">
-            <h1 className="text-lg font-semibold">Tasks</h1>
-          </div>
+    <AppLayout
+      pageTitle="Tasks"
+      headerActions={
+        <>
           <DateRangeFilter
             dateRange={dateRange}
             onDateRangeChange={setDateRange}
             filterBy={filterBy}
             onFilterByChange={setFilterBy}
           />
-          <ThemeToggle />
-        </header>
-
-        <main className="flex-1 overflow-auto p-4 lg:p-6 space-y-6">
+        </>
+      }
+    >
+      <main className="flex-1 overflow-auto p-4 lg:p-6 space-y-6">
           {/* Stats badges */}
           <div className="flex items-center gap-1.5 flex-wrap">
             <Badge variant="secondary" className="h-6 px-2 text-xs font-medium gap-1">
@@ -962,8 +956,7 @@ const Tasks = () => {
             </div>
           </div>
         </main>
-      </SidebarInset>
-    </SidebarProvider>
+    </AppLayout>
   );
 };
 

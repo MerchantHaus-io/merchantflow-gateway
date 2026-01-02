@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { AppSidebar } from "@/components/AppSidebar";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppLayout } from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme, THEME_OPTIONS, ThemeVariant } from "@/contexts/ThemeContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -190,15 +189,8 @@ const Settings = () => {
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <AppSidebar />
-        <SidebarInset className="flex-1 flex flex-col min-h-0">
-          <header className="h-14 flex items-center px-4 md:px-6 border-b border-border gap-2">
-            <SidebarTrigger className="md:hidden" />
-            <h1 className="text-lg font-semibold text-foreground">Settings</h1>
-          </header>
-          <main className="flex-1 overflow-auto p-6">
+    <AppLayout pageTitle="Settings">
+      <main className="flex-1 overflow-auto p-6">
             <div className="space-y-6 max-w-2xl">
               {/* Profile Settings */}
               <Card>
@@ -435,11 +427,9 @@ const Settings = () => {
                   </CardContent>
                 </Card>
               )}
-            </div>
-          </main>
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
+          </div>
+        </main>
+    </AppLayout>
   );
 };
 
