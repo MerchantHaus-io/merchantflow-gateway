@@ -311,32 +311,50 @@ Sales Support`,
                   Internal Ops
                 </div>
                 <a
+                  href="#ps-terminal"
+                  className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
+                >
+                  3.1 PS Terminal Usage Guide
+                </a>
+                <a
+                  href="#microsite-application"
+                  className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
+                >
+                  3.2 NMI Microsite Application
+                </a>
+                <a
                   href="#step4"
                   className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
                 >
-                  3.1 Processing & Gateway Setup (Internal)
+                  3.3 Processing & Gateway Setup
                 </a>
                 <a
                   href="#action-items"
                   className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
                 >
-                  3.2 Action Items & Standards
+                  3.4 Action Items & Standards
                 </a>
 
                 <div className="pt-4 pb-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Reference
                 </div>
                 <a
+                  href="#services-overview"
+                  className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
+                >
+                  4. Services Overview
+                </a>
+                <a
                   href="#appendix"
                   className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
                 >
-                  4. Appendices
+                  5. Appendices
                 </a>
                 <a
                   href="#tech-stack"
                   className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
                 >
-                  5. Systems & Tech Stack
+                  6. Systems & Tech Stack
                 </a>
               </nav>
             </aside>
@@ -387,36 +405,52 @@ Sales Support`,
                     </div>
                     <div>
                       <h3 className="font-bold text-foreground mb-3 uppercase tracking-wide text-xs">
-                        Section 3 — Internal Operations & Risk
+                        Section 3 — Internal Operations & Systems
                       </h3>
                       <ul className="space-y-2 text-muted-foreground pl-2 border-l-2 border-border">
                         <li>
-                          <strong>3.1</strong> — Step 4: Processing & Gateway
-                          Setup (Internal)
+                          <strong>3.1</strong> — PS Terminal Usage Guide
                         </li>
                         <li>
-                          <strong>3.2</strong> — Additional Action Items &
-                          Industry Standards
+                          <strong>3.2</strong> — NMI Microsite Application Process
+                        </li>
+                        <li>
+                          <strong>3.3</strong> — Processing & Gateway Setup
+                        </li>
+                        <li>
+                          <strong>3.4</strong> — Action Items & Industry Standards
                         </li>
                       </ul>
 
                       <h3 className="font-bold text-foreground mt-6 mb-3 uppercase tracking-wide text-xs">
-                        Section 4 — Appendices & Reference
+                        Section 4 — Services & Pricing Reference
                       </h3>
                       <ul className="space-y-2 text-muted-foreground pl-2 border-l-2 border-border">
                         <li>
-                          <strong>4.1</strong> — SOP Structure & Best Practices
+                          <strong>4.1</strong> — MerchantHaus Services Overview
                         </li>
                         <li>
-                          <strong>4.2</strong> — Development Reference
-                        </li>
-                        <li>
-                          <strong>4.3</strong> — Service Providers & SaaS Stack
+                          <strong>4.2</strong> — Pricing Tiers & Features
                         </li>
                       </ul>
 
                       <h3 className="font-bold text-foreground mt-6 mb-3 uppercase tracking-wide text-xs">
-                        Section 5 — External Artifacts
+                        Section 5 — Appendices & Reference
+                      </h3>
+                      <ul className="space-y-2 text-muted-foreground pl-2 border-l-2 border-border">
+                        <li>
+                          <strong>5.1</strong> — SOP Structure & Best Practices
+                        </li>
+                        <li>
+                          <strong>5.2</strong> — Development Reference
+                        </li>
+                        <li>
+                          <strong>5.3</strong> — Service Providers & SaaS Stack
+                        </li>
+                      </ul>
+
+                      <h3 className="font-bold text-foreground mt-6 mb-3 uppercase tracking-wide text-xs">
+                        Section 6 — External Artifacts
                       </h3>
                       <ul className="space-y-2 text-cyan-400 pl-2 border-l-2 border-border">
                         <li>
@@ -439,6 +473,26 @@ Sales Support`,
                           >
                             <ExternalLink className="w-3 h-3" /> Form Responses
                             Sheet
+                          </a>
+                        </li>
+                        <li>
+                          <a
+                            href="https://merchanthaus-fr.nmipays.com/form/MerchantHaus-fr"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:underline flex items-center gap-1"
+                          >
+                            <ExternalLink className="w-3 h-3" /> NMI Flat Rate Microsite
+                          </a>
+                        </li>
+                        <li>
+                          <a
+                            href="https://merchanthaus-ic.nmipays.com/form/MerchantHaus-ic"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:underline flex items-center gap-1"
+                          >
+                            <ExternalLink className="w-3 h-3" /> NMI Interchange+ Microsite
                           </a>
                         </li>
                       </ul>
@@ -1105,11 +1159,250 @@ Sales Support`,
                   </div>
                 </section>
 
-                {/* Step 4 Internal */}
+                {/* PS Terminal Usage Guide */}
+                <section
+                  id="ps-terminal"
+                  className="bg-card rounded-xl border border-border shadow-sm p-8"
+                >
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-primary border-b-4 border-cyan-500 inline-block pb-1">
+                      3.1 — PS Terminal Usage Guide
+                    </h2>
+                    <span className="bg-cyan-500/20 text-cyan-400 text-xs font-semibold px-2.5 py-0.5 rounded flex items-center gap-1">
+                      <Settings className="w-3 h-3" /> Internal Tool
+                    </span>
+                  </div>
+                  
+                  <p className="text-muted-foreground mb-6 italic border-l-4 border-cyan-500 pl-4 bg-cyan-500/10 py-2 pr-2 rounded-r">
+                    The PS Terminal is the internal CRM and pipeline management system for tracking opportunities from lead to live merchant.
+                  </p>
+
+                  <div className="grid md:grid-cols-2 gap-6 mb-8">
+                    <div className="bg-accent/30 rounded-lg border border-border p-5">
+                      <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
+                        <Rocket className="w-4 h-4 text-cyan-500" /> Getting Started
+                      </h3>
+                      <ul className="space-y-2 text-sm text-muted-foreground">
+                        <li className="flex gap-2 items-start">
+                          <span className="text-cyan-500">1.</span>
+                          <span>Sign in with your MerchantHaus Google account</span>
+                        </li>
+                        <li className="flex gap-2 items-start">
+                          <span className="text-cyan-500">2.</span>
+                          <span>The <strong className="text-foreground">Pipeline</strong> view shows dual boards: Gateway and Processing</span>
+                        </li>
+                        <li className="flex gap-2 items-start">
+                          <span className="text-cyan-500">3.</span>
+                          <span>Click <strong className="text-foreground">+New</strong> to create an opportunity (accessible from any page)</span>
+                        </li>
+                        <li className="flex gap-2 items-start">
+                          <span className="text-cyan-500">4.</span>
+                          <span>Use the sidebar to navigate between Pipeline, Opportunities, Tasks, Accounts, Contacts, and Reports</span>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div className="bg-accent/30 rounded-lg border border-border p-5">
+                      <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-cyan-500" /> Creating Opportunities
+                      </h3>
+                      <ul className="space-y-2 text-sm text-muted-foreground">
+                        <li className="flex gap-2 items-start">
+                          <span className="text-cyan-500">•</span>
+                          <span>Fill in <strong className="text-foreground">Account Name</strong> (business name) and <strong className="text-foreground">Contact</strong> details</span>
+                        </li>
+                        <li className="flex gap-2 items-start">
+                          <span className="text-cyan-500">•</span>
+                          <span>Select <strong className="text-foreground">Pipeline Type</strong>: Gateway (existing processor) or Processing (full stack)</span>
+                        </li>
+                        <li className="flex gap-2 items-start">
+                          <span className="text-cyan-500">•</span>
+                          <span>Assign an <strong className="text-foreground">Owner</strong> (team member responsible)</span>
+                        </li>
+                        <li className="flex gap-2 items-start">
+                          <span className="text-cyan-500">•</span>
+                          <span>The opportunity starts in <strong className="text-foreground">New</strong> stage</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-6 mb-8">
+                    <div className="bg-accent/30 rounded-lg border border-border p-5">
+                      <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
+                        <ClipboardCheck className="w-4 h-4 text-cyan-500" /> Preboarding Wizard
+                      </h3>
+                      <ul className="space-y-2 text-sm text-muted-foreground">
+                        <li className="flex gap-2 items-start">
+                          <span className="text-cyan-500">•</span>
+                          <span>Access from opportunity detail modal → <strong className="text-foreground">Open Wizard</strong></span>
+                        </li>
+                        <li className="flex gap-2 items-start">
+                          <span className="text-cyan-500">•</span>
+                          <span>Use as <strong className="text-foreground">application readiness form</strong> before microsite submission</span>
+                        </li>
+                        <li className="flex gap-2 items-start">
+                          <span className="text-cyan-500">•</span>
+                          <span>Captures: Business info, ownership details, processing needs, banking, and agreement</span>
+                        </li>
+                        <li className="flex gap-2 items-start">
+                          <span className="text-cyan-500">•</span>
+                          <span>Progress auto-saves and syncs to the opportunity</span>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div className="bg-accent/30 rounded-lg border border-border p-5">
+                      <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
+                        <Activity className="w-4 h-4 text-cyan-500" /> Managing Pipeline
+                      </h3>
+                      <ul className="space-y-2 text-sm text-muted-foreground">
+                        <li className="flex gap-2 items-start">
+                          <span className="text-cyan-500">•</span>
+                          <span>Drag cards between stages to update progress</span>
+                        </li>
+                        <li className="flex gap-2 items-start">
+                          <span className="text-cyan-500">•</span>
+                          <span>Click any card to open full details, notes, tasks, and documents</span>
+                        </li>
+                        <li className="flex gap-2 items-start">
+                          <span className="text-cyan-500">•</span>
+                          <span>Add <strong className="text-foreground">Notes</strong> for each interaction</span>
+                        </li>
+                        <li className="flex gap-2 items-start">
+                          <span className="text-cyan-500">•</span>
+                          <span>Create <strong className="text-foreground">Tasks</strong> to track follow-ups</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="bg-blue-500/10 rounded-lg border border-blue-500/30 p-5">
+                    <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-blue-400" /> Key Features
+                    </h3>
+                    <div className="grid md:grid-cols-3 gap-4 text-sm text-muted-foreground">
+                      <div>
+                        <strong className="text-foreground block mb-1">Dual Pipeline View</strong>
+                        <span>Gateway and Processing opportunities displayed side-by-side</span>
+                      </div>
+                      <div>
+                        <strong className="text-foreground block mb-1">Real-time Updates</strong>
+                        <span>Changes sync instantly across all team members</span>
+                      </div>
+                      <div>
+                        <strong className="text-foreground block mb-1">Dark/Light Themes</strong>
+                        <span>Toggle in sidebar or choose from Settings → Appearance</span>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* NMI Microsite Application Process */}
+                <section
+                  id="microsite-application"
+                  className="bg-card rounded-xl border-2 border-primary/30 shadow-sm p-8"
+                >
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-primary border-b-4 border-primary inline-block pb-1">
+                      3.2 — NMI Microsite Application Process
+                    </h2>
+                    <span className="bg-red-500/20 text-red-400 text-xs font-semibold px-2.5 py-0.5 rounded flex items-center gap-1">
+                      <Lock className="w-3 h-3" /> Internal Only
+                    </span>
+                  </div>
+
+                  <p className="text-muted-foreground mb-6 italic border-l-4 border-primary pl-4 bg-primary/10 py-2 pr-2 rounded-r">
+                    The NMI microsites are used internally to submit processing applications. The Preboarding Wizard should be completed first to gather all required merchant information.
+                  </p>
+
+                  <div className="grid md:grid-cols-2 gap-6 mb-8">
+                    <div className="bg-accent/30 rounded-lg border border-border p-5">
+                      <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
+                        <Zap className="w-4 h-4 text-green-500" /> Flat Rate Microsite
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        For merchants preferring simple, predictable pricing with a fixed rate per transaction.
+                      </p>
+                      <a
+                        href="https://merchanthaus-fr.nmipays.com/form/MerchantHaus-fr"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 bg-green-500/20 text-green-400 px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-500/30 transition-colors"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        Open Flat Rate Form
+                      </a>
+                      <ul className="mt-4 space-y-1 text-sm text-muted-foreground">
+                        <li>• Best for: Small businesses, predictable volume</li>
+                        <li>• Simple pricing structure</li>
+                        <li>• Faster approval process</li>
+                      </ul>
+                    </div>
+
+                    <div className="bg-accent/30 rounded-lg border border-border p-5">
+                      <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
+                        <Activity className="w-4 h-4 text-blue-500" /> Interchange+ Microsite
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        For merchants with higher volume who benefit from transparent cost-plus pricing.
+                      </p>
+                      <a
+                        href="https://merchanthaus-ic.nmipays.com/form/MerchantHaus-ic"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 bg-blue-500/20 text-blue-400 px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-500/30 transition-colors"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        Open Interchange+ Form
+                      </a>
+                      <ul className="mt-4 space-y-1 text-sm text-muted-foreground">
+                        <li>• Best for: High volume, B2B, large ticket</li>
+                        <li>• Transparent pass-through pricing</li>
+                        <li>• Lower effective rates for qualified transactions</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="bg-yellow-500/10 rounded-lg border border-yellow-500/30 p-5 mb-6">
+                    <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-yellow-400" /> Application Workflow
+                    </h3>
+                    <ol className="space-y-3 text-sm text-muted-foreground">
+                      <li className="flex gap-3 items-start">
+                        <span className="bg-yellow-500/30 text-yellow-400 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0">1</span>
+                        <span><strong className="text-foreground">Complete Preboarding Wizard:</strong> Ensure all merchant details are captured in the PS Terminal wizard before proceeding.</span>
+                      </li>
+                      <li className="flex gap-3 items-start">
+                        <span className="bg-yellow-500/30 text-yellow-400 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0">2</span>
+                        <span><strong className="text-foreground">Choose Pricing Model:</strong> Select Flat Rate or Interchange+ based on merchant volume and business type.</span>
+                      </li>
+                      <li className="flex gap-3 items-start">
+                        <span className="bg-yellow-500/30 text-yellow-400 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0">3</span>
+                        <span><strong className="text-foreground">Submit Microsite Application:</strong> Transfer all information from wizard to the appropriate NMI microsite form.</span>
+                      </li>
+                      <li className="flex gap-3 items-start">
+                        <span className="bg-yellow-500/30 text-yellow-400 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0">4</span>
+                        <span><strong className="text-foreground">Update Pipeline Stage:</strong> Move opportunity to "Underwriting" stage in PS Terminal.</span>
+                      </li>
+                      <li className="flex gap-3 items-start">
+                        <span className="bg-yellow-500/30 text-yellow-400 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0">5</span>
+                        <span><strong className="text-foreground">Monitor for Approval:</strong> Track status via NMI partner portal and update PS Terminal accordingly.</span>
+                      </li>
+                    </ol>
+                  </div>
+
+                  <div className="bg-muted/50 rounded-md p-4 text-sm">
+                    <strong className="text-foreground">Important:</strong>
+                    <span className="text-muted-foreground"> Never share microsite links directly with merchants. These forms are for internal use only. The Preboarding Wizard serves as the merchant-facing application readiness tool.</span>
+                  </div>
+                </section>
+
+                {/* Step 4 Internal - now 3.3 */}
                 <section id="step4">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-bold text-foreground">
-                      Step 4 — Processing & Gateway Setup
+                      3.3 — Processing & Gateway Setup
                     </h2>
                     <span className="bg-red-500/20 text-red-400 text-xs font-semibold px-2.5 py-0.5 rounded flex items-center gap-1">
                       <Lock className="w-3 h-3" /> Internal Only
@@ -1162,7 +1455,7 @@ Sales Support`,
                   className="bg-card rounded-xl border border-border shadow-sm p-8"
                 >
                   <h2 className="text-2xl font-bold text-primary border-b-4 border-cyan-500 inline-block mb-6 pb-1">
-                    3.2 — Action Items & Standards
+                    3.4 — Action Items & Standards
                   </h2>
 
                   <div className="grid md:grid-cols-2 gap-8">
@@ -1279,6 +1572,120 @@ Sales Support`,
                           </span>
                         </li>
                       </ul>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Services Overview */}
+                <section
+                  id="services-overview"
+                  className="bg-card rounded-xl border border-border shadow-sm p-8"
+                >
+                  <h2 className="text-2xl font-bold text-primary border-b-4 border-cyan-500 inline-block mb-6 pb-1">
+                    4. MerchantHaus Services Overview
+                  </h2>
+                  <p className="text-muted-foreground mb-6 italic border-l-4 border-cyan-500 pl-4 bg-cyan-500/10 py-2 pr-2 rounded-r">
+                    Reference guide for core services offered through MerchantHaus. Use this information when discussing solutions with merchants.
+                  </p>
+
+                  <div className="grid md:grid-cols-3 gap-4 mb-8">
+                    <div className="bg-accent/30 rounded-lg border border-border p-4">
+                      <h3 className="font-bold text-foreground mb-2 text-sm">Payment Processing</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Accept all major credit cards, debit cards, and digital wallets with competitive rates and instant settlements.
+                      </p>
+                    </div>
+                    <div className="bg-accent/30 rounded-lg border border-border p-4">
+                      <h3 className="font-bold text-foreground mb-2 text-sm">Fraud Detection</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Multi-layered fraud prevention with AI-powered scoring (Kount), 3D Secure, and rule-based risk controls.
+                      </p>
+                    </div>
+                    <div className="bg-accent/30 rounded-lg border border-border p-4">
+                      <h3 className="font-bold text-foreground mb-2 text-sm">Mobile Solutions</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Mobile-ready technology and POS systems for on-the-go businesses with TXT2PAY billing tools.
+                      </p>
+                    </div>
+                    <div className="bg-accent/30 rounded-lg border border-border p-4">
+                      <h3 className="font-bold text-foreground mb-2 text-sm">Global Payments</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Multi-currency support and local payment methods in over 200 countries through 175+ processor connections.
+                      </p>
+                    </div>
+                    <div className="bg-accent/30 rounded-lg border border-border p-4">
+                      <h3 className="font-bold text-foreground mb-2 text-sm">Network Tokenization</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Enhanced payment security and approval rates with Customer Token Vault for recurring billing.
+                      </p>
+                    </div>
+                    <div className="bg-accent/30 rounded-lg border border-border p-4">
+                      <h3 className="font-bold text-foreground mb-2 text-sm">Ecommerce Solutions</h3>
+                      <p className="text-xs text-muted-foreground">
+                        200+ shopping cart integrations including Shopify, Magento, WooCommerce, Wix, and Squarespace.
+                      </p>
+                    </div>
+                    <div className="bg-accent/30 rounded-lg border border-border p-4">
+                      <h3 className="font-bold text-foreground mb-2 text-sm">Subscription Billing</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Automated recurring billing with Automatic Card Updater to reduce failed payments and churn.
+                      </p>
+                    </div>
+                    <div className="bg-accent/30 rounded-lg border border-border p-4">
+                      <h3 className="font-bold text-foreground mb-2 text-sm">Chargeback Management</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Automated dispute handling with up to 70% reduction in chargebacks using built-in fraud protection.
+                      </p>
+                    </div>
+                    <div className="bg-accent/30 rounded-lg border border-border p-4">
+                      <h3 className="font-bold text-foreground mb-2 text-sm">Data & Analytics</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Real-time transaction analytics, custom reporting dashboards, and Level III data optimization.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-r from-primary/10 to-cyan-500/10 rounded-lg border border-border p-6">
+                    <h3 className="font-bold text-foreground mb-4">Platform Highlights</h3>
+                    <div className="grid md:grid-cols-4 gap-4 text-center">
+                      <div>
+                        <span className="text-2xl font-bold text-primary">99.99%</span>
+                        <p className="text-xs text-muted-foreground">Uptime</p>
+                      </div>
+                      <div>
+                        <span className="text-2xl font-bold text-cyan-400">175+</span>
+                        <p className="text-xs text-muted-foreground">Processor Connections</p>
+                      </div>
+                      <div>
+                        <span className="text-2xl font-bold text-green-400">Level 1</span>
+                        <p className="text-xs text-muted-foreground">PCI DSS Certified</p>
+                      </div>
+                      <div>
+                        <span className="text-2xl font-bold text-yellow-400">7-10 Days</span>
+                        <p className="text-xs text-muted-foreground">ACH Settlement</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 grid md:grid-cols-2 gap-4">
+                    <div className="bg-muted/50 rounded-md p-4">
+                      <h4 className="font-bold text-foreground text-sm mb-2">Pricing Tiers</h4>
+                      <ul className="text-xs text-muted-foreground space-y-1">
+                        <li><strong className="text-foreground">Starter ($59/mo):</strong> Fraud-first foundation, mobile gateway, TXT2PAY</li>
+                        <li><strong className="text-foreground">Intermediate ($99/mo):</strong> + Kount AI Fraud Manager, priority support, API access</li>
+                        <li><strong className="text-foreground">Pro ($149/mo):</strong> + Level III Advantage, Shopify integration, custom analytics</li>
+                        <li><strong className="text-foreground">Enterprise (Custom):</strong> + SLA guarantees, multi-entity, dedicated engineering</li>
+                      </ul>
+                    </div>
+                    <div className="bg-muted/50 rounded-md p-4">
+                      <h4 className="font-bold text-foreground text-sm mb-2">Key Integrations</h4>
+                      <div className="flex flex-wrap gap-1.5">
+                        {["Shopify", "Magento", "WooCommerce", "Wix", "Squarespace", "QuickBooks", "FreshBooks", "Salesforce", "HubSpot", "Zoho CRM", "Clover", "NCR"].map((item) => (
+                          <span key={item} className="bg-background px-1.5 py-0.5 rounded border border-border text-xs text-muted-foreground">
+                            {item}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </section>
