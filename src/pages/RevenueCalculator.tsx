@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { AppSidebar } from "@/components/AppSidebar";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppLayout } from "@/components/AppLayout";
 import { 
   Calculator, 
   DollarSign, 
@@ -87,17 +86,9 @@ const RevenueCalculator = () => {
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-merchant-black text-merchant-text font-sans">
-        <AppSidebar />
-        <SidebarInset className="flex-1 flex flex-col min-h-0 bg-merchant-black">
-          <header className="h-14 flex items-center px-4 md:px-6 border-b border-merchant-gray bg-merchant-black gap-2">
-            <SidebarTrigger className="md:hidden text-gray-400" />
-            <h1 className="text-lg font-semibold text-white">Revenue Calculator</h1>
-          </header>
-          
-          <main className="flex-1 overflow-auto p-4 md:p-8">
-            <div className="max-w-6xl mx-auto space-y-8">
+    <AppLayout pageTitle="Revenue Calculator">
+      <main className="flex-1 overflow-auto p-4 md:p-8 bg-merchant-black text-merchant-text">
+        <div className="max-w-6xl mx-auto space-y-8">
               
               {/* Header Area */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -462,13 +453,11 @@ const RevenueCalculator = () => {
                     </div>
                   </div>
 
-                </div>
-              </div>
             </div>
-          </main>
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
+          </div>
+        </div>
+      </main>
+    </AppLayout>
   );
 };
 

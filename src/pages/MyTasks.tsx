@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AppSidebar } from "@/components/AppSidebar";
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppLayout } from "@/components/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -115,19 +114,8 @@ const MyTasks = () => {
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <AppSidebar />
-        <SidebarInset className="flex-1 flex flex-col min-h-0">
-          <header className="flex h-16 items-center gap-2 border-b px-4 flex-shrink-0">
-            <SidebarTrigger className="md:hidden" />
-            <div>
-              <p className="text-sm text-muted-foreground">Personal workspace</p>
-              <h1 className="text-xl font-semibold">My Tasks</h1>
-            </div>
-          </header>
-
-          <main className="flex-1 overflow-auto p-4 lg:p-6 space-y-4">
+    <AppLayout pageTitle="My Tasks">
+      <main className="flex-1 overflow-auto p-4 lg:p-6 space-y-4">
             <section className="grid grid-cols-1 xl:grid-cols-3 gap-4">
               <Card className="xl:col-span-2">
                 <CardHeader>
@@ -315,9 +303,7 @@ const MyTasks = () => {
               </Card>
             </section>
           </main>
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
+    </AppLayout>
   );
 };
 

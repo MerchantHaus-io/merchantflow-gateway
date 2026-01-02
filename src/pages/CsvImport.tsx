@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AppSidebar } from "@/components/AppSidebar";
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppLayout } from "@/components/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -215,23 +214,9 @@ const CsvImport = () => {
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <AppSidebar />
-        <SidebarInset className="flex-1 flex flex-col min-h-0">
-          <header className="flex h-16 items-center gap-2 border-b px-4 flex-shrink-0">
-            <SidebarTrigger className="md:hidden" />
-            <div>
-              <p className="text-sm text-muted-foreground">Tools</p>
-              <h1 className="text-xl font-semibold flex items-center gap-2">
-                <FileSpreadsheet className="h-5 w-5 text-primary" />
-                CSV Import
-              </h1>
-            </div>
-          </header>
-
-          <main className="flex-1 overflow-auto p-4 lg:p-6">
-            <section className="grid gap-4 lg:grid-cols-[2fr_1fr]">
+    <AppLayout pageTitle="CSV Import">
+      <main className="flex-1 overflow-auto p-4 lg:p-6">
+        <section className="grid gap-4 lg:grid-cols-[2fr_1fr]">
               <Card>
                 <CardHeader>
                   <CardTitle>Upload & validate</CardTitle>
@@ -474,11 +459,9 @@ const CsvImport = () => {
                   </CardContent>
                 </Card>
               </div>
-            </section>
-          </main>
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
+          </section>
+        </main>
+    </AppLayout>
   );
 };
 
