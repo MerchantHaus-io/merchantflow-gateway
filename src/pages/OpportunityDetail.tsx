@@ -387,57 +387,41 @@ const OpportunityDetail = () => {
 
   if (loading) {
     return (
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset className="flex flex-col h-screen">
-          <header className="flex h-14 items-center gap-4 border-b bg-background px-4 lg:px-6">
-            <SidebarTrigger />
-            <Skeleton className="h-6 w-48" />
-          </header>
-          <main className="flex-1 p-6">
-            <Skeleton className="h-[600px] w-full" />
-          </main>
-        </SidebarInset>
-      </SidebarProvider>
+      <AppLayout>
+        <div className="flex-1 p-6">
+          <Skeleton className="h-6 w-48 mb-6" />
+          <Skeleton className="h-[600px] w-full" />
+        </div>
+      </AppLayout>
     );
   }
 
   if (!opportunity) {
     return (
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset className="flex flex-col h-screen">
-          <header className="flex h-14 items-center gap-4 border-b bg-background px-4 lg:px-6">
-            <SidebarTrigger />
-            <Button variant="ghost" size="sm" onClick={() => navigate('/opportunities')}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-          </header>
-          <main className="flex-1 flex items-center justify-center">
-            <p className="text-muted-foreground">Opportunity not found</p>
-          </main>
-        </SidebarInset>
-      </SidebarProvider>
-    );
-  }
-
-  return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset className="flex flex-col h-screen">
-        {/* Header */}
-        <header className="flex h-14 items-center gap-4 border-b bg-background px-4 lg:px-6">
-          <SidebarTrigger />
+      <AppLayout>
+        <div className="p-4">
           <Button variant="ghost" size="sm" onClick={() => navigate('/opportunities')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
-          <div className="flex-1" />
-          <ThemeToggle />
-        </header>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-muted-foreground">Opportunity not found</p>
+        </div>
+      </AppLayout>
+    );
+  }
 
-        <main className="flex-1 overflow-auto">
+  return (
+    <AppLayout
+      headerActions={
+        <Button variant="ghost" size="sm" onClick={() => navigate('/opportunities')}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </Button>
+      }
+    >
+      <div className="flex-1 overflow-auto">
           <div className="container max-w-7xl mx-auto p-6 space-y-6">
             {/* Hero Section */}
             <div className="flex flex-col lg:flex-row gap-6">
@@ -749,9 +733,7 @@ const OpportunityDetail = () => {
               </Card>
             </div>
           </div>
-        </main>
-      </SidebarInset>
-
+        </div>
       {/* Dialogs */}
       <AlertDialog open={showDeadDialog} onOpenChange={setShowDeadDialog}>
         <AlertDialogContent>
@@ -799,7 +781,7 @@ const OpportunityDetail = () => {
         show={showDeathSplash}
         onComplete={() => setShowDeathSplash(false)}
       />
-    </SidebarProvider>
+    </AppLayout>
   );
 };
 
