@@ -90,7 +90,7 @@ const RevenueCalculator = () => {
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-merchant-black text-merchant-text font-sans">
         <AppSidebar />
-        <SidebarInset className="flex-1 flex flex-col overflow-hidden bg-merchant-black">
+        <SidebarInset className="flex-1 flex flex-col min-h-0 bg-merchant-black">
           <header className="h-14 flex items-center px-4 md:px-6 border-b border-merchant-gray bg-merchant-black gap-2">
             <SidebarTrigger className="md:hidden text-gray-400" />
             <h1 className="text-lg font-semibold text-white">Revenue Calculator</h1>

@@ -277,7 +277,7 @@ const Accounts = () => {
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <AppSidebar />
-        <SidebarInset className="flex-1 flex flex-col overflow-hidden">
+        <SidebarInset className="flex-1 flex flex-col min-h-0">
           <header className="h-14 flex items-center px-4 lg:px-6 border-b border-border gap-4">
             <SidebarTrigger className="md:hidden" />
             <div className="flex-1">

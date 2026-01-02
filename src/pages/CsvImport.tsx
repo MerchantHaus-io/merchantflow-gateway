@@ -218,7 +218,7 @@ const CsvImport = () => {
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <AppSidebar />
-        <SidebarInset className="flex-1 flex flex-col overflow-hidden">
+        <SidebarInset className="flex-1 flex flex-col min-h-0">
           <header className="flex h-16 items-center gap-2 border-b px-4 flex-shrink-0">
             <SidebarTrigger className="md:hidden" />
             <div>
