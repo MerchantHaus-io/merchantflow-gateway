@@ -749,9 +749,9 @@ const Index = () => {
       </div>;
   }
   return <SidebarProvider>
-      <div className="h-screen min-h-0 flex w-full p-4 gap-4 pb-20 overflow-hidden orientation-stable landscape:p-2 landscape:gap-2 landscape:pb-4">
+      <div className="h-screen min-h-0 flex w-full p-2 sm:p-3 lg:p-4 gap-2 sm:gap-3 lg:gap-4 overflow-hidden orientation-stable mobile-landscape:p-2 mobile-landscape:gap-2">
         <AppSidebar onNewApplication={() => setIsModalOpen(true)} />
-        <div className="flex-1 flex flex-col gap-3 min-h-0 overflow-hidden landscape:gap-2">
+        <div className="flex-1 flex flex-col gap-2 sm:gap-3 min-h-0 overflow-hidden mobile-landscape:gap-2">
           <header className="h-12 flex items-center px-4 rounded-lg border shadow-lg backdrop-blur-md gap-2 flex-shrink-0 sticky top-0 z-20 border-primary bg-card/70 dark:bg-card/70">
             <SidebarTrigger className="md:hidden" />
             <h1 className="text-lg font-semibold text-foreground">Pipeline</h1>
