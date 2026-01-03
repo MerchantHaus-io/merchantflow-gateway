@@ -757,9 +757,8 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
               </TabsTrigger>
             </TabsList>
 
-            <div className="flex-1 min-h-0 overflow-y-auto pr-2">
               {/* Overview Tab - Application Progress */}
-              <TabsContent value="overview" className="mt-4 space-y-4">
+              <TabsContent value="overview" className="mt-4 flex-1 min-h-0 overflow-y-auto pr-2 space-y-4">
                 <ApplicationProgress 
                   opportunity={opportunity} 
                   wizardState={wizardState ? {
@@ -772,7 +771,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
               </TabsContent>
 
               {/* Tasks Tab */}
-              <TabsContent value="tasks" className="mt-4">
+              <TabsContent value="tasks" className="mt-4 flex-1 min-h-0 overflow-y-auto pr-2">
                 <OpportunityTasks 
                   opportunityId={opportunity.id} 
                   tasks={relatedTasks}
@@ -780,16 +779,16 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
               </TabsContent>
 
               {/* Notes Tab */}
-              <TabsContent value="notes" className="mt-4">
+              <TabsContent value="notes" className="mt-4 flex-1 min-h-0 overflow-y-auto pr-2">
                 <NotesSection opportunityId={opportunity.id} />
               </TabsContent>
 
-              <TabsContent value="documents" className="mt-4">
+              <TabsContent value="documents" className="mt-4 flex-1 min-h-0 overflow-y-auto pr-2">
                 <DocumentsTab opportunityId={opportunity.id} />
               </TabsContent>
 
               {/* Details Tab - Account, Contact, Opportunity info */}
-              <TabsContent value="details" className="mt-4 space-y-6">
+              <TabsContent value="details" className="mt-4 flex-1 min-h-0 overflow-y-auto pr-2 space-y-6">
                 <div className="space-y-4">
                   <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
                     <Building2 className="h-4 w-4" />
@@ -868,7 +867,6 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                   )}
                 </div>
               </TabsContent>
-            </div>
           </Tabs>
 
           {/* Activity Section - Always visible below tabs */}
