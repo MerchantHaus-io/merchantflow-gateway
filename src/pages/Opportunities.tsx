@@ -38,7 +38,8 @@ import {
   TrendingUp,
   AlertCircle,
   CheckCircle2,
-  XCircle
+  XCircle,
+  RotateCcw
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -386,7 +387,15 @@ const Opportunities = () => {
                               <div className="flex items-center gap-2">
                                 <Building2 className="h-4 w-4 text-muted-foreground" />
                                 <div>
-                                  <p className="font-medium">{opp.account?.name || 'Unknown'}</p>
+                                  <div className="flex items-center gap-2">
+                                    <p className="font-medium">{opp.account?.name || 'Unknown'}</p>
+                                    {opp.status === 'dead' && (
+                                      <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-amber-500/50 text-amber-600 dark:text-amber-400 gap-1">
+                                        <RotateCcw className="h-2.5 w-2.5" />
+                                        Assign to reactivate
+                                      </Badge>
+                                    )}
+                                  </div>
                                   <p className="text-xs text-muted-foreground">
                                     {opp.contact?.email || '-'}
                                   </p>
@@ -502,6 +511,12 @@ const Opportunities = () => {
                             <div>
                               <h3 className="font-medium">{opp.account?.name || 'Unknown'}</h3>
                               <p className="text-xs text-muted-foreground">{opp.contact?.email}</p>
+                              {opp.status === 'dead' && (
+                                <Badge variant="outline" className="mt-1 text-[10px] h-5 px-1.5 border-amber-500/50 text-amber-600 dark:text-amber-400 gap-1">
+                                  <RotateCcw className="h-2.5 w-2.5" />
+                                  Assign to reactivate
+                                </Badge>
+                              )}
                             </div>
                             <Badge 
                               variant="outline"
