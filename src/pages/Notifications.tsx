@@ -80,7 +80,7 @@ const Notifications = () => {
         </Button>
       }
     >
-      <main className="flex-1 overflow-auto p-4 lg:p-6">
+      <div className="flex-1 overflow-y-auto p-4 lg:p-6">
 
           {loading ? (
             <div className="flex items-center justify-center h-64">
@@ -152,7 +152,7 @@ const Notifications = () => {
               ))}
             </div>
           )}
-        </main>
+        </div>
     </AppLayout>
   );
 };

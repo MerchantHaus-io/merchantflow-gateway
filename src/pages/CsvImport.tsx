@@ -215,7 +215,7 @@ const CsvImport = () => {
 
   return (
     <AppLayout pageTitle="CSV Import">
-      <main className="flex-1 overflow-auto p-4 lg:p-6">
+      <div className="flex-1 overflow-y-auto p-4 lg:p-6">
         <section className="grid gap-4 lg:grid-cols-[2fr_1fr]">
               <Card>
                 <CardHeader>
@@ -460,7 +460,7 @@ const CsvImport = () => {
                 </Card>
               </div>
           </section>
-        </main>
+        </div>
     </AppLayout>
   );
 };

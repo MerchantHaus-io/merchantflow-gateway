@@ -242,7 +242,7 @@ const Opportunities = () => {
     <AppLayout
       onNewApplication={() => setShowNewModal(true)}
     >
-      <main className="flex-1 overflow-auto p-4 lg:p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6">
         {/* Page title */}
         <h1 className="text-lg font-semibold text-foreground">Opportunities</h1>
         {/* Stats - Compact header-style badges */}
@@ -552,7 +552,7 @@ const Opportunities = () => {
               )}
             </CardContent>
           </Card>
-        </main>
+        </div>
 
         {/* New Application Modal */}
         <NewApplicationModal

@@ -287,7 +287,7 @@ const Accounts = () => {
         </div>
       }
     >
-      <main className="flex-1 overflow-auto p-4 lg:p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6">
             <div className="grid gap-4 md:grid-cols-3 mb-6">
               <Card className="border-muted/70">
                 <CardHeader className="pb-2">
@@ -403,7 +403,7 @@ const Accounts = () => {
                 </Table>
               </CardContent>
             </Card>
-          </main>
+          </div>
       <Dialog
         open={!!editingAccount}
         onOpenChange={(open) => {

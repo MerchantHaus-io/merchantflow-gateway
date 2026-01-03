@@ -406,7 +406,7 @@ const Tasks = () => {
         </>
       }
     >
-      <main className="flex-1 overflow-auto p-4 lg:p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6">
           {/* Stats badges */}
           <div className="flex items-center gap-1.5 flex-wrap">
             <Badge variant="secondary" className="h-6 px-2 text-xs font-medium gap-1">
@@ -955,7 +955,7 @@ const Tasks = () => {
               </Card>
             </div>
           </div>
-        </main>
+        </div>
     </AppLayout>
   );
 };

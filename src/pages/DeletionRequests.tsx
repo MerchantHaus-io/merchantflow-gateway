@@ -135,7 +135,7 @@ const DeletionRequests = () => {
 
   return (
     <AppLayout pageTitle="Deletion Requests">
-      <main className="flex-1 p-6">
+      <div className="flex-1 overflow-y-auto p-6">
         {loading ? (
             <div className="flex items-center justify-center h-64">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -218,7 +218,7 @@ const DeletionRequests = () => {
               ))}
             </div>
           )}
-        </main>
+        </div>
 
       <AlertDialog
         open={confirmDialog.open}

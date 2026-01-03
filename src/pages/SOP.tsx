@@ -349,7 +349,7 @@ Sales Support`,
             </aside>
 
             {/* Main Content */}
-            <main className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto">
               <div className="max-w-4xl mx-auto p-6 md:p-12 space-y-10">
                 {/* Document Index */}
                 <section
@@ -1814,7 +1814,7 @@ Sales Support`,
                   <p>MerchantHaus Internal SOP — Confidential</p>
                 </footer>
               </div>
-            </main>
+            </div>
           </div>
     </AppLayout>
   );

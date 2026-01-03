@@ -283,9 +283,9 @@ const Reports = () => {
   if (loading) {
     return (
       <AppLayout pageTitle="Reports">
-        <main className="flex-1 flex items-center justify-center">
+        <div className="flex-1 flex items-center justify-center">
           <p className="text-muted-foreground">Loading reports...</p>
-        </main>
+        </div>
       </AppLayout>
     );
   }
@@ -302,7 +302,7 @@ const Reports = () => {
         />
       }
     >
-      <main className="flex-1 overflow-auto p-4 md:p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
             {/* KPI Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <Card>
@@ -600,7 +600,7 @@ const Reports = () => {
                 </CardContent>
               </Card>
             </div>
-          </main>
+          </div>
 
       {/* Detail Modal */}
       <ReportDetailModal

@@ -87,7 +87,7 @@ const RevenueCalculator = () => {
 
   return (
     <AppLayout pageTitle="Revenue Calculator">
-      <main className="flex-1 overflow-auto p-4 md:p-8 bg-merchant-black text-merchant-text">
+      <div className="flex-1 overflow-y-auto p-4 md:p-8 bg-merchant-black text-merchant-text">
         <div className="max-w-6xl mx-auto space-y-8">
               
               {/* Header Area */}
@@ -456,7 +456,7 @@ const RevenueCalculator = () => {
             </div>
           </div>
         </div>
-      </main>
+      </div>
     </AppLayout>
   );
 };

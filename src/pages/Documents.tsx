@@ -354,7 +354,7 @@ const DocumentsPage = () => {
         </>
       }
     >
-      <main className="flex-1 overflow-auto p-4 lg:p-6">
+      <div className="flex-1 overflow-y-auto p-4 lg:p-6">
         {loading ? (
           <div className="text-center py-16 text-muted-foreground">Loading documents...</div>
         ) : (
@@ -515,7 +515,7 @@ const DocumentsPage = () => {
             )}
           </div>
         )}
-      </main>
+      </div>
     </AppLayout>
   );
 };
