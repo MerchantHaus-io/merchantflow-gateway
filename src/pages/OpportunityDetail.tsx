@@ -38,7 +38,8 @@ import {
   CreditCard,
   Calendar,
   Clock,
-  ExternalLink
+  ExternalLink,
+  RotateCcw
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -160,6 +161,7 @@ const OpportunityDetail = () => {
   const [showDeadDialog, setShowDeadDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showDeathSplash, setShowDeathSplash] = useState(false);
+  const [reactivateConfirm, setReactivateConfirm] = useState<{ assignee: string } | null>(null);
   
   // Form state
   const [accountName, setAccountName] = useState("");
@@ -308,30 +310,67 @@ const OpportunityDetail = () => {
     if (isEditing) resetInitialData();
   }, [isEditing, resetInitialData]);
 
-  const handleOwnerChange = async (value: string) => {
+  const performOwnerUpdate = async (value: string, isReactivation: boolean) => {
     if (!opportunity) return;
     const newAssignee = value === "unassigned" ? null : value;
-    
+
+    const updatePayload: { assigned_to: string | null; status?: string } = {
+      assigned_to: newAssignee,
+    };
+
+    if (isReactivation && newAssignee) {
+      updatePayload.status = 'active';
+    }
+
     const { error } = await supabase
       .from('opportunities')
-      .update({ assigned_to: newAssignee })
+      .update(updatePayload)
       .eq('id', opportunity.id);
-    
+
     if (error) {
-      toast.error("Failed to reassign owner");
+      toast.error("Failed to update owner");
       return;
     }
-    
+
     await supabase.from('activities').insert({
       opportunity_id: opportunity.id,
-      type: 'assignment_change',
-      description: `Reassigned to ${newAssignee || 'Unassigned'}`,
+      type: isReactivation ? 'reactivated' : 'assignment_change',
+      description: isReactivation
+        ? `Reactivated and assigned to ${newAssignee}`
+        : `Reassigned to ${newAssignee || 'Unassigned'}`,
       user_id: user?.id,
       user_email: user?.email,
     });
-    
-    setOpportunity(prev => prev ? { ...prev, assigned_to: newAssignee || undefined } : null);
-    toast.success(`Assigned to ${newAssignee || 'Unassigned'}`);
+
+    setOpportunity(prev => prev ? {
+      ...prev,
+      assigned_to: newAssignee || undefined,
+      ...(isReactivation ? { status: 'active' } : {}),
+    } : null);
+
+    toast.success(
+      isReactivation
+        ? `Reactivated and assigned to ${newAssignee}`
+        : `Assigned to ${newAssignee || 'Unassigned'}`
+    );
+  };
+
+  const handleOwnerChange = (value: string) => {
+    if (!opportunity) return;
+    const newAssignee = value === "unassigned" ? null : value;
+
+    if (opportunity.status === 'dead' && newAssignee) {
+      setReactivateConfirm({ assignee: value });
+      return;
+    }
+
+    performOwnerUpdate(value, false);
+  };
+
+  const confirmReactivation = () => {
+    if (!reactivateConfirm) return;
+    performOwnerUpdate(reactivateConfirm.assignee, true);
+    setReactivateConfirm(null);
   };
 
   const handleMarkAsDead = async () => {
@@ -444,7 +483,20 @@ const OpportunityDetail = () => {
                             {stageConfig.label}
                           </Badge>
                           {opportunity.status === 'dead' && (
-                            <Badge variant="destructive">Archived</Badge>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="destructive">Archived</Badge>
+                              {opportunity.assigned_to && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 px-2 text-xs"
+                                  onClick={() => setReactivateConfirm({ assignee: opportunity.assigned_to as string })}
+                                >
+                                  <RotateCcw className="h-3 w-3 mr-1" />
+                                  Reactivate
+                                </Button>
+                              )}
+                            </div>
                           )}
                           <div className="flex items-center gap-1 text-sm text-muted-foreground">
                             {serviceType === 'gateway_only' ? (
@@ -735,6 +787,26 @@ const OpportunityDetail = () => {
           </div>
         </div>
       {/* Dialogs */}
+      <AlertDialog open={!!reactivateConfirm} onOpenChange={(open) => !open && setReactivateConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <RotateCcw className="h-5 w-5 text-primary" />
+              Reactivate Archived Opportunity?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Assigning will reactivate this opportunity and return it to the pipeline.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmReactivation}>
+              Reactivate &amp; Assign to {reactivateConfirm?.assignee}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={showDeadDialog} onOpenChange={setShowDeadDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

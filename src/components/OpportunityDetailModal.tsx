@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Opportunity, STAGE_CONFIG, Account, Contact, getServiceType, EMAIL_TO_USER, TEAM_MEMBERS, OpportunityStage, PROCESSING_PIPELINE_STAGES, GATEWAY_ONLY_PIPELINE_STAGES } from "@/types/opportunity";
-import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, ListChecks, Zap, CreditCard, Maximize2, Minimize2, Loader2, Wand2 } from "lucide-react";
+import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, ListChecks, Zap, CreditCard, Maximize2, Minimize2, Loader2, Wand2, RotateCcw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -187,11 +187,11 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   const [showMoveDialog, setShowMoveDialog] = useState(false);
   const [showRequestDeleteDialog, setShowRequestDeleteDialog] = useState(false);
   const [showDeathSplash, setShowDeathSplash] = useState(false);
+  const [reactivateConfirm, setReactivateConfirm] = useState<{ assignee: string } | null>(null);
   const [activeTab, setActiveTab] = useState<ModalTab>('overview');
   const [taskTitle, setTaskTitle] = useState("");
   const [taskAssignee, setTaskAssignee] = useState("Unassigned");
   const [taskComments, setTaskComments] = useState("");
-
   // Keyboard shortcuts for tab navigation
   useEffect(() => {
     if (!opportunity) return;
@@ -455,6 +455,68 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     }
   }, [isEditing, resetInitialData]);
 
+  const performOwnerUpdate = async (value: string, isReactivation: boolean) => {
+    if (!opportunity) return;
+    const newAssignee = value === "unassigned" ? null : value;
+
+    const updatePayload: { assigned_to: string | null; status?: string } = {
+      assigned_to: newAssignee,
+    };
+
+    if (isReactivation && newAssignee) {
+      updatePayload.status = 'active';
+    }
+
+    const { error } = await supabase
+      .from('opportunities')
+      .update(updatePayload)
+      .eq('id', opportunity.id);
+
+    if (error) {
+      toast.error("Failed to update owner");
+      return;
+    }
+
+    // Log activity
+    await supabase.from('activities').insert({
+      opportunity_id: opportunity.id,
+      type: isReactivation ? 'reactivated' : 'assignment_change',
+      description: isReactivation
+        ? `Reactivated and assigned to ${newAssignee}`
+        : `Reassigned to ${newAssignee || 'Unassigned'}`,
+      user_id: user?.id,
+      user_email: user?.email,
+    });
+
+    // Send email notification for opportunity assignment
+    if (newAssignee) {
+      sendOpportunityAssignmentEmail(
+        newAssignee,
+        account?.name || 'Unknown Account',
+        contact ? `${contact.first_name || ''} ${contact.last_name || ''}`.trim() : undefined,
+        opportunity.stage
+      ).catch(err => console.error("Failed to send assignment email:", err));
+    }
+
+    onUpdate({
+      ...opportunity,
+      assigned_to: newAssignee || undefined,
+      ...(isReactivation ? { status: 'active' } : {}),
+    });
+
+    toast.success(
+      isReactivation
+        ? `Reactivated and assigned to ${newAssignee}`
+        : `Assigned to ${newAssignee || 'Unassigned'}`
+    );
+  };
+
+  const confirmReactivation = () => {
+    if (!reactivateConfirm) return;
+    performOwnerUpdate(reactivateConfirm.assignee, true);
+    setReactivateConfirm(null);
+  };
+
   const handleMarkAsDead = async () => {
     try {
       const { error } = await supabase
@@ -636,39 +698,15 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                     {/* Primary Owner Dropdown */}
                     <Select
                       value={opportunity.assigned_to || "unassigned"}
-                      onValueChange={async (value) => {
+                      onValueChange={(value) => {
                         const newAssignee = value === "unassigned" ? null : value;
-                        const { error } = await supabase
-                          .from('opportunities')
-                          .update({ assigned_to: newAssignee })
-                          .eq('id', opportunity.id);
-                        
-                        if (error) {
-                          toast.error("Failed to reassign owner");
+
+                        if (opportunity.status === 'dead' && newAssignee) {
+                          setReactivateConfirm({ assignee: value });
                           return;
                         }
-                        
-                        // Log activity
-                        await supabase.from('activities').insert({
-                          opportunity_id: opportunity.id,
-                          type: 'assignment_change',
-                          description: `Reassigned to ${newAssignee || 'Unassigned'}`,
-                          user_id: user?.id,
-                          user_email: user?.email,
-                        });
-                        
-                        // Send email notification for opportunity assignment
-                        if (newAssignee) {
-                          sendOpportunityAssignmentEmail(
-                            newAssignee,
-                            account?.name || 'Unknown Account',
-                            contact ? `${contact.first_name || ''} ${contact.last_name || ''}`.trim() : undefined,
-                            opportunity.stage
-                          ).catch(err => console.error("Failed to send assignment email:", err));
-                        }
-                        
-                        onUpdate({ ...opportunity, assigned_to: newAssignee || undefined });
-                        toast.success(`Assigned to ${newAssignee || 'Unassigned'}`);
+
+                        performOwnerUpdate(value, false);
                       }}
                     >
                       <SelectTrigger className="h-6 w-auto border-0 bg-transparent hover:bg-muted/50 px-2 text-xs font-medium">
@@ -1001,6 +1039,27 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Reactivation Confirmation */}
+      <AlertDialog open={!!reactivateConfirm} onOpenChange={(open) => !open && setReactivateConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <RotateCcw className="h-5 w-5 text-primary" />
+              Reactivate Archived Opportunity?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Assigning will reactivate this opportunity and return it to the pipeline.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmReactivation}>
+              Reactivate &amp; Assign to {reactivateConfirm?.assignee}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Mark as Dead Confirmation */}
       <AlertDialog open={showDeadDialog} onOpenChange={setShowDeadDialog}>
