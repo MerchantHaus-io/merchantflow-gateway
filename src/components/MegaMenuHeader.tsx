@@ -88,9 +88,9 @@ const navMain: NavGroup[] = [
       { title: "All Opportunities", url: "/opportunities", icon: Briefcase, description: "Browse all opportunities" },
       { title: "Accounts", url: "/accounts", icon: Building2, description: "Manage business accounts" },
       { title: "Contacts", url: "/contacts", icon: Users, description: "Manage contacts" },
+      { title: "Documents", url: "/documents", icon: FileText, description: "View uploaded documents" },
     ],
   },
-  { title: "Documents", url: "/documents", icon: FileText },
   { title: "Reports", url: "/reports", icon: BarChart3 },
 ];
 
