@@ -221,7 +221,55 @@ const OpportunityDetail = () => {
 
   useEffect(() => {
     fetchOpportunity();
-  }, [fetchOpportunity]);
+
+    // Subscribe to real-time changes for this opportunity
+    if (!id) return;
+    
+    const channel = supabase
+      .channel(`opportunity-detail-${id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'opportunities',
+          filter: `id=eq.${id}`,
+        },
+        (payload) => {
+          console.log('Realtime opportunity update:', payload);
+          setOpportunity(prev => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              stage: migrateStage(payload.new.stage) as OpportunityStage,
+              status: payload.new.status as 'active' | 'dead' | undefined,
+              assigned_to: payload.new.assigned_to,
+              sla_status: payload.new.sla_status,
+              stage_entered_at: payload.new.stage_entered_at,
+              updated_at: payload.new.updated_at,
+            };
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'opportunities',
+          filter: `id=eq.${id}`,
+        },
+        () => {
+          toast.info("This opportunity was deleted");
+          navigate('/opportunities');
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchOpportunity, id, navigate]);
 
   const account = opportunity?.account;
   const contact = opportunity?.contact;
