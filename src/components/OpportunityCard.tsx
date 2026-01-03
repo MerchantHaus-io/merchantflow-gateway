@@ -120,13 +120,33 @@ const OpportunityCard = ({
   const handleAssignmentChange = async (value: string) => {
     const newValue = value === 'unassigned' ? null : value;
     try {
+      // Build update object - if opportunity is archived (dead), reactivate it
+      const updateData: Record<string, unknown> = { assigned_to: newValue };
+      
+      if (opportunity.status === 'dead' && newValue) {
+        // Reactivate archived opportunity and move to appropriate stage
+        updateData.status = 'active';
+        // Keep current stage if it's a valid active stage, otherwise reset to application_started
+        const validActiveStages = ['application_started', 'discovery', 'qualified', 'application_prep', 
+          'underwriting_review', 'processor_approval', 'integration_setup', 'gateway_submitted', 'live_activated'];
+        if (!validActiveStages.includes(opportunity.stage)) {
+          updateData.stage = 'application_started';
+        }
+      }
+      
       const { error } = await supabase
         .from('opportunities')
-        .update({ assigned_to: newValue })
+        .update(updateData)
         .eq('id', opportunity.id);
       if (error) throw error;
+      
       onAssignmentChange?.(opportunity.id, newValue);
-      toast.success(newValue ? `Assigned to ${newValue}` : 'Unassigned');
+      
+      if (opportunity.status === 'dead' && newValue) {
+        toast.success(`Assigned to ${newValue} and reactivated from archive`);
+      } else {
+        toast.success(newValue ? `Assigned to ${newValue}` : 'Unassigned');
+      }
     } catch (error) {
       console.error('Error updating assignment:', error);
       toast.error('Failed to update assignment');
