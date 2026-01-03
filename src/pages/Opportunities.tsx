@@ -56,6 +56,16 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { SortableTableHead } from "@/components/SortableTableHead";
 
 type SortField = 'name' | 'stage' | 'pipeline' | 'owner' | 'tasks' | 'progress' | 'created' | 'updated';
@@ -79,6 +89,7 @@ const Opportunities = () => {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [showNewModal, setShowNewModal] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
+  const [reactivateConfirm, setReactivateConfirm] = useState<{ opp: Opportunity; assignee: string } | null>(null);
 
   // Handle ?new=true query param from sidebar navigation
   useEffect(() => {
@@ -242,18 +253,29 @@ const Opportunities = () => {
     navigate(`/opportunities/${opp.id}`);
   };
 
-  const handleAssignmentChange = async (opp: Opportunity, newAssignee: string) => {
+  const handleAssignmentChange = (opp: Opportunity, newAssignee: string) => {
     const wasArchived = opp.status === 'dead';
     const assigneeValue = newAssignee === 'unassigned' ? null : newAssignee;
     
-    // Build update payload - reactivate if was archived and being assigned
+    // Show confirmation if reactivating an archived opportunity
+    if (wasArchived && assigneeValue) {
+      setReactivateConfirm({ opp, assignee: newAssignee });
+      return;
+    }
+    
+    // Otherwise just update assignment directly
+    performAssignmentUpdate(opp, newAssignee, false);
+  };
+
+  const performAssignmentUpdate = async (opp: Opportunity, newAssignee: string, isReactivation: boolean) => {
+    const assigneeValue = newAssignee === 'unassigned' ? null : newAssignee;
+    
     const updatePayload: { assigned_to: string | null; status?: string; stage?: string } = {
       assigned_to: assigneeValue,
     };
     
-    if (wasArchived && assigneeValue) {
+    if (isReactivation && assigneeValue) {
       updatePayload.status = 'active';
-      // Reset to first stage if currently not a valid active stage
       const serviceType = getServiceType(opp);
       const validStages = serviceType === 'gateway_only' 
         ? GATEWAY_ONLY_PIPELINE_STAGES 
@@ -273,11 +295,10 @@ const Opportunities = () => {
       return;
     }
     
-    // Log activity
     await supabase.from('activities').insert({
       opportunity_id: opp.id,
-      type: wasArchived && assigneeValue ? 'reactivated' : 'assignment_change',
-      description: wasArchived && assigneeValue 
+      type: isReactivation ? 'reactivated' : 'assignment_change',
+      description: isReactivation 
         ? `Reactivated and assigned to ${assigneeValue}`
         : `Assigned to ${assigneeValue || 'Unassigned'}`,
       user_id: user?.id,
@@ -285,10 +306,17 @@ const Opportunities = () => {
     });
     
     toast({ 
-      title: wasArchived && assigneeValue 
+      title: isReactivation 
         ? `Reactivated and assigned to ${assigneeValue}` 
         : `Assigned to ${assigneeValue || 'Unassigned'}` 
     });
+  };
+
+  const confirmReactivation = () => {
+    if (reactivateConfirm) {
+      performAssignmentUpdate(reactivateConfirm.opp, reactivateConfirm.assignee, true);
+      setReactivateConfirm(null);
+    }
   };
 
   return (
@@ -758,6 +786,32 @@ const Opportunities = () => {
           onClose={() => setShowNewModal(false)}
           onSubmit={fetchOpportunities}
         />
+
+        {/* Reactivation Confirmation Dialog */}
+        <AlertDialog open={!!reactivateConfirm} onOpenChange={(open) => !open && setReactivateConfirm(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <RotateCcw className="h-5 w-5 text-amber-500" />
+                Reactivate Archived Opportunity?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                This opportunity is currently archived. Assigning it to <span className="font-medium text-foreground">{reactivateConfirm?.assignee}</span> will:
+                <ul className="list-disc list-inside mt-2 space-y-1">
+                  <li>Reactivate the opportunity</li>
+                  <li>Move it back to the pipeline</li>
+                  <li>Assign it to {reactivateConfirm?.assignee}</li>
+                </ul>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmReactivation}>
+                Reactivate & Assign
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
     </AppLayout>
   );
 };
