@@ -11,7 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Shield, RefreshCw, LogOut, Camera, User, Loader2, Save, Bell, Palette, Sun, Moon, Trees, Waves, Flame, Stars } from "lucide-react";
+import { Shield, RefreshCw, LogOut, Camera, User, Loader2, Save, Bell, Palette, Sun, Moon, Trees, Waves, Flame, Stars, MessageCircle, Volume2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
 // Theme variant icons mapping
@@ -35,6 +35,18 @@ const Settings = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [chatNotificationsEnabled, setChatNotificationsEnabled] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('chatNotificationsEnabled') !== 'false';
+    }
+    return true;
+  });
+  const [chatSoundEnabled, setChatSoundEnabled] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('chatSoundEnabled') !== 'false';
+    }
+    return true;
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const displayName = fullName || teamMemberName || user?.email?.split("@")[0] || "User";
@@ -346,6 +358,57 @@ const Settings = () => {
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Notifications appear in the bell icon at the top of the sidebar
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Chat Notification Settings */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageCircle className="h-5 w-5" />
+                    Chat Notifications
+                  </CardTitle>
+                  <CardDescription>
+                    Manage chat message notifications and sounds
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div>
+                      <h3 className="font-medium">Browser Notifications</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Show desktop notifications for new chat messages
+                      </p>
+                    </div>
+                    <Switch 
+                      checked={chatNotificationsEnabled} 
+                      onCheckedChange={(checked) => {
+                        setChatNotificationsEnabled(checked);
+                        localStorage.setItem('chatNotificationsEnabled', String(checked));
+                      }} 
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Volume2 className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <h3 className="font-medium">Notification Sound</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Play a sound when you receive new chat messages
+                        </p>
+                      </div>
+                    </div>
+                    <Switch 
+                      checked={chatSoundEnabled} 
+                      onCheckedChange={(checked) => {
+                        setChatSoundEnabled(checked);
+                        localStorage.setItem('chatSoundEnabled', String(checked));
+                      }} 
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Chat notifications require browser permission. You may need to allow notifications in your browser settings.
                   </p>
                 </CardContent>
               </Card>

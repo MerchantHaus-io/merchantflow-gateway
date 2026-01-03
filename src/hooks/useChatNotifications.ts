@@ -40,6 +40,12 @@ export const useChatNotifications = ({ isChatOpen, currentChannelId, currentDMUs
     }
     return true;
   });
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('chatSoundEnabled') !== 'false';
+    }
+    return true;
+  });
   const notificationQueue = useRef<Array<{ title: string; body: string; tag: string }>>([]);
   const isProcessingQueue = useRef(false);
 
@@ -58,6 +64,20 @@ export const useChatNotifications = ({ isChatOpen, currentChannelId, currentDMUs
         return () => clearTimeout(timer);
       }
     }
+  }, []);
+
+  // Sync with localStorage changes from Settings page
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'chatNotificationsEnabled') {
+        setNotificationsEnabled(e.newValue !== 'false');
+      }
+      if (e.key === 'chatSoundEnabled') {
+        setSoundEnabled(e.newValue !== 'false');
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   // Save notification preference
@@ -109,13 +129,13 @@ export const useChatNotifications = ({ isChatOpen, currentChannelId, currentDMUs
     // Add to queue
     notificationQueue.current.push({ title, body, tag });
     
-    // Play sound if document is not focused
-    if (!document.hasFocus()) {
+    // Play sound if enabled and document is not focused
+    if (soundEnabled && !document.hasFocus()) {
       playNotificationSound();
     }
     
     processNotificationQueue();
-  }, [isChatOpen, notificationsEnabled, processNotificationQueue]);
+  }, [isChatOpen, notificationsEnabled, soundEnabled, processNotificationQueue]);
 
   // Listen for new channel messages
   useEffect(() => {
@@ -247,6 +267,7 @@ export const useChatNotifications = ({ isChatOpen, currentChannelId, currentDMUs
     requestPermission,
     toggleNotifications,
     notificationsEnabled,
+    soundEnabled,
     isSupported: 'Notification' in window,
     permissionStatus: 'Notification' in window ? Notification.permission : 'denied',
     permissionGranted,
