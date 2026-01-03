@@ -119,10 +119,25 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [unreadChatCount, setUnreadChatCount] = useState(0);
+  const [unreadDMCount, setUnreadDMCount] = useState(0);
+  const [unreadChannelCount, setUnreadChannelCount] = useState(0);
+
+  // Load last read timestamps from localStorage for channel messages
+  const getLastReadTimestamps = useCallback((): Record<string, string> => {
+    if (!user) return {};
+    const stored = localStorage.getItem(`chat_last_read_${user.id}`);
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch {
+        return {};
+      }
+    }
+    return {};
+  }, [user]);
 
   // Fetch unread DM count
-  const fetchUnreadChatCount = useCallback(async () => {
+  const fetchUnreadDMCount = useCallback(async () => {
     if (!user) return;
 
     const { count, error } = await supabase
@@ -132,15 +147,52 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
       .is("read_at", null);
 
     if (!error && count !== null) {
-      setUnreadChatCount(count);
+      setUnreadDMCount(count);
     }
   }, [user]);
+
+  // Fetch unread channel message count
+  const fetchUnreadChannelCount = useCallback(async () => {
+    if (!user) return;
+
+    const lastReadTimestamps = getLastReadTimestamps();
+
+    // Get all channels
+    const { data: channels } = await supabase
+      .from("chat_channels")
+      .select("id");
+
+    if (!channels) return;
+
+    let total = 0;
+
+    // For each channel, count messages after last read timestamp
+    for (const channel of channels) {
+      const lastRead = lastReadTimestamps[channel.id];
+
+      let query = supabase
+        .from("chat_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("channel_id", channel.id)
+        .neq("user_id", user.id);
+
+      if (lastRead) {
+        query = query.gt("created_at", lastRead);
+      }
+
+      const { count } = await query;
+      total += count || 0;
+    }
+
+    setUnreadChannelCount(total);
+  }, [user, getLastReadTimestamps]);
 
   // Subscribe to new messages for unread count
   useEffect(() => {
     if (!user) return;
 
-    fetchUnreadChatCount();
+    fetchUnreadDMCount();
+    fetchUnreadChannelCount();
 
     const channel = supabase
       .channel("header-chat-unread")
@@ -153,7 +205,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
           filter: `receiver_id=eq.${user.id}`,
         },
         () => {
-          setUnreadChatCount((prev) => prev + 1);
+          setUnreadDMCount((prev) => prev + 1);
         }
       )
       .on(
@@ -164,16 +216,40 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
           table: "direct_messages",
         },
         () => {
-          // Refetch when messages are marked as read
-          fetchUnreadChatCount();
+          fetchUnreadDMCount();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "chat_messages",
+        },
+        (payload) => {
+          const newMsg = payload.new as { user_id: string };
+          if (newMsg.user_id !== user.id) {
+            setUnreadChannelCount((prev) => prev + 1);
+          }
         }
       )
       .subscribe();
 
+    // Also listen for localStorage changes (when user marks as read in Chat page)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === `chat_last_read_${user.id}`) {
+        fetchUnreadChannelCount();
+      }
+    };
+    window.addEventListener("storage", handleStorageChange);
+
     return () => {
       supabase.removeChannel(channel);
+      window.removeEventListener("storage", handleStorageChange);
     };
-  }, [user, fetchUnreadChatCount]);
+  }, [user, fetchUnreadDMCount, fetchUnreadChannelCount]);
+
+  const totalUnreadCount = unreadDMCount + unreadChannelCount;
 
   const handleNewClick = (type: "opportunity" | "account" | "contact") => {
     switch (type) {
@@ -336,9 +412,9 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                 className="h-9 w-9 relative"
               >
                 <MessageCircle className="h-4 w-4" />
-                {unreadChatCount > 0 && (
+                {totalUnreadCount > 0 && (
                   <span className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center font-medium">
-                    {unreadChatCount > 99 ? "99+" : unreadChatCount}
+                    {totalUnreadCount > 99 ? "99+" : totalUnreadCount}
                   </span>
                 )}
               </Button>
