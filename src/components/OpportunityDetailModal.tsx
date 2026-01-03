@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { Opportunity, STAGE_CONFIG, Account, Contact, getServiceType, EMAIL_TO_USER, TEAM_MEMBERS } from "@/types/opportunity";
+import { Opportunity, STAGE_CONFIG, Account, Contact, getServiceType, EMAIL_TO_USER, TEAM_MEMBERS, OpportunityStage, PROCESSING_PIPELINE_STAGES, GATEWAY_ONLY_PIPELINE_STAGES } from "@/types/opportunity";
 import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, ListChecks, Zap, CreditCard, Maximize2, Minimize2, Loader2, Wand2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
@@ -571,8 +571,62 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                     </span>
                   </div>
                   <div className="flex items-center gap-2 mt-1">
-                    <div className={`w-2 h-2 rounded-full ${stageConfig.colorClass}`} />
-                    <span className="text-sm text-muted-foreground">{stageConfig.label}</span>
+                    {/* Editable Stage Dropdown */}
+                    <Select
+                      value={opportunity.stage}
+                      onValueChange={async (value) => {
+                        const newStage = value as OpportunityStage;
+                        const oldStage = opportunity.stage;
+                        
+                        const { error } = await supabase
+                          .from('opportunities')
+                          .update({ stage: newStage })
+                          .eq('id', opportunity.id);
+                        
+                        if (error) {
+                          toast.error("Failed to update stage");
+                          return;
+                        }
+                        
+                        // Log activity
+                        await supabase.from('activities').insert({
+                          opportunity_id: opportunity.id,
+                          type: 'stage_change',
+                          description: `Moved from ${STAGE_CONFIG[oldStage].label} to ${STAGE_CONFIG[newStage].label}`,
+                          user_id: user?.id,
+                          user_email: user?.email,
+                        });
+                        
+                        // Send email notification
+                        if (opportunity.assigned_to) {
+                          sendStageChangeEmail(
+                            opportunity.assigned_to,
+                            account?.name || 'Unknown Account',
+                            oldStage,
+                            newStage,
+                            user?.email
+                          ).catch(err => console.error("Failed to send stage change email:", err));
+                        }
+                        
+                        onUpdate({ ...opportunity, stage: newStage });
+                        toast.success(`Stage updated to ${STAGE_CONFIG[newStage].label}`);
+                      }}
+                    >
+                      <SelectTrigger className="h-6 w-auto border-0 bg-transparent hover:bg-muted/50 px-2 text-sm gap-1">
+                        <div className={`w-2 h-2 rounded-full ${stageConfig.colorClass}`} />
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover z-50">
+                        {(isGatewayCard ? GATEWAY_ONLY_PIPELINE_STAGES : PROCESSING_PIPELINE_STAGES).map((stage) => (
+                          <SelectItem key={stage} value={stage} className="text-xs">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-2 h-2 rounded-full ${STAGE_CONFIG[stage].colorClass}`} />
+                              {STAGE_CONFIG[stage].label}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     {opportunity.status === 'dead' && (
                       <span className="text-xs text-destructive bg-destructive/10 px-2 py-0.5 rounded">
                         Archived
