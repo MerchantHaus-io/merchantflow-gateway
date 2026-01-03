@@ -119,8 +119,53 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [profileName, setProfileName] = useState<string | null>(null);
   const [unreadDMCount, setUnreadDMCount] = useState(0);
   const [unreadChannelCount, setUnreadChannelCount] = useState(0);
+
+  // Fetch profile from profiles table
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchProfile = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("avatar_url, full_name")
+        .eq("id", user.id)
+        .single();
+
+      if (data) {
+        setAvatarUrl(data.avatar_url);
+        setProfileName(data.full_name);
+      }
+    };
+
+    fetchProfile();
+
+    // Subscribe to profile changes for real-time sync
+    const channel = supabase
+      .channel("header-profile-sync")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "profiles",
+          filter: `id=eq.${user.id}`,
+        },
+        (payload) => {
+          const updated = payload.new as { avatar_url: string | null; full_name: string | null };
+          setAvatarUrl(updated.avatar_url);
+          setProfileName(updated.full_name);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   // Load last read timestamps from localStorage for channel messages
   const getLastReadTimestamps = useCallback((): Record<string, string> => {
@@ -283,7 +328,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
   };
 
   const userEmail = user?.email?.toLowerCase() || "";
-  const displayName = EMAIL_TO_USER[userEmail] || user?.email?.split("@")[0] || "User";
+  const displayName = profileName || EMAIL_TO_USER[userEmail] || user?.email?.split("@")[0] || "User";
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -443,7 +488,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="gap-2 pl-1">
                 <Avatar className="h-7 w-7">
-                  <AvatarImage src={user?.user_metadata?.avatar_url} alt={displayName} />
+                  <AvatarImage src={avatarUrl || undefined} alt={displayName} />
                   <AvatarFallback className="text-xs bg-primary/10 text-primary">
                     {displayName.slice(0, 2).toUpperCase()}
                   </AvatarFallback>
