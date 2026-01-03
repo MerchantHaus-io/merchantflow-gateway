@@ -400,6 +400,16 @@ All colors MUST be HSL.
     scroll-behavior: smooth;
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    html, body, #root {
+      scroll-behavior: auto;
+    }
+
+    .scroll-smooth {
+      scroll-behavior: auto !important;
+    }
+  }
+
   body {
     @apply bg-background text-foreground font-sans antialiased tracking-tight;
   }

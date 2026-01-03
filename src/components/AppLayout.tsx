@@ -17,9 +17,9 @@ export function AppLayout({
   headerActions,
 }: AppLayoutProps) {
   return (
-    <div className="min-h-screen flex flex-col w-full">
+    <div className="h-screen h-dvh min-h-0 flex flex-col w-full overflow-hidden">
       <MegaMenuHeader onNewApplication={onNewApplication} />
-      <main className="flex-1 flex flex-col overflow-auto">
+      <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {(pageTitle || headerActions) && (
           <div className="border-b border-border bg-background/50 px-4 lg:px-6 py-3">
             <div className="flex items-center justify-between gap-4">
@@ -30,7 +30,9 @@ export function AppLayout({
             </div>
           </div>
         )}
-        {children}
+        <div className="flex-1 min-h-0 overflow-y-auto scroll-smooth">
+          {children}
+        </div>
       </main>
     </div>
   );
