@@ -236,7 +236,7 @@ Sales Support`,
 
   return (
     <AppLayout pageTitle="Standard Operating Procedures">
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex min-h-0">
             {/* SOP Navigation Sidebar */}
             <aside className="w-64 border-r border-border bg-card hidden lg:block overflow-y-auto">
               <div className="p-4 border-b border-border">

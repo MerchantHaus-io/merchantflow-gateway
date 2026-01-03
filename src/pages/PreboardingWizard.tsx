@@ -395,7 +395,7 @@ export default function PreboardingWizard() {
         <span className="text-xs text-muted-foreground">Step {stepIndex + 1} of {STEPS.length}</span>
       }
     >
-      <div className="flex-1 overflow-y-auto p-4 md:p-8">
+      <div className="p-4 md:p-8">
             <div className="max-w-6xl mx-auto space-y-6">
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div className="space-y-2">

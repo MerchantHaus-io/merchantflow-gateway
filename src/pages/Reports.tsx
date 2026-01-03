@@ -302,7 +302,7 @@ const Reports = () => {
         />
       }
     >
-      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+      <div className="p-4 md:p-6 space-y-6">
             {/* KPI Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <Card>
