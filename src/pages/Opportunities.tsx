@@ -242,6 +242,55 @@ const Opportunities = () => {
     navigate(`/opportunities/${opp.id}`);
   };
 
+  const handleAssignmentChange = async (opp: Opportunity, newAssignee: string) => {
+    const wasArchived = opp.status === 'dead';
+    const assigneeValue = newAssignee === 'unassigned' ? null : newAssignee;
+    
+    // Build update payload - reactivate if was archived and being assigned
+    const updatePayload: { assigned_to: string | null; status?: string; stage?: string } = {
+      assigned_to: assigneeValue,
+    };
+    
+    if (wasArchived && assigneeValue) {
+      updatePayload.status = 'active';
+      // Reset to first stage if currently not a valid active stage
+      const serviceType = getServiceType(opp);
+      const validStages = serviceType === 'gateway_only' 
+        ? GATEWAY_ONLY_PIPELINE_STAGES 
+        : PROCESSING_PIPELINE_STAGES;
+      if (!validStages.includes(opp.stage as OpportunityStage)) {
+        updatePayload.stage = 'application_started';
+      }
+    }
+    
+    const { error } = await supabase
+      .from('opportunities')
+      .update(updatePayload)
+      .eq('id', opp.id);
+    
+    if (error) {
+      toast({ title: "Failed to update assignment", variant: "destructive" });
+      return;
+    }
+    
+    // Log activity
+    await supabase.from('activities').insert({
+      opportunity_id: opp.id,
+      type: wasArchived && assigneeValue ? 'reactivated' : 'assignment_change',
+      description: wasArchived && assigneeValue 
+        ? `Reactivated and assigned to ${assigneeValue}`
+        : `Assigned to ${assigneeValue || 'Unassigned'}`,
+      user_id: user?.id,
+      user_email: user?.email,
+    });
+    
+    toast({ 
+      title: wasArchived && assigneeValue 
+        ? `Reactivated and assigned to ${assigneeValue}` 
+        : `Assigned to ${assigneeValue || 'Unassigned'}` 
+    });
+  };
+
   return (
     <AppLayout
       onNewApplication={() => setShowNewModal(true)}
@@ -482,11 +531,22 @@ const Opportunities = () => {
                                 )}
                               </div>
                             </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1">
-                                <User className="h-3 w-3 text-muted-foreground" />
-                                <span className="text-sm">{opp.assigned_to || 'Unassigned'}</span>
-                              </div>
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <Select
+                                value={opp.assigned_to || 'unassigned'}
+                                onValueChange={(value) => handleAssignmentChange(opp, value)}
+                              >
+                                <SelectTrigger className="h-7 w-auto min-w-[100px] border-0 bg-transparent hover:bg-muted/50 px-2 text-xs gap-1">
+                                  <User className="h-3 w-3 text-muted-foreground" />
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-popover z-50">
+                                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                                  {TEAM_MEMBERS.map(member => (
+                                    <SelectItem key={member} value={member}>{member}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </TableCell>
                             <TableCell>
                               {taskCount > 0 && (
@@ -637,9 +697,22 @@ const Opportunities = () => {
                           </div>
                           
                           <div className="space-y-2">
-                            <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center justify-between text-sm" onClick={(e) => e.stopPropagation()}>
                               <span className="text-muted-foreground">Owner</span>
-                              <span>{opp.assigned_to || 'Unassigned'}</span>
+                              <Select
+                                value={opp.assigned_to || 'unassigned'}
+                                onValueChange={(value) => handleAssignmentChange(opp, value)}
+                              >
+                                <SelectTrigger className="h-6 w-auto border-0 bg-transparent hover:bg-muted/50 px-1 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-popover z-50">
+                                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                                  {TEAM_MEMBERS.map(member => (
+                                    <SelectItem key={member} value={member}>{member}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">Pipeline</span>
