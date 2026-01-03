@@ -11,7 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Shield, RefreshCw, LogOut, Camera, User, Loader2, Save, Bell, Palette, Sun, Moon, Trees, Waves, Flame, Stars, MessageCircle, Volume2, Download, FileArchive } from "lucide-react";
+import { Shield, RefreshCw, LogOut, Camera, User, Loader2, Save, Bell, Palette, Sun, Moon, Trees, Waves, Flame, Stars, MessageCircle, Volume2, Download, FileArchive, Users } from "lucide-react";
 import JSZip from "jszip";
 import { Switch } from "@/components/ui/switch";
 
@@ -37,6 +37,8 @@ const Settings = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [adminUsers, setAdminUsers] = useState<{ id: string; email: string; full_name: string | null; avatar_url: string | null }[]>([]);
+  const [loadingAdmins, setLoadingAdmins] = useState(false);
   const [chatNotificationsEnabled, setChatNotificationsEnabled] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('chatNotificationsEnabled') !== 'false';
@@ -56,8 +58,36 @@ const Settings = () => {
   useEffect(() => {
     if (user) {
       fetchProfile();
+      if (isAdmin) {
+        fetchAdminUsers();
+      }
     }
-  }, [user]);
+  }, [user, isAdmin]);
+
+  const fetchAdminUsers = async () => {
+    setLoadingAdmins(true);
+    try {
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("user_id, profiles:user_id(id, email, full_name, avatar_url)")
+        .eq("role", "admin");
+
+      if (error) throw error;
+
+      const admins = data?.map((item: any) => ({
+        id: item.profiles?.id || item.user_id,
+        email: item.profiles?.email || "Unknown",
+        full_name: item.profiles?.full_name,
+        avatar_url: item.profiles?.avatar_url,
+      })) || [];
+
+      setAdminUsers(admins);
+    } catch (error) {
+      console.error("Error fetching admin users:", error);
+    } finally {
+      setLoadingAdmins(false);
+    }
+  };
 
   const fetchProfile = async () => {
     if (!user) return;
@@ -509,6 +539,60 @@ const Settings = () => {
                     <p className="text-xs text-muted-foreground">
                       Exports all data as JSON files in a ZIP archive
                     </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Admin Users List - Only for admins */}
+              {isAdmin && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="h-5 w-5" />
+                      Admin Users
+                    </CardTitle>
+                    <CardDescription>
+                      Users with administrator privileges
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {loadingAdmins ? (
+                      <div className="flex items-center justify-center py-4">
+                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : adminUsers.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No admin users found
+                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        {adminUsers.map((admin) => (
+                          <div 
+                            key={admin.id} 
+                            className="flex items-center gap-3 p-3 border border-border rounded-lg"
+                          >
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage src={admin.avatar_url || undefined} alt={admin.full_name || admin.email} />
+                              <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                                {(admin.full_name || admin.email).slice(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate">
+                                {admin.full_name || admin.email.split("@")[0]}
+                              </p>
+                              <p className="text-sm text-muted-foreground truncate">
+                                {admin.email}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full">
+                              <Shield className="h-3 w-3" />
+                              Admin
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               )}
