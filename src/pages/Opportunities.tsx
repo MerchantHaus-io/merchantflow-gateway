@@ -12,8 +12,11 @@ import {
   TEAM_MEMBERS, 
   migrateStage, 
   getServiceType,
-  EMAIL_TO_USER 
+  EMAIL_TO_USER,
+  PROCESSING_PIPELINE_STAGES,
+  GATEWAY_ONLY_PIPELINE_STAGES
 } from "@/types/opportunity";
+import { sendStageChangeEmail } from "@/hooks/useEmailNotifications";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -402,14 +405,67 @@ const Opportunities = () => {
                                 </div>
                               </div>
                             </TableCell>
-                            <TableCell>
-                              <Badge 
-                                variant="outline" 
-                                className={cn("text-xs", stageConfig?.colorClass && `border-current`)}
-                                style={{ color: stageConfig?.color }}
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <Select
+                                value={opp.stage}
+                                onValueChange={async (value) => {
+                                  const newStage = value as OpportunityStage;
+                                  const oldStage = opp.stage;
+                                  
+                                  const { error } = await supabase
+                                    .from('opportunities')
+                                    .update({ stage: newStage })
+                                    .eq('id', opp.id);
+                                  
+                                  if (error) {
+                                    toast({ title: "Failed to update stage", variant: "destructive" });
+                                    return;
+                                  }
+                                  
+                                  // Log activity
+                                  await supabase.from('activities').insert({
+                                    opportunity_id: opp.id,
+                                    type: 'stage_change',
+                                    description: `Moved from ${STAGE_CONFIG[oldStage as OpportunityStage].label} to ${STAGE_CONFIG[newStage].label}`,
+                                    user_id: user?.id,
+                                    user_email: user?.email,
+                                  });
+                                  
+                                  // Send email notification
+                                  if (opp.assigned_to) {
+                                    sendStageChangeEmail(
+                                      opp.assigned_to,
+                                      opp.account?.name || 'Unknown Account',
+                                      oldStage,
+                                      newStage,
+                                      user?.email
+                                    ).catch(err => console.error("Failed to send stage change email:", err));
+                                  }
+                                  
+                                  toast({ title: `Stage updated to ${STAGE_CONFIG[newStage].label}` });
+                                }}
                               >
-                                {stageConfig?.label || opp.stage}
-                              </Badge>
+                                <SelectTrigger className="h-7 w-auto min-w-[100px] border-0 bg-transparent hover:bg-muted/50 px-2 text-xs gap-1">
+                                  <div 
+                                    className="w-2 h-2 rounded-full flex-shrink-0" 
+                                    style={{ backgroundColor: stageConfig?.color }}
+                                  />
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-popover z-50">
+                                  {(serviceType === 'gateway_only' ? GATEWAY_ONLY_PIPELINE_STAGES : PROCESSING_PIPELINE_STAGES).map((stage) => (
+                                    <SelectItem key={stage} value={stage} className="text-xs">
+                                      <div className="flex items-center gap-2">
+                                        <div 
+                                          className="w-2 h-2 rounded-full" 
+                                          style={{ backgroundColor: STAGE_CONFIG[stage].color }}
+                                        />
+                                        {STAGE_CONFIG[stage].label}
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-1">
@@ -518,12 +574,66 @@ const Opportunities = () => {
                                 </Badge>
                               )}
                             </div>
-                            <Badge 
-                              variant="outline"
-                              style={{ borderColor: stageConfig?.color, color: stageConfig?.color }}
-                            >
-                              {stageConfig?.label}
-                            </Badge>
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <Select
+                                value={opp.stage}
+                                onValueChange={async (value) => {
+                                  const newStage = value as OpportunityStage;
+                                  const oldStage = opp.stage;
+                                  
+                                  const { error } = await supabase
+                                    .from('opportunities')
+                                    .update({ stage: newStage })
+                                    .eq('id', opp.id);
+                                  
+                                  if (error) {
+                                    toast({ title: "Failed to update stage", variant: "destructive" });
+                                    return;
+                                  }
+                                  
+                                  await supabase.from('activities').insert({
+                                    opportunity_id: opp.id,
+                                    type: 'stage_change',
+                                    description: `Moved from ${STAGE_CONFIG[oldStage as OpportunityStage].label} to ${STAGE_CONFIG[newStage].label}`,
+                                    user_id: user?.id,
+                                    user_email: user?.email,
+                                  });
+                                  
+                                  if (opp.assigned_to) {
+                                    sendStageChangeEmail(
+                                      opp.assigned_to,
+                                      opp.account?.name || 'Unknown Account',
+                                      oldStage,
+                                      newStage,
+                                      user?.email
+                                    ).catch(err => console.error("Failed to send stage change email:", err));
+                                  }
+                                  
+                                  toast({ title: `Stage updated to ${STAGE_CONFIG[newStage].label}` });
+                                }}
+                              >
+                                <SelectTrigger className="h-7 w-auto border-0 bg-transparent hover:bg-muted/50 px-2 text-xs gap-1">
+                                  <div 
+                                    className="w-2 h-2 rounded-full flex-shrink-0" 
+                                    style={{ backgroundColor: stageConfig?.color }}
+                                  />
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-popover z-50">
+                                  {(serviceType === 'gateway_only' ? GATEWAY_ONLY_PIPELINE_STAGES : PROCESSING_PIPELINE_STAGES).map((stage) => (
+                                    <SelectItem key={stage} value={stage} className="text-xs">
+                                      <div className="flex items-center gap-2">
+                                        <div 
+                                          className="w-2 h-2 rounded-full" 
+                                          style={{ backgroundColor: STAGE_CONFIG[stage].color }}
+                                        />
+                                        {STAGE_CONFIG[stage].label}
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </div>
                           
                           <div className="space-y-2">
