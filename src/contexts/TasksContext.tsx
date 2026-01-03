@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Task, TaskInput } from "@/types/task";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { sendTaskAssignmentEmail } from "@/hooks/useEmailNotifications";
 interface TasksContextValue {
   tasks: Task[];
   addTask: (input: TaskInput) => Promise<Task>;
@@ -172,6 +173,19 @@ export const TasksProvider = ({ children }: { children: React.ReactNode }) => {
           user_email: user?.email,
         });
       }
+
+      // Send email notification for task assignment
+      if (newTask.assignee) {
+        sendTaskAssignmentEmail(
+          newTask.assignee,
+          newTask.title,
+          newTask.description,
+          newTask.priority,
+          newTask.dueAt,
+          user?.email
+        ).catch(err => console.error("Failed to send task email:", err));
+      }
+
       // Refresh to get account/contact names
       refreshTasks();
     }

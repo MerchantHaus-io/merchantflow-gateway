@@ -13,6 +13,7 @@ import { User } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import GameSplash from "@/components/GameSplash";
+import { sendStageChangeEmail } from "@/hooks/useEmailNotifications";
 
 type WizardPrefillForm = {
   dbaName: string;
@@ -660,6 +661,17 @@ const Index = () => {
         user_id: user?.id,
         user_email: user?.email
       });
+
+      // Send email notification for stage change
+      if (opportunity.assigned_to) {
+        sendStageChangeEmail(
+          opportunity.assigned_to,
+          opportunity.account?.name || 'Unknown Account',
+          opportunity.stage,
+          updates.stage,
+          user?.email
+        ).catch(err => console.error("Failed to send stage change email:", err));
+      }
     }
 
     if (

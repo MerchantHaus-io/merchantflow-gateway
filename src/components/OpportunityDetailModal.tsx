@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTasks } from "@/contexts/TasksContext";
+import { sendOpportunityAssignmentEmail, sendStageChangeEmail } from "@/hooks/useEmailNotifications";
 import ActivitiesTab from "./ActivitiesTab";
 import {
   AlertDialog,
@@ -562,6 +563,16 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                           user_id: user?.id,
                           user_email: user?.email,
                         });
+                        
+                        // Send email notification for opportunity assignment
+                        if (newAssignee) {
+                          sendOpportunityAssignmentEmail(
+                            newAssignee,
+                            account?.name || 'Unknown Account',
+                            contact ? `${contact.first_name || ''} ${contact.last_name || ''}`.trim() : undefined,
+                            opportunity.stage
+                          ).catch(err => console.error("Failed to send assignment email:", err));
+                        }
                         
                         onUpdate({ ...opportunity, assigned_to: newAssignee || undefined });
                         toast.success(`Assigned to ${newAssignee || 'Unassigned'}`);

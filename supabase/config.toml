@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.force-password-reset]
 verify_jwt = false
+
+[functions.sign-out-all-users]
+verify_jwt = false
+
+[functions.send-notification-email]
+verify_jwt = false
