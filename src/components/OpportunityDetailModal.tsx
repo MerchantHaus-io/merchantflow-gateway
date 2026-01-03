@@ -172,6 +172,9 @@ interface OpportunityDetailModalProps {
   hasGatewayOpportunity?: boolean;
 }
 
+const MODAL_TABS = ['overview', 'tasks', 'notes', 'documents', 'details'] as const;
+type ModalTab = typeof MODAL_TABS[number];
+
 const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, onDelete, onConvertToGateway, onMoveToProcessing, hasGatewayOpportunity }: OpportunityDetailModalProps) => {
   const { isAdmin } = useUserRole();
   const { user } = useAuth();
@@ -184,9 +187,45 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   const [showMoveDialog, setShowMoveDialog] = useState(false);
   const [showRequestDeleteDialog, setShowRequestDeleteDialog] = useState(false);
   const [showDeathSplash, setShowDeathSplash] = useState(false);
+  const [activeTab, setActiveTab] = useState<ModalTab>('overview');
   const [taskTitle, setTaskTitle] = useState("");
   const [taskAssignee, setTaskAssignee] = useState("Unassigned");
   const [taskComments, setTaskComments] = useState("");
+
+  // Keyboard shortcuts for tab navigation
+  useEffect(() => {
+    if (!opportunity) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      
+      const currentIndex = MODAL_TABS.indexOf(activeTab);
+      
+      // Arrow keys or [ ] for tab navigation
+      if (e.key === 'ArrowLeft' || e.key === '[') {
+        e.preventDefault();
+        const newIndex = currentIndex > 0 ? currentIndex - 1 : MODAL_TABS.length - 1;
+        setActiveTab(MODAL_TABS[newIndex]);
+      } else if (e.key === 'ArrowRight' || e.key === ']') {
+        e.preventDefault();
+        const newIndex = currentIndex < MODAL_TABS.length - 1 ? currentIndex + 1 : 0;
+        setActiveTab(MODAL_TABS[newIndex]);
+      }
+      
+      // Number keys 1-5 for direct tab access
+      if (e.key >= '1' && e.key <= '5') {
+        e.preventDefault();
+        const tabIndex = parseInt(e.key) - 1;
+        if (tabIndex < MODAL_TABS.length) {
+          setActiveTab(MODAL_TABS[tabIndex]);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [opportunity, activeTab]);
   
   // Account fields
   const [accountName, setAccountName] = useState("");
@@ -733,28 +772,53 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
             <StagePath opportunity={opportunity} />
           </div>
 
-          <Tabs defaultValue="overview" className="mt-4 flex-1 flex flex-col min-h-0">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ModalTab)} className="mt-4 flex-1 flex flex-col min-h-0">
             <TabsList className="grid w-full grid-cols-5 flex-shrink-0">
-              <TabsTrigger value="overview" className="flex items-center gap-1">
-                <ClipboardList className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Overview</span>
-              </TabsTrigger>
-              <TabsTrigger value="tasks" className="flex items-center gap-1">
-                <ListChecks className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Tasks</span>
-              </TabsTrigger>
-              <TabsTrigger value="notes" className="flex items-center gap-1">
-                <MessageSquare className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Notes</span>
-              </TabsTrigger>
-              <TabsTrigger value="documents" className="flex items-center gap-1">
-                <FileText className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Docs</span>
-              </TabsTrigger>
-              <TabsTrigger value="details" className="flex items-center gap-1">
-                <Building2 className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Details</span>
-              </TabsTrigger>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="overview" className="flex items-center gap-1">
+                    <ClipboardList className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Overview</span>
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">Press 1</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="tasks" className="flex items-center gap-1">
+                    <ListChecks className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Tasks</span>
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">Press 2</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="notes" className="flex items-center gap-1">
+                    <MessageSquare className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Notes</span>
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">Press 3</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="documents" className="flex items-center gap-1">
+                    <FileText className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Docs</span>
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">Press 4</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="details" className="flex items-center gap-1">
+                    <Building2 className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Details</span>
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">Press 5</TooltipContent>
+              </Tooltip>
             </TabsList>
 
               {/* Overview Tab - Application Progress */}
