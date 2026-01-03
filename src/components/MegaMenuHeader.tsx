@@ -105,20 +105,40 @@ const toolsItems: NavItem[] = [
 
 interface MegaMenuHeaderProps {
   onNewApplication?: () => void;
+  onNewAccount?: () => void;
+  onNewContact?: () => void;
 }
 
-export function MegaMenuHeader({ onNewApplication }: MegaMenuHeaderProps) {
+export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }: MegaMenuHeaderProps) {
   const { user, signOut } = useAuth();
   const { isAdmin } = useUserRole();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const handleNewClick = () => {
-    if (onNewApplication) {
-      onNewApplication();
-    } else {
-      navigate("/opportunities?new=true");
+  const handleNewClick = (type: "opportunity" | "account" | "contact") => {
+    switch (type) {
+      case "opportunity":
+        if (onNewApplication) {
+          onNewApplication();
+        } else {
+          navigate("/opportunities?new=true");
+        }
+        break;
+      case "account":
+        if (onNewAccount) {
+          onNewAccount();
+        } else {
+          navigate("/accounts?new=true");
+        }
+        break;
+      case "contact":
+        if (onNewContact) {
+          onNewContact();
+        } else {
+          navigate("/contacts?new=true");
+        }
+        break;
     }
   };
 
@@ -219,15 +239,33 @@ export function MegaMenuHeader({ onNewApplication }: MegaMenuHeaderProps) {
 
         {/* Right side actions */}
         <div className="flex items-center gap-2 ml-auto">
-          {/* +New button */}
-          <Button
-            onClick={handleNewClick}
-            size="sm"
-            className="gradient-primary text-primary-foreground hover:opacity-90 transition-opacity"
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            <span className="hidden sm:inline">New</span>
-          </Button>
+          {/* +New dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="sm"
+                className="gradient-primary text-primary-foreground hover:opacity-90 transition-opacity"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                <span className="hidden sm:inline">New</span>
+                <ChevronDown className="h-3 w-3 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => handleNewClick("opportunity")}>
+                <Briefcase className="h-4 w-4 mr-2" />
+                Create Opportunity
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleNewClick("account")}>
+                <Building2 className="h-4 w-4 mr-2" />
+                Create Account
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleNewClick("contact")}>
+                <Users className="h-4 w-4 mr-2" />
+                Create Contact
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <NotificationBell />
 

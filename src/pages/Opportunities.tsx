@@ -241,15 +241,10 @@ const Opportunities = () => {
   return (
     <AppLayout
       onNewApplication={() => setShowNewModal(true)}
-      pageTitle="Opportunities"
-      headerActions={
-        <Button onClick={() => setShowNewModal(true)}>
-          <Plus className="h-4 w-4 mr-1" />
-          New Opportunity
-        </Button>
-      }
     >
       <main className="flex-1 overflow-auto p-4 lg:p-6 space-y-6">
+        {/* Page title */}
+        <h1 className="text-lg font-semibold text-foreground">Opportunities</h1>
         {/* Stats - Compact header-style badges */}
           <div className="flex items-center gap-1.5 flex-wrap">
             <Badge variant="secondary" className="h-6 px-2 text-xs font-medium gap-1">
@@ -330,10 +325,6 @@ const Opportunities = () => {
                   </SelectContent>
                 </Select>
 
-                <Button onClick={() => setShowNewModal(true)} className="ml-auto">
-                  <Plus className="h-4 w-4 mr-1" />
-                  New Opportunity
-                </Button>
               </div>
             </CardContent>
           </Card>
