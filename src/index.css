@@ -397,6 +397,7 @@ All colors MUST be HSL.
   html, body, #root {
     height: 100%;
     overflow: hidden;
+    scroll-behavior: smooth;
   }
 
   body {
