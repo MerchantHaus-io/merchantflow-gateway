@@ -319,6 +319,25 @@ const ChatBox: React.FC<ChatBoxProps> = ({
   );
 };
 
+// Helper to find a profile by participant name (matches full_name or email username)
+const findProfileByName = (profiles: Record<string, Profile>, participantName: string): Profile | null => {
+  const nameLower = participantName.toLowerCase();
+  for (const profile of Object.values(profiles)) {
+    // Check full_name
+    if (profile.full_name?.toLowerCase() === nameLower) {
+      return profile;
+    }
+    // Check email username part
+    if (profile.email) {
+      const emailUsername = profile.email.split('@')[0].toLowerCase();
+      if (emailUsername === nameLower || profile.email.toLowerCase().startsWith(nameLower)) {
+        return profile;
+      }
+    }
+  }
+  return null;
+};
+
 interface ChannelListProps {
   channels: Channel[];
   current: string;
@@ -334,10 +353,11 @@ interface ChannelListProps {
   isAdmin: boolean;
   showArchived: boolean;
   onToggleShowArchived: () => void;
+  profiles: Record<string, Profile>;
 }
 
 const ChannelList: React.FC<ChannelListProps> = ({ 
-  channels, current, onSelect, onCreate, onCreateDM, onDeleteChannel, onRenameChannel, onArchiveChannel, onRestoreChannel, currentUserName, unreadByChannel, isAdmin, showArchived, onToggleShowArchived 
+  channels, current, onSelect, onCreate, onCreateDM, onDeleteChannel, onRenameChannel, onArchiveChannel, onRestoreChannel, currentUserName, unreadByChannel, isAdmin, showArchived, onToggleShowArchived, profiles 
 }) => {
   const [newChannel, setNewChannel] = useState("");
   const [renamingChannel, setRenamingChannel] = useState<{ id: string; name: string } | null>(null);
@@ -527,32 +547,36 @@ const ChannelList: React.FC<ChannelListProps> = ({
           Direct Messages
         </div>
         <ul className="space-y-1">
-          {directChannels.map((ch) => (
-            <li key={ch.id}>
-              <button
-                type="button"
-                onClick={() => onSelect(ch.id)}
-                className={cn(
-                  "w-full text-left px-2 py-1.5 rounded-md flex items-center justify-between",
-                  current === ch.id ? "bg-accent text-accent-foreground font-medium" : "hover:bg-muted"
-                )}
-              >
-                <span className="flex items-center gap-2">
-                  <Avatar className="h-5 w-5">
-                    <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
-                      {ch.participant_name?.slice(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  {ch.participant_name}
-                </span>
-                {unreadByChannel[ch.id] && unreadByChannel[ch.id] > 0 && (
-                  <span className="h-5 min-w-[20px] px-1.5 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center">
-                    {unreadByChannel[ch.id] > 99 ? '99+' : unreadByChannel[ch.id]}
+          {directChannels.map((ch) => {
+            const participantProfile = ch.participant_name ? findProfileByName(profiles, ch.participant_name) : null;
+            return (
+              <li key={ch.id}>
+                <button
+                  type="button"
+                  onClick={() => onSelect(ch.id)}
+                  className={cn(
+                    "w-full text-left px-2 py-1.5 rounded-md flex items-center justify-between",
+                    current === ch.id ? "bg-accent text-accent-foreground font-medium" : "hover:bg-muted"
+                  )}
+                >
+                  <span className="flex items-center gap-2">
+                    <Avatar className="h-5 w-5">
+                      <AvatarImage src={participantProfile?.avatar_url || undefined} alt={ch.participant_name} />
+                      <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                        {ch.participant_name?.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    {ch.participant_name}
                   </span>
-                )}
-              </button>
-            </li>
-          ))}
+                  {unreadByChannel[ch.id] && unreadByChannel[ch.id] > 0 && (
+                    <span className="h-5 min-w-[20px] px-1.5 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center">
+                      {unreadByChannel[ch.id] > 99 ? '99+' : unreadByChannel[ch.id]}
+                    </span>
+                  )}
+                </button>
+              </li>
+            );
+          })}
         </ul>
 
         {/* Add new DM */}
@@ -1192,6 +1216,7 @@ const Chat: React.FC = () => {
               isAdmin={isAdmin}
               showArchived={showArchived}
               onToggleShowArchived={() => setShowArchived(prev => !prev)}
+              profiles={profiles}
             />
           </aside>
           
@@ -1209,14 +1234,20 @@ const Chat: React.FC = () => {
                   <PanelLeftOpen className="h-4 w-4" />
                 </Button>
                 {currentChannel?.channel_type === 'direct' ? (
-                  <>
-                    <Avatar className="h-6 w-6">
-                      <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                        {currentChannel.participant_name?.slice(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <h2 className="font-semibold text-sm sm:text-base truncate">{currentChannel.participant_name}</h2>
-                  </>
+                  (() => {
+                    const headerProfile = currentChannel.participant_name ? findProfileByName(profiles, currentChannel.participant_name) : null;
+                    return (
+                      <>
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage src={headerProfile?.avatar_url || undefined} alt={currentChannel.participant_name} />
+                          <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                            {currentChannel.participant_name?.slice(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <h2 className="font-semibold text-sm sm:text-base truncate">{currentChannel.participant_name}</h2>
+                      </>
+                    );
+                  })()
                 ) : (
                   <>
                     <Hash className="h-4 w-4 text-muted-foreground shrink-0" />
