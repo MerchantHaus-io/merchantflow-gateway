@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { Reply, X, Users, Hash, ListTodo, Wifi, WifiOff, RefreshCw } from "lucide-react";
+import { Reply, X, Users, Hash, ListTodo, Wifi, WifiOff, RefreshCw, Trash2, MoreVertical } from "lucide-react";
 import { TEAM_MEMBERS, EMAIL_TO_USER, TEAM_MEMBER_COLORS } from "@/types/opportunity";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useTasks } from "@/contexts/TasksContext";
@@ -15,6 +15,8 @@ import { cn } from "@/lib/utils";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { useConnectionStatus, useTypingIndicator, validateMessage } from "@/hooks/useChatUtils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useUserRole } from "@/hooks/useUserRole";
 import { AppLayout } from "@/components/AppLayout";
 
 // Generate a consistent color based on a string (name/email)
@@ -249,11 +251,13 @@ interface ChannelListProps {
   onSelect: (id: string) => void;
   onCreate: (name: string) => void;
   onCreateDM: (memberName: string) => void;
+  onDeleteChannel: (id: string, name: string) => void;
   currentUserName: string;
   unreadByChannel: Record<string, number>;
+  isAdmin: boolean;
 }
 
-const ChannelList: React.FC<ChannelListProps> = ({ channels, current, onSelect, onCreate, onCreateDM, currentUserName, unreadByChannel }) => {
+const ChannelList: React.FC<ChannelListProps> = ({ channels, current, onSelect, onCreate, onCreateDM, onDeleteChannel, currentUserName, unreadByChannel, isAdmin }) => {
   const [newChannel, setNewChannel] = useState("");
 
   const handleCreate = () => {
@@ -297,25 +301,50 @@ const ChannelList: React.FC<ChannelListProps> = ({ channels, current, onSelect, 
         </div>
         <ul className="space-y-1">
           {groupChannels.map((ch) => (
-            <li key={ch.id}>
-              <button
-                type="button"
-                onClick={() => onSelect(ch.id)}
+            <li key={ch.id} className="group">
+              <div
                 className={cn(
                   "w-full text-left px-2 py-1.5 rounded-md flex items-center justify-between",
                   current === ch.id ? "bg-accent text-accent-foreground font-medium" : "hover:bg-muted"
                 )}
               >
-                <span className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => onSelect(ch.id)}
+                  className="flex-1 flex items-center gap-1 text-left"
+                >
                   <Hash className="h-3 w-3 text-muted-foreground" />
                   {ch.name}
-                </span>
-                {unreadByChannel[ch.id] && unreadByChannel[ch.id] > 0 && (
-                  <span className="h-5 min-w-[20px] px-1.5 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center">
-                    {unreadByChannel[ch.id] > 99 ? '99+' : unreadByChannel[ch.id]}
-                  </span>
-                )}
-              </button>
+                </button>
+                <div className="flex items-center gap-1">
+                  {unreadByChannel[ch.id] && unreadByChannel[ch.id] > 0 && (
+                    <span className="h-5 min-w-[20px] px-1.5 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center">
+                      {unreadByChannel[ch.id] > 99 ? '99+' : unreadByChannel[ch.id]}
+                    </span>
+                  )}
+                  {isAdmin && ch.name !== 'general' && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="p-1 opacity-0 group-hover:opacity-100 hover:bg-muted rounded transition-opacity">
+                          <MoreVertical className="h-3 w-3 text-muted-foreground" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-32">
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteChannel(ch.id, ch.name);
+                          }}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="h-3 w-3 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
+              </div>
             </li>
           ))}
         </ul>
@@ -393,6 +422,7 @@ const ChannelList: React.FC<ChannelListProps> = ({ channels, current, onSelect, 
 
 const Chat: React.FC = () => {
   const { user, teamMemberName, loading } = useAuth();
+  const { isAdmin } = useUserRole();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [currentChannelId, setCurrentChannelId] = useState<string>("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -678,6 +708,37 @@ const Chat: React.FC = () => {
     }
   };
 
+  // Delete a channel (admin only)
+  const handleDeleteChannel = async (channelId: string, channelName: string) => {
+    if (!confirm(`Are you sure you want to delete the channel "${channelName}"? This will delete all messages in this channel.`)) {
+      return;
+    }
+
+    const { error } = await supabase
+      .from("chat_channels")
+      .delete()
+      .eq("id", channelId);
+
+    if (error) {
+      console.error("Failed to delete channel:", error);
+      toast.error("Failed to delete channel");
+      return;
+    }
+
+    toast.success(`Channel "${channelName}" deleted`);
+    setChannels(prev => prev.filter(ch => ch.id !== channelId));
+    
+    // If we deleted the current channel, switch to another
+    if (currentChannelId === channelId) {
+      const remainingChannels = channels.filter(ch => ch.id !== channelId);
+      if (remainingChannels.length > 0) {
+        setCurrentChannelId(remainingChannels[0].id);
+      } else {
+        setCurrentChannelId("");
+      }
+    }
+  };
+
   const handleSendMessage = async (text: string, replyToId?: string) => {
     // Validate message
     const validation = validateMessage(text);
@@ -868,8 +929,10 @@ const Chat: React.FC = () => {
               onSelect={handleSelectChannel}
               onCreate={handleCreateChannel}
               onCreateDM={handleCreateDM}
+              onDeleteChannel={handleDeleteChannel}
               currentUserName={userName}
               unreadByChannel={unreadByChannel}
+              isAdmin={isAdmin}
             />
           </aside>
           <div className="flex-grow border rounded-md p-4 bg-background flex flex-col min-h-0">

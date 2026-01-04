@@ -141,18 +141,21 @@ export type Database = {
       }
       chat_channels: {
         Row: {
+          archived_at: string | null
           created_at: string
           created_by: string | null
           id: string
           name: string
         }
         Insert: {
+          archived_at?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
           name: string
         }
         Update: {
+          archived_at?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
