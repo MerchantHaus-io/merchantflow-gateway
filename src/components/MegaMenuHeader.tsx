@@ -562,87 +562,93 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[300px] sm:w-[350px] p-0">
+            <SheetContent side="right" className="w-[300px] sm:w-[350px] p-0 bg-background border-l border-border">
               <div className="flex flex-col h-full">
-                <div className="flex items-center justify-between p-4 border-b border-border">
-                  <span className="font-semibold">Menu</span>
+                <div className="flex items-center justify-between p-4 border-b border-border bg-muted/30">
+                  <span className="font-semibold text-foreground">Menu</span>
                   <SheetClose asChild>
-                    <Button variant="ghost" size="icon">
-                      <X className="h-5 w-5" />
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <X className="h-4 w-4" />
                     </Button>
                   </SheetClose>
                 </div>
-                <nav className="flex-1 overflow-auto p-4 space-y-1">
-                  {navMain.map((item) => {
-                    if (item.items) {
+                <nav className="flex-1 overflow-auto py-4 px-2">
+                  <div className="space-y-1">
+                    {navMain.map((item) => {
+                      if (item.items) {
+                        return (
+                          <div key={item.title} className="mb-4">
+                            <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                              <item.icon className="h-4 w-4" />
+                              {item.title}
+                            </div>
+                            <div className="space-y-0.5 mt-1">
+                              {item.items.map((subItem) =>
+                                subItem.external ? (
+                                  <a
+                                    key={subItem.title}
+                                    href={subItem.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg hover:bg-accent/80 text-foreground transition-colors ml-2"
+                                    onClick={() => setMobileOpen(false)}
+                                  >
+                                    <subItem.icon className="h-4 w-4 text-muted-foreground" />
+                                    {subItem.title}
+                                  </a>
+                                ) : (
+                                  <SheetClose key={subItem.title} asChild>
+                                    <RouterNavLink
+                                      to={subItem.url}
+                                      className={({ isActive }) =>
+                                        cn(
+                                          "flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-colors ml-2",
+                                          isActive 
+                                            ? "bg-primary/10 text-primary font-medium" 
+                                            : "hover:bg-accent/80 text-foreground"
+                                        )
+                                      }
+                                    >
+                                      <subItem.icon className="h-4 w-4" />
+                                      {subItem.title}
+                                    </RouterNavLink>
+                                  </SheetClose>
+                                )
+                              )}
+                            </div>
+                          </div>
+                        );
+                      }
+
                       return (
-                        <div key={item.title} className="space-y-1">
-                          <div className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground">
+                        <SheetClose key={item.title} asChild>
+                          <RouterNavLink
+                            to={item.url}
+                            end={item.url === "/"}
+                            className={({ isActive }) =>
+                              cn(
+                                "flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-colors",
+                                isActive 
+                                  ? "bg-primary/10 text-primary font-medium" 
+                                  : "hover:bg-accent/80 text-foreground"
+                              )
+                            }
+                          >
                             <item.icon className="h-4 w-4" />
                             {item.title}
-                          </div>
-                          <div className="pl-6 space-y-1">
-                            {item.items.map((subItem) =>
-                              subItem.external ? (
-                                <a
-                                  key={subItem.title}
-                                  href={subItem.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-accent"
-                                  onClick={() => setMobileOpen(false)}
-                                >
-                                  <subItem.icon className="h-4 w-4" />
-                                  {subItem.title}
-                                </a>
-                              ) : (
-                                <SheetClose key={subItem.title} asChild>
-                                  <RouterNavLink
-                                    to={subItem.url}
-                                    className={({ isActive }) =>
-                                      cn(
-                                        "flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-accent",
-                                        isActive && "bg-accent text-accent-foreground"
-                                      )
-                                    }
-                                  >
-                                    <subItem.icon className="h-4 w-4" />
-                                    {subItem.title}
-                                  </RouterNavLink>
-                                </SheetClose>
-                              )
-                            )}
-                          </div>
-                        </div>
+                          </RouterNavLink>
+                        </SheetClose>
                       );
-                    }
-
-                    return (
-                      <SheetClose key={item.title} asChild>
-                        <RouterNavLink
-                          to={item.url}
-                          end={item.url === "/"}
-                          className={({ isActive }) =>
-                            cn(
-                              "flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-accent",
-                              isActive && "bg-accent text-accent-foreground font-medium"
-                            )
-                          }
-                        >
-                          <item.icon className="h-4 w-4" />
-                          {item.title}
-                        </RouterNavLink>
-                      </SheetClose>
-                    );
-                  })}
+                    })}
+                  </div>
                   
                   {/* Tools section in mobile */}
-                  <div className="space-y-1 pt-4 border-t border-border mt-4">
-                    <div className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-muted-foreground">
+                  <div className="mt-4 pt-4 border-t border-border">
+                    <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       <Wrench className="h-4 w-4" />
                       Tools
                     </div>
-                    <div className="pl-6 space-y-1">
+                    <div className="space-y-0.5 mt-1">
                       {toolsItems.map((tool) =>
                         tool.external ? (
                           <a
@@ -650,10 +656,10 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                             href={tool.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-accent"
+                            className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg hover:bg-accent/80 text-foreground transition-colors ml-2"
                             onClick={() => setMobileOpen(false)}
                           >
-                            <tool.icon className="h-4 w-4" />
+                            <tool.icon className="h-4 w-4 text-muted-foreground" />
                             {tool.title}
                           </a>
                         ) : (
@@ -662,8 +668,10 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                               to={tool.url}
                               className={({ isActive }) =>
                                 cn(
-                                  "flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-accent",
-                                  isActive && "bg-accent text-accent-foreground"
+                                  "flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-colors ml-2",
+                                  isActive 
+                                    ? "bg-primary/10 text-primary font-medium" 
+                                    : "hover:bg-accent/80 text-foreground"
                                 )
                               }
                             >
@@ -676,6 +684,44 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                     </div>
                   </div>
                 </nav>
+                
+                {/* User section at bottom */}
+                <div className="p-4 border-t border-border bg-muted/30">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={avatarUrl || undefined} alt={displayName} />
+                      <AvatarFallback className="text-sm bg-primary/10 text-primary">
+                        {displayName.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm text-foreground truncate">{displayName}</p>
+                      <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <SheetClose asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => navigate("/settings")}
+                      >
+                        <Settings className="h-4 w-4 mr-2" />
+                        Settings
+                      </Button>
+                    </SheetClose>
+                    <Button 
+                      variant="destructive" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={handleLogout}
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Logout
+                    </Button>
+                  </div>
+                </div>
               </div>
             </SheetContent>
           </Sheet>
