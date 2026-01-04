@@ -98,6 +98,20 @@ const CHAT_COLORS = {
   offline: "bg-slate-400",
 };
 
+// Generate a consistent color based on a string (name/email)
+const getAvatarColor = (str: string): string => {
+  const colors = [
+    'bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500', 
+    'bg-purple-500', 'bg-cyan-500', 'bg-orange-500', 'bg-teal-500',
+    'bg-indigo-500', 'bg-pink-500', 'bg-lime-500', 'bg-fuchsia-500'
+  ];
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+};
+
 const FloatingChat: React.FC = () => {
   const { user, teamMemberName } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
@@ -259,10 +273,19 @@ const FloatingChat: React.FC = () => {
     });
     setProfiles(profileMap);
 
-    // Initialize online users with all profiles
+    // Initialize online users with all profiles, deduplicated by email
     const now = new Date();
+    const seenEmails = new Set<string>();
     const users: OnlineUser[] = (data || [])
-      .filter(p => p.id !== user?.id)
+      .filter(p => {
+        // Exclude current user
+        if (p.id === user?.id) return false;
+        // Deduplicate by email
+        const email = p.email?.toLowerCase() || '';
+        if (seenEmails.has(email)) return false;
+        seenEmails.add(email);
+        return true;
+      })
       .map(p => {
         const lastSeen = p.last_seen ? new Date(p.last_seen) : null;
         const isOnline = lastSeen ? (now.getTime() - lastSeen.getTime()) < 120000 : false;
@@ -1265,7 +1288,7 @@ const FloatingChat: React.FC = () => {
                           <div className="relative">
                             <Avatar className="h-11 w-11 border-2 border-slate-200 dark:border-slate-700">
                               <AvatarImage src={u.avatarUrl || undefined} />
-                              <AvatarFallback className="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-medium">
+                              <AvatarFallback className={cn(getAvatarColor(u.email || u.name), "text-white text-sm font-medium")}>
                                 {getInitials(u.name, u.email)}
                               </AvatarFallback>
                             </Avatar>
@@ -1421,7 +1444,7 @@ const FloatingChat: React.FC = () => {
                                     {!isOwn && (
                                       <Avatar className="h-8 w-8 shrink-0 border border-slate-200 dark:border-slate-700">
                                         <AvatarImage src={profile?.avatar_url || undefined} />
-                                        <AvatarFallback className="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs">
+                                        <AvatarFallback className={cn(getAvatarColor(channelMsg.user_email), "text-white text-xs")}>
                                           {getInitials(displayName, channelMsg.user_email)}
                                         </AvatarFallback>
                                       </Avatar>
@@ -1691,7 +1714,7 @@ const FloatingChat: React.FC = () => {
                                     {!isOwn && (
                                       <Avatar className="h-8 w-8 shrink-0 border border-slate-200 dark:border-slate-700">
                                         <AvatarImage src={profile?.avatar_url || undefined} />
-                                        <AvatarFallback className="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs">
+                                        <AvatarFallback className={cn(getAvatarColor(profile?.email || displayName), "text-white text-xs")}>
                                           {getInitials(displayName, profile?.email || "")}
                                         </AvatarFallback>
                                       </Avatar>

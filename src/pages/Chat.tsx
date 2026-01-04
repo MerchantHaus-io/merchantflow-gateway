@@ -17,6 +17,19 @@ import { useConnectionStatus, useTypingIndicator, validateMessage } from "@/hook
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/AppLayout";
 
+// Generate a consistent color based on a string (name/email)
+const getAvatarColor = (str: string): string => {
+  const colors = [
+    'bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500', 
+    'bg-purple-500', 'bg-cyan-500', 'bg-orange-500', 'bg-teal-500',
+    'bg-indigo-500', 'bg-pink-500', 'bg-lime-500', 'bg-fuchsia-500'
+  ];
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+};
 type Message = {
   id: string;
   channel_id: string;
@@ -138,7 +151,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({
                 {!isOwn && (
                   <Avatar className="h-8 w-8 shrink-0">
                     <AvatarImage src={avatarUrl || undefined} alt={displayName} />
-                    <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                    <AvatarFallback className={cn(getAvatarColor(msg.user_email), "text-white text-xs")}>
                       {getInitials(displayName, msg.user_email)}
                     </AvatarFallback>
                   </Avatar>
@@ -172,7 +185,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({
                 {isOwn && (
                   <Avatar className="h-8 w-8 shrink-0">
                     <AvatarImage src={avatarUrl || undefined} alt={displayName} />
-                    <AvatarFallback className="text-xs bg-primary text-primary-foreground">
+                    <AvatarFallback className={cn(getAvatarColor(msg.user_email), "text-white text-xs")}>
                       {getInitials(displayName, msg.user_email)}
                     </AvatarFallback>
                   </Avatar>
