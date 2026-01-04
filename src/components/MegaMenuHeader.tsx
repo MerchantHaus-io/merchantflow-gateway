@@ -590,10 +590,9 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                                     href={subItem.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg hover:bg-accent/80 text-foreground transition-colors ml-2"
+                                    className="block px-3 py-2.5 text-sm rounded-lg hover:bg-accent/80 text-foreground transition-colors ml-6"
                                     onClick={() => setMobileOpen(false)}
                                   >
-                                    <subItem.icon className="h-4 w-4 text-muted-foreground" />
                                     {subItem.title}
                                   </a>
                                 ) : (
@@ -602,14 +601,13 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                                       to={subItem.url}
                                       className={({ isActive }) =>
                                         cn(
-                                          "flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-colors ml-2",
+                                          "block px-3 py-2.5 text-sm rounded-lg transition-colors ml-6",
                                           isActive 
                                             ? "bg-primary/10 text-primary font-medium" 
                                             : "hover:bg-accent/80 text-foreground"
                                         )
                                       }
                                     >
-                                      <subItem.icon className="h-4 w-4" />
                                       {subItem.title}
                                     </RouterNavLink>
                                   </SheetClose>
@@ -656,10 +654,9 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                             href={tool.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg hover:bg-accent/80 text-foreground transition-colors ml-2"
+                            className="block px-3 py-2.5 text-sm rounded-lg hover:bg-accent/80 text-foreground transition-colors ml-6"
                             onClick={() => setMobileOpen(false)}
                           >
-                            <tool.icon className="h-4 w-4 text-muted-foreground" />
                             {tool.title}
                           </a>
                         ) : (
@@ -668,14 +665,13 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                               to={tool.url}
                               className={({ isActive }) =>
                                 cn(
-                                  "flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-colors ml-2",
+                                  "block px-3 py-2.5 text-sm rounded-lg transition-colors ml-6",
                                   isActive 
                                     ? "bg-primary/10 text-primary font-medium" 
                                     : "hover:bg-accent/80 text-foreground"
                                 )
                               }
                             >
-                              <tool.icon className="h-4 w-4" />
                               {tool.title}
                             </RouterNavLink>
                           </SheetClose>
