@@ -266,7 +266,19 @@ const ChannelList: React.FC<ChannelListProps> = ({ channels, current, onSelect, 
 
   // Separate group channels and direct messages
   const groupChannels = channels.filter(ch => ch.channel_type !== 'direct');
-  const directChannels = channels.filter(ch => ch.channel_type === 'direct');
+  
+  // Deduplicate direct channels by participant name (keep most recent)
+  const directChannelsRaw = channels.filter(ch => ch.channel_type === 'direct');
+  const seenParticipants = new Map<string, Channel>();
+  directChannelsRaw.forEach(ch => {
+    const participantKey = ch.participant_name?.toLowerCase() || '';
+    const existing = seenParticipants.get(participantKey);
+    // Keep the most recent channel (by created_at) for each participant
+    if (!existing || new Date(ch.created_at) > new Date(existing.created_at)) {
+      seenParticipants.set(participantKey, ch);
+    }
+  });
+  const directChannels = Array.from(seenParticipants.values());
 
   // Get team members who don't have a DM channel yet
   const existingDMNames = directChannels.map(ch => ch.participant_name?.toLowerCase());
