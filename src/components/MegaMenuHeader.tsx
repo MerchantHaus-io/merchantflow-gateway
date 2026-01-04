@@ -82,7 +82,6 @@ const navMain: NavGroup[] = [
     items: [
       { title: "Pipeline Board", url: "/", icon: LayoutDashboard, description: "View opportunity pipeline" },
       { title: "Tasks", url: "/tasks", icon: ListChecks, description: "Manage your tasks" },
-      { title: "My Tasks", url: "/my-tasks", icon: ClipboardList, description: "Tasks assigned to you" },
       { title: "Team Chat", url: "/chat", icon: MessageCircle, description: "Chat with team members" },
     ],
   },
