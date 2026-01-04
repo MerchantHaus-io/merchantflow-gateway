@@ -56,6 +56,7 @@ type Profile = {
   id: string;
   avatar_url: string | null;
   full_name: string | null;
+  email?: string | null;
 };
 
 type TypingUser = {
@@ -656,12 +657,12 @@ const Chat: React.FC = () => {
 
     setMessages(data || []);
 
-    // Fetch profiles for all unique user_ids
+    // Fetch profiles for any missing user_ids
     const userIds = [...new Set((data || []).map(m => m.user_id))];
     if (userIds.length > 0) {
       const { data: profilesData } = await supabase
         .from("profiles")
-        .select("id, avatar_url, full_name")
+        .select("id, avatar_url, full_name, email")
         .in("id", userIds);
 
       if (profilesData) {
@@ -674,28 +675,28 @@ const Chat: React.FC = () => {
     }
   }, [currentChannelId]);
 
-  // Fetch current user's profile
-  const fetchCurrentUserProfile = useCallback(async () => {
-    if (!user) return;
-    
-    const { data } = await supabase
+  // Fetch all profiles upfront
+  const fetchAllProfiles = useCallback(async () => {
+    const { data: profilesData } = await supabase
       .from("profiles")
-      .select("id, avatar_url, full_name")
-      .eq("id", user.id)
-      .single();
+      .select("id, avatar_url, full_name, email");
 
-    if (data) {
-      setProfiles(prev => ({ ...prev, [data.id]: data }));
+    if (profilesData) {
+      const profileMap: Record<string, Profile> = {};
+      profilesData.forEach(p => {
+        profileMap[p.id] = p;
+      });
+      setProfiles(profileMap);
     }
-  }, [user]);
+  }, []);
 
   // Initial data load
   useEffect(() => {
     if (user) {
-      Promise.all([fetchChannels(), fetchCurrentUserProfile()])
+      Promise.all([fetchChannels(), fetchAllProfiles()])
         .finally(() => setLoadingData(false));
     }
-  }, [user, fetchChannels, fetchCurrentUserProfile]);
+  }, [user, fetchChannels, fetchAllProfiles]);
 
   // Fetch messages when channel changes
   useEffect(() => {
