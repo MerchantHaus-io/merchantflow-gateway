@@ -354,10 +354,11 @@ interface ChannelListProps {
   showArchived: boolean;
   onToggleShowArchived: () => void;
   profiles: Record<string, Profile>;
+  onlineUsers: Set<string>;
 }
 
 const ChannelList: React.FC<ChannelListProps> = ({ 
-  channels, current, onSelect, onCreate, onCreateDM, onDeleteChannel, onRenameChannel, onArchiveChannel, onRestoreChannel, currentUserName, unreadByChannel, isAdmin, showArchived, onToggleShowArchived, profiles 
+  channels, current, onSelect, onCreate, onCreateDM, onDeleteChannel, onRenameChannel, onArchiveChannel, onRestoreChannel, currentUserName, unreadByChannel, isAdmin, showArchived, onToggleShowArchived, profiles, onlineUsers 
 }) => {
   const [newChannel, setNewChannel] = useState("");
   const [renamingChannel, setRenamingChannel] = useState<{ id: string; name: string } | null>(null);
@@ -549,6 +550,7 @@ const ChannelList: React.FC<ChannelListProps> = ({
         <ul className="space-y-1">
           {directChannels.map((ch) => {
             const participantProfile = ch.participant_name ? findProfileByName(profiles, ch.participant_name) : null;
+            const isOnline = participantProfile ? onlineUsers.has(participantProfile.id) : false;
             return (
               <li key={ch.id}>
                 <button
@@ -560,13 +562,23 @@ const ChannelList: React.FC<ChannelListProps> = ({
                   )}
                 >
                   <span className="flex items-center gap-2">
-                    <Avatar className="h-5 w-5">
-                      <AvatarImage src={participantProfile?.avatar_url || undefined} alt={ch.participant_name} />
-                      <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
-                        {ch.participant_name?.slice(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    {ch.participant_name}
+                    <div className="relative">
+                      <Avatar className="h-5 w-5">
+                        <AvatarImage src={participantProfile?.avatar_url || undefined} alt={ch.participant_name} />
+                        <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                          {ch.participant_name?.slice(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      {isOnline && (
+                        <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-background" />
+                      )}
+                    </div>
+                    <span className="flex items-center gap-1.5">
+                      {ch.participant_name}
+                      {isOnline && (
+                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">●</span>
+                      )}
+                    </span>
                   </span>
                   {unreadByChannel[ch.id] && unreadByChannel[ch.id] > 0 && (
                     <span className="h-5 min-w-[20px] px-1.5 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center">
@@ -615,8 +627,10 @@ const Chat: React.FC = () => {
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const [tasksModalOpen, setTasksModalOpen] = useState(false);
   const [mobileChannelListOpen, setMobileChannelListOpen] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const presenceChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const globalPresenceRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const userName = teamMemberName || user?.email?.split("@")[0] || "";
   const { tasks } = useTasks();
@@ -826,6 +840,38 @@ const Chat: React.FC = () => {
       presenceChannelRef.current = null;
     };
   }, [currentChannelId, user, userName]);
+
+  // Global presence tracking for online/offline status
+  useEffect(() => {
+    if (!user) return;
+
+    const globalChannel = supabase.channel("global-chat-presence", {
+      config: { presence: { key: user.id } }
+    });
+
+    globalChannel
+      .on("presence", { event: "sync" }, () => {
+        const state = globalChannel.presenceState();
+        const onlineIds = new Set(Object.keys(state));
+        setOnlineUsers(onlineIds);
+      })
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          await globalChannel.track({
+            name: userName,
+            email: user.email,
+            online_at: new Date().toISOString()
+          });
+        }
+      });
+
+    globalPresenceRef.current = globalChannel;
+
+    return () => {
+      supabase.removeChannel(globalChannel);
+      globalPresenceRef.current = null;
+    };
+  }, [user, userName]);
 
   // Use the improved typing indicator
   const handleTyping = useCallback(() => {
@@ -1217,6 +1263,7 @@ const Chat: React.FC = () => {
               showArchived={showArchived}
               onToggleShowArchived={() => setShowArchived(prev => !prev)}
               profiles={profiles}
+              onlineUsers={onlineUsers}
             />
           </aside>
           
@@ -1236,15 +1283,29 @@ const Chat: React.FC = () => {
                 {currentChannel?.channel_type === 'direct' ? (
                   (() => {
                     const headerProfile = currentChannel.participant_name ? findProfileByName(profiles, currentChannel.participant_name) : null;
+                    const isParticipantOnline = headerProfile ? onlineUsers.has(headerProfile.id) : false;
                     return (
                       <>
-                        <Avatar className="h-6 w-6">
-                          <AvatarImage src={headerProfile?.avatar_url || undefined} alt={currentChannel.participant_name} />
-                          <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                            {currentChannel.participant_name?.slice(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <h2 className="font-semibold text-sm sm:text-base truncate">{currentChannel.participant_name}</h2>
+                        <div className="relative">
+                          <Avatar className="h-6 w-6">
+                            <AvatarImage src={headerProfile?.avatar_url || undefined} alt={currentChannel.participant_name} />
+                            <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                              {currentChannel.participant_name?.slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          {isParticipantOnline && (
+                            <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-background" />
+                          )}
+                        </div>
+                        <div className="flex flex-col">
+                          <h2 className="font-semibold text-sm sm:text-base truncate leading-tight">{currentChannel.participant_name}</h2>
+                          <span className={cn(
+                            "text-[10px] leading-tight",
+                            isParticipantOnline ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"
+                          )}>
+                            {isParticipantOnline ? "Online" : "Offline"}
+                          </span>
+                        </div>
                       </>
                     );
                   })()
