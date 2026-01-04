@@ -17,6 +17,9 @@ interface PipelineColumnProps {
   onAddNew?: () => void;
   hideHeader?: boolean;
   isCompact?: boolean;
+  onTouchDragStart?: (e: React.TouchEvent, opportunity: Opportunity, element: HTMLElement) => void;
+  onTouchDragMove?: (e: React.TouchEvent) => void;
+  onTouchDragEnd?: (e: React.TouchEvent) => void;
 }
 
 const PipelineColumn = ({
@@ -31,6 +34,9 @@ const PipelineColumn = ({
   onAddNew,
   hideHeader = false,
   isCompact = false,
+  onTouchDragStart,
+  onTouchDragMove,
+  onTouchDragEnd,
 }: PipelineColumnProps) => {
   const [collapsedCards, setCollapsedCards] = useState<Set<string>>(new Set());
   const [allCollapsed, setAllCollapsed] = useState(false);
@@ -66,6 +72,7 @@ const PipelineColumn = ({
           ? "rounded-md w-[90px] sm:w-[110px] md:w-[130px] lg:w-[150px] mobile-landscape:w-[140px]" 
           : "rounded-lg w-[100px] sm:w-[130px] md:w-[150px] lg:w-[180px] mobile-landscape:w-[160px]"
       )}
+      data-stage={stage}
       onDragOver={onDragOver}
       onDrop={(e) => onDrop(e, stage)}
     >
@@ -186,6 +193,9 @@ const PipelineColumn = ({
               onSlaStatusChange={onSlaStatusChange}
               isCollapsed={collapsedCards.has(opportunity.id)}
               onToggleCollapse={() => toggleCardCollapse(opportunity.id)}
+              onTouchDragStart={onTouchDragStart}
+              onTouchDragMove={onTouchDragMove}
+              onTouchDragEnd={onTouchDragEnd}
             />
           ))
         )}

@@ -14,6 +14,7 @@ import OpportunityDetailModal from "./OpportunityDetailModal";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useTouchDrag } from "@/hooks/useTouchDrag";
 
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -45,6 +46,9 @@ interface PipelineSectionProps {
   colorAccent: string;
   pipelineType: 'processing' | 'gateway';
   isCompact: boolean;
+  onTouchDragStart?: (e: React.TouchEvent, opportunity: Opportunity, element: HTMLElement) => void;
+  onTouchDragMove?: (e: React.TouchEvent) => void;
+  onTouchDragEnd?: (e: React.TouchEvent) => void;
 }
 
 const PipelineSection = ({
@@ -62,6 +66,9 @@ const PipelineSection = ({
   colorAccent,
   pipelineType,
   isCompact,
+  onTouchDragStart,
+  onTouchDragMove,
+  onTouchDragEnd,
 }: PipelineSectionProps) => {
   const totalCount = opportunities.length;
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -292,6 +299,9 @@ const PipelineSection = ({
                 onAddNew={stage === 'application_started' ? onAddNew : undefined}
                 hideHeader={true}
                 isCompact={isCompact}
+                onTouchDragStart={onTouchDragStart}
+                onTouchDragMove={onTouchDragMove}
+                onTouchDragEnd={onTouchDragEnd}
               />
             ))}
           </div>
@@ -359,6 +369,37 @@ const DualPipelineBoard = ({
   const [isCompact, setIsCompact] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const isMobile = useIsMobile();
+  
+  // Touch drag handling for mobile
+  const handleTouchDrop = useCallback((opportunity: Opportunity, stage: OpportunityStage, pipelineType: 'processing' | 'gateway') => {
+    const targetIsGateway = pipelineType === 'gateway';
+    const sourceIsGateway = getServiceType(opportunity) === 'gateway_only';
+    
+    const updates: Partial<Opportunity> = { stage };
+    
+    if (targetIsGateway !== sourceIsGateway) {
+      if (targetIsGateway) {
+        updates.processing_services = [];
+      } else {
+        updates.processing_services = opportunity.processing_services?.length 
+          ? opportunity.processing_services 
+          : ['Credit Card'];
+      }
+    }
+    
+    if (opportunity.stage !== stage || targetIsGateway !== sourceIsGateway) {
+      onUpdateOpportunity(opportunity.id, updates);
+    }
+  }, [onUpdateOpportunity]);
+
+  const { 
+    handleTouchStart, 
+    handleTouchMove, 
+    handleTouchEnd 
+  } = useTouchDrag({
+    onDrop: handleTouchDrop,
+    enabled: isMobile,
+  });
   
   const handleRefresh = async () => {
     if (!onRefresh || isRefreshing) return;
@@ -506,6 +547,9 @@ const DualPipelineBoard = ({
             colorAccent="bg-primary"
             pipelineType="processing"
             isCompact={isCompact}
+            onTouchDragStart={handleTouchStart}
+            onTouchDragMove={handleTouchMove}
+            onTouchDragEnd={handleTouchEnd}
           />
         </div>
 
@@ -526,6 +570,9 @@ const DualPipelineBoard = ({
             colorAccent="bg-teal"
             pipelineType="gateway"
             isCompact={isCompact}
+            onTouchDragStart={handleTouchStart}
+            onTouchDragMove={handleTouchMove}
+            onTouchDragEnd={handleTouchEnd}
           />
         </div>
       </div>

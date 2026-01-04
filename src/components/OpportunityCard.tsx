@@ -20,6 +20,9 @@ interface OpportunityCardProps {
   onSlaStatusChange?: (opportunityId: string, slaStatus: string | null) => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  onTouchDragStart?: (e: React.TouchEvent, opportunity: Opportunity, element: HTMLElement) => void;
+  onTouchDragMove?: (e: React.TouchEvent) => void;
+  onTouchDragEnd?: (e: React.TouchEvent) => void;
 }
 
 const TEAM_COLORS: Record<string, { border: string; bg: string; text: string }> = {
@@ -47,6 +50,9 @@ const OpportunityCard = ({
   onClick,
   onAssignmentChange,
   isCollapsed = false,
+  onTouchDragStart,
+  onTouchDragMove,
+  onTouchDragEnd,
 }: OpportunityCardProps) => {
   const account = opportunity.account;
   const contact = opportunity.contact;
@@ -157,8 +163,11 @@ const OpportunityCard = ({
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
+  const cardRef = useRef<HTMLDivElement>(null);
+
   return (
     <Card
+      ref={cardRef}
       draggable
       onDragStart={(e) => {
         dragStartPosRef.current = { x: e.clientX, y: e.clientY };
@@ -180,11 +189,18 @@ const OpportunityCard = ({
           isDraggingRef.current = false;
         }, 100);
       }}
+      onTouchStart={(e) => {
+        if (onTouchDragStart && cardRef.current) {
+          onTouchDragStart(e, opportunity, cardRef.current);
+        }
+      }}
+      onTouchMove={onTouchDragMove}
+      onTouchEnd={onTouchDragEnd}
       onClick={() => {
         if (!isDraggingRef.current) onClick();
       }}
       className={cn(
-        'cursor-grab active:cursor-grabbing transition-all duration-200 group',
+        'cursor-grab active:cursor-grabbing transition-all duration-200 group touch-manipulation',
         'bg-card hover:shadow-lg border border-border/50 rounded-md overflow-hidden',
         'border-l-2',
         teamColors.border
