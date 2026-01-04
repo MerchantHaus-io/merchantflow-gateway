@@ -572,81 +572,81 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                     </Button>
                   </SheetClose>
                 </div>
-                <nav className="flex-1 overflow-auto py-4 px-2">
-                  <div className="space-y-1">
-                    {navMain.map((item) => {
-                      if (item.items) {
-                        return (
-                          <div key={item.title} className="mb-4">
-                            <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                              <item.icon className="h-4 w-4" />
-                              {item.title}
-                            </div>
-                            <div className="space-y-0.5 mt-1">
-                              {item.items.map((subItem) =>
-                                subItem.external ? (
-                                  <a
-                                    key={subItem.title}
-                                    href={subItem.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="block px-3 py-2.5 text-sm rounded-lg hover:bg-accent/80 text-foreground transition-colors ml-6"
-                                    onClick={() => setMobileOpen(false)}
-                                  >
-                                    {subItem.title}
-                                  </a>
-                                ) : (
-                                  <SheetClose key={subItem.title} asChild>
-                                    <RouterNavLink
-                                      to={subItem.url}
-                                      className={({ isActive }) =>
-                                        cn(
-                                          "block px-3 py-2.5 text-sm rounded-lg transition-colors ml-6",
-                                          isActive 
-                                            ? "bg-primary/10 text-primary font-medium" 
-                                            : "hover:bg-accent/80 text-foreground"
-                                        )
-                                      }
-                                    >
-                                      {subItem.title}
-                                    </RouterNavLink>
-                                  </SheetClose>
-                                )
-                              )}
-                            </div>
-                          </div>
-                        );
-                      }
-
+                <nav className="flex-1 overflow-auto py-2">
+                  {navMain.map((item) => {
+                    if (item.items) {
                       return (
-                        <SheetClose key={item.title} asChild>
-                          <RouterNavLink
-                            to={item.url}
-                            end={item.url === "/"}
-                            className={({ isActive }) =>
-                              cn(
-                                "flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg transition-colors",
-                                isActive 
-                                  ? "bg-primary/10 text-primary font-medium" 
-                                  : "hover:bg-accent/80 text-foreground"
-                              )
-                            }
-                          >
+                        <div key={item.title} className="mb-1">
+                          <div className="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border/50 bg-muted/20">
                             <item.icon className="h-4 w-4" />
                             {item.title}
-                          </RouterNavLink>
-                        </SheetClose>
+                          </div>
+                          <div className="py-1">
+                            {item.items.map((subItem) =>
+                              subItem.external ? (
+                                <a
+                                  key={subItem.title}
+                                  href={subItem.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent/50 text-foreground transition-colors border-b border-border/30"
+                                  onClick={() => setMobileOpen(false)}
+                                >
+                                  <subItem.icon className="h-4 w-4 text-muted-foreground" />
+                                  {subItem.title}
+                                </a>
+                              ) : (
+                                <SheetClose key={subItem.title} asChild>
+                                  <RouterNavLink
+                                    to={subItem.url}
+                                    className={({ isActive }) =>
+                                      cn(
+                                        "flex items-center gap-3 px-4 py-3 text-sm transition-colors border-b border-border/30",
+                                        isActive 
+                                          ? "bg-primary/10 text-primary font-medium border-l-2 border-l-primary" 
+                                          : "hover:bg-accent/50 text-foreground"
+                                      )
+                                    }
+                                  >
+                                    <subItem.icon className="h-4 w-4 text-muted-foreground" />
+                                    {subItem.title}
+                                  </RouterNavLink>
+                                </SheetClose>
+                              )
+                            )}
+                          </div>
+                        </div>
                       );
-                    })}
-                  </div>
+                    }
+
+                    return (
+                      <SheetClose key={item.title} asChild>
+                        <RouterNavLink
+                          to={item.url}
+                          end={item.url === "/"}
+                          className={({ isActive }) =>
+                            cn(
+                              "flex items-center gap-3 px-4 py-3 text-sm transition-colors border-b border-border/30",
+                              isActive 
+                                ? "bg-primary/10 text-primary font-medium border-l-2 border-l-primary" 
+                                : "hover:bg-accent/50 text-foreground"
+                            )
+                          }
+                        >
+                          <item.icon className="h-4 w-4 text-muted-foreground" />
+                          {item.title}
+                        </RouterNavLink>
+                      </SheetClose>
+                    );
+                  })}
                   
                   {/* Tools section in mobile */}
-                  <div className="mt-4 pt-4 border-t border-border">
-                    <div className="flex items-center gap-2 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <div className="mb-1">
+                    <div className="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b border-border/50 bg-muted/20">
                       <Wrench className="h-4 w-4" />
                       Tools
                     </div>
-                    <div className="space-y-0.5 mt-1">
+                    <div className="py-1">
                       {toolsItems.map((tool) =>
                         tool.external ? (
                           <a
@@ -654,9 +654,10 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                             href={tool.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="block px-3 py-2.5 text-sm rounded-lg hover:bg-accent/80 text-foreground transition-colors ml-6"
+                            className="flex items-center gap-3 px-4 py-3 text-sm hover:bg-accent/50 text-foreground transition-colors border-b border-border/30"
                             onClick={() => setMobileOpen(false)}
                           >
+                            <tool.icon className="h-4 w-4 text-muted-foreground" />
                             {tool.title}
                           </a>
                         ) : (
@@ -665,13 +666,14 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                               to={tool.url}
                               className={({ isActive }) =>
                                 cn(
-                                  "block px-3 py-2.5 text-sm rounded-lg transition-colors ml-6",
+                                  "flex items-center gap-3 px-4 py-3 text-sm transition-colors border-b border-border/30",
                                   isActive 
-                                    ? "bg-primary/10 text-primary font-medium" 
-                                    : "hover:bg-accent/80 text-foreground"
+                                    ? "bg-primary/10 text-primary font-medium border-l-2 border-l-primary" 
+                                    : "hover:bg-accent/50 text-foreground"
                                 )
                               }
                             >
+                              <tool.icon className="h-4 w-4 text-muted-foreground" />
                               {tool.title}
                             </RouterNavLink>
                           </SheetClose>
