@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { Reply, X, Users, Hash, ListTodo, Wifi, WifiOff, RefreshCw, Trash2, MoreVertical, Pencil, Archive, ArchiveRestore, Search } from "lucide-react";
+import { Reply, X, Users, Hash, ListTodo, Wifi, WifiOff, RefreshCw, Trash2, MoreVertical, Pencil, Archive, ArchiveRestore, Search, PanelLeftOpen, ArrowLeft } from "lucide-react";
 import { TEAM_MEMBERS, EMAIL_TO_USER, TEAM_MEMBER_COLORS } from "@/types/opportunity";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useTasks } from "@/contexts/TasksContext";
@@ -589,6 +589,7 @@ const Chat: React.FC = () => {
   const [loadingData, setLoadingData] = useState(true);
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const [tasksModalOpen, setTasksModalOpen] = useState(false);
+  const [mobileChannelListOpen, setMobileChannelListOpen] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const presenceChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
@@ -1033,8 +1034,9 @@ const Chat: React.FC = () => {
 
   return (
     <AppLayout>
-      <div className="flex flex-col h-full p-4 gap-4">
-        <div className="flex items-center justify-between flex-shrink-0">
+      <div className="flex flex-col h-full p-2 sm:p-4 gap-2 sm:gap-4">
+        {/* Desktop header - hidden on mobile */}
+        <div className="hidden sm:flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-4">
             <h1 className="text-2xl font-semibold">Team Chat</h1>
             <span className="text-sm text-muted-foreground">
@@ -1143,12 +1145,41 @@ const Chat: React.FC = () => {
             </Dialog>
           </div>
         </div>
-        <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0">
-          <aside className="lg:w-1/4 border rounded-md p-4 bg-background overflow-y-auto">
+        <div className="flex flex-1 min-h-0 relative">
+          {/* Mobile channel list overlay */}
+          <div 
+            className={cn(
+              "lg:hidden fixed inset-0 z-40 bg-background/80 backdrop-blur-sm transition-opacity",
+              mobileChannelListOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+            )}
+            onClick={() => setMobileChannelListOpen(false)}
+          />
+          
+          {/* Channel sidebar - slide out on mobile */}
+          <aside 
+            className={cn(
+              "absolute lg:relative z-50 lg:z-auto h-full w-[280px] lg:w-1/4 border rounded-md p-4 bg-background overflow-y-auto transition-transform duration-200 lg:translate-x-0 shrink-0",
+              mobileChannelListOpen ? "translate-x-0" : "-translate-x-[calc(100%+1rem)]"
+            )}
+          >
+            <div className="flex items-center justify-between mb-4 lg:hidden">
+              <span className="text-sm font-medium">Channels</span>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8"
+                onClick={() => setMobileChannelListOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
             <ChannelList
               channels={channels}
               current={currentChannelId}
-              onSelect={handleSelectChannel}
+              onSelect={(id) => {
+                handleSelectChannel(id);
+                setMobileChannelListOpen(false);
+              }}
               onCreate={handleCreateChannel}
               onCreateDM={handleCreateDM}
               onDeleteChannel={handleDeleteChannel}
@@ -1162,9 +1193,20 @@ const Chat: React.FC = () => {
               onToggleShowArchived={() => setShowArchived(prev => !prev)}
             />
           </aside>
-          <div className="flex-grow border rounded-md p-4 bg-background flex flex-col min-h-0">
+          
+          {/* Main chat area */}
+          <div className="flex-grow border rounded-md p-2 sm:p-4 bg-background flex flex-col min-h-0 lg:ml-4">
             <div className="flex items-center justify-between gap-2 mb-2 flex-shrink-0">
               <div className="flex items-center gap-2">
+                {/* Mobile channel toggle button */}
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 lg:hidden shrink-0"
+                  onClick={() => setMobileChannelListOpen(true)}
+                >
+                  <PanelLeftOpen className="h-4 w-4" />
+                </Button>
                 {currentChannel?.channel_type === 'direct' ? (
                   <>
                     <Avatar className="h-6 w-6">
@@ -1172,23 +1214,23 @@ const Chat: React.FC = () => {
                         {currentChannel.participant_name?.slice(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <h2 className="font-semibold">{currentChannel.participant_name}</h2>
+                    <h2 className="font-semibold text-sm sm:text-base truncate">{currentChannel.participant_name}</h2>
                   </>
                 ) : (
                   <>
-                    <Hash className="h-4 w-4 text-muted-foreground" />
-                    <h2 className="font-semibold">{getChannelDisplayName()}</h2>
+                    <Hash className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <h2 className="font-semibold text-sm sm:text-base truncate">{getChannelDisplayName()}</h2>
                   </>
                 )}
               </div>
-              <div className="relative">
+              <div className="relative shrink-0">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
                   type="text"
-                  placeholder="Search messages..."
+                  placeholder="Search..."
                   value={messageSearch}
                   onChange={(e) => setMessageSearch(e.target.value)}
-                  className="h-8 w-48 pl-8 text-sm"
+                  className="h-8 w-28 sm:w-48 pl-8 text-sm"
                 />
                 {messageSearch && (
                   <button
