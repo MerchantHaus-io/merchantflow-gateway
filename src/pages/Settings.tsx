@@ -20,12 +20,12 @@ const VARIANT_ICONS: Record<ThemeVariant, React.ReactNode> = {
   'dark-default': <Moon className="h-4 w-4" />,
   'dark-midnight': <Stars className="h-4 w-4" />,
   'dark-forest': <Trees className="h-4 w-4" />,
-  'dark-slate': <Cloudy className="h-4 w-4" />,
+  'dark-charcoal': <Cloudy className="h-4 w-4" />,
   'dark-mono': <Circle className="h-4 w-4" />,
   'light-default': <Sun className="h-4 w-4" />,
   'light-ocean': <Waves className="h-4 w-4" />,
   'light-warm': <Flame className="h-4 w-4" />,
-  'light-slate': <Cloudy className="h-4 w-4" />,
+  'light-silver': <Cloudy className="h-4 w-4" />,
   'light-mono': <Circle className="h-4 w-4" />,
 };
 
