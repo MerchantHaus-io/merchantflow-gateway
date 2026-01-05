@@ -271,12 +271,10 @@ const PipelineSection = ({
         <div
           ref={scrollContainerRef}
           className={cn(
-            "flex-1 overflow-x-auto overflow-y-hidden min-h-0 relative z-10",
-            isMobile && "snap-x snap-mandatory"
+            "flex-1 overflow-x-auto overflow-y-hidden min-h-0 relative z-10"
           )}
           style={{ 
             WebkitOverflowScrolling: 'touch',
-            scrollBehavior: 'smooth',
             touchAction: 'pan-x pan-y'
           }}
         >
