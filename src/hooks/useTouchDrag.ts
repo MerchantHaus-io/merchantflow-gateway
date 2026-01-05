@@ -154,19 +154,25 @@ export function useTouchDrag({ onDrop, enabled = true }: UseTouchDragOptions) {
     const currentX = touch.clientX;
     const currentY = touch.clientY;
 
-    // Cancel long press if moved too much before drag started
+    // Cancel long press if moved too much before drag started (user is swiping)
     if (longPressTimerRef.current && !touchDragState.isDragging) {
       const dx = Math.abs(currentX - touchDragState.startX);
       const dy = Math.abs(currentY - touchDragState.startY);
-      if (dx > 10 || dy > 10) {
+      // Lower threshold so swipe is detected quickly
+      if (dx > 5 || dy > 5) {
         clearTimeout(longPressTimerRef.current);
         longPressTimerRef.current = null;
+        // Don't prevent default - allow native scroll to happen
+        return;
       }
     }
 
+    // If not dragging, allow native scroll behavior
     if (!touchDragState.isDragging) return;
 
+    // Only prevent default when we're actually dragging after long-press
     e.preventDefault();
+    e.stopPropagation();
     
     updateDragClonePosition(currentX, currentY);
 

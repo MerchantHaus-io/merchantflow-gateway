@@ -190,12 +190,23 @@ const OpportunityCard = ({
         }, 100);
       }}
       onTouchStart={(e) => {
+        // Only set up drag handler - don't prevent default to allow swiping
         if (onTouchDragStart && cardRef.current) {
           onTouchDragStart(e, opportunity, cardRef.current);
         }
       }}
-      onTouchMove={onTouchDragMove}
-      onTouchEnd={onTouchDragEnd}
+      onTouchMove={(e) => {
+        // Only handle move if we're actually dragging (long-press was triggered)
+        if (onTouchDragMove) {
+          onTouchDragMove(e);
+        }
+      }}
+      onTouchEnd={(e) => {
+        // Only handle end if we're actually dragging
+        if (onTouchDragEnd) {
+          onTouchDragEnd(e);
+        }
+      }}
       onClick={() => {
         if (!isDraggingRef.current) onClick();
       }}

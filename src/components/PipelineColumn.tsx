@@ -172,7 +172,8 @@ const PipelineColumn = ({
         )} 
         style={{ 
           WebkitOverflowScrolling: 'touch',
-          touchAction: 'pan-y'
+          // Allow both horizontal and vertical touch actions for proper swipe
+          touchAction: 'auto'
         }}
       >
         {opportunities.length === 0 ? (
