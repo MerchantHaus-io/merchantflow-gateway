@@ -271,49 +271,62 @@ All colors MUST be HSL.
     --sidebar-ring: 348 83% 47%;
   }
 
-  /* Dark Mono - Minimalist black & white with hints of color */
+  /* Dark Mono - Pure black & white, no colors, no background image */
   .dark-mono.dark {
-    --background: 0 0% 3%;
-    --foreground: 0 0% 95%;
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
 
-    --card: 0 0% 8%;
-    --card-foreground: 0 0% 95%;
-    --card-glass: 0 0% 8% / 0.9;
+    --card: 0 0% 6%;
+    --card-foreground: 0 0% 100%;
+    --card-glass: 0 0% 6% / 0.95;
 
-    --popover: 0 0% 8%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 0 0% 6%;
+    --popover-foreground: 0 0% 100%;
 
-    --primary: 348 83% 47%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 0%;
 
     --secondary: 0 0% 12%;
-    --secondary-foreground: 0 0% 95%;
+    --secondary-foreground: 0 0% 100%;
+
+    --teal: 0 0% 70%;
+    --teal-foreground: 0 0% 0%;
 
     --muted: 0 0% 10%;
-    --muted-foreground: 0 0% 55%;
+    --muted-foreground: 0 0% 60%;
 
-    --accent: 348 83% 47%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 0 0% 85%;
+    --accent-foreground: 0 0% 0%;
 
-    --destructive: 0 70% 45%;
+    --destructive: 0 0% 35%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 142 60% 40%;
-    --success-foreground: 0 0% 100%;
+    --success: 0 0% 70%;
+    --success-foreground: 0 0% 0%;
 
-    --warning: 38 80% 50%;
-    --warning-foreground: 0 0% 100%;
+    --warning: 0 0% 55%;
+    --warning-foreground: 0 0% 0%;
 
-    --border: 0 0% 18%;
-    --input: 0 0% 18%;
-    --ring: 348 83% 47%;
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 0 0% 50%;
 
-    --sidebar-background: 0 0% 8% / 0.9;
-    --sidebar-primary: 348 83% 47%;
+    /* Team colors - greyscale for mono */
+    --team-wesley: 0 0% 45%;
+    --team-jamie: 0 0% 65%;
+    --team-darryn: 0 0% 55%;
+    --team-taryn: 0 0% 50%;
+    --team-yaseen: 0 0% 40%;
+    --team-sales: 0 0% 60%;
+
+    --sidebar-background: 0 0% 6% / 0.95;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 0 0% 0%;
     --sidebar-accent: 0 0% 12%;
-    --sidebar-accent-foreground: 348 83% 57%;
-    --sidebar-border: 0 0% 20%;
-    --sidebar-ring: 348 83% 47%;
+    --sidebar-accent-foreground: 0 0% 85%;
+    --sidebar-border: 0 0% 22%;
+    --sidebar-ring: 0 0% 50%;
   }
 
   /* Light Theme - Enterprise Professional Style (Salesforce/Microsoft 365 inspired) */
@@ -507,51 +520,62 @@ All colors MUST be HSL.
     --sidebar-ring: 348 83% 47%;
   }
 
-  /* Light Mono - Minimalist black & white with hints of color */
+  /* Light Mono - Pure white & black, no colors */
   .light-mono.light {
-    --background: 0 0% 97%;
-    --foreground: 0 0% 8%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 8%;
-    --card-glass: 0 0% 100% / 0.95;
+    --card: 0 0% 98%;
+    --card-foreground: 0 0% 0%;
+    --card-glass: 0 0% 98% / 0.95;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 8%;
+    --popover: 0 0% 98%;
+    --popover-foreground: 0 0% 0%;
 
-    --primary: 348 83% 47%;
+    --primary: 0 0% 0%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 93%;
-    --secondary-foreground: 0 0% 8%;
+    --secondary: 0 0% 92%;
+    --secondary-foreground: 0 0% 0%;
+
+    --teal: 0 0% 30%;
+    --teal-foreground: 0 0% 100%;
 
     --muted: 0 0% 95%;
-    --muted-foreground: 0 0% 40%;
+    --muted-foreground: 0 0% 45%;
 
-    --accent: 348 83% 47%;
+    --accent: 0 0% 15%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 70% 50%;
+    --destructive: 0 0% 30%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 142 60% 40%;
+    --success: 0 0% 25%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 80% 50%;
-    --warning-foreground: 0 0% 8%;
+    --warning: 0 0% 50%;
+    --warning-foreground: 0 0% 0%;
 
-    --border: 0 0% 85%;
-    --input: 0 0% 85%;
-    --ring: 348 83% 47%;
+    --border: 0 0% 82%;
+    --input: 0 0% 82%;
+    --ring: 0 0% 50%;
 
-    --sidebar-background: 0 0% 100% / 0.95;
-    --sidebar-foreground: 0 0% 8%;
-    --sidebar-primary: 348 83% 47%;
+    /* Team colors - greyscale for mono */
+    --team-wesley: 0 0% 35%;
+    --team-jamie: 0 0% 55%;
+    --team-darryn: 0 0% 45%;
+    --team-taryn: 0 0% 40%;
+    --team-yaseen: 0 0% 30%;
+    --team-sales: 0 0% 50%;
+
+    --sidebar-background: 0 0% 98% / 0.95;
+    --sidebar-foreground: 0 0% 0%;
+    --sidebar-primary: 0 0% 0%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 0 0% 95%;
-    --sidebar-accent-foreground: 348 83% 47%;
-    --sidebar-border: 0 0% 85%;
-    --sidebar-ring: 348 83% 47%;
+    --sidebar-accent-foreground: 0 0% 15%;
+    --sidebar-border: 0 0% 82%;
+    --sidebar-ring: 0 0% 50%;
   }
 }
 
@@ -594,7 +618,7 @@ All colors MUST be HSL.
     @apply uppercase tracking-caps text-xs font-medium;
   }
 
-  /* Dark mode: use background image */
+  /* Dark mode: use background image (except mono) */
   .dark body {
     background-image: url('/src/assets/Background.webp');
     background-size: cover;
@@ -603,9 +627,21 @@ All colors MUST be HSL.
     background-attachment: fixed;
   }
 
+  /* Dark Mono: solid black background, no image */
+  .dark-mono.dark body {
+    background-color: hsl(0 0% 0%);
+    background-image: none;
+  }
+
   /* Light mode: solid background color (no image) */
   .light body {
     background-color: hsl(220 14% 96%);
+    background-image: none;
+  }
+
+  /* Light Mono: pure white background */
+  .light-mono.light body {
+    background-color: hsl(0 0% 100%);
     background-image: none;
   }
 }
