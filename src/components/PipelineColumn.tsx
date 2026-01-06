@@ -98,7 +98,7 @@ const PipelineColumn = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                  className="h-6 w-6 bg-primary hover:bg-primary/90 text-white"
                   onClick={onAddNew}
                 >
                   <Plus className="h-4 w-4" />
@@ -135,7 +135,7 @@ const PipelineColumn = ({
               variant="ghost"
               size="icon"
               className={cn(
-                "text-muted-foreground hover:text-foreground",
+                "bg-primary hover:bg-primary/90 text-white",
                 isCompact ? "h-4 w-4" : "h-5 w-5"
               )}
               onClick={onAddNew}

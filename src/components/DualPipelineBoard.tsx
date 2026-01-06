@@ -173,17 +173,19 @@ const PipelineSection = ({
           <span className="hidden sm:block mobile-landscape:hidden">{icon}</span>
           <span
             className={cn(
-              "text-white font-semibold whitespace-nowrap tracking-wide",
-              isCompact ? "text-[8px] sm:text-[10px]" : "text-[10px] sm:text-xs",
-              "mobile-landscape:text-[7px]"
+              "font-bold whitespace-nowrap tracking-wide drop-shadow-sm",
+              // Force white text with black stroke for legibility in all themes
+              "text-white [text-shadow:_0_1px_2px_rgb(0_0_0_/_60%),_0_0_1px_rgb(0_0_0_/_80%)]",
+              isCompact ? "text-[9px] sm:text-[11px]" : "text-[11px] sm:text-sm",
+              "mobile-landscape:text-[8px]"
             )}
             style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
           >
             {title}
           </span>
           <span className={cn(
-            "text-white/90 font-medium bg-white/20 rounded-full",
-            isCompact ? "text-[8px] px-0.5 py-0" : "text-[10px] sm:text-xs px-1 py-0.5",
+            "text-white font-semibold bg-black/40 rounded-full",
+            isCompact ? "text-[8px] px-1 py-0" : "text-[10px] sm:text-xs px-1.5 py-0.5",
             "mobile-landscape:text-[8px] mobile-landscape:px-0.5"
           )}>
             {totalCount}
