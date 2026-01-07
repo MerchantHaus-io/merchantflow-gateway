@@ -9,6 +9,7 @@ interface TasksContextValue {
   addTask: (input: TaskInput) => Promise<Task>;
   updateTask: (taskId: string, update: Partial<Task>) => void;
   updateTaskStatus: (taskId: string, status: Task["status"]) => void;
+  deleteTask: (taskId: string) => Promise<void>;
   ensureSlaTask: (input: TaskInput & { relatedOpportunityId: string }) => Promise<Task | undefined>;
   getTasksForOpportunity: (opportunityId: string) => Task[];
   refreshTasks: () => Promise<void>;
@@ -247,6 +248,41 @@ export const TasksProvider = ({ children }: { children: React.ReactNode }) => {
     [updateTask],
   );
 
+  const deleteTask = useCallback(async (taskId: string) => {
+    // Get task before deletion for activity logging
+    const taskToDelete = tasks.find(t => t.id === taskId);
+    
+    // Optimistically remove from state
+    setTasks((prev) => prev.filter((t) => t.id !== taskId));
+
+    try {
+      const { error } = await supabase
+        .from("tasks")
+        .delete()
+        .eq("id", taskId);
+
+      if (error) throw error;
+
+      // Log activity if task was related to an opportunity
+      if (taskToDelete?.relatedOpportunityId) {
+        await supabase.from('activities').insert({
+          opportunity_id: taskToDelete.relatedOpportunityId,
+          type: 'task_deleted',
+          description: `Task deleted: ${taskToDelete.title}`,
+          user_id: user?.id,
+          user_email: user?.email,
+        });
+      }
+
+      toast.success('Task deleted');
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      toast.error('Failed to delete task');
+      // Refresh to restore actual state
+      refreshTasks();
+    }
+  }, [refreshTasks, tasks, user]);
+
   const ensureSlaTask = useCallback(
     async (input: TaskInput & { relatedOpportunityId: string }) => {
       const alreadyExists = tasks.some(
@@ -268,8 +304,8 @@ export const TasksProvider = ({ children }: { children: React.ReactNode }) => {
   );
 
   const value = useMemo(
-    () => ({ tasks, addTask, updateTaskStatus, ensureSlaTask, getTasksForOpportunity, updateTask, refreshTasks }),
-    [addTask, ensureSlaTask, getTasksForOpportunity, refreshTasks, tasks, updateTask, updateTaskStatus],
+    () => ({ tasks, addTask, updateTaskStatus, deleteTask, ensureSlaTask, getTasksForOpportunity, updateTask, refreshTasks }),
+    [addTask, deleteTask, ensureSlaTask, getTasksForOpportunity, refreshTasks, tasks, updateTask, updateTaskStatus],
   );
 
   return <TasksContext.Provider value={value}>{children}</TasksContext.Provider>;

@@ -11,9 +11,21 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTasks } from "@/contexts/TasksContext";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Task } from "@/types/task";
 import { cn } from "@/lib/utils";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface LightweightOpportunity {
   id: string;
@@ -43,8 +55,9 @@ const teamOptions = ["Unassigned", "Onboarding", "Operations", "Support"];
 
 const MyTasks = () => {
   const { user } = useAuth();
+  const { isAdmin } = useUserRole();
   const displayName = user?.email?.split("@")[0] || "Me";
-  const { tasks, addTask, updateTaskStatus } = useTasks();
+  const { tasks, addTask, updateTaskStatus, deleteTask } = useTasks();
   const [title, setTitle] = useState("");
   const [assignee, setAssignee] = useState<string>(displayName);
   const [comments, setComments] = useState("");
@@ -143,18 +156,46 @@ const MyTasks = () => {
                           {task.relatedContactId && <Badge variant="secondary">Contact: {task.relatedContactId}</Badge>}
                         </div>
                       </div>
-                      <Select value={task.status} onValueChange={(value) => updateTaskStatus(task.id, value as Task["status"])}>
-                        <SelectTrigger className="w-full md:w-[160px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(statusCopy).map(([value, label]) => (
-                            <SelectItem key={value} value={value}>
-                              {label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex items-center gap-2">
+                        <Select value={task.status} onValueChange={(value) => updateTaskStatus(task.id, value as Task["status"])}>
+                          <SelectTrigger className="w-full md:w-[160px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(statusCopy).map(([value, label]) => (
+                              <SelectItem key={value} value={value}>
+                                {label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {isAdmin && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-destructive">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Task</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete "{task.title}"? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteTask(task.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </CardContent>
