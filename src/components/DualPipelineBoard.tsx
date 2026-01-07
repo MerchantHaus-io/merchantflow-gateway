@@ -160,33 +160,36 @@ const PipelineSection = ({
     )}>
       {/* Vertical Title Sidebar */}
       <div className={cn(
-        "flex flex-col items-center justify-center flex-shrink-0 border-r border-border/40",
-        isCompact ? "w-6 sm:w-8 lg:w-10" : "w-8 sm:w-10 lg:w-12",
-        "mobile-landscape:w-5",
+        "flex flex-col items-center justify-center flex-shrink-0",
+        // Dark grey background with white border for mono theme support
+        "bg-zinc-800 border-r border-white/20",
+        isCompact ? "w-7 sm:w-9 lg:w-11" : "w-9 sm:w-11 lg:w-14",
+        "mobile-landscape:w-6",
         colorAccent
       )}>
         <div className={cn(
           "flex flex-col items-center py-2 sm:py-4 mobile-landscape:py-1",
-          isCompact ? "gap-0.5" : "gap-1",
+          isCompact ? "gap-1" : "gap-1.5",
           "mobile-landscape:gap-0.5"
         )}>
-          <span className="hidden sm:block mobile-landscape:hidden">{icon}</span>
+          <span className="hidden sm:block mobile-landscape:hidden text-white">{icon}</span>
           <span
             className={cn(
-              "font-bold whitespace-nowrap tracking-wide drop-shadow-sm",
-              // Force white text with black stroke for legibility in all themes
-              "text-white [text-shadow:_0_1px_2px_rgb(0_0_0_/_60%),_0_0_1px_rgb(0_0_0_/_80%)]",
-              isCompact ? "text-[9px] sm:text-[11px]" : "text-[11px] sm:text-sm",
-              "mobile-landscape:text-[8px]"
+              "font-bold whitespace-nowrap tracking-wide",
+              // White text for dark background
+              "text-white",
+              // Increased font sizes for better mobile readability
+              isCompact ? "text-[11px] sm:text-[13px]" : "text-[13px] sm:text-base",
+              "mobile-landscape:text-[10px]"
             )}
             style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
           >
             {title}
           </span>
           <span className={cn(
-            "text-white font-semibold bg-black/40 rounded-full",
-            isCompact ? "text-[8px] px-1 py-0" : "text-[10px] sm:text-xs px-1.5 py-0.5",
-            "mobile-landscape:text-[8px] mobile-landscape:px-0.5"
+            "text-white font-semibold bg-white/20 border border-white/40 rounded-full",
+            isCompact ? "text-[9px] px-1.5 py-0.5" : "text-[11px] sm:text-xs px-2 py-0.5",
+            "mobile-landscape:text-[9px] mobile-landscape:px-1"
           )}>
             {totalCount}
           </span>
