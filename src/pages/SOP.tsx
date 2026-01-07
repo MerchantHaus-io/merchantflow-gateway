@@ -484,6 +484,26 @@ Sales Support`,
                             <ExternalLink className="w-3 h-3" /> NMI Interchange+ Microsite
                           </a>
                         </li>
+                        <li>
+                          <a
+                            href="https://drive.google.com/file/d/1vl9oY_DjiiGaPLXgwBThCWKb2k_P45aH/view?usp=drive_link"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:underline flex items-center gap-1"
+                          >
+                            <ExternalLink className="w-3 h-3" /> Recommended Pricing Doc
+                          </a>
+                        </li>
+                        <li>
+                          <a
+                            href="https://drive.google.com/file/d/1vl9oY_DjiiGaPLXgwBThCWKb2k_P45aH/view?usp=drive_link"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:underline flex items-center gap-1"
+                          >
+                            <ExternalLink className="w-3 h-3" /> Current NMI Contract
+                          </a>
+                        </li>
                       </ul>
                     </div>
                   </div>
