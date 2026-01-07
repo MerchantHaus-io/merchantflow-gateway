@@ -7,12 +7,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Clock, AlertTriangle, User, CalendarDays } from "lucide-react";
+import { Plus, Clock, AlertTriangle, User, CalendarDays, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, isPast, isToday, addDays } from "date-fns";
 import { useTasks } from "@/contexts/TasksContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserRole } from "@/hooks/useUserRole";
 import { TEAM_MEMBERS } from "@/types/opportunity";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface OpportunityTasksProps {
   opportunityId: string;
@@ -21,7 +33,8 @@ interface OpportunityTasksProps {
 
 export const OpportunityTasks = ({ opportunityId, tasks }: OpportunityTasksProps) => {
   const { user } = useAuth();
-  const { addTask, updateTaskStatus } = useTasks();
+  const { isAdmin } = useUserRole();
+  const { addTask, updateTaskStatus, deleteTask } = useTasks();
   const [isAdding, setIsAdding] = useState(false);
   const [newTask, setNewTask] = useState({
     title: "",
@@ -235,6 +248,32 @@ export const OpportunityTasks = ({ opportunityId, tasks }: OpportunityTasksProps
                     )}
                   </div>
                 </div>
+                {isAdmin && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive flex-shrink-0">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Task</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete "{task.title}"? This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => deleteTask(task.id)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
               </div>
             );
           })}

@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTasks } from "@/contexts/TasksContext";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/contexts/AuthContext";
 import { Task, TaskPriority } from "@/types/task";
 import { EMAIL_TO_USER, TEAM_MEMBERS } from "@/types/opportunity";
@@ -35,7 +36,19 @@ import {
   Minus,
   AlertTriangle,
   Bell,
+  Trash2,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   Bar,
   BarChart,
@@ -92,8 +105,9 @@ type PriorityFilter = 'all' | TaskPriority;
 
 const Tasks = () => {
   const { user } = useAuth();
+  const { isAdmin } = useUserRole();
   const displayName = EMAIL_TO_USER[user?.email?.toLowerCase() || ""] || user?.email || "Me";
-  const { tasks, addTask, updateTaskStatus, refreshTasks } = useTasks();
+  const { tasks, addTask, updateTaskStatus, deleteTask, refreshTasks } = useTasks();
 
   // Local loading state
   const [loading, setLoading] = useState(true);
@@ -699,6 +713,7 @@ const Tasks = () => {
                           <SortableTableHead field="assignee" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Assignee</SortableTableHead>
                           <SortableTableHead field="status" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Status</SortableTableHead>
                           <SortableTableHead field="dueAt" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Due</SortableTableHead>
+                          {isAdmin && <TableHead className="w-12"></TableHead>}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -799,12 +814,40 @@ const Tasks = () => {
                                 {getDueDateLabel(task.dueAt, task.status)}
                               </div>
                             </TableCell>
+                            {isAdmin && (
+                              <TableCell>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete Task</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to delete "{task.title}"? This action cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => deleteTask(task.id)}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      >
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </TableCell>
+                            )}
                           </TableRow>
                           );
                         })}
                         {filteredTasks.length === 0 && (
                           <TableRow>
-                            <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                            <TableCell colSpan={isAdmin ? 8 : 7} className="h-24 text-center text-muted-foreground">
                               No tasks found.
                             </TableCell>
                           </TableRow>
