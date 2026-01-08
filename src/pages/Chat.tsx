@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { Reply, X, Users, Hash, ListTodo, Wifi, WifiOff, RefreshCw, Trash2, MoreVertical, Pencil, Archive, ArchiveRestore, Search, PanelLeftOpen, ArrowLeft } from "lucide-react";
+import { Reply, X, Users, Hash, ListTodo, Wifi, WifiOff, RefreshCw, Trash2, MoreVertical, Pencil, Archive, ArchiveRestore, Search, PanelLeftOpen, ArrowLeft, Clock } from "lucide-react";
 import { TEAM_MEMBERS, EMAIL_TO_USER, TEAM_MEMBER_COLORS } from "@/types/opportunity";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useTasks } from "@/contexts/TasksContext";
@@ -31,6 +31,26 @@ const getAvatarColor = (str: string): string => {
     hash = str.charCodeAt(i) + ((hash << 5) - hash);
   }
   return colors[Math.abs(hash) % colors.length];
+};
+
+// Format last seen time
+const formatLastSeen = (lastSeen: string | null | undefined): string => {
+  if (!lastSeen) return 'Never';
+  
+  const now = new Date();
+  const lastSeenDate = new Date(lastSeen);
+  const diffMs = now.getTime() - lastSeenDate.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  
+  if (diffMins < 2) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays}d ago`;
+  
+  return lastSeenDate.toLocaleDateString();
 };
 type Message = {
   id: string;
@@ -57,6 +77,7 @@ type Profile = {
   avatar_url: string | null;
   full_name: string | null;
   email?: string | null;
+  last_seen?: string | null;
 };
 
 type TypingUser = {
@@ -551,41 +572,57 @@ const ChannelList: React.FC<ChannelListProps> = ({
           {directChannels.map((ch) => {
             const participantProfile = ch.participant_name ? findProfileByName(profiles, ch.participant_name) : null;
             const isOnline = participantProfile ? onlineUsers.has(participantProfile.id) : false;
+            const lastSeenText = !isOnline && participantProfile?.last_seen ? formatLastSeen(participantProfile.last_seen) : null;
             return (
               <li key={ch.id}>
-                <button
-                  type="button"
-                  onClick={() => onSelect(ch.id)}
-                  className={cn(
-                    "w-full text-left px-2 py-1.5 rounded-md flex items-center justify-between",
-                    current === ch.id ? "bg-accent text-accent-foreground font-medium" : "hover:bg-muted"
-                  )}
-                >
-                  <span className="flex items-center gap-2">
-                    <div className="relative">
-                      <Avatar className="h-5 w-5">
-                        <AvatarImage src={participantProfile?.avatar_url || undefined} alt={ch.participant_name} />
-                        <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
-                          {ch.participant_name?.slice(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      {isOnline && (
-                        <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-background" />
-                      )}
-                    </div>
-                    <span className="flex items-center gap-1.5">
-                      {ch.participant_name}
-                      {isOnline && (
-                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">●</span>
-                      )}
-                    </span>
-                  </span>
-                  {unreadByChannel[ch.id] && unreadByChannel[ch.id] > 0 && (
-                    <span className="h-5 min-w-[20px] px-1.5 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center">
-                      {unreadByChannel[ch.id] > 99 ? '99+' : unreadByChannel[ch.id]}
-                    </span>
-                  )}
-                </button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        onClick={() => onSelect(ch.id)}
+                        className={cn(
+                          "w-full text-left px-2 py-1.5 rounded-md flex items-center justify-between",
+                          current === ch.id ? "bg-accent text-accent-foreground font-medium" : "hover:bg-muted"
+                        )}
+                      >
+                        <span className="flex items-center gap-2">
+                          <div className="relative">
+                            <Avatar className="h-5 w-5">
+                              <AvatarImage src={participantProfile?.avatar_url || undefined} alt={ch.participant_name} />
+                              <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                                {ch.participant_name?.slice(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className={cn(
+                              "absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-background",
+                              isOnline ? "bg-emerald-500" : "bg-gray-400"
+                            )} />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="flex items-center gap-1.5 text-sm">
+                              {ch.participant_name}
+                            </span>
+                            {!isOnline && lastSeenText && (
+                              <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                                <Clock className="h-2.5 w-2.5" />
+                                {lastSeenText}
+                              </span>
+                            )}
+                          </div>
+                        </span>
+                        {unreadByChannel[ch.id] && unreadByChannel[ch.id] > 0 && (
+                          <span className="h-5 min-w-[20px] px-1.5 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center">
+                            {unreadByChannel[ch.id] > 99 ? '99+' : unreadByChannel[ch.id]}
+                          </span>
+                        )}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      {isOnline ? 'Online now' : lastSeenText ? `Last seen: ${lastSeenText}` : 'Offline'}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </li>
             );
           })}
@@ -700,7 +737,7 @@ const Chat: React.FC = () => {
     if (userIds.length > 0) {
       const { data: profilesData } = await supabase
         .from("profiles")
-        .select("id, avatar_url, full_name, email")
+        .select("id, avatar_url, full_name, email, last_seen")
         .in("id", userIds);
 
       if (profilesData) {
@@ -717,7 +754,7 @@ const Chat: React.FC = () => {
   const fetchAllProfiles = useCallback(async () => {
     const { data: profilesData } = await supabase
       .from("profiles")
-      .select("id, avatar_url, full_name, email");
+      .select("id, avatar_url, full_name, email, last_seen");
 
     if (profilesData) {
       const profileMap: Record<string, Profile> = {};
@@ -728,13 +765,27 @@ const Chat: React.FC = () => {
     }
   }, []);
 
+  // Update current user's last_seen
+  const updateLastSeen = useCallback(async () => {
+    if (!user) return;
+    await supabase
+      .from("profiles")
+      .update({ last_seen: new Date().toISOString() })
+      .eq("id", user.id);
+  }, [user]);
+
   // Initial data load
   useEffect(() => {
     if (user) {
       Promise.all([fetchChannels(), fetchAllProfiles()])
         .finally(() => setLoadingData(false));
+      
+      // Update last_seen on load and periodically
+      updateLastSeen();
+      const interval = setInterval(updateLastSeen, 60000); // Every minute
+      return () => clearInterval(interval);
     }
-  }, [user, fetchChannels, fetchAllProfiles]);
+  }, [user, fetchChannels, fetchAllProfiles, updateLastSeen]);
 
   // Fetch messages when channel changes
   useEffect(() => {
@@ -764,7 +815,7 @@ const Chat: React.FC = () => {
           if (!profiles[newMsg.user_id]) {
             const { data: profileData } = await supabase
               .from("profiles")
-              .select("id, avatar_url, full_name")
+              .select("id, avatar_url, full_name, last_seen")
               .eq("id", newMsg.user_id)
               .single();
 
