@@ -11,9 +11,10 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Shield, RefreshCw, LogOut, Camera, User, Loader2, Save, Bell, Palette, Sun, Moon, Trees, Waves, Flame, Stars, MessageCircle, Volume2, Download, FileArchive, Users, Cloudy, Circle } from "lucide-react";
+import { Shield, RefreshCw, LogOut, Camera, User, Loader2, Save, Bell, Palette, Sun, Moon, Trees, Waves, Flame, Stars, MessageCircle, Volume2, Download, FileArchive, Users, Cloudy, Circle, Smartphone } from "lucide-react";
 import JSZip from "jszip";
 import { Switch } from "@/components/ui/switch";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 // Theme variant icons mapping
 const VARIANT_ICONS: Record<ThemeVariant, React.ReactNode> = {
@@ -32,6 +33,7 @@ const VARIANT_ICONS: Record<ThemeVariant, React.ReactNode> = {
 const Settings = () => {
   const { user, teamMemberName } = useAuth();
   const { variant, setVariant } = useTheme();
+  const { isSupported: pushSupported, isSubscribed: pushSubscribed, isLoading: pushLoading, toggleSubscription: togglePush } = usePushNotifications();
   const isAdmin = user?.email === "admin@merchanthaus.io" || user?.email === "darryn@merchanthaus.io";
   const [isResetting, setIsResetting] = useState(false);
   const [isSigningOutAll, setIsSigningOutAll] = useState(false);
@@ -460,6 +462,25 @@ const Settings = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Push Notifications */}
+                  {pushSupported && (
+                    <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-muted/30">
+                      <div className="flex items-center gap-3">
+                        <Smartphone className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <h3 className="font-medium">Push Notifications</h3>
+                          <p className="text-sm text-muted-foreground">
+                            Get alerts on your phone/device when new messages arrive
+                          </p>
+                        </div>
+                      </div>
+                      <Switch 
+                        checked={pushSubscribed} 
+                        onCheckedChange={() => togglePush()}
+                        disabled={pushLoading}
+                      />
+                    </div>
+                  )}
                   <div className="flex items-center justify-between p-4 border border-border rounded-lg">
                     <div>
                       <h3 className="font-medium">Browser Notifications</h3>
@@ -494,7 +515,7 @@ const Settings = () => {
                     />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Chat notifications require browser permission. You may need to allow notifications in your browser settings.
+                    Push notifications require browser permission. Enable push notifications to get alerts even when the app is closed.
                   </p>
                 </CardContent>
               </Card>
