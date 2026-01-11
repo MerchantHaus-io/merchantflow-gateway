@@ -592,12 +592,24 @@ const FloatingChat: React.FC = () => {
               (newMsg.sender_id === currentDMUserId && newMsg.receiver_id === user.id);
             
             if (isPartOfConversation) {
-              // Play sound for incoming message from other user
-              if (payload.eventType === 'INSERT' && newMsg.sender_id !== user.id) {
-                playMessageSound();
+              // Handle INSERT - new message
+              if (payload.eventType === 'INSERT') {
+                // Play sound for incoming message from other user
+                if (newMsg.sender_id !== user.id) {
+                  playMessageSound();
+                }
+                fetchDirectMessages();
+                return;
               }
-              fetchDirectMessages();
-              return;
+              
+              // Handle UPDATE - includes read receipts
+              if (payload.eventType === 'UPDATE') {
+                // Update the message in local state for real-time read receipts
+                setDirectMessages(prev => prev.map(msg => 
+                  msg.id === newMsg.id ? { ...msg, ...newMsg } : msg
+                ));
+                return;
+              }
             }
           }
           
@@ -610,6 +622,14 @@ const FloatingChat: React.FC = () => {
                 : u
             ));
             setUnreadCount(prev => prev + 1);
+          }
+          
+          // Handle UPDATE for messages we sent (read receipt notifications)
+          if (payload.eventType === 'UPDATE' && newMsg.sender_id === user.id && newMsg.read_at) {
+            // Update our sent messages with read receipt in real-time
+            setDirectMessages(prev => prev.map(msg => 
+              msg.id === newMsg.id ? { ...msg, read_at: newMsg.read_at } : msg
+            ));
           }
         }
       )
