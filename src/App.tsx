@@ -32,6 +32,7 @@ import Opportunities from "./pages/Opportunities";
 import OpportunityDetail from "./pages/OpportunityDetail";
 import Chat from "./pages/Chat";
 import NMIPaymentsExplained from "./pages/NMIPaymentsExplained";
+import WebSubmissions from "./pages/WebSubmissions";
 
 const queryClient = new QueryClient();
 
@@ -67,10 +68,13 @@ const App = () => (
                 <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
                 <Route path="/admin/deletion-requests" element={<ProtectedRoute><DeletionRequests /></ProtectedRoute>} />
                 <Route path="/admin/data-export" element={<ProtectedRoute><DataExport /></ProtectedRoute>} />
+                
+                {/* ADMIN ROUTE */}
+                <Route path="/admin/web-submissions" element={<ProtectedRoute><WebSubmissions /></ProtectedRoute>} />
+                
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
                 <Route path="/tools/nmi-payments" element={<ProtectedRoute><NMIPaymentsExplained /></ProtectedRoute>} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </TasksProvider>
