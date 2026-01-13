@@ -58,6 +58,27 @@ const Apply = () => {
       status: 'pending' as const,
     };
 
+    // Submit to Netlify Forms
+    const netlifyFormData = new URLSearchParams();
+    netlifyFormData.append('form-name', 'apply');
+    netlifyFormData.append('full_name', applicationData.full_name);
+    netlifyFormData.append('email', applicationData.email);
+    netlifyFormData.append('phone', applicationData.phone || '');
+    netlifyFormData.append('company_name', applicationData.company_name || '');
+    netlifyFormData.append('business_type', applicationData.business_type || '');
+    netlifyFormData.append('monthly_volume', applicationData.monthly_volume || '');
+    netlifyFormData.append('message', applicationData.message || '');
+
+    try {
+      await fetch('/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: netlifyFormData.toString(),
+      });
+    } catch (netlifyError) {
+      console.warn('Netlify Forms submission failed (non-blocking):', netlifyError);
+    }
+
     // Insert directly into Supabase 'applications' table
     const { error } = await supabase
       .from('applications')
@@ -135,7 +156,22 @@ const Apply = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form
+            name="apply"
+            method="POST"
+            data-netlify="true"
+            data-netlify-honeypot="bot-field"
+            onSubmit={handleSubmit}
+            className="space-y-4"
+          >
+            {/* Hidden form-name field for Netlify */}
+            <input type="hidden" name="form-name" value="apply" />
+            {/* Honeypot field for spam protection */}
+            <p className="hidden">
+              <label>
+                Don't fill this out if you're human: <input name="bot-field" />
+              </label>
+            </p>
             {/* Error Message */}
             {formStatus === 'error' && errorMessage && (
               <div className="p-3 rounded-md bg-destructive/10 border border-destructive/20 text-destructive text-sm">
