@@ -28,6 +28,7 @@ import {
   MessageCircle,
   Bell,
   ExternalLink,
+  CreditCard,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -105,6 +106,7 @@ const toolsItems: NavItem[] = [
   { title: "Revenue Calculator", url: "/tools/revenue-calculator", icon: Calculator, description: "Estimate processing revenue" },
   { title: "CSV Import", url: "/tools/csv-import", icon: FileSpreadsheet, description: "Bulk import data" },
   { title: "Data Export", url: "/admin/data-export", icon: Download, description: "Export opportunity data" },
+  { title: "NMI Payments", url: "/tools/nmi-payments", icon: CreditCard, description: "Learn about NMI Payments platform" },
   { title: "NMI Status", url: "https://statusgator.com/services/nmi", icon: Activity, description: "System status page", external: true },
 ];
 
