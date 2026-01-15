@@ -19,10 +19,11 @@ import type { PublicMerchantApplication } from "@/types/application";
 /**
  * WebSubmissions page fetches merchant application submissions from Supabase
  * and provides simple actions to archive or convert an application.  In
- * addition to the initial fetch, it now subscribes to real‑time changes
+ * addition to the initial fetch, it subscribes to real‑time changes
  * on the `merchant_applications` table so the list stays up to date
- * without requiring manual refreshes.  A dedicated realtime channel is
- * established on mount and removed on unmount.
+ * without requiring manual refreshes.  Three dedicated realtime channels
+ * (INSERT, UPDATE, DELETE) are established on mount and removed on unmount,
+ * each logging the payload to the console for debugging purposes.
  */
 export default function WebSubmissions() {
   const [apps, setApps] = useState<PublicMerchantApplication[]>([]);
@@ -32,20 +33,51 @@ export default function WebSubmissions() {
   // Fetch applications on mount
   useEffect(() => {
     fetchApplications();
-    // Subscribe to realtime updates on the merchant_applications table
-    const channel = supabase
-      .channel("merchant-applications-updates")
+
+    // Subscribe to realtime INSERT events on the merchant_applications table
+    const insertChannel = supabase
+      .channel("custom-insert-channel")
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "merchant_applications" },
-        () => {
-          // Refresh list whenever an insert/update/delete occurs
+        { event: "INSERT", schema: "public", table: "merchant_applications" },
+        (payload) => {
+          console.log("INSERT received!", payload);
           fetchApplications();
         }
       )
       .subscribe();
+
+    // Subscribe to realtime UPDATE events on the merchant_applications table
+    const updateChannel = supabase
+      .channel("custom-update-channel")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "merchant_applications" },
+        (payload) => {
+          console.log("UPDATE received!", payload);
+          fetchApplications();
+        }
+      )
+      .subscribe();
+
+    // Subscribe to realtime DELETE events on the merchant_applications table
+    const deleteChannel = supabase
+      .channel("custom-delete-channel")
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "merchant_applications" },
+        (payload) => {
+          console.log("DELETE received!", payload);
+          fetchApplications();
+        }
+      )
+      .subscribe();
+
+    // Cleanup: remove all channels on unmount
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(insertChannel);
+      supabase.removeChannel(updateChannel);
+      supabase.removeChannel(deleteChannel);
     };
   }, []);
 
