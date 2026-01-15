@@ -13,18 +13,43 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ExternalLink, Archive, CheckCircle } from "lucide-react";
+import { Loader2, Archive, CheckCircle } from "lucide-react";
 import type { PublicMerchantApplication } from "@/types/application";
 
+/**
+ * WebSubmissions page fetches merchant application submissions from Supabase
+ * and provides simple actions to archive or convert an application.  In
+ * addition to the initial fetch, it now subscribes to real‑time changes
+ * on the `merchant_applications` table so the list stays up to date
+ * without requiring manual refreshes.  A dedicated realtime channel is
+ * established on mount and removed on unmount.
+ */
 export default function WebSubmissions() {
   const [apps, setApps] = useState<PublicMerchantApplication[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
+  // Fetch applications on mount
   useEffect(() => {
     fetchApplications();
+    // Subscribe to realtime updates on the merchant_applications table
+    const channel = supabase
+      .channel("merchant-applications-updates")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "merchant_applications" },
+        () => {
+          // Refresh list whenever an insert/update/delete occurs
+          fetchApplications();
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
+  // Retrieve all applications ordered by creation date
   const fetchApplications = async () => {
     setIsLoading(true);
     const { data, error } = await supabase
@@ -39,11 +64,12 @@ export default function WebSubmissions() {
         description: error.message,
       });
     } else {
-      setApps((data as unknown) as PublicMerchantApplication[]);
+      setApps(data as unknown as PublicMerchantApplication[]);
     }
     setIsLoading(false);
   };
 
+  // Update status of an application and refresh list
   const updateStatus = async (id: string, status: string) => {
     const { error } = await supabase
       .from("merchant_applications")
@@ -54,6 +80,7 @@ export default function WebSubmissions() {
       toast({ variant: "destructive", title: "Update failed" });
     } else {
       toast({ title: "Status updated" });
+      // Let realtime subscription update the list; manual refresh as fallback
       fetchApplications();
     }
   };
