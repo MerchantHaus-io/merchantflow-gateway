@@ -1,5 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Input } from "@/components/ui/input";
+// Import the Textarea component to allow multi-line chat input. Using a textarea
+// provides a better typing experience than a single-line input because users
+// can create multi-line messages with Shift+Enter. The Textarea component
+// already supports styling consistent with the rest of the UI.
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -135,14 +140,22 @@ const ChatBox: React.FC<ChatBoxProps> = ({
     }
   };
 
-  const handleKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (e) => {
-    if (e.key === "Enter") {
+  // Handle key presses on the chat input. When the user presses Enter without
+  // holding Shift we send the message. If Shift+Enter is used we insert a
+  // newline, letting the Textarea handle it naturally. Preventing the default
+  // action on Enter stops newlines from being added unintentionally when
+  // sending.
+  const handleKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Update the input value and notify other clients that the user is typing.
+  // The handler accepts both HTMLInputElement and HTMLTextAreaElement events
+  // because the Textarea component uses a textarea under the hood.
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
     onTyping();
   };
@@ -247,7 +260,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({
                   {!isOwn && (
                     <Avatar className="h-8 w-8 shrink-0">
                       <AvatarImage src={avatarUrl || undefined} alt={displayName} />
-                      <AvatarFallback className={cn(getAvatarColor(msg.user_email), "text-white text-xs")}>
+                      <AvatarFallback className={cn(getAvatarColor(msg.user_email), "text-white text-xs")}> 
                         {getInitials(displayName, msg.user_email)}
                       </AvatarFallback>
                     </Avatar>
@@ -255,7 +268,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({
                   <div className="max-w-xs">
                     {/* Reply preview */}
                     {replyMessage && (
-                      <div className={`text-xs px-2 py-1 mb-1 rounded border-l-2 border-primary/50 bg-muted/50 ${isOwn ? "ml-auto" : ""}`}>
+                      <div className={`${isOwn ? "ml-auto" : ""} text-xs px-2 py-1 mb-1 rounded border-l-2 border-primary/50 bg-muted/50`}>
                         <span className="font-medium text-primary/70">{getDisplayName(replyMessage)}</span>
                         <p className="text-muted-foreground truncate">{replyMessage.content}</p>
                       </div>
@@ -265,7 +278,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({
                         <p className="text-xs font-semibold mb-1 opacity-80">{displayName}</p>
                       )}
                       <p className="text-sm">{highlightText(msg.content)}</p>
-                      <p className={`text-xs mt-1 ${isOwn ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                      <p className={`${isOwn ? "text-primary-foreground/70" : "text-muted-foreground"} text-xs mt-1`}>
                         {formatTime(msg.created_at)}
                       </p>
                       {/* Reply button */}
@@ -281,7 +294,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({
                   {isOwn && (
                     <Avatar className="h-8 w-8 shrink-0">
                       <AvatarImage src={avatarUrl || undefined} alt={displayName} />
-                      <AvatarFallback className={cn(getAvatarColor(msg.user_email), "text-white text-xs")}>
+                      <AvatarFallback className={cn(getAvatarColor(msg.user_email), "text-white text-xs")}> 
                         {getInitials(displayName, msg.user_email)}
                       </AvatarFallback>
                     </Avatar>
@@ -325,16 +338,28 @@ const ChatBox: React.FC<ChatBoxProps> = ({
         </div>
       )}
 
-      <div className="flex items-center gap-2">
-        <Input
-          type="text"
+      {/* Message input and send button */}
+      <div className="flex items-end gap-2">
+        {/*
+          Replace the single‑line Input with a Textarea to support multi‑line
+          messages. We limit the height to a reasonable size and remove the
+          ability to resize the box to keep the layout consistent. When
+          Shift+Enter is pressed, a newline is inserted; Enter alone sends
+          the message. The rounded‑t‑none class is retained when replying to
+          ensure the reply preview sits flush on top of the input area.
+        */}
+        <Textarea
           placeholder={replyTo ? "Type your reply..." : "Type a message..."}
           value={input}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          className={replyTo ? "rounded-t-none" : ""}
+          rows={1}
+          className={cn(
+            "resize-none leading-tight min-h-[3rem] max-h-[10rem] overflow-y-auto",
+            replyTo ? "rounded-t-none" : ""
+          )}
         />
-        <Button onClick={handleSend}>Send</Button>
+        <Button onClick={handleSend} className="h-10">Send</Button>
       </div>
     </div>
   );
@@ -419,16 +444,16 @@ const ChannelList: React.FC<ChannelListProps> = ({
     }
   });
   const directChannels = Array.from(seenParticipants.values());
-
+  
   // Get team members who don't have a DM channel yet
   const existingDMNames = directChannels.map(ch => ch.participant_name?.toLowerCase());
   const availableForDM = TEAM_MEMBERS.filter(member =>
     member.toLowerCase() !== currentUserName.toLowerCase() &&
     !existingDMNames.includes(member.toLowerCase())
   );
-
+  
   const archivedCount = allGroupChannels.filter(ch => ch.archived_at).length;
-
+  
   return (
     <div className="space-y-4">
       {/* Group Channels */}
