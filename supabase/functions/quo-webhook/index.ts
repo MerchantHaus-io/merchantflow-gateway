@@ -105,30 +105,49 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Handle call recordings
+    if (eventType === 'call.recording.completed') {
+      const recordingMedia = callData.media;
+      if (recordingMedia && Array.isArray(recordingMedia) && recordingMedia.length > 0) {
+        const recordingUrl = recordingMedia[0]?.url || null;
+        if (recordingUrl) {
+          await supabase
+            .from('call_logs')
+            .update({ recording_url: recordingUrl })
+            .eq('quo_call_id', callData.id);
+          console.log('Recording URL saved for call:', callData.id);
+        }
+      }
+    }
+
     // Handle call summaries
-    if (eventType === 'call.summary.completed' || payload.type === 'callSummary') {
+    if (eventType === 'call.summary.completed') {
       const summaryData = payload.data?.object;
-      if (summaryData?.callId) {
+      const callId = summaryData?.callId || callData?.id;
+      if (callId) {
         await supabase
           .from('call_logs')
           .update({
-            summary: summaryData.summary || [],
-            next_steps: summaryData.nextSteps || [],
+            summary: summaryData?.summary || [],
+            next_steps: summaryData?.nextSteps || [],
           })
-          .eq('quo_call_id', summaryData.callId);
+          .eq('quo_call_id', callId);
+        console.log('Summary saved for call:', callId);
       }
     }
 
     // Handle call transcripts
-    if (eventType === 'call.transcript.completed' || payload.type === 'callTranscript') {
+    if (eventType === 'call.transcript.completed') {
       const transcriptData = payload.data?.object;
-      if (transcriptData?.callId) {
+      const callId = transcriptData?.callId || callData?.id;
+      if (callId) {
         await supabase
           .from('call_logs')
           .update({
-            transcript: transcriptData.dialogue || [],
+            transcript: transcriptData?.dialogue || [],
           })
-          .eq('quo_call_id', transcriptData.callId);
+          .eq('quo_call_id', callId);
+        console.log('Transcript saved for call:', callId);
       }
     }
 

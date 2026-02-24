@@ -38,7 +38,7 @@ export const CallLogPanel = ({
   maxItems = 10,
   compact = false,
 }: CallLogPanelProps) => {
-  const [calls, setCalls] = useState<CallLog[]>([]);
+  const [calls, setCalls] = useState<(CallLog & { contact_name?: string; account_name?: string })[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedCallId, setExpandedCallId] = useState<string | null>(null);
 
@@ -46,7 +46,7 @@ export const CallLogPanel = ({
     const fetchCalls = async () => {
       let query = supabase
         .from('call_logs')
-        .select('*')
+        .select('*, contacts(first_name, last_name, account_id, accounts(name))')
         .order('created_at', { ascending: false })
         .limit(maxItems);
 
@@ -56,7 +56,11 @@ export const CallLogPanel = ({
 
       const { data, error } = await query;
       if (!error && data) {
-        setCalls(data as unknown as CallLog[]);
+        setCalls(data.map((c: any) => ({
+          ...c,
+          contact_name: c.contacts ? `${c.contacts.first_name || ''} ${c.contacts.last_name || ''}`.trim() : undefined,
+          account_name: c.contacts?.accounts?.name,
+        })));
       }
       setLoading(false);
     };
@@ -139,8 +143,8 @@ export const CallLogPanel = ({
             {getCallIcon(call.direction, call.status)}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium truncate">
-                  {call.phone_number || 'Unknown'}
+              <span className="text-sm font-medium truncate">
+                  {call.contact_name || call.phone_number || 'Unknown'}
                 </span>
                 {getStatusBadge(call.status)}
               </div>
