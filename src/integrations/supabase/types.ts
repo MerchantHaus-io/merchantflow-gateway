@@ -393,6 +393,7 @@ export type Database = {
           phone_number: string | null
           quo_call_id: string | null
           quo_phone_number_id: string | null
+          recording_url: string | null
           status: string
           summary: string[] | null
           transcript: Json | null
@@ -416,6 +417,7 @@ export type Database = {
           phone_number?: string | null
           quo_call_id?: string | null
           quo_phone_number_id?: string | null
+          recording_url?: string | null
           status?: string
           summary?: string[] | null
           transcript?: Json | null
@@ -439,6 +441,7 @@ export type Database = {
           phone_number?: string | null
           quo_call_id?: string | null
           quo_phone_number_id?: string | null
+          recording_url?: string | null
           status?: string
           summary?: string[] | null
           transcript?: Json | null

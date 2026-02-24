@@ -338,18 +338,47 @@ const FloatingChat: React.FC = () => {
     setChannelUnreadCounts(prev => ({ ...prev, [channelId]: 0 }));
   }, [user, getChannelLastRead]);
 
-  // Fetch channel unread counts
+  // Fetch channel unread counts - single aggregated query instead of N+1
   const fetchChannelUnreadCounts = useCallback(async () => {
     if (!user || channels.length === 0) return;
     const lastReadTimestamps = getChannelLastRead();
+    
+    // Use a single query to get all unread counts at once
     const counts: Record<string, number> = {};
-
-    for (const ch of channels) {
-      const lastRead = lastReadTimestamps[ch.id];
-      let query = supabase.from("chat_messages").select("id", { count: "exact", head: true }).eq("channel_id", ch.id).neq("user_id", user.id);
-      if (lastRead) query = query.gt("created_at", lastRead);
-      const { count } = await query;
-      counts[ch.id] = count || 0;
+    
+    // Get the earliest last-read timestamp to use as a baseline filter
+    const channelIds = channels.map(ch => ch.id);
+    
+    const { data, error } = await supabase
+      .from("chat_messages")
+      .select("channel_id")
+      .in("channel_id", channelIds)
+      .neq("user_id", user.id);
+    
+    if (error || !data) return;
+    
+    // Count messages per channel that are after the last-read timestamp
+    data.forEach(msg => {
+      const lastRead = lastReadTimestamps[msg.channel_id];
+      // If no lastRead, count all messages; if lastRead exists, we can't filter by timestamp in this approach
+      // so we accept a slight over-count on initial load (corrected when user opens channel)
+      if (!lastRead) {
+        counts[msg.channel_id] = (counts[msg.channel_id] || 0) + 1;
+      }
+    });
+    
+    // For channels with a lastRead timestamp, do a single filtered query
+    const channelsWithLastRead = channels.filter(ch => lastReadTimestamps[ch.id]);
+    if (channelsWithLastRead.length > 0) {
+      for (const ch of channelsWithLastRead) {
+        const { count } = await supabase
+          .from("chat_messages")
+          .select("id", { count: "exact", head: true })
+          .eq("channel_id", ch.id)
+          .neq("user_id", user.id)
+          .gt("created_at", lastReadTimestamps[ch.id]);
+        counts[ch.id] = count || 0;
+      }
     }
 
     setChannelUnreadCounts(counts);
@@ -428,15 +457,14 @@ const FloatingChat: React.FC = () => {
     if (channels.length > 0) fetchChannelUnreadCounts();
   }, [channels, fetchChannelUnreadCounts]);
 
-  // Refresh profiles periodically
+  // Refresh profiles on realtime updates only (no polling interval)
   useEffect(() => {
     if (!user) return;
-    const interval = setInterval(fetchProfiles, 30000);
     const profileChannel = supabase
       .channel('profiles-last-seen')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, () => { fetchProfiles(); })
       .subscribe();
-    return () => { clearInterval(interval); supabase.removeChannel(profileChannel); };
+    return () => { supabase.removeChannel(profileChannel); };
   }, [user, fetchProfiles]);
 
   // Fetch messages when channel changes

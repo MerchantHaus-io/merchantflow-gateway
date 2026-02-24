@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
         method = 'POST';
         body = JSON.stringify({
           url: params.url,
-          events: params.events || ['call.completed', 'call.ringing'],
+          events: params.events || ['call.completed', 'call.ringing', 'call.recording.completed', 'call.summary.completed', 'call.transcript.completed'],
           label: params.label || 'MerchantHaus CRM',
           status: 'enabled',
         });

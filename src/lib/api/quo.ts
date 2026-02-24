@@ -56,7 +56,7 @@ export const quoApi = {
         action: 'create-webhook',
         params: {
           url: webhookUrl,
-          events: ['call.ringing', 'call.completed', 'call.recording.completed'],
+          events: ['call.ringing', 'call.completed', 'call.recording.completed', 'call.summary.completed', 'call.transcript.completed'],
           label: 'MerchantHaus CRM',
         },
       },
