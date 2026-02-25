@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import DualPipelineBoard from "@/components/DualPipelineBoard";
+import UnifiedPipelineBoard from "@/components/UnifiedPipelineBoard";
 import NewApplicationModal, { ApplicationFormData } from "@/components/NewApplicationModal";
 import { AppLayout } from "@/components/AppLayout";
 import { getServiceType, ServiceType, OnboardingWizardState, Opportunity, OpportunityStage, migrateStage, EMAIL_TO_USER, TEAM_MEMBERS } from "@/types/opportunity";
@@ -775,7 +775,7 @@ const Index = () => {
           </div>
         </header>
         <main className="flex-1 flex flex-col overflow-hidden rounded-lg border border-border/50 shadow-lg backdrop-blur-md min-h-0 bg-card/70 dark:bg-card/70">
-          <DualPipelineBoard
+          <UnifiedPipelineBoard
             opportunities={filteredOpportunities}
             onUpdateOpportunity={handleUpdateOpportunity}
             onAssignmentChange={handleAssignmentChange}

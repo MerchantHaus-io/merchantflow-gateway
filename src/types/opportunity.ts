@@ -284,6 +284,21 @@ export const PIPELINE_STAGES: OpportunityStage[] = [
   'closed_lost',
 ];
 
+// Unified single-row pipeline (merged, deduplicated, logical order)
+export const UNIFIED_PIPELINE_STAGES: OpportunityStage[] = [
+  'application_started',
+  'discovery',
+  'qualified',
+  'application_prep',
+  'underwriting_review',
+  'processor_approval',
+  'gateway_submitted',
+  'integration_setup',
+  'closed_won',
+  'live_activated',
+  'closed_lost',
+];
+
 /**
  * Migration helper: Maps old 'opportunities' stage to new 'application_prep' stage
  * This ensures no data is lost during the stage rename
