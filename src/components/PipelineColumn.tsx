@@ -46,62 +46,77 @@ const PipelineColumn = ({
   const toggleCardCollapse = (id: string) => {
     setCollapsedCards((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   };
 
   const toggleAllCards = () => {
-    if (allCollapsed) {
-      setCollapsedCards(new Set());
-    } else {
-      setCollapsedCards(new Set(opportunities.map((o) => o.id)));
-    }
+    if (allCollapsed) setCollapsedCards(new Set());
+    else setCollapsedCards(new Set(opportunities.map((o) => o.id)));
     setAllCollapsed(!allCollapsed);
   };
 
   return (
     <div
       className={cn(
-        "flex-shrink-0 flex flex-col min-h-0 self-stretch bg-muted/20 overflow-hidden snap-start rounded-none",
-        isCompact 
-          ? "w-[90px] sm:w-[110px] md:w-[140px] lg:w-[170px] xl:w-[190px] mobile-landscape:w-[140px]" 
-          : "w-[100px] sm:w-[130px] md:w-[170px] lg:w-[210px] xl:w-[240px] mobile-landscape:w-[160px]"
+        "flex-shrink-0 flex flex-col min-h-0 self-stretch overflow-hidden snap-start",
+        "border-r-2 border-foreground/10 last:border-r-0",
+        isCompact
+          ? "w-[100px] sm:w-[120px] md:w-[150px] lg:w-[180px] xl:w-[210px]"
+          : "w-[120px] sm:w-[150px] md:w-[190px] lg:w-[230px] xl:w-[270px]"
       )}
       data-stage={stage}
       onDragOver={onDragOver}
       onDrop={(e) => onDrop(e, stage)}
     >
-      {/* Column Header */}
+      {/* Neo-brutalist Column Header */}
       {!hideHeader && (
-        <div className="px-3 py-2.5 flex-shrink-0 border-b-2" style={{ borderColor: config.color || 'hsl(var(--primary))' }}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div 
-                className="w-5 h-5 rounded flex items-center justify-center"
-                style={{ backgroundColor: `${config.color}20` || 'hsl(var(--primary) / 0.1)' }}
+        <div
+          className="flex-shrink-0 border-b-[3px] px-2 py-2"
+          style={{
+            borderBottomColor: config.color || "hsl(var(--primary))",
+            background: `linear-gradient(180deg, ${config.color}15 0%, transparent 100%)`,
+          }}
+        >
+          <div className="flex items-center justify-between gap-1">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span
+                className="text-lg leading-none"
+                role="img"
+                aria-label={config.label}
               >
-                <span className="text-[10px] font-bold" style={{ color: config.color || 'hsl(var(--primary))' }}>
-                  {config.icon || '●'}
-                </span>
-              </div>
-              <span className="text-sm font-semibold text-foreground">
+                {config.icon}
+              </span>
+              <span
+                className={cn(
+                  "font-black uppercase tracking-wider text-foreground truncate",
+                  isCompact ? "text-[9px]" : "text-[10px] sm:text-xs"
+                )}
+              >
                 {config.label}
               </span>
             </div>
-            <div className="flex items-center gap-1">
-              {stage === 'application_started' && onAddNew && (
+            <div className="flex items-center gap-0.5 flex-shrink-0">
+              <span
+                className="font-black text-xs px-1.5 py-0.5 border-2"
+                style={{
+                  borderColor: config.color,
+                  color: config.color,
+                  backgroundColor: `${config.color}15`,
+                }}
+              >
+                {count}
+              </span>
+              {stage === "application_started" && onAddNew && (
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 bg-primary hover:bg-primary/90 text-white"
+                  className="h-6 w-6 bg-primary hover:bg-primary/90 text-primary-foreground border-2 border-foreground/50"
                   onClick={onAddNew}
                 >
-                  <Plus className="h-4 w-4" />
+                  <Plus className="h-3.5 w-3.5" />
                 </Button>
               )}
               {count > 0 && (
@@ -113,9 +128,9 @@ const PipelineColumn = ({
                   title={allCollapsed ? "Expand all" : "Collapse all"}
                 >
                   {allCollapsed ? (
-                    <ChevronsUpDown className="h-4 w-4" />
+                    <ChevronsUpDown className="h-3.5 w-3.5" />
                   ) : (
-                    <ChevronsDownUp className="h-4 w-4" />
+                    <ChevronsDownUp className="h-3.5 w-3.5" />
                   )}
                 </Button>
               )}
@@ -124,63 +139,21 @@ const PipelineColumn = ({
         </div>
       )}
 
-      {/* Action Bar when header is hidden */}
-      {hideHeader && (
-        <div className={cn(
-          "px-1 flex items-center justify-end gap-0.5 bg-muted/20",
-          isCompact ? "py-0" : "py-0.5"
-        )}>
-          {stage === 'application_started' && onAddNew && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "bg-primary hover:bg-primary/90 text-white",
-                isCompact ? "h-4 w-4" : "h-5 w-5"
-              )}
-              onClick={onAddNew}
-            >
-              <Plus className={isCompact ? "h-2.5 w-2.5" : "h-3 w-3"} />
-            </Button>
-          )}
-          {count > 0 && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "text-muted-foreground hover:text-foreground",
-                isCompact ? "h-4 w-4" : "h-5 w-5"
-              )}
-              onClick={toggleAllCards}
-              title={allCollapsed ? "Expand all" : "Collapse all"}
-            >
-              {allCollapsed ? (
-                <ChevronsUpDown className={isCompact ? "h-2.5 w-2.5" : "h-3 w-3"} />
-              ) : (
-                <ChevronsDownUp className={isCompact ? "h-2.5 w-2.5" : "h-3 w-3"} />
-              )}
-            </Button>
-          )}
-        </div>
-      )}
-
       {/* Scrollable Cards Area */}
-      <div 
+      <div
         className={cn(
           "flex-1 overflow-y-auto overscroll-contain min-h-0",
-          isCompact ? "p-0.5 space-y-0.5" : "p-1 space-y-1"
-        )} 
-        style={{ 
-          WebkitOverflowScrolling: 'touch',
-          // Allow both horizontal and vertical touch actions for proper swipe
-          touchAction: 'auto'
-        }}
+          isCompact ? "p-1 space-y-1" : "p-1.5 space-y-1.5"
+        )}
+        style={{ WebkitOverflowScrolling: "touch", touchAction: "auto" }}
       >
         {opportunities.length === 0 ? (
-          <div className={cn(
-            "flex items-center justify-center text-muted-foreground/60 border border-dashed border-border/30 rounded",
-            isCompact ? "h-8 text-[8px]" : "h-12 text-[10px]"
-          )}>
+          <div
+            className={cn(
+              "flex items-center justify-center text-muted-foreground/50 border-2 border-dashed border-border/40 font-bold uppercase tracking-wider",
+              isCompact ? "h-10 text-[8px]" : "h-14 text-[9px]"
+            )}
+          >
             Drop here
           </div>
         ) : (
