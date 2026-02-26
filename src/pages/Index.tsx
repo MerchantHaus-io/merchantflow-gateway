@@ -175,6 +175,7 @@ const Index = () => {
   const [filterBy, setFilterBy] = useState<'created_at' | 'updated_at'>('created_at');
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
   const [splashType, setSplashType] = useState<"1up" | "level-up" | null>(null);
+  const [isFocusMode, setIsFocusMode] = useState(false);
   const {
     toast
   } = useToast();
@@ -751,30 +752,32 @@ const Index = () => {
       </div>;
   }
   return (
-    <AppLayout onNewApplication={() => setIsModalOpen(true)}>
-      <div className="flex-1 flex flex-col gap-2 sm:gap-3 p-2 sm:p-3 lg:p-4 min-h-0 overflow-hidden mobile-landscape:gap-2">
-        <header className="h-12 flex items-center px-4 rounded-lg border shadow-lg backdrop-blur-md gap-2 flex-shrink-0 sticky top-0 z-20 border-primary bg-card/70 dark:bg-card/70">
-          <h1 className="text-lg font-semibold text-foreground">Pipeline</h1>
-          <div className="ml-auto flex items-center gap-2">
-            <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
-              <SelectTrigger className="w-[140px] h-8 text-xs bg-background border-border">
-                <User className="h-3 w-3 mr-1" />
-                <SelectValue placeholder="Filter by..." />
-              </SelectTrigger>
-              <SelectContent className="bg-popover z-50">
-                <SelectItem value="all">All Cards</SelectItem>
-                <SelectItem value="mine">My Cards</SelectItem>
-                {TEAM_MEMBERS.map((member) => (
-                  <SelectItem key={member} value={member}>
-                    {member}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} filterBy={filterBy} onFilterByChange={setFilterBy} />
-          </div>
-        </header>
-        <main className="flex-1 flex flex-col overflow-hidden rounded-lg border border-border/50 shadow-lg backdrop-blur-md min-h-0 bg-card/70 dark:bg-card/70">
+    <AppLayout onNewApplication={() => setIsModalOpen(true)} focusMode={isFocusMode}>
+      <div className={isFocusMode ? "flex-1 flex flex-col min-h-0 overflow-hidden" : "flex-1 flex flex-col gap-2 sm:gap-3 p-2 sm:p-3 lg:p-4 min-h-0 overflow-hidden mobile-landscape:gap-2"}>
+        {!isFocusMode && (
+          <header className="h-12 flex items-center px-4 rounded-lg border shadow-sm backdrop-blur-md gap-2 flex-shrink-0 sticky top-0 z-20 border-border/60 bg-card/90 dark:bg-card/80">
+            <h1 className="text-lg font-semibold text-foreground">Pipeline</h1>
+            <div className="ml-auto flex items-center gap-2">
+              <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
+                <SelectTrigger className="w-[140px] h-8 text-xs bg-background border-border">
+                  <User className="h-3 w-3 mr-1" />
+                  <SelectValue placeholder="Filter by..." />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-50">
+                  <SelectItem value="all">All Cards</SelectItem>
+                  <SelectItem value="mine">My Cards</SelectItem>
+                  {TEAM_MEMBERS.map((member) => (
+                    <SelectItem key={member} value={member}>
+                      {member}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} filterBy={filterBy} onFilterByChange={setFilterBy} />
+            </div>
+          </header>
+        )}
+        <main className={isFocusMode ? "flex-1 flex flex-col overflow-hidden min-h-0" : "flex-1 flex flex-col overflow-hidden rounded-lg border border-border/50 shadow-sm backdrop-blur-md min-h-0 bg-card/90 dark:bg-card/80"}>
           <UnifiedPipelineBoard
             opportunities={filteredOpportunities}
             onUpdateOpportunity={handleUpdateOpportunity}
@@ -786,12 +789,15 @@ const Index = () => {
             onConvertToGateway={handleConvertToGatewayTrack}
             onMoveToProcessing={handleMoveToProcessing}
             onRefresh={fetchOpportunities}
+            currentUser={currentUserDisplayName || undefined}
+            focusMode={isFocusMode}
+            onFocusModeChange={setIsFocusMode}
           />
         </main>
       </div>
 
       <NewApplicationModal open={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleNewApplication} />
-      
+
       <GameSplash
         type={splashType || "1up"}
         show={splashType !== null}

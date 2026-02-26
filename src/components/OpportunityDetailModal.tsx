@@ -598,12 +598,12 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   return (
     <>
       <Dialog open={!!opportunity} onOpenChange={onClose}>
-        <DialogContent 
+        <DialogContent
           className={cn(
             "flex flex-col transition-all duration-200",
-            isMaximized 
-              ? "sm:max-w-[95vw] h-[95vh]" 
-              : "sm:max-w-2xl h-[90vh]"
+            isMaximized
+              ? "sm:max-w-[95vw] max-h-[95vh]"
+              : "sm:max-w-2xl max-h-[90vh]"
           )}
           aria-describedby={undefined}
         >
