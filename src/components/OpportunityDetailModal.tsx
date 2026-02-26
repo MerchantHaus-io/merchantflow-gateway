@@ -886,8 +886,9 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                   opportunity={opportunity} 
                   wizardProgress={wizardState?.progress ?? 0}
                   onUpdate={onUpdate}
+                  compact={activeSection !== 'overview'}
                 />
-                <StagePath opportunity={opportunity} />
+                {activeSection === 'overview' && <StagePath opportunity={opportunity} />}
               </>
             )}
           </div>
