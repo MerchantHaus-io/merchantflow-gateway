@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Table,
@@ -61,6 +63,7 @@ export default function WebSubmissions() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [isConverting, setIsConverting] = useState<string | null>(null);
+  const [referralPrompt, setReferralPrompt] = useState<{ app: Application; isReferral: boolean; referredBy: string } | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -101,7 +104,11 @@ export default function WebSubmissions() {
     }
   };
 
-  const convertToPipeline = async (app: Application) => {
+  const promptReferralAndConvert = (app: Application) => {
+    setReferralPrompt({ app, isReferral: false, referredBy: '' });
+  };
+
+  const convertToPipeline = async (app: Application, referralSource?: string) => {
     setIsConverting(app.id);
 
     try {
@@ -153,6 +160,7 @@ export default function WebSubmissions() {
           stage: "application_started",
           status: "active",
           service_type: isGatewayOnly ? "gateway_only" : "processing",
+          referral_source: referralSource || null,
           username: isGatewayOnly ? (app.notes?.match(/Username:\s*([^.]+)/)?.[1]?.trim() || null) : null,
         })
         .select()
@@ -422,9 +430,9 @@ export default function WebSubmissions() {
                                     This will create an Account, Contact, and Opportunity for <strong>{app.company_name || app.full_name}</strong> and pre-fill the onboarding wizard. The submission will be removed from this list.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
-                                <AlertDialogFooter>
+                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => convertToPipeline(app)}>
+                                  <AlertDialogAction onClick={() => promptReferralAndConvert(app)}>
                                     Convert
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
@@ -581,7 +589,7 @@ export default function WebSubmissions() {
                       </Button>
                       <Button
                         onClick={() => {
-                          convertToPipeline(selectedApp);
+                          promptReferralAndConvert(selectedApp);
                           setSelectedApp(null);
                         }}
                       >
@@ -592,6 +600,62 @@ export default function WebSubmissions() {
                   )}
                 </div>
               </ScrollArea>
+            )}
+          </DialogContent>
+        </Dialog>
+        {/* Referral Source Prompt */}
+        <Dialog open={!!referralPrompt} onOpenChange={() => setReferralPrompt(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Lead Source</DialogTitle>
+            </DialogHeader>
+            {referralPrompt && (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Was <strong>{referralPrompt.app.company_name || referralPrompt.app.full_name}</strong> referred by someone?
+                </p>
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant={referralPrompt.isReferral ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setReferralPrompt(prev => prev ? { ...prev, isReferral: true } : null)}
+                  >
+                    Yes, a referral
+                  </Button>
+                  <Button
+                    variant={!referralPrompt.isReferral ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setReferralPrompt(prev => prev ? { ...prev, isReferral: false, referredBy: '' } : null)}
+                  >
+                    No
+                  </Button>
+                </div>
+                {referralPrompt.isReferral && (
+                  <div className="space-y-2">
+                    <Label htmlFor="referredBy">Who referred them?</Label>
+                    <Input
+                      id="referredBy"
+                      value={referralPrompt.referredBy}
+                      onChange={(e) => setReferralPrompt(prev => prev ? { ...prev, referredBy: e.target.value } : null)}
+                      placeholder="e.g. John Smith, Partner X"
+                      autoFocus
+                    />
+                  </div>
+                )}
+                <div className="flex justify-end gap-2 pt-2 border-t border-border">
+                  <Button variant="outline" onClick={() => setReferralPrompt(null)}>Cancel</Button>
+                  <Button
+                    onClick={() => {
+                      const source = referralPrompt.isReferral ? referralPrompt.referredBy : undefined;
+                      const app = referralPrompt.app;
+                      setReferralPrompt(null);
+                      convertToPipeline(app, source || undefined);
+                    }}
+                  >
+                    Convert to Pipeline
+                  </Button>
+                </div>
+              </div>
             )}
           </DialogContent>
         </Dialog>

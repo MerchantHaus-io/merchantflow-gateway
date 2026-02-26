@@ -241,6 +241,13 @@ const OpportunityCard = ({
           </p>
         )}
 
+        {/* Lead Source */}
+        {!isCollapsed && opportunity.referral_source && (
+          <span className="text-[8px] md:text-[9px] text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded truncate inline-block max-w-full border border-border/40">
+            📣 {opportunity.referral_source}
+          </span>
+        )}
+
         {/* Footer Row — value, assignee pill, priority badge */}
         {!isCollapsed && (
           <div className="flex items-center justify-between pt-1 border-t border-border/60 gap-1">
