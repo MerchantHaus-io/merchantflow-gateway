@@ -777,7 +777,7 @@ const Index = () => {
             </div>
           </header>
         )}
-        <main className={isFocusMode ? "flex-1 flex flex-col overflow-hidden min-h-0" : "flex-1 flex flex-col overflow-hidden rounded-lg border border-border/50 shadow-sm backdrop-blur-md min-h-0 bg-card/90 dark:bg-card/80"}>
+        <main className={isFocusMode ? "flex-1 flex flex-col min-h-0 overflow-hidden" : "flex-1 flex flex-col min-h-0 overflow-y-hidden overflow-x-visible rounded-lg border border-border/50 shadow-sm backdrop-blur-md bg-card/90 dark:bg-card/80"}>
           <UnifiedPipelineBoard
             opportunities={filteredOpportunities}
             onUpdateOpportunity={handleUpdateOpportunity}
