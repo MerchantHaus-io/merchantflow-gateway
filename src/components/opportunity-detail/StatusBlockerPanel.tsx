@@ -12,32 +12,39 @@ interface StatusBlockerPanelProps {
   opportunity: Opportunity;
   wizardProgress: number;
   onUpdate: (updates: Partial<Opportunity>) => void;
+  compact?: boolean;
 }
 
 type StatusType = "moving" | "waiting" | "blocked";
 
-const STATUS_CONFIG: Record<StatusType, { label: string; icon: React.ElementType; colorClass: string; bgClass: string }> = {
+const STATUS_CONFIG: Record<
+  StatusType,
+  { label: string; icon: React.ElementType; colorClass: string; bgClass: string; progressClass: string }
+> = {
   moving: {
     label: "Moving",
     icon: CheckCircle2,
-    colorClass: "text-emerald-500",
-    bgClass: "bg-emerald-500/10 border-emerald-500/30",
+    colorClass: "text-success",
+    bgClass: "bg-success/10 border-success/30",
+    progressClass: "bg-success",
   },
   waiting: {
     label: "Waiting",
     icon: Clock,
-    colorClass: "text-amber-500",
-    bgClass: "bg-amber-500/10 border-amber-500/30",
+    colorClass: "text-warning",
+    bgClass: "bg-warning/10 border-warning/30",
+    progressClass: "bg-warning",
   },
   blocked: {
     label: "Blocked",
     icon: AlertCircle,
     colorClass: "text-destructive",
     bgClass: "bg-destructive/10 border-destructive/30",
+    progressClass: "bg-destructive",
   },
 };
 
-export const StatusBlockerPanel = ({ opportunity, wizardProgress, onUpdate }: StatusBlockerPanelProps) => {
+export const StatusBlockerPanel = ({ opportunity, wizardProgress, compact = true }: StatusBlockerPanelProps) => {
   const { user } = useAuth();
   const [isEditingBlocker, setIsEditingBlocker] = useState(false);
   const [blockerReason, setBlockerReason] = useState("");
@@ -45,36 +52,35 @@ export const StatusBlockerPanel = ({ opportunity, wizardProgress, onUpdate }: St
 
   const stageConfig = STAGE_CONFIG[opportunity.stage];
 
-  // Fetch latest blocker note on mount
   useEffect(() => {
     const fetchLatestBlocker = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("activities")
         .select("description")
         .eq("opportunity_id", opportunity.id)
         .eq("type", "blocker")
         .order("created_at", { ascending: false })
         .limit(1)
-        .single();
-      
+        .maybeSingle();
+
+      if (error) return;
       if (data?.description) {
         setCurrentBlocker(data.description);
         setBlockerReason(data.description);
       }
     };
+
     fetchLatestBlocker();
   }, [opportunity.id]);
 
-  // Determine status based on various signals
   const determineStatus = (): StatusType => {
     if (opportunity.status === "dead") return "blocked";
     if (opportunity.sla_status === "red") return "blocked";
     if (currentBlocker) return "blocked";
-    
-    // Check stage duration - if > 3 days without activity, it's waiting
+
     const stageEnteredAt = opportunity.stage_entered_at ? new Date(opportunity.stage_entered_at) : new Date(opportunity.created_at);
     const daysSinceStageEntry = Math.floor((Date.now() - stageEnteredAt.getTime()) / (1000 * 60 * 60 * 24));
-    
+
     if (daysSinceStageEntry > 3 || opportunity.sla_status === "amber") return "waiting";
     return "moving";
   };
@@ -86,7 +92,6 @@ export const StatusBlockerPanel = ({ opportunity, wizardProgress, onUpdate }: St
   const handleSaveBlocker = async () => {
     try {
       if (blockerReason.trim()) {
-        // Add blocker as activity
         await supabase.from("activities").insert({
           opportunity_id: opportunity.id,
           type: "blocker",
@@ -97,7 +102,6 @@ export const StatusBlockerPanel = ({ opportunity, wizardProgress, onUpdate }: St
         setCurrentBlocker(blockerReason.trim());
         toast.success("Blocker saved");
       } else {
-        // Clear blocker by adding a "blocker cleared" activity
         await supabase.from("activities").insert({
           opportunity_id: opportunity.id,
           type: "blocker_cleared",
@@ -108,7 +112,7 @@ export const StatusBlockerPanel = ({ opportunity, wizardProgress, onUpdate }: St
         setCurrentBlocker(null);
         toast.success("Blocker cleared");
       }
-      
+
       setIsEditingBlocker(false);
     } catch (error) {
       console.error("Error updating blocker:", error);
@@ -117,60 +121,51 @@ export const StatusBlockerPanel = ({ opportunity, wizardProgress, onUpdate }: St
   };
 
   return (
-    <div className={`rounded-lg border p-4 ${statusConfig.bgClass}`}>
-      <div className="flex items-start justify-between gap-4">
-        {/* Status indicator */}
-        <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-full ${statusConfig.bgClass}`}>
-            <StatusIcon className={`h-5 w-5 ${statusConfig.colorClass}`} />
+    <div className={`rounded-md border ${statusConfig.bgClass} ${compact ? "px-3 py-2" : "p-4"}`}>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className={`p-1.5 rounded-full border ${statusConfig.bgClass}`}>
+            <StatusIcon className={`h-3.5 w-3.5 ${statusConfig.colorClass}`} />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className={`font-semibold ${statusConfig.colorClass}`}>
-                {statusConfig.label}
-              </span>
-              <Badge variant="outline" className="text-xs">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className={`font-semibold text-sm ${statusConfig.colorClass}`}>{statusConfig.label}</span>
+              <Badge variant="outline" className="text-[10px] h-5 px-1.5">
                 {stageConfig.label}
               </Badge>
             </div>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {wizardProgress}% complete
-            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">{wizardProgress}% complete</p>
           </div>
         </div>
 
-        {/* Progress bar */}
-        <div className="flex-1 max-w-[200px]">
-          <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+        <div className="w-24 sm:w-32 shrink-0">
+          <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
             <div
-              className={`h-full transition-all ${
-                wizardProgress >= 100 ? "bg-emerald-500" : 
-                wizardProgress >= 50 ? "bg-amber-500" : "bg-destructive"
-              }`}
+              className={`h-full transition-all ${statusConfig.progressClass}`}
               style={{ width: `${Math.min(wizardProgress, 100)}%` }}
             />
           </div>
         </div>
       </div>
 
-      {/* Blocker reason */}
-      <div className="mt-4">
+      <div className={compact ? "mt-2" : "mt-4"}>
         {isEditingBlocker ? (
           <div className="space-y-2">
             <Textarea
-              placeholder="What is blocking progress? Who owns the resolution?"
+              placeholder="What is blocking progress?"
               value={blockerReason}
               onChange={(e) => setBlockerReason(e.target.value)}
-              className="min-h-[80px] text-sm"
+              className="min-h-[64px] text-sm"
             />
             <div className="flex gap-2">
-              <Button size="sm" onClick={handleSaveBlocker}>
+              <Button size="sm" onClick={handleSaveBlocker} className="h-7 text-xs">
                 <Check className="h-3 w-3 mr-1" />
                 Save
               </Button>
-              <Button 
-                size="sm" 
-                variant="ghost" 
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs"
                 onClick={() => {
                   setBlockerReason(currentBlocker || "");
                   setIsEditingBlocker(false);
@@ -182,26 +177,15 @@ export const StatusBlockerPanel = ({ opportunity, wizardProgress, onUpdate }: St
             </div>
           </div>
         ) : (
-          <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center justify-between gap-2">
             {currentBlocker ? (
-              <div className="flex-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
-                  Blocking Reason
-                </p>
-                <p className="text-sm">{currentBlocker}</p>
-              </div>
+              <p className="text-xs text-foreground/90 line-clamp-1 flex-1">{currentBlocker}</p>
             ) : (
-              <p className="text-sm text-muted-foreground italic">
-                No blockers reported
-              </p>
+              <p className="text-xs text-muted-foreground italic flex-1">No blocker logged</p>
             )}
-            <Button 
-              size="sm" 
-              variant="ghost"
-              onClick={() => setIsEditingBlocker(true)}
-            >
+            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setIsEditingBlocker(true)}>
               <Edit2 className="h-3 w-3 mr-1" />
-              {currentBlocker ? "Edit" : "Add Blocker"}
+              {currentBlocker ? "Edit" : "Add"}
             </Button>
           </div>
         )}
