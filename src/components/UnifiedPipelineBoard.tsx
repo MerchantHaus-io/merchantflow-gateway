@@ -1,5 +1,5 @@
-import { useState, useCallback, useRef, useEffect } from "react";
-import { RefreshCw, Minimize2, Maximize2, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { RefreshCw, Minimize2, Maximize2, ChevronLeft, ChevronRight, Focus, Minimize, X, User, CreditCard, Zap, Calendar, Plus } from "lucide-react";
 import { Opportunity, OpportunityStage, UNIFIED_PIPELINE_STAGES, STAGE_CONFIG, getServiceType, migrateStage } from "@/types/opportunity";
 import PipelineColumn from "./PipelineColumn";
 import OpportunityDetailModal from "./OpportunityDetailModal";
@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { format } from "date-fns";
 
 interface UnifiedPipelineBoardProps {
   opportunities: Opportunity[];
@@ -19,6 +20,11 @@ interface UnifiedPipelineBoardProps {
   onConvertToGateway?: (opportunity: Opportunity) => Promise<void> | void;
   onMoveToProcessing?: (opportunity: Opportunity) => Promise<void> | void;
   onRefresh?: () => Promise<void>;
+  currentUser?: string;
+  /** Controlled focus mode state from parent */
+  focusMode?: boolean;
+  /** Called when focus mode should change */
+  onFocusModeChange?: (active: boolean) => void;
 }
 
 const UnifiedPipelineBoard = ({
@@ -32,14 +38,26 @@ const UnifiedPipelineBoard = ({
   onConvertToGateway,
   onMoveToProcessing,
   onRefresh,
+  currentUser,
+  focusMode: externalFocusMode,
+  onFocusModeChange,
 }: UnifiedPipelineBoardProps) => {
   const [draggedOpportunity, setDraggedOpportunity] = useState<Opportunity | null>(null);
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
   const [isCompact, setIsCompact] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [internalFocusMode, setInternalFocusMode] = useState(false);
+  const [showExitButton, setShowExitButton] = useState(false);
   const [currentColumnIndex, setCurrentColumnIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
+
+  // Use external focus mode if provided, otherwise internal
+  const isFocusMode = externalFocusMode !== undefined ? externalFocusMode : internalFocusMode;
+  const setIsFocusMode = useCallback((active: boolean) => {
+    if (onFocusModeChange) onFocusModeChange(active);
+    else setInternalFocusMode(active);
+  }, [onFocusModeChange]);
 
   const handleRefresh = async () => {
     if (!onRefresh || isRefreshing) return;
@@ -50,6 +68,15 @@ const UnifiedPipelineBoard = ({
   const handleDragStart = (e: React.DragEvent, opportunity: Opportunity) => {
     setDraggedOpportunity(opportunity);
     e.dataTransfer.effectAllowed = "move";
+    // Add dragging class to the element
+    const el = e.currentTarget as HTMLElement;
+    requestAnimationFrame(() => el.classList.add("dragging"));
+  };
+
+  const handleDragEnd = () => {
+    setDraggedOpportunity(null);
+    // Remove dragging class from all cards
+    document.querySelectorAll(".dragging").forEach((el) => el.classList.remove("dragging"));
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -104,19 +131,300 @@ const UnifiedPipelineBoard = ({
 
   const totalCount = opportunities.length;
 
+  // Calculate total pipeline value from wizard_state monthly_volume
+  const totalPipelineValue = useMemo(() => {
+    let total = 0;
+    opportunities.forEach((opp) => {
+      const formState = opp.wizard_state?.form_state as Record<string, string> | undefined;
+      if (formState?.monthly_volume) {
+        const val = parseFloat(formState.monthly_volume.replace(/[^0-9.]/g, ""));
+        if (!isNaN(val)) total += val;
+      }
+    });
+    return total;
+  }, [opportunities]);
+
+  // Focus mode: separate current user's deals from others
+  const { myDeals, otherDeals } = useMemo(() => {
+    if (!isFocusMode || !currentUser) return { myDeals: [], otherDeals: [] };
+    const mine: Opportunity[] = [];
+    const others: Opportunity[] = [];
+    opportunities.forEach((opp) => {
+      if (opp.assigned_to === currentUser) mine.push(opp);
+      else others.push(opp);
+    });
+    return { myDeals: mine, otherDeals: others };
+  }, [opportunities, currentUser, isFocusMode]);
+
+  // Stable random positions for background cards (regenerated only when deals change)
+  const bgCardPositions = useMemo(() => {
+    return otherDeals.map(() => ({
+      x: Math.floor(Math.random() * 75) + 5,
+      y: Math.floor(Math.random() * 70) + 5,
+      animDuration: Math.random() * 15 + 20,
+      animDelay: Math.random() * -20,
+      depthScale: Math.random() * 0.3 + 0.65,
+    }));
+  }, [otherDeals.length]);
+
+  // Stable random animation timings for foreground cards (desynchronized)
+  const fgCardAnimations = useMemo(() => {
+    return myDeals.map(() => ({
+      animDuration: Math.random() * 2 + 3,
+      animDelay: Math.random() * -5,
+    }));
+  }, [myDeals.length]);
+
+  // ESC key to exit focus mode
+  useEffect(() => {
+    if (!isFocusMode) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsFocusMode(false);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isFocusMode, setIsFocusMode]);
+
+  // Mouse near top to show exit button
+  useEffect(() => {
+    if (!isFocusMode) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      setShowExitButton(e.clientY < 100);
+    };
+    document.addEventListener("mousemove", handleMouseMove);
+    return () => document.removeEventListener("mousemove", handleMouseMove);
+  }, [isFocusMode]);
+
+  // History API — push state on entering focus mode, pop to exit
+  useEffect(() => {
+    if (!isFocusMode) return;
+    window.history.pushState({ focusMode: true }, "");
+    const onPopState = () => setIsFocusMode(false);
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [isFocusMode, setIsFocusMode]);
+
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
+
+  // Helper to get a deal's value from wizard_state
+  const getDealValue = (opp: Opportunity): number => {
+    const formState = opp.wizard_state?.form_state as Record<string, string> | undefined;
+    if (formState?.monthly_volume) {
+      const val = parseFloat(formState.monthly_volume.replace(/[^0-9.]/g, ""));
+      if (!isNaN(val)) return val;
+    }
+    return 0;
+  };
+
+  // Focus mode rendering
+  if (isFocusMode) {
+    return (
+      <>
+        {/* Floating exit button — hidden, fades in when cursor near top */}
+        <div
+          className={cn(
+            "fixed top-6 left-1/2 -translate-x-1/2 z-50 transition-opacity duration-300",
+            showExitButton ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          )}
+        >
+          <Button
+            onClick={() => setIsFocusMode(false)}
+            className="bg-gray-900/90 backdrop-blur-sm text-white px-6 py-3 rounded-full shadow-2xl font-bold text-sm flex items-center gap-2 hover:bg-gray-900 transition-all"
+          >
+            <Minimize className="h-4 w-4" />
+            Exit Focus Mode (Esc)
+          </Button>
+        </div>
+
+        {/* Focus mode container — fixed to fill entire viewport */}
+        <div className="fixed inset-0 z-40 overflow-hidden bg-gray-50">
+          {/* Background Layer — Other Users' Deals (Parallax Depth) */}
+          <div className="absolute inset-0 z-0 pointer-events-none">
+            {otherDeals.map((deal, idx) => {
+              const pos = bgCardPositions[idx];
+              if (!pos) return null;
+              const blurAmount = (1 - pos.depthScale) * 4;
+              const opacityAmount = pos.depthScale * 0.5;
+              return (
+                <div
+                  key={deal.id}
+                  className="bg-floating-card bg-white p-4 rounded-xl w-64 border border-gray-200"
+                  style={{
+                    left: `${pos.x}%`,
+                    top: `${pos.y}%`,
+                    ["--depth-scale" as string]: pos.depthScale,
+                    filter: `grayscale(100%) blur(${blurAmount}px)`,
+                    opacity: opacityAmount,
+                    animationDuration: `${pos.animDuration}s`,
+                    animationDelay: `${pos.animDelay}s`,
+                  }}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h4 className="font-bold text-gray-900 text-sm">{deal.account?.name || "Unknown"}</h4>
+                      <span
+                        className="text-[10px] font-medium px-2 py-0.5 rounded-full mt-1 inline-block"
+                        style={{
+                          color: STAGE_CONFIG[deal.stage]?.color || "#6b7280",
+                          backgroundColor: `${STAGE_CONFIG[deal.stage]?.color || "#6b7280"}15`,
+                        }}
+                      >
+                        {STAGE_CONFIG[deal.stage]?.label || deal.stage}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mb-3 flex items-center gap-1.5">
+                    <User className="h-3 w-3" />
+                    {deal.assigned_to || "Unassigned"}
+                  </p>
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+                    <span className="font-bold text-gray-400 text-sm">
+                      {getDealValue(deal) > 0 ? formatCurrency(getDealValue(deal)) : "—"}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Foreground Layer — Current User's Deals (Iron Man Animation) */}
+          <div className="relative z-10 flex flex-wrap gap-10 justify-center items-center content-center w-full h-full p-8 overflow-y-auto no-scrollbar pointer-events-auto">
+            {myDeals.length === 0 ? (
+              <div className="text-center text-gray-500">
+                <p className="text-lg font-bold">No deals assigned to you</p>
+                <p className="text-sm mt-2">Cards assigned to you will appear here in focus mode.</p>
+              </div>
+            ) : (
+              myDeals.map((deal, idx) => {
+                const anim = fgCardAnimations[idx] || { animDuration: 4, animDelay: 0 };
+                const serviceType = getServiceType(deal);
+                const dealValue = getDealValue(deal);
+                const stageConfig = STAGE_CONFIG[deal.stage];
+                return (
+                  <div
+                    key={deal.id}
+                    className="floating-card bg-white p-5 rounded-xl w-72 cursor-pointer group shrink-0"
+                    style={{
+                      animationDuration: `${anim.animDuration}s`,
+                      animationDelay: `${anim.animDelay}s`,
+                    }}
+                    onClick={() => setSelectedOpportunity(deal)}
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h4 className="font-bold text-gray-900 text-lg group-hover:text-indigo-600 transition-colors">
+                          {deal.account?.name || "Unknown"}
+                        </h4>
+                        {/* Stage pill badge (visible because column headers are gone) */}
+                        <span
+                          className="text-xs font-medium px-2 py-0.5 rounded-full border mt-1 inline-block"
+                          style={{
+                            color: stageConfig?.color || "#6b7280",
+                            backgroundColor: `${stageConfig?.color || "#6b7280"}15`,
+                            borderColor: `${stageConfig?.color || "#6b7280"}30`,
+                          }}
+                        >
+                          {stageConfig?.label || deal.stage}
+                        </span>
+                      </div>
+                      <span
+                        className={cn(
+                          "flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded border",
+                          serviceType === "gateway_only"
+                            ? "text-teal-600 border-teal-500/40 bg-teal-500/10"
+                            : "text-indigo-600 border-indigo-500/40 bg-indigo-500/10"
+                        )}
+                      >
+                        {serviceType === "gateway_only" ? (
+                          <><Zap className="h-3 w-3" />GW</>
+                        ) : (
+                          <><CreditCard className="h-3 w-3" />CC</>
+                        )}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500 mb-2 flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      {deal.contact?.last_name || deal.contact?.first_name || "No contact"}
+                    </p>
+                    <p className="text-xs text-gray-400 flex items-center gap-1.5 mb-4">
+                      <Calendar className="h-3 w-3" />
+                      {format(new Date(deal.created_at), "MMM d, yyyy")}
+                    </p>
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                      <span className="font-bold text-gray-900 text-lg">
+                        {dealValue > 0 ? formatCurrency(dealValue) : "—"}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        <OpportunityDetailModal
+          opportunity={selectedOpportunity}
+          onClose={() => setSelectedOpportunity(null)}
+          onUpdate={(updates) => {
+            if (selectedOpportunity) {
+              onUpdateOpportunity(selectedOpportunity.id, updates);
+            }
+          }}
+          onMarkAsDead={onMarkAsDead}
+          onDelete={onDelete}
+          onConvertToGateway={onConvertToGateway}
+          onMoveToProcessing={onMoveToProcessing}
+          hasGatewayOpportunity={
+            selectedOpportunity
+              ? opportunities.some(
+                  (opp) =>
+                    opp.account_id === selectedOpportunity.account_id &&
+                    getServiceType(opp) === "gateway_only"
+                )
+              : false
+          }
+        />
+      </>
+    );
+  }
+
   return (
     <>
-      {/* Toolbar */}
-      <div className="flex-shrink-0 px-3 py-2 flex items-center justify-between border-b-2 border-foreground/10">
-        <div className="flex items-center gap-3">
-          <span className="font-black text-sm uppercase tracking-widest text-foreground">
+      {/* Sticky toolbar — logo, Total Pipeline Value, Focus Mode toggle, Add Deal */}
+      <div className="flex-shrink-0 sticky top-0 z-20 px-4 py-2.5 flex items-center justify-between border-b border-border/60 bg-card/95 backdrop-blur-sm">
+        <div className="flex items-center gap-4">
+          <span className="font-bold text-sm text-foreground tracking-tight">
             Pipeline
           </span>
-          <span className="text-xs font-bold text-muted-foreground bg-muted px-2 py-0.5 border border-border">
-            {totalCount} deals
-          </span>
+          <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="font-medium bg-muted px-2 py-0.5 rounded-full">
+              {totalCount} deals
+            </span>
+            {totalPipelineValue > 0 && (
+              <span className="font-semibold text-foreground">
+                Total: {formatCurrency(totalPipelineValue)}
+              </span>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
+          {currentUser && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsFocusMode(true)}
+                  className="h-8 px-3 gap-1.5 text-xs font-medium"
+                >
+                  <Focus className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Focus Mode</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Show only your deals in focus mode</TooltipContent>
+            </Tooltip>
+          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -124,7 +432,7 @@ const UnifiedPipelineBoard = ({
                 size="sm"
                 onClick={handleRefresh}
                 disabled={isRefreshing}
-                className="h-7 px-2 gap-1 text-xs"
+                className="h-8 px-2 gap-1 text-xs"
               >
                 <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
                 <span className="hidden sm:inline">{isRefreshing ? "Refreshing..." : "Refresh"}</span>
@@ -138,7 +446,7 @@ const UnifiedPipelineBoard = ({
                 variant="outline"
                 size="sm"
                 onClick={() => setIsCompact(!isCompact)}
-                className="h-7 px-2 gap-1 text-xs border-2 border-foreground/30"
+                className="h-8 px-2 gap-1 text-xs border border-border rounded-md"
               >
                 {isCompact ? <Maximize2 className="h-3.5 w-3.5" /> : <Minimize2 className="h-3.5 w-3.5" />}
                 <span className="hidden sm:inline">{isCompact ? "Expand" : "Compact"}</span>
@@ -146,16 +454,26 @@ const UnifiedPipelineBoard = ({
             </TooltipTrigger>
             <TooltipContent>{isCompact ? "Switch to regular view" : "Switch to compact view"}</TooltipContent>
           </Tooltip>
+          {onAddNew && (
+            <Button
+              size="sm"
+              onClick={onAddNew}
+              className="h-8 px-3 gap-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Add Deal</span>
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Pipeline columns */}
+      {/* Kanban board — horizontal scroll, no scrollbar */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-x-auto overflow-y-hidden min-h-0"
+        className="flex-1 overflow-x-auto overflow-y-hidden min-h-0 no-scrollbar"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
-        <div className={cn("flex items-stretch min-w-max h-full", isCompact ? "gap-0 p-1" : "gap-0 p-2")}>
+        <div className={cn("flex items-stretch min-w-max h-full", isCompact ? "gap-1.5 p-1.5" : "gap-2 p-3")}>
           {UNIFIED_PIPELINE_STAGES.map((stage) => (
             <PipelineColumn
               key={stage}
@@ -164,11 +482,13 @@ const UnifiedPipelineBoard = ({
               onDragStart={handleDragStart}
               onDragOver={handleDragOver}
               onDrop={handleDrop}
+              onDragEnd={handleDragEnd}
               onCardClick={setSelectedOpportunity}
               onAssignmentChange={onAssignmentChange}
               onSlaStatusChange={onSlaStatusChange}
               onAddNew={stage === "application_started" ? onAddNew : undefined}
               isCompact={isCompact}
+              currentUser={currentUser}
             />
           ))}
         </div>
@@ -193,7 +513,7 @@ const UnifiedPipelineBoard = ({
                 onClick={() => scrollToColumn(i)}
                 className={cn(
                   "w-1.5 h-1.5 rounded-full transition-all duration-200",
-                  i === currentColumnIndex ? "bg-primary w-3" : "bg-muted-foreground/40"
+                  i === currentColumnIndex ? "bg-indigo-600 w-3" : "bg-muted-foreground/40"
                 )}
               />
             ))}

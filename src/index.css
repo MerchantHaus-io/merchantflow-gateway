@@ -794,6 +794,127 @@ All colors MUST be HSL.
   .resize-stable {
     contain: size layout;
   }
+
+  /* Hide scrollbar while maintaining scroll functionality */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* --- Focus Mode Animations --- */
+
+  /* Floating hover animation for user's focus cards (Iron Man bobbing) */
+  @keyframes ironman-hover {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-15px); }
+    100% { transform: translateY(0px); }
+  }
+
+  /* Drift animation for background (other users') cards — diagonal drift */
+  @keyframes background-drift {
+    0% { transform: translate(0px, 0px) scale(var(--depth-scale, 0.8)); }
+    33% { transform: translate(40px, -60px) scale(var(--depth-scale, 0.8)); }
+    66% { transform: translate(-50px, 40px) scale(var(--depth-scale, 0.8)); }
+    100% { transform: translate(0px, 0px) scale(var(--depth-scale, 0.8)); }
+  }
+
+  /* Background floating card (other users' deals in focus mode) */
+  .bg-floating-card {
+    position: absolute;
+    animation: background-drift 25s ease-in-out infinite;
+    pointer-events: none;
+    will-change: transform;
+  }
+
+  /* Foreground floating card (user's deals in focus mode) — indigo glow */
+  .floating-card {
+    position: relative;
+    animation: ironman-hover 4s ease-in-out infinite;
+    animation-timing-function: ease-in-out;
+    box-shadow:
+      0 10px 25px -5px rgba(0, 0, 0, 0.15),
+      0 0 20px rgba(79, 70, 229, 0.35),
+      0 0 40px rgba(79, 70, 229, 0.15);
+    border: 1px solid rgba(79, 70, 229, 0.4);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .floating-card:hover {
+    z-index: 50;
+    animation-play-state: paused;
+    box-shadow:
+      0 15px 35px -5px rgba(0, 0, 0, 0.2),
+      0 0 35px rgba(79, 70, 229, 0.6),
+      0 0 60px rgba(79, 70, 229, 0.25);
+    transform: scale(1.05) translateY(-5px) !important;
+  }
+
+  /* Pipeline card — adapted focus-mode glow for kanban columns */
+  .pipeline-card {
+    position: relative;
+    box-shadow:
+      0 4px 12px -2px rgba(0, 0, 0, 0.12),
+      0 0 10px rgba(79, 70, 229, 0.2),
+      0 0 20px rgba(79, 70, 229, 0.08);
+    border: 1px solid rgba(79, 70, 229, 0.3);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+
+  .pipeline-card:hover {
+    box-shadow:
+      0 8px 20px -4px rgba(0, 0, 0, 0.18),
+      0 0 18px rgba(79, 70, 229, 0.4),
+      0 0 35px rgba(79, 70, 229, 0.15);
+    border-color: rgba(79, 70, 229, 0.5);
+    transform: translateY(-2px) scale(1.02);
+  }
+
+  /* Live-stage pipeline card — amber glow variant */
+  .pipeline-card-live {
+    position: relative;
+    box-shadow:
+      0 4px 12px -2px rgba(0, 0, 0, 0.12),
+      0 0 10px rgba(245, 158, 11, 0.25),
+      0 0 20px rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+
+  .pipeline-card-live:hover {
+    box-shadow:
+      0 8px 20px -4px rgba(0, 0, 0, 0.18),
+      0 0 18px rgba(245, 158, 11, 0.45),
+      0 0 35px rgba(245, 158, 11, 0.18);
+    border-color: rgba(245, 158, 11, 0.6);
+    transform: translateY(-2px) scale(1.02);
+  }
+
+  /* Dragging feedback — card shrinks and fades */
+  .dragging {
+    opacity: 0.5;
+    transform: scale(0.95);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+
+  /* Drop target highlight — dashed gray border */
+  .drag-over {
+    background-color: hsl(var(--muted) / 0.6);
+    border: 2px dashed #9ca3af !important;
+    border-radius: 0.75rem;
+  }
+
+  /* Toast notification slide-up animation */
+  @keyframes toast-slide-up {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes toast-slide-down {
+    from { transform: translateY(0); opacity: 1; }
+    to { transform: translateY(20px); opacity: 0; }
+  }
 }
 
 /* Smooth transitions during orientation changes */

@@ -12,6 +12,8 @@ interface AppLayoutProps {
   pageTitle?: string;
   /** Optional header actions slot */
   headerActions?: ReactNode;
+  /** When true, all chrome (header, footer, widgets) is hidden for focus mode */
+  focusMode?: boolean;
 }
 
 export function AppLayout({
@@ -19,12 +21,13 @@ export function AppLayout({
   onNewApplication,
   pageTitle,
   headerActions,
+  focusMode = false,
 }: AppLayoutProps) {
   return (
     <div className="h-screen h-dvh min-h-0 flex flex-col w-full overflow-hidden">
-      <MegaMenuHeader onNewApplication={onNewApplication} />
+      {!focusMode && <MegaMenuHeader onNewApplication={onNewApplication} />}
       <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
-        {(pageTitle || headerActions) && (
+        {!focusMode && (pageTitle || headerActions) && (
           <div className="border-b border-border bg-background/50 px-4 lg:px-6 py-3">
             <div className="flex items-center justify-between gap-4 flex-wrap">
               {pageTitle && (
@@ -34,14 +37,14 @@ export function AppLayout({
             </div>
           </div>
         )}
-        <div className="flex-1 min-h-0 overflow-y-auto scroll-smooth pb-16 lg:pb-0">
+        <div className={focusMode ? "flex-1 min-h-0 overflow-hidden" : "flex-1 min-h-0 overflow-y-auto scroll-smooth pb-16 lg:pb-0"}>
           {children}
         </div>
       </main>
-      <MobileBottomNav />
-      <FloatingChat />
-      <ActionItemsWidget />
-      <BroadcastPopup />
+      {!focusMode && <MobileBottomNav />}
+      {!focusMode && <FloatingChat />}
+      {!focusMode && <ActionItemsWidget />}
+      {!focusMode && <BroadcastPopup />}
     </div>
   );
 }
