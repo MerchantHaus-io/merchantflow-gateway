@@ -411,10 +411,13 @@ export default function MerchantApply() {
     setIsSubmitting(true);
 
     try {
-      // 1. Insert into applications table
-      const { data: appData, error: appError } = await supabase
+      // 1. Generate a client-side UUID so we don't need .select() (which requires auth)
+      const applicationId = crypto.randomUUID();
+
+      const { error: appError } = await supabase
         .from("applications")
         .insert({
+          id: applicationId,
           full_name: `${form.dba_contact_first_name} ${form.dba_contact_last_name}`.trim(),
           email: form.dba_contact_email,
           phone: form.dba_contact_phone,
@@ -424,13 +427,12 @@ export default function MerchantApply() {
           dba_name: form.dba_name || null,
           nature_of_business: form.nature_of_business || null,
           monthly_volume: form.monthly_volume || null,
-          notes: form.additional_notes || null,
-        })
-        .select("id")
-        .single();
+          notes: isGatewayOnly
+            ? `[Gateway Only] Processor: ${form.current_processor || ''}. Username: ${form.username || ''}. ${form.additional_notes || ""}`.trim()
+            : (form.additional_notes || null),
+        });
 
       if (appError) throw appError;
-      const applicationId = appData.id;
 
       if (!isGatewayOnly) {
         // 2. Insert into merchants table (canonical keys match column names)
@@ -549,13 +551,7 @@ export default function MerchantApply() {
           }
         }
       } else {
-        // Gateway only — store notes with processor/username info
-        await supabase
-          .from("applications")
-          .update({
-            notes: `[Gateway Only] Processor: ${form.current_processor}. Username: ${form.username}. ${form.additional_notes || ""}`.trim(),
-          })
-          .eq("id", applicationId);
+        // Gateway only — notes already set during insert, no update needed
       }
 
       // Record consent
