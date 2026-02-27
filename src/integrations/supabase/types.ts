@@ -779,6 +779,62 @@ export type Database = {
           },
         ]
       }
+      merchant_consents: {
+        Row: {
+          accepted_at: string
+          account_authorization_accepted: boolean
+          applicant_email: string
+          applicant_name: string
+          application_id: string | null
+          beneficial_ownership_accepted: boolean
+          consent_type: string
+          created_at: string
+          id: string
+          ip_address: string | null
+          merchant_agreement_accepted: boolean
+          terms_version: string
+          user_agent: string | null
+        }
+        Insert: {
+          accepted_at?: string
+          account_authorization_accepted?: boolean
+          applicant_email: string
+          applicant_name: string
+          application_id?: string | null
+          beneficial_ownership_accepted?: boolean
+          consent_type?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          merchant_agreement_accepted?: boolean
+          terms_version?: string
+          user_agent?: string | null
+        }
+        Update: {
+          accepted_at?: string
+          account_authorization_accepted?: boolean
+          applicant_email?: string
+          applicant_name?: string
+          application_id?: string | null
+          beneficial_ownership_accepted?: boolean
+          consent_type?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          merchant_agreement_accepted?: boolean
+          terms_version?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_consents_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchants: {
         Row: {
           application_id: string
