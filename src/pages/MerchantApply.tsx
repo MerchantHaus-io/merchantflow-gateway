@@ -430,6 +430,33 @@ export default function MerchantApply() {
           notes: isGatewayOnly
             ? `[Gateway Only] Processor: ${form.current_processor || ''}. Username: ${form.username || ''}. ${form.additional_notes || ""}`.trim()
             : (form.additional_notes || null),
+          // Populate address/legal fields so conversion can read them
+          address: form.dba_address_line1 || null,
+          address2: form.dba_address_line2 || null,
+          city: form.dba_city || null,
+          state: form.dba_state || null,
+          zip: form.dba_zip || null,
+          website: form.website_url || null,
+          legal_name: form.legal_entity_name || null,
+          federal_tax_id: form.federal_tax_id || null,
+          state_of_incorporation: form.state_incorporated || null,
+          business_structure: form.ownership_type || null,
+          date_established: form.business_formation_date || null,
+          avg_ticket: form.average_transaction || null,
+          high_ticket: form.high_ticket || null,
+          products: form.product_description || null,
+          in_person_percent: form.percent_swiped || null,
+          keyed_percent: form.percent_keyed || null,
+          ecommerce_percent: form.percent_ecommerce || null,
+          // Owner info from first principal
+          owner_name: form.principals[0] ? `${form.principals[0].principal_first_name} ${form.principals[0].principal_last_name}`.trim() : null,
+          owner_title: form.principals[0]?.principal_title || null,
+          owner_dob: form.principals[0]?.date_of_birth || null,
+          owner_ssn_last4: form.principals[0]?.ssn_full ? form.principals[0].ssn_full.slice(-4) : null,
+          owner_address: form.principals[0]?.principal_address_line1 || null,
+          owner_city: form.principals[0]?.principal_city || null,
+          owner_state: form.principals[0]?.principal_state || null,
+          owner_zip: form.principals[0]?.principal_zip || null,
         });
 
       if (appError) throw appError;

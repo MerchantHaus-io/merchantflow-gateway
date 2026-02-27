@@ -277,43 +277,55 @@ export default function WebSubmissions() {
           form_state: wizardFormState,
         } as never, { onConflict: "opportunity_id" });
 
-      // 5. Populate normalized tables from application data
-      // Insert merchant record
+      // 5. Populate normalized tables ONLY if they don't already exist (public form may have inserted them)
       if (!isGatewayOnly) {
-        await supabase.from("merchants").insert({
-          application_id: app.id,
-          dba_name: app.dba_name || app.company_name || null,
-          nature_of_business: app.nature_of_business || null,
-          dba_contact_first_name: firstName,
-          dba_contact_last_name: lastName,
-          dba_contact_phone: app.phone || null,
-          dba_contact_email: app.email || null,
-          dba_address_line1: app.address || null,
-          dba_address_line2: app.address2 || null,
-          dba_city: app.city || null,
-          dba_state: app.state || null,
-          dba_zip: app.zip || null,
-          legal_entity_name: app.legal_name || null,
-          federal_tax_id: app.federal_tax_id || null,
-          ownership_type: app.business_structure || null,
-          business_formation_date: app.date_established || null,
-          state_incorporated: app.state_of_incorporation || null,
-          legal_address_line1: app.address || null,
-          legal_city: app.city || null,
-          legal_state: app.state || null,
-          legal_zip: app.zip || null,
-          monthly_volume: app.monthly_volume || null,
-          average_transaction: app.avg_ticket || null,
-          high_ticket: app.high_ticket || null,
-          percent_swiped: app.in_person_percent || null,
-          percent_keyed: app.keyed_percent || null,
-          percent_ecommerce: app.ecommerce_percent || null,
-          website_url: app.website || null,
-          product_description: app.products || null,
-        });
+        const { data: existingMerchant } = await supabase
+          .from("merchants")
+          .select("id")
+          .eq("application_id", app.id)
+          .maybeSingle();
 
-        // Insert principal if owner data exists
-        if (app.owner_name) {
+        if (!existingMerchant) {
+          await supabase.from("merchants").insert({
+            application_id: app.id,
+            dba_name: app.dba_name || app.company_name || null,
+            nature_of_business: app.nature_of_business || null,
+            dba_contact_first_name: firstName,
+            dba_contact_last_name: lastName,
+            dba_contact_phone: app.phone || null,
+            dba_contact_email: app.email || null,
+            dba_address_line1: app.address || null,
+            dba_address_line2: app.address2 || null,
+            dba_city: app.city || null,
+            dba_state: app.state || null,
+            dba_zip: app.zip || null,
+            legal_entity_name: app.legal_name || null,
+            federal_tax_id: app.federal_tax_id || null,
+            ownership_type: app.business_structure || null,
+            business_formation_date: app.date_established || null,
+            state_incorporated: app.state_of_incorporation || null,
+            legal_address_line1: app.address || null,
+            legal_city: app.city || null,
+            legal_state: app.state || null,
+            legal_zip: app.zip || null,
+            monthly_volume: app.monthly_volume || null,
+            average_transaction: app.avg_ticket || null,
+            high_ticket: app.high_ticket || null,
+            percent_swiped: app.in_person_percent || null,
+            percent_keyed: app.keyed_percent || null,
+            percent_ecommerce: app.ecommerce_percent || null,
+            website_url: app.website || null,
+            product_description: app.products || null,
+          });
+        }
+
+        const { data: existingPrincipals } = await supabase
+          .from("principals")
+          .select("id")
+          .eq("application_id", app.id)
+          .limit(1);
+
+        if ((!existingPrincipals || existingPrincipals.length === 0) && app.owner_name) {
           const ownerParts = app.owner_name.trim().split(" ");
           await supabase.from("principals").insert({
             application_id: app.id,
@@ -330,7 +342,44 @@ export default function WebSubmissions() {
         }
       }
 
-      // 6. Delete the application entry
+      // 6. Migrate uploaded documents from applications/{id}/ to opportunity
+      try {
+        const { data: storedFiles } = await supabase.storage
+          .from('opportunity-documents')
+          .list(`applications/${app.id}`);
+
+        if (storedFiles && storedFiles.length > 0) {
+          for (const file of storedFiles) {
+            const oldPath = `applications/${app.id}/${file.name}`;
+            const newPath = `${opportunity.id}/${file.name}`;
+
+            // Copy file to opportunity path
+            const { error: copyErr } = await supabase.storage
+              .from('opportunity-documents')
+              .copy(oldPath, newPath);
+
+            if (!copyErr) {
+              // Create document record linked to opportunity
+              await supabase.from("documents").insert({
+                opportunity_id: opportunity.id,
+                file_name: file.name.replace(/^\d+_/, ''), // strip timestamp prefix
+                file_path: newPath,
+                content_type: file.metadata?.mimetype || null,
+                file_size: file.metadata?.size || null,
+                uploaded_by: app.email,
+                document_type: file.name.toLowerCase().includes('void') ? 'Voided Check / Bank Confirmation Letter' : 'Bank Statement',
+              });
+
+              // Remove old file
+              await supabase.storage.from('opportunity-documents').remove([oldPath]);
+            }
+          }
+        }
+      } catch (docMigrateErr) {
+        console.error("Document migration (non-blocking):", docMigrateErr);
+      }
+
+      // 7. Delete the application entry
       await supabase
         .from("applications")
         .delete()
