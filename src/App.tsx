@@ -35,6 +35,7 @@ import NMIPaymentsExplained from "./pages/NMIPaymentsExplained";
 import TerminalUpdates from "./pages/TerminalUpdates";
 import WebSubmissions from "./pages/WebSubmissions";
 import MerchantApply from "./pages/MerchantApply";
+import TermsProcessing from "./pages/TermsProcessing";
 import LiveBilling from "./pages/LiveBilling";
 import LiveAccountDetail from "./pages/LiveAccountDetail";
 import SupportedProcessors from "./pages/SupportedProcessors";
@@ -65,6 +66,7 @@ const App = () => (
                 <Route path="/update-password" element={<UpdatePassword />} />
                 <Route path="/apply" element={<Apply />} />
                 <Route path="/merchant-apply" element={<MerchantApply />} />
+                <Route path="/terms-processing" element={<TermsProcessing />} />
                 <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
                 <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
                 <Route path="/opportunities" element={<ProtectedRoute><Opportunities /></ProtectedRoute>} />

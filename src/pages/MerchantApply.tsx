@@ -118,6 +118,8 @@ interface MerchantForm {
   // Agreements
   beneficial_owner_certification: boolean;
   bank_disclosure_ack: boolean;
+  merchant_agreement_accepted: boolean;
+  account_authorization_accepted: boolean;
 
   // Notes
   additional_notes: string;
@@ -150,6 +152,7 @@ const initialState: MerchantForm = {
   statement_docs: [], void_check_docs: [],
 
   beneficial_owner_certification: false, bank_disclosure_ack: false,
+  merchant_agreement_accepted: false, account_authorization_accepted: false,
 
   additional_notes: "",
   username: "", current_processor: "",
@@ -371,6 +374,14 @@ export default function MerchantApply() {
       return;
     }
 
+    // Validate agreement acceptance for processing applications
+    if (!isGatewayOnly) {
+      if (!form.merchant_agreement_accepted || !form.account_authorization_accepted) {
+        toast({ variant: "destructive", title: "Agreement Required", description: "You must accept the Merchant Agreement and authorize account creation before submitting." });
+        return;
+      }
+    }
+
     // Validate percentage rules for processing
     if (!isGatewayOnly) {
       const txMix = [form.percent_swiped, form.percent_keyed, form.percent_moto, form.percent_ecommerce]
@@ -546,6 +557,28 @@ export default function MerchantApply() {
           .eq("id", applicationId);
       }
 
+      // Record consent
+      if (!isGatewayOnly) {
+        try {
+          const ipRes = await fetch('https://api.ipify.org?format=json').catch(() => null);
+          const ipData = ipRes ? await ipRes.json().catch(() => ({})) : {};
+          await supabase.from("merchant_consents" as any).insert({
+            application_id: applicationId,
+            applicant_name: `${form.dba_contact_first_name} ${form.dba_contact_last_name}`.trim(),
+            applicant_email: form.dba_contact_email,
+            consent_type: 'merchant_agreement',
+            ip_address: ipData.ip || 'unknown',
+            user_agent: navigator.userAgent,
+            terms_version: '1.0',
+            beneficial_ownership_accepted: form.beneficial_owner_certification,
+            merchant_agreement_accepted: form.merchant_agreement_accepted,
+            account_authorization_accepted: form.account_authorization_accepted,
+          });
+        } catch (consentErr) {
+          console.error("Consent record (non-blocking):", consentErr);
+        }
+      }
+
       setIsSubmitted(true);
       window.location.href = "https://merchanthaus.io";
     } catch (error: any) {
@@ -670,7 +703,7 @@ export default function MerchantApply() {
                     {stepIndex === 1 && <LegalInfoStep form={form} onChange={handleChange} onBlur={handleBlur} getError={getError} />}
                     {stepIndex === 2 && <ProcessingStep form={form} onChange={handleChange} onBlur={handleBlur} getError={getError} />}
                     {stepIndex === 3 && <OwnersBankingStep form={form} onChange={handleChange} onPrincipalChange={handlePrincipalChange} addPrincipal={addPrincipal} removePrincipal={removePrincipal} onBlur={handleBlur} getError={getError} />}
-                    {stepIndex === 4 && <ReviewStep form={form} onSubmit={handleSubmit} isSubmitting={isSubmitting} progress={progress} />}
+                    {stepIndex === 4 && <ReviewStep form={form} onSubmit={handleSubmit} isSubmitting={isSubmitting} progress={progress} onChange={handleChange} />}
                   </>
                 )}
               </div>
@@ -1232,7 +1265,7 @@ function OwnersBankingStep({ form, onChange, onPrincipalChange, addPrincipal, re
 
 // ─── Review & Submit ───
 
-function ReviewStep({ form, onSubmit, isSubmitting, progress }: { form: MerchantForm; onSubmit: () => void; isSubmitting: boolean; progress: number }) {
+function ReviewStep({ form, onSubmit, isSubmitting, progress, onChange }: { form: MerchantForm; onSubmit: () => void; isSubmitting: boolean; progress: number; onChange: <K extends keyof MerchantForm>(field: K, value: MerchantForm[K]) => void }) {
   const allComplete = progress === 100;
   return (
     <div className="space-y-6">
@@ -1306,8 +1339,57 @@ function ReviewStep({ form, onSubmit, isSubmitting, progress }: { form: Merchant
           </dl>
         </div>
       </div>
+
+      {/* ─── Disclosure & Agreement ─── */}
+      <div className="rounded-xl border-2 border-primary/30 bg-card p-4 md:p-6 space-y-5">
+        <h3 className="text-sm font-bold text-foreground uppercase tracking-wide">Disclosure</h3>
+
+        <div className="rounded-lg border border-border bg-muted/50 p-4">
+          <h4 className="text-sm font-semibold text-foreground mb-3">Merchant Application and Agreement Acceptance</h4>
+          <div className="text-xs text-muted-foreground leading-relaxed space-y-3 max-h-64 overflow-y-auto pr-2">
+            <p><strong>IMPORTANT INFORMATION ABOUT PROCEDURES FOR OPENING A NEW ACCOUNT:</strong> To help the government fight the funding of terrorism and money laundering activities, Federal law requires all financial institutions to obtain, verify, and record information that identifies each person who opens an account. What this means for you: When you open an account, we will ask for your name, address, date of birth, and other information that will allow us to identify you. We may also ask to see your driver's license or other identifying documents.</p>
+            <p><strong>MERCHANT APPLICATION AND AGREEMENT ACCEPTANCE</strong> (Capitalized terms not defined in the Acceptance section have the meaning set forth below in the Terms and Conditions section). By executing this Merchant Application on behalf of the merchant described above ("Merchant"), the undersigned individual(s) represent(s), warrant(s), and acknowledge(s) that:</p>
+            <p>(1) All information contained in this Merchant Application ("Application") is true, correct and complete as of the date of this Application;</p>
+            <p>(ii) If the Merchant is a corporation, limited liability company, or partnership, the individual(s) executing this Application have the requisite legal power and authority to complete and submit this Application on behalf of the Merchant and to make and provide the acknowledgments, authorizations and agreements set forth herein on behalf of the Merchant and individually;</p>
+            <p>(iii) The information contained in this Application is provided for the purpose of obtaining, or maintaining, a merchant account for the Merchant with the Member Bank ("BANK") and BANK will rely on the information provided herein in its approved process and in settling the applicable Discount Rate, Approved Average Ticket, and Approved Monthly Card Volume;</p>
+            <p>(iv) BANK is authorized to investigate, either through its own agents or through credit bureaus/agencies, the credit of the Merchant and each person listed on this Application;</p>
+            <p>(v) BANK will determine all rates, fees and charges and notify Merchant of the approved fees and by Merchant's submission and acceptance of Merchant's first settled transaction, Merchant agrees to pay such approved fees;</p>
+            <p>(vi) The Merchant Agreement will not take effect until Merchant has been approved by BANK and a merchant number has been issued to merchant; and</p>
+            <p>(vii) The undersigned has received, read, understood the Merchant Agreement, which is incorporated herein by reference thereto, and agrees on behalf of the Merchant to be bound by all terms and conditions thereof.</p>
+            <p>The merchant on whose behalf this Application is being submitted acknowledges that if this Application is being submitted to Merrick Bank as the Member Bank, MerchantHaus / NMI Payments may also be a party to this Merchant Agreement. In such case, Merchant acknowledges that MerchantHaus / NMI Payments will rely on the representations and warranties set forth in this application for Merchant Agreement and unless otherwise specified or prohibited by Association of applicable law, MerchantHaus / NMI Payments will have all the rights of BANK under this Application and Agreement.</p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex items-start gap-3">
+            <input type="checkbox" id="review_account_auth" checked={form.account_authorization_accepted} onChange={e => onChange("account_authorization_accepted", e.target.checked)} className="mt-1 rounded border-border accent-primary h-4 w-4" />
+            <label htmlFor="review_account_auth" className="text-sm text-foreground">
+              By checking this box, you authorize the creation of your account <span className="text-destructive">*</span>
+            </label>
+          </div>
+
+          <div className="flex items-start gap-3">
+            <input type="checkbox" id="review_merchant_agreement" checked={form.merchant_agreement_accepted} onChange={e => onChange("merchant_agreement_accepted", e.target.checked)} className="mt-1 rounded border-border accent-primary h-4 w-4" />
+            <label htmlFor="review_merchant_agreement" className="text-sm text-foreground">
+              I acknowledge I have read and agree to the{" "}
+              <a href="/terms-processing" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">
+                Merchant Terms and Conditions
+              </a>
+              <span className="text-destructive"> *</span>
+            </label>
+          </div>
+        </div>
+
+        {(!form.merchant_agreement_accepted || !form.account_authorization_accepted) && (
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-600 flex items-start gap-2">
+            <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+            <span>You must accept both agreements above before you can submit your application.</span>
+          </div>
+        )}
+      </div>
+
       <div className="pt-4 border-t border-border">
-        <button type="button" className="w-full rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground disabled:bg-secondary disabled:text-muted-foreground flex items-center justify-center gap-2" onClick={onSubmit} disabled={!allComplete || isSubmitting}>
+        <button type="button" className="w-full rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground disabled:bg-secondary disabled:text-muted-foreground flex items-center justify-center gap-2" onClick={onSubmit} disabled={!allComplete || isSubmitting || !form.merchant_agreement_accepted || !form.account_authorization_accepted}>
           {isSubmitting ? "Submitting..." : <><CheckCircle className="w-4 h-4" />Submit Application</>}
         </button>
       </div>
