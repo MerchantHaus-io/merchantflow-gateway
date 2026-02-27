@@ -1384,8 +1384,9 @@ function ReviewStep({ form, onSubmit, isSubmitting, progress, onChange }: { form
         <div className="rounded-xl border border-border bg-muted p-4">
           <h3 className="text-sm font-semibold text-foreground mb-3">Principals ({form.principals.length})</h3>
           {form.principals.map((p, i) => (
-            <div key={i} className="text-sm mb-2">
-              <span className="font-medium">{p.principal_first_name} {p.principal_last_name}</span> — {p.principal_title} ({p.ownership_percent}%) • SSN: ••••{p.ssn_full.slice(-4)}
+            <div key={i} className="text-sm text-foreground mb-2">
+              <span className="font-medium text-foreground">{p.principal_first_name} {p.principal_last_name}</span>
+              <span className="text-muted-foreground"> — {p.principal_title} ({p.ownership_percent}%) • SSN: ••••{p.ssn_full.slice(-4)}</span>
             </div>
           ))}
         </div>
