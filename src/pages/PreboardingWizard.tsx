@@ -456,9 +456,33 @@ export default function PreboardingWizard() {
   };
 
   const handleSubmit = async () => {
+    if (!selectedOpportunityId) return;
     await saveWizardState();
-    console.log("Preboarding payload", form);
-    alert("Preboarding checklist complete! You can now move to the formal merchant app.");
+
+    // Advance opportunity stage to preboarding_complete
+    const { error: stageError } = await supabase
+      .from('opportunities')
+      .update({ stage: 'preboarding_complete' })
+      .eq('id', selectedOpportunityId);
+
+    if (stageError) {
+      toast({ title: "Could not advance stage", description: stageError.message, variant: "destructive" });
+      return;
+    }
+
+    // Log activity
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from('activities').insert({
+      opportunity_id: selectedOpportunityId,
+      type: 'stage_change',
+      description: 'Preboarding checklist marked complete — moved to preboarding_complete',
+      user_id: user?.id ?? null,
+      user_email: user?.email ?? null,
+    });
+
+    sonnerToast.success("Preboarding complete!", {
+      description: "Stage advanced to Preboarding Complete. Ready for the formal merchant application.",
+    });
   };
 
   const currentStep = steps[stepIndex];
