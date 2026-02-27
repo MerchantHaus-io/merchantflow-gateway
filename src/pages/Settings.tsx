@@ -11,7 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Shield, RefreshCw, LogOut, Camera, User, Loader2, Save, Bell, Palette, Sun, Moon, Trees, Waves, Flame, Stars, MessageCircle, Volume2, Download, FileArchive, Users, Cloudy, Circle, Smartphone } from "lucide-react";
+import { Shield, RefreshCw, LogOut, Camera, User, Loader2, Save, Bell, Palette, Sun, Moon, Trees, Waves, Flame, Stars, MessageCircle, Volume2, Download, FileArchive, Users, Cloudy, Circle, Smartphone, DatabaseBackup } from "lucide-react";
 import JSZip from "jszip";
 import { Switch } from "@/components/ui/switch";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
@@ -39,6 +39,7 @@ const Settings = () => {
   const [isResetting, setIsResetting] = useState(false);
   const [isSigningOutAll, setIsSigningOutAll] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -244,6 +245,126 @@ const Settings = () => {
       setIsSigningOutAll(false);
     }
   };
+
+  const handleBackSync = async () => {
+    setIsSyncing(true);
+    let synced = 0;
+    let failed = 0;
+    try {
+      // Fetch all opportunities with their related data
+      const { data: opportunities, error: oppError } = await supabase
+        .from("opportunities")
+        .select(`
+          id, service_type,
+          account:accounts(name, address1, address2, city, state, zip, country, website),
+          contact:contacts(first_name, last_name, email, phone, fax)
+        `)
+        .eq("status", "active");
+
+      if (oppError) throw oppError;
+
+      for (const opp of opportunities || []) {
+        try {
+          // Get merchants data if exists
+          // We need to find the application_id linked to this opportunity
+          // Since there's no direct FK, we match by account name → application
+          const { data: wizardState } = await supabase
+            .from("onboarding_wizard_states")
+            .select("form_state")
+            .eq("opportunity_id", opp.id)
+            .maybeSingle();
+
+          const existingForm = (wizardState?.form_state as Record<string, unknown>) || {};
+          const account = opp.account as any;
+          const contact = opp.contact as any;
+          const isGateway = opp.service_type === "gateway_only";
+
+          // Build canonical form state, preserving existing values where they exist
+          const syncedForm: Record<string, unknown> = {
+            dba_name: existingForm.dba_name || account?.name || "",
+            product_description: existingForm.product_description || "",
+            nature_of_business: existingForm.nature_of_business || "",
+            dba_contact_first_name: existingForm.dba_contact_first_name || contact?.first_name || "",
+            dba_contact_last_name: existingForm.dba_contact_last_name || contact?.last_name || "",
+            dba_contact_phone: existingForm.dba_contact_phone || contact?.phone || "",
+            dba_contact_email: existingForm.dba_contact_email || contact?.email || "",
+            dba_address_line1: existingForm.dba_address_line1 || account?.address1 || "",
+            dba_address_line2: existingForm.dba_address_line2 || account?.address2 || "",
+            dba_city: existingForm.dba_city || account?.city || "",
+            dba_state: existingForm.dba_state || account?.state || "",
+            dba_zip: existingForm.dba_zip || account?.zip || "",
+            legal_entity_name: existingForm.legal_entity_name || account?.name || "",
+            federal_tax_id: existingForm.federal_tax_id || "",
+            ownership_type: existingForm.ownership_type || "",
+            business_formation_date: existingForm.business_formation_date || "",
+            state_incorporated: existingForm.state_incorporated || "",
+            legal_address_line1: existingForm.legal_address_line1 || account?.address1 || "",
+            legal_address_line2: existingForm.legal_address_line2 || account?.address2 || "",
+            legal_city: existingForm.legal_city || account?.city || "",
+            legal_state: existingForm.legal_state || account?.state || "",
+            legal_zip: existingForm.legal_zip || account?.zip || "",
+            monthly_volume: existingForm.monthly_volume || "",
+            average_transaction: existingForm.average_transaction || "",
+            high_ticket: existingForm.high_ticket || "",
+            percent_swiped: existingForm.percent_swiped || "",
+            percent_keyed: existingForm.percent_keyed || "",
+            percent_moto: existingForm.percent_moto || "",
+            percent_ecommerce: existingForm.percent_ecommerce || "",
+            percent_b2b: existingForm.percent_b2b || "",
+            percent_b2c: existingForm.percent_b2c || "",
+            sic_mcc_code: existingForm.sic_mcc_code || "",
+            website_url: existingForm.website_url || account?.website || "",
+            username: existingForm.username || "",
+            current_processor: existingForm.current_processor || "",
+            documents: [],
+            notes: existingForm.notes || "",
+          };
+
+          // Calculate progress
+          const requiredFields = isGateway
+            ? ["dba_name", "dba_contact_first_name", "dba_contact_last_name", "dba_contact_phone", "dba_contact_email", "dba_address_line1", "dba_city", "dba_state", "dba_zip", "username", "current_processor"]
+            : ["dba_name", "product_description", "nature_of_business", "dba_contact_first_name", "dba_contact_last_name", "dba_contact_phone", "dba_contact_email", "dba_address_line1", "dba_city", "dba_state", "dba_zip", "legal_entity_name", "federal_tax_id", "ownership_type", "business_formation_date", "state_incorporated", "legal_address_line1", "legal_city", "legal_state", "legal_zip", "monthly_volume", "average_transaction", "high_ticket", "percent_swiped", "percent_keyed", "percent_moto", "percent_ecommerce", "percent_b2c", "percent_b2b"];
+
+          const filled = requiredFields.filter(f => {
+            const v = syncedForm[f];
+            return typeof v === "string" ? v.trim().length > 0 : Boolean(v);
+          }).length;
+
+          // Check uploaded docs count
+          const { count: docCount } = await supabase
+            .from("documents")
+            .select("id", { count: "exact", head: true })
+            .eq("opportunity_id", opp.id);
+
+          const totalRequired = requiredFields.length + (isGateway ? 0 : 1);
+          const docsComplete = (docCount ?? 0) > 0 ? 1 : 0;
+          const progress = Math.round(((filled + (isGateway ? 0 : docsComplete)) / totalRequired) * 100);
+
+          await supabase
+            .from("onboarding_wizard_states")
+            .upsert({
+              opportunity_id: opp.id,
+              progress,
+              step_index: wizardState ? undefined : 0,
+              form_state: syncedForm,
+            } as never, { onConflict: "opportunity_id" });
+
+          synced++;
+        } catch (e) {
+          console.error(`Failed to sync opportunity ${opp.id}:`, e);
+          failed++;
+        }
+      }
+
+      toast.success(`Back-sync complete: ${synced} synced, ${failed} failed`);
+    } catch (error) {
+      console.error("Back-sync error:", error);
+      toast.error("Back-sync failed");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
 
   const handleDataExport = async () => {
     setIsExporting(true);
@@ -643,6 +764,35 @@ const Settings = () => {
                         ))}
                       </div>
                     )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Back-Sync Wizard Data - Admin Only */}
+              {isAdmin && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <DatabaseBackup className="h-5 w-5" />
+                      Back-Sync Wizard Data
+                    </CardTitle>
+                    <CardDescription>
+                      Re-populate all onboarding wizard states from account, contact, and merchant data for existing opportunities.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                      <div>
+                        <h3 className="font-medium">Sync All Opportunities</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Fills empty wizard fields from linked records. Existing values are preserved.
+                        </p>
+                      </div>
+                      <Button onClick={handleBackSync} disabled={isSyncing}>
+                        {isSyncing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <DatabaseBackup className="h-4 w-4 mr-2" />}
+                        {isSyncing ? "Syncing…" : "Run Back-Sync"}
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               )}
