@@ -213,37 +213,50 @@ export default function WebSubmissions() {
 
       if (opportunityError) throw opportunityError;
 
-      // 4. Pre-populate wizard state using CANONICAL snake_case keys
+      // 4. Read merchant record (if exists) for full field coverage
+      const { data: merchantData } = await supabase
+        .from("merchants")
+        .select("*")
+        .eq("application_id", app.id)
+        .maybeSingle();
+
+      // Pre-populate wizard state using CANONICAL snake_case keys
+      // Merge from both applications table and merchants table for completeness
+      const m = merchantData;
       const wizardFormState: Record<string, unknown> = {
-        dba_name: app.dba_name || app.company_name || "",
-        product_description: app.products || "",
-        nature_of_business: app.nature_of_business || "",
-        dba_contact_first_name: firstName,
-        dba_contact_last_name: lastName,
-        dba_contact_phone: app.phone || "",
-        dba_contact_email: app.email || "",
-        dba_address_line1: app.address || "",
-        dba_address_line2: app.address2 || "",
-        dba_city: app.city || "",
-        dba_state: app.state || "",
-        dba_zip: app.zip || "",
-        legal_entity_name: app.legal_name || app.company_name || "",
-        federal_tax_id: app.federal_tax_id || "",
-        ownership_type: app.business_structure || "",
-        business_formation_date: app.date_established || "",
-        state_incorporated: app.state_of_incorporation || "",
-        legal_address_line1: app.address || "",
-        legal_address_line2: app.address2 || "",
-        legal_city: app.city || "",
-        legal_state: app.state || "",
-        legal_zip: app.zip || "",
-        monthly_volume: app.monthly_volume || "",
-        average_transaction: app.avg_ticket || "",
-        high_ticket: app.high_ticket || "",
-        percent_swiped: app.in_person_percent || "",
-        percent_keyed: app.keyed_percent || "",
-        percent_ecommerce: app.ecommerce_percent || "",
-        website_url: app.website || "",
+        dba_name: m?.dba_name || app.dba_name || app.company_name || "",
+        product_description: m?.product_description || app.products || "",
+        nature_of_business: m?.nature_of_business || app.nature_of_business || "",
+        dba_contact_first_name: m?.dba_contact_first_name || firstName,
+        dba_contact_last_name: m?.dba_contact_last_name || lastName,
+        dba_contact_phone: m?.dba_contact_phone || app.phone || "",
+        dba_contact_email: m?.dba_contact_email || app.email || "",
+        dba_address_line1: m?.dba_address_line1 || app.address || "",
+        dba_address_line2: m?.dba_address_line2 || app.address2 || "",
+        dba_city: m?.dba_city || app.city || "",
+        dba_state: m?.dba_state || app.state || "",
+        dba_zip: m?.dba_zip || app.zip || "",
+        legal_entity_name: m?.legal_entity_name || app.legal_name || app.company_name || "",
+        federal_tax_id: m?.federal_tax_id || app.federal_tax_id || "",
+        ownership_type: m?.ownership_type || app.business_structure || "",
+        business_formation_date: m?.business_formation_date || app.date_established || "",
+        state_incorporated: m?.state_incorporated || app.state_of_incorporation || "",
+        legal_address_line1: m?.legal_address_line1 || app.address || "",
+        legal_address_line2: m?.legal_address_line2 || app.address2 || "",
+        legal_city: m?.legal_city || app.city || "",
+        legal_state: m?.legal_state || app.state || "",
+        legal_zip: m?.legal_zip || app.zip || "",
+        monthly_volume: m?.monthly_volume || app.monthly_volume || "",
+        average_transaction: m?.average_transaction || app.avg_ticket || "",
+        high_ticket: m?.high_ticket || app.high_ticket || "",
+        percent_swiped: m?.percent_swiped || app.in_person_percent || "",
+        percent_keyed: m?.percent_keyed || app.keyed_percent || "",
+        percent_moto: m?.percent_moto || "",
+        percent_ecommerce: m?.percent_ecommerce || app.ecommerce_percent || "",
+        percent_b2b: m?.percent_b2b || "",
+        percent_b2c: m?.percent_b2c || "",
+        sic_mcc_code: m?.sic_mcc_code || "",
+        website_url: m?.website_url || app.website || "",
         documents: [],
         notes: app.notes || app.message || "",
       };
