@@ -111,6 +111,10 @@ interface MerchantForm {
   routing_number: string;
   account_number: string;
 
+  // Supporting Documents
+  statement_docs: File[];
+  void_check_docs: File[];
+
   // Agreements
   beneficial_owner_certification: boolean;
   bank_disclosure_ack: boolean;
@@ -142,6 +146,8 @@ const initialState: MerchantForm = {
   principals: [{ ...emptyPrincipal }],
 
   bank_name: "", account_holder_name: "", routing_number: "", account_number: "",
+
+  statement_docs: [], void_check_docs: [],
 
   beneficial_owner_certification: false, bank_disclosure_ack: false,
 
@@ -514,6 +520,20 @@ export default function MerchantApply() {
             });
           } catch (encErr) {
             console.error("Encryption call failed (non-blocking):", encErr);
+          }
+        }
+        // 6. Upload supporting documents
+        const allDocs = [
+          ...form.statement_docs.map(f => ({ file: f, type: 'Bank Statement' })),
+          ...form.void_check_docs.map(f => ({ file: f, type: 'Voided Check / Bank Confirmation Letter' })),
+        ];
+        for (const doc of allDocs) {
+          const filePath = `applications/${applicationId}/${Date.now()}_${doc.file.name}`;
+          const { error: storageError } = await supabase.storage
+            .from('opportunity-documents')
+            .upload(filePath, doc.file);
+          if (storageError) {
+            console.error(`Doc upload error (${doc.file.name}):`, storageError);
           }
         }
       } else {
@@ -1052,6 +1072,45 @@ function ProcessingStep({ form, onChange, onBlur, getError }: StepProps) {
         <Field label="Website URL"><Input value={form.website_url} onChange={e => onChange("website_url", e.target.value)} placeholder="https://" /></Field>
         <Field label="SIC/MCC Code"><Input value={form.sic_mcc_code} onChange={e => onChange("sic_mcc_code", e.target.value)} placeholder="MCC if known" /></Field>
       </div>
+
+      <Divider label="Supporting Documents" />
+      <p className="text-xs text-muted-foreground -mt-1 mb-2">
+        If your average ticket is &gt; $1,000 or High Ticket &gt; $2,500, we will need 3 months of Bank or Merchant Processing Statements to review with your application. You can upload them now to save time. Provide a Void Check or Bank Letter to assist us in validating your bank account to speed up application review.
+      </p>
+      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+        <label className="flex items-center gap-3 rounded-xl border-2 border-dashed border-border hover:border-primary/50 bg-card p-4 cursor-pointer transition-all group">
+          <Plus className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
+          <div className="text-xs md:text-sm font-semibold text-foreground uppercase tracking-wide">Bank or Processing Statements</div>
+          <input type="file" multiple className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onChange={e => {
+            const files = Array.from(e.target.files ?? []);
+            onChange("statement_docs", [...form.statement_docs, ...files] as any);
+          }} />
+        </label>
+        <label className="flex items-center gap-3 rounded-xl border-2 border-dashed border-border hover:border-primary/50 bg-card p-4 cursor-pointer transition-all group">
+          <Plus className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
+          <div className="text-xs md:text-sm font-semibold text-foreground uppercase tracking-wide">Void Check or Bank Letter</div>
+          <input type="file" multiple className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onChange={e => {
+            const files = Array.from(e.target.files ?? []);
+            onChange("void_check_docs", [...form.void_check_docs, ...files] as any);
+          }} />
+        </label>
+      </div>
+      {(form.statement_docs.length > 0 || form.void_check_docs.length > 0) && (
+        <div className="rounded-lg border border-border bg-muted p-3 text-xs space-y-1">
+          {form.statement_docs.map((f, i) => (
+            <div key={`s-${i}`} className="flex items-center justify-between">
+              <span className="text-foreground">📄 {f.name}</span>
+              <button type="button" onClick={() => onChange("statement_docs", form.statement_docs.filter((_, j) => j !== i) as any)} className="text-destructive hover:text-destructive/80"><Trash2 className="w-3 h-3" /></button>
+            </div>
+          ))}
+          {form.void_check_docs.map((f, i) => (
+            <div key={`v-${i}`} className="flex items-center justify-between">
+              <span className="text-foreground">📄 {f.name}</span>
+              <button type="button" onClick={() => onChange("void_check_docs", form.void_check_docs.filter((_, j) => j !== i) as any)} className="text-destructive hover:text-destructive/80"><Trash2 className="w-3 h-3" /></button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -1106,7 +1165,7 @@ function OwnersBankingStep({ form, onChange, onPrincipalChange, addPrincipal, re
             <Field label="Date of Birth" required error={getError(`date_of_birth_${idx}`)}>
               <Input type="date" value={principal.date_of_birth} onChange={e => onPrincipalChange(idx, "date_of_birth", e.target.value)} onBlur={() => onBlur(`date_of_birth_${idx}`)} hasError={!!getError(`date_of_birth_${idx}`)} />
             </Field>
-            <Field label="Full SSN" required hint="Securely stored and automatically deleted after review" error={getError(`ssn_full_${idx}`)}>
+            <Field label="Full SSN" required hint="🔒 Securely stored and automatically deleted after review. Please double-check for accuracy — if incorrect, we may request a scanned copy of an identity document (Passport or Driver's License)." error={getError(`ssn_full_${idx}`)}>
               <Input type="password" value={principal.ssn_full} onChange={e => onPrincipalChange(idx, "ssn_full", e.target.value)} onBlur={() => onBlur(`ssn_full_${idx}`)} placeholder="XXX-XX-XXXX" maxLength={11} hasError={!!getError(`ssn_full_${idx}`)} />
             </Field>
             <Field label="Phone"><Input value={principal.principal_phone} onChange={e => onPrincipalChange(idx, "principal_phone", e.target.value)} /></Field>
@@ -1141,12 +1200,23 @@ function OwnersBankingStep({ form, onChange, onPrincipalChange, addPrincipal, re
         </Field>
       </div>
 
-      <Divider label="Agreements" />
-      <div className="space-y-3">
-        <div className="flex items-start gap-2">
-          <input type="checkbox" id="beneficial_cert" checked={form.beneficial_owner_certification} onChange={e => onChange("beneficial_owner_certification", e.target.checked)} className="mt-1 rounded border-border" />
-          <label htmlFor="beneficial_cert" className="text-sm text-foreground">I certify that the information provided regarding beneficial ownership is true and accurate.</label>
+      <Divider label="Certification of Beneficial Ownership" />
+      <div className="rounded-xl border border-border bg-muted/50 p-4 space-y-3">
+        <div className="text-xs text-muted-foreground leading-relaxed space-y-2 max-h-64 overflow-y-auto">
+          <p>To help the government fight financial crime, Federal regulation requires certain financial institutions to obtain, verify, and record information about the beneficial owners of legal entity customers.</p>
+          <p>Legal entities can be abused to disguise involvement in terrorist financing, money laundering, tax evasion, corruption, fraud, and other financial crimes. Requiring the disclosure of key individuals who own or control a legal entity (i.e., the beneficial owners) helps law enforcement investigate and prosecute these crimes.</p>
+          <p>By signing below, I attest that I have accurately provided the name, address, date of birth and Social Security Number (SSN) for the following individuals (i.e. the beneficial owners):</p>
+          <p className="pl-4">(i) Each individual, if any, who owns directly or indirectly, 25 percent or more of the equity interests of the legal entity customer (e.g., each natural person that owns 25 percent or more of the shares of a corporation); and</p>
+          <p className="pl-4">(ii) An individual with significant responsibility for managing the legal entity customer (e.g., a Chief Executive Officer, Chief Financial Officer, Chief Operating Officer, Managing Member, General Partner, President, Vice President, or Treasurer).</p>
+          <p>The number of individuals that satisfy this definition of "beneficial owner" may vary. Under section (i), depending on the factual circumstances, up to four individuals (but as few as zero) may need to be identified. Regardless of the number of individuals identified under section (i), you must provide the identifying information of one individual under section (ii). It is possible that in some circumstances the same individual might be identified under both sections (e.g., the President of Acme, Inc. who also holds a 30% equity interest). Thus, a completed form will contain the identifying information of at least one individual (under section (ii)), and up to five individuals (i.e., one individual under section (ii) and four 25 percent equity holders under section (i)).</p>
         </div>
+        <div className="flex items-start gap-2 pt-2 border-t border-border">
+          <input type="checkbox" id="beneficial_cert" checked={form.beneficial_owner_certification} onChange={e => onChange("beneficial_owner_certification", e.target.checked)} className="mt-1 rounded border-border" />
+          <label htmlFor="beneficial_cert" className="text-sm font-medium text-foreground">I have read and agree to the Certification of Beneficial Ownership <span className="text-destructive">*</span></label>
+        </div>
+      </div>
+
+      <div className="space-y-3 mt-3">
         <div className="flex items-start gap-2">
           <input type="checkbox" id="bank_disclosure" checked={form.bank_disclosure_ack} onChange={e => onChange("bank_disclosure_ack", e.target.checked)} className="mt-1 rounded border-border" />
           <label htmlFor="bank_disclosure" className="text-sm text-foreground">I acknowledge the bank disclosure and authorize debits/credits to the account provided.</label>
@@ -1211,6 +1281,13 @@ function ReviewStep({ form, onSubmit, isSubmitting, progress }: { form: Merchant
             <DataItem label="Swiped/Keyed/MOTO/eCom" value={`${form.percent_swiped}/${form.percent_keyed}/${form.percent_moto}/${form.percent_ecommerce}%`} />
           </dl>
         </div>
+        {(form.statement_docs.length > 0 || form.void_check_docs.length > 0) && (
+          <div className="rounded-xl border border-border bg-muted p-4">
+            <h3 className="text-sm font-semibold text-foreground mb-3">Supporting Documents ({form.statement_docs.length + form.void_check_docs.length})</h3>
+            {form.statement_docs.map((f, i) => <p key={`rs-${i}`} className="text-sm text-foreground">📄 {f.name} <span className="text-muted-foreground">(Statement)</span></p>)}
+            {form.void_check_docs.map((f, i) => <p key={`rv-${i}`} className="text-sm text-foreground">📄 {f.name} <span className="text-muted-foreground">(Void Check/Bank Letter)</span></p>)}
+          </div>
+        )}
         <div className="rounded-xl border border-border bg-muted p-4">
           <h3 className="text-sm font-semibold text-foreground mb-3">Principals ({form.principals.length})</h3>
           {form.principals.map((p, i) => (

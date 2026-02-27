@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Archive, CheckCircle, ArrowRightCircle, Eye, X } from "lucide-react";
+import { Loader2, Archive, CheckCircle, ArrowRightCircle, Eye, X, FileText } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,6 +39,51 @@ import type { Tables } from "@/integrations/supabase/types";
 
 type Application = Tables<"applications">;
 
+function ApplicationDocsBadge({ applicationId }: { applicationId: string }) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    const checkDocs = async () => {
+      try {
+        const { data } = await supabase.storage.from('opportunity-documents').list(`applications/${applicationId}`);
+        setCount(data?.length ?? 0);
+      } catch {
+        setCount(0);
+      }
+    };
+    checkDocs();
+  }, [applicationId]);
+  if (count === 0) return <span className="text-xs text-muted-foreground">—</span>;
+  return (
+    <Badge variant="outline" className="gap-1">
+      <FileText className="h-3 w-3" />
+      {count}
+    </Badge>
+  );
+}
+
+function ApplicationDocsDetail({ applicationId }: { applicationId: string }) {
+  const [files, setFiles] = useState<{ name: string }[]>([]);
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const { data } = await supabase.storage.from('opportunity-documents').list(`applications/${applicationId}`);
+        setFiles((data ?? []).map(f => ({ name: f.name })));
+      } catch { setFiles([]); }
+    };
+    load();
+  }, [applicationId]);
+  if (files.length === 0) return <p className="text-xs text-muted-foreground mt-1">No documents uploaded</p>;
+  return (
+    <div className="mt-1 space-y-1">
+      {files.map((f, i) => (
+        <div key={i} className="flex items-center gap-2 text-sm">
+          <FileText className="h-3 w-3 text-primary" />
+          <span>{f.name}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
 const DetailField = ({ label, value }: { label: string; value: string | null | undefined }) => {
   if (!value) return null;
   return (
@@ -339,17 +384,18 @@ export default function WebSubmissions() {
               </div>
             ) : (
               <Table>
-                <TableHeader>
-                  <TableRow>
-                     <TableHead>Date</TableHead>
-                     <TableHead>Business Name</TableHead>
-                     <TableHead>Type</TableHead>
-                     <TableHead>Contact</TableHead>
-                     <TableHead>Volume</TableHead>
-                     <TableHead>Status</TableHead>
-                     <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
+                 <TableHeader>
+                   <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Business Name</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Contact</TableHead>
+                      <TableHead>Volume</TableHead>
+                      <TableHead>Docs</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                   </TableRow>
+                 </TableHeader>
                 <TableBody>
                   {apps.map((app) => (
                     <TableRow key={app.id}>
@@ -374,12 +420,15 @@ export default function WebSubmissions() {
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        {app.monthly_volume
-                          ? `$${Number(app.monthly_volume).toLocaleString()}`
-                          : "-"}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(app.status)}</TableCell>
+                       <TableCell>
+                         {app.monthly_volume
+                           ? `$${Number(app.monthly_volume).toLocaleString()}`
+                           : "-"}
+                       </TableCell>
+                       <TableCell>
+                         <ApplicationDocsBadge applicationId={app.id} />
+                       </TableCell>
+                       <TableCell>{getStatusBadge(app.status)}</TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button
                           size="sm"
@@ -573,6 +622,13 @@ export default function WebSubmissions() {
                       </div>
                     </>
                   )}
+
+                  {/* Uploaded Documents */}
+                  <Separator />
+                  <div>
+                    <span className="text-xs text-muted-foreground">Uploaded Documents</span>
+                    <ApplicationDocsDetail applicationId={selectedApp.id} />
+                  </div>
 
                   {/* Actions */}
                   {selectedApp.status === "pending" && (
