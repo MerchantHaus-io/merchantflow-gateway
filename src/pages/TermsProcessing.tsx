@@ -1,20 +1,8 @@
 import merchanthausLogo from "@/assets/merchanthaus-logo.png";
 
-export default function TermsProcessing() {
+export function TermsContent() {
   return (
-    <div className="fixed inset-0 z-50 bg-background overflow-y-auto" style={{ WebkitOverflowScrolling: "touch" }}>
-      <header className="bg-card border-b border-border px-3 py-2.5 md:px-4 md:py-4 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <img src={merchanthausLogo} alt="MerchantHaus" className="h-7 md:h-10 w-auto" />
-          <a href="/merchant-apply" className="text-xs text-primary hover:underline">← Back to Application</a>
-        </div>
-      </header>
-
-      <div className="max-w-4xl mx-auto p-4 md:p-8">
-        <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-6">Merchant Terms and Conditions</h1>
-        <p className="text-sm text-muted-foreground mb-8">Version 1.0 — Effective February 2026</p>
-
-        <div className="prose prose-sm max-w-none text-foreground space-y-4 text-sm leading-relaxed">
+    <div className="prose prose-sm max-w-none text-foreground space-y-4 text-sm leading-relaxed">
 
           <h2 className="text-lg font-bold mt-8 mb-4">TERMS AND CONDITIONS</h2>
 
@@ -618,7 +606,23 @@ export default function TermsProcessing() {
               These Terms and Conditions are proprietary to MerchantHaus LLC and may not be reproduced without permission.
             </p>
           </div>
+    </div>
+  );
+}
+
+export default function TermsProcessing() {
+  return (
+    <div className="fixed inset-0 z-50 bg-background overflow-y-auto" style={{ WebkitOverflowScrolling: "touch" }}>
+      <header className="bg-card border-b border-border px-3 py-2.5 md:px-4 md:py-4 sticky top-0 z-10">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <img src={merchanthausLogo} alt="MerchantHaus" className="h-7 md:h-10 w-auto" />
+          <a href="/merchant-apply" className="text-xs text-primary hover:underline">← Back to Application</a>
         </div>
+      </header>
+      <div className="max-w-4xl mx-auto p-4 md:p-8">
+        <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-6">Merchant Terms and Conditions</h1>
+        <p className="text-sm text-muted-foreground mb-8">Version 1.0 — Effective February 2026</p>
+        <TermsContent />
       </div>
     </div>
   );

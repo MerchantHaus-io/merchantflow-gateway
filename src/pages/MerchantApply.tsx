@@ -1,4 +1,5 @@
-import { useMemo, useState, type InputHTMLAttributes, type ReactNode } from "react";
+import { useMemo, useState, lazy, Suspense, type InputHTMLAttributes, type ReactNode } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -1263,6 +1264,31 @@ function OwnersBankingStep({ form, onChange, onPrincipalChange, addPrincipal, re
   );
 }
 
+// ─── Terms Dialog ───
+
+const LazyTermsContent = lazy(() => import("./TermsProcessing").then(m => ({ default: m.TermsContent ?? m.default })));
+
+function TermsDialog() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button type="button" onClick={(e) => { e.preventDefault(); setOpen(true); }} className="text-primary hover:underline font-medium">
+        Merchant Terms and Conditions
+      </button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Merchant Terms and Conditions</DialogTitle>
+          </DialogHeader>
+          <Suspense fallback={<div className="py-8 text-center text-muted-foreground text-sm">Loading terms…</div>}>
+            <LazyTermsContent />
+          </Suspense>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
 // ─── Review & Submit ───
 
 function ReviewStep({ form, onSubmit, isSubmitting, progress, onChange }: { form: MerchantForm; onSubmit: () => void; isSubmitting: boolean; progress: number; onChange: <K extends keyof MerchantForm>(field: K, value: MerchantForm[K]) => void }) {
@@ -1372,9 +1398,7 @@ function ReviewStep({ form, onSubmit, isSubmitting, progress, onChange }: { form
             <input type="checkbox" id="review_merchant_agreement" checked={form.merchant_agreement_accepted} onChange={e => onChange("merchant_agreement_accepted", e.target.checked)} className="mt-1 rounded border-border accent-primary h-4 w-4" />
             <label htmlFor="review_merchant_agreement" className="text-sm text-foreground">
               I acknowledge I have read and agree to the{" "}
-              <a href="/terms-processing" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">
-                Merchant Terms and Conditions
-              </a>
+              <TermsDialog />
               <span className="text-destructive"> *</span>
             </label>
           </div>
