@@ -578,11 +578,22 @@ export default function MerchantApply() {
           }
         }
       } else {
-        // Gateway only — notes already set during insert, no update needed
+        // Gateway only — upload any supporting documents
+        const gwDocs = [
+          ...form.statement_docs.map(f => ({ file: f, type: 'Bank Statement' })),
+          ...form.void_check_docs.map(f => ({ file: f, type: 'Voided Check / Bank Confirmation Letter' })),
+        ];
+        for (const doc of gwDocs) {
+          const filePath = `applications/${applicationId}/${Date.now()}_${doc.file.name}`;
+          const { error: storageError } = await supabase.storage
+            .from('opportunity-documents')
+            .upload(filePath, doc.file);
+          if (storageError) console.error(`GW doc upload error (${doc.file.name}):`, storageError);
+        }
       }
 
-      // Record consent
-      if (!isGatewayOnly) {
+      // Record consent for all service types
+      {
         try {
           const ipRes = await fetch('https://api.ipify.org?format=json').catch(() => null);
           const ipData = ipRes ? await ipRes.json().catch(() => ({})) : {};

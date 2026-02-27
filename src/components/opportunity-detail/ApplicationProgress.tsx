@@ -89,6 +89,7 @@ const PROCESSING_SECTIONS: Section[] = [
       "monthly_volume", "average_transaction", "high_ticket",
       "percent_swiped", "percent_keyed", "percent_moto", "percent_ecommerce",
       "percent_b2c", "percent_b2b",
+      "sic_mcc_code", "website_url",
     ],
     owner: "Merchant",
   },
