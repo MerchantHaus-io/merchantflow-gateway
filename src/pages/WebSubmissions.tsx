@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Archive, CheckCircle, ArrowRightCircle, Eye, X, FileText } from "lucide-react";
+import { Loader2, Archive, CheckCircle, ArrowRightCircle, Eye, X, FileText, Download, Link2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,9 +35,18 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { Tables } from "@/integrations/supabase/types";
+import JSZip from "jszip";
 
 type Application = Tables<"applications">;
+type Account = Tables<"accounts">;
 
 function ApplicationDocsBadge({ applicationId }: { applicationId: string }) {
   const [count, setCount] = useState(0);
@@ -84,6 +93,7 @@ function ApplicationDocsDetail({ applicationId }: { applicationId: string }) {
     </div>
   );
 }
+
 const DetailField = ({ label, value }: { label: string; value: string | null | undefined }) => {
   if (!value) return null;
   return (
@@ -103,12 +113,19 @@ const DetailSection = ({ title, children }: { title: string; children: React.Rea
   </div>
 );
 
+const isDocSubmission = (app: Application) => app.service_type === "document_submission";
+
 export default function WebSubmissions() {
   const [apps, setApps] = useState<Application[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [isConverting, setIsConverting] = useState<string | null>(null);
   const [referralPrompt, setReferralPrompt] = useState<{ app: Application; isReferral: boolean; referredBy: string } | null>(null);
+  const [assignPrompt, setAssignPrompt] = useState<Application | null>(null);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [selectedAccountId, setSelectedAccountId] = useState<string>("");
+  const [isAssigning, setIsAssigning] = useState(false);
+  const [isDownloading, setIsDownloading] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -151,6 +168,144 @@ export default function WebSubmissions() {
 
   const promptReferralAndConvert = (app: Application) => {
     setReferralPrompt({ app, isReferral: false, referredBy: '' });
+  };
+
+  // --- Assign to Account logic ---
+  const openAssignDialog = async (app: Application) => {
+    setAssignPrompt(app);
+    setSelectedAccountId("");
+    // Fetch accounts for the picker
+    const { data } = await supabase
+      .from("accounts")
+      .select("*")
+      .order("name", { ascending: true });
+    setAccounts(data || []);
+  };
+
+  const assignToAccount = async () => {
+    if (!assignPrompt || !selectedAccountId) return;
+    setIsAssigning(true);
+    const app = assignPrompt;
+
+    try {
+      // Find an opportunity linked to this account
+      const { data: opportunities } = await supabase
+        .from("opportunities")
+        .select("id")
+        .eq("account_id", selectedAccountId)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      const opportunityId = opportunities?.[0]?.id;
+
+      if (!opportunityId) {
+        toast({ variant: "destructive", title: "No opportunity found", description: "This account has no opportunities to attach documents to. Please convert a full application first." });
+        setIsAssigning(false);
+        return;
+      }
+
+      // Migrate files from applications/{app.id}/ to {opportunityId}/
+      const { data: storedFiles } = await supabase.storage
+        .from('opportunity-documents')
+        .list(`applications/${app.id}`);
+
+      if (!storedFiles || storedFiles.length === 0) {
+        toast({ variant: "destructive", title: "No files found", description: "No documents to assign." });
+        setIsAssigning(false);
+        return;
+      }
+
+      let migrated = 0;
+      for (const file of storedFiles) {
+        const oldPath = `applications/${app.id}/${file.name}`;
+        const newPath = `${opportunityId}/${file.name}`;
+
+        const { error: copyErr } = await supabase.storage
+          .from('opportunity-documents')
+          .copy(oldPath, newPath);
+
+        if (!copyErr) {
+          // Look up the audit record for a better document_type
+          const { data: auditRow } = await supabase
+            .from("application_documents")
+            .select("document_type")
+            .eq("application_id", app.id)
+            .eq("file_name", file.name)
+            .maybeSingle();
+
+          await supabase.from("documents").insert({
+            opportunity_id: opportunityId,
+            file_name: file.name.replace(/^\d+_/, ''),
+            file_path: newPath,
+            content_type: file.metadata?.mimetype || null,
+            file_size: file.metadata?.size || null,
+            uploaded_by: app.email,
+            document_type: auditRow?.document_type || "Unassigned",
+          });
+
+          await supabase.storage.from('opportunity-documents').remove([oldPath]);
+          migrated++;
+        }
+      }
+
+      // Mark submission as approved
+      await supabase.from("applications").update({ status: "approved" }).eq("id", app.id);
+
+      const accountName = accounts.find(a => a.id === selectedAccountId)?.name || "Account";
+      toast({ title: "Documents assigned", description: `${migrated} file(s) assigned to ${accountName}.` });
+      setAssignPrompt(null);
+      fetchApplications();
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Assignment failed", description: err.message });
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
+  // --- Download All logic ---
+  const downloadAllDocs = async (app: Application) => {
+    setIsDownloading(app.id);
+    try {
+      const { data: storedFiles } = await supabase.storage
+        .from('opportunity-documents')
+        .list(`applications/${app.id}`);
+
+      if (!storedFiles || storedFiles.length === 0) {
+        toast({ title: "No documents", description: "No files uploaded for this submission." });
+        setIsDownloading(null);
+        return;
+      }
+
+      const zip = new JSZip();
+
+      for (const file of storedFiles) {
+        const filePath = `applications/${app.id}/${file.name}`;
+        const { data: blob } = await supabase.storage
+          .from('opportunity-documents')
+          .download(filePath);
+
+        if (blob) {
+          const cleanName = file.name.replace(/^\d+_/, '');
+          zip.file(cleanName, blob);
+        }
+      }
+
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${app.full_name.replace(/\s+/g, '_')}_documents.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast({ title: "Download started", description: `${storedFiles.length} file(s) zipped and downloading.` });
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Download failed", description: err.message });
+    } finally {
+      setIsDownloading(null);
+    }
   };
 
   const convertToPipeline = async (app: Application, referralSource?: string) => {
@@ -432,6 +587,16 @@ export default function WebSubmissions() {
     }
   };
 
+  const getTypeBadge = (app: Application) => {
+    if (isDocSubmission(app)) {
+      return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/40">Docs Only</Badge>;
+    }
+    if (app.service_type === "gateway_only" || app.business_type === "Gateway Only") {
+      return <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/40">Gateway</Badge>;
+    }
+    return <Badge className="bg-primary/20 text-primary border-primary/40">Processing</Badge>;
+  };
+
   return (
     <AppLayout pageTitle="Web Submissions">
       <div className="p-6 space-y-6">
@@ -469,14 +634,10 @@ export default function WebSubmissions() {
                         {new Date(app.created_at).toLocaleDateString()}
                       </TableCell>
                        <TableCell className="font-medium">
-                         {app.company_name || app.dba_name || "Untitled"}
+                         {app.company_name || app.dba_name || app.full_name || "Untitled"}
                        </TableCell>
                        <TableCell>
-                         {(app.service_type === "gateway_only" || app.business_type === "Gateway Only") ? (
-                           <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/40">Gateway</Badge>
-                         ) : (
-                           <Badge className="bg-primary/20 text-primary border-primary/40">Processing</Badge>
-                         )}
+                         {getTypeBadge(app)}
                        </TableCell>
                        <TableCell>
                         <div className="flex flex-col">
@@ -503,7 +664,53 @@ export default function WebSubmissions() {
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        {app.status === "pending" && (
+                        {app.status === "pending" && isDocSubmission(app) && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={isDownloading === app.id}
+                              onClick={() => downloadAllDocs(app)}
+                            >
+                              {isDownloading === app.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                              ) : (
+                                <Download className="h-4 w-4 mr-1" />
+                              )}
+                              Download All
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => openAssignDialog(app)}
+                            >
+                              <Link2 className="h-4 w-4 mr-1" />
+                              Assign to Account
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="outline">
+                                  <Archive className="h-4 w-4 mr-1" />
+                                  Reject
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Reject Submission</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to reject the document submission from <strong>{app.full_name}</strong>?
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => rejectApplication(app.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                    Reject
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </>
+                        )}
+                        {app.status === "pending" && !isDocSubmission(app) && (
                           <>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
@@ -558,7 +765,7 @@ export default function WebSubmissions() {
                         {app.status === "approved" && (
                           <Badge className="bg-emerald-500/20 text-emerald-400">
                             <CheckCircle className="h-3 w-3 mr-1" />
-                            In Pipeline
+                            {isDocSubmission(app) ? "Assigned" : "In Pipeline"}
                           </Badge>
                         )}
                       </TableCell>
@@ -574,7 +781,7 @@ export default function WebSubmissions() {
         <Dialog open={!!selectedApp} onOpenChange={() => setSelectedApp(null)}>
           <DialogContent className="max-w-2xl max-h-[85vh]">
             <DialogHeader>
-              <DialogTitle>Application Details</DialogTitle>
+              <DialogTitle>{isDocSubmission(selectedApp!) ? "Document Submission Details" : "Application Details"}</DialogTitle>
             </DialogHeader>
             {selectedApp && (
               <ScrollArea className="max-h-[70vh] pr-4">
@@ -583,11 +790,7 @@ export default function WebSubmissions() {
                    <div className="flex items-center justify-between">
                      {getStatusBadge(selectedApp.status)}
                      <div className="flex items-center gap-2">
-                       {(selectedApp.service_type === "gateway_only" || selectedApp.business_type === "Gateway Only") ? (
-                         <Badge className="bg-teal-500/20 text-teal-400 border-teal-500/40">Gateway Only</Badge>
-                       ) : (
-                         <Badge className="bg-primary/20 text-primary border-primary/40">Processing</Badge>
-                       )}
+                       {getTypeBadge(selectedApp)}
                        <span className="text-xs text-muted-foreground">
                          Submitted {new Date(selectedApp.created_at).toLocaleString()}
                        </span>
@@ -596,100 +799,98 @@ export default function WebSubmissions() {
 
                   <Separator />
 
-                  {/* Business Profile */}
-                  <DetailSection title="Business Profile">
-                    <DetailField label="DBA Name" value={selectedApp.dba_name || selectedApp.company_name} />
-                    <DetailField label="Legal Name" value={selectedApp.legal_name} />
-                    <DetailField label="Products / Services" value={selectedApp.products} />
-                    <DetailField label="Nature of Business" value={selectedApp.nature_of_business} />
-                    <DetailField label="Business Type" value={selectedApp.business_type} />
-                    <DetailField label="Website" value={selectedApp.website} />
-                  </DetailSection>
-
-                  {/* Business Address */}
-                  {(selectedApp.address || selectedApp.city) && (
-                    <>
-                      <Separator />
-                      <DetailSection title="Business Address">
-                        <DetailField label="Address" value={[selectedApp.address, selectedApp.address2].filter(Boolean).join(", ")} />
-                        <DetailField label="City / State / ZIP" value={[selectedApp.city, selectedApp.state, selectedApp.zip].filter(Boolean).join(", ")} />
-                      </DetailSection>
-                    </>
-                  )}
-
-                  <Separator />
-
-                  {/* Contact Information */}
+                  {/* Contact Information - always shown */}
                   <DetailSection title="Contact Information">
                     <DetailField label="Contact Name" value={selectedApp.full_name} />
                     <DetailField label="Email" value={selectedApp.email} />
                     <DetailField label="Phone" value={selectedApp.phone} />
                   </DetailSection>
 
-                  {/* Legal Information */}
-                  {(selectedApp.federal_tax_id || selectedApp.business_structure || selectedApp.owner_name) && (
+                  {/* Business Profile - only for non-doc submissions */}
+                  {!isDocSubmission(selectedApp) && (
                     <>
                       <Separator />
-                      <DetailSection title="Legal Information">
-                        <DetailField label="Federal Tax ID (EIN)" value={selectedApp.federal_tax_id} />
-                        <DetailField label="State of Incorporation" value={selectedApp.state_of_incorporation} />
-                        <DetailField label="Business Structure" value={selectedApp.business_structure} />
-                        <DetailField label="Date Established" value={selectedApp.date_established} />
-                      </DetailSection>
-                    </>
-                  )}
-
-                  {/* Owner Information */}
-                  {selectedApp.owner_name && (
-                    <>
-                      <Separator />
-                      <DetailSection title="Owner Information">
-                        <DetailField label="Owner Name" value={selectedApp.owner_name} />
-                        <DetailField label="Title" value={selectedApp.owner_title} />
-                        <DetailField label="Date of Birth" value={selectedApp.owner_dob} />
-                        <DetailField label="SSN (last 4)" value={selectedApp.owner_ssn_last4 ? `••••${selectedApp.owner_ssn_last4}` : null} />
-                        <DetailField label="Home Address" value={selectedApp.owner_address} />
-                        <DetailField label="City / State / ZIP" value={[selectedApp.owner_city, selectedApp.owner_state, selectedApp.owner_zip].filter(Boolean).join(", ")} />
-                      </DetailSection>
-                    </>
-                  )}
-
-                  {/* Processing Information */}
-                  {(selectedApp.monthly_volume || selectedApp.avg_ticket || selectedApp.current_processor) && (
-                    <>
-                      <Separator />
-                      <DetailSection title="Processing Information">
-                        <DetailField label="Monthly Volume" value={selectedApp.monthly_volume ? `$${Number(selectedApp.monthly_volume).toLocaleString()}` : null} />
-                        <DetailField label="Avg Ticket" value={selectedApp.avg_ticket ? `$${selectedApp.avg_ticket}` : null} />
-                        <DetailField label="High Ticket" value={selectedApp.high_ticket ? `$${selectedApp.high_ticket}` : null} />
-                        <DetailField label="Current Processor" value={selectedApp.current_processor} />
-                        <DetailField label="Accepted Cards" value={selectedApp.accepted_cards} />
+                      <DetailSection title="Business Profile">
+                        <DetailField label="DBA Name" value={selectedApp.dba_name || selectedApp.company_name} />
+                        <DetailField label="Legal Name" value={selectedApp.legal_name} />
+                        <DetailField label="Products / Services" value={selectedApp.products} />
+                        <DetailField label="Nature of Business" value={selectedApp.nature_of_business} />
+                        <DetailField label="Business Type" value={selectedApp.business_type} />
+                        <DetailField label="Website" value={selectedApp.website} />
                       </DetailSection>
 
-                      {(selectedApp.ecommerce_percent || selectedApp.in_person_percent || selectedApp.keyed_percent) && (
-                        <div className="grid grid-cols-3 gap-3 mt-2">
-                          <DetailField label="eCommerce %" value={selectedApp.ecommerce_percent ? `${selectedApp.ecommerce_percent}%` : null} />
-                          <DetailField label="In-Person %" value={selectedApp.in_person_percent ? `${selectedApp.in_person_percent}%` : null} />
-                          <DetailField label="Keyed %" value={selectedApp.keyed_percent ? `${selectedApp.keyed_percent}%` : null} />
-                        </div>
+                      {(selectedApp.address || selectedApp.city) && (
+                        <>
+                          <Separator />
+                          <DetailSection title="Business Address">
+                            <DetailField label="Address" value={[selectedApp.address, selectedApp.address2].filter(Boolean).join(", ")} />
+                            <DetailField label="City / State / ZIP" value={[selectedApp.city, selectedApp.state, selectedApp.zip].filter(Boolean).join(", ")} />
+                          </DetailSection>
+                        </>
+                      )}
+
+                      {(selectedApp.federal_tax_id || selectedApp.business_structure || selectedApp.owner_name) && (
+                        <>
+                          <Separator />
+                          <DetailSection title="Legal Information">
+                            <DetailField label="Federal Tax ID (EIN)" value={selectedApp.federal_tax_id} />
+                            <DetailField label="State of Incorporation" value={selectedApp.state_of_incorporation} />
+                            <DetailField label="Business Structure" value={selectedApp.business_structure} />
+                            <DetailField label="Date Established" value={selectedApp.date_established} />
+                          </DetailSection>
+                        </>
+                      )}
+
+                      {selectedApp.owner_name && (
+                        <>
+                          <Separator />
+                          <DetailSection title="Owner Information">
+                            <DetailField label="Owner Name" value={selectedApp.owner_name} />
+                            <DetailField label="Title" value={selectedApp.owner_title} />
+                            <DetailField label="Date of Birth" value={selectedApp.owner_dob} />
+                            <DetailField label="SSN (last 4)" value={selectedApp.owner_ssn_last4 ? `••••${selectedApp.owner_ssn_last4}` : null} />
+                            <DetailField label="Home Address" value={selectedApp.owner_address} />
+                            <DetailField label="City / State / ZIP" value={[selectedApp.owner_city, selectedApp.owner_state, selectedApp.owner_zip].filter(Boolean).join(", ")} />
+                          </DetailSection>
+                        </>
+                      )}
+
+                      {(selectedApp.monthly_volume || selectedApp.avg_ticket || selectedApp.current_processor) && (
+                        <>
+                          <Separator />
+                          <DetailSection title="Processing Information">
+                            <DetailField label="Monthly Volume" value={selectedApp.monthly_volume ? `$${Number(selectedApp.monthly_volume).toLocaleString()}` : null} />
+                            <DetailField label="Avg Ticket" value={selectedApp.avg_ticket ? `$${selectedApp.avg_ticket}` : null} />
+                            <DetailField label="High Ticket" value={selectedApp.high_ticket ? `$${selectedApp.high_ticket}` : null} />
+                            <DetailField label="Current Processor" value={selectedApp.current_processor} />
+                            <DetailField label="Accepted Cards" value={selectedApp.accepted_cards} />
+                          </DetailSection>
+
+                          {(selectedApp.ecommerce_percent || selectedApp.in_person_percent || selectedApp.keyed_percent) && (
+                            <div className="grid grid-cols-3 gap-3 mt-2">
+                              <DetailField label="eCommerce %" value={selectedApp.ecommerce_percent ? `${selectedApp.ecommerce_percent}%` : null} />
+                              <DetailField label="In-Person %" value={selectedApp.in_person_percent ? `${selectedApp.in_person_percent}%` : null} />
+                              <DetailField label="Keyed %" value={selectedApp.keyed_percent ? `${selectedApp.keyed_percent}%` : null} />
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      {(selectedApp.notes || selectedApp.message) && (
+                        <>
+                          <Separator />
+                          <div>
+                            <span className="text-xs text-muted-foreground">Notes / Message</span>
+                            <p className="mt-1 text-sm whitespace-pre-wrap bg-muted/50 p-3 rounded-lg">
+                              {selectedApp.notes || selectedApp.message}
+                            </p>
+                          </div>
+                        </>
                       )}
                     </>
                   )}
 
-                  {/* Notes */}
-                  {(selectedApp.notes || selectedApp.message) && (
-                    <>
-                      <Separator />
-                      <div>
-                        <span className="text-xs text-muted-foreground">Notes / Message</span>
-                        <p className="mt-1 text-sm whitespace-pre-wrap bg-muted/50 p-3 rounded-lg">
-                          {selectedApp.notes || selectedApp.message}
-                        </p>
-                      </div>
-                    </>
-                  )}
-
-                  {/* Uploaded Documents */}
+                  {/* Uploaded Documents - always shown */}
                   <Separator />
                   <div>
                     <span className="text-xs text-muted-foreground">Uploaded Documents</span>
@@ -698,26 +899,64 @@ export default function WebSubmissions() {
 
                   {/* Actions */}
                   {selectedApp.status === "pending" && (
-                    <div className="flex gap-2 pt-4 border-t">
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          rejectApplication(selectedApp.id);
-                          setSelectedApp(null);
-                        }}
-                      >
-                        <X className="h-4 w-4 mr-1" />
-                        Reject
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          promptReferralAndConvert(selectedApp);
-                          setSelectedApp(null);
-                        }}
-                      >
-                        <ArrowRightCircle className="h-4 w-4 mr-1" />
-                        Convert to Pipeline
-                      </Button>
+                    <div className="flex flex-wrap gap-2 pt-4 border-t">
+                      {isDocSubmission(selectedApp) ? (
+                        <>
+                          <Button
+                            variant="outline"
+                            disabled={isDownloading === selectedApp.id}
+                            onClick={() => downloadAllDocs(selectedApp)}
+                          >
+                            {isDownloading === selectedApp.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                            ) : (
+                              <Download className="h-4 w-4 mr-1" />
+                            )}
+                            Download All
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              openAssignDialog(selectedApp);
+                              setSelectedApp(null);
+                            }}
+                          >
+                            <Link2 className="h-4 w-4 mr-1" />
+                            Assign to Account
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              rejectApplication(selectedApp.id);
+                              setSelectedApp(null);
+                            }}
+                          >
+                            <X className="h-4 w-4 mr-1" />
+                            Reject
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              rejectApplication(selectedApp.id);
+                              setSelectedApp(null);
+                            }}
+                          >
+                            <X className="h-4 w-4 mr-1" />
+                            Reject
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              promptReferralAndConvert(selectedApp);
+                              setSelectedApp(null);
+                            }}
+                          >
+                            <ArrowRightCircle className="h-4 w-4 mr-1" />
+                            Convert to Pipeline
+                          </Button>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -725,6 +964,52 @@ export default function WebSubmissions() {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Assign to Account Dialog */}
+        <Dialog open={!!assignPrompt} onOpenChange={() => setAssignPrompt(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Assign Documents to Account</DialogTitle>
+            </DialogHeader>
+            {assignPrompt && (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Assign the uploaded documents from <strong>{assignPrompt.full_name}</strong> to an existing account. Files will be moved to the account's most recent opportunity.
+                </p>
+                <div className="space-y-2">
+                  <Label htmlFor="account-select">Select Account</Label>
+                  <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose an account..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accounts.map((acc) => (
+                        <SelectItem key={acc.id} value={acc.id}>
+                          {acc.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex justify-end gap-2 pt-2 border-t border-border">
+                  <Button variant="outline" onClick={() => setAssignPrompt(null)}>Cancel</Button>
+                  <Button
+                    disabled={!selectedAccountId || isAssigning}
+                    onClick={assignToAccount}
+                  >
+                    {isAssigning ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    ) : (
+                      <Link2 className="h-4 w-4 mr-1" />
+                    )}
+                    Assign Documents
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
         {/* Referral Source Prompt */}
         <Dialog open={!!referralPrompt} onOpenChange={() => setReferralPrompt(null)}>
           <DialogContent className="sm:max-w-md">
