@@ -156,6 +156,7 @@ const FloatingChat: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [pendingAttachment, setPendingAttachment] = useState<{ file: File; url: string } | null>(null);
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const scrollViewportRef = useRef<HTMLDivElement | null>(null);
   const presenceChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -730,8 +731,8 @@ const FloatingChat: React.FC = () => {
       return null;
     }
 
-    const { data: urlData } = supabase.storage.from('chat-attachments').getPublicUrl(path);
-    return { url: urlData.publicUrl, name: file.name, type: file.type, size: file.size };
+    // Store the relative path; we'll generate signed URLs on render
+    return { url: path, name: file.name, type: file.type, size: file.size };
   };
 
   // Handle file selection
@@ -1023,17 +1024,46 @@ const FloatingChat: React.FC = () => {
     return <Check className="h-3 w-3 text-slate-400 inline-block ml-1" />;
   };
 
+  // Generate signed URL for private chat-attachments bucket
+  const getSignedAttachmentUrl = useCallback(async (storedUrl: string): Promise<string> => {
+    if (storedUrl.startsWith('http')) return storedUrl;
+    const { data } = await supabase.storage.from('chat-attachments').createSignedUrl(storedUrl, 3600);
+    return data?.signedUrl || storedUrl;
+  }, []);
+
+
+  const resolveAttachmentUrl = useCallback(async (msgId: string, storedUrl: string) => {
+    if (signedUrls[msgId]) return;
+    const url = await getSignedAttachmentUrl(storedUrl);
+    setSignedUrls(prev => ({ ...prev, [msgId]: url }));
+  }, [signedUrls, getSignedAttachmentUrl]);
+
   // Render attachment in message
   const renderAttachment = (msg: ChannelMessage | DirectMessage) => {
-    const attachmentUrl = msg.attachment_url;
+    const storedUrl = msg.attachment_url;
     const attachmentName = msg.attachment_name;
     const attachmentType = msg.attachment_type;
     const attachmentSize = msg.attachment_size;
     
-    if (!attachmentUrl) return null;
+    if (!storedUrl) return null;
+
+    if (!signedUrls[msg.id] && !storedUrl.startsWith('http')) {
+      resolveAttachmentUrl(msg.id, storedUrl);
+    }
+
+    const attachmentUrl = signedUrls[msg.id] || (storedUrl.startsWith('http') ? storedUrl : '');
 
     const isImage = attachmentType?.startsWith('image/');
     const isAudio = attachmentType?.startsWith('audio/');
+
+    if (!attachmentUrl) {
+      return (
+        <div className="mt-2 flex items-center gap-2 p-2 rounded-lg bg-white/10 text-xs opacity-60">
+          <File className="h-4 w-4 shrink-0 animate-pulse" />
+          <span className="truncate flex-1">{attachmentName || 'Loading...'}</span>
+        </div>
+      );
+    }
 
     if (isImage) {
       return (
