@@ -415,9 +415,6 @@ const UnifiedPipelineBoard = ({
       {/* Sticky toolbar — logo, Total Pipeline Value, Focus Mode toggle, Add Deal */}
       <div className="flex-shrink-0 sticky top-0 z-20 px-4 py-2.5 flex items-center justify-between border-b border-border/60 bg-card/95 backdrop-blur-sm">
         <div className="flex items-center gap-4">
-          <span className="font-bold text-sm text-foreground tracking-tight">
-            Pipeline
-          </span>
           <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
             <span className="font-medium bg-muted px-2 py-0.5 rounded-full">
               {totalCount} deals
