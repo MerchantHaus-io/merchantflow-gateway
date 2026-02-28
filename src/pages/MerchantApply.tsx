@@ -1,4 +1,4 @@
-import { useMemo, useState, lazy, Suspense, type InputHTMLAttributes, type ReactNode } from "react";
+import { useMemo, useState, useCallback, lazy, Suspense, type InputHTMLAttributes, type ReactNode } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -818,12 +818,23 @@ function Field({ label, required, children, hint, error }: { label: string; requ
 }
 
 function Input({ hasError, ...props }: InputHTMLAttributes<HTMLInputElement> & { hasError?: boolean }) {
+  const [focused, setFocused] = useState(false);
+  const filled = !hasError && !focused && typeof props.value === "string" && props.value.trim().length > 0;
   return (
-    <input {...props} className={cn(
-      "w-full rounded-lg border bg-card px-2.5 py-2 md:px-3 md:py-2.5 text-xs md:text-sm text-foreground placeholder:text-muted-foreground shadow-sm focus:outline-none focus:ring-2",
-      hasError ? "border-destructive focus:border-destructive focus:ring-destructive/20" : "border-input focus:border-primary focus:ring-primary/20",
-      props.className
-    )} />
+    <input
+      {...props}
+      onFocus={e => { setFocused(true); props.onFocus?.(e); }}
+      onBlur={e => { setFocused(false); props.onBlur?.(e); }}
+      className={cn(
+        "w-full rounded-lg border px-2.5 py-2 md:px-3 md:py-2.5 text-xs md:text-sm placeholder:text-muted-foreground shadow-sm focus:outline-none focus:ring-2 transition-colors duration-200",
+        hasError
+          ? "bg-card text-foreground border-destructive focus:border-destructive focus:ring-destructive/20"
+          : filled
+            ? "bg-emerald-600 text-white font-semibold border-emerald-600 focus:bg-card focus:text-foreground focus:font-normal focus:border-primary focus:ring-primary/20"
+            : "bg-card text-foreground border-input focus:border-primary focus:ring-primary/20",
+        props.className
+      )}
+    />
   );
 }
 
@@ -832,20 +843,42 @@ function NumberInput(props: InputHTMLAttributes<HTMLInputElement> & { hasError?:
 }
 
 function SelectInput({ children, hasError, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { children: ReactNode; hasError?: boolean }) {
+  const [focused, setFocused] = useState(false);
+  const filled = !hasError && !focused && typeof props.value === "string" && props.value.trim().length > 0;
   return (
-    <select {...props} className={cn(
-      "w-full rounded-lg border bg-card px-2.5 py-2 md:px-3 md:py-2.5 text-xs md:text-sm text-foreground shadow-sm focus:outline-none focus:ring-2",
-      hasError ? "border-destructive focus:ring-destructive/20" : "border-input focus:ring-primary/20",
-    )}>{children}</select>
+    <select
+      {...props}
+      onFocus={e => { setFocused(true); props.onFocus?.(e); }}
+      onBlur={e => { setFocused(false); props.onBlur?.(e); }}
+      className={cn(
+        "w-full rounded-lg border px-2.5 py-2 md:px-3 md:py-2.5 text-xs md:text-sm shadow-sm focus:outline-none focus:ring-2 transition-colors duration-200",
+        hasError
+          ? "bg-card text-foreground border-destructive focus:ring-destructive/20"
+          : filled
+            ? "bg-emerald-600 text-white font-semibold border-emerald-600 focus:bg-card focus:text-foreground focus:font-normal focus:border-primary focus:ring-primary/20"
+            : "bg-card text-foreground border-input focus:ring-primary/20",
+      )}
+    >{children}</select>
   );
 }
 
 function Textarea({ hasError, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { hasError?: boolean }) {
+  const [focused, setFocused] = useState(false);
+  const filled = !hasError && !focused && typeof props.value === "string" && props.value.trim().length > 0;
   return (
-    <textarea {...props} className={cn(
-      "w-full rounded-lg border bg-card px-2.5 py-2 md:px-3 md:py-2.5 text-xs md:text-sm text-foreground placeholder:text-muted-foreground shadow-sm focus:outline-none focus:ring-2 min-h-[60px]",
-      hasError ? "border-destructive focus:ring-destructive/20" : "border-input focus:ring-primary/20",
-    )} />
+    <textarea
+      {...props}
+      onFocus={e => { setFocused(true); props.onFocus?.(e); }}
+      onBlur={e => { setFocused(false); props.onBlur?.(e); }}
+      className={cn(
+        "w-full rounded-lg border px-2.5 py-2 md:px-3 md:py-2.5 text-xs md:text-sm placeholder:text-muted-foreground shadow-sm focus:outline-none focus:ring-2 min-h-[60px] transition-colors duration-200",
+        hasError
+          ? "bg-card text-foreground border-destructive focus:ring-destructive/20"
+          : filled
+            ? "bg-emerald-600 text-white font-semibold border-emerald-600 focus:bg-card focus:text-foreground focus:font-normal focus:border-primary focus:ring-primary/20"
+            : "bg-card text-foreground border-input focus:ring-primary/20",
+      )}
+    />
   );
 }
 
