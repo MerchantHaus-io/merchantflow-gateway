@@ -804,7 +804,33 @@ All colors MUST be HSL.
     scrollbar-width: none;
   }
 
-  /* --- Focus Mode Animations --- */
+  /* Styled pipeline scrollbar — thin gold-on-charcoal, visible on hover */
+  .pipeline-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+  .pipeline-scrollbar:hover {
+    scrollbar-color: hsl(var(--gold) / 0.5) hsl(var(--gold) / 0.06);
+  }
+  .pipeline-scrollbar::-webkit-scrollbar {
+    height: 6px;
+  }
+  .pipeline-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .pipeline-scrollbar::-webkit-scrollbar-thumb {
+    background: transparent;
+  }
+  .pipeline-scrollbar:hover::-webkit-scrollbar-track {
+    background: hsl(var(--gold) / 0.06);
+  }
+  .pipeline-scrollbar:hover::-webkit-scrollbar-thumb {
+    background: hsl(var(--gold) / 0.4);
+  }
+  .pipeline-scrollbar:hover::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--gold) / 0.7);
+  }
+
 
   /* Floating hover animation for user's focus cards (Iron Man bobbing) */
   @keyframes ironman-hover {

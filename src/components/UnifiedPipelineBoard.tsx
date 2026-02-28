@@ -492,7 +492,7 @@ const UnifiedPipelineBoard = ({
       <div
         ref={scrollRef}
         onWheel={handleHorizontalWheel}
-        className="flex-1 overflow-x-auto overflow-y-hidden min-h-0"
+        className="flex-1 overflow-x-auto overflow-y-hidden min-h-0 pipeline-scrollbar"
         style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-x pan-y" }}
       >
         <div className={cn("flex items-stretch min-w-max h-full", isCompact ? "gap-1.5 p-1.5" : "gap-2 p-3")}>
