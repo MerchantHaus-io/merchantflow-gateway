@@ -27,6 +27,7 @@ import {
   BadgeDollarSign,
   Maximize,
   Minimize,
+  Cloud,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -115,6 +116,7 @@ const toolsItems: NavItem[] = [
   { title: "Data Export", url: "/admin/data-export", icon: Download, description: "Export opportunity data" },
   { title: "Terminal Updates", url: "/tools/terminal-updates", icon: Sparkles, description: "Latest CRM changes & features" },
   { title: "NMI Status", url: "https://statusgator.com/services/nmi", icon: Activity, description: "System status page", external: true },
+  { title: "Netlify", url: "/tools/netlify", icon: Cloud, description: "Deployment audit & fix prompts" },
 ];
 
 interface MegaMenuHeaderProps {

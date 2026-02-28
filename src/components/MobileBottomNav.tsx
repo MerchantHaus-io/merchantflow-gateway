@@ -23,6 +23,7 @@ import {
   ExternalLink,
   X,
   BadgeDollarSign,
+  Cloud,
   type LucideIcon,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetClose } from "@/components/ui/sheet";
@@ -69,6 +70,7 @@ const toolItems: MoreItem[] = [
   { title: "Data Export", url: "/admin/data-export", icon: Download },
   { title: "NMI Payments", url: "/tools/nmi-payments", icon: CreditCard },
   { title: "NMI Status", url: "https://statusgator.com/services/nmi", icon: Activity, external: true },
+  { title: "Netlify", url: "/tools/netlify", icon: Cloud },
 ];
 
 export function MobileBottomNav() {
