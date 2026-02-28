@@ -756,18 +756,19 @@ const Tasks = () => {
                                 key={task.id} 
                                 className={cn(
                                   "hover:bg-muted/50 cursor-pointer",
-                                  dueStatus === 'overdue' && "bg-red-500/5 border-l-2 border-l-red-500",
-                                  dueStatus === 'due-today' && "bg-orange-500/5 border-l-2 border-l-orange-500",
-                                  dueStatus === 'due-tomorrow' && "bg-amber-500/5 border-l-2 border-l-amber-500"
+                                  task.status === 'done' && "bg-emerald-500/10",
+                                  task.status !== 'done' && dueStatus === 'overdue' && "bg-red-500/5 border-l-2 border-l-red-500",
+                                  task.status !== 'done' && dueStatus === 'due-today' && "bg-orange-500/5 border-l-2 border-l-orange-500",
+                                  task.status !== 'done' && dueStatus === 'due-tomorrow' && "bg-amber-500/5 border-l-2 border-l-amber-500"
                                 )}
                                 onClick={() => setSelectedTask(task)}
                               >
-                                <TableCell className="text-muted-foreground text-sm">{(manualPage - 1) * MANUAL_PER_PAGE + index + 1}</TableCell>
+                                <TableCell className={cn("text-sm", task.status === 'done' ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground")}>{(manualPage - 1) * MANUAL_PER_PAGE + index + 1}</TableCell>
                                 <TableCell>
                                   <div className="flex items-center gap-2">
-                                    {dueStatus === 'overdue' && <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />}
+                                    {dueStatus === 'overdue' && task.status !== 'done' && <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />}
                                     <div>
-                                      <p className="font-medium">{task.title}</p>
+                                      <p className={cn("font-medium", task.status === 'done' && "text-emerald-600 dark:text-emerald-400 line-through")}>{task.title}</p>
                                       {task.description && <p className="text-xs text-muted-foreground line-clamp-1">{task.description}</p>}
                                     </div>
                                   </div>
@@ -923,18 +924,19 @@ const Tasks = () => {
                                 key={task.id} 
                                 className={cn(
                                   "hover:bg-muted/50 cursor-pointer",
-                                  dueStatus === 'overdue' && "bg-red-500/5 border-l-2 border-l-red-500",
-                                  dueStatus === 'due-today' && "bg-orange-500/5 border-l-2 border-l-orange-500",
-                                  dueStatus === 'due-tomorrow' && "bg-amber-500/5 border-l-2 border-l-amber-500"
+                                  task.status === 'done' && "bg-emerald-500/10",
+                                  task.status !== 'done' && dueStatus === 'overdue' && "bg-red-500/5 border-l-2 border-l-red-500",
+                                  task.status !== 'done' && dueStatus === 'due-today' && "bg-orange-500/5 border-l-2 border-l-orange-500",
+                                  task.status !== 'done' && dueStatus === 'due-tomorrow' && "bg-amber-500/5 border-l-2 border-l-amber-500"
                                 )}
                                 onClick={() => setSelectedTask(task)}
                               >
-                                <TableCell className="text-muted-foreground text-sm">{(autoPage - 1) * AUTO_PER_PAGE + index + 1}</TableCell>
+                                <TableCell className={cn("text-sm", task.status === 'done' ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground")}>{(autoPage - 1) * AUTO_PER_PAGE + index + 1}</TableCell>
                                 <TableCell>
                                   <div className="flex items-center gap-2">
-                                    {dueStatus === 'overdue' && <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />}
+                                    {dueStatus === 'overdue' && task.status !== 'done' && <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />}
                                     <div>
-                                      <p className="font-medium">{task.title}</p>
+                                      <p className={cn("font-medium", task.status === 'done' && "text-emerald-600 dark:text-emerald-400 line-through")}>{task.title}</p>
                                       {task.description && <p className="text-xs text-muted-foreground line-clamp-1">{task.description}</p>}
                                     </div>
                                   </div>
@@ -1074,16 +1076,16 @@ const Tasks = () => {
                           const PriorityIcon = priorityConf.icon;
                           const dueStatus = getDueDateStatus(task.dueAt, task.status);
                           return (
-                            <Card key={task.id} className={cn("p-3 cursor-pointer hover:shadow-md transition-shadow", dueStatus === 'overdue' && "border-red-500/50 bg-red-500/5", dueStatus === 'due-today' && "border-orange-500/50 bg-orange-500/5", dueStatus === 'due-tomorrow' && "border-amber-500/30 bg-amber-500/5")} onClick={() => setSelectedTask(task)}>
+                            <Card key={task.id} className={cn("p-3 cursor-pointer hover:shadow-md transition-shadow", task.status === 'done' && "bg-emerald-500/10 border-emerald-500/30", task.status !== 'done' && dueStatus === 'overdue' && "border-red-500/50 bg-red-500/5", task.status !== 'done' && dueStatus === 'due-today' && "border-orange-500/50 bg-orange-500/5", task.status !== 'done' && dueStatus === 'due-tomorrow' && "border-amber-500/30 bg-amber-500/5")} onClick={() => setSelectedTask(task)}>
                               <div className="space-y-2">
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="flex items-center gap-1.5 min-w-0">
-                                    {dueStatus === 'overdue' ? <AlertTriangle className="h-3.5 w-3.5 text-red-500 flex-shrink-0" /> : <PriorityIcon className={cn("h-3.5 w-3.5 flex-shrink-0", priorityConf.color.split(' ')[0])} />}
-                                    <h4 className="font-medium text-sm leading-tight truncate">{task.title}</h4>
+                                    {task.status === 'done' ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" /> : dueStatus === 'overdue' ? <AlertTriangle className="h-3.5 w-3.5 text-red-500 flex-shrink-0" /> : <PriorityIcon className={cn("h-3.5 w-3.5 flex-shrink-0", priorityConf.color.split(' ')[0])} />}
+                                    <h4 className={cn("font-medium text-sm leading-tight truncate", task.status === 'done' && "text-emerald-600 dark:text-emerald-400 line-through")}>{task.title}</h4>
                                   </div>
                                   <Badge variant="outline" className={cn("text-xs flex-shrink-0", task.status === 'open' && "border-blue-500/30 text-blue-500", task.status === 'in_progress' && "border-amber-500/30 text-amber-500", task.status === 'done' && "border-emerald-500/30 text-emerald-500")}>{statusLabels[task.status]}</Badge>
                                 </div>
-                                {task.description && <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>}
+                                {task.description && <p className={cn("text-xs line-clamp-2", task.status === 'done' ? "text-emerald-600/60 dark:text-emerald-400/60" : "text-muted-foreground")}>{task.description}</p>}
                                 <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                                   <Badge variant="outline" className={cn("text-[10px] gap-0.5 h-5", priorityConf.color)}><PriorityIcon className="h-2.5 w-2.5" />{priorityConf.label}</Badge>
                                   {task.source === 'notice' && <Badge variant="outline" className="text-[10px] gap-0.5 h-5 border-purple-500/30 text-purple-500 bg-purple-500/10">Notice</Badge>}
@@ -1129,16 +1131,16 @@ const Tasks = () => {
                           const PriorityIcon = priorityConf.icon;
                           const dueStatus = getDueDateStatus(task.dueAt, task.status);
                           return (
-                            <Card key={task.id} className={cn("p-3 cursor-pointer hover:shadow-md transition-shadow", dueStatus === 'overdue' && "border-red-500/50 bg-red-500/5", dueStatus === 'due-today' && "border-orange-500/50 bg-orange-500/5", dueStatus === 'due-tomorrow' && "border-amber-500/30 bg-amber-500/5")} onClick={() => setSelectedTask(task)}>
+                            <Card key={task.id} className={cn("p-3 cursor-pointer hover:shadow-md transition-shadow", task.status === 'done' && "bg-emerald-500/10 border-emerald-500/30", task.status !== 'done' && dueStatus === 'overdue' && "border-red-500/50 bg-red-500/5", task.status !== 'done' && dueStatus === 'due-today' && "border-orange-500/50 bg-orange-500/5", task.status !== 'done' && dueStatus === 'due-tomorrow' && "border-amber-500/30 bg-amber-500/5")} onClick={() => setSelectedTask(task)}>
                               <div className="space-y-2">
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="flex items-center gap-1.5 min-w-0">
-                                    {dueStatus === 'overdue' ? <AlertTriangle className="h-3.5 w-3.5 text-red-500 flex-shrink-0" /> : <PriorityIcon className={cn("h-3.5 w-3.5 flex-shrink-0", priorityConf.color.split(' ')[0])} />}
-                                    <h4 className="font-medium text-sm leading-tight truncate">{task.title}</h4>
+                                    {task.status === 'done' ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" /> : dueStatus === 'overdue' ? <AlertTriangle className="h-3.5 w-3.5 text-red-500 flex-shrink-0" /> : <PriorityIcon className={cn("h-3.5 w-3.5 flex-shrink-0", priorityConf.color.split(' ')[0])} />}
+                                    <h4 className={cn("font-medium text-sm leading-tight truncate", task.status === 'done' && "text-emerald-600 dark:text-emerald-400 line-through")}>{task.title}</h4>
                                   </div>
                                   <Badge variant="outline" className={cn("text-xs flex-shrink-0", task.status === 'open' && "border-blue-500/30 text-blue-500", task.status === 'in_progress' && "border-amber-500/30 text-amber-500", task.status === 'done' && "border-emerald-500/30 text-emerald-500")}>{statusLabels[task.status]}</Badge>
                                 </div>
-                                {task.description && <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>}
+                                {task.description && <p className={cn("text-xs line-clamp-2", task.status === 'done' ? "text-emerald-600/60 dark:text-emerald-400/60" : "text-muted-foreground")}>{task.description}</p>}
                                 <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                                   <Badge variant="outline" className={cn("text-[10px] gap-0.5 h-5", priorityConf.color)}><PriorityIcon className="h-2.5 w-2.5" />{priorityConf.label}</Badge>
                                   <Badge variant="outline" className="text-[10px] gap-0.5 h-5 border-amber-500/30 text-amber-500"><Zap className="h-2.5 w-2.5" />Auto</Badge>
