@@ -213,7 +213,10 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
   const displayName = profileName || EMAIL_TO_USER[userEmail] || user?.email?.split("@")[0] || "User";
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-haus-charcoal text-white">
+    <header className={cn(
+      "sticky top-0 z-50 w-full border-b border-border",
+      theme === 'dark' ? "bg-haus-charcoal text-white" : "bg-background text-foreground shadow-sm"
+    )}>
       <div className="flex h-14 items-center px-4 lg:px-6 gap-4">
         {/* Logo */}
         <Link to="/" className="flex items-center shrink-0">
@@ -227,7 +230,12 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
               if (item.items) {
                 return (
                   <NavigationMenuItem key={item.title}>
-                    <NavigationMenuTrigger className="bg-transparent text-white/90 hover:text-white hover:bg-white/10 data-[state=open]:bg-white/10">
+                    <NavigationMenuTrigger className={cn(
+                      "bg-transparent",
+                      theme === 'dark' 
+                        ? "text-white/90 hover:text-white hover:bg-white/10 data-[state=open]:bg-white/10"
+                        : "text-foreground/80 hover:text-foreground hover:bg-accent data-[state=open]:bg-accent"
+                    )}>
                       <item.icon className="h-4 w-4 mr-2" />
                       {item.title}
                     </NavigationMenuTrigger>
@@ -283,7 +291,10 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                       className={({ isActive }) =>
                         cn(
                           navigationMenuTriggerStyle(),
-                          "bg-transparent text-white/90 hover:text-white hover:bg-white/10 flex items-center",
+                          "bg-transparent flex items-center",
+                          theme === 'dark'
+                            ? "text-white/90 hover:text-white hover:bg-white/10"
+                            : "text-foreground/80 hover:text-foreground hover:bg-accent",
                           isActive && "bg-accent text-accent-foreground"
                         )
                       }
@@ -300,9 +311,12 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
               <Button
                 variant="ghost"
                 onClick={() => navigate('/?focus=true')}
-                className="bg-transparent hover:bg-white/10 flex items-center gap-2 h-10 px-4 relative group"
+                className={cn(
+                  "bg-transparent flex items-center gap-2 h-10 px-4 relative group",
+                  theme === 'dark' ? "hover:bg-white/10" : "hover:bg-accent"
+                )}
               >
-                <Focus className="h-4 w-4 text-white" />
+                <Focus className={cn("h-4 w-4", theme === 'dark' ? "text-white" : "text-foreground")} />
                 <span
                   className="font-bold text-sm bg-clip-text text-transparent"
                   style={{
@@ -364,7 +378,10 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                     document.documentElement.requestFullscreen();
                   }
                 }}
-                className="h-9 w-9 text-white/70 hover:text-white hover:bg-white/10"
+                className={cn(
+                  "h-9 w-9",
+                  theme === 'dark' ? "text-white/70 hover:text-white hover:bg-white/10" : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                )}
               >
                 {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
               </Button>
@@ -377,7 +394,10 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
             variant="ghost"
             size="icon"
             onClick={toggleTheme}
-            className="h-9 w-9 text-white/70 hover:text-white hover:bg-white/10"
+            className={cn(
+              "h-9 w-9",
+              theme === 'dark' ? "text-white/70 hover:text-white hover:bg-white/10" : "text-muted-foreground hover:text-foreground hover:bg-accent"
+            )}
           >
             {theme === "dark" ? (
               <Sun className="h-4 w-4" />
@@ -389,7 +409,10 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
           {/* Profile dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="gap-2 pl-1 text-white/90 hover:text-white hover:bg-white/10">
+              <Button variant="ghost" size="sm" className={cn(
+                "gap-2 pl-1",
+                theme === 'dark' ? "text-white/90 hover:text-white hover:bg-white/10" : "text-foreground/80 hover:text-foreground hover:bg-accent"
+              )}>
                 <Avatar className="h-7 w-7">
                   <AvatarImage src={avatarUrl || undefined} alt={displayName} />
                   <AvatarFallback className="text-xs bg-primary/10 text-primary">
