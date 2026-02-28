@@ -45,15 +45,18 @@ export const useUnreadMessages = () => {
       for (const channel of channels) {
         const lastRead = lastReadTimestamps[channel.id];
 
+        // If user has never read this channel, don't count any historical messages as unread
+        if (!lastRead) {
+          byChannel[channel.id] = 0;
+          continue;
+        }
+
         let query = supabase
           .from('chat_messages')
           .select('id', { count: 'exact' })
           .eq('channel_id', channel.id)
-          .neq('user_id', user.id);
-
-        if (lastRead) {
-          query = query.gt('created_at', lastRead);
-        }
+          .neq('user_id', user.id)
+          .gt('created_at', lastRead);
 
         const { count } = await query;
         const unread = count || 0;
