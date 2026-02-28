@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Opportunity, STAGE_CONFIG, Account, Contact, getServiceType, EMAIL_TO_USER, TEAM_MEMBERS, OpportunityStage, PROCESSING_PIPELINE_STAGES, GATEWAY_ONLY_PIPELINE_STAGES } from "@/types/opportunity";
-import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, ListChecks, Zap, CreditCard, Maximize2, Minimize2, Loader2, Wand2, RotateCcw, Eye } from "lucide-react";
+import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, ListChecks, Zap, CreditCard, Maximize2, Minimize2, Loader2, Wand2, RotateCcw, Eye, Check } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -250,13 +250,20 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   const [timezone, setTimezone] = useState("");
   const [language, setLanguage] = useState("");
 
+  // Wizard fields
+  const [wizardFields, setWizardFields] = useState<Record<string, string>>({});
+  const setWizardField = useCallback((key: string, value: string) => {
+    setWizardFields(prev => ({ ...prev, [key]: value }));
+  }, []);
+
   // Combined form data for auto-save
   const formData = useMemo(() => ({
     accountName, website, address1, address2, city, state, zip, country,
     firstName, lastName, email, phone, fax,
     username, referralSource, timezone, language,
+    wizardFields,
   }), [accountName, website, address1, address2, city, state, zip, country,
-      firstName, lastName, email, phone, fax, username, referralSource, timezone, language]);
+      firstName, lastName, email, phone, fax, username, referralSource, timezone, language, wizardFields]);
 
   const account = opportunity?.account;
   const contact = opportunity?.contact;
@@ -320,12 +327,41 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     setReferralSource(opportunity.referral_source || "");
     setTimezone(opportunity.timezone || "");
     setLanguage(opportunity.language || "");
+
+    // Populate wizard fields
+    const wf: Record<string, string> = {};
+    const wizardKeys = [
+      'dba_name', 'product_description', 'nature_of_business',
+      'dba_contact_first_name', 'dba_contact_last_name', 'dba_contact_phone', 'dba_contact_email',
+      'dba_address_line1', 'dba_city', 'dba_state', 'dba_zip',
+      'legal_entity_name', 'federal_tax_id', 'ownership_type',
+      'business_formation_date', 'state_incorporated',
+      'legal_address_line1', 'legal_city', 'legal_state', 'legal_zip',
+      'monthly_volume', 'average_transaction', 'high_ticket',
+      'percent_swiped', 'percent_keyed', 'percent_moto', 'percent_ecommerce',
+      'percent_b2c', 'percent_b2b', 'website_url', 'sic_mcc_code',
+      'current_processor', 'username',
+    ];
+    for (const key of wizardKeys) {
+      wf[key] = (wizardFormState[key] as string) || "";
+    }
+    setWizardFields(wf);
     
     setIsEditing(true);
   };
 
   const cancelEditing = () => {
     setIsEditing(false);
+  };
+
+  const handleManualSave = async () => {
+    try {
+      await handleAutoSave(formData);
+      toast.success("All changes saved");
+      setIsEditing(false);
+    } catch (err) {
+      toast.error("Failed to save changes");
+    }
   };
 
   const handleConvertToGateway = async () => {
@@ -407,6 +443,36 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     
     if (oppError) throw oppError;
 
+    // Update wizard state if wizard fields changed
+    if (data.wizardFields && Object.keys(data.wizardFields).length > 0) {
+      const { data: ws } = await supabase
+        .from('onboarding_wizard_states')
+        .select('id, form_state')
+        .eq('opportunity_id', opportunity.id)
+        .maybeSingle();
+
+      if (ws) {
+        const currentForm = (ws.form_state as Record<string, unknown>) ?? {};
+        const mergedForm = { ...currentForm, ...data.wizardFields };
+        const { error: wizErr } = await supabase
+          .from('onboarding_wizard_states')
+          .update({ form_state: mergedForm as never, updated_at: new Date().toISOString() } as never)
+          .eq('id', ws.id);
+        if (wizErr) throw wizErr;
+      } else {
+        // Create wizard state if it doesn't exist
+        const { error: wizErr } = await supabase
+          .from('onboarding_wizard_states')
+          .insert({
+            opportunity_id: opportunity.id,
+            form_state: data.wizardFields as never,
+            progress: 0,
+            step_index: 0,
+          } as never);
+        if (wizErr) throw wizErr;
+      }
+    }
+
     // Update local state
     onUpdate({
       ...opportunity,
@@ -432,6 +498,10 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
         email: data.email || undefined,
         phone: data.phone || undefined,
         fax: data.fax || undefined,
+      } : undefined,
+      wizard_state: opportunity.wizard_state ? {
+        ...opportunity.wizard_state,
+        form_state: { ...(opportunity.wizard_state.form_state as Record<string, unknown>), ...data.wizardFields },
       } : undefined,
     });
   }, [opportunity, account, contact, onUpdate]);
@@ -737,9 +807,13 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                 {isEditing ? (
                   <>
                     <AutoSaveIndicator status={saveStatus} />
+                    <Button variant="default" size="sm" onClick={handleManualSave}>
+                      <Check className="h-4 w-4 mr-1" />
+                      Save
+                    </Button>
                     <Button variant="ghost" size="sm" onClick={cancelEditing}>
                       <X className="h-4 w-4 mr-1" />
-                      Close
+                      Cancel
                     </Button>
                   </>
                 ) : (
@@ -1020,83 +1094,133 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                   </div>
 
                   {/* Wizard: Business Profile */}
-                  {Object.keys(wizardFormState).length > 0 && (
-                    <>
-                      <div className="border-t border-border pt-4 space-y-4">
-                        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                          <CreditCard className="h-4 w-4" />
-                          Business Profile <span className="text-xs font-normal">(Wizard)</span>
-                        </h3>
-                        <div className="grid grid-cols-2 gap-4">
-                          <InfoItem label="DBA Name" value={wizardFormState.dba_name as string} />
-                          <InfoItem label="Products / Services" value={wizardFormState.product_description as string} />
-                          <InfoItem label="Nature of Business" value={wizardFormState.nature_of_business as string} />
-                          <InfoItem label="Contact First Name" value={wizardFormState.dba_contact_first_name as string} />
-                          <InfoItem label="Contact Last Name" value={wizardFormState.dba_contact_last_name as string} />
-                          <InfoItem label="Contact Phone" value={wizardFormState.dba_contact_phone as string} />
-                          <InfoItem label="Contact Email" value={wizardFormState.dba_contact_email as string} />
-                          <InfoItem label="DBA Address" value={wizardFormState.dba_address_line1 as string} />
-                          <InfoItem label="DBA City" value={wizardFormState.dba_city as string} />
-                          <InfoItem label="DBA State" value={wizardFormState.dba_state as string} />
-                          <InfoItem label="DBA Zip" value={wizardFormState.dba_zip as string} />
-                        </div>
+                  <div className="border-t border-border pt-4 space-y-4">
+                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                      <CreditCard className="h-4 w-4" />
+                      Business Profile <span className="text-xs font-normal">(Wizard)</span>
+                    </h3>
+                    {isEditing ? (
+                      <div className="grid grid-cols-2 gap-4">
+                        <EditField label="DBA Name" value={wizardFields.dba_name || ""} onChange={v => setWizardField("dba_name", v)} />
+                        <EditField label="Products / Services" value={wizardFields.product_description || ""} onChange={v => setWizardField("product_description", v)} />
+                        <EditField label="Nature of Business" value={wizardFields.nature_of_business || ""} onChange={v => setWizardField("nature_of_business", v)} />
+                        <EditField label="Contact First Name" value={wizardFields.dba_contact_first_name || ""} onChange={v => setWizardField("dba_contact_first_name", v)} />
+                        <EditField label="Contact Last Name" value={wizardFields.dba_contact_last_name || ""} onChange={v => setWizardField("dba_contact_last_name", v)} />
+                        <EditField label="Contact Phone" value={wizardFields.dba_contact_phone || ""} onChange={v => setWizardField("dba_contact_phone", v)} type="tel" />
+                        <EditField label="Contact Email" value={wizardFields.dba_contact_email || ""} onChange={v => setWizardField("dba_contact_email", v)} type="email" />
+                        <EditField label="DBA Address" value={wizardFields.dba_address_line1 || ""} onChange={v => setWizardField("dba_address_line1", v)} />
+                        <EditField label="DBA City" value={wizardFields.dba_city || ""} onChange={v => setWizardField("dba_city", v)} />
+                        <EditField label="DBA State" value={wizardFields.dba_state || ""} onChange={v => setWizardField("dba_state", v)} />
+                        <EditField label="DBA Zip" value={wizardFields.dba_zip || ""} onChange={v => setWizardField("dba_zip", v)} />
                       </div>
-
-                      {/* Wizard: Legal Info */}
-                      <div className="border-t border-border pt-4 space-y-4">
-                        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                          <ClipboardList className="h-4 w-4" />
-                          Legal Info <span className="text-xs font-normal">(Wizard)</span>
-                        </h3>
-                        <div className="grid grid-cols-2 gap-4">
-                          <InfoItem label="Legal Entity Name" value={wizardFormState.legal_entity_name as string} />
-                          <InfoItem label="Federal Tax ID" value={wizardFormState.federal_tax_id as string} />
-                          <InfoItem label="Ownership Type" value={wizardFormState.ownership_type as string} />
-                          <InfoItem label="Formation Date" value={wizardFormState.business_formation_date as string} />
-                          <InfoItem label="State Incorporated" value={wizardFormState.state_incorporated as string} />
-                          <InfoItem label="Legal Address" value={wizardFormState.legal_address_line1 as string} />
-                          <InfoItem label="Legal City" value={wizardFormState.legal_city as string} />
-                          <InfoItem label="Legal State" value={wizardFormState.legal_state as string} />
-                          <InfoItem label="Legal Zip" value={wizardFormState.legal_zip as string} />
-                        </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-4">
+                        <InfoItem label="DBA Name" value={wizardFormState.dba_name as string} />
+                        <InfoItem label="Products / Services" value={wizardFormState.product_description as string} />
+                        <InfoItem label="Nature of Business" value={wizardFormState.nature_of_business as string} />
+                        <InfoItem label="Contact First Name" value={wizardFormState.dba_contact_first_name as string} />
+                        <InfoItem label="Contact Last Name" value={wizardFormState.dba_contact_last_name as string} />
+                        <InfoItem label="Contact Phone" value={wizardFormState.dba_contact_phone as string} />
+                        <InfoItem label="Contact Email" value={wizardFormState.dba_contact_email as string} />
+                        <InfoItem label="DBA Address" value={wizardFormState.dba_address_line1 as string} />
+                        <InfoItem label="DBA City" value={wizardFormState.dba_city as string} />
+                        <InfoItem label="DBA State" value={wizardFormState.dba_state as string} />
+                        <InfoItem label="DBA Zip" value={wizardFormState.dba_zip as string} />
                       </div>
+                    )}
+                  </div>
 
-                      {/* Wizard: Processing */}
-                      <div className="border-t border-border pt-4 space-y-4">
-                        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                          <Zap className="h-4 w-4" />
-                          Processing <span className="text-xs font-normal">(Wizard)</span>
-                        </h3>
+                  {/* Wizard: Legal Info */}
+                  <div className="border-t border-border pt-4 space-y-4">
+                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                      <ClipboardList className="h-4 w-4" />
+                      Legal Info <span className="text-xs font-normal">(Wizard)</span>
+                    </h3>
+                    {isEditing ? (
+                      <div className="grid grid-cols-2 gap-4">
+                        <EditField label="Legal Entity Name" value={wizardFields.legal_entity_name || ""} onChange={v => setWizardField("legal_entity_name", v)} />
+                        <EditField label="Federal Tax ID" value={wizardFields.federal_tax_id || ""} onChange={v => setWizardField("federal_tax_id", v)} />
+                        <EditField label="Ownership Type" value={wizardFields.ownership_type || ""} onChange={v => setWizardField("ownership_type", v)} />
+                        <EditField label="Formation Date" value={wizardFields.business_formation_date || ""} onChange={v => setWizardField("business_formation_date", v)} />
+                        <EditField label="State Incorporated" value={wizardFields.state_incorporated || ""} onChange={v => setWizardField("state_incorporated", v)} />
+                        <EditField label="Legal Address" value={wizardFields.legal_address_line1 || ""} onChange={v => setWizardField("legal_address_line1", v)} />
+                        <EditField label="Legal City" value={wizardFields.legal_city || ""} onChange={v => setWizardField("legal_city", v)} />
+                        <EditField label="Legal State" value={wizardFields.legal_state || ""} onChange={v => setWizardField("legal_state", v)} />
+                        <EditField label="Legal Zip" value={wizardFields.legal_zip || ""} onChange={v => setWizardField("legal_zip", v)} />
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-4">
+                        <InfoItem label="Legal Entity Name" value={wizardFormState.legal_entity_name as string} />
+                        <InfoItem label="Federal Tax ID" value={wizardFormState.federal_tax_id as string} />
+                        <InfoItem label="Ownership Type" value={wizardFormState.ownership_type as string} />
+                        <InfoItem label="Formation Date" value={wizardFormState.business_formation_date as string} />
+                        <InfoItem label="State Incorporated" value={wizardFormState.state_incorporated as string} />
+                        <InfoItem label="Legal Address" value={wizardFormState.legal_address_line1 as string} />
+                        <InfoItem label="Legal City" value={wizardFormState.legal_city as string} />
+                        <InfoItem label="Legal State" value={wizardFormState.legal_state as string} />
+                        <InfoItem label="Legal Zip" value={wizardFormState.legal_zip as string} />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Wizard: Processing */}
+                  <div className="border-t border-border pt-4 space-y-4">
+                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                      <Zap className="h-4 w-4" />
+                      Processing <span className="text-xs font-normal">(Wizard)</span>
+                    </h3>
+                    {isEditing ? (
+                      <div className="grid grid-cols-2 gap-4">
+                        <EditField label="Monthly Volume" value={wizardFields.monthly_volume || ""} onChange={v => setWizardField("monthly_volume", v)} />
+                        <EditField label="Avg Transaction" value={wizardFields.average_transaction || ""} onChange={v => setWizardField("average_transaction", v)} />
+                        <EditField label="High Ticket" value={wizardFields.high_ticket || ""} onChange={v => setWizardField("high_ticket", v)} />
+                        <EditField label="% Swiped" value={wizardFields.percent_swiped || ""} onChange={v => setWizardField("percent_swiped", v)} />
+                        <EditField label="% Keyed" value={wizardFields.percent_keyed || ""} onChange={v => setWizardField("percent_keyed", v)} />
+                        <EditField label="% MOTO" value={wizardFields.percent_moto || ""} onChange={v => setWizardField("percent_moto", v)} />
+                        <EditField label="% eCommerce" value={wizardFields.percent_ecommerce || ""} onChange={v => setWizardField("percent_ecommerce", v)} />
+                        <EditField label="% B2C" value={wizardFields.percent_b2c || ""} onChange={v => setWizardField("percent_b2c", v)} />
+                        <EditField label="% B2B" value={wizardFields.percent_b2b || ""} onChange={v => setWizardField("percent_b2b", v)} />
+                        <EditField label="Website" value={wizardFields.website_url || ""} onChange={v => setWizardField("website_url", v)} />
+                        <EditField label="SIC / MCC Code" value={wizardFields.sic_mcc_code || ""} onChange={v => setWizardField("sic_mcc_code", v)} />
+                        <EditField label="Current Processor" value={wizardFields.current_processor || ""} onChange={v => setWizardField("current_processor", v)} />
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-4">
+                        <InfoItem label="Monthly Volume" value={wizardFormState.monthly_volume as string} />
+                        <InfoItem label="Avg Transaction" value={wizardFormState.average_transaction as string} />
+                        <InfoItem label="High Ticket" value={wizardFormState.high_ticket as string} />
+                        <InfoItem label="% Swiped" value={wizardFormState.percent_swiped as string} />
+                        <InfoItem label="% Keyed" value={wizardFormState.percent_keyed as string} />
+                        <InfoItem label="% MOTO" value={wizardFormState.percent_moto as string} />
+                        <InfoItem label="% eCommerce" value={wizardFormState.percent_ecommerce as string} />
+                        <InfoItem label="% B2C" value={wizardFormState.percent_b2c as string} />
+                        <InfoItem label="% B2B" value={wizardFormState.percent_b2b as string} />
+                        <InfoItem label="Website" value={wizardFormState.website_url as string} />
+                        <InfoItem label="SIC / MCC Code" value={wizardFormState.sic_mcc_code as string} />
+                        <InfoItem label="Current Processor" value={wizardFormState.current_processor as string} />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Wizard: Gateway Only fields */}
+                  {opportunity.service_type === 'gateway_only' && (
+                    <div className="border-t border-border pt-4 space-y-4">
+                      <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                        <Zap className="h-4 w-4" />
+                        Gateway Details <span className="text-xs font-normal">(Wizard)</span>
+                      </h3>
+                      {isEditing ? (
                         <div className="grid grid-cols-2 gap-4">
-                          <InfoItem label="Monthly Volume" value={wizardFormState.monthly_volume as string} />
-                          <InfoItem label="Avg Transaction" value={wizardFormState.average_transaction as string} />
-                          <InfoItem label="High Ticket" value={wizardFormState.high_ticket as string} />
-                          <InfoItem label="% Swiped" value={wizardFormState.percent_swiped as string} />
-                          <InfoItem label="% Keyed" value={wizardFormState.percent_keyed as string} />
-                          <InfoItem label="% MOTO" value={wizardFormState.percent_moto as string} />
-                          <InfoItem label="% eCommerce" value={wizardFormState.percent_ecommerce as string} />
-                          <InfoItem label="% B2C" value={wizardFormState.percent_b2c as string} />
-                          <InfoItem label="% B2B" value={wizardFormState.percent_b2b as string} />
-                          <InfoItem label="Website" value={wizardFormState.website_url as string} />
-                          <InfoItem label="SIC / MCC Code" value={wizardFormState.sic_mcc_code as string} />
+                          <EditField label="Username" value={wizardFields.username || ""} onChange={v => setWizardField("username", v)} />
+                          <EditField label="Current Processor" value={wizardFields.current_processor || ""} onChange={v => setWizardField("current_processor", v)} />
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-4">
+                          <InfoItem label="Username" value={wizardFormState.username as string} />
                           <InfoItem label="Current Processor" value={wizardFormState.current_processor as string} />
                         </div>
-                      </div>
-
-                      {/* Wizard: Gateway Only fields */}
-                      {opportunity.service_type === 'gateway_only' && (
-                        <div className="border-t border-border pt-4 space-y-4">
-                          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                            <Zap className="h-4 w-4" />
-                            Gateway Details <span className="text-xs font-normal">(Wizard)</span>
-                          </h3>
-                          <div className="grid grid-cols-2 gap-4">
-                            <InfoItem label="Username" value={wizardFormState.username as string} />
-                            <InfoItem label="Current Processor" value={wizardFormState.current_processor as string} />
-                          </div>
-                        </div>
                       )}
-                    </>
+                    </div>
                   )}
                 </div>
               )}
