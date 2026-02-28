@@ -19,12 +19,17 @@ import {
   Trash2,
 } from "lucide-react";
 import merchanthausLogo from "@/assets/merchanthaus-logo.png";
+import cardVisa from "@/assets/card-visa.png";
+import cardMastercard from "@/assets/card-mastercard.png";
+import cardAmex from "@/assets/card-amex.png";
+import cardDiscover from "@/assets/card-discover.png";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types using canonical keys
 // ─────────────────────────────────────────────────────────────────────────────
 
 type ServiceType = "gateway_only" | "gateway_and_processing" | null;
+type PricingPlan = "flat_rate" | "interchange_plus" | "";
 
 interface PrincipalForm {
   principal_first_name: string;
@@ -128,6 +133,7 @@ interface MerchantForm {
   // Gateway-only
   username: string;
   current_processor: string;
+  pricing_plan: PricingPlan;
 }
 
 const initialState: MerchantForm = {
@@ -157,11 +163,13 @@ const initialState: MerchantForm = {
 
   additional_notes: "",
   username: "", current_processor: "",
+  pricing_plan: "",
 };
 
 // ─── Steps config ───
 
 const PROCESSING_STEPS = [
+  { label: "Pricing", icon: CreditCard },
   { label: "Business Profile", icon: Building2 },
   { label: "Legal Information", icon: Scale },
   { label: "Processing Info", icon: CreditCard },
@@ -734,17 +742,18 @@ export default function MerchantApply() {
                   </>
                 ) : (
                   <>
-                    {stepIndex === 0 && <BusinessProfileStep form={form} onChange={handleChange} onBlur={handleBlur} getError={getError} />}
-                    {stepIndex === 1 && <LegalInfoStep form={form} onChange={handleChange} onBlur={handleBlur} getError={getError} />}
-                    {stepIndex === 2 && <ProcessingStep form={form} onChange={handleChange} onBlur={handleBlur} getError={getError} />}
-                    {stepIndex === 3 && <OwnersBankingStep form={form} onChange={handleChange} onPrincipalChange={handlePrincipalChange} addPrincipal={addPrincipal} removePrincipal={removePrincipal} onBlur={handleBlur} getError={getError} />}
-                    {stepIndex === 4 && <ReviewStep form={form} onSubmit={handleSubmit} isSubmitting={isSubmitting} progress={progress} onChange={handleChange} />}
+                    {stepIndex === 0 && <PricingStep form={form} onChange={handleChange} />}
+                    {stepIndex === 1 && <BusinessProfileStep form={form} onChange={handleChange} onBlur={handleBlur} getError={getError} />}
+                    {stepIndex === 2 && <LegalInfoStep form={form} onChange={handleChange} onBlur={handleBlur} getError={getError} />}
+                    {stepIndex === 3 && <ProcessingStep form={form} onChange={handleChange} onBlur={handleBlur} getError={getError} />}
+                    {stepIndex === 4 && <OwnersBankingStep form={form} onChange={handleChange} onPrincipalChange={handlePrincipalChange} addPrincipal={addPrincipal} removePrincipal={removePrincipal} onBlur={handleBlur} getError={getError} />}
+                    {stepIndex === 5 && <ReviewStep form={form} onSubmit={handleSubmit} isSubmitting={isSubmitting} progress={progress} onChange={handleChange} />}
                   </>
                 )}
               </div>
 
               {/* Navigation — hide on last step */}
-              {((isGatewayOnly && stepIndex < 1) || (!isGatewayOnly && stepIndex < 4)) && (
+              {((isGatewayOnly && stepIndex < 1) || (!isGatewayOnly && stepIndex < 5)) && (
                 <div className="px-4 py-3 md:px-6 md:py-4 bg-muted border-t border-border flex items-center justify-between">
                   <button type="button" className="rounded-lg border border-border bg-card px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-medium text-foreground hover:bg-secondary disabled:opacity-40" onClick={() => setStepIndex(prev => Math.max(0, prev - 1))} disabled={stepIndex === 0}>Back</button>
                   <button type="button" className="rounded-lg bg-primary px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90" onClick={handleNextStep}>Next Step</button>
@@ -982,6 +991,96 @@ function GatewayDocumentsStep({ form, onSubmit, isSubmitting, progress }: { form
           {isSubmitting ? "Submitting..." : <><CheckCircle className="w-4 h-4" />Submit Gateway Application</>}
         </button>
       </div>
+    </div>
+  );
+}
+
+// ─── Pricing Step ───
+
+const CARD_LOGOS = [cardVisa, cardMastercard, cardAmex, cardDiscover];
+
+function PricingStep({ form, onChange }: { form: MerchantForm; onChange: <K extends keyof MerchantForm>(field: K, value: MerchantForm[K]) => void }) {
+  const selected = form.pricing_plan;
+  return (
+    <div className="space-y-6">
+      <p className="text-sm text-muted-foreground">Select the pricing model for your merchant account. This determines how processing fees are calculated.</p>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Flat Rate */}
+        <button
+          type="button"
+          onClick={() => onChange("pricing_plan", "flat_rate")}
+          className={cn(
+            "text-left rounded-xl border-2 p-5 transition-all space-y-4",
+            selected === "flat_rate" ? "border-primary bg-primary/5 shadow-md" : "border-border hover:border-primary/40 bg-card"
+          )}
+        >
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-semibold text-foreground">Flat Rate</h3>
+            {selected === "flat_rate" && <CheckCircle className="w-5 h-5 text-primary" />}
+          </div>
+          <div className="flex items-center gap-1.5">
+            {CARD_LOGOS.map((logo, i) => <img key={i} src={logo} alt="" className="h-6 w-auto rounded-sm" />)}
+          </div>
+          <table className="w-full text-sm">
+            <thead><tr className="border-b border-border"><th className="text-left py-1 font-medium text-muted-foreground"></th><th className="text-right py-1 font-medium text-muted-foreground">Percent</th><th className="text-right py-1 font-medium text-muted-foreground">Per Item</th></tr></thead>
+            <tbody>
+              <tr className="border-b border-border/50"><td className="py-1.5 text-foreground">Visa, Mastercard, Discover</td><td className="text-right text-foreground">2.90%</td><td className="text-right text-foreground">$0.30</td></tr>
+              <tr><td className="py-1.5 text-foreground">Non Swiped Fee</td><td className="text-right text-foreground">0.70%</td><td className="text-right text-foreground">$0.30</td></tr>
+            </tbody>
+          </table>
+        </button>
+
+        {/* Interchange Plus */}
+        <button
+          type="button"
+          onClick={() => onChange("pricing_plan", "interchange_plus")}
+          className={cn(
+            "text-left rounded-xl border-2 p-5 transition-all space-y-4",
+            selected === "interchange_plus" ? "border-primary bg-primary/5 shadow-md" : "border-border hover:border-primary/40 bg-card"
+          )}
+        >
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-semibold text-foreground">Interchange Plus</h3>
+            {selected === "interchange_plus" && <CheckCircle className="w-5 h-5 text-primary" />}
+          </div>
+          <div className="flex items-center gap-1.5">
+            {CARD_LOGOS.map((logo, i) => <img key={i} src={logo} alt="" className="h-6 w-auto rounded-sm" />)}
+          </div>
+          <table className="w-full text-sm">
+            <thead><tr className="border-b border-border"><th className="text-left py-1 font-medium text-muted-foreground"></th><th className="text-right py-1 font-medium text-muted-foreground">Percent</th><th className="text-right py-1 font-medium text-muted-foreground">Per Item</th></tr></thead>
+            <tbody>
+              <tr className="border-b border-border/50"><td className="py-1.5 text-foreground">Visa, Mastercard, Discover</td><td className="text-right text-foreground">0.50%</td><td className="text-right text-foreground">$0.25</td></tr>
+              <tr><td className="py-1.5 text-foreground">American Express Rate</td><td className="text-right text-foreground">0.50%</td><td className="text-right text-foreground">$0.25</td></tr>
+            </tbody>
+          </table>
+        </button>
+      </div>
+
+      {/* Additional Fees — shown for both plans */}
+      {selected && (
+        <div className="rounded-xl border border-border bg-muted p-4 space-y-3">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Additional Fees</h4>
+          <table className="w-full text-sm">
+            <thead><tr className="border-b border-border"><th className="text-left py-1 font-medium text-muted-foreground">Fee</th><th className="text-right py-1 font-medium text-muted-foreground">Per Item</th></tr></thead>
+            <tbody className="text-foreground">
+              <tr className="border-b border-border/30"><td className="py-1.5">Monthly Fee</td><td className="text-right">$7.95</td></tr>
+              <tr className="border-b border-border/30"><td className="py-1.5">Voice Auth Fee</td><td className="text-right">$0.95</td></tr>
+              <tr className="border-b border-border/30"><td className="py-1.5">Address Verification (AVS) Fee</td><td className="text-right">$0.07</td></tr>
+              <tr className="border-b border-border/30"><td className="py-1.5">Batch Fee</td><td className="text-right">$0.25</td></tr>
+              <tr className="border-b border-border/30"><td className="py-1.5">ACH Return Fee</td><td className="text-right">$25.00</td></tr>
+              <tr className="border-b border-border/30"><td className="py-1.5">Chargeback Fee</td><td className="text-right">$25.00</td></tr>
+              <tr className="border-b border-border/30"><td className="py-1.5">Retrieval Request Fee</td><td className="text-right">$10.00</td></tr>
+              <tr className="border-b border-border/30"><td className="py-1.5">Regulatory/1099 Fee</td><td className="text-right">$6.95</td></tr>
+              <tr className="border-b border-border/30"><td className="py-1.5">Monthly Minimum</td><td className="text-right">$10.00</td></tr>
+              <tr><td className="py-1.5">Annual Fee</td><td className="text-right">$99.00</td></tr>
+            </tbody>
+          </table>
+          <p className="text-[10px] text-muted-foreground leading-relaxed mt-3">
+            Terms and Conditions will apply. *All Interchange, Card Brand Fees, Dues and Assessments will be passed through to the merchant on the monthly billing statement. **PCI/DSS Compliance is regulated and monitored by the Major Card Brands (Visa, Mastercard, Discover, and American Express).
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -1373,6 +1472,38 @@ function ReviewStep({ form, onSubmit, isSubmitting, progress, onChange }: { form
         </div>
       )}
       <div className="space-y-4">
+        {/* Pricing Summary */}
+        {form.pricing_plan && (
+          <div className="rounded-xl border border-border bg-muted p-4">
+            <h3 className="text-sm font-semibold text-foreground mb-3">Pricing Plan</h3>
+            <div className="flex items-center gap-1.5 mb-3">
+              {CARD_LOGOS.map((logo, i) => <img key={i} src={logo} alt="" className="h-5 w-auto rounded-sm" />)}
+            </div>
+            {form.pricing_plan === "flat_rate" ? (
+              <>
+                <p className="text-sm font-medium text-foreground mb-2">Flat Rate</p>
+                <div className="text-sm text-foreground space-y-0.5">
+                  <p>Visa, Mastercard, Discover — 2.90% + $0.30</p>
+                  <p>Non Swiped Fee — 0.70% + $0.30</p>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-medium text-foreground mb-2">Interchange Plus</p>
+                <div className="text-sm text-foreground space-y-0.5">
+                  <p>Visa, Mastercard, Discover — IC + 0.50% + $0.25</p>
+                  <p>American Express — IC + 0.50% + $0.25</p>
+                </div>
+              </>
+            )}
+            <div className="mt-3 text-[10px] text-muted-foreground leading-relaxed space-y-0.5">
+              <p>Monthly Fee: $7.95 · Batch Fee: $0.25 · AVS Fee: $0.07 · Voice Auth: $0.95</p>
+              <p>ACH Return: $25.00 · Chargeback: $25.00 · Retrieval: $10.00</p>
+              <p>Regulatory/1099: $6.95 · Monthly Minimum: $10.00 · Annual Fee: $99.00</p>
+              <p className="mt-1 italic">*All Interchange, Card Brand Fees, Dues and Assessments are passed through on the monthly billing statement. **PCI/DSS Compliance is regulated by the Major Card Brands.</p>
+            </div>
+          </div>
+        )}
         <div className="rounded-xl border border-border bg-muted p-4">
           <h3 className="text-sm font-semibold text-foreground mb-3">Business Profile</h3>
           <dl className="grid gap-2 text-sm md:grid-cols-2">
@@ -1414,9 +1545,21 @@ function ReviewStep({ form, onSubmit, isSubmitting, progress, onChange }: { form
         <div className="rounded-xl border border-border bg-muted p-4">
           <h3 className="text-sm font-semibold text-foreground mb-3">Principals ({form.principals.length})</h3>
           {form.principals.map((p, i) => (
-            <div key={i} className="text-sm text-foreground mb-2">
-              <span className="font-medium text-foreground">{p.principal_first_name} {p.principal_last_name}</span>
-              <span className="text-muted-foreground"> — {p.principal_title} ({p.ownership_percent}%) • SSN: ••••{p.ssn_full.slice(-4)}</span>
+            <div key={i} className="rounded-lg border border-border bg-card p-3 mb-2 last:mb-0">
+              <p className="text-sm font-semibold text-foreground">{p.principal_first_name} {p.principal_last_name}</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {p.principal_title} · {p.ownership_percent}% ownership · SSN: ••••{p.ssn_full.slice(-4)}
+              </p>
+              {(p.principal_email || p.principal_phone) && (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {p.principal_email}{p.principal_email && p.principal_phone ? " · " : ""}{p.principal_phone}
+                </p>
+              )}
+              {p.principal_address_line1 && (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {[p.principal_address_line1, p.principal_city, p.principal_state, p.principal_zip].filter(Boolean).join(", ")}
+                </p>
+              )}
             </div>
           ))}
         </div>
