@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Activity, 
@@ -13,9 +13,17 @@ import {
   Skull,
   ListChecks
 } from "lucide-react";
-import { format, formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow, subDays, subWeeks, subMonths, isAfter } from "date-fns";
 import { STAGE_CONFIG, OpportunityStage, EMAIL_TO_USER } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DateRange } from "react-day-picker";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon } from "lucide-react";
+
+type TimeFilter = 'all' | 'today' | '7d' | '30d' | '1w' | '1m' | '3m' | 'custom';
 
 interface ActivityItem {
   id: string;
@@ -103,6 +111,8 @@ const ACTIVITY_CONFIG: Record<string, {
 const ActivitiesTab = ({ opportunityId, compact = false }: ActivitiesTabProps) => {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
+  const [customRange, setCustomRange] = useState<DateRange | undefined>();
 
   useEffect(() => {
     fetchActivities();
@@ -169,6 +179,35 @@ const ActivitiesTab = ({ opportunityId, compact = false }: ActivitiesTabProps) =
     };
   };
 
+  const getCutoffDate = (): Date | null => {
+    const now = new Date();
+    switch (timeFilter) {
+      case 'today': return subDays(now, 1);
+      case '7d': return subDays(now, 7);
+      case '30d': return subDays(now, 30);
+      case '1w': return subWeeks(now, 1);
+      case '1m': return subMonths(now, 1);
+      case '3m': return subMonths(now, 3);
+      case 'custom': return customRange?.from || null;
+      default: return null;
+    }
+  };
+
+  const filteredActivities = useMemo(() => {
+    if (timeFilter === 'all') return activities;
+    if (timeFilter === 'custom' && customRange?.from) {
+      return activities.filter((a) => {
+        const d = new Date(a.created_at);
+        const afterFrom = isAfter(d, customRange.from!) || d.getTime() === customRange.from!.getTime();
+        const beforeTo = !customRange.to || d <= new Date(new Date(customRange.to).setHours(23, 59, 59, 999));
+        return afterFrom && beforeTo;
+      });
+    }
+    const cutoff = getCutoffDate();
+    if (!cutoff) return activities;
+    return activities.filter((a) => isAfter(new Date(a.created_at), cutoff));
+  }, [activities, timeFilter, customRange]);
+
   if (loading) {
     return (
       <div className={cn("text-center text-muted-foreground", compact ? "py-4" : "py-8")}>
@@ -188,7 +227,52 @@ const ActivitiesTab = ({ opportunityId, compact = false }: ActivitiesTabProps) =
 
   return (
     <div className={compact ? "space-y-1.5" : "space-y-3"}>
-      {(compact ? activities.slice(0, 5) : activities).map((activity) => {
+      {!compact && (
+        <div className="flex items-center gap-2 pb-2">
+          <Select value={timeFilter} onValueChange={(v) => setTimeFilter(v as TimeFilter)}>
+            <SelectTrigger className="w-36 h-8 text-xs">
+              <SelectValue placeholder="Time range" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Time</SelectItem>
+              <SelectItem value="today">Today</SelectItem>
+              <SelectItem value="7d">Last 7 Days</SelectItem>
+              <SelectItem value="1w">Last Week</SelectItem>
+              <SelectItem value="30d">Last 30 Days</SelectItem>
+              <SelectItem value="1m">Last Month</SelectItem>
+              <SelectItem value="3m">Last 3 Months</SelectItem>
+              <SelectItem value="custom">Custom Range</SelectItem>
+            </SelectContent>
+          </Select>
+          {timeFilter === 'custom' && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5">
+                  <CalendarIcon className="h-3.5 w-3.5" />
+                  {customRange?.from
+                    ? customRange.to
+                      ? `${format(customRange.from, 'MMM d')} – ${format(customRange.to, 'MMM d')}`
+                      : format(customRange.from, 'MMM d, yyyy')
+                    : 'Pick dates'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="range"
+                  selected={customRange}
+                  onSelect={setCustomRange}
+                  numberOfMonths={2}
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          )}
+          <span className="text-xs text-muted-foreground ml-auto">
+            {filteredActivities.length} of {activities.length}
+          </span>
+        </div>
+      )}
+      {(compact ? filteredActivities.slice(0, 5) : filteredActivities).map((activity) => {
         const stageMovement = activity.type === 'stage_change' ? parseStageMovement(activity.description) : null;
         const config = getActivityConfig(activity.type);
         const Icon = config.icon;
@@ -248,10 +332,16 @@ const ActivitiesTab = ({ opportunityId, compact = false }: ActivitiesTabProps) =
         );
       })}
       
-      {compact && activities.length > 5 && (
+      {compact && filteredActivities.length > 5 && (
         <p className="text-[10px] text-muted-foreground text-center pt-1">
-          +{activities.length - 5} more activities
+          +{filteredActivities.length - 5} more activities
         </p>
+      )}
+      {!compact && filteredActivities.length === 0 && activities.length > 0 && (
+        <div className="text-center text-muted-foreground py-6">
+          <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+          <p className="text-sm">No activities in this time range</p>
+        </div>
       )}
     </div>
   );
