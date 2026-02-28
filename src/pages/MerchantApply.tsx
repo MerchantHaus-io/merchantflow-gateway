@@ -899,8 +899,8 @@ export default function MerchantApply() {
                 <div className="flex items-start gap-2">
                   <Info className="w-4 h-4 text-info mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm font-medium text-info-foreground">Security Notice</p>
-                    <p className="text-xs text-info/80 mt-1">SSN and bank account numbers are encrypted with AES-256-GCM before storage and automatically purged after underwriting.</p>
+                    <p className="text-sm font-medium text-foreground">Security Notice</p>
+                    <p className="text-xs text-muted-foreground mt-1">SSN and bank account numbers are encrypted with AES-256-GCM before storage and automatically purged after underwriting.</p>
                   </div>
                 </div>
               </div>
