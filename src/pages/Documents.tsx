@@ -48,7 +48,8 @@ const DocumentsPage = () => {
   const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(new Set());
   const [isDownloading, setIsDownloading] = useState(false);
   const [selectedDocName, setSelectedDocName] = useState<string>("all");
-  const [collapsedAccounts, setCollapsedAccounts] = useState<Set<string>>(new Set());
+  const [collapsedAccounts, setCollapsedAccounts] = useState<Set<string> | null>(null);
+  const [initialCollapseApplied, setInitialCollapseApplied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -290,9 +291,18 @@ const DocumentsPage = () => {
     return groups;
   }, [filteredDocs]);
 
+  // Collapse all accounts by default once groupedDocs is first available
+  useEffect(() => {
+    const keys = Object.keys(groupedDocs);
+    if (keys.length > 0 && !initialCollapseApplied) {
+      setCollapsedAccounts(new Set(keys));
+      setInitialCollapseApplied(true);
+    }
+  }, [groupedDocs, initialCollapseApplied]);
+
   const toggleAccountCollapse = (key: string) => {
     setCollapsedAccounts((prev) => {
-      const next = new Set(prev);
+      const next = new Set(prev || []);
       if (next.has(key)) {
         next.delete(key);
       } else {
@@ -419,7 +429,7 @@ const DocumentsPage = () => {
                         group.docs.length > 0 && group.docs.every((doc) => selectedDocuments.has(doc.id));
                       const accountPartiallySelected =
                         group.docs.some((doc) => selectedDocuments.has(doc.id)) && !accountAllSelected;
-                      const isCollapsed = collapsedAccounts.has(key);
+                      const isCollapsed = collapsedAccounts ? collapsedAccounts.has(key) : true;
 
                       return (
                         <Collapsible key={key} open={!isCollapsed} onOpenChange={() => toggleAccountCollapse(key)}>
