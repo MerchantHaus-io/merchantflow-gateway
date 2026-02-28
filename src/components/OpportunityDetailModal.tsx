@@ -355,11 +355,15 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   };
 
   const handleManualSave = async () => {
+    // Cancel any pending auto-save to avoid race conditions
+    cancelAutoSave();
     try {
       await handleAutoSave(formData);
+      markSaved();
       toast.success("All changes saved");
       setIsEditing(false);
     } catch (err) {
+      console.error("Manual save error:", err);
       toast.error("Failed to save changes");
     }
   };
@@ -506,7 +510,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     });
   }, [opportunity, account, contact, onUpdate]);
 
-  const { status: saveStatus, resetInitialData } = useAutoSave({
+  const { status: saveStatus, resetInitialData, cancel: cancelAutoSave, markSaved } = useAutoSave({
     data: formData,
     onSave: handleAutoSave,
     delay: 800,
