@@ -419,6 +419,14 @@ export default function MerchantApply() {
     setIsSubmitting(true);
 
     try {
+      // Fetch client IP for audit trail
+      let clientIp = 'unknown';
+      try {
+        const ipRes = await fetch('https://api.ipify.org?format=json').catch(() => null);
+        const ipData = ipRes ? await ipRes.json().catch(() => ({})) : {};
+        clientIp = ipData.ip || 'unknown';
+      } catch { /* non-blocking */ }
+
       // 1. Generate a client-side UUID so we don't need .select() (which requires auth)
       const applicationId = crypto.randomUUID();
 
@@ -585,6 +593,18 @@ export default function MerchantApply() {
           if (storageError) {
             console.error(`Doc upload error (${doc.file.name}):`, storageError);
             docUploadErrors++;
+          } else {
+            // Audit trail for uploaded document
+            await supabase.from('application_documents' as any).insert({
+              application_id: applicationId,
+              file_name: doc.file.name,
+              file_path: filePath,
+              file_size: doc.file.size,
+              content_type: doc.file.type || null,
+              document_type: doc.type,
+              ip_address: clientIp,
+              user_agent: navigator.userAgent,
+            });
           }
         }
         if (docUploadErrors > 0) {
@@ -601,21 +621,33 @@ export default function MerchantApply() {
           const { error: storageError } = await supabase.storage
             .from('opportunity-documents')
             .upload(filePath, doc.file);
-          if (storageError) console.error(`GW doc upload error (${doc.file.name}):`, storageError);
+          if (storageError) {
+            console.error(`GW doc upload error (${doc.file.name}):`, storageError);
+          } else {
+            // Audit trail for uploaded document
+            await supabase.from('application_documents' as any).insert({
+              application_id: applicationId,
+              file_name: doc.file.name,
+              file_path: filePath,
+              file_size: doc.file.size,
+              content_type: doc.file.type || null,
+              document_type: doc.type,
+              ip_address: clientIp,
+              user_agent: navigator.userAgent,
+            });
+          }
         }
       }
 
       // Record consent for all service types
       {
         try {
-          const ipRes = await fetch('https://api.ipify.org?format=json').catch(() => null);
-          const ipData = ipRes ? await ipRes.json().catch(() => ({})) : {};
           await supabase.from("merchant_consents" as any).insert({
             application_id: applicationId,
             applicant_name: `${form.dba_contact_first_name} ${form.dba_contact_last_name}`.trim(),
             applicant_email: form.dba_contact_email,
             consent_type: 'merchant_agreement',
-            ip_address: ipData.ip || 'unknown',
+            ip_address: clientIp,
             user_agent: navigator.userAgent,
             terms_version: '1.0',
             beneficial_ownership_accepted: form.beneficial_owner_certification,
