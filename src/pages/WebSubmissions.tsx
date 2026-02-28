@@ -197,31 +197,14 @@ export default function WebSubmissions() {
       // 3. Create Opportunity
       const isGatewayOnly = app.service_type === "gateway_only" || app.business_type === "Gateway Only";
 
-      const { data: opportunity, error: opportunityError } = await supabase
-        .from("opportunities")
-        .insert({
-          account_id: account.id,
-          contact_id: contact.id,
-          stage: "application_started",
-          status: "active",
-          service_type: isGatewayOnly ? "gateway_only" : "processing",
-          referral_source: referralSource || null,
-          username: isGatewayOnly ? (app.notes?.match(/Username:\s*([^.]+)/)?.[1]?.trim() || null) : null,
-        })
-        .select()
-        .single();
-
-      if (opportunityError) throw opportunityError;
-
-      // 4. Read merchant record (if exists) for full field coverage
+      // Calculate progress to determine initial stage
+      // (we'll compute it here before creating the opportunity)
       const { data: merchantData } = await supabase
         .from("merchants")
         .select("*")
         .eq("application_id", app.id)
         .maybeSingle();
 
-      // Pre-populate wizard state using CANONICAL snake_case keys
-      // Merge from both applications table and merchants table for completeness
       const m = merchantData;
       const wizardFormState: Record<string, unknown> = {
         dba_name: m?.dba_name || app.dba_name || app.company_name || "",
@@ -261,7 +244,6 @@ export default function WebSubmissions() {
         notes: app.notes || app.message || "",
       };
 
-      // Calculate initial progress using canonical keys
       const requiredFields = [
         "dba_name", "product_description", "nature_of_business",
         "dba_contact_first_name", "dba_contact_last_name",
@@ -281,6 +263,28 @@ export default function WebSubmissions() {
       const totalRequired = requiredFields.length + 1; // +1 for documents
       const progress = Math.round((filled / totalRequired) * 100);
 
+      // 100% complete → Qualified + assigned to Yaseen; otherwise → Discovery
+      const initialStage = progress >= 100 ? "qualified" : "discovery";
+      const initialAssignee = progress >= 100 ? "support@merchanthaus.io" : null;
+
+      const { data: opportunity, error: opportunityError } = await supabase
+        .from("opportunities")
+        .insert({
+          account_id: account.id,
+          contact_id: contact.id,
+          stage: initialStage,
+          status: "active",
+          service_type: isGatewayOnly ? "gateway_only" : "processing",
+          referral_source: referralSource || null,
+          assigned_to: initialAssignee,
+          username: isGatewayOnly ? (app.notes?.match(/Username:\s*([^.]+)/)?.[1]?.trim() || null) : null,
+        })
+        .select()
+        .single();
+
+      if (opportunityError) throw opportunityError;
+
+      // Wizard state and progress already computed above — just persist
       await supabase
         .from("onboarding_wizard_states")
         .upsert({
