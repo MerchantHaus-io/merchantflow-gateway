@@ -1192,6 +1192,24 @@ interface OwnersBankingStepProps extends StepProps {
 }
 
 function OwnersBankingStep({ form, onChange, onPrincipalChange, addPrincipal, removePrincipal, onBlur, getError }: OwnersBankingStepProps) {
+  const [sameAsDba, setSameAsDba] = useState<Record<number, boolean>>({});
+
+  const handleSameAsDba = (idx: number, checked: boolean) => {
+    setSameAsDba(prev => ({ ...prev, [idx]: checked }));
+    if (checked) {
+      onPrincipalChange(idx, "principal_first_name", form.dba_contact_first_name);
+      onPrincipalChange(idx, "principal_last_name", form.dba_contact_last_name);
+      onPrincipalChange(idx, "principal_phone", form.dba_contact_phone);
+      onPrincipalChange(idx, "principal_email", form.dba_contact_email);
+      onPrincipalChange(idx, "principal_address_line1", form.dba_address_line1);
+      onPrincipalChange(idx, "principal_address_line2", form.dba_address_line2);
+      onPrincipalChange(idx, "principal_city", form.dba_city);
+      onPrincipalChange(idx, "principal_state", form.dba_state);
+      onPrincipalChange(idx, "principal_zip", form.dba_zip);
+      onPrincipalChange(idx, "principal_country", form.dba_country);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -1216,6 +1234,18 @@ function OwnersBankingStep({ form, onChange, onPrincipalChange, addPrincipal, re
                 <Trash2 className="w-4 h-4" />
               </button>
             )}
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id={`same_as_dba_${idx}`}
+              checked={!!sameAsDba[idx]}
+              onChange={e => handleSameAsDba(idx, e.target.checked)}
+              className="rounded border-border"
+            />
+            <label htmlFor={`same_as_dba_${idx}`} className="text-xs text-muted-foreground cursor-pointer">
+              Same as DBA Contact
+            </label>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             <Field label="First Name" required error={getError(`principal_first_name_${idx}`)}>
