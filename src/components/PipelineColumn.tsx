@@ -52,15 +52,20 @@ const PipelineColumn = ({
   const config = STAGE_CONFIG[stage];
   const count = opportunities.length;
 
-  // Sum monetary value for this column from wizard_state monthly_volume
+  // Sum deal value: 33% of 2.92% processing fee + $1 per 10 transactions
   const columnValue = useMemo(() => {
     let total = 0;
     opportunities.forEach((opp) => {
       const formState = opp.wizard_state?.form_state as Record<string, string> | undefined;
-      if (formState?.monthly_volume) {
-        const val = parseFloat(formState.monthly_volume.replace(/[^0-9.]/g, ""));
-        if (!isNaN(val)) total += val;
-      }
+      if (!formState?.monthly_volume) return;
+      const vol = parseFloat(formState.monthly_volume.replace(/[^0-9.]/g, ""));
+      if (isNaN(vol) || vol <= 0) return;
+      const processingRevenue = vol * 0.0292 * 0.33;
+      const avgTicket = formState.average_transaction
+        ? parseFloat(formState.average_transaction.replace(/[^0-9.]/g, ""))
+        : 0;
+      const txnRevenue = avgTicket > 0 ? (vol / avgTicket / 10) : 0;
+      total += processingRevenue + txnRevenue;
     });
     return total;
   }, [opportunities]);
