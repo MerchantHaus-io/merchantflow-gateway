@@ -1058,83 +1058,117 @@ const Tasks = () => {
                     </div>
                   </div>
                 ) : (
-                  /* Cards view - show all filtered tasks combined */
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {filteredTasks.map((task) => {
-                      const taskPriority = task.priority || 'medium';
-                      const priorityConf = priorityConfig[taskPriority];
-                      const PriorityIcon = priorityConf.icon;
-                      const dueStatus = getDueDateStatus(task.dueAt, task.status);
-                      return (
-                        <Card 
-                          key={task.id} 
-                          className={cn(
-                            "p-3 cursor-pointer hover:shadow-md transition-shadow",
-                            dueStatus === 'overdue' && "border-red-500/50 bg-red-500/5",
-                            dueStatus === 'due-today' && "border-orange-500/50 bg-orange-500/5",
-                            dueStatus === 'due-tomorrow' && "border-amber-500/30 bg-amber-500/5"
-                          )}
-                          onClick={() => setSelectedTask(task)}
-                        >
-                          <div className="space-y-2">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                {dueStatus === 'overdue' ? (
-                                  <AlertTriangle className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
-                                ) : (
-                                  <PriorityIcon className={cn("h-3.5 w-3.5 flex-shrink-0", priorityConf.color.split(' ')[0])} />
-                                )}
-                                <h4 className="font-medium text-sm leading-tight truncate">{task.title}</h4>
-                              </div>
-                              <Badge variant="outline" className={cn(
-                                "text-xs flex-shrink-0",
-                                task.status === 'open' && "border-blue-500/30 text-blue-500",
-                                task.status === 'in_progress' && "border-amber-500/30 text-amber-500",
-                                task.status === 'done' && "border-emerald-500/30 text-emerald-500"
-                              )}>
-                                {statusLabels[task.status]}
-                              </Badge>
-                            </div>
-                            {task.description && (
-                              <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
-                            )}
-                            <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-                              <Badge variant="outline" className={cn("text-[10px] gap-0.5 h-5", priorityConf.color)}>
-                                <PriorityIcon className="h-2.5 w-2.5" />{priorityConf.label}
-                              </Badge>
-                              {task.source === 'sla' && (
-                                <Badge variant="outline" className="text-[10px] gap-0.5 h-5 border-amber-500/30 text-amber-500">
-                                  <Zap className="h-2.5 w-2.5" />Auto
-                                </Badge>
-                              )}
-                              {task.accountName && (
-                                <div className="flex items-center gap-1">
-                                  <Building2 className="h-3 w-3" />{task.accountName}
+                  /* Cards view - split like table view */
+                  <div className="space-y-8">
+                    {/* User-Created Tasks Cards */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                        <UserRound className="h-4 w-4 text-primary" />
+                        User-Created Tasks
+                        <Badge variant="secondary" className="text-xs">{manualTasks.length}</Badge>
+                      </h3>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {paginatedManual.map((task) => {
+                          const taskPriority = task.priority || 'medium';
+                          const priorityConf = priorityConfig[taskPriority];
+                          const PriorityIcon = priorityConf.icon;
+                          const dueStatus = getDueDateStatus(task.dueAt, task.status);
+                          return (
+                            <Card key={task.id} className={cn("p-3 cursor-pointer hover:shadow-md transition-shadow", dueStatus === 'overdue' && "border-red-500/50 bg-red-500/5", dueStatus === 'due-today' && "border-orange-500/50 bg-orange-500/5", dueStatus === 'due-tomorrow' && "border-amber-500/30 bg-amber-500/5")} onClick={() => setSelectedTask(task)}>
+                              <div className="space-y-2">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    {dueStatus === 'overdue' ? <AlertTriangle className="h-3.5 w-3.5 text-red-500 flex-shrink-0" /> : <PriorityIcon className={cn("h-3.5 w-3.5 flex-shrink-0", priorityConf.color.split(' ')[0])} />}
+                                    <h4 className="font-medium text-sm leading-tight truncate">{task.title}</h4>
+                                  </div>
+                                  <Badge variant="outline" className={cn("text-xs flex-shrink-0", task.status === 'open' && "border-blue-500/30 text-blue-500", task.status === 'in_progress' && "border-amber-500/30 text-amber-500", task.status === 'done' && "border-emerald-500/30 text-emerald-500")}>{statusLabels[task.status]}</Badge>
                                 </div>
-                              )}
-                              <div className="flex items-center gap-1">
-                                <UserRound className="h-3 w-3" />{task.assignee || 'Unassigned'}
-                              </div>
-                              {task.dueAt && (
-                                <div className={cn(
-                                  "flex items-center gap-1",
-                                  dueStatus === 'overdue' && "text-red-500 font-medium",
-                                  dueStatus === 'due-today' && "text-orange-500 font-medium",
-                                  dueStatus === 'due-tomorrow' && "text-amber-500",
-                                  dueStatus === 'due-soon' && "text-amber-500/80"
-                                )}>
-                                  {dueStatus === 'overdue' ? <AlertTriangle className="h-3 w-3" /> : dueStatus === 'due-today' || dueStatus === 'due-tomorrow' ? <Bell className="h-3 w-3" /> : <CalendarClock className="h-3 w-3" />}
-                                  {getDueDateLabel(task.dueAt, task.status)}
+                                {task.description && <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>}
+                                <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                                  <Badge variant="outline" className={cn("text-[10px] gap-0.5 h-5", priorityConf.color)}><PriorityIcon className="h-2.5 w-2.5" />{priorityConf.label}</Badge>
+                                  {task.source === 'notice' && <Badge variant="outline" className="text-[10px] gap-0.5 h-5 border-purple-500/30 text-purple-500 bg-purple-500/10">Notice</Badge>}
+                                  {task.accountName && <div className="flex items-center gap-1"><Building2 className="h-3 w-3" />{task.accountName}</div>}
+                                  <div className="flex items-center gap-1"><UserRound className="h-3 w-3" />{task.assignee || 'Unassigned'}</div>
+                                  <div className="flex items-center gap-1"><CalendarClock className="h-3 w-3" />{task.createdAt ? format(new Date(task.createdAt), 'MMM d, h:mm a') : '-'}</div>
+                                  {task.dueAt && (
+                                    <div className={cn("flex items-center gap-1", dueStatus === 'overdue' && "text-red-500 font-medium", dueStatus === 'due-today' && "text-orange-500 font-medium", dueStatus === 'due-tomorrow' && "text-amber-500", dueStatus === 'due-soon' && "text-amber-500/80")}>
+                                      {dueStatus === 'overdue' ? <AlertTriangle className="h-3 w-3" /> : dueStatus === 'due-today' || dueStatus === 'due-tomorrow' ? <Bell className="h-3 w-3" /> : <CalendarClock className="h-3 w-3" />}
+                                      {getDueDateLabel(task.dueAt, task.status)}
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                            </div>
+                              </div>
+                            </Card>
+                          );
+                        })}
+                        {paginatedManual.length === 0 && <div className="col-span-2 py-8 text-center text-muted-foreground">No user-created tasks found.</div>}
+                      </div>
+                      {manualTotalPages > 1 && (
+                        <div className="flex items-center justify-between mt-3 px-1">
+                          <span className="text-xs text-muted-foreground">Showing {(manualPage - 1) * MANUAL_PER_PAGE + 1}–{Math.min(manualPage * MANUAL_PER_PAGE, manualTasks.length)} of {manualTasks.length}</span>
+                          <div className="flex items-center gap-1">
+                            <Button variant="outline" size="icon" className="h-7 w-7" disabled={manualPage <= 1} onClick={() => setManualPage(p => p - 1)}><PaginationLeft className="h-3.5 w-3.5" /></Button>
+                            {Array.from({ length: manualTotalPages }, (_, i) => i + 1).map(p => (<Button key={p} variant={p === manualPage ? "default" : "outline"} size="icon" className="h-7 w-7 text-xs" onClick={() => setManualPage(p)}>{p}</Button>))}
+                            <Button variant="outline" size="icon" className="h-7 w-7" disabled={manualPage >= manualTotalPages} onClick={() => setManualPage(p => p + 1)}><PaginationRight className="h-3.5 w-3.5" /></Button>
                           </div>
-                        </Card>
-                      );
-                    })}
-                    {filteredTasks.length === 0 && (
-                      <div className="col-span-2 py-12 text-center text-muted-foreground">No tasks found.</div>
-                    )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Auto Tasks Cards */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-amber-500" />
+                        Auto Tasks
+                        <Badge variant="secondary" className="text-xs">{autoTasks.length}</Badge>
+                      </h3>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {paginatedAuto.map((task) => {
+                          const taskPriority = task.priority || 'medium';
+                          const priorityConf = priorityConfig[taskPriority];
+                          const PriorityIcon = priorityConf.icon;
+                          const dueStatus = getDueDateStatus(task.dueAt, task.status);
+                          return (
+                            <Card key={task.id} className={cn("p-3 cursor-pointer hover:shadow-md transition-shadow", dueStatus === 'overdue' && "border-red-500/50 bg-red-500/5", dueStatus === 'due-today' && "border-orange-500/50 bg-orange-500/5", dueStatus === 'due-tomorrow' && "border-amber-500/30 bg-amber-500/5")} onClick={() => setSelectedTask(task)}>
+                              <div className="space-y-2">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    {dueStatus === 'overdue' ? <AlertTriangle className="h-3.5 w-3.5 text-red-500 flex-shrink-0" /> : <PriorityIcon className={cn("h-3.5 w-3.5 flex-shrink-0", priorityConf.color.split(' ')[0])} />}
+                                    <h4 className="font-medium text-sm leading-tight truncate">{task.title}</h4>
+                                  </div>
+                                  <Badge variant="outline" className={cn("text-xs flex-shrink-0", task.status === 'open' && "border-blue-500/30 text-blue-500", task.status === 'in_progress' && "border-amber-500/30 text-amber-500", task.status === 'done' && "border-emerald-500/30 text-emerald-500")}>{statusLabels[task.status]}</Badge>
+                                </div>
+                                {task.description && <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>}
+                                <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                                  <Badge variant="outline" className={cn("text-[10px] gap-0.5 h-5", priorityConf.color)}><PriorityIcon className="h-2.5 w-2.5" />{priorityConf.label}</Badge>
+                                  <Badge variant="outline" className="text-[10px] gap-0.5 h-5 border-amber-500/30 text-amber-500"><Zap className="h-2.5 w-2.5" />Auto</Badge>
+                                  {task.accountName && <div className="flex items-center gap-1"><Building2 className="h-3 w-3" />{task.accountName}</div>}
+                                  <div className="flex items-center gap-1"><UserRound className="h-3 w-3" />{task.assignee || 'Unassigned'}</div>
+                                  <div className="flex items-center gap-1"><CalendarClock className="h-3 w-3" />{task.createdAt ? format(new Date(task.createdAt), 'MMM d, h:mm a') : '-'}</div>
+                                  {task.dueAt && (
+                                    <div className={cn("flex items-center gap-1", dueStatus === 'overdue' && "text-red-500 font-medium", dueStatus === 'due-today' && "text-orange-500 font-medium", dueStatus === 'due-tomorrow' && "text-amber-500", dueStatus === 'due-soon' && "text-amber-500/80")}>
+                                      {dueStatus === 'overdue' ? <AlertTriangle className="h-3 w-3" /> : dueStatus === 'due-today' || dueStatus === 'due-tomorrow' ? <Bell className="h-3 w-3" /> : <CalendarClock className="h-3 w-3" />}
+                                      {getDueDateLabel(task.dueAt, task.status)}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </Card>
+                          );
+                        })}
+                        {paginatedAuto.length === 0 && <div className="col-span-2 py-8 text-center text-muted-foreground">No auto tasks found.</div>}
+                      </div>
+                      {autoTotalPages > 1 && (
+                        <div className="flex items-center justify-between mt-3 px-1">
+                          <span className="text-xs text-muted-foreground">Showing {(autoPage - 1) * AUTO_PER_PAGE + 1}–{Math.min(autoPage * AUTO_PER_PAGE, autoTasks.length)} of {autoTasks.length}</span>
+                          <div className="flex items-center gap-1">
+                            <Button variant="outline" size="icon" className="h-7 w-7" disabled={autoPage <= 1} onClick={() => setAutoPage(p => p - 1)}><PaginationLeft className="h-3.5 w-3.5" /></Button>
+                            {Array.from({ length: autoTotalPages }, (_, i) => i + 1).map(p => (<Button key={p} variant={p === autoPage ? "default" : "outline"} size="icon" className="h-7 w-7 text-xs" onClick={() => setAutoPage(p)}>{p}</Button>))}
+                            <Button variant="outline" size="icon" className="h-7 w-7" disabled={autoPage >= autoTotalPages} onClick={() => setAutoPage(p => p + 1)}><PaginationRight className="h-3.5 w-3.5" /></Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </CardContent>
