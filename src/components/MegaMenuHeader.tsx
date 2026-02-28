@@ -28,6 +28,7 @@ import {
   Maximize,
   Minimize,
   Cloud,
+  Focus,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

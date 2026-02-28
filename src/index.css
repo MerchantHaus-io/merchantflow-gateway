@@ -712,10 +712,13 @@ All colors MUST be HSL.
     background-image: none;
   }
 
-  /* Light mode: solid background color (no image) */
+  /* Light mode: use light background image */
   .light body {
-    background-color: hsl(220 14% 96%);
-    background-image: none;
+    background-image: url('/src/assets/light-background-new.png');
+    background-size: cover;
+    background-position: center top;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
   }
 
   /* Light Mono: pure white background */
