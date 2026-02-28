@@ -97,38 +97,40 @@ const PipelineColumn = ({
         }
       }}
     >
-      {/* Column Header — pill-style badge */}
+      {/* Column Header — full-width solid pill */}
       {!hideHeader && (
-        <div className="flex-shrink-0 px-1 py-1.5">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span
-              className={cn(
-                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold uppercase tracking-wide",
-                isCompact ? "text-[8px]" : "text-[10px] sm:text-xs"
-              )}
-              style={{
-                color: config.color || "hsl(var(--primary))",
-                backgroundColor: `${config.color || "hsl(var(--primary))"}12`,
-                border: `1px solid ${config.color || "hsl(var(--primary))"}25`,
-              }}
-            >
+        <div className="flex-shrink-0 px-1.5 py-1.5">
+          <div
+            className={cn(
+              "w-full flex items-center justify-between gap-1.5 px-3 py-2 rounded-lg font-bold uppercase tracking-wide",
+              isCompact ? "text-[8px]" : "text-[10px] sm:text-xs"
+            )}
+            style={{
+              color: config.color || "hsl(var(--primary))",
+              backgroundColor: `${config.color || "hsl(var(--primary))"}18`,
+              borderBottom: `2px solid ${config.color || "hsl(var(--primary))"}60`,
+            }}
+          >
+            <span className="inline-flex items-center gap-1.5 truncate">
               <span
                 className="w-2 h-2 rounded-full shrink-0"
                 style={{ backgroundColor: config.color || "hsl(var(--primary))" }}
               />
               {config.label}
-              <span className="font-black">{count}</span>
             </span>
-            {stage === "application_started" && onAddNew && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-sm"
-                onClick={onAddNew}
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </Button>
-            )}
+            <span className="inline-flex items-center gap-1.5 shrink-0">
+              <span className="font-black">{count}</span>
+              {stage === "application_started" && onAddNew && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-sm ml-1"
+                  onClick={onAddNew}
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              )}
+            </span>
           </div>
           {/* Column monetary value */}
           {!isCompact && columnValue > 0 && (
