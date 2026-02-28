@@ -324,10 +324,19 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
               <Button
                 variant="ghost"
                 onClick={() => setFocusOpen(true)}
-                className="bg-transparent text-white/90 hover:text-white hover:bg-white/10 flex items-center gap-2 h-10 px-4 relative"
+                className="bg-transparent hover:bg-white/10 flex items-center gap-2 h-10 px-4 relative group"
               >
-                <Focus className="h-4 w-4" />
-                Focus Mode
+                <Focus className="h-4 w-4 text-white" />
+                <span
+                  className="font-bold text-sm bg-clip-text text-transparent animate-pulse"
+                  style={{
+                    backgroundImage: 'linear-gradient(90deg, #f97316, #facc15, #22d3ee, #a78bfa, #f97316)',
+                    backgroundSize: '200% 100%',
+                    animation: 'focusGradient 3s linear infinite',
+                  }}
+                >
+                  Focus Mode
+                </span>
                 {focusTasks.length > 0 && (
                   <Badge variant="secondary" className="h-5 min-w-[20px] text-[10px] font-bold px-1.5 bg-primary text-primary-foreground">
                     {focusTasks.length}
