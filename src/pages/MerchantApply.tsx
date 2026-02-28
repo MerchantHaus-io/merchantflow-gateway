@@ -576,6 +576,7 @@ export default function MerchantApply() {
           ...form.statement_docs.map(f => ({ file: f, type: 'Bank Statement' })),
           ...form.void_check_docs.map(f => ({ file: f, type: 'Voided Check / Bank Confirmation Letter' })),
         ];
+        let docUploadErrors = 0;
         for (const doc of allDocs) {
           const filePath = `applications/${applicationId}/${Date.now()}_${doc.file.name}`;
           const { error: storageError } = await supabase.storage
@@ -583,7 +584,11 @@ export default function MerchantApply() {
             .upload(filePath, doc.file);
           if (storageError) {
             console.error(`Doc upload error (${doc.file.name}):`, storageError);
+            docUploadErrors++;
           }
+        }
+        if (docUploadErrors > 0) {
+          console.warn(`${docUploadErrors} of ${allDocs.length} document uploads failed`);
         }
       } else {
         // Gateway only — upload any supporting documents
