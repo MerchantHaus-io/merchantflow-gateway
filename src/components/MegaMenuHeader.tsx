@@ -319,6 +319,22 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                 </NavigationMenuItem>
               );
             })}
+            {/* Focus Mode - inline in nav */}
+            <NavigationMenuItem>
+              <Button
+                variant="ghost"
+                onClick={() => setFocusOpen(true)}
+                className="bg-transparent text-white/90 hover:text-white hover:bg-white/10 flex items-center gap-2 h-10 px-4 relative"
+              >
+                <Focus className="h-4 w-4" />
+                Focus Mode
+                {focusTasks.length > 0 && (
+                  <Badge variant="secondary" className="h-5 min-w-[20px] text-[10px] font-bold px-1.5 bg-primary text-primary-foreground">
+                    {focusTasks.length}
+                  </Badge>
+                )}
+              </Button>
+            </NavigationMenuItem>
           </NavigationMenuList>
         </NavigationMenu>
 
@@ -352,27 +368,8 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Focus Mode */}
+          {/* Focus Mode Sheet (triggered from nav) */}
           <Sheet open={focusOpen} onOpenChange={setFocusOpen}>
-            <SheetTrigger asChild>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 text-white/70 hover:text-white hover:bg-white/10 relative"
-                  >
-                    <Focus className="h-4 w-4" />
-                    {focusTasks.length > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 h-4 min-w-[16px] rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center px-1">
-                        {focusTasks.length}
-                      </span>
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Focus Mode</TooltipContent>
-              </Tooltip>
-            </SheetTrigger>
             <SheetContent side="right" className="w-[400px] sm:w-[440px] p-0">
               <SheetHeader className="px-6 py-4 border-b">
                 <SheetTitle className="flex items-center gap-2 text-base">
