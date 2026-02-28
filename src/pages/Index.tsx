@@ -10,7 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTasks } from "@/contexts/TasksContext";
 import DateRangeFilter from "@/components/DateRangeFilter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User } from "lucide-react";
+import { User, ExternalLink } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import GameSplash from "@/components/GameSplash";
@@ -768,6 +768,15 @@ const Index = () => {
         {!isFocusMode && (
           <header className="h-12 flex items-center px-4 rounded-lg border shadow-sm backdrop-blur-md gap-2 flex-shrink-0 sticky top-0 z-20 border-border/60 bg-card/90 dark:bg-card/80">
             <h1 className="text-lg font-semibold text-foreground">Pipeline</h1>
+            <a
+              href="/merchant-apply"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+            >
+              <ExternalLink className="h-3 w-3" />
+              <span className="hidden sm:inline">Merchant Application</span>
+            </a>
             <div className="ml-auto flex items-center gap-2">
               <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
                 <SelectTrigger className="w-[140px] h-8 text-xs bg-background border-border">
