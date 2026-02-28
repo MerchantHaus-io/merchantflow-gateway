@@ -766,17 +766,20 @@ const Index = () => {
     <AppLayout onNewApplication={() => setIsModalOpen(true)} focusMode={isFocusMode}>
       <div className={isFocusMode ? "flex-1 flex flex-col min-h-0 overflow-hidden" : "flex-1 flex flex-col gap-2 sm:gap-3 p-2 sm:p-3 lg:p-4 min-h-0 overflow-hidden mobile-landscape:gap-2"}>
         {!isFocusMode && (
-          <header className="h-12 flex items-center px-4 rounded-lg border shadow-sm backdrop-blur-md gap-2 flex-shrink-0 sticky top-0 z-20 border-border/60 bg-card/90 dark:bg-card/80">
+           <header className="h-12 flex items-center px-4 rounded-lg border shadow-sm backdrop-blur-md gap-2 flex-shrink-0 sticky top-0 z-20 border-border/60 bg-card/90 dark:bg-card/80">
             <h1 className="text-lg font-semibold text-foreground">Pipeline</h1>
             <a
               href="/merchant-apply"
               target="_blank"
               rel="noopener noreferrer"
-              className="ml-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+              className="ml-1 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
             >
               <ExternalLink className="h-3 w-3" />
               <span className="hidden sm:inline">Merchant Application</span>
             </a>
+            <span className="hidden sm:inline-flex items-center text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full ml-2">
+              {filteredOpportunities.length} deals
+            </span>
             <div className="ml-auto flex items-center gap-2">
               <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
                 <SelectTrigger className="w-[140px] h-8 text-xs bg-background border-border">
