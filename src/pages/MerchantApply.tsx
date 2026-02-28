@@ -1129,10 +1129,13 @@ function GatewayDocumentsStep({ form, onSubmit, isSubmitting, progress }: { form
           <AlertCircle className="w-4 h-4 mt-0.5" /><div><p className="font-medium">Please complete all required fields.</p></div>
         </div>
       )}
-      <div className="pt-4 border-t border-border">
+      <div className="pt-4 border-t border-border space-y-3">
         <button type="button" className="w-full rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground disabled:bg-secondary disabled:text-muted-foreground flex items-center justify-center gap-2" onClick={onSubmit} disabled={!allComplete || isSubmitting}>
           {isSubmitting ? "Submitting..." : <><CheckCircle className="w-4 h-4" />Submit Gateway Application</>}
         </button>
+        <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
+          By submitting this application, you acknowledge that we collect your IP address and browser information for fraud prevention and audit purposes in accordance with applicable law.
+        </p>
       </div>
     </div>
   );
@@ -1228,12 +1231,14 @@ function DocumentSubmissionStep({ form, onChange, onBlur, getError, onSubmit, is
         </div>
       )}
 
-      {/* Submit */}
-      <div className="pt-4 border-t border-border">
+      <div className="pt-4 border-t border-border space-y-3">
         <button type="button" className="w-full rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground disabled:bg-secondary disabled:text-muted-foreground flex items-center justify-center gap-2" onClick={onSubmit} disabled={!canSubmit || isSubmitting}>
           {isSubmitting ? "Submitting..." : <><CheckCircle className="w-4 h-4" />Submit Documents</>}
         </button>
         {!hasFiles && <p className="text-xs text-muted-foreground text-center mt-2">Please upload at least one document.</p>}
+        <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
+          By submitting, you acknowledge that we collect your IP address and browser information for fraud prevention and audit purposes in accordance with applicable law.
+        </p>
       </div>
     </div>
   );
@@ -1864,10 +1869,13 @@ function ReviewStep({ form, onSubmit, isSubmitting, progress, onChange }: { form
         )}
       </div>
 
-      <div className="pt-4 border-t border-border">
+      <div className="pt-4 border-t border-border space-y-3">
         <button type="button" className="w-full rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground disabled:bg-secondary disabled:text-muted-foreground flex items-center justify-center gap-2" onClick={onSubmit} disabled={!allComplete || isSubmitting || !form.merchant_agreement_accepted || !form.account_authorization_accepted}>
           {isSubmitting ? "Submitting..." : <><CheckCircle className="w-4 h-4" />Submit Application</>}
         </button>
+        <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
+          By submitting this application, you acknowledge that we collect your IP address and browser information for fraud prevention and audit purposes in accordance with applicable law.
+        </p>
       </div>
     </div>
   );
