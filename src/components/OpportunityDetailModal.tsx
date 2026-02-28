@@ -938,6 +938,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
 
               {activeSection === 'details' && (
                 <div className="space-y-6">
+                  {/* Account */}
                   <div className="space-y-4">
                     <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
                       <Building2 className="h-4 w-4" />
@@ -968,6 +969,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                     )}
                   </div>
 
+                  {/* Contact */}
                   <div className="space-y-4">
                     <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
                       <User className="h-4 w-4" />
@@ -992,6 +994,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                     )}
                   </div>
 
+                  {/* Opportunity */}
                   <div className="space-y-4">
                     <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
                       <Briefcase className="h-4 w-4" />
@@ -1015,6 +1018,86 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                       </div>
                     )}
                   </div>
+
+                  {/* Wizard: Business Profile */}
+                  {Object.keys(wizardFormState).length > 0 && (
+                    <>
+                      <div className="border-t border-border pt-4 space-y-4">
+                        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                          <CreditCard className="h-4 w-4" />
+                          Business Profile <span className="text-xs font-normal">(Wizard)</span>
+                        </h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <InfoItem label="DBA Name" value={wizardFormState.dba_name as string} />
+                          <InfoItem label="Products / Services" value={wizardFormState.product_description as string} />
+                          <InfoItem label="Nature of Business" value={wizardFormState.nature_of_business as string} />
+                          <InfoItem label="Contact First Name" value={wizardFormState.dba_contact_first_name as string} />
+                          <InfoItem label="Contact Last Name" value={wizardFormState.dba_contact_last_name as string} />
+                          <InfoItem label="Contact Phone" value={wizardFormState.dba_contact_phone as string} />
+                          <InfoItem label="Contact Email" value={wizardFormState.dba_contact_email as string} />
+                          <InfoItem label="DBA Address" value={wizardFormState.dba_address_line1 as string} />
+                          <InfoItem label="DBA City" value={wizardFormState.dba_city as string} />
+                          <InfoItem label="DBA State" value={wizardFormState.dba_state as string} />
+                          <InfoItem label="DBA Zip" value={wizardFormState.dba_zip as string} />
+                        </div>
+                      </div>
+
+                      {/* Wizard: Legal Info */}
+                      <div className="border-t border-border pt-4 space-y-4">
+                        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                          <ClipboardList className="h-4 w-4" />
+                          Legal Info <span className="text-xs font-normal">(Wizard)</span>
+                        </h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <InfoItem label="Legal Entity Name" value={wizardFormState.legal_entity_name as string} />
+                          <InfoItem label="Federal Tax ID" value={wizardFormState.federal_tax_id as string} />
+                          <InfoItem label="Ownership Type" value={wizardFormState.ownership_type as string} />
+                          <InfoItem label="Formation Date" value={wizardFormState.business_formation_date as string} />
+                          <InfoItem label="State Incorporated" value={wizardFormState.state_incorporated as string} />
+                          <InfoItem label="Legal Address" value={wizardFormState.legal_address_line1 as string} />
+                          <InfoItem label="Legal City" value={wizardFormState.legal_city as string} />
+                          <InfoItem label="Legal State" value={wizardFormState.legal_state as string} />
+                          <InfoItem label="Legal Zip" value={wizardFormState.legal_zip as string} />
+                        </div>
+                      </div>
+
+                      {/* Wizard: Processing */}
+                      <div className="border-t border-border pt-4 space-y-4">
+                        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                          <Zap className="h-4 w-4" />
+                          Processing <span className="text-xs font-normal">(Wizard)</span>
+                        </h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <InfoItem label="Monthly Volume" value={wizardFormState.monthly_volume as string} />
+                          <InfoItem label="Avg Transaction" value={wizardFormState.average_transaction as string} />
+                          <InfoItem label="High Ticket" value={wizardFormState.high_ticket as string} />
+                          <InfoItem label="% Swiped" value={wizardFormState.percent_swiped as string} />
+                          <InfoItem label="% Keyed" value={wizardFormState.percent_keyed as string} />
+                          <InfoItem label="% MOTO" value={wizardFormState.percent_moto as string} />
+                          <InfoItem label="% eCommerce" value={wizardFormState.percent_ecommerce as string} />
+                          <InfoItem label="% B2C" value={wizardFormState.percent_b2c as string} />
+                          <InfoItem label="% B2B" value={wizardFormState.percent_b2b as string} />
+                          <InfoItem label="Website" value={wizardFormState.website_url as string} />
+                          <InfoItem label="SIC / MCC Code" value={wizardFormState.sic_mcc_code as string} />
+                          <InfoItem label="Current Processor" value={wizardFormState.current_processor as string} />
+                        </div>
+                      </div>
+
+                      {/* Wizard: Gateway Only fields */}
+                      {opportunity.service_type === 'gateway_only' && (
+                        <div className="border-t border-border pt-4 space-y-4">
+                          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                            <Zap className="h-4 w-4" />
+                            Gateway Details <span className="text-xs font-normal">(Wizard)</span>
+                          </h3>
+                          <div className="grid grid-cols-2 gap-4">
+                            <InfoItem label="Username" value={wizardFormState.username as string} />
+                            <InfoItem label="Current Processor" value={wizardFormState.current_processor as string} />
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               )}
 
