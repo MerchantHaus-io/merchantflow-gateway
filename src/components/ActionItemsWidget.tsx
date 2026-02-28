@@ -87,6 +87,16 @@ export function ActionItemsWidget() {
     if (error) {
       toast.error("Failed to add action item");
     } else {
+      // Also create a linked task with source 'notice'
+      const assigneeName = selectedUsers.length > 0 ? selectedUsers[0] : (user.email || "");
+      await supabase.from("tasks").insert({
+        title: newTitle.trim(),
+        assignee: assigneeName,
+        created_by: user.email || "",
+        source: "notice",
+        status: "open",
+        priority: "medium",
+      });
       playNoticeBoardSound();
       setNewTitle("");
       setSelectedUsers([]);
