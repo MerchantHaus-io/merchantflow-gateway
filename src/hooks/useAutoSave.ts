@@ -75,5 +75,18 @@ export const useAutoSave = <T>({
     setStatus('idle');
   }, [data]);
 
-  return { status, resetInitialData };
+  // Cancel any pending auto-save
+  const cancel = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  }, []);
+
+  // Mark current data as saved (prevents re-save of same data)
+  const markSaved = useCallback(() => {
+    initialDataRef.current = JSON.stringify(data);
+  }, [data]);
+
+  return { status, resetInitialData, cancel, markSaved };
 };
