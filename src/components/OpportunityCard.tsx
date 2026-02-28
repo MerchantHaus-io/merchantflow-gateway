@@ -69,14 +69,20 @@ const OpportunityCard = ({
   const isLive = opportunity.stage === "live_activated";
   const serviceType = getServiceType(opportunity);
 
-  // Deal value from wizard_state monthly_volume
+  // Deal value: 33% of 2.92% processing fee + $1 per 10 transactions
   const dealValue = useMemo(() => {
     const formState = opportunity.wizard_state?.form_state as Record<string, string> | undefined;
-    if (formState?.monthly_volume) {
-      const val = parseFloat(formState.monthly_volume.replace(/[^0-9.]/g, ""));
-      if (!isNaN(val)) return val;
-    }
-    return 0;
+    if (!formState?.monthly_volume) return 0;
+    const vol = parseFloat(formState.monthly_volume.replace(/[^0-9.]/g, ""));
+    if (isNaN(vol) || vol <= 0) return 0;
+    // Processing fee revenue: 33% of 2.92% of monthly volume
+    const processingRevenue = vol * 0.0292 * 0.33;
+    // Per-transaction revenue: $1 per 10 transactions
+    const avgTicket = formState.average_transaction
+      ? parseFloat(formState.average_transaction.replace(/[^0-9.]/g, ""))
+      : 0;
+    const txnRevenue = avgTicket > 0 ? (vol / avgTicket / 10) : 0;
+    return processingRevenue + txnRevenue;
   }, [opportunity.wizard_state]);
 
   const isDraggingRef = useRef(false);
