@@ -28,7 +28,7 @@ import cardDiscover from "@/assets/card-discover.png";
 // Types using canonical keys
 // ─────────────────────────────────────────────────────────────────────────────
 
-type ServiceType = "gateway_only" | "gateway_and_processing" | null;
+type ServiceType = "gateway_only" | "gateway_and_processing" | "document_submission" | null;
 type PricingPlan = "flat_rate" | "interchange_plus" | "";
 
 interface PrincipalForm {
@@ -120,6 +120,7 @@ interface MerchantForm {
   // Supporting Documents
   statement_docs: File[];
   void_check_docs: File[];
+  general_docs: File[];
 
   // Agreements
   beneficial_owner_certification: boolean;
@@ -156,7 +157,7 @@ const initialState: MerchantForm = {
 
   bank_name: "", account_holder_name: "", routing_number: "", account_number: "",
 
-  statement_docs: [], void_check_docs: [],
+  statement_docs: [], void_check_docs: [], general_docs: [],
 
   beneficial_owner_certification: false, bank_disclosure_ack: false,
   merchant_agreement_accepted: false, account_authorization_accepted: false,
@@ -180,6 +181,10 @@ const PROCESSING_STEPS = [
 const GATEWAY_STEPS = [
   { label: "Business Details", icon: Building2 },
   { label: "Documents & Submit", icon: FileText },
+] as const;
+
+const DOCS_STEPS = [
+  { label: "Contact & Documents", icon: FileText },
 ] as const;
 
 // ─── Required fields per section ───
@@ -213,6 +218,12 @@ const GATEWAY_REQUIRED: Record<string, string[]> = {
     "dba_contact_phone", "dba_contact_email",
     "dba_address_line1", "dba_city", "dba_state", "dba_zip",
     "username", "current_processor",
+  ],
+};
+
+const DOCS_REQUIRED: Record<string, string[]> = {
+  docs_contact: [
+    "dba_contact_first_name", "dba_contact_last_name", "dba_contact_email",
   ],
 };
 
@@ -272,9 +283,11 @@ export default function MerchantApply() {
   const { toast } = useToast();
 
   const isGatewayOnly = serviceType === "gateway_only";
-  const steps = isGatewayOnly ? GATEWAY_STEPS : PROCESSING_STEPS;
+  const isDocSubmission = serviceType === "document_submission";
+  const steps = isDocSubmission ? DOCS_STEPS : isGatewayOnly ? GATEWAY_STEPS : PROCESSING_STEPS;
 
   const allRequiredFields = useMemo(() => {
+    if (isDocSubmission) return DOCS_REQUIRED.docs_contact;
     if (isGatewayOnly) return GATEWAY_REQUIRED.gateway_business;
     return [
       ...PROCESSING_REQUIRED.business,
@@ -288,7 +301,7 @@ export default function MerchantApply() {
       ]),
       "bank_name", "account_holder_name", "routing_number", "account_number",
     ];
-  }, [isGatewayOnly, form.principals.length]);
+  }, [isGatewayOnly, isDocSubmission, form.principals.length]);
 
   const getFieldValue = (key: string): string => {
     // Handle principal indexed fields like "principal_first_name_0"
@@ -348,6 +361,9 @@ export default function MerchantApply() {
     fields.filter(f => !getFieldValue(f).trim());
 
   const missingBySection = useMemo(() => {
+    if (isDocSubmission) {
+      return { docs_contact: getMissing(DOCS_REQUIRED.docs_contact) };
+    }
     if (isGatewayOnly) {
       return { gateway_business: getMissing(GATEWAY_REQUIRED.gateway_business) };
     }
@@ -365,7 +381,7 @@ export default function MerchantApply() {
       processing: getMissing(PROCESSING_REQUIRED.processing),
       owners_banking: getMissing(ownersBankingFields),
     };
-  }, [form, isGatewayOnly]);
+  }, [form, isGatewayOnly, isDocSubmission]);
 
   const totalRequired = allRequiredFields.length;
   const completedRequired = totalRequired - getMissing(allRequiredFields).length;
@@ -384,7 +400,7 @@ export default function MerchantApply() {
     }
 
     // Validate agreement acceptance for processing applications
-    if (!isGatewayOnly) {
+    if (!isGatewayOnly && !isDocSubmission) {
       if (!form.merchant_agreement_accepted || !form.account_authorization_accepted) {
         toast({ variant: "destructive", title: "Agreement Required", description: "You must accept the Merchant Agreement and authorize account creation before submitting." });
         return;
@@ -392,7 +408,7 @@ export default function MerchantApply() {
     }
 
     // Validate percentage rules for processing
-    if (!isGatewayOnly) {
+    if (!isGatewayOnly && !isDocSubmission) {
       const txMix = [form.percent_swiped, form.percent_keyed, form.percent_moto, form.percent_ecommerce]
         .map(v => parseFloat(v) || 0)
         .reduce((a, b) => a + b, 0);
@@ -416,6 +432,12 @@ export default function MerchantApply() {
       }
     }
 
+    // Validate document submission has at least 1 file
+    if (isDocSubmission && form.general_docs.length === 0) {
+      toast({ variant: "destructive", title: "Documents Required", description: "Please upload at least one document before submitting." });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -429,6 +451,47 @@ export default function MerchantApply() {
 
       // 1. Generate a client-side UUID so we don't need .select() (which requires auth)
       const applicationId = crypto.randomUUID();
+
+      // Document Submission Only flow — simplified
+      if (isDocSubmission) {
+        const { error: appError } = await supabase
+          .from("applications")
+          .insert({
+            id: applicationId,
+            full_name: `${form.dba_contact_first_name} ${form.dba_contact_last_name}`.trim(),
+            email: form.dba_contact_email,
+            service_type: "document_submission",
+            status: "pending",
+            notes: form.additional_notes || null,
+          });
+        if (appError) throw appError;
+
+        // Upload documents with audit trail
+        for (const doc of form.general_docs) {
+          const filePath = `applications/${applicationId}/${Date.now()}_${doc.name}`;
+          const { error: storageError } = await supabase.storage
+            .from('opportunity-documents')
+            .upload(filePath, doc);
+          if (storageError) {
+            console.error(`Doc upload error (${doc.name}):`, storageError);
+          } else {
+            await supabase.from('application_documents' as any).insert({
+              application_id: applicationId,
+              file_name: doc.name,
+              file_path: filePath,
+              file_size: doc.size,
+              content_type: doc.type || null,
+              document_type: 'General Submission',
+              ip_address: clientIp,
+              user_agent: navigator.userAgent,
+            });
+          }
+        }
+
+        setIsSubmitted(true);
+        window.location.href = "https://merchanthaus.io";
+        return;
+      }
 
       const { error: appError } = await supabase
         .from("applications")
@@ -683,7 +746,7 @@ export default function MerchantApply() {
               <h1 className="text-xl md:text-3xl font-bold text-foreground">What do you need?</h1>
               <p className="text-sm md:text-base text-muted-foreground">Select the service that best fits your business requirements.</p>
             </div>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-3">
               <button onClick={() => { setServiceType("gateway_only"); setStepIndex(0); }} className="group text-left bg-card rounded-2xl border-2 border-border hover:border-primary/50 p-5 md:p-6 transition-all shadow-sm hover:shadow-md space-y-3">
                 <div className="w-12 h-12 rounded-xl bg-teal-500/10 flex items-center justify-center"><Zap className="w-6 h-6 text-teal-600" /></div>
                 <h2 className="text-lg font-semibold text-foreground">Gateway Only</h2>
@@ -695,6 +758,12 @@ export default function MerchantApply() {
                 <h2 className="text-lg font-semibold text-foreground">Gateway + Processing</h2>
                 <p className="text-sm text-muted-foreground leading-relaxed">I need both a payment processor and NMI gateway.</p>
                 <div className="text-xs text-primary font-medium">Full application required →</div>
+              </button>
+              <button onClick={() => { setServiceType("document_submission"); setStepIndex(0); }} className="group text-left bg-card rounded-2xl border-2 border-border hover:border-primary/50 p-5 md:p-6 transition-all shadow-sm hover:shadow-md space-y-3">
+                <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center"><FileText className="w-6 h-6 text-amber-600" /></div>
+                <h2 className="text-lg font-semibold text-foreground">Document Submission</h2>
+                <p className="text-sm text-muted-foreground leading-relaxed">Upload required documents for an existing or new application.</p>
+                <div className="text-xs text-primary font-medium">Upload documents only →</div>
               </button>
             </div>
           </div>
@@ -772,7 +841,9 @@ export default function MerchantApply() {
                   <p className="text-xs md:text-sm text-muted-foreground mt-0.5">Required fields marked with <span className="text-destructive">*</span></p>
                 </div>
 
-                {isGatewayOnly ? (
+                {isDocSubmission ? (
+                  <DocumentSubmissionStep form={form} onChange={handleChange} onBlur={handleBlur} getError={getError} onSubmit={handleSubmit} isSubmitting={isSubmitting} />
+                ) : isGatewayOnly ? (
                   <>
                     {stepIndex === 0 && <GatewayBusinessStep form={form} onChange={handleChange} onBlur={handleBlur} getError={getError} />}
                     {stepIndex === 1 && <GatewayDocumentsStep form={form} onSubmit={handleSubmit} isSubmitting={isSubmitting} progress={progress} />}
@@ -789,8 +860,8 @@ export default function MerchantApply() {
                 )}
               </div>
 
-              {/* Navigation — hide on last step */}
-              {((isGatewayOnly && stepIndex < 1) || (!isGatewayOnly && stepIndex < 5)) && (
+              {/* Navigation — hide on last step and doc submission (single step) */}
+              {!isDocSubmission && ((isGatewayOnly && stepIndex < 1) || (!isGatewayOnly && stepIndex < 5)) && (
                 <div className="px-4 py-3 md:px-6 md:py-4 bg-muted border-t border-border flex items-center justify-between">
                   <button type="button" className="rounded-lg border border-border bg-card px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-medium text-foreground hover:bg-secondary disabled:opacity-40" onClick={() => setStepIndex(prev => Math.max(0, prev - 1))} disabled={stepIndex === 0}>Back</button>
                   <button type="button" className="rounded-lg bg-primary px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90" onClick={handleNextStep}>Next Step</button>
@@ -806,7 +877,9 @@ export default function MerchantApply() {
                   Status Snapshot
                 </div>
                 <div className="space-y-4">
-                  {isGatewayOnly ? (
+                  {isDocSubmission ? (
+                    <SectionStatus label="Contact Info" count={DOCS_REQUIRED.docs_contact.length - (missingBySection.docs_contact?.length ?? 0)} total={DOCS_REQUIRED.docs_contact.length} />
+                  ) : isGatewayOnly ? (
                     <SectionStatus label="Business Details" count={GATEWAY_REQUIRED.gateway_business.length - (missingBySection.gateway_business?.length ?? 0)} total={GATEWAY_REQUIRED.gateway_business.length} />
                   ) : (
                     <>
@@ -1060,6 +1133,107 @@ function GatewayDocumentsStep({ form, onSubmit, isSubmitting, progress }: { form
         <button type="button" className="w-full rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground disabled:bg-secondary disabled:text-muted-foreground flex items-center justify-center gap-2" onClick={onSubmit} disabled={!allComplete || isSubmitting}>
           {isSubmitting ? "Submitting..." : <><CheckCircle className="w-4 h-4" />Submit Gateway Application</>}
         </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Document Submission Step ───
+
+const DOC_TYPES = [
+  "Articles of Organization",
+  "Tax Document (EIN)",
+  "Bank Confirmation Letter",
+  "Voided Check",
+  "Passport / Drivers License",
+  "Bank Statement",
+  "Processing Statement",
+  "Other",
+] as const;
+
+function DocumentSubmissionStep({ form, onChange, onBlur, getError, onSubmit, isSubmitting }: {
+  form: MerchantForm;
+  onChange: <K extends keyof MerchantForm>(field: K, value: MerchantForm[K]) => void;
+  onBlur: (field: string) => void;
+  getError: (field: string) => string | null;
+  onSubmit: () => void;
+  isSubmitting: boolean;
+}) {
+  const hasFiles = form.general_docs.length > 0;
+  const contactComplete = form.dba_contact_first_name.trim() && form.dba_contact_last_name.trim() && form.dba_contact_email.trim();
+  const canSubmit = hasFiles && contactComplete;
+
+  return (
+    <div className="space-y-6">
+      {/* Info Banner */}
+      <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm flex items-start gap-3">
+        <Info className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+        <div>
+          <p className="font-semibold text-foreground">Please fill out the email address associated with your submission.</p>
+          <p className="text-muted-foreground mt-1">This allows us to match your documents to the correct application.</p>
+        </div>
+      </div>
+
+      {/* Contact Fields */}
+      <div className="grid gap-3 md:gap-4 md:grid-cols-3">
+        <Field label="First Name" required error={getError("dba_contact_first_name")}>
+          <Input value={form.dba_contact_first_name} onChange={e => onChange("dba_contact_first_name", e.target.value)} onBlur={() => onBlur("dba_contact_first_name")} placeholder="First name" hasError={!!getError("dba_contact_first_name")} />
+        </Field>
+        <Field label="Last Name" required error={getError("dba_contact_last_name")}>
+          <Input value={form.dba_contact_last_name} onChange={e => onChange("dba_contact_last_name", e.target.value)} onBlur={() => onBlur("dba_contact_last_name")} placeholder="Last name" hasError={!!getError("dba_contact_last_name")} />
+        </Field>
+        <Field label="Email Address" required error={getError("dba_contact_email")}>
+          <Input type="email" value={form.dba_contact_email} onChange={e => onChange("dba_contact_email", e.target.value)} onBlur={() => onBlur("dba_contact_email")} placeholder="email@example.com" hasError={!!getError("dba_contact_email")} />
+        </Field>
+      </div>
+
+      {/* Document Types Reference */}
+      <div className="rounded-xl border border-border bg-muted p-5 space-y-3">
+        <h3 className="text-sm font-semibold text-foreground">Accepted Document Types</h3>
+        <div className="grid gap-2 md:grid-cols-2">
+          {DOC_TYPES.map(dt => (
+            <div key={dt} className="flex items-center gap-2 text-sm text-foreground">
+              <FileText className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+              {dt}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* File Upload */}
+      <div>
+        <label className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-border hover:border-primary/50 bg-card p-6 cursor-pointer transition-all group text-center">
+          <Plus className="w-8 h-8 text-muted-foreground group-hover:text-primary" />
+          <div>
+            <p className="text-sm font-semibold text-foreground">Upload Documents</p>
+            <p className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG, DOC — multiple files allowed</p>
+          </div>
+          <input type="file" multiple className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.tiff,.tif" onChange={e => {
+            const files = Array.from(e.target.files ?? []);
+            onChange("general_docs", [...form.general_docs, ...files] as any);
+          }} />
+        </label>
+      </div>
+
+      {/* Uploaded Files List */}
+      {form.general_docs.length > 0 && (
+        <div className="rounded-lg border border-border bg-muted p-3 space-y-1">
+          <p className="text-xs font-medium text-muted-foreground mb-2">{form.general_docs.length} file(s) selected</p>
+          {form.general_docs.map((f, i) => (
+            <div key={`gd-${i}`} className="flex items-center justify-between text-xs">
+              <span className="text-foreground truncate">📄 {f.name} <span className="text-muted-foreground">({(f.size / 1024).toFixed(0)} KB)</span></span>
+              <button type="button" onClick={() => onChange("general_docs", form.general_docs.filter((_, j) => j !== i) as any)} className="text-destructive hover:text-destructive/80 ml-2"><Trash2 className="w-3 h-3" /></button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Submit */}
+      <div className="pt-4 border-t border-border">
+        <button type="button" className="w-full rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground disabled:bg-secondary disabled:text-muted-foreground flex items-center justify-center gap-2" onClick={onSubmit} disabled={!canSubmit || isSubmitting}>
+          {isSubmitting ? "Submitting..." : <><CheckCircle className="w-4 h-4" />Submit Documents</>}
+        </button>
+        {!hasFiles && <p className="text-xs text-muted-foreground text-center mt-2">Please upload at least one document.</p>}
       </div>
     </div>
   );
