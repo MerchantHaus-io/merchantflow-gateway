@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
+import { ChevronLeft as PaginationLeft, ChevronRight as PaginationRight } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,7 @@ import {
   AlertTriangle,
   Bell,
   Trash2,
+  Zap,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -298,6 +300,25 @@ const Tasks = () => {
 
     return result;
   }, [tasks, dateRange, filterBy, searchQuery, statusFilter, priorityFilter, viewFilter, displayName, user?.email, assigneeFilter, sortKey, sortDirection]);
+
+  // Split into manual and auto tasks
+  const manualTasks = useMemo(() => filteredTasks.filter(t => t.source !== 'sla'), [filteredTasks]);
+  const autoTasks = useMemo(() => filteredTasks.filter(t => t.source === 'sla'), [filteredTasks]);
+
+  // Pagination state
+  const [manualPage, setManualPage] = useState(1);
+  const [autoPage, setAutoPage] = useState(1);
+  const MANUAL_PER_PAGE = 10;
+  const AUTO_PER_PAGE = 5;
+
+  // Reset pages when filters change
+  useEffect(() => { setManualPage(1); }, [searchQuery, statusFilter, priorityFilter, viewFilter, assigneeFilter, dateRange]);
+  useEffect(() => { setAutoPage(1); }, [searchQuery, statusFilter, priorityFilter, viewFilter, assigneeFilter, dateRange]);
+
+  const manualTotalPages = Math.max(1, Math.ceil(manualTasks.length / MANUAL_PER_PAGE));
+  const autoTotalPages = Math.max(1, Math.ceil(autoTasks.length / AUTO_PER_PAGE));
+  const paginatedManual = manualTasks.slice((manualPage - 1) * MANUAL_PER_PAGE, manualPage * MANUAL_PER_PAGE);
+  const paginatedAuto = autoTasks.slice((autoPage - 1) * AUTO_PER_PAGE, autoPage * AUTO_PER_PAGE);
 
   // Stats
   const stats = useMemo(() => {
@@ -697,168 +718,332 @@ const Tasks = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                {loading ? (
+              {loading ? (
                   <div className="space-y-3">
                     {[1, 2, 3, 4, 5].map(i => (
                       <Skeleton key={i} className="h-12 w-full" />
                     ))}
                   </div>
                 ) : viewMode === 'table' ? (
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-12">#</TableHead>
-                          <SortableTableHead field="title" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Title</SortableTableHead>
-                          <SortableTableHead field="priority" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Priority</SortableTableHead>
-                          <SortableTableHead field="account" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Account</SortableTableHead>
-                          <SortableTableHead field="assignee" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Assignee</SortableTableHead>
-                          <SortableTableHead field="status" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Status</SortableTableHead>
-                          <SortableTableHead field="dueAt" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Due</SortableTableHead>
-                          {isAdmin && <TableHead className="w-12"></TableHead>}
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredTasks.map((task, index) => {
-                          const dueStatus = getDueDateStatus(task.dueAt, task.status);
-                          return (
-                          <TableRow 
-                            key={task.id} 
-                            className={cn(
-                              "hover:bg-muted/50 cursor-pointer",
-                              dueStatus === 'overdue' && "bg-red-500/5 border-l-2 border-l-red-500",
-                              dueStatus === 'due-today' && "bg-orange-500/5 border-l-2 border-l-orange-500",
-                              dueStatus === 'due-tomorrow' && "bg-amber-500/5 border-l-2 border-l-amber-500"
-                            )}
-                            onClick={() => setSelectedTask(task)}
-                          >
-                            <TableCell className="text-muted-foreground text-sm">{index + 1}</TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                {dueStatus === 'overdue' && (
-                                  <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />
+                  <div className="space-y-8">
+                    {/* ── User-Created Tasks ── */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                        <UserRound className="h-4 w-4 text-primary" />
+                        User-Created Tasks
+                        <Badge variant="secondary" className="text-xs">{manualTasks.length}</Badge>
+                      </h3>
+                      <div className="rounded-md border">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="w-12">#</TableHead>
+                              <SortableTableHead field="title" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Title</SortableTableHead>
+                              <SortableTableHead field="priority" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Priority</SortableTableHead>
+                              <SortableTableHead field="account" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Account</SortableTableHead>
+                              <SortableTableHead field="assignee" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Assignee</SortableTableHead>
+                              <SortableTableHead field="status" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Status</SortableTableHead>
+                              <SortableTableHead field="dueAt" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Due</SortableTableHead>
+                              {isAdmin && <TableHead className="w-12"></TableHead>}
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {paginatedManual.map((task, index) => {
+                              const dueStatus = getDueDateStatus(task.dueAt, task.status);
+                              return (
+                              <TableRow 
+                                key={task.id} 
+                                className={cn(
+                                  "hover:bg-muted/50 cursor-pointer",
+                                  dueStatus === 'overdue' && "bg-red-500/5 border-l-2 border-l-red-500",
+                                  dueStatus === 'due-today' && "bg-orange-500/5 border-l-2 border-l-orange-500",
+                                  dueStatus === 'due-tomorrow' && "bg-amber-500/5 border-l-2 border-l-amber-500"
                                 )}
-                                <div>
-                                  <p className="font-medium">{task.title}</p>
-                                  {task.description && (
-                                    <p className="text-xs text-muted-foreground line-clamp-1">{task.description}</p>
-                                  )}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              {(() => {
-                                const taskPriority = task.priority || 'medium';
-                                const config = priorityConfig[taskPriority];
-                                const IconComponent = config.icon;
-                                return (
-                                  <Badge variant="outline" className={cn("text-xs gap-1", config.color)}>
-                                    <IconComponent className="h-3 w-3" />
-                                    {config.label}
-                                  </Badge>
-                                );
-                              })()}
-                            </TableCell>
-                            <TableCell>
-                              {task.accountName ? (
-                                <div className="flex items-center gap-1.5">
-                                  <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-                                  <span className="text-sm">{task.accountName}</span>
-                                </div>
-                              ) : (
-                                <span className="text-muted-foreground text-sm">-</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1.5">
-                                <UserRound className="h-3.5 w-3.5 text-muted-foreground" />
-                                <span className="text-sm">{task.assignee || 'Unassigned'}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell onClick={(e) => e.stopPropagation()}>
-                              <Select
-                                value={task.status}
-                                onValueChange={(value) => updateTaskStatus(task.id, value as Task['status'])}
+                                onClick={() => setSelectedTask(task)}
                               >
-                                <SelectTrigger className="h-8 w-[130px]">
-                                  <div className="flex items-center gap-1.5">
-                                    {getStatusIcon(task.status)}
-                                    <SelectValue />
+                                <TableCell className="text-muted-foreground text-sm">{(manualPage - 1) * MANUAL_PER_PAGE + index + 1}</TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    {dueStatus === 'overdue' && <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />}
+                                    <div>
+                                      <p className="font-medium">{task.title}</p>
+                                      {task.description && <p className="text-xs text-muted-foreground line-clamp-1">{task.description}</p>}
+                                    </div>
                                   </div>
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {Object.entries(statusLabels).map(([key, label]) => (
-                                    <SelectItem key={key} value={key}>
+                                </TableCell>
+                                <TableCell>
+                                  {(() => {
+                                    const taskPriority = task.priority || 'medium';
+                                    const config = priorityConfig[taskPriority];
+                                    const IconComponent = config.icon;
+                                    return (
+                                      <Badge variant="outline" className={cn("text-xs gap-1", config.color)}>
+                                        <IconComponent className="h-3 w-3" />{config.label}
+                                      </Badge>
+                                    );
+                                  })()}
+                                </TableCell>
+                                <TableCell>
+                                  {task.accountName ? (
+                                    <div className="flex items-center gap-1.5">
+                                      <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                                      <span className="text-sm">{task.accountName}</span>
+                                    </div>
+                                  ) : <span className="text-muted-foreground text-sm">-</span>}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-1.5">
+                                    <UserRound className="h-3.5 w-3.5 text-muted-foreground" />
+                                    <span className="text-sm">{task.assignee || 'Unassigned'}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell onClick={(e) => e.stopPropagation()}>
+                                  <Select value={task.status} onValueChange={(value) => updateTaskStatus(task.id, value as Task['status'])}>
+                                    <SelectTrigger className="h-8 w-[130px]">
                                       <div className="flex items-center gap-1.5">
-                                        {getStatusIcon(key as Task['status'])}
-                                        {label}
+                                        {getStatusIcon(task.status)}
+                                        <SelectValue />
                                       </div>
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </TableCell>
-                            <TableCell>
-                              <div className={cn(
-                                "flex items-center gap-1 text-sm",
-                                dueStatus === 'overdue' && "text-red-500 font-medium",
-                                dueStatus === 'due-today' && "text-orange-500 font-medium",
-                                dueStatus === 'due-tomorrow' && "text-amber-500",
-                                dueStatus === 'due-soon' && "text-amber-500/80",
-                                !dueStatus && "text-muted-foreground"
-                              )}>
-                                {dueStatus === 'overdue' ? (
-                                  <AlertTriangle className="h-3.5 w-3.5" />
-                                ) : dueStatus === 'due-today' || dueStatus === 'due-tomorrow' ? (
-                                  <Bell className="h-3.5 w-3.5" />
-                                ) : (
-                                  <CalendarClock className="h-3.5 w-3.5" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {Object.entries(statusLabels).map(([key, label]) => (
+                                        <SelectItem key={key} value={key}>
+                                          <div className="flex items-center gap-1.5">
+                                            {getStatusIcon(key as Task['status'])}{label}
+                                          </div>
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </TableCell>
+                                <TableCell>
+                                  <div className={cn(
+                                    "flex items-center gap-1 text-sm",
+                                    dueStatus === 'overdue' && "text-red-500 font-medium",
+                                    dueStatus === 'due-today' && "text-orange-500 font-medium",
+                                    dueStatus === 'due-tomorrow' && "text-amber-500",
+                                    dueStatus === 'due-soon' && "text-amber-500/80",
+                                    !dueStatus && "text-muted-foreground"
+                                  )}>
+                                    {dueStatus === 'overdue' ? <AlertTriangle className="h-3.5 w-3.5" /> : dueStatus === 'due-today' || dueStatus === 'due-tomorrow' ? <Bell className="h-3.5 w-3.5" /> : <CalendarClock className="h-3.5 w-3.5" />}
+                                    {getDueDateLabel(task.dueAt, task.status)}
+                                  </div>
+                                </TableCell>
+                                {isAdmin && (
+                                  <TableCell onClick={(e) => e.stopPropagation()}>
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Delete Task</AlertDialogTitle>
+                                          <AlertDialogDescription>Are you sure you want to delete "{task.title}"? This action cannot be undone.</AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                          <AlertDialogAction onClick={() => deleteTask(task.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  </TableCell>
                                 )}
-                                {getDueDateLabel(task.dueAt, task.status)}
-                              </div>
-                            </TableCell>
-                            {isAdmin && (
-                              <TableCell onClick={(e) => e.stopPropagation()}>
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Delete Task</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        Are you sure you want to delete "{task.title}"? This action cannot be undone.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                      <AlertDialogAction
-                                        onClick={() => deleteTask(task.id)}
-                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                      >
-                                        Delete
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              </TableCell>
+                              </TableRow>
+                              );
+                            })}
+                            {paginatedManual.length === 0 && (
+                              <TableRow>
+                                <TableCell colSpan={isAdmin ? 8 : 7} className="h-16 text-center text-muted-foreground">No user-created tasks found.</TableCell>
+                              </TableRow>
                             )}
-                          </TableRow>
-                          );
-                        })}
-                        {filteredTasks.length === 0 && (
-                          <TableRow>
-                            <TableCell colSpan={isAdmin ? 8 : 7} className="h-24 text-center text-muted-foreground">
-                              No tasks found.
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
+                          </TableBody>
+                        </Table>
+                      </div>
+                      {/* Manual tasks pagination */}
+                      {manualTotalPages > 1 && (
+                        <div className="flex items-center justify-between mt-3 px-1">
+                          <span className="text-xs text-muted-foreground">
+                            Showing {(manualPage - 1) * MANUAL_PER_PAGE + 1}–{Math.min(manualPage * MANUAL_PER_PAGE, manualTasks.length)} of {manualTasks.length}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <Button variant="outline" size="icon" className="h-7 w-7" disabled={manualPage <= 1} onClick={() => setManualPage(p => p - 1)}>
+                              <PaginationLeft className="h-3.5 w-3.5" />
+                            </Button>
+                            {Array.from({ length: manualTotalPages }, (_, i) => i + 1).map(p => (
+                              <Button key={p} variant={p === manualPage ? "default" : "outline"} size="icon" className="h-7 w-7 text-xs" onClick={() => setManualPage(p)}>
+                                {p}
+                              </Button>
+                            ))}
+                            <Button variant="outline" size="icon" className="h-7 w-7" disabled={manualPage >= manualTotalPages} onClick={() => setManualPage(p => p + 1)}>
+                              <PaginationRight className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* ── Auto / SLA Tasks ── */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-amber-500" />
+                        Auto Tasks
+                        <Badge variant="secondary" className="text-xs">{autoTasks.length}</Badge>
+                      </h3>
+                      <div className="rounded-md border">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="w-12">#</TableHead>
+                              <SortableTableHead field="title" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Title</SortableTableHead>
+                              <SortableTableHead field="priority" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Priority</SortableTableHead>
+                              <SortableTableHead field="account" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Account</SortableTableHead>
+                              <SortableTableHead field="assignee" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Assignee</SortableTableHead>
+                              <SortableTableHead field="status" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Status</SortableTableHead>
+                              <SortableTableHead field="dueAt" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Due</SortableTableHead>
+                              {isAdmin && <TableHead className="w-12"></TableHead>}
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {paginatedAuto.map((task, index) => {
+                              const dueStatus = getDueDateStatus(task.dueAt, task.status);
+                              return (
+                              <TableRow 
+                                key={task.id} 
+                                className={cn(
+                                  "hover:bg-muted/50 cursor-pointer",
+                                  dueStatus === 'overdue' && "bg-red-500/5 border-l-2 border-l-red-500",
+                                  dueStatus === 'due-today' && "bg-orange-500/5 border-l-2 border-l-orange-500",
+                                  dueStatus === 'due-tomorrow' && "bg-amber-500/5 border-l-2 border-l-amber-500"
+                                )}
+                                onClick={() => setSelectedTask(task)}
+                              >
+                                <TableCell className="text-muted-foreground text-sm">{(autoPage - 1) * AUTO_PER_PAGE + index + 1}</TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    {dueStatus === 'overdue' && <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0" />}
+                                    <div>
+                                      <p className="font-medium">{task.title}</p>
+                                      {task.description && <p className="text-xs text-muted-foreground line-clamp-1">{task.description}</p>}
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  {(() => {
+                                    const taskPriority = task.priority || 'medium';
+                                    const config = priorityConfig[taskPriority];
+                                    const IconComponent = config.icon;
+                                    return (
+                                      <Badge variant="outline" className={cn("text-xs gap-1", config.color)}>
+                                        <IconComponent className="h-3 w-3" />{config.label}
+                                      </Badge>
+                                    );
+                                  })()}
+                                </TableCell>
+                                <TableCell>
+                                  {task.accountName ? (
+                                    <div className="flex items-center gap-1.5">
+                                      <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                                      <span className="text-sm">{task.accountName}</span>
+                                    </div>
+                                  ) : <span className="text-muted-foreground text-sm">-</span>}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-1.5">
+                                    <UserRound className="h-3.5 w-3.5 text-muted-foreground" />
+                                    <span className="text-sm">{task.assignee || 'Unassigned'}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell onClick={(e) => e.stopPropagation()}>
+                                  <Select value={task.status} onValueChange={(value) => updateTaskStatus(task.id, value as Task['status'])}>
+                                    <SelectTrigger className="h-8 w-[130px]">
+                                      <div className="flex items-center gap-1.5">
+                                        {getStatusIcon(task.status)}
+                                        <SelectValue />
+                                      </div>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {Object.entries(statusLabels).map(([key, label]) => (
+                                        <SelectItem key={key} value={key}>
+                                          <div className="flex items-center gap-1.5">
+                                            {getStatusIcon(key as Task['status'])}{label}
+                                          </div>
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </TableCell>
+                                <TableCell>
+                                  <div className={cn(
+                                    "flex items-center gap-1 text-sm",
+                                    dueStatus === 'overdue' && "text-red-500 font-medium",
+                                    dueStatus === 'due-today' && "text-orange-500 font-medium",
+                                    dueStatus === 'due-tomorrow' && "text-amber-500",
+                                    dueStatus === 'due-soon' && "text-amber-500/80",
+                                    !dueStatus && "text-muted-foreground"
+                                  )}>
+                                    {dueStatus === 'overdue' ? <AlertTriangle className="h-3.5 w-3.5" /> : dueStatus === 'due-today' || dueStatus === 'due-tomorrow' ? <Bell className="h-3.5 w-3.5" /> : <CalendarClock className="h-3.5 w-3.5" />}
+                                    {getDueDateLabel(task.dueAt, task.status)}
+                                  </div>
+                                </TableCell>
+                                {isAdmin && (
+                                  <TableCell onClick={(e) => e.stopPropagation()}>
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Delete Task</AlertDialogTitle>
+                                          <AlertDialogDescription>Are you sure you want to delete "{task.title}"? This action cannot be undone.</AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                          <AlertDialogAction onClick={() => deleteTask(task.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  </TableCell>
+                                )}
+                              </TableRow>
+                              );
+                            })}
+                            {paginatedAuto.length === 0 && (
+                              <TableRow>
+                                <TableCell colSpan={isAdmin ? 8 : 7} className="h-16 text-center text-muted-foreground">No auto tasks found.</TableCell>
+                              </TableRow>
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
+                      {/* Auto tasks pagination */}
+                      {autoTotalPages > 1 && (
+                        <div className="flex items-center justify-between mt-3 px-1">
+                          <span className="text-xs text-muted-foreground">
+                            Showing {(autoPage - 1) * AUTO_PER_PAGE + 1}–{Math.min(autoPage * AUTO_PER_PAGE, autoTasks.length)} of {autoTasks.length}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <Button variant="outline" size="icon" className="h-7 w-7" disabled={autoPage <= 1} onClick={() => setAutoPage(p => p - 1)}>
+                              <PaginationLeft className="h-3.5 w-3.5" />
+                            </Button>
+                            {Array.from({ length: autoTotalPages }, (_, i) => i + 1).map(p => (
+                              <Button key={p} variant={p === autoPage ? "default" : "outline"} size="icon" className="h-7 w-7 text-xs" onClick={() => setAutoPage(p)}>
+                                {p}
+                              </Button>
+                            ))}
+                            <Button variant="outline" size="icon" className="h-7 w-7" disabled={autoPage >= autoTotalPages} onClick={() => setAutoPage(p => p + 1)}>
+                              <PaginationRight className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ) : (
+                  /* Cards view - show all filtered tasks combined */
                   <div className="grid gap-3 sm:grid-cols-2">
                     {filteredTasks.map((task) => {
                       const taskPriority = task.priority || 'medium';
@@ -900,18 +1085,20 @@ const Tasks = () => {
                             )}
                             <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                               <Badge variant="outline" className={cn("text-[10px] gap-0.5 h-5", priorityConf.color)}>
-                                <PriorityIcon className="h-2.5 w-2.5" />
-                                {priorityConf.label}
+                                <PriorityIcon className="h-2.5 w-2.5" />{priorityConf.label}
                               </Badge>
+                              {task.source === 'sla' && (
+                                <Badge variant="outline" className="text-[10px] gap-0.5 h-5 border-amber-500/30 text-amber-500">
+                                  <Zap className="h-2.5 w-2.5" />Auto
+                                </Badge>
+                              )}
                               {task.accountName && (
                                 <div className="flex items-center gap-1">
-                                  <Building2 className="h-3 w-3" />
-                                  {task.accountName}
+                                  <Building2 className="h-3 w-3" />{task.accountName}
                                 </div>
                               )}
                               <div className="flex items-center gap-1">
-                                <UserRound className="h-3 w-3" />
-                                {task.assignee || 'Unassigned'}
+                                <UserRound className="h-3 w-3" />{task.assignee || 'Unassigned'}
                               </div>
                               {task.dueAt && (
                                 <div className={cn(
@@ -921,13 +1108,7 @@ const Tasks = () => {
                                   dueStatus === 'due-tomorrow' && "text-amber-500",
                                   dueStatus === 'due-soon' && "text-amber-500/80"
                                 )}>
-                                  {dueStatus === 'overdue' ? (
-                                    <AlertTriangle className="h-3 w-3" />
-                                  ) : dueStatus === 'due-today' || dueStatus === 'due-tomorrow' ? (
-                                    <Bell className="h-3 w-3" />
-                                  ) : (
-                                    <CalendarClock className="h-3 w-3" />
-                                  )}
+                                  {dueStatus === 'overdue' ? <AlertTriangle className="h-3 w-3" /> : dueStatus === 'due-today' || dueStatus === 'due-tomorrow' ? <Bell className="h-3 w-3" /> : <CalendarClock className="h-3 w-3" />}
                                   {getDueDateLabel(task.dueAt, task.status)}
                                 </div>
                               )}
@@ -937,9 +1118,7 @@ const Tasks = () => {
                       );
                     })}
                     {filteredTasks.length === 0 && (
-                      <div className="col-span-2 py-12 text-center text-muted-foreground">
-                        No tasks found.
-                      </div>
+                      <div className="col-span-2 py-12 text-center text-muted-foreground">No tasks found.</div>
                     )}
                   </div>
                 )}
