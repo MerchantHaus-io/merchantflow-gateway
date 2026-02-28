@@ -1,0 +1,1 @@
+UPDATE public.opportunities SET stage = 'discovery' WHERE stage = 'application_started';
