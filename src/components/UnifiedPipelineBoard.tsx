@@ -141,15 +141,20 @@ const UnifiedPipelineBoard = ({
 
   const totalCount = opportunities.length;
 
-  // Calculate total pipeline value from wizard_state monthly_volume
+  // Calculate total pipeline revenue: 33% of 2.92% processing fee + $1 per 10 transactions
   const totalPipelineValue = useMemo(() => {
     let total = 0;
     opportunities.forEach((opp) => {
       const formState = opp.wizard_state?.form_state as Record<string, string> | undefined;
-      if (formState?.monthly_volume) {
-        const val = parseFloat(formState.monthly_volume.replace(/[^0-9.]/g, ""));
-        if (!isNaN(val)) total += val;
-      }
+      if (!formState?.monthly_volume) return;
+      const vol = parseFloat(formState.monthly_volume.replace(/[^0-9.]/g, ""));
+      if (isNaN(vol) || vol <= 0) return;
+      const processingRevenue = vol * 0.0292 * 0.33;
+      const avgTicket = formState.average_transaction
+        ? parseFloat(formState.average_transaction.replace(/[^0-9.]/g, ""))
+        : 0;
+      const txnRevenue = avgTicket > 0 ? (vol / avgTicket / 10) : 0;
+      total += processingRevenue + txnRevenue;
     });
     return total;
   }, [opportunities]);
@@ -412,8 +417,8 @@ const UnifiedPipelineBoard = ({
               {totalCount} deals
             </span>
             {totalPipelineValue > 0 && (
-              <span className="font-semibold text-foreground">
-                Total: {formatCurrency(totalPipelineValue)}
+              <span className="font-semibold text-foreground bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full">
+                Revenue: {formatCurrency(totalPipelineValue)}/mo
               </span>
             )}
           </div>
