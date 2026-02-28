@@ -121,6 +121,8 @@ interface MerchantForm {
   statement_docs: File[];
   void_check_docs: File[];
   general_docs: File[];
+  gateway_var_docs: File[];
+  gateway_void_docs: File[];
 
   // Agreements
   beneficial_owner_certification: boolean;
@@ -158,6 +160,7 @@ const initialState: MerchantForm = {
   bank_name: "", account_holder_name: "", routing_number: "", account_number: "",
 
   statement_docs: [], void_check_docs: [], general_docs: [],
+  gateway_var_docs: [], gateway_void_docs: [],
 
   beneficial_owner_certification: false, bank_disclosure_ack: false,
   merchant_agreement_accepted: false, account_authorization_accepted: false,
@@ -674,10 +677,10 @@ export default function MerchantApply() {
           console.warn(`${docUploadErrors} of ${allDocs.length} document uploads failed`);
         }
       } else {
-        // Gateway only — upload any supporting documents
+        // Gateway only — upload VAR sheets and voided checks
         const gwDocs = [
-          ...form.statement_docs.map(f => ({ file: f, type: 'Bank Statement' })),
-          ...form.void_check_docs.map(f => ({ file: f, type: 'Voided Check / Bank Confirmation Letter' })),
+          ...form.gateway_var_docs.map(f => ({ file: f, type: 'VAR Sheet' })),
+          ...form.gateway_void_docs.map(f => ({ file: f, type: 'Voided Check / Bank Confirmation Letter' })),
         ];
         for (const doc of gwDocs) {
           const filePath = `applications/${applicationId}/${Date.now()}_${doc.file.name}`;
@@ -846,7 +849,7 @@ export default function MerchantApply() {
                 ) : isGatewayOnly ? (
                   <>
                     {stepIndex === 0 && <GatewayBusinessStep form={form} onChange={handleChange} onBlur={handleBlur} getError={getError} />}
-                    {stepIndex === 1 && <GatewayDocumentsStep form={form} onSubmit={handleSubmit} isSubmitting={isSubmitting} progress={progress} />}
+                    {stepIndex === 1 && <GatewayDocumentsStep form={form} onChange={handleChange} onSubmit={handleSubmit} isSubmitting={isSubmitting} progress={progress} />}
                   </>
                 ) : (
                   <>
@@ -1092,23 +1095,65 @@ function GatewayBusinessStep({ form, onChange, onBlur, getError }: StepProps) {
 
 // ─── Gateway Documents & Submit ───
 
-function GatewayDocumentsStep({ form, onSubmit, isSubmitting, progress }: { form: MerchantForm; onSubmit: () => void; isSubmitting: boolean; progress: number }) {
+function GatewayDocumentsStep({ form, onChange, onSubmit, isSubmitting, progress }: { form: MerchantForm; onChange: <K extends keyof MerchantForm>(field: K, value: MerchantForm[K]) => void; onSubmit: () => void; isSubmitting: boolean; progress: number }) {
   const allComplete = progress === 100;
+  const hasFiles = form.gateway_var_docs.length > 0 || form.gateway_void_docs.length > 0;
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-border bg-muted p-5 space-y-4">
-        <p className="text-sm text-foreground">Please prepare the following documents and send to <a href="mailto:sales@merchanthaus.io" className="text-primary font-medium hover:underline">sales@merchanthaus.io</a>:</p>
-        <ul className="space-y-3 text-sm">
-          <li className="flex items-start gap-3 p-3 rounded-lg bg-card border border-border">
-            <FileText className="w-4 h-4 text-primary mt-0.5" />
-            <div><p className="font-medium text-foreground">VAR Sheet</p><p className="text-xs text-muted-foreground mt-0.5">From your current processor.</p></div>
-          </li>
-          <li className="flex items-start gap-3 p-3 rounded-lg bg-card border border-border">
-            <FileText className="w-4 h-4 text-primary mt-0.5" />
-            <div><p className="font-medium text-foreground">Voided Check or Bank Confirmation Letter</p></div>
-          </li>
-        </ul>
+      {/* VAR Sheet Upload */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <FileText className="w-4 h-4 text-primary" /> VAR Sheet
+        </h3>
+        <p className="text-xs text-muted-foreground">From your current processor. This document shows your current rates and processing details.</p>
+        <label className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-border hover:border-primary/50 bg-card p-4 cursor-pointer transition-all group text-center">
+          <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary" />
+          <span className="text-xs font-medium text-foreground">Upload VAR Sheet</span>
+          <span className="text-[10px] text-muted-foreground">PDF, JPG, PNG, DOC</span>
+          <input type="file" multiple className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.tiff,.tif" onChange={e => {
+            const files = Array.from(e.target.files ?? []);
+            onChange("gateway_var_docs", [...form.gateway_var_docs, ...files] as any);
+          }} />
+        </label>
+        {form.gateway_var_docs.length > 0 && (
+          <div className="rounded-lg border border-border bg-muted p-3 space-y-1">
+            {form.gateway_var_docs.map((f, i) => (
+              <div key={`var-${i}`} className="flex items-center justify-between text-xs">
+                <span className="text-foreground truncate">📄 {f.name} <span className="text-muted-foreground">({(f.size / 1024).toFixed(0)} KB)</span></span>
+                <button type="button" onClick={() => onChange("gateway_var_docs", form.gateway_var_docs.filter((_, j) => j !== i) as any)} className="text-destructive hover:text-destructive/80 ml-2"><Trash2 className="w-3 h-3" /></button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* Voided Check Upload */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <FileText className="w-4 h-4 text-primary" /> Voided Check or Bank Confirmation Letter
+        </h3>
+        <label className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-border hover:border-primary/50 bg-card p-4 cursor-pointer transition-all group text-center">
+          <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary" />
+          <span className="text-xs font-medium text-foreground">Upload Voided Check / Bank Letter</span>
+          <span className="text-[10px] text-muted-foreground">PDF, JPG, PNG, DOC</span>
+          <input type="file" multiple className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.tiff,.tif" onChange={e => {
+            const files = Array.from(e.target.files ?? []);
+            onChange("gateway_void_docs", [...form.gateway_void_docs, ...files] as any);
+          }} />
+        </label>
+        {form.gateway_void_docs.length > 0 && (
+          <div className="rounded-lg border border-border bg-muted p-3 space-y-1">
+            {form.gateway_void_docs.map((f, i) => (
+              <div key={`void-${i}`} className="flex items-center justify-between text-xs">
+                <span className="text-foreground truncate">📄 {f.name} <span className="text-muted-foreground">({(f.size / 1024).toFixed(0)} KB)</span></span>
+                <button type="button" onClick={() => onChange("gateway_void_docs", form.gateway_void_docs.filter((_, j) => j !== i) as any)} className="text-destructive hover:text-destructive/80 ml-2"><Trash2 className="w-3 h-3" /></button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Summary */}
       <div className="rounded-xl border border-border bg-muted p-4">
         <h3 className="text-sm font-semibold text-foreground mb-3">Application Summary</h3>
         <dl className="grid gap-2 text-sm md:grid-cols-2">
@@ -1118,6 +1163,7 @@ function GatewayDocumentsStep({ form, onSubmit, isSubmitting, progress }: { form
           <DataItem label="Phone" value={form.dba_contact_phone} />
           <DataItem label="Username" value={form.username} />
           <DataItem label="Current Processor" value={form.current_processor} />
+          <DataItem label="Documents" value={`${form.gateway_var_docs.length + form.gateway_void_docs.length} file(s) attached`} />
         </dl>
       </div>
       {allComplete ? (
