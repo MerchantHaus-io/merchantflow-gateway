@@ -1,5 +1,5 @@
 import { useState, useRef, useMemo } from "react";
-import { Plus, ChevronsDownUp, ChevronsUpDown } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Opportunity, OpportunityStage, STAGE_CONFIG } from "@/types/opportunity";
 import OpportunityCard from "./OpportunityCard";
 import { cn } from "@/lib/utils";
@@ -45,8 +45,6 @@ const PipelineColumn = ({
   onTouchDragMove,
   onTouchDragEnd,
 }: PipelineColumnProps) => {
-  const [collapsedCards, setCollapsedCards] = useState<Set<string>>(new Set(opportunities.map((o) => o.id)));
-  const [allCollapsed, setAllCollapsed] = useState(true);
   const [isDragOver, setIsDragOver] = useState(false);
   const dragEnterCounter = useRef(0);
   const config = STAGE_CONFIG[stage];
@@ -69,21 +67,6 @@ const PipelineColumn = ({
     });
     return total;
   }, [opportunities]);
-
-  const toggleCardCollapse = (id: string) => {
-    setCollapsedCards((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const toggleAllCards = () => {
-    if (allCollapsed) setCollapsedCards(new Set());
-    else setCollapsedCards(new Set(opportunities.map((o) => o.id)));
-    setAllCollapsed(!allCollapsed);
-  };
 
   return (
     <div
@@ -153,21 +136,6 @@ const PipelineColumn = ({
                   <Plus className="h-3.5 w-3.5" />
                 </Button>
               )}
-              {count > 0 && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                  onClick={toggleAllCards}
-                  title={allCollapsed ? "Expand all" : "Collapse all"}
-                >
-                  {allCollapsed ? (
-                    <ChevronsUpDown className="h-3.5 w-3.5" />
-                  ) : (
-                    <ChevronsDownUp className="h-3.5 w-3.5" />
-                  )}
-                </Button>
-              )}
             </div>
           </div>
           {/* Column monetary value */}
@@ -206,8 +174,6 @@ const PipelineColumn = ({
               onClick={() => onCardClick(opportunity)}
               onAssignmentChange={onAssignmentChange}
               onSlaStatusChange={onSlaStatusChange}
-              isCollapsed={collapsedCards.has(opportunity.id)}
-              onToggleCollapse={() => toggleCardCollapse(opportunity.id)}
               onTouchDragStart={onTouchDragStart}
               onTouchDragMove={onTouchDragMove}
               onTouchDragEnd={onTouchDragEnd}
