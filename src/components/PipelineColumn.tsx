@@ -107,7 +107,7 @@ const PipelineColumn = ({
             )}
             style={{
               color: config.color || "hsl(var(--primary))",
-              backgroundColor: `${config.color || "hsl(var(--primary))"}18`,
+              backgroundColor: `${config.color || "hsl(var(--primary))"}40`,
               borderBottom: `2px solid ${config.color || "hsl(var(--primary))"}60`,
             }}
           >
