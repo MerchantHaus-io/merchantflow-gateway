@@ -72,7 +72,6 @@ const PipelineColumn = ({
     <div
       className={cn(
         "flex-shrink-0 flex flex-col min-h-0 self-stretch overflow-hidden snap-start transition-colors duration-200",
-        "bg-muted/40 rounded-xl border border-border/60 shadow-sm",
         isCompact
           ? "w-[100px] sm:w-[120px] md:w-[150px] lg:w-[180px] xl:w-[210px]"
           : "w-[120px] sm:w-[150px] md:w-[190px] lg:w-[230px] xl:w-[270px]",
@@ -98,49 +97,42 @@ const PipelineColumn = ({
         }
       }}
     >
-      {/* Column Header — colored dot, uppercase stage, count pill, value */}
+      {/* Column Header — pill-style badge */}
       {!hideHeader && (
-        <div className="flex-shrink-0 border-b border-border/80 px-2.5 py-2 bg-muted/30 rounded-t-xl">
-          <div className="flex items-center justify-between gap-1">
-            <div className="flex items-center gap-1.5 min-w-0">
+        <div className="flex-shrink-0 px-1 py-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span
+              className={cn(
+                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold uppercase tracking-wide",
+                isCompact ? "text-[8px]" : "text-[10px] sm:text-xs"
+              )}
+              style={{
+                color: config.color || "hsl(var(--primary))",
+                backgroundColor: `${config.color || "hsl(var(--primary))"}12`,
+                border: `1px solid ${config.color || "hsl(var(--primary))"}25`,
+              }}
+            >
               <span
-                className="w-2.5 h-2.5 rounded-full shrink-0"
+                className="w-2 h-2 rounded-full shrink-0"
                 style={{ backgroundColor: config.color || "hsl(var(--primary))" }}
               />
-              <span
-                className={cn(
-                  "font-bold uppercase tracking-wide text-muted-foreground truncate",
-                  isCompact ? "text-[9px]" : "text-[10px] sm:text-xs"
-                )}
+              {config.label}
+              <span className="font-black">{count}</span>
+            </span>
+            {stage === "application_started" && onAddNew && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-sm"
+                onClick={onAddNew}
               >
-                {config.label}
-              </span>
-            </div>
-            <div className="flex items-center gap-0.5 flex-shrink-0">
-              <span
-                className="font-bold text-xs px-1.5 py-0.5 rounded-full"
-                style={{
-                  color: config.color,
-                  backgroundColor: `${config.color}15`,
-                }}
-              >
-                {count}
-              </span>
-              {stage === "application_started" && onAddNew && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md shadow-sm"
-                  onClick={onAddNew}
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                </Button>
-              )}
-            </div>
+                <Plus className="h-3.5 w-3.5" />
+              </Button>
+            )}
           </div>
           {/* Column monetary value */}
           {!isCompact && columnValue > 0 && (
-            <div className="mt-1 text-[10px] font-semibold text-muted-foreground truncate">
+            <div className="mt-1 px-1 text-[10px] font-semibold text-muted-foreground truncate">
               {formatCurrency(columnValue)}
             </div>
           )}
