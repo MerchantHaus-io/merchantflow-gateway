@@ -17,8 +17,6 @@ interface OpportunityCardProps {
   onClick: () => void;
   onAssignmentChange?: (opportunityId: string, assignedTo: string | null) => void;
   onSlaStatusChange?: (opportunityId: string, slaStatus: string | null) => void;
-  isCollapsed?: boolean;
-  onToggleCollapse?: () => void;
   onTouchDragStart?: (e: React.TouchEvent, opportunity: Opportunity, element: HTMLElement) => void;
   onTouchDragMove?: (e: React.TouchEvent) => void;
   onTouchDragEnd?: (e: React.TouchEvent) => void;
@@ -52,7 +50,6 @@ const OpportunityCard = ({
   onDragEnd,
   onClick,
   onAssignmentChange,
-  isCollapsed = false,
   onTouchDragStart,
   onTouchDragMove,
   onTouchDragEnd,
@@ -208,19 +205,13 @@ const OpportunityCard = ({
         <Trash2 className="h-3.5 w-3.5" />
       </button>
 
-      <div
-        className={cn(
-          "p-2 md:p-2.5 space-y-1",
-          isCollapsed && "py-1"
-        )}
-      >
+      <div className="p-2 md:p-2.5 space-y-1">
         {/* Deal Name + Service Type */}
         <div className="flex items-center justify-between gap-1">
           <h3 className="font-bold text-[10px] md:text-xs lg:text-sm text-foreground truncate leading-tight flex-1 group-hover:text-indigo-600 transition-colors">
             {account?.name || "Unknown"}
           </h3>
           <div className="flex items-center gap-1 flex-shrink-0">
-            {!isCollapsed && (
               <span
                 className={cn(
                   "flex items-center gap-0.5 text-[9px] md:text-[10px] font-bold px-1 py-0.5 rounded border",
@@ -235,28 +226,24 @@ const OpportunityCard = ({
                   <><CreditCard className="h-2.5 w-2.5" /><span className="hidden sm:inline">CC</span></>
                 )}
               </span>
-            )}
           </div>
         </div>
 
         {/* Contact — with user icon */}
-        {!isCollapsed && (
-          <p className="text-[9px] md:text-[11px] text-muted-foreground truncate font-medium flex items-center gap-1">
-            <User className="h-2.5 w-2.5 shrink-0" />
-            {contactName || "No contact"}
-          </p>
-        )}
+        <p className="text-[9px] md:text-[11px] text-muted-foreground truncate font-medium flex items-center gap-1">
+          <User className="h-2.5 w-2.5 shrink-0" />
+          {contactName || "No contact"}
+        </p>
 
         {/* Lead Source */}
-        {!isCollapsed && opportunity.referral_source && (
+        {opportunity.referral_source && (
           <span className="text-[8px] md:text-[9px] text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded truncate inline-block max-w-full border border-border/40">
             📣 {opportunity.referral_source}
           </span>
         )}
 
         {/* Footer Row — value, assignee pill, priority badge */}
-        {!isCollapsed && (
-          <div className="flex items-center justify-between pt-1 border-t border-border/60 gap-1">
+        <div className="flex items-center justify-between pt-1 border-t border-border/60 gap-1">
             {/* Value */}
             <span className="font-bold text-[10px] md:text-xs text-foreground truncate">
               {dealValue > 0 ? formatCurrency(dealValue) : "—"}
@@ -320,8 +307,7 @@ const OpportunityCard = ({
                 </PopoverContent>
               </Popover>
             </div>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );
