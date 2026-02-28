@@ -309,10 +309,16 @@ const FloatingChat: React.FC = () => {
     setOnlineUsers(users);
   }, [user?.id]);
 
-  // Fetch unread DM counts
+  // Fetch unread DM counts (exclude system sender)
+  const SYSTEM_SENDER_ID = '00000000-0000-0000-0000-000000000000';
   const fetchUnreadCounts = useCallback(async () => {
     if (!user) return;
-    const { data, error } = await supabase.from("direct_messages").select("sender_id").eq("receiver_id", user.id).is("read_at", null);
+    const { data, error } = await supabase
+      .from("direct_messages")
+      .select("sender_id")
+      .eq("receiver_id", user.id)
+      .is("read_at", null)
+      .neq("sender_id", SYSTEM_SENDER_ID);
     if (error) { console.error("Failed to fetch unread counts:", error); return; }
 
     const counts: Record<string, number> = {};
@@ -444,12 +450,20 @@ const FloatingChat: React.FC = () => {
     }
   };
 
-  // Initial load
+  // Initial load — also auto-mark system DMs as read
   useEffect(() => {
     if (user) {
       fetchProfiles();
       fetchChannels();
       fetchUnreadCounts();
+      // Mark system DMs as read so they don't inflate the badge
+      supabase
+        .from("direct_messages")
+        .update({ read_at: new Date().toISOString() })
+        .eq("receiver_id", user.id)
+        .eq("sender_id", SYSTEM_SENDER_ID)
+        .is("read_at", null)
+        .then();
     }
   }, [user, fetchProfiles, fetchChannels, fetchUnreadCounts]);
 
