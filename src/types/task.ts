@@ -13,7 +13,7 @@ export interface Task {
   relatedOpportunityId?: string;
   relatedContactId?: string;
   comments?: string;
-  source?: "manual" | "sla";
+  source?: "manual" | "sla" | "notice";
   // Related entity info
   accountName?: string;
   contactName?: string;
@@ -29,5 +29,5 @@ export type TaskInput = {
   relatedOpportunityId?: string;
   relatedContactId?: string;
   comments?: string;
-  source?: "manual" | "sla";
+  source?: "manual" | "sla" | "notice";
 };

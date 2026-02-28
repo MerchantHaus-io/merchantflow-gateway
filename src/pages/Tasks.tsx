@@ -743,6 +743,7 @@ const Tasks = () => {
                               <SortableTableHead field="account" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Account</SortableTableHead>
                               <SortableTableHead field="assignee" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Assignee</SortableTableHead>
                               <SortableTableHead field="status" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Status</SortableTableHead>
+                              <SortableTableHead field="createdAt" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Created</SortableTableHead>
                               <SortableTableHead field="dueAt" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Due</SortableTableHead>
                               {isAdmin && <TableHead className="w-12"></TableHead>}
                             </TableRow>
@@ -795,6 +796,9 @@ const Tasks = () => {
                                   <div className="flex items-center gap-1.5">
                                     <UserRound className="h-3.5 w-3.5 text-muted-foreground" />
                                     <span className="text-sm">{task.assignee || 'Unassigned'}</span>
+                                    {task.source === 'notice' && (
+                                      <Badge variant="outline" className="text-[10px] h-4 px-1.5 border-purple-500/30 text-purple-500 bg-purple-500/10">Notice</Badge>
+                                    )}
                                   </div>
                                 </TableCell>
                                 <TableCell onClick={(e) => e.stopPropagation()}>
@@ -815,6 +819,11 @@ const Tasks = () => {
                                       ))}
                                     </SelectContent>
                                   </Select>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                    {task.createdAt ? format(new Date(task.createdAt), 'MMM d, h:mm a') : '-'}
+                                  </span>
                                 </TableCell>
                                 <TableCell>
                                   <div className={cn(
@@ -855,7 +864,7 @@ const Tasks = () => {
                             })}
                             {paginatedManual.length === 0 && (
                               <TableRow>
-                                <TableCell colSpan={isAdmin ? 8 : 7} className="h-16 text-center text-muted-foreground">No user-created tasks found.</TableCell>
+                                <TableCell colSpan={isAdmin ? 9 : 8} className="h-16 text-center text-muted-foreground">No user-created tasks found.</TableCell>
                               </TableRow>
                             )}
                           </TableBody>
@@ -901,6 +910,7 @@ const Tasks = () => {
                               <SortableTableHead field="account" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Account</SortableTableHead>
                               <SortableTableHead field="assignee" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Assignee</SortableTableHead>
                               <SortableTableHead field="status" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Status</SortableTableHead>
+                              <SortableTableHead field="createdAt" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Created</SortableTableHead>
                               <SortableTableHead field="dueAt" currentSortField={sortKey} sortDirection={sortDirection} onSort={handleSort}>Due</SortableTableHead>
                               {isAdmin && <TableHead className="w-12"></TableHead>}
                             </TableRow>
@@ -975,6 +985,11 @@ const Tasks = () => {
                                   </Select>
                                 </TableCell>
                                 <TableCell>
+                                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                    {task.createdAt ? format(new Date(task.createdAt), 'MMM d, h:mm a') : '-'}
+                                  </span>
+                                </TableCell>
+                                <TableCell>
                                   <div className={cn(
                                     "flex items-center gap-1 text-sm",
                                     dueStatus === 'overdue' && "text-red-500 font-medium",
@@ -1013,7 +1028,7 @@ const Tasks = () => {
                             })}
                             {paginatedAuto.length === 0 && (
                               <TableRow>
-                                <TableCell colSpan={isAdmin ? 8 : 7} className="h-16 text-center text-muted-foreground">No auto tasks found.</TableCell>
+                                <TableCell colSpan={isAdmin ? 9 : 8} className="h-16 text-center text-muted-foreground">No auto tasks found.</TableCell>
                               </TableRow>
                             )}
                           </TableBody>
