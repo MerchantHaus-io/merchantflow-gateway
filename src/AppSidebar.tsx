@@ -1,4 +1,4 @@
-import { LayoutDashboard, Building2, Users, FileText, BarChart3, Settings, Plus, ChevronLeft, ChevronRight, BookOpen, Wrench, ChevronDown, Calculator, Activity, User, LogOut, ClipboardList, ListChecks, FileSpreadsheet, Trash2, Sparkles, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Building2, Users, FileText, BarChart3, Settings, Plus, ChevronLeft, ChevronRight, BookOpen, Wrench, ChevronDown, Calculator, Activity, User, LogOut, ClipboardList, ListChecks, FileSpreadsheet, Trash2, Sparkles, Cloud, type LucideIcon } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter, useSidebar, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
@@ -96,6 +96,11 @@ const navMain: NavItem[] = [
         url: "https://statusgator.com/services/nmi",
         icon: Activity,
         external: true,
+      },
+      {
+        title: "Netlify",
+        url: "/tools/netlify",
+        icon: Cloud,
       },
     ],
   },
