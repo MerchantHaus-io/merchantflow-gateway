@@ -106,9 +106,9 @@ const PipelineColumn = ({
               isCompact ? "text-[8px]" : "text-[10px] sm:text-xs"
             )}
             style={{
-              color: config.color || "hsl(var(--primary))",
-              backgroundColor: `${config.color || "hsl(var(--primary))"}40`,
-              borderBottom: `2px solid ${config.color || "hsl(var(--primary))"}60`,
+              color: "#FFFFFF",
+              backgroundColor: config.color || "hsl(var(--primary))",
+              borderBottom: `2px solid ${config.color || "hsl(var(--primary))"}`,
             }}
           >
             <span className="inline-flex items-center gap-1.5 truncate">
