@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import UnifiedPipelineBoard from "@/components/UnifiedPipelineBoard";
 import NewApplicationModal, { ApplicationFormData } from "@/components/NewApplicationModal";
 import { AppLayout } from "@/components/AppLayout";
@@ -176,10 +177,20 @@ const Index = () => {
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
   const [splashType, setSplashType] = useState<"1up" | "level-up" | null>(null);
   const [isFocusMode, setIsFocusMode] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
     toast
   } = useToast();
   const { ensureSlaTask } = useTasks();
+
+  // Activate focus mode from URL param (e.g. header nav)
+  useEffect(() => {
+    if (searchParams.get('focus') === 'true') {
+      setIsFocusMode(true);
+      searchParams.delete('focus');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
   
   // Get current user's display name for filtering
   const currentUserDisplayName = EMAIL_TO_USER[user?.email?.toLowerCase() || ''] || user?.email?.split('@')[0] || '';
