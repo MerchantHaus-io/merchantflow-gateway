@@ -248,7 +248,6 @@ export const STAGE_CONFIG: Record<
 
 // Processing Pipeline stages (full flow)
 export const PROCESSING_PIPELINE_STAGES: OpportunityStage[] = [
-  'application_started',
   'discovery',
   'qualified',
   'application_prep',
@@ -259,7 +258,6 @@ export const PROCESSING_PIPELINE_STAGES: OpportunityStage[] = [
 
 // Gateway Only Pipeline stages (simplified flow)
 export const GATEWAY_ONLY_PIPELINE_STAGES: OpportunityStage[] = [
-  'application_started',
   'discovery',
   'qualified',
   'gateway_submitted',
@@ -271,7 +269,6 @@ export const GATEWAY_ONLY_PIPELINE_STAGES: OpportunityStage[] = [
 
 // Legacy: All stages for backwards compatibility
 export const PIPELINE_STAGES: OpportunityStage[] = [
-  'application_started',
   'discovery',
   'qualified',
   'application_prep',
@@ -286,7 +283,6 @@ export const PIPELINE_STAGES: OpportunityStage[] = [
 
 // Unified single-row pipeline (merged, deduplicated, logical order)
 export const UNIFIED_PIPELINE_STAGES: OpportunityStage[] = [
-  'application_started',
   'discovery',
   'qualified',
   'application_prep',

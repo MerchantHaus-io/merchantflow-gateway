@@ -47,9 +47,10 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet"; // kept for potential future use
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -134,6 +135,9 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [profileName, setProfileName] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
+  // focusOpen state removed — Focus Mode now navigates to pipeline
+
+  // Focus tasks count removed — Focus Mode now triggers pipeline view
 
   useEffect(() => {
     const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
@@ -290,6 +294,26 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                 </NavigationMenuItem>
               );
             })}
+            {/* Focus Mode - inline in nav */}
+            <NavigationMenuItem>
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/?focus=true')}
+                className="bg-transparent hover:bg-white/10 flex items-center gap-2 h-10 px-4 relative group"
+              >
+                <Focus className="h-4 w-4 text-white" />
+                <span
+                  className="font-bold text-sm bg-clip-text text-transparent"
+                  style={{
+                    backgroundImage: 'linear-gradient(90deg, #f97316, #facc15, #22d3ee, #a78bfa, #f97316)',
+                    backgroundSize: '200% 100%',
+                    animation: 'focusGradient 3s linear infinite',
+                  }}
+                >
+                  Focus Mode
+                </span>
+              </Button>
+            </NavigationMenuItem>
           </NavigationMenuList>
         </NavigationMenu>
 
@@ -322,6 +346,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
 
           <NotificationBell />
 

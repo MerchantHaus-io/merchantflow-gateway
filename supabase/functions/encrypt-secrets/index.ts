@@ -42,6 +42,24 @@ async function encryptValue(
   return `${toHex(iv.buffer)}:${toHex(encrypted)}`;
 }
 
+// ── Validation helpers ────────────────────────────────────────────────
+
+function isValidUUID(str: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+}
+
+function isValidSSN(str: string): boolean {
+  return /^\d{9}$/.test(str);
+}
+
+function isValidRoutingNumber(str: string): boolean {
+  return /^\d{9}$/.test(str);
+}
+
+function isValidAccountNumber(str: string): boolean {
+  return /^\d{4,17}$/.test(str);
+}
+
 // ── Main handler ─────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
@@ -53,14 +71,14 @@ Deno.serve(async (req) => {
     const { application_id, ssn_full, routing_number, account_number } =
       await req.json();
 
-    if (!application_id) {
+    // --- Input validation ---
+    if (!application_id || typeof application_id !== "string" || !isValidUUID(application_id)) {
       return new Response(
-        JSON.stringify({ error: "application_id is required" }),
+        JSON.stringify({ error: "Valid application_id is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // At least one sensitive value must be provided
     if (!ssn_full && !routing_number && !account_number) {
       return new Response(
         JSON.stringify({ error: "No sensitive values provided" }),
@@ -68,6 +86,70 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Format validation
+    if (ssn_full && !isValidSSN(ssn_full)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid SSN format" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (routing_number && !isValidRoutingNumber(routing_number)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid routing number format" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (account_number && !isValidAccountNumber(account_number)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid account number format" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Use service role client
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // --- Verify application exists and is recent (< 24 hours) ---
+    const { data: app, error: appErr } = await supabase
+      .from("applications")
+      .select("created_at, status")
+      .eq("id", application_id)
+      .single();
+
+    if (appErr || !app) {
+      return new Response(
+        JSON.stringify({ error: "Application not found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const ageMs = Date.now() - new Date(app.created_at).getTime();
+    const MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
+    if (ageMs > MAX_AGE_MS) {
+      return new Response(
+        JSON.stringify({ error: "Application submission window expired" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // --- Check for duplicate submissions ---
+    const { data: existing } = await supabase
+      .from("application_secrets")
+      .select("application_id")
+      .eq("application_id", application_id)
+      .single();
+
+    if (existing) {
+      return new Response(
+        JSON.stringify({ error: "Secrets already stored for this application" }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // --- Encrypt and store ---
     const encKey = await getEncryptionKey();
 
     const ssnEnc = ssn_full ? await encryptValue(ssn_full, encKey) : null;
@@ -78,22 +160,16 @@ Deno.serve(async (req) => {
       ? await encryptValue(account_number, encKey)
       : null;
 
-    // Use service role to write to application_secrets
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const clientIp = req.headers.get("x-forwarded-for") || "unknown";
+    console.log(`Encrypt request: app_id=${application_id}, ip=${clientIp}, has_ssn=${!!ssn_full}`);
 
-    const { error } = await supabase.from("application_secrets").upsert(
-      {
-        application_id,
-        ssn_enc: ssnEnc,
-        routing_enc: routingEnc,
-        account_enc: accountEnc,
-        key_version: 1,
-      },
-      { onConflict: "application_id" }
-    );
+    const { error } = await supabase.from("application_secrets").insert({
+      application_id,
+      ssn_enc: ssnEnc,
+      routing_enc: routingEnc,
+      account_enc: accountEnc,
+      key_version: 1,
+    });
 
     if (error) {
       console.error("Failed to store encrypted secrets:", error);
