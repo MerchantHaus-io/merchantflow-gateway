@@ -360,63 +360,112 @@ export default function WebSubmissions() {
         .eq("application_id", app.id)
         .maybeSingle();
 
-      const m = merchantData;
-      const wizardFormState: Record<string, unknown> = {
-        dba_name: m?.dba_name || app.dba_name || app.company_name || "",
-        product_description: m?.product_description || app.products || "",
-        nature_of_business: m?.nature_of_business || app.nature_of_business || "",
-        dba_contact_first_name: m?.dba_contact_first_name || firstName,
-        dba_contact_last_name: m?.dba_contact_last_name || lastName,
-        dba_contact_phone: m?.dba_contact_phone || app.phone || "",
-        dba_contact_email: m?.dba_contact_email || app.email || "",
-        dba_address_line1: m?.dba_address_line1 || app.address || "",
-        dba_address_line2: m?.dba_address_line2 || app.address2 || "",
-        dba_city: m?.dba_city || app.city || "",
-        dba_state: m?.dba_state || app.state || "",
-        dba_zip: m?.dba_zip || app.zip || "",
-        legal_entity_name: m?.legal_entity_name || app.legal_name || app.company_name || "",
-        federal_tax_id: m?.federal_tax_id || app.federal_tax_id || "",
-        ownership_type: m?.ownership_type || app.business_structure || "",
-        business_formation_date: m?.business_formation_date || app.date_established || "",
-        state_incorporated: m?.state_incorporated || app.state_of_incorporation || "",
-        legal_address_line1: m?.legal_address_line1 || app.address || "",
-        legal_address_line2: m?.legal_address_line2 || app.address2 || "",
-        legal_city: m?.legal_city || app.city || "",
-        legal_state: m?.legal_state || app.state || "",
-        legal_zip: m?.legal_zip || app.zip || "",
-        monthly_volume: m?.monthly_volume || app.monthly_volume || "",
-        average_transaction: m?.average_transaction || app.avg_ticket || "",
-        high_ticket: m?.high_ticket || app.high_ticket || "",
-        percent_swiped: m?.percent_swiped || app.in_person_percent || "",
-        percent_keyed: m?.percent_keyed || app.keyed_percent || "",
-        percent_moto: m?.percent_moto || "",
-        percent_ecommerce: m?.percent_ecommerce || app.ecommerce_percent || "",
-        percent_b2b: m?.percent_b2b || "",
-        percent_b2c: m?.percent_b2c || "",
-        sic_mcc_code: m?.sic_mcc_code || "",
-        website_url: m?.website_url || app.website || "",
-        documents: [],
-        notes: app.notes || app.message || "",
-      };
+      // Check for uploaded documents
+      const { data: appDocFiles } = await supabase.storage
+        .from('opportunity-documents')
+        .list(`applications/${app.id}`);
+      const hasUploadedDocs = (appDocFiles?.length ?? 0) > 0;
 
-      const requiredFields = [
-        "dba_name", "product_description", "nature_of_business",
-        "dba_contact_first_name", "dba_contact_last_name",
-        "dba_contact_phone", "dba_contact_email",
-        "dba_address_line1", "dba_city", "dba_state", "dba_zip",
-        "legal_entity_name", "federal_tax_id", "ownership_type",
-        "business_formation_date", "state_incorporated",
-        "legal_address_line1", "legal_city", "legal_state", "legal_zip",
-        "monthly_volume", "average_transaction", "high_ticket",
-        "percent_swiped", "percent_keyed", "percent_moto", "percent_ecommerce",
-        "percent_b2c", "percent_b2b"
-      ];
-      const filled = requiredFields.filter(f => {
-        const v = wizardFormState[f];
-        return typeof v === "string" ? v.trim().length > 0 : Boolean(v);
-      }).length;
-      const totalRequired = requiredFields.length + 1; // +1 for documents
-      const progress = Math.round((filled / totalRequired) * 100);
+      const m = merchantData;
+
+      let wizardFormState: Record<string, unknown>;
+      let progress: number;
+
+      if (isGatewayOnly) {
+        // Gateway-only wizard track — simpler required fields
+        const usernameFromNotes = app.notes?.match(/Username:\s*([^.]+)/)?.[1]?.trim() || "";
+        const processorFromNotes = app.notes?.match(/Processor:\s*([^.]+)/)?.[1]?.trim() || "";
+
+        wizardFormState = {
+          dba_name: app.dba_name || app.company_name || "",
+          dba_contact_first_name: firstName,
+          dba_contact_last_name: lastName,
+          dba_contact_phone: app.phone || "",
+          dba_contact_email: app.email || "",
+          dba_address_line1: app.address || "",
+          dba_address_line2: app.address2 || "",
+          dba_city: app.city || "",
+          dba_state: app.state || "",
+          dba_zip: app.zip || "",
+          username: usernameFromNotes,
+          current_processor: processorFromNotes,
+          documents: [],
+          notes: app.notes || app.message || "",
+        };
+
+        const gatewayRequired = [
+          "dba_name", "dba_contact_first_name", "dba_contact_last_name",
+          "dba_contact_phone", "dba_contact_email",
+          "dba_address_line1", "dba_city", "dba_state", "dba_zip",
+          "username", "current_processor",
+        ];
+        const filled = gatewayRequired.filter(f => {
+          const v = wizardFormState[f];
+          return typeof v === "string" ? v.trim().length > 0 : Boolean(v);
+        }).length;
+        // +1 for documents
+        const totalRequired = gatewayRequired.length + 1;
+        const docScore = hasUploadedDocs ? 1 : 0;
+        progress = Math.round(((filled + docScore) / totalRequired) * 100);
+      } else {
+        // Processing wizard track — full required fields
+        wizardFormState = {
+          dba_name: m?.dba_name || app.dba_name || app.company_name || "",
+          product_description: m?.product_description || app.products || "",
+          nature_of_business: m?.nature_of_business || app.nature_of_business || "",
+          dba_contact_first_name: m?.dba_contact_first_name || firstName,
+          dba_contact_last_name: m?.dba_contact_last_name || lastName,
+          dba_contact_phone: m?.dba_contact_phone || app.phone || "",
+          dba_contact_email: m?.dba_contact_email || app.email || "",
+          dba_address_line1: m?.dba_address_line1 || app.address || "",
+          dba_address_line2: m?.dba_address_line2 || app.address2 || "",
+          dba_city: m?.dba_city || app.city || "",
+          dba_state: m?.dba_state || app.state || "",
+          dba_zip: m?.dba_zip || app.zip || "",
+          legal_entity_name: m?.legal_entity_name || app.legal_name || app.company_name || "",
+          federal_tax_id: m?.federal_tax_id || app.federal_tax_id || "",
+          ownership_type: m?.ownership_type || app.business_structure || "",
+          business_formation_date: m?.business_formation_date || app.date_established || "",
+          state_incorporated: m?.state_incorporated || app.state_of_incorporation || "",
+          legal_address_line1: m?.legal_address_line1 || app.address || "",
+          legal_address_line2: m?.legal_address_line2 || app.address2 || "",
+          legal_city: m?.legal_city || app.city || "",
+          legal_state: m?.legal_state || app.state || "",
+          legal_zip: m?.legal_zip || app.zip || "",
+          monthly_volume: m?.monthly_volume || app.monthly_volume || "",
+          average_transaction: m?.average_transaction || app.avg_ticket || "",
+          high_ticket: m?.high_ticket || app.high_ticket || "",
+          percent_swiped: m?.percent_swiped || app.in_person_percent || "",
+          percent_keyed: m?.percent_keyed || app.keyed_percent || "",
+          percent_moto: m?.percent_moto || "",
+          percent_ecommerce: m?.percent_ecommerce || app.ecommerce_percent || "",
+          percent_b2b: m?.percent_b2b || "",
+          percent_b2c: m?.percent_b2c || "",
+          sic_mcc_code: m?.sic_mcc_code || "",
+          website_url: m?.website_url || app.website || "",
+          documents: [],
+          notes: app.notes || app.message || "",
+        };
+
+        const requiredFields = [
+          "dba_name", "product_description", "nature_of_business",
+          "dba_contact_first_name", "dba_contact_last_name",
+          "dba_contact_phone", "dba_contact_email",
+          "dba_address_line1", "dba_city", "dba_state", "dba_zip",
+          "legal_entity_name", "federal_tax_id", "ownership_type",
+          "business_formation_date", "state_incorporated",
+          "legal_address_line1", "legal_city", "legal_state", "legal_zip",
+          "monthly_volume", "average_transaction", "high_ticket",
+          "percent_swiped", "percent_keyed", "percent_moto", "percent_ecommerce",
+          "percent_b2c", "percent_b2b"
+        ];
+        const filled = requiredFields.filter(f => {
+          const v = wizardFormState[f];
+          return typeof v === "string" ? v.trim().length > 0 : Boolean(v);
+        }).length;
+        const totalRequired = requiredFields.length + 1; // +1 for documents
+        progress = Math.round((filled / totalRequired) * 100);
+      }
 
       // 100% complete → Qualified + assigned to Yaseen; otherwise → Discovery
       const initialStage = progress >= 100 ? "qualified" : "discovery";
@@ -520,6 +569,21 @@ export default function WebSubmissions() {
           .from('opportunity-documents')
           .list(`applications/${app.id}`);
 
+        // Fetch audit trail for accurate document type mapping
+        const { data: auditDocs } = await supabase
+          .from('application_documents' as any)
+          .select('file_path, document_type, file_name')
+          .eq('application_id', app.id);
+
+        const auditMap = new Map<string, string>();
+        if (auditDocs) {
+          for (const ad of auditDocs as any[]) {
+            // Map by filename from file_path
+            const fileName = (ad.file_path as string).split('/').pop() || '';
+            auditMap.set(fileName, ad.document_type || 'Unassigned');
+          }
+        }
+
         if (storedFiles && storedFiles.length > 0) {
           for (const file of storedFiles) {
             const oldPath = `applications/${app.id}/${file.name}`;
@@ -531,6 +595,12 @@ export default function WebSubmissions() {
               .copy(oldPath, newPath);
 
             if (!copyErr) {
+              // Use audit trail for document type, fallback to inference
+              const docType = auditMap.get(file.name)
+                || (file.name.toLowerCase().includes('var') ? 'VAR Sheet'
+                  : file.name.toLowerCase().includes('void') ? 'Voided Check / Bank Confirmation Letter'
+                  : 'Unassigned');
+
               // Create document record linked to opportunity
               await supabase.from("documents").insert({
                 opportunity_id: opportunity.id,
@@ -539,7 +609,7 @@ export default function WebSubmissions() {
                 content_type: file.metadata?.mimetype || null,
                 file_size: file.metadata?.size || null,
                 uploaded_by: app.email,
-                document_type: file.name.toLowerCase().includes('void') ? 'Voided Check / Bank Confirmation Letter' : 'Bank Statement',
+                document_type: docType,
               });
 
               // Remove old file
