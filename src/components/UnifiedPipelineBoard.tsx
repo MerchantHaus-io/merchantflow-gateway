@@ -412,77 +412,68 @@ const UnifiedPipelineBoard = ({
 
   return (
     <>
-      {/* Sticky toolbar — logo, Total Pipeline Value, Focus Mode toggle, Add Deal */}
-      <div className="flex-shrink-0 sticky top-0 z-20 px-4 py-2.5 flex items-center justify-between border-b border-border/60 bg-card/95 backdrop-blur-sm">
-        <div className="flex items-center gap-4">
-          <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="font-medium bg-muted px-2 py-0.5 rounded-full">
-              {totalCount} deals
-            </span>
-            {totalPipelineValue > 0 && (
-              <span className="font-semibold text-foreground bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full">
-                Revenue: {formatCurrency(totalPipelineValue)}/mo
-              </span>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5">
-          {currentUser && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsFocusMode(true)}
-                  className="h-8 px-3 gap-1.5 text-xs font-medium"
-                >
-                  <Focus className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Focus Mode</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Show only your deals in focus mode</TooltipContent>
-            </Tooltip>
-          )}
+      {/* Inline toolbar — compact action row */}
+      <div className="flex-shrink-0 px-4 py-1.5 flex items-center justify-end gap-1.5">
+        {totalPipelineValue > 0 && (
+          <span className="hidden sm:inline-flex text-xs font-semibold text-foreground bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full mr-auto">
+            Revenue: {formatCurrency(totalPipelineValue)}/mo
+          </span>
+        )}
+        {currentUser && (
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className="h-8 px-2 gap-1 text-xs"
+                onClick={() => setIsFocusMode(true)}
+                className="h-7 px-2.5 gap-1 text-xs font-medium"
               >
-                <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
-                <span className="hidden sm:inline">{isRefreshing ? "Refreshing..." : "Refresh"}</span>
+                <Focus className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Focus Mode</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Refresh pipeline data</TooltipContent>
+            <TooltipContent>Show only your deals in focus mode</TooltipContent>
           </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsCompact(!isCompact)}
-                className="h-8 px-2 gap-1 text-xs border border-border rounded-md"
-              >
-                {isCompact ? <Maximize2 className="h-3.5 w-3.5" /> : <Minimize2 className="h-3.5 w-3.5" />}
-                <span className="hidden sm:inline">{isCompact ? "Expand" : "Compact"}</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>{isCompact ? "Switch to regular view" : "Switch to compact view"}</TooltipContent>
-          </Tooltip>
-          {onAddNew && (
+        )}
+        <Tooltip>
+          <TooltipTrigger asChild>
             <Button
+              variant="ghost"
               size="sm"
-              onClick={onAddNew}
-              className="h-8 px-3 gap-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="h-7 px-2 gap-1 text-xs"
             >
-              <Plus className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Add Deal</span>
+              <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
+              <span className="hidden sm:inline">{isRefreshing ? "Refreshing..." : "Refresh"}</span>
             </Button>
-          )}
-        </div>
+          </TooltipTrigger>
+          <TooltipContent>Refresh pipeline data</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsCompact(!isCompact)}
+              className="h-7 px-2 gap-1 text-xs border border-border rounded-md"
+            >
+              {isCompact ? <Maximize2 className="h-3.5 w-3.5" /> : <Minimize2 className="h-3.5 w-3.5" />}
+              <span className="hidden sm:inline">{isCompact ? "Expand" : "Compact"}</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{isCompact ? "Switch to regular view" : "Switch to compact view"}</TooltipContent>
+        </Tooltip>
+        {onAddNew && (
+          <Button
+            size="sm"
+            onClick={onAddNew}
+            className="h-7 px-3 gap-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Add Deal</span>
+          </Button>
+        )}
       </div>
 
       {/* Kanban board — horizontal scroll, no scrollbar */}
