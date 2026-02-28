@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -91,36 +91,18 @@ const Apply = () => {
     setErrorMessage('');
   };
 
-  // Success state
-  if (formStatus === 'success') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md text-center">
-          <CardHeader>
-            <div className="flex justify-center mb-4">
-              <CheckCircle2 className="h-16 w-16 text-green-500" />
-            </div>
-            <CardTitle className="text-2xl">Application Submitted!</CardTitle>
-            <CardDescription className="text-base">
-              Thank you for your interest. We've received your application and
-              will be in touch within 1-2 business days.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button onClick={resetForm} variant="outline" className="w-full">
-              Submit Another Application
-            </Button>
-            <Link to="/auth">
-              <Button variant="ghost" className="w-full">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Login
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // Auto-redirect after success
+  const [countdown, setCountdown] = useState(5);
+
+  useEffect(() => {
+    if (formStatus !== 'success') return;
+    if (countdown <= 0) {
+      window.location.href = 'https://merchanthaus.io';
+      return;
+    }
+    const timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [formStatus, countdown]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -285,6 +267,36 @@ const Apply = () => {
           </form>
         </CardContent>
       </Card>
+      {/* Success Popup Overlay */}
+      {formStatus === 'success' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <Card className="w-full max-w-md text-center animate-in zoom-in-95 fade-in duration-300">
+            <CardHeader>
+              <div className="flex justify-center mb-4">
+                <CheckCircle2 className="h-16 w-16 text-green-500" />
+              </div>
+              <CardTitle className="text-2xl">Application Submitted!</CardTitle>
+              <CardDescription className="text-base">
+                Thank you for your interest. We've received your application and
+                will be in touch within 1-2 business days.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Redirecting to merchanthaus.io in{' '}
+                <span className="font-semibold text-foreground">{countdown}s</span>…
+              </p>
+              <Button
+                variant="outline"
+                className="mt-4 w-full"
+                onClick={() => (window.location.href = 'https://merchanthaus.io')}
+              >
+                Go now
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };
