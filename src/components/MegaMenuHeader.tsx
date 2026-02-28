@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Link, NavLink as RouterNavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -28,14 +28,6 @@ import {
   Maximize,
   Minimize,
   Focus,
-  CheckCircle2,
-  CircleDot,
-  Clock,
-  ArrowUp,
-  ArrowDown,
-  Minus,
-  CalendarClock,
-  AlertTriangle,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -55,21 +47,17 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useTasks } from "@/contexts/TasksContext";
 import { NotificationBell } from "@/components/NotificationBell";
 import { EMAIL_TO_USER } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-import { format, isPast, isToday, startOfDay } from "date-fns";
 import sidebarIcon from "@/assets/sidebar-icon.webp";
 
 interface NavItem {
@@ -141,28 +129,14 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
   const { user, signOut } = useAuth();
   const { isAdmin } = useUserRole();
   const { theme, toggleTheme } = useTheme();
-  const { tasks, updateTaskStatus } = useTasks();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [profileName, setProfileName] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
-  const [focusOpen, setFocusOpen] = useState(false);
+  // focusOpen state removed — Focus Mode now navigates to pipeline
 
-  // Open user-created tasks (not SLA/auto)
-  const focusTasks = useMemo(() => 
-    tasks.filter(t => t.source !== 'sla' && t.status !== 'done')
-      .sort((a, b) => {
-        // Overdue first, then by priority
-        const priorityOrder = { high: 0, medium: 1, low: 2 };
-        const aOverdue = a.dueAt && isPast(startOfDay(new Date(a.dueAt))) && !isToday(new Date(a.dueAt));
-        const bOverdue = b.dueAt && isPast(startOfDay(new Date(b.dueAt))) && !isToday(new Date(b.dueAt));
-        if (aOverdue && !bOverdue) return -1;
-        if (!aOverdue && bOverdue) return 1;
-        return (priorityOrder[a.priority || 'medium'] - priorityOrder[b.priority || 'medium']);
-      }),
-    [tasks]
-  );
+  // Focus tasks count removed — Focus Mode now triggers pipeline view
 
   useEffect(() => {
     const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
@@ -323,12 +297,12 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
             <NavigationMenuItem>
               <Button
                 variant="ghost"
-                onClick={() => setFocusOpen(true)}
+                onClick={() => navigate('/?focus=true')}
                 className="bg-transparent hover:bg-white/10 flex items-center gap-2 h-10 px-4 relative group"
               >
                 <Focus className="h-4 w-4 text-white" />
                 <span
-                  className="font-bold text-sm bg-clip-text text-transparent animate-pulse"
+                  className="font-bold text-sm bg-clip-text text-transparent"
                   style={{
                     backgroundImage: 'linear-gradient(90deg, #f97316, #facc15, #22d3ee, #a78bfa, #f97316)',
                     backgroundSize: '200% 100%',
@@ -337,11 +311,6 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                 >
                   Focus Mode
                 </span>
-                {focusTasks.length > 0 && (
-                  <Badge variant="secondary" className="h-5 min-w-[20px] text-[10px] font-bold px-1.5 bg-primary text-primary-foreground">
-                    {focusTasks.length}
-                  </Badge>
-                )}
               </Button>
             </NavigationMenuItem>
           </NavigationMenuList>
@@ -377,85 +346,6 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Focus Mode Sheet (triggered from nav) */}
-          <Sheet open={focusOpen} onOpenChange={setFocusOpen}>
-            <SheetContent side="right" className="w-[400px] sm:w-[440px] p-0">
-              <SheetHeader className="px-6 py-4 border-b">
-                <SheetTitle className="flex items-center gap-2 text-base">
-                  <Focus className="h-5 w-5 text-primary" />
-                  Focus Mode
-                  <Badge variant="secondary" className="text-xs ml-auto">{focusTasks.length} open</Badge>
-                </SheetTitle>
-              </SheetHeader>
-              <ScrollArea className="h-[calc(100vh-80px)]">
-                <div className="p-4 space-y-2">
-                  {focusTasks.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-2">
-                      <CheckCircle2 className="h-10 w-10 text-emerald-500/50" />
-                      <p className="text-sm font-medium">All caught up!</p>
-                      <p className="text-xs">No open tasks remaining.</p>
-                    </div>
-                  ) : (
-                    focusTasks.map((task) => {
-                      const isOverdue = task.dueAt && isPast(startOfDay(new Date(task.dueAt))) && !isToday(new Date(task.dueAt));
-                      const isDueToday = task.dueAt && isToday(new Date(task.dueAt));
-                      const priorityIcons = { high: ArrowUp, medium: Minus, low: ArrowDown };
-                      const priorityColors = { high: "text-red-500", medium: "text-amber-500", low: "text-blue-500" };
-                      const PIcon = priorityIcons[task.priority || 'medium'];
-
-                      return (
-                        <div
-                          key={task.id}
-                          className={cn(
-                            "rounded-lg border p-3 space-y-2 transition-colors",
-                            isOverdue && "border-red-500/40 bg-red-500/5",
-                            isDueToday && "border-orange-500/40 bg-orange-500/5",
-                            !isOverdue && !isDueToday && "hover:bg-muted/50"
-                          )}
-                        >
-                          <div className="flex items-start gap-2">
-                            <button
-                              onClick={() => updateTaskStatus(task.id, 'done')}
-                              className="mt-0.5 flex-shrink-0 h-4 w-4 rounded-full border-2 border-muted-foreground/40 hover:border-emerald-500 hover:bg-emerald-500/20 transition-colors"
-                              title="Mark as done"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5">
-                                {isOverdue && <AlertTriangle className="h-3 w-3 text-red-500 flex-shrink-0" />}
-                                <p className="text-sm font-medium leading-tight">{task.title}</p>
-                              </div>
-                              {task.description && (
-                                <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{task.description}</p>
-                              )}
-                            </div>
-                            <PIcon className={cn("h-3.5 w-3.5 flex-shrink-0 mt-0.5", priorityColors[task.priority || 'medium'])} />
-                          </div>
-                          <div className="flex items-center gap-3 text-[11px] text-muted-foreground pl-6">
-                            {task.source === 'notice' && (
-                              <Badge variant="outline" className="text-[9px] h-4 px-1 border-purple-500/30 text-purple-500 bg-purple-500/10">Notice</Badge>
-                            )}
-                            <Badge variant="outline" className={cn("text-[9px] h-4 px-1", task.status === 'open' ? "border-blue-500/30 text-blue-500" : "border-amber-500/30 text-amber-500")}>
-                              {task.status === 'open' ? 'Open' : 'In Progress'}
-                            </Badge>
-                            {task.assignee && <span>{task.assignee}</span>}
-                            {task.dueAt && (
-                              <span className={cn(
-                                isOverdue && "text-red-500 font-medium",
-                                isDueToday && "text-orange-500 font-medium"
-                              )}>
-                                {isOverdue ? 'Overdue' : isDueToday ? 'Due today' : format(new Date(task.dueAt), 'MMM d')}
-                              </span>
-                            )}
-                            {task.accountName && <span className="truncate">{task.accountName}</span>}
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </ScrollArea>
-            </SheetContent>
-          </Sheet>
 
           <NotificationBell />
 
