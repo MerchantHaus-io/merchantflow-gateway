@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
+import { QueryErrorCard } from "@/components/QueryErrorCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { STAGE_CONFIG, TEAM_MEMBERS, OpportunityStage } from "@/types/opportunity";
@@ -87,6 +88,7 @@ const Reports = () => {
   const [opportunities, setOpportunities] = useState<OpportunityData[]>([]);
   const [activities, setActivities] = useState<ActivityData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [filterBy, setFilterBy] = useState<'created_at' | 'updated_at'>('created_at');
   const [modalState, setModalState] = useState<ModalState>({
@@ -121,18 +123,24 @@ const Reports = () => {
     });
   }, [tasks, dateRange, filterBy]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const [oppRes, actRes] = await Promise.all([
-        supabase.from('opportunities').select('id, stage, assigned_to, created_at, status, account:accounts(name), contact:contacts(first_name, last_name)'),
-        supabase.from('activities').select('id, type, created_at, opportunity_id').order('created_at', { ascending: false }).limit(500),
-      ]);
-      if (oppRes.data) setOpportunities(oppRes.data as OpportunityData[]);
-      if (actRes.data) setActivities(actRes.data as ActivityData[]);
-      setLoading(false);
-    };
-    fetchData();
+  const fetchReportData = useCallback(async () => {
+    setLoading(true);
+    setFetchError(null);
+    const [oppRes, actRes] = await Promise.all([
+      supabase.from('opportunities').select('id, stage, assigned_to, created_at, status, account:accounts(name), contact:contacts(first_name, last_name)'),
+      supabase.from('activities').select('id, type, created_at, opportunity_id').order('created_at', { ascending: false }).limit(500),
+    ]);
+    if (oppRes.error || actRes.error) {
+      setFetchError('Failed to load report data. Please try again.');
+    }
+    if (oppRes.data) setOpportunities(oppRes.data as OpportunityData[]);
+    if (actRes.data) setActivities(actRes.data as ActivityData[]);
+    setLoading(false);
   }, []);
+
+  useEffect(() => {
+    fetchReportData();
+  }, [fetchReportData]);
 
   // Pipeline stage distribution
   const stageData = useMemo(() => {
@@ -285,6 +293,16 @@ const Reports = () => {
       <AppLayout pageTitle="Reports">
         <div className="flex-1 flex items-center justify-center">
           <p className="text-muted-foreground">Loading reports...</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <AppLayout pageTitle="Reports">
+        <div className="p-6">
+          <QueryErrorCard message={fetchError} onRetry={fetchReportData} />
         </div>
       </AppLayout>
     );

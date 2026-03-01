@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import { AppLayout } from "@/components/AppLayout";
+import { QueryErrorCard } from "@/components/QueryErrorCard";
 import { Download, FileText, ChevronDown, ChevronRight, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Document } from "@/types/opportunity";
@@ -45,6 +46,7 @@ const DocumentsPage = () => {
   const [documents, setDocuments] = useState<DocumentWithOpportunity[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(new Set());
   const [isDownloading, setIsDownloading] = useState(false);
   const [selectedDocName, setSelectedDocName] = useState<string>("all");
@@ -85,6 +87,7 @@ const DocumentsPage = () => {
    * errors will trigger a toast notification.
    */
   const fetchDocuments = async () => {
+    setFetchError(null);
     const { data, error } = await supabase
       .from("documents")
       .select(
@@ -96,6 +99,7 @@ const DocumentsPage = () => {
       setDocuments(data);
       setSelectedDocuments(new Set());
     } else {
+      setFetchError("Failed to load documents. Please try again.");
       toast.error("Failed to fetch documents");
     }
     setLoading(false);
@@ -402,7 +406,9 @@ const DocumentsPage = () => {
       }
     >
       <div className="p-4 lg:p-6">
-        {loading ? (
+        {fetchError ? (
+          <QueryErrorCard message={fetchError} onRetry={() => { setLoading(true); fetchDocuments(); }} />
+        ) : loading ? (
           <div className="text-center py-16 text-muted-foreground">Loading documents...</div>
         ) : (
               <div className="space-y-2">
