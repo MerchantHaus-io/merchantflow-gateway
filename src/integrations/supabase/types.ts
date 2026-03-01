@@ -617,6 +617,47 @@ export type Database = {
           },
         ]
       }
+      client_interactions: {
+        Row: {
+          account_id: string
+          created_at: string
+          created_by: string | null
+          created_by_email: string | null
+          id: string
+          interaction_type: string
+          notes: string | null
+          subject: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          created_by?: string | null
+          created_by_email?: string | null
+          id?: string
+          interaction_type?: string
+          notes?: string | null
+          subject: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          created_by?: string | null
+          created_by_email?: string | null
+          id?: string
+          interaction_type?: string
+          notes?: string | null
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_interactions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comments: {
         Row: {
           content: string

@@ -33,6 +33,7 @@ import { getServiceType, STAGE_CONFIG, migrateStage } from "@/types/opportunity"
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTheme } from "@/contexts/ThemeContext";
+import ClientInteractionLog from "@/components/ClientInteractionLog";
 import logoDark from "@/assets/logo-dark.png";
 import logoLight from "@/assets/logo-light.png";
 import liveBadge from "@/assets/live-badge.webp";
@@ -538,7 +539,10 @@ const LiveAccountDetail = () => {
             </Card>
           </div>
 
-          {/* Footer */}
+          {/* Client Interaction Log */}
+          <div className="mt-6">
+            <ClientInteractionLog accountId={accountId!} />
+          </div>
           <footer className="border-t border-border/50 mt-8 py-6 px-4 lg:px-6">
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">
