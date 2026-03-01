@@ -3,6 +3,7 @@ import { formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { Contact, Account, TEAM_MEMBERS, STAGE_CONFIG, OpportunityStage } from "@/types/opportunity";
 import { AppLayout } from "@/components/AppLayout";
+import { QueryErrorCard } from "@/components/QueryErrorCard";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,6 +87,7 @@ const Contacts = () => {
   const [contacts, setContacts] = useState<ContactWithAccount[]>([]);
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [editingContact, setEditingContact] = useState<ContactWithAccount | null>(null);
   const [isNewDialogOpen, setIsNewDialogOpen] = useState(false);
   const [isNewAccount, setIsNewAccount] = useState(false);
@@ -148,11 +150,17 @@ const Contacts = () => {
   }, []);
 
   const fetchContacts = async () => {
+    setFetchError(null);
     const { data, error } = await supabase
       .from('contacts')
       .select(`id, account_id, first_name, last_name, email, phone, fax, created_at, account:accounts(name), opportunities(id, assigned_to, stage)`)
       .order('created_at', { ascending: false });
-    if (!error && data) {
+    if (error) {
+      setFetchError('Failed to load contacts. Please try again.');
+      setLoading(false);
+      return;
+    }
+    if (data) {
       const contactsWithAssignment = (data as ContactQueryResult[]).map((contact) => ({
         ...contact,
         assigned_to: contact.opportunities?.[0]?.assigned_to || null,
@@ -161,7 +169,6 @@ const Contacts = () => {
         last_activity_at: null as string | null,
       }));
 
-      // Fetch last activity for each contact's opportunity
       const oppIds = contactsWithAssignment
         .map(c => c.opportunity_id)
         .filter(Boolean) as string[];
@@ -711,7 +718,9 @@ const Contacts = () => {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {loading ? (
+              {fetchError ? (
+                <QueryErrorCard message={fetchError} onRetry={() => { setLoading(true); fetchContacts(); }} />
+              ) : loading ? (
                 <div className="space-y-3">
                   {[1, 2, 3, 4, 5].map(i => (
                     <Skeleton key={i} className="h-12 w-full" />
