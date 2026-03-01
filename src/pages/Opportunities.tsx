@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
+import { QueryErrorCard } from "@/components/QueryErrorCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -81,6 +82,7 @@ const Opportunities = () => {
   
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [stageFilter, setStageFilter] = useState<string>("all");
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
@@ -104,6 +106,7 @@ const Opportunities = () => {
 
   const fetchOpportunities = useCallback(async () => {
     setLoading(true);
+    setFetchError(null);
     try {
       const { data, error } = await supabase
         .from('opportunities')
@@ -126,6 +129,7 @@ const Opportunities = () => {
       setOpportunities(mapped);
     } catch (error) {
       console.error('Error fetching opportunities:', error);
+      setFetchError('Failed to load opportunities. Please try again.');
       toast({ title: "Error loading opportunities", variant: "destructive" });
     } finally {
       setLoading(false);
@@ -462,7 +466,9 @@ const Opportunities = () => {
               </div>
             </CardHeader>
             <CardContent>
-              {loading ? (
+              {fetchError ? (
+                <QueryErrorCard message={fetchError} onRetry={fetchOpportunities} />
+              ) : loading ? (
                 <div className="space-y-3">
                   {[1, 2, 3, 4, 5].map(i => (
                     <Skeleton key={i} className="h-12 w-full" />
