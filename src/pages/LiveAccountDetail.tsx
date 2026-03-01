@@ -541,7 +541,12 @@ const LiveAccountDetail = () => {
 
           {/* Client Interaction Log */}
           <div className="mt-6">
-            <ClientInteractionLog accountId={accountId!} />
+            <ClientInteractionLog
+              accountId={accountId!}
+              contactName={[contact?.first_name, contact?.last_name].filter(Boolean).join(" ") || null}
+              contactEmail={contact?.email}
+              contactPhone={contact?.phone}
+            />
           </div>
           <footer className="border-t border-border/50 mt-8 py-6 px-4 lg:px-6">
             <div className="flex items-center justify-between">
