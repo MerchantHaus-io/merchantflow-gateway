@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { useState, useCallback } from "react";
+import { ChevronDown, Download } from "lucide-react";
 import { UnderwritingChecklist } from "@/components/sop/UnderwritingChecklist";
 import {
   MessageSquare,
@@ -55,6 +55,174 @@ const SOP = () => {
       [stepKey]: variantKey,
     }));
   };
+
+  const generateArchitectureDoc = useCallback(() => {
+    return `# MerchantHaus CRM — Architecture & Technical Reference
+## Confidential — Internal Use Only
+---
+
+## 1. Technology Stack
+
+### Frontend
+| Component | Technology |
+|-----------|-----------|
+| Language | TypeScript (strict mode) |
+| Framework | React 18 (SPA) |
+| Build Tool | Vite |
+| Styling | Tailwind CSS + tailwindcss-animate |
+| UI Components | shadcn/ui (Radix primitives) |
+| State Management | React Query (TanStack) + React Context |
+| Routing | React Router v6 |
+| Forms | React Hook Form + Zod validation |
+| Charts | Recharts |
+| Animation | Framer Motion |
+| Mobile | Capacitor (Android wrapper) |
+
+### Backend (Lovable Cloud / Supabase)
+| Component | Technology |
+|-----------|-----------|
+| Database | PostgreSQL (managed) |
+| Authentication | Supabase Auth (email + password) |
+| API | Auto-generated REST + Realtime WebSockets |
+| Edge Functions | Deno runtime (serverless) |
+| File Storage | Private buckets with signed URLs |
+| Security | Row-Level Security (RLS) on all tables |
+| Encryption | AES-256-GCM for PII (server-side) |
+
+### SaaS Ecosystem
+Resend (email), Netlify (hosting), GitHub (source control), OpenPhone (telephony), Google Workspace, Gemini AI, Lovable (development platform)
+
+---
+
+## 2. Authentication & User Roles
+
+### Auth Flow
+- Email + password sign-in (no anonymous signups)
+- Email verification required before first login
+- Password reset via email link → /update-password
+- Force-password-change on first login (admin-triggered)
+- Session tracking in \`user_sessions\` table
+
+### Role Types
+
+#### Admin (app_role: 'admin')
+- Full CRUD on all data
+- Master data exports (ZIP of all tables)
+- User management and channel administration
+- Deletion request approval
+- Database schema exports
+- **Users:** admin@merchanthaus.io, darryn@merchanthaus.io
+
+#### User (app_role: 'user')
+- Pipeline management and task creation
+- Chat & direct messages
+- Document upload and contact editing
+- Cannot manage roles, approve deletions, or export master data
+- **Users:** support@merchanthaus.io, sales@merchanthaus.io, taryn@merchanthaus.io
+
+### Access Control Architecture
+- **Allowlist:** Only 5 authorized emails can authenticate (\`ALLOWED_EMAILS\` constant + \`isEmailAllowed()\` utility)
+- **RLS:** All tables enforce \`auth.uid() IS NOT NULL\` for read/write
+- **Admin check:** \`is_admin_email()\` SQL function (security definer)
+- **Role check:** \`has_role(uuid, app_role)\` SQL function — separate \`user_roles\` table (never stored on profiles)
+- **Public forms:** INSERT-only policies (no \`.select()\`) for merchant applications & consents
+
+---
+
+## 3. Data Architecture
+
+### Core Tables
+| Table | Purpose |
+|-------|---------|
+| \`accounts\` | Merchant businesses |
+| \`contacts\` | People linked to accounts |
+| \`opportunities\` | Pipeline deals (FK → accounts, contacts) |
+| \`tasks\` | Assignable work items (FK → opportunities, contacts) |
+| \`documents\` | Files per opportunity (private bucket) |
+| \`activities\` | Audit trail per opportunity |
+| \`comments\` | Discussion threads per opportunity |
+
+### Onboarding & Compliance
+| Table | Purpose |
+|-------|---------|
+| \`applications\` | Public merchant submissions |
+| \`merchants\` | Detailed business profiles (1:1 with application) |
+| \`principals\` | Beneficial owners (1:many with application) |
+| \`bank_accounts\` | Settlement details (1:1 with application) |
+| \`application_secrets\` | Encrypted PII (auto-purged on underwriting) |
+| \`merchant_consents\` | Legal agreements with IP/user agent |
+| \`application_documents\` | File audit trail with IP logging |
+
+### Communication
+| Table | Purpose |
+|-------|---------|
+| \`chat_channels\` + \`chat_messages\` | Team chat (realtime) |
+| \`direct_messages\` | 1:1 DMs (realtime) |
+| \`message_reactions\` | Emoji reactions |
+| \`notifications\` | In-app notification feed |
+| \`push_subscriptions\` | Web push registration (VAPID) |
+| \`call_logs\` | Phone call records |
+
+### System
+| Table | Purpose |
+|-------|---------|
+| \`profiles\` | User display data (auto-created on signup via trigger) |
+| \`user_roles\` | Role assignments (admin/user enum) |
+| \`user_sessions\` | Login/logout tracking |
+| \`action_items\` | Dashboard action items |
+| \`deletion_requests\` | Soft-delete approval queue |
+| \`broadcast_acknowledgments\` | System announcement tracking |
+| \`terminal_updates\` | Changelog entries |
+
+---
+
+## 4. Security Model
+
+### Data Protection
+- RLS enabled on every table — no exceptions
+- Sensitive PII encrypted at rest (AES-256-GCM) in \`application_secrets\`
+- Auto-purge trigger (\`trg_purge_secrets_on_underwriting\`) nullifies encrypted values on status → underwriting
+- 24-hour insertion window enforced by \`encrypt-secrets\` edge function
+- Private storage buckets with signed URL access
+- Deletion requests require admin approval (soft-delete workflow)
+
+### Edge Functions
+| Function | Purpose |
+|----------|---------|
+| \`encrypt-secrets\` | Server-side AES-256-GCM encryption of SSN, routing, account numbers |
+| \`send-notification-email\` | Transactional emails via Resend |
+| \`send-push-notification\` | Web push notifications via VAPID |
+| \`export-data\` | Admin-only ZIP export of all tables |
+| \`force-password-reset\` | Admin-triggered password resets |
+| \`quo-proxy\` / \`quo-webhook\` | Telephony integration (OpenPhone) |
+| \`generate-profile-avatars\` | Auto-generate user avatars |
+| \`sign-out-all-users\` | Admin session termination |
+
+---
+
+## 5. Pipeline & Workflow
+
+### Service Types
+- **Processing** — Full merchant onboarding with underwriting
+- **Gateway Only** — Simplified gateway configuration flow
+- **Document Submission** — Compliance document uploads only
+
+### Pipeline Stages
+- **Processing:** Discovery → Qualified → App Prep → Docs Submitted → Underwriting → Approved → Live → Won
+- **Gateway:** Discovery → Qualified → Config → Testing → Live → Won
+
+### Automation
+- SLA tracking: Automatic 24-hour SLA tasks on stage entry
+- Realtime: Pipeline board, chat, and notifications use WebSocket subscriptions
+- Auto-assignment: Web submissions at 100% completion assigned to support@merchanthaus.io
+- Stage change notifications: Email + in-app + push notifications on assignment and stage transitions
+- System messages: Automated chat posts for assignments and key events
+
+---
+
+*Document generated from MerchantHaus CRM — ${new Date().toISOString().split('T')[0]}*
+`;
+  }, []);
 
   const emailTemplates = {
     step1: {
@@ -427,7 +595,7 @@ Sales Support`,
                           <a href="#appendix" className="hover:text-primary transition-colors cursor-pointer"><strong>5.1</strong> — SOP Structure & Best Practices</a>
                         </li>
                         <li>
-                          <a href="#tech-stack" className="hover:text-primary transition-colors cursor-pointer"><strong>5.2</strong> — Development Reference</a>
+                          <a href="#tech-stack" className="hover:text-primary transition-colors cursor-pointer"><strong>5.2</strong> — CRM Architecture & Technical Reference</a>
                         </li>
                         <li>
                           <strong>5.3</strong> — Service Providers & SaaS Stack
@@ -1752,79 +1920,223 @@ Sales Support`,
                   </div>
                 </section>
 
-                {/* Tech Stack */}
+                {/* CRM Architecture & Tech Stack Document */}
                 <section
                   id="tech-stack"
                   className="bg-sidebar rounded-xl p-8 shadow-lg"
                 >
-                  <h2 className="text-xl font-bold text-foreground mb-6 border-b border-border pb-2">
-                    System Documentation & Tech Stack
-                  </h2>
+                  <div className="flex items-center justify-between mb-6 border-b border-border pb-2">
+                    <h2 className="text-xl font-bold text-foreground">
+                      CRM Architecture & Technical Reference
+                    </h2>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => {
+                        const docContent = generateArchitectureDoc();
+                        const blob = new Blob([docContent], { type: 'text/markdown' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'MerchantHaus-CRM-Architecture.md';
+                        a.click();
+                        URL.revokeObjectURL(url);
+                        toast.success('Architecture document downloaded');
+                      }}
+                    >
+                      <Download className="h-4 w-4" />
+                      Download .md
+                    </Button>
+                  </div>
 
-                  <div className="grid md:grid-cols-2 gap-8 text-sm">
+                  <div className="space-y-8 text-sm">
+                    {/* 1. Tech Stack */}
                     <div>
-                      <h3 className="text-cyan-400 font-bold mb-3">
-                        MerchantHaus.io Frontend
-                      </h3>
-                      <ul className="space-y-2 text-muted-foreground">
-                        <li>
-                          <strong className="text-foreground">Vite:</strong> Build
-                          tool
-                        </li>
-                        <li>
-                          <strong className="text-foreground">React 18 + TS:</strong>{" "}
-                          Component architecture
-                        </li>
-                        <li>
-                          <strong className="text-foreground">
-                            Tailwind + Animate:
-                          </strong>{" "}
-                          Styling
-                        </li>
-                        <li>
-                          <strong className="text-foreground">shadcn/ui:</strong> UI
-                          Primitives
-                        </li>
-                        <li>
-                          <strong className="text-foreground">React Query:</strong>{" "}
-                          Async state
-                        </li>
-                        <li>
-                          <strong className="text-foreground">Recharts:</strong>{" "}
-                          Dashboards
-                        </li>
-                        <li>
-                          <strong className="text-foreground">
-                            Zod + Hook Form:
-                          </strong>{" "}
-                          Validation
-                        </li>
-                      </ul>
-                    </div>
-                    <div>
-                      <h3 className="text-cyan-400 font-bold mb-3">
-                        SaaS Ecosystem
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {[
-                          "Resend",
-                          "Formspree",
-                          "Netlify",
-                          "Supabase",
-                          "GitHub",
-                          "OpenPhone",
-                          "Google Workspace",
-                          "Gemini AI",
-                          "Lovable",
-                        ].map((item) => (
-                          <span
-                            key={item}
-                            className="bg-background px-2 py-1 rounded border border-border text-muted-foreground"
-                          >
-                            {item}
-                          </span>
-                        ))}
+                      <h3 className="text-cyan-400 font-bold mb-3 text-base">1. Technology Stack</h3>
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div>
+                          <h4 className="font-semibold text-foreground mb-2">Frontend</h4>
+                          <ul className="space-y-1.5 text-muted-foreground">
+                            <li><strong className="text-foreground">Language:</strong> TypeScript (strict mode)</li>
+                            <li><strong className="text-foreground">Framework:</strong> React 18 (SPA)</li>
+                            <li><strong className="text-foreground">Build:</strong> Vite</li>
+                            <li><strong className="text-foreground">Styling:</strong> Tailwind CSS + tailwindcss-animate</li>
+                            <li><strong className="text-foreground">Components:</strong> shadcn/ui (Radix primitives)</li>
+                            <li><strong className="text-foreground">State:</strong> React Query (TanStack) + React Context</li>
+                            <li><strong className="text-foreground">Routing:</strong> React Router v6</li>
+                            <li><strong className="text-foreground">Forms:</strong> React Hook Form + Zod validation</li>
+                            <li><strong className="text-foreground">Charts:</strong> Recharts</li>
+                            <li><strong className="text-foreground">Animation:</strong> Framer Motion</li>
+                          </ul>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-foreground mb-2">Backend (Lovable Cloud)</h4>
+                          <ul className="space-y-1.5 text-muted-foreground">
+                            <li><strong className="text-foreground">Database:</strong> PostgreSQL (managed)</li>
+                            <li><strong className="text-foreground">Auth:</strong> Supabase Auth (email + password)</li>
+                            <li><strong className="text-foreground">API:</strong> Auto-generated REST + Realtime WebSockets</li>
+                            <li><strong className="text-foreground">Edge Functions:</strong> Deno runtime (serverless)</li>
+                            <li><strong className="text-foreground">Storage:</strong> Private buckets with signed URLs</li>
+                            <li><strong className="text-foreground">Security:</strong> Row-Level Security (RLS) on all tables</li>
+                            <li><strong className="text-foreground">Encryption:</strong> AES-256-GCM for PII (server-side)</li>
+                          </ul>
+                          <h4 className="font-semibold text-foreground mt-4 mb-2">SaaS Ecosystem</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {["Resend", "Netlify", "GitHub", "OpenPhone", "Google Workspace", "Gemini AI", "Lovable"].map((item) => (
+                              <span key={item} className="bg-background px-2 py-1 rounded border border-border text-muted-foreground">{item}</span>
+                            ))}
+                          </div>
+                        </div>
                       </div>
+                    </div>
+
+                    {/* 2. Auth & Roles */}
+                    <div>
+                      <h3 className="text-cyan-400 font-bold mb-3 text-base">2. Authentication & User Roles</h3>
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div>
+                          <h4 className="font-semibold text-foreground mb-2">Auth Flow</h4>
+                          <ul className="space-y-1.5 text-muted-foreground">
+                            <li>Email + password sign-in (no anonymous signups)</li>
+                            <li>Email verification required before first login</li>
+                            <li>Password reset via email link → <code className="text-xs bg-background px-1 rounded">/update-password</code></li>
+                            <li>Force-password-change on first login (admin-triggered)</li>
+                            <li>Session tracking in <code className="text-xs bg-background px-1 rounded">user_sessions</code> table</li>
+                          </ul>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-foreground mb-2">Role Types</h4>
+                          <div className="space-y-3">
+                            <div className="p-3 rounded border border-border bg-background/50">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Shield className="h-4 w-4 text-primary" />
+                                <strong className="text-foreground">Admin</strong>
+                              </div>
+                              <p className="text-muted-foreground text-xs">Full CRUD on all data. Master exports. User management. Channel administration. Deletion request approval. Stored in <code className="bg-background px-1 rounded">user_roles</code> table (enum: admin/user).</p>
+                              <p className="text-muted-foreground text-xs mt-1">Users: admin@merchanthaus.io, darryn@merchanthaus.io</p>
+                            </div>
+                            <div className="p-3 rounded border border-border bg-background/50">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Users className="h-4 w-4 text-cyan-400" />
+                                <strong className="text-foreground">User (Standard)</strong>
+                              </div>
+                              <p className="text-muted-foreground text-xs">Pipeline management. Task creation & completion. Chat & DMs. Document upload. Contact editing. Cannot manage roles, approve deletions, or export master data.</p>
+                              <p className="text-muted-foreground text-xs mt-1">Users: support@, sales@, taryn@merchanthaus.io</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 p-3 rounded border border-border bg-background/50">
+                        <h4 className="font-semibold text-foreground mb-2">Access Control Architecture</h4>
+                        <ul className="space-y-1 text-muted-foreground text-xs">
+                          <li>• <strong className="text-foreground">Allowlist:</strong> Only 5 authorized emails can authenticate (<code className="bg-background px-1 rounded">ALLOWED_EMAILS</code> constant + <code className="bg-background px-1 rounded">isEmailAllowed()</code> utility)</li>
+                          <li>• <strong className="text-foreground">RLS:</strong> All tables enforce <code className="bg-background px-1 rounded">auth.uid() IS NOT NULL</code> for read/write operations</li>
+                          <li>• <strong className="text-foreground">Admin check:</strong> <code className="bg-background px-1 rounded">is_admin_email()</code> SQL function (security definer) for admin-only policies</li>
+                          <li>• <strong className="text-foreground">Role check:</strong> <code className="bg-background px-1 rounded">has_role(uuid, app_role)</code> SQL function — separate <code className="bg-background px-1 rounded">user_roles</code> table (never stored on profiles)</li>
+                          <li>• <strong className="text-foreground">Public forms:</strong> INSERT-only policies (no <code className="bg-background px-1 rounded">.select()</code>) for merchant applications & consents</li>
+                        </ul>
+                      </div>
+                    </div>
+
+                    {/* 3. Data Architecture */}
+                    <div>
+                      <h3 className="text-cyan-400 font-bold mb-3 text-base">3. Data Architecture</h3>
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div>
+                          <h4 className="font-semibold text-foreground mb-2">Core Tables</h4>
+                          <ul className="space-y-1 text-muted-foreground text-xs">
+                            <li><code className="bg-background px-1 rounded">accounts</code> — Merchant businesses</li>
+                            <li><code className="bg-background px-1 rounded">contacts</code> — People linked to accounts</li>
+                            <li><code className="bg-background px-1 rounded">opportunities</code> — Pipeline deals (FK → accounts, contacts)</li>
+                            <li><code className="bg-background px-1 rounded">tasks</code> — Assignable work items (FK → opportunities, contacts)</li>
+                            <li><code className="bg-background px-1 rounded">documents</code> — Files per opportunity (private bucket)</li>
+                            <li><code className="bg-background px-1 rounded">activities</code> — Audit trail per opportunity</li>
+                            <li><code className="bg-background px-1 rounded">comments</code> — Discussion threads per opportunity</li>
+                          </ul>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-foreground mb-2">Onboarding & Compliance</h4>
+                          <ul className="space-y-1 text-muted-foreground text-xs">
+                            <li><code className="bg-background px-1 rounded">applications</code> — Public merchant submissions</li>
+                            <li><code className="bg-background px-1 rounded">merchants</code> — Detailed business profiles (1:1 with app)</li>
+                            <li><code className="bg-background px-1 rounded">principals</code> — Beneficial owners (1:many with app)</li>
+                            <li><code className="bg-background px-1 rounded">bank_accounts</code> — Settlement details (1:1 with app)</li>
+                            <li><code className="bg-background px-1 rounded">application_secrets</code> — Encrypted PII (auto-purged)</li>
+                            <li><code className="bg-background px-1 rounded">merchant_consents</code> — Legal agreements with IP/UA</li>
+                            <li><code className="bg-background px-1 rounded">application_documents</code> — File audit trail</li>
+                          </ul>
+                        </div>
+                      </div>
+
+                      <div className="grid md:grid-cols-2 gap-6 mt-4">
+                        <div>
+                          <h4 className="font-semibold text-foreground mb-2">Communication</h4>
+                          <ul className="space-y-1 text-muted-foreground text-xs">
+                            <li><code className="bg-background px-1 rounded">chat_channels</code> + <code className="bg-background px-1 rounded">chat_messages</code> — Team chat (realtime)</li>
+                            <li><code className="bg-background px-1 rounded">direct_messages</code> — 1:1 DMs (realtime)</li>
+                            <li><code className="bg-background px-1 rounded">message_reactions</code> — Emoji reactions</li>
+                            <li><code className="bg-background px-1 rounded">notifications</code> — In-app notification feed</li>
+                            <li><code className="bg-background px-1 rounded">push_subscriptions</code> — Web push registration</li>
+                            <li><code className="bg-background px-1 rounded">call_logs</code> — Phone call records</li>
+                          </ul>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-foreground mb-2">System</h4>
+                          <ul className="space-y-1 text-muted-foreground text-xs">
+                            <li><code className="bg-background px-1 rounded">profiles</code> — User display data (auto-created on signup)</li>
+                            <li><code className="bg-background px-1 rounded">user_roles</code> — Role assignments (admin/user enum)</li>
+                            <li><code className="bg-background px-1 rounded">user_sessions</code> — Login/logout tracking</li>
+                            <li><code className="bg-background px-1 rounded">action_items</code> — Dashboard action items</li>
+                            <li><code className="bg-background px-1 rounded">deletion_requests</code> — Soft-delete approval queue</li>
+                            <li><code className="bg-background px-1 rounded">broadcast_acknowledgments</code> — System announcements</li>
+                            <li><code className="bg-background px-1 rounded">terminal_updates</code> — Changelog entries</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 4. Security */}
+                    <div>
+                      <h3 className="text-cyan-400 font-bold mb-3 text-base">4. Security Model</h3>
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div>
+                          <h4 className="font-semibold text-foreground mb-2">Data Protection</h4>
+                          <ul className="space-y-1.5 text-muted-foreground">
+                            <li>• RLS enabled on every table — no exceptions</li>
+                            <li>• Sensitive PII encrypted at rest (AES-256-GCM)</li>
+                            <li>• Auto-purge trigger on status → underwriting</li>
+                            <li>• 24-hour insertion window for secret submissions</li>
+                            <li>• Private storage buckets with signed URL access</li>
+                            <li>• Deletion requests require admin approval</li>
+                          </ul>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-foreground mb-2">Edge Functions</h4>
+                          <ul className="space-y-1.5 text-muted-foreground">
+                            <li><code className="text-xs bg-background px-1 rounded">encrypt-secrets</code> — Server-side PII encryption</li>
+                            <li><code className="text-xs bg-background px-1 rounded">send-notification-email</code> — Transactional emails (Resend)</li>
+                            <li><code className="text-xs bg-background px-1 rounded">send-push-notification</code> — Web push via VAPID</li>
+                            <li><code className="text-xs bg-background px-1 rounded">export-data</code> — Admin-only ZIP exports</li>
+                            <li><code className="text-xs bg-background px-1 rounded">force-password-reset</code> — Admin password resets</li>
+                            <li><code className="text-xs bg-background px-1 rounded">quo-proxy</code> / <code className="text-xs bg-background px-1 rounded">quo-webhook</code> — Telephony integration</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 5. Pipeline */}
+                    <div>
+                      <h3 className="text-cyan-400 font-bold mb-3 text-base">5. Pipeline & Workflow</h3>
+                      <ul className="space-y-1.5 text-muted-foreground">
+                        <li>• <strong className="text-foreground">Service Types:</strong> Processing, Gateway Only, Document Submission</li>
+                        <li>• <strong className="text-foreground">Processing Pipeline:</strong> Discovery → Qualified → App Prep → Docs Submitted → Underwriting → Approved → Live → Won</li>
+                        <li>• <strong className="text-foreground">Gateway Pipeline:</strong> Discovery → Qualified → Config → Testing → Live → Won</li>
+                        <li>• <strong className="text-foreground">SLA Tracking:</strong> Automatic 24-hour SLA tasks on stage entry</li>
+                        <li>• <strong className="text-foreground">Realtime:</strong> Pipeline board, chat, and notifications use WebSocket subscriptions</li>
+                        <li>• <strong className="text-foreground">Auto-assignment:</strong> Web submissions at 100% completion assigned to support@merchanthaus.io</li>
+                      </ul>
                     </div>
                   </div>
                 </section>
