@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Account, Contact } from "@/types/opportunity";
 import { AppLayout } from "@/components/AppLayout";
@@ -20,7 +21,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Search, Users, Trash } from "lucide-react";
+import { Pencil, Search, Users, Trash, Mail, Phone, ExternalLink } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAutoSave } from "@/hooks/useAutoSave";
@@ -46,6 +48,7 @@ interface AccountWithContacts extends Account {
  * underlying data model or behaviour.
  */
 const Accounts = () => {
+  const navigate = useNavigate();
   const [accounts, setAccounts] = useState<AccountWithContacts[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingAccount, setEditingAccount] = useState<AccountWithContacts | null>(null);
@@ -359,26 +362,46 @@ const Accounts = () => {
                         </TableCell>
                         <TableCell>
                           {account.contacts && account.contacts.length > 0 ? (
-                            <Select value="placeholder" onValueChange={() => {}}>
-                              <SelectTrigger className="w-48 bg-secondary">
-                                <div className="flex items-center gap-2">
-                                  <Users className="h-4 w-4 text-muted-foreground" />
-                                  <span>{account.contacts.length} contact{account.contacts.length !== 1 ? 's' : ''}</span>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button variant="outline" size="sm" className="gap-1.5 bg-secondary">
+                                  <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                                  {account.contacts.length} contact{account.contacts.length !== 1 ? 's' : ''}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-64 p-0" align="start">
+                                <div className="p-2 border-b border-border">
+                                  <p className="text-xs font-medium text-muted-foreground">Contacts for {account.name}</p>
                                 </div>
-                              </SelectTrigger>
-                              <SelectContent className="bg-popover">
-                                {account.contacts.map((contact) => (
-                                  <SelectItem key={contact.id} value={contact.id} disabled>
-                                    <div className="flex flex-col">
-                                      <span>{contact.first_name} {contact.last_name}</span>
+                                <div className="max-h-48 overflow-y-auto">
+                                  {account.contacts.map((contact) => (
+                                    <button
+                                      key={contact.id}
+                                      className="w-full text-left px-3 py-2 hover:bg-muted/50 transition-colors flex flex-col gap-0.5 border-b border-border/50 last:border-0"
+                                      onClick={() => navigate(`/contacts?highlight=${contact.id}`)}
+                                    >
+                                      <span className="text-sm font-medium">{contact.first_name} {contact.last_name}</span>
                                       {contact.email && (
-                                        <span className="text-xs text-muted-foreground">{contact.email}</span>
+                                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                          <Mail className="h-3 w-3" />{contact.email}
+                                        </span>
                                       )}
-                                    </div>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                                    </button>
+                                  ))}
+                                </div>
+                                <div className="p-1.5 border-t border-border">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="w-full text-xs gap-1"
+                                    onClick={() => navigate('/contacts')}
+                                  >
+                                    <ExternalLink className="h-3 w-3" />
+                                    View all contacts
+                                  </Button>
+                                </div>
+                              </PopoverContent>
+                            </Popover>
                           ) : (
                             <Badge variant="outline" className="bg-muted/40 text-muted-foreground">No contacts</Badge>
                           )}
