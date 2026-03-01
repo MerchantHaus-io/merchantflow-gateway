@@ -1,9 +1,12 @@
-import { ReactNode } from "react";
+import { ReactNode, useRef, useCallback } from "react";
 import { MegaMenuHeader } from "@/components/MegaMenuHeader";
 import FloatingChat from "@/components/FloatingChat";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { ActionItemsWidget } from "@/components/ActionItemsWidget";
 import { BroadcastPopup } from "@/components/BroadcastPopup";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import { RefreshCw } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -23,6 +26,20 @@ export function AppLayout({
   headerActions,
   focusMode = false,
 }: AppLayoutProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const handleRefresh = useCallback(async () => {
+    window.location.reload();
+  }, []);
+
+  const { pullDistance, isRefreshing } = usePullToRefresh({
+    containerRef: scrollRef,
+    onRefresh: handleRefresh,
+    disabled: focusMode,
+  });
+
+  const showIndicator = pullDistance > 0 || isRefreshing;
+
   return (
     <div className="h-screen h-dvh min-h-0 flex flex-col w-full overflow-hidden">
       {!focusMode && <MegaMenuHeader onNewApplication={onNewApplication} />}
@@ -37,7 +54,27 @@ export function AppLayout({
             </div>
           </div>
         )}
-        <div className={focusMode ? "flex-1 min-h-0 overflow-hidden" : "flex-1 min-h-0 overflow-y-auto scroll-smooth pb-16 lg:pb-0"}>
+
+        {/* Pull-to-refresh indicator */}
+        {showIndicator && (
+          <div
+            className="flex-shrink-0 flex items-center justify-center overflow-hidden transition-all duration-200"
+            style={{ height: isRefreshing ? 40 : Math.min(pullDistance, 60) }}
+          >
+            <RefreshCw
+              className={cn(
+                "h-5 w-5 text-muted-foreground transition-transform",
+                isRefreshing && "animate-spin"
+              )}
+              style={{ transform: isRefreshing ? undefined : `rotate(${pullDistance * 3}deg)` }}
+            />
+          </div>
+        )}
+
+        <div
+          ref={scrollRef}
+          className={focusMode ? "flex-1 min-h-0 overflow-hidden" : "flex-1 min-h-0 overflow-y-auto scroll-smooth pb-16 lg:pb-0"}
+        >
           {children}
         </div>
       </main>
