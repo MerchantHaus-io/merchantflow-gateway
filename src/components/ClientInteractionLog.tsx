@@ -36,6 +36,7 @@ import {
   User,
   Hash,
   Filter,
+  Download,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { toast } from "sonner";
@@ -258,6 +259,51 @@ const ClientInteractionLog = ({ accountId, contactName, contactEmail, contactPho
     resolved: interactions?.filter((i) => i.status === "resolved").length || 0,
   };
 
+  const exportCsv = () => {
+    if (!filtered || filtered.length === 0) return;
+    const esc = (v: string | null | undefined) => {
+      if (!v) return "";
+      const s = v.replace(/"/g, '""');
+      return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s}"` : s;
+    };
+    const headers = [
+      "Date", "Type", "Status", "Priority", "Subject", "Contact Name",
+      "Contact Email", "Contact Phone", "Duration (min)", "Outcome",
+      "Channel/Ref", "Follow-up Date", "Notes", "Resolution", "Tags",
+      "Created By", "Last Updated",
+    ];
+    const rows = filtered.map((i) => [
+      format(new Date(i.created_at), "yyyy-MM-dd HH:mm"),
+      getTypeConfig(i.interaction_type).label,
+      i.status,
+      i.priority,
+      esc(i.subject),
+      esc(i.contact_name),
+      esc(i.contact_email),
+      esc(i.contact_phone),
+      i.duration_minutes ?? "",
+      esc(i.outcome),
+      esc(i.channel),
+      i.follow_up_at ? format(new Date(i.follow_up_at), "yyyy-MM-dd HH:mm") : "",
+      esc(i.notes),
+      esc(i.resolution),
+      esc(i.tags.join("; ")),
+      esc(i.created_by_email),
+      format(new Date(i.updated_at), "yyyy-MM-dd HH:mm"),
+    ].join(","));
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `interaction-log-${format(new Date(), "yyyy-MM-dd")}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success("CSV exported");
+  };
+
   /* ── render ──────────────────────────────────────────── */
 
   return (
@@ -281,6 +327,11 @@ const ClientInteractionLog = ({ accountId, contactName, contactEmail, contactPho
             </Badge>
           )}
           <div className="ml-auto flex items-center gap-1.5">
+            {interactions && interactions.length > 0 && (
+              <Button variant="outline" size="sm" className="h-7 text-xs" onClick={exportCsv}>
+                <Download className="h-3.5 w-3.5 mr-1" />CSV
+              </Button>
+            )}
             {!isAdding && (
               <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setIsAdding(true)}>
                 <Plus className="h-3.5 w-3.5 mr-1" />Log Interaction
