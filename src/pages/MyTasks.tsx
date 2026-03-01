@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
+import { QueryErrorCard } from "@/components/QueryErrorCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,31 +66,40 @@ const MyTasks = () => {
   const [relatedContactId, setRelatedContactId] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [opportunities, setOpportunities] = useState<LightweightOpportunity[]>([]);
   const [contacts, setContacts] = useState<LightweightContact[]>([]);
 
-  useEffect(() => {
-    const fetchOptions = async () => {
-      setLoading(true);
-      const { data: opps } = await supabase
+  const fetchOptions = useCallback(async () => {
+    setLoading(true);
+    setFetchError(null);
+    try {
+      const { data: opps, error: oppsErr } = await supabase
         .from("opportunities")
         .select("id, account:accounts(name), contact:contacts(first_name, last_name)")
         .order("created_at", { ascending: false })
         .limit(20);
 
-      const { data: contactsData } = await supabase
+      const { data: contactsData, error: contactsErr } = await supabase
         .from("contacts")
         .select("id, first_name, last_name, email")
         .order("created_at", { ascending: false })
         .limit(30);
 
+      if (oppsErr || contactsErr) {
+        setFetchError("Failed to load options. Please try again.");
+      }
       setOpportunities(opps || []);
       setContacts(contactsData || []);
-      setLoading(false);
-    };
-
-    fetchOptions();
+    } catch {
+      setFetchError("Failed to load options. Please try again.");
+    }
+    setLoading(false);
   }, []);
+
+  useEffect(() => {
+    fetchOptions();
+  }, [fetchOptions]);
 
   const myTasks = useMemo(
     () => tasks.filter((task) => task.assignee === displayName || task.assignee === user?.email),
@@ -136,9 +146,11 @@ const MyTasks = () => {
                   <CardDescription>Tasks created by teammates or the system that mention you.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {myTasks.length === 0 && (
+                  {fetchError ? (
+                    <QueryErrorCard message={fetchError} onRetry={fetchOptions} />
+                  ) : myTasks.length === 0 ? (
                     <div className="text-sm text-muted-foreground">No tasks yet. Create one to get started.</div>
-                  )}
+                  ) : null}
                   {myTasks.map((task) => (
                     <div
                       key={task.id}

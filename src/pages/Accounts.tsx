@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Account, Contact } from "@/types/opportunity";
 import { AppLayout } from "@/components/AppLayout";
+import { QueryErrorCard } from "@/components/QueryErrorCard";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +52,7 @@ const Accounts = () => {
   const navigate = useNavigate();
   const [accounts, setAccounts] = useState<AccountWithContacts[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [editingAccount, setEditingAccount] = useState<AccountWithContacts | null>(null);
   const [selectedContactId, setSelectedContactId] = useState<string>('');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -148,11 +150,14 @@ const Accounts = () => {
   };
 
   const fetchAccounts = async () => {
+    setFetchError(null);
     const { data, error } = await supabase
       .from('accounts')
       .select('id, name, status, address1, address2, city, state, zip, country, website, created_at, contacts(id, first_name, last_name, email)')
       .order('created_at', { ascending: false });
-    if (!error && data) {
+    if (error) {
+      setFetchError('Failed to load accounts. Please try again.');
+    } else if (data) {
       setAccounts(data as AccountWithContacts[]);
     }
     setLoading(false);
@@ -281,6 +286,16 @@ const Accounts = () => {
       <div className="h-screen flex items-center justify-center">
         <div className="text-muted-foreground">Loading...</div>
       </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <AppLayout pageTitle="Accounts">
+        <div className="p-6">
+          <QueryErrorCard message={fetchError} onRetry={() => { setLoading(true); fetchAccounts(); }} />
+        </div>
+      </AppLayout>
     );
   }
 
