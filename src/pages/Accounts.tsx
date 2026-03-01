@@ -6,6 +6,16 @@ import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,6 +50,7 @@ const Accounts = () => {
   const [loading, setLoading] = useState(true);
   const [editingAccount, setEditingAccount] = useState<AccountWithContacts | null>(null);
   const [selectedContactId, setSelectedContactId] = useState<string>('');
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     address1: '',
@@ -159,24 +170,21 @@ const Accounts = () => {
     });
   };
 
-  // Delete an account after confirmation. Removes the record from Supabase and updates local state
+  // Delete an account after confirmation
   const handleDeleteAccount = async (accountId: string) => {
-    const confirmDelete = window.confirm(
-      'Are you sure you want to delete this account? This will remove any linked contacts.'
-    );
-    if (!confirmDelete) return;
     try {
       const { error } = await supabase.from('accounts').delete().eq('id', accountId);
       if (error) {
         toast.error('Failed to delete account');
         return;
       }
-      // Optimistically update the client state
       setAccounts((prev) => prev.filter((acc) => acc.id !== accountId));
       toast.success('Account deleted');
     } catch (err) {
       console.error(err);
       toast.error('An unexpected error occurred');
+    } finally {
+      setDeleteConfirm(null);
     }
   };
 
@@ -399,7 +407,7 @@ const Accounts = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleDeleteAccount(account.id)}
+                              onClick={() => setDeleteConfirm(account.id)}
                             >
                               <Trash className="h-4 w-4 text-destructive" />
                             </Button>
@@ -496,6 +504,26 @@ const Accounts = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Account</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this account? This will remove any linked contacts. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteConfirm && handleDeleteAccount(deleteConfirm)}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 };
