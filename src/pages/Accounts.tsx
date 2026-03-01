@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Pencil, Search, Users, Trash } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
@@ -338,9 +339,16 @@ const Accounts = () => {
                   </TableHeader>
                   <TableBody>
                     {filteredAccounts.map((account, index) => (
-                      <TableRow key={account.id} className="hover:bg-muted/50">
+                      <TableRow key={account.id} className={cn("hover:bg-muted/50", account.status === 'dead' && "opacity-60")}>
                         <TableCell className="text-muted-foreground text-sm">{index + 1}</TableCell>
-                        <TableCell className="font-medium">{account.name}</TableCell>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            {account.name}
+                            {account.status === 'dead' && (
+                              <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Dead</Badge>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           {account.contacts && account.contacts.length > 0 ? (
                             <Select value="placeholder" onValueChange={() => {}}>
