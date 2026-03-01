@@ -62,6 +62,10 @@ export type Database = {
       action_items: {
         Row: {
           assigned_to: string[]
+          attachment_name: string | null
+          attachment_size: number | null
+          attachment_type: string | null
+          attachment_url: string | null
           completed: boolean
           completed_at: string | null
           created_at: string
@@ -73,6 +77,10 @@ export type Database = {
         }
         Insert: {
           assigned_to?: string[]
+          attachment_name?: string | null
+          attachment_size?: number | null
+          attachment_type?: string | null
+          attachment_url?: string | null
           completed?: boolean
           completed_at?: string | null
           created_at?: string
@@ -84,6 +92,10 @@ export type Database = {
         }
         Update: {
           assigned_to?: string[]
+          attachment_name?: string | null
+          attachment_size?: number | null
+          attachment_type?: string | null
+          attachment_url?: string | null
           completed?: boolean
           completed_at?: string | null
           created_at?: string

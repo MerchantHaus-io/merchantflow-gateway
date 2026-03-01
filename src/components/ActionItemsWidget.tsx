@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { ClipboardCheck, X, Plus, Trash2, ChevronDown } from "lucide-react";
+import { ClipboardCheck, X, Plus, Trash2, ChevronDown, Paperclip, FileText, Image as ImageIcon, Download, ExternalLink } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,10 @@ interface ActionItem {
   created_at: string;
   completed_at: string | null;
   sort_order: number;
+  attachment_url: string | null;
+  attachment_name: string | null;
+  attachment_type: string | null;
+  attachment_size: number | null;
 }
 
 interface Profile {
@@ -29,6 +33,8 @@ interface Profile {
   email: string | null;
   full_name: string | null;
 }
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
 export function ActionItemsWidget() {
   const { user } = useAuth();
@@ -40,8 +46,9 @@ export function ActionItemsWidget() {
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [showUserPicker, setShowUserPicker] = useState(false);
   const [completedCollapsed, setCompletedCollapsed] = useState(true);
-
-  // Fixed icon position (no longer draggable)
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch items
   const fetchItems = useCallback(async () => {
@@ -74,19 +81,59 @@ export function ActionItemsWidget() {
     return () => { supabase.removeChannel(channel); };
   }, [user, fetchItems]);
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error("File too large. Maximum size is 10 MB.");
+      return;
+    }
+    setPendingFile(file);
+    // Reset input so re-selecting same file works
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
-  // Add item
+  // Add item (with optional attachment)
   const addItem = async () => {
     if (!newTitle.trim() || !user) return;
-    const { error } = await supabase.from("action_items").insert({
-      title: newTitle.trim(),
-      created_by: user.id,
-      created_by_email: user.email || "",
-      assigned_to: selectedUsers,
-    });
-    if (error) {
-      toast.error("Failed to add action item");
-    } else {
+    setIsUploading(true);
+
+    let attachmentUrl: string | null = null;
+    let attachmentName: string | null = null;
+    let attachmentType: string | null = null;
+    let attachmentSize: number | null = null;
+
+    try {
+      if (pendingFile) {
+        const ext = pendingFile.name.split(".").pop() || "bin";
+        const path = `notice-board/${crypto.randomUUID()}.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from("chat-attachments")
+          .upload(path, pendingFile, { contentType: pendingFile.type });
+        if (uploadError) throw uploadError;
+
+        const { data: signedData } = await supabase.storage
+          .from("chat-attachments")
+          .createSignedUrl(path, 60 * 60 * 24 * 365); // 1 year
+
+        attachmentUrl = signedData?.signedUrl || path;
+        attachmentName = pendingFile.name;
+        attachmentType = pendingFile.type;
+        attachmentSize = pendingFile.size;
+      }
+
+      const { error } = await supabase.from("action_items").insert({
+        title: newTitle.trim(),
+        created_by: user.id,
+        created_by_email: user.email || "",
+        assigned_to: selectedUsers,
+        attachment_url: attachmentUrl,
+        attachment_name: attachmentName,
+        attachment_type: attachmentType,
+        attachment_size: attachmentSize,
+      });
+      if (error) throw error;
+
       // Also create a linked task with source 'notice'
       const assigneeName = selectedUsers.length > 0 ? selectedUsers[0] : (user.email || "");
       await supabase.from("tasks").insert({
@@ -100,7 +147,12 @@ export function ActionItemsWidget() {
       playNoticeBoardSound();
       setNewTitle("");
       setSelectedUsers([]);
+      setPendingFile(null);
       setShowUserPicker(false);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to add action item");
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -138,6 +190,15 @@ export function ActionItemsWidget() {
 
   return (
     <>
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip"
+        className="hidden"
+        onChange={handleFileSelect}
+      />
+
       {/* Mobile: floating circle icon / Desktop: tab bar like Dialler & Messenger */}
       {isMobile ? (
         <button
@@ -217,12 +278,39 @@ export function ActionItemsWidget() {
                   onChange={(e) => setNewTitle(e.target.value)}
                   placeholder="Add action item…"
                   className="flex-1 text-sm border-b border-haus-canvas"
-                  onKeyDown={(e) => e.key === "Enter" && addItem()}
+                  onKeyDown={(e) => e.key === "Enter" && !isUploading && addItem()}
                 />
-                <Button size="sm" onClick={addItem} disabled={!newTitle.trim()} className="bg-gold text-haus-charcoal hover:bg-gold/90 h-8 px-3">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                  title="Attach file"
+                >
+                  <Paperclip className="h-3.5 w-3.5" />
+                </Button>
+                <Button size="sm" onClick={addItem} disabled={!newTitle.trim() || isUploading} className="bg-gold text-haus-charcoal hover:bg-gold/90 h-8 px-3">
                   <Plus className="h-3.5 w-3.5" />
                 </Button>
               </div>
+
+              {/* Pending file preview */}
+              {pendingFile && (
+                <div className="flex items-center gap-2 bg-muted/50 rounded-md px-2 py-1.5 text-xs">
+                  {pendingFile.type.startsWith("image/") ? (
+                    <ImageIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  ) : (
+                    <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  )}
+                  <span className="truncate flex-1">{pendingFile.name}</span>
+                  <span className="text-muted-foreground shrink-0">
+                    {(pendingFile.size / 1024).toFixed(0)} KB
+                  </span>
+                  <button onClick={() => setPendingFile(null)} className="text-muted-foreground hover:text-destructive shrink-0">
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
 
               {/* Tag users */}
               <div>
@@ -310,6 +398,8 @@ function ActionItemRow({
   getDisplayName: (email: string) => string;
   canDelete: boolean;
 }) {
+  const isImage = item.attachment_type?.startsWith("image/");
+
   return (
     <div className={cn(
       "flex items-start gap-2 px-4 py-2.5 border-b border-border/50 group hover:bg-muted/30 transition-colors",
@@ -324,6 +414,34 @@ function ActionItemRow({
         <p className={cn("text-sm leading-tight", item.completed && "line-through text-muted-foreground")}>
           {item.title}
         </p>
+
+        {/* Attachment display */}
+        {item.attachment_url && (
+          <div className="mt-1.5">
+            {isImage ? (
+              <a href={item.attachment_url} target="_blank" rel="noopener noreferrer" className="block">
+                <img
+                  src={item.attachment_url}
+                  alt={item.attachment_name || "Attachment"}
+                  className="max-w-full max-h-32 rounded-md border border-border object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                  loading="lazy"
+                />
+              </a>
+            ) : (
+              <a
+                href={item.attachment_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 bg-muted/50 hover:bg-muted rounded-md px-2 py-1 text-xs text-foreground transition-colors"
+              >
+                <FileText className="h-3 w-3 text-muted-foreground shrink-0" />
+                <span className="truncate max-w-[160px]">{item.attachment_name || "File"}</span>
+                <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0" />
+              </a>
+            )}
+          </div>
+        )}
+
         <div className="flex items-center gap-1 mt-1 flex-wrap">
           <span className="text-[10px] text-muted-foreground">
             {getDisplayName(item.created_by_email)}
