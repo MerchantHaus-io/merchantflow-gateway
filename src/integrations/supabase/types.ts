@@ -620,33 +620,69 @@ export type Database = {
       client_interactions: {
         Row: {
           account_id: string
+          channel: string | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
           created_at: string
           created_by: string | null
           created_by_email: string | null
+          duration_minutes: number | null
+          follow_up_at: string | null
           id: string
           interaction_type: string
           notes: string | null
+          outcome: string | null
+          priority: string
+          resolution: string | null
+          status: string
           subject: string
+          tags: string[]
+          updated_at: string
         }
         Insert: {
           account_id: string
+          channel?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
           created_at?: string
           created_by?: string | null
           created_by_email?: string | null
+          duration_minutes?: number | null
+          follow_up_at?: string | null
           id?: string
           interaction_type?: string
           notes?: string | null
+          outcome?: string | null
+          priority?: string
+          resolution?: string | null
+          status?: string
           subject: string
+          tags?: string[]
+          updated_at?: string
         }
         Update: {
           account_id?: string
+          channel?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
           created_at?: string
           created_by?: string | null
           created_by_email?: string | null
+          duration_minutes?: number | null
+          follow_up_at?: string | null
           id?: string
           interaction_type?: string
           notes?: string | null
+          outcome?: string | null
+          priority?: string
+          resolution?: string | null
+          status?: string
           subject?: string
+          tags?: string[]
+          updated_at?: string
         }
         Relationships: [
           {
