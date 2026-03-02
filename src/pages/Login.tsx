@@ -6,9 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { useTheme } from '@/contexts/ThemeContext';
-import logoDark from '@/assets/logo-dark.png';
-import logoLight from '@/assets/logo-light.png';
+
+import psTerminalLogo from '@/assets/ps-terminal-logo.png';
 import { isEmailAllowed } from '@/types/opportunity';
 
 const emailSchema = z.string().email('Please enter a valid email address');
@@ -16,7 +15,7 @@ const passwordSchema = z.string().min(6, 'Password must be at least 6 characters
 
 const Login = () => {
   const navigate = useNavigate();
-  const { theme } = useTheme();
+  
   const { user, signInWithGoogle, signInWithEmail, mustChangePassword } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -77,7 +76,7 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-8">
         <div className="flex items-center justify-center">
-          <img src={theme === 'dark' ? logoDark : logoLight} alt="Ops Terminal" className="h-14 w-auto" />
+          <img src={psTerminalLogo} alt="PS Terminal" className="h-14 w-auto" />
         </div>
 
         <div className="bg-card border-[3px] border-foreground/80 rounded-2xl p-8 neo-shadow">
