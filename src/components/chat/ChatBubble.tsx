@@ -1,4 +1,5 @@
 import React, { useCallback, useRef } from "react";
+import { Bot } from "lucide-react";
 import {
   Check, CheckCheck, Reply, Edit2, Smile, File, Download,
 } from "lucide-react";
@@ -46,6 +47,8 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
   onReaction, onProfileClick, onResolveAttachment,
 }) => {
   const senderId = isChannel ? (msg as ChannelMessage).user_id : (msg as DirectMessage).sender_id;
+  const senderEmail = isChannel ? (msg as ChannelMessage).user_email : "";
+  const isAIBot = senderEmail === "ai-assistant@ops.internal";
   const formatTime = (ts: string) => new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   // Swipe-to-reply
@@ -173,14 +176,22 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
   return (
     <div className={cn("flex gap-2 min-w-0 overflow-hidden px-[6%] md:px-[10%]", isOwn ? "justify-end" : "justify-start")}>
       {!isOwn && (
-        <button type="button" onClick={() => onProfileClick(senderId)} className="shrink-0 cursor-pointer hover:opacity-80 transition-opacity self-end mb-1">
-          <Avatar className="h-7 w-7">
-            <AvatarImage src={profile?.avatar_url || undefined} />
-            <AvatarFallback className={cn(getAvatarColor(email || displayName), "text-white text-[10px]")}>
-              {getInitials(displayName, email)}
-            </AvatarFallback>
-          </Avatar>
-        </button>
+        isAIBot ? (
+          <div className="shrink-0 self-end mb-1">
+            <div className="h-7 w-7 rounded-full bg-purple-500 flex items-center justify-center">
+              <Bot className="h-4 w-4 text-white" />
+            </div>
+          </div>
+        ) : (
+          <button type="button" onClick={() => onProfileClick(senderId)} className="shrink-0 cursor-pointer hover:opacity-80 transition-opacity self-end mb-1">
+            <Avatar className="h-7 w-7">
+              <AvatarImage src={profile?.avatar_url || undefined} />
+              <AvatarFallback className={cn(getAvatarColor(email || displayName), "text-white text-[10px]")}>
+                {getInitials(displayName, email)}
+              </AvatarFallback>
+            </Avatar>
+          </button>
+        )
       )}
       <div
         className="max-w-[75%] min-w-0 overflow-hidden"

@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.quo-webhook]
 verify_jwt = false
+
+[functions.ai-assistant]
+verify_jwt = false
