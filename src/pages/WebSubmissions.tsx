@@ -851,7 +851,7 @@ export default function WebSubmissions() {
         <Dialog open={!!selectedApp} onOpenChange={() => setSelectedApp(null)}>
           <DialogContent className="max-w-2xl max-h-[85vh]">
             <DialogHeader>
-              <DialogTitle>{isDocSubmission(selectedApp!) ? "Document Submission Details" : "Application Details"}</DialogTitle>
+              <DialogTitle>{selectedApp && isDocSubmission(selectedApp) ? "Document Submission Details" : "Application Details"}</DialogTitle>
             </DialogHeader>
             {selectedApp && (
               <ScrollArea className="max-h-[70vh] pr-4">
