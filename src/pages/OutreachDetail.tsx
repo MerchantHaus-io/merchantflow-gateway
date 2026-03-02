@@ -8,6 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -27,6 +33,8 @@ import {
   CheckCircle2,
   XCircle,
   ArrowRightCircle,
+  Eye,
+  Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -47,12 +55,22 @@ const STATUS_COLORS: Record<string, string> = {
   converted: "default",
 };
 
+function mergeTags(html: string, contact: { first_name?: string | null; last_name?: string | null; company?: string | null; email: string }) {
+  return html
+    .replace(/\{\{first_name\}\}/g, contact.first_name || "")
+    .replace(/\{\{last_name\}\}/g, contact.last_name || "")
+    .replace(/\{\{company\}\}/g, contact.company || "")
+    .replace(/\{\{email\}\}/g, contact.email || "");
+}
+
 export default function OutreachDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [sending, setSending] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [convertingId, setConvertingId] = useState<string | null>(null);
 
   const { data: campaign } = useQuery({
     queryKey: ["outreach-campaign", id],
@@ -126,7 +144,6 @@ export default function OutreachDetail() {
       return;
     }
 
-    // Update total_contacts count
     await supabase
       .from("outreach_campaigns")
       .update({ total_contacts: (campaign?.total_contacts || 0) + rows.length })
@@ -177,7 +194,6 @@ export default function OutreachDetail() {
         .eq("id", contactId);
       if (error) throw error;
 
-      // Recalculate campaign counts
       const { data: allContacts } = await supabase
         .from("outreach_contacts")
         .select("status")
@@ -199,6 +215,82 @@ export default function OutreachDetail() {
     },
   });
 
+  // Convert to pipeline: create account, contact, opportunity
+  const convertToPipeline = async (contact: any) => {
+    if (!campaign) return;
+    setConvertingId(contact.id);
+    try {
+      // 1. Create account
+      const accountName = contact.company || `${contact.first_name || ""} ${contact.last_name || ""}`.trim() || contact.email;
+      const { data: account, error: accErr } = await supabase
+        .from("accounts")
+        .insert({ name: accountName })
+        .select()
+        .single();
+      if (accErr) throw accErr;
+
+      // 2. Create contact
+      const { data: newContact, error: contErr } = await supabase
+        .from("contacts")
+        .insert({
+          account_id: account.id,
+          first_name: contact.first_name || null,
+          last_name: contact.last_name || null,
+          email: contact.email,
+        })
+        .select()
+        .single();
+      if (contErr) throw contErr;
+
+      // 3. Create opportunity
+      const { data: opp, error: oppErr } = await supabase
+        .from("opportunities")
+        .insert({
+          account_id: account.id,
+          contact_id: newContact.id,
+          stage: "discovery",
+          referral_source: `Outreach: ${campaign.name}`,
+        })
+        .select()
+        .single();
+      if (oppErr) throw oppErr;
+
+      // 4. Update outreach contact status
+      await supabase
+        .from("outreach_contacts")
+        .update({
+          status: "converted",
+          converted_at: new Date().toISOString(),
+          opportunity_id: opp.id,
+        })
+        .eq("id", contact.id);
+
+      // Recalculate counts
+      const { data: allContacts } = await supabase
+        .from("outreach_contacts")
+        .select("status")
+        .eq("campaign_id", id!);
+
+      if (allContacts) {
+        await supabase.from("outreach_campaigns").update({
+          sent_count: allContacts.filter((c) => ["sent", "bounced", "replied", "converted"].includes(c.status)).length,
+          bounced_count: allContacts.filter((c) => c.status === "bounced").length,
+          replied_count: allContacts.filter((c) => ["replied", "converted"].includes(c.status)).length,
+          converted_count: allContacts.filter((c) => c.status === "converted").length,
+        }).eq("id", id!);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["outreach-contacts", id] });
+      queryClient.invalidateQueries({ queryKey: ["outreach-campaign", id] });
+      queryClient.invalidateQueries({ queryKey: ["outreach-campaigns"] });
+      toast.success(`${accountName} converted to pipeline`);
+    } catch (err: any) {
+      toast.error(err.message || "Conversion failed");
+    } finally {
+      setConvertingId(null);
+    }
+  };
+
   if (!campaign) return <AppLayout><div className="p-6 text-muted-foreground">Loading...</div></AppLayout>;
 
   const pendingCount = contacts.filter((c) => c.status === "pending").length;
@@ -208,10 +300,14 @@ export default function OutreachDetail() {
   const convertedCount = contacts.filter((c) => c.status === "converted").length;
   const total = contacts.length || 1;
 
+  // Sample contact for preview
+  const sampleContact = contacts[0] || { first_name: "John", last_name: "Doe", company: "Acme Corp", email: "john@example.com" };
+  const previewHtml = mergeTags(campaign.body_html, sampleContact);
+
   // Timeline events sorted by most recent
   const timelineEvents = contacts
     .flatMap((c) => {
-      const events = [];
+      const events: { type: string; date: string; contact: typeof c }[] = [];
       if (c.sent_at) events.push({ type: "sent", date: c.sent_at, contact: c });
       if (c.bounced_at) events.push({ type: "bounced", date: c.bounced_at, contact: c });
       if (c.replied_at) events.push({ type: "replied", date: c.replied_at, contact: c });
@@ -286,11 +382,52 @@ export default function OutreachDetail() {
           <Button variant="outline" onClick={() => fileRef.current?.click()}>
             <Upload className="h-4 w-4 mr-2" />Upload CSV
           </Button>
+          <Button variant="outline" onClick={() => setPreviewOpen(true)}>
+            <Eye className="h-4 w-4 mr-2" />Preview Email
+          </Button>
           <Button onClick={sendEmails} disabled={sending || pendingCount === 0}>
             <Send className="h-4 w-4 mr-2" />
             {sending ? "Sending..." : `Send to ${pendingCount} Pending`}
           </Button>
         </div>
+
+        {/* Email Preview Dialog */}
+        <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+          <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Email Preview</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-muted-foreground">From</p>
+                  <p className="font-medium text-foreground">{campaign.from_name} &lt;{campaign.from_email}&gt;</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">To</p>
+                  <p className="font-medium text-foreground">{sampleContact.email}</p>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Subject</p>
+                <p className="font-medium text-foreground">{campaign.subject}</p>
+              </div>
+              <div className="border border-border rounded-lg overflow-hidden">
+                <div className="bg-muted/30 px-3 py-2 text-xs text-muted-foreground flex items-center gap-2">
+                  <Mail className="h-3 w-3" />
+                  Preview using: {[sampleContact.first_name, sampleContact.last_name].filter(Boolean).join(" ") || sampleContact.email}
+                </div>
+                <div
+                  className="p-4 bg-white text-black min-h-[200px]"
+                  dangerouslySetInnerHTML={{ __html: previewHtml }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Merge tags replaced with data from the first contact in the list. Actual emails will use each contact's individual data.
+              </p>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Contact Table */}
@@ -366,9 +503,25 @@ export default function OutreachDetail() {
                                   size="sm"
                                   variant="ghost"
                                   className="h-7 text-xs text-amber-500"
-                                  onClick={() => markStatus.mutate({ contactId: c.id, status: "converted" })}
+                                  disabled={convertingId === c.id}
+                                  onClick={() => convertToPipeline(c)}
                                 >
+                                  {convertingId === c.id ? (
+                                    <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                                  ) : (
+                                    <TrendingUp className="h-3 w-3 mr-1" />
+                                  )}
                                   Convert
+                                </Button>
+                              )}
+                              {c.status === "converted" && c.opportunity_id && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 text-xs"
+                                  onClick={() => navigate(`/opportunities/${c.opportunity_id}`)}
+                                >
+                                  View Opp
                                 </Button>
                               )}
                             </div>
