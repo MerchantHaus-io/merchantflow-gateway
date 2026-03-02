@@ -73,7 +73,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="light min-h-screen flex items-center justify-center bg-white text-black p-4" data-theme="light">
       <div className="w-full max-w-md space-y-8">
         <div className="flex items-center justify-center">
           <img src={psTerminalLogo} alt="PS Terminal" className="h-[4.5rem] w-auto" />

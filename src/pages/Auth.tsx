@@ -166,7 +166,7 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="light min-h-screen flex items-center justify-center p-4 bg-white text-black" data-theme="light">
       <div className="w-full max-w-md space-y-8">
         <div className="bg-card border-[3px] border-foreground/80 rounded-2xl p-8 neo-shadow">
           <div className="flex items-center justify-center mb-6">
