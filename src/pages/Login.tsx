@@ -76,7 +76,7 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-8">
         <div className="flex items-center justify-center">
-          <img src={psTerminalLogo} alt="PS Terminal" className="h-14 w-auto" />
+          <img src={psTerminalLogo} alt="PS Terminal" className="h-[4.5rem] w-auto" />
         </div>
 
         <div className="bg-card border-[3px] border-foreground/80 rounded-2xl p-8 neo-shadow">
