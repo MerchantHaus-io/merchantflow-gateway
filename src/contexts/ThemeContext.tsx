@@ -47,8 +47,8 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 const defaultThemeContext: ThemeContextType = {
-  theme: 'dark',
-  variant: 'dark-default',
+  theme: 'light',
+  variant: 'light-default',
   defaultDarkVariant: 'dark-default',
   defaultLightVariant: 'light-default',
   toggleTheme: () => {},
@@ -83,7 +83,7 @@ const getStoredTheme = (): ThemeMode => {
   } catch (error) {
     console.warn('Theme preference unavailable, falling back to dark mode.', error);
   }
-  return 'dark';
+  return 'light';
 };
 
 const getStoredVariant = (): ThemeVariant => {
@@ -95,7 +95,7 @@ const getStoredVariant = (): ThemeVariant => {
   } catch (error) {
     console.warn('Theme variant unavailable, falling back to default.', error);
   }
-  return 'dark-default';
+  return 'light-default';
 };
 
 const getStoredDefaultDark = (): ThemeVariant => {
