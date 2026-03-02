@@ -1,15 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTheme } from '@/contexts/ThemeContext';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
-import logoDark from '@/assets/logo-dark.png';
-import logoLight from '@/assets/logo-light.png';
+import psTerminalLogo from '@/assets/ps-terminal-logo.png';
 import { isEmailAllowed } from '@/types/opportunity';
 import ForcePasswordChange from '@/components/ForcePasswordChange';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,7 +18,7 @@ const passwordSchema = z.string().min(6, 'Password must be at least 6 characters
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { theme } = useTheme();
+  
   const { user, signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, mustChangePassword } = useAuth();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
@@ -171,7 +170,7 @@ const Auth = () => {
       <div className="w-full max-w-md space-y-8">
         <div className="bg-card border-[3px] border-foreground/80 rounded-2xl p-8 neo-shadow">
           <div className="flex items-center justify-center mb-6">
-            <img src={theme === 'dark' ? logoDark : logoLight} alt="Ops Terminal" className="h-14 w-auto" />
+            <img src={psTerminalLogo} alt="PS Terminal" className="h-14 w-auto" />
           </div>
           <p className="text-center text-muted-foreground mb-8 font-medium">
             Sign in to access your pipeline
