@@ -24,6 +24,7 @@ import {
   X,
   BadgeDollarSign,
   Cloud,
+  Send,
   type LucideIcon,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetClose } from "@/components/ui/sheet";
@@ -53,6 +54,7 @@ interface MoreItem {
 }
 
 const moreItems: MoreItem[] = [
+  { title: "Email Outreach", url: "/outreach", icon: Send },
   { title: "Web Submissions", url: "/admin/web-submissions", icon: Globe },
   { title: "Accounts", url: "/accounts", icon: Building2 },
   { title: "Contacts", url: "/contacts", icon: Users },
