@@ -17,6 +17,7 @@ import { useChatNotifications } from "@/hooks/useChatNotifications";
 import { useConnectionStatus, useTypingIndicator, validateMessage } from "@/hooks/useChatUtils";
 import { useChatSounds } from "@/hooks/useChatSounds";
 import { isEmailAllowed } from "@/types/opportunity";
+import { useAIAssistant } from "@/hooks/useAIAssistant";
 import { UserProfileModal } from "@/components/UserProfileModal";
 
 import { ChatSidebar } from "@/components/chat/ChatSidebar";
@@ -78,6 +79,7 @@ const FloatingChat: React.FC = () => {
   const { startTyping, stopTyping } = useTypingIndicator(presenceChannelRef, userName);
   const { requestPermission, toggleNotifications, notificationsEnabled, isSupported, permissionStatus } = useChatNotifications({ isChatOpen: isOpen, currentChannelId, currentDMUserId });
   const { soundEnabled, toggleSound, playMessageSound, playSentSound } = useChatSounds();
+  const { isThinking, isAIChannel, isAIBotMessage, triggerAIResponse } = useAIAssistant();
 
   const viewRef = useRef(view);
   const currentDMUserIdRef = useRef(currentDMUserId);
@@ -500,6 +502,13 @@ const FloatingChat: React.FC = () => {
     setChannelMessages(prev => [...prev, optimisticMessage]); setInput(""); setReplyTo(null);
     const { error } = await supabase.from("chat_messages").insert({ channel_id: currentChannelId, user_id: user.id, user_email: user.email || "", user_name: userName, content: text, reply_to_id: replyTo?.id || null });
     if (error) { setChannelMessages(prev => prev.filter(m => m.id !== optimisticMessage.id)); toast.error("Failed to send message."); }
+    else {
+      // Check if this is the AI channel and trigger bot response
+      const currentChannel = channels.find(ch => ch.id === currentChannelId);
+      if (currentChannel && isAIChannel(currentChannel.name)) {
+        triggerAIResponse(currentChannelId, text);
+      }
+    }
   };
 
   const handleSendDirectMessage = async () => {
@@ -675,14 +684,18 @@ const FloatingChat: React.FC = () => {
         </button>
       </div>
 
-      {typingUsers.length > 0 && (
+      {(typingUsers.length > 0 || (isThinking && view === "chat" && channels.find(ch => ch.id === currentChannelId && isAIChannel(ch.name)))) && (
         <div className="text-xs text-[hsl(var(--wa-accent))] px-4 py-1 flex items-center gap-2 bg-[hsl(var(--wa-chat-bg))]">
           <span className="flex gap-0.5">
             <span className="animate-bounce w-1.5 h-1.5 rounded-full bg-[hsl(var(--wa-accent))]" style={{ animationDelay: "0ms" }} />
             <span className="animate-bounce w-1.5 h-1.5 rounded-full bg-[hsl(var(--wa-accent))]" style={{ animationDelay: "150ms" }} />
             <span className="animate-bounce w-1.5 h-1.5 rounded-full bg-[hsl(var(--wa-accent))]" style={{ animationDelay: "300ms" }} />
           </span>
-          <span>{typingUsers.length === 1 ? `${typingUsers[0].name} is typing...` : `${typingUsers.length} people are typing...`}</span>
+          <span>
+            {isThinking && view === "chat" && channels.find(ch => ch.id === currentChannelId && isAIChannel(ch.name))
+              ? "MerchantHaus AI is thinking..."
+              : typingUsers.length === 1 ? `${typingUsers[0].name} is typing...` : `${typingUsers.length} people are typing...`}
+          </span>
         </div>
       )}
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { Search, Hash } from "lucide-react";
+import { Search, Hash, Bot } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -78,8 +78,17 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                         : "hover:bg-[hsl(var(--wa-sidebar-hover))]"
                     )}
                   >
-                    <div className="w-10 h-10 rounded-full bg-[hsl(var(--wa-accent))] flex items-center justify-center shrink-0">
-                      <Hash className="h-5 w-5 text-white" />
+                    <div className={cn(
+                      "w-10 h-10 rounded-full flex items-center justify-center shrink-0",
+                      ch.name.toLowerCase() === "ask-ai"
+                        ? "bg-purple-500"
+                        : "bg-[hsl(var(--wa-accent))]"
+                    )}>
+                      {ch.name.toLowerCase() === "ask-ai" ? (
+                        <Bot className="h-5 w-5 text-white" />
+                      ) : (
+                        <Hash className="h-5 w-5 text-white" />
+                      )}
                     </div>
                     <div className="flex-1 text-left min-w-0">
                       <p className="font-medium text-sm text-[hsl(var(--wa-bubble-in-foreground))] truncate">

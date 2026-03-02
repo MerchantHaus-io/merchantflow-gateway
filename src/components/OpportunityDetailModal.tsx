@@ -1410,6 +1410,8 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [selectedDocType, setSelectedDocType] = useState("Unassigned");
   const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
+  const [validationReport, setValidationReport] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   /** Sync document list into the wizard's form_state so ApplicationProgress stays accurate */
@@ -1643,6 +1645,23 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
+  const handleValidateDocuments = async () => {
+    setIsValidating(true);
+    setValidationReport(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("ai-assistant", {
+        body: { action: "validate-documents", opportunityId },
+      });
+      if (error) throw error;
+      setValidationReport(data?.report || "No report generated.");
+    } catch (err) {
+      console.error("Validation error:", err);
+      toast.error("Failed to validate documents");
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-end gap-2">
@@ -1653,6 +1672,16 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
           onChange={handleFileSelect}
           className="hidden"
         />
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleValidateDocuments}
+          disabled={isValidating || documents.length === 0}
+          className="text-primary border-primary/30 hover:bg-primary/10"
+        >
+          <Wand2 className="h-4 w-4 mr-1" />
+          {isValidating ? 'Validating...' : 'AI Validate'}
+        </Button>
         {documents.length > 0 && (
           <Button
             size="sm"
@@ -1673,6 +1702,33 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
           {isUploading ? 'Uploading...' : 'Upload'}
         </Button>
       </div>
+
+      {/* AI Validation Report */}
+      {(isValidating || validationReport) && (
+        <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-sm font-semibold flex items-center gap-1.5">
+              <Wand2 className="h-4 w-4 text-primary" />
+              AI Validation Report
+            </h4>
+            {validationReport && (
+              <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setValidationReport(null)}>
+                <X className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+          {isValidating ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Analyzing documents and application data...
+            </div>
+          ) : (
+            <div className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed max-h-[300px] overflow-y-auto">
+              {validationReport}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Inline Upload Panel — avoids nested dialog focus trap issues */}
       {showUploadDialog && pendingFiles.length > 0 && (
