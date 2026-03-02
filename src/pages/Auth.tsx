@@ -170,7 +170,7 @@ const Auth = () => {
       <div className="w-full max-w-md space-y-8">
         <div className="bg-card border-[3px] border-foreground/80 rounded-2xl p-8 neo-shadow">
           <div className="flex items-center justify-center mb-6">
-            <img src={psTerminalLogo} alt="PS Terminal" className="h-14 w-auto" />
+            <img src={psTerminalLogo} alt="PS Terminal" className="h-[4.5rem] w-auto" />
           </div>
           <p className="text-center text-muted-foreground mb-8 font-medium">
             Sign in to access your pipeline
