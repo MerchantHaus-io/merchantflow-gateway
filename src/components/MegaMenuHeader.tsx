@@ -216,7 +216,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
     <header className={cn(
       "sticky top-0 z-50 w-full border-b border-border",
       theme === 'dark' ? "bg-haus-charcoal text-white" : "bg-background text-foreground shadow-sm"
-    )}>
+    )} style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
       <div className="flex h-14 items-center px-4 lg:px-6 gap-4">
         {/* Logo */}
         <Link to="/" className="flex items-center shrink-0">
