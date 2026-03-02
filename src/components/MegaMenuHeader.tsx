@@ -29,6 +29,7 @@ import {
   Minimize,
   Cloud,
   Focus,
+  Send,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -113,6 +114,7 @@ const navMain: NavGroup[] = [
 const toolsItems: NavItem[] = [
   { title: "SOP", url: "/sop", icon: BookOpen, description: "Standard operating procedures" },
   { title: "Preboarding Wizard", url: "/tools/preboarding-wizard", icon: ClipboardList, description: "Application readiness form" },
+  { title: "Email Outreach", url: "/outreach", icon: Send, description: "Campaign tracker & email sender" },
   { title: "Revenue Calculator", url: "/tools/revenue-calculator", icon: Calculator, description: "Estimate processing revenue" },
   { title: "CSV Import", url: "/tools/csv-import", icon: FileSpreadsheet, description: "Bulk import data" },
   { title: "Data Export", url: "/admin/data-export", icon: Download, description: "Export opportunity data" },
