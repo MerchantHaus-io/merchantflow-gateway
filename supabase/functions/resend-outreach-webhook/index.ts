@@ -20,8 +20,7 @@ serve(async (req) => {
     const payload = await req.json();
     console.log("Resend webhook received:", JSON.stringify(payload));
 
-    // Resend sends webhook events with type and data
-    const eventType = payload.type; // e.g. "email.bounced", "email.delivered", "email.complained"
+    const eventType = payload.type;
     const eventData = payload.data;
 
     if (!eventType || !eventData) {
@@ -76,7 +75,6 @@ serve(async (req) => {
 
     } else if (eventType === "email.delivery_delayed") {
       console.log("Delivery delayed for:", emailId);
-      // Optionally log but don't change status
     }
 
     // Recalculate campaign counts

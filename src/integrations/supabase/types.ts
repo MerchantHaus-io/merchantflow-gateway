@@ -433,6 +433,44 @@ export type Database = {
         }
         Relationships: []
       }
+      cadence_steps: {
+        Row: {
+          body_html: string
+          campaign_id: string
+          created_at: string
+          delay_days: number
+          id: string
+          step_number: number
+          subject: string
+        }
+        Insert: {
+          body_html: string
+          campaign_id: string
+          created_at?: string
+          delay_days?: number
+          id?: string
+          step_number?: number
+          subject: string
+        }
+        Update: {
+          body_html?: string
+          campaign_id?: string
+          created_at?: string
+          delay_days?: number
+          id?: string
+          step_number?: number
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cadence_steps_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       call_logs: {
         Row: {
           account_id: string | null
@@ -1303,6 +1341,7 @@ export type Database = {
           id: string
           name: string
           replied_count: number
+          scheduled_at: string | null
           sent_count: number
           status: string
           subject: string
@@ -1321,6 +1360,7 @@ export type Database = {
           id?: string
           name: string
           replied_count?: number
+          scheduled_at?: string | null
           sent_count?: number
           status?: string
           subject: string
@@ -1339,6 +1379,7 @@ export type Database = {
           id?: string
           name?: string
           replied_count?: number
+          scheduled_at?: string | null
           sent_count?: number
           status?: string
           subject?: string
@@ -1355,10 +1396,12 @@ export type Database = {
           company: string | null
           converted_at: string | null
           created_at: string
+          current_step: number
           email: string
           first_name: string | null
           id: string
           last_name: string | null
+          last_step_sent_at: string | null
           opportunity_id: string | null
           replied_at: string | null
           reply_snippet: string | null
@@ -1374,10 +1417,12 @@ export type Database = {
           company?: string | null
           converted_at?: string | null
           created_at?: string
+          current_step?: number
           email: string
           first_name?: string | null
           id?: string
           last_name?: string | null
+          last_step_sent_at?: string | null
           opportunity_id?: string | null
           replied_at?: string | null
           reply_snippet?: string | null
@@ -1393,10 +1438,12 @@ export type Database = {
           company?: string | null
           converted_at?: string | null
           created_at?: string
+          current_step?: number
           email?: string
           first_name?: string | null
           id?: string
           last_name?: string | null
+          last_step_sent_at?: string | null
           opportunity_id?: string | null
           replied_at?: string | null
           reply_snippet?: string | null

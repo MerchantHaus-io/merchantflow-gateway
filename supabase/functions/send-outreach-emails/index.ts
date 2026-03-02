@@ -18,10 +18,10 @@ serve(async (req) => {
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const { campaign_id } = await req.json();
+    const body = await req.json();
+    const { campaign_id, step_number = 1, scheduled_trigger = false } = body;
     if (!campaign_id) throw new Error("campaign_id required");
 
     // Get campaign
@@ -33,21 +33,48 @@ serve(async (req) => {
 
     if (campErr || !campaign) throw new Error("Campaign not found");
 
-    // Get pending contacts
-    const { data: contacts, error: contErr } = await supabase
+    // Determine subject and body
+    let subject = campaign.subject;
+    let bodyHtml = campaign.body_html;
+
+    if (step_number > 1) {
+      // Get cadence step
+      const { data: step, error: stepErr } = await supabase
+        .from("cadence_steps")
+        .select("*")
+        .eq("campaign_id", campaign_id)
+        .eq("step_number", step_number)
+        .single();
+
+      if (stepErr || !step) throw new Error(`Cadence step ${step_number} not found`);
+      subject = step.subject;
+      bodyHtml = step.body_html;
+    }
+
+    // Get eligible contacts
+    let contactQuery = supabase
       .from("outreach_contacts")
       .select("*")
-      .eq("campaign_id", campaign_id)
-      .eq("status", "pending");
+      .eq("campaign_id", campaign_id);
 
+    if (step_number === 1) {
+      contactQuery = contactQuery.eq("status", "pending");
+    } else {
+      // For follow-up steps: contacts who were sent the previous step and haven't replied/bounced/converted
+      contactQuery = contactQuery
+        .eq("current_step", step_number - 1)
+        .eq("status", "sent");
+    }
+
+    const { data: contacts, error: contErr } = await contactQuery;
     if (contErr) throw contErr;
     if (!contacts || contacts.length === 0) {
-      return new Response(JSON.stringify({ message: "No pending contacts" }), {
+      return new Response(JSON.stringify({ message: "No eligible contacts" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Update campaign status to sending
+    // Update campaign status
     await supabase
       .from("outreach_campaigns")
       .update({ status: "sending" })
@@ -57,8 +84,7 @@ serve(async (req) => {
     let bouncedCount = 0;
 
     for (const contact of contacts) {
-      // Replace merge tags
-      let html = campaign.body_html;
+      let html = bodyHtml;
       html = html.replace(/\{\{first_name\}\}/g, contact.first_name || "");
       html = html.replace(/\{\{last_name\}\}/g, contact.last_name || "");
       html = html.replace(/\{\{company\}\}/g, contact.company || "");
@@ -74,7 +100,7 @@ serve(async (req) => {
           body: JSON.stringify({
             from: `${campaign.from_name} <${campaign.from_email}>`,
             to: [contact.email],
-            subject: campaign.subject,
+            subject,
             html,
           }),
         });
@@ -88,6 +114,8 @@ serve(async (req) => {
               status: "sent",
               sent_at: new Date().toISOString(),
               resend_message_id: resendData.id,
+              current_step: step_number,
+              last_step_sent_at: new Date().toISOString(),
             })
             .eq("id", contact.id);
           sentCount++;
@@ -114,11 +142,10 @@ serve(async (req) => {
         bouncedCount++;
       }
 
-      // Small delay to avoid rate limiting
       await new Promise((r) => setTimeout(r, 200));
     }
 
-    // Update campaign counts
+    // Recalculate counts
     const { data: allContacts } = await supabase
       .from("outreach_contacts")
       .select("status")
