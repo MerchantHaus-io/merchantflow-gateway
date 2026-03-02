@@ -205,21 +205,7 @@ ${docList || "No documents uploaded"}
 
 ${applicationContext}
 
-Provide a structured validation report with these sections:
-
-1. **Document Completeness** — Which required documents are present vs missing? Required docs typically include: Voided Check/Bank Letter, EIN Letter, Government ID, Articles of Organization (if LLC), and Processing Statements (if switching providers).
-
-2. **Document Classification Check** — Are the uploaded documents correctly classified? Flag any that seem mismatched (e.g., a file named "bank_statement.pdf" classified as "EIN").
-
-3. **Application Data Gaps** — What critical fields are missing from the application that underwriting will need?
-
-4. **Risk Flags** — Any concerns based on the data (missing website, high ticket amounts without context, volume inconsistencies, etc.)?
-
-5. **Readiness Score** — Give an overall readiness score: 🟢 Ready to Submit, 🟡 Needs Attention, or 🔴 Not Ready.
-
-6. **Recommended Actions** — Specific steps to take before submission.
-
-Be concise and actionable. Use bullet points.`;
+Return your analysis by calling the "validation_report" function. Be concise and actionable.`;
 
       const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -233,6 +219,82 @@ Be concise and actionable. Use bullet points.`;
             { role: "system", content: "You are an expert underwriting document reviewer for payment processing merchant applications." },
             { role: "user", content: validationPrompt },
           ],
+          tools: [
+            {
+              type: "function",
+              function: {
+                name: "validation_report",
+                description: "Return a structured validation report for a merchant application.",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    readiness_score: {
+                      type: "string",
+                      enum: ["ready", "needs_attention", "not_ready"],
+                      description: "Overall readiness: ready (green), needs_attention (yellow), not_ready (red)",
+                    },
+                    summary: {
+                      type: "string",
+                      description: "One-sentence summary of the application readiness.",
+                    },
+                    document_completeness: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          document: { type: "string" },
+                          status: { type: "string", enum: ["present", "missing", "unverified"] },
+                          note: { type: "string" },
+                        },
+                        required: ["document", "status"],
+                        additionalProperties: false,
+                      },
+                      description: "Required documents with their presence status.",
+                    },
+                    classification_issues: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          file_name: { type: "string" },
+                          issue: { type: "string" },
+                        },
+                        required: ["file_name", "issue"],
+                        additionalProperties: false,
+                      },
+                      description: "Documents that appear misclassified.",
+                    },
+                    data_gaps: {
+                      type: "array",
+                      items: { type: "string" },
+                      description: "Critical application fields that are missing.",
+                    },
+                    risk_flags: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          flag: { type: "string" },
+                          severity: { type: "string", enum: ["low", "medium", "high"] },
+                        },
+                        required: ["flag", "severity"],
+                        additionalProperties: false,
+                      },
+                      description: "Risk concerns with severity levels.",
+                    },
+                    recommended_actions: {
+                      type: "array",
+                      items: { type: "string" },
+                      description: "Specific steps to take before submission.",
+                    },
+                  },
+                  required: ["readiness_score", "summary", "document_completeness", "recommended_actions"],
+                  additionalProperties: false,
+                },
+              },
+            },
+          ],
+          tool_choice: { type: "function", function: { name: "validation_report" } },
         }),
       });
 
@@ -256,9 +318,60 @@ Be concise and actionable. Use bullet points.`;
       }
 
       const aiData = await aiResponse.json();
-      const report = aiData.choices?.[0]?.message?.content || "Unable to generate validation report.";
+      
+      // Extract structured data from tool call
+      const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+      let report: Record<string, unknown>;
+      
+      if (toolCall?.function?.arguments) {
+        report = typeof toolCall.function.arguments === "string"
+          ? JSON.parse(toolCall.function.arguments)
+          : toolCall.function.arguments;
+      } else {
+        // Fallback if model didn't use tool calling
+        report = {
+          readiness_score: "unknown",
+          summary: aiData.choices?.[0]?.message?.content || "Unable to generate report.",
+          document_completeness: [],
+          classification_issues: [],
+          data_gaps: [],
+          risk_flags: [],
+          recommended_actions: [],
+        };
+      }
 
-      return new Response(JSON.stringify({ success: true, report }), {
+      // Get triggering user's email from auth header
+      const authHeader = req.headers.get("authorization");
+      let triggeredBy = "unknown";
+      if (authHeader) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
+          triggeredBy = user?.email || "unknown";
+        } catch { /* ignore */ }
+      }
+
+      // Persist to database
+      const { data: savedReport, error: saveError } = await supabase
+        .from("validation_reports")
+        .insert({
+          opportunity_id: opportunityId,
+          triggered_by: triggeredBy,
+          readiness_score: (report.readiness_score as string) || "unknown",
+          document_completeness: report.document_completeness || [],
+          classification_issues: report.classification_issues || [],
+          data_gaps: report.data_gaps || [],
+          risk_flags: report.risk_flags || [],
+          recommended_actions: report.recommended_actions || [],
+          summary: (report.summary as string) || null,
+        })
+        .select()
+        .single();
+
+      if (saveError) {
+        console.error("Failed to save validation report:", saveError);
+      }
+
+      return new Response(JSON.stringify({ success: true, report, id: savedReport?.id }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

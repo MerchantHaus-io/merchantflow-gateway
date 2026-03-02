@@ -1403,6 +1403,155 @@ const EditField = ({
   </div>
 );
 
+interface ValidationReport {
+  id?: string;
+  readiness_score: string;
+  summary: string;
+  document_completeness: { document: string; status: string; note?: string }[];
+  classification_issues: { file_name: string; issue: string }[];
+  data_gaps: string[];
+  risk_flags: { flag: string; severity: string }[];
+  recommended_actions: string[];
+  triggered_by?: string;
+  created_at?: string;
+}
+
+const READINESS_CONFIG: Record<string, { label: string; emoji: string; color: string; bg: string }> = {
+  ready: { label: "Ready to Submit", emoji: "🟢", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/30" },
+  needs_attention: { label: "Needs Attention", emoji: "🟡", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-500/10 border-amber-500/30" },
+  not_ready: { label: "Not Ready", emoji: "🔴", color: "text-destructive", bg: "bg-destructive/10 border-destructive/30" },
+  unknown: { label: "Unknown", emoji: "⚪", color: "text-muted-foreground", bg: "bg-muted border-border" },
+};
+
+const DOC_STATUS_ICON: Record<string, { icon: React.ReactNode; color: string }> = {
+  present: { icon: <Check className="h-3.5 w-3.5" />, color: "text-emerald-500" },
+  missing: { icon: <X className="h-3.5 w-3.5" />, color: "text-destructive" },
+  unverified: { icon: <AlertTriangle className="h-3.5 w-3.5" />, color: "text-amber-500" },
+};
+
+const ValidationReportCard = ({ report, onDismiss }: { report: ValidationReport; onDismiss?: () => void }) => {
+  const readiness = READINESS_CONFIG[report.readiness_score] || READINESS_CONFIG.unknown;
+
+  return (
+    <div className="border rounded-lg overflow-hidden">
+      {/* Header */}
+      <div className={cn("px-4 py-3 flex items-center justify-between border-b", readiness.bg)}>
+        <div className="flex items-center gap-2">
+          <Wand2 className="h-4 w-4 text-primary" />
+          <span className="text-sm font-semibold">AI Validation Report</span>
+          {report.created_at && (
+            <span className="text-xs text-muted-foreground">
+              {new Date(report.created_at).toLocaleDateString()} {new Date(report.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className={cn("text-xs", readiness.color)}>
+            {readiness.emoji} {readiness.label}
+          </Badge>
+          {onDismiss && (
+            <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={onDismiss}>
+              <X className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <div className="p-4 space-y-4">
+        {/* Summary */}
+        {report.summary && (
+          <p className="text-sm text-foreground/80 italic">{report.summary}</p>
+        )}
+
+        {/* Document Completeness */}
+        {report.document_completeness.length > 0 && (
+          <div>
+            <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Document Checklist</h5>
+            <div className="grid gap-1.5">
+              {report.document_completeness.map((doc, i) => {
+                const statusInfo = DOC_STATUS_ICON[doc.status] || DOC_STATUS_ICON.unverified;
+                return (
+                  <div key={i} className="flex items-start gap-2 text-sm">
+                    <span className={cn("mt-0.5 shrink-0", statusInfo.color)}>{statusInfo.icon}</span>
+                    <span className="font-medium">{doc.document}</span>
+                    {doc.note && <span className="text-muted-foreground">— {doc.note}</span>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Classification Issues */}
+        {report.classification_issues && report.classification_issues.length > 0 && (
+          <div>
+            <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Classification Issues</h5>
+            <div className="grid gap-1.5">
+              {report.classification_issues.map((issue, i) => (
+                <div key={i} className="flex items-start gap-2 text-sm">
+                  <AlertTriangle className="h-3.5 w-3.5 text-amber-500 mt-0.5 shrink-0" />
+                  <span><span className="font-medium">{issue.file_name}</span> — {issue.issue}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Data Gaps */}
+        {report.data_gaps && report.data_gaps.length > 0 && (
+          <div>
+            <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Missing Application Data</h5>
+            <div className="flex flex-wrap gap-1.5">
+              {report.data_gaps.map((gap, i) => (
+                <Badge key={i} variant="outline" className="text-xs text-destructive border-destructive/30">{gap}</Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Risk Flags */}
+        {report.risk_flags && report.risk_flags.length > 0 && (
+          <div>
+            <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Risk Flags</h5>
+            <div className="grid gap-1.5">
+              {report.risk_flags.map((rf, i) => (
+                <div key={i} className="flex items-center gap-2 text-sm">
+                  <Badge variant="outline" className={cn("text-[10px] px-1.5",
+                    rf.severity === "high" ? "text-destructive border-destructive/30" :
+                    rf.severity === "medium" ? "text-amber-500 border-amber-500/30" :
+                    "text-muted-foreground border-border"
+                  )}>
+                    {rf.severity}
+                  </Badge>
+                  <span>{rf.flag}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Recommended Actions */}
+        {report.recommended_actions.length > 0 && (
+          <div>
+            <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Recommended Actions</h5>
+            <ol className="list-decimal list-inside space-y-1">
+              {report.recommended_actions.map((action, i) => (
+                <li key={i} className="text-sm text-foreground/80">{action}</li>
+              ))}
+            </ol>
+          </div>
+        )}
+
+        {report.triggered_by && (
+          <p className="text-[11px] text-muted-foreground pt-1 border-t">
+            Run by {report.triggered_by}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -1411,7 +1560,9 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
   const [selectedDocType, setSelectedDocType] = useState("Unassigned");
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
-  const [validationReport, setValidationReport] = useState<string | null>(null);
+  const [validationReport, setValidationReport] = useState<ValidationReport | null>(null);
+  const [pastReports, setPastReports] = useState<ValidationReport[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   /** Sync document list into the wizard's form_state so ApplicationProgress stays accurate */
@@ -1430,8 +1581,19 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
       .eq('id', ws.id);
   };
 
+  const fetchPastReports = async () => {
+    const { data } = await supabase
+      .from('validation_reports')
+      .select('*')
+      .eq('opportunity_id', opportunityId)
+      .order('created_at', { ascending: false })
+      .limit(10);
+    if (data) setPastReports(data as unknown as ValidationReport[]);
+  };
+
   useEffect(() => {
     fetchDocuments();
+    fetchPastReports();
   }, [opportunityId]);
 
   const fetchDocuments = async () => {
@@ -1491,7 +1653,6 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
     }
 
     toast.success('Documents uploaded');
-    // Re-fetch and sync with wizard
     const { data: updatedDocs } = await supabase
       .from('documents')
       .select('id, opportunity_id, file_name, file_path, file_size, content_type, uploaded_by, created_at, document_type')
@@ -1653,7 +1814,13 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
         body: { action: "validate-documents", opportunityId },
       });
       if (error) throw error;
-      setValidationReport(data?.report || "No report generated.");
+      const report = data?.report as ValidationReport;
+      if (report) {
+        setValidationReport(report);
+        fetchPastReports(); // refresh history
+      } else {
+        toast.error("No report generated");
+      }
     } catch (err) {
       console.error("Validation error:", err);
       toast.error("Failed to validate documents");
@@ -1672,6 +1839,17 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
           onChange={handleFileSelect}
           className="hidden"
         />
+        {pastReports.length > 0 && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setShowHistory(!showHistory)}
+            className="text-xs"
+          >
+            <RotateCcw className="h-3.5 w-3.5 mr-1" />
+            {showHistory ? "Hide History" : `History (${pastReports.length})`}
+          </Button>
+        )}
         <Button
           size="sm"
           variant="outline"
@@ -1703,34 +1881,31 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
         </Button>
       </div>
 
-      {/* AI Validation Report */}
-      {(isValidating || validationReport) && (
-        <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="text-sm font-semibold flex items-center gap-1.5">
-              <Wand2 className="h-4 w-4 text-primary" />
-              AI Validation Report
-            </h4>
-            {validationReport && (
-              <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setValidationReport(null)}>
-                <X className="h-3 w-3" />
-              </Button>
-            )}
+      {/* AI Validation Report — Current */}
+      {isValidating && (
+        <div className="border rounded-lg p-4 bg-primary/5 border-primary/20">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Analyzing documents and application data...
           </div>
-          {isValidating ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Analyzing documents and application data...
-            </div>
-          ) : (
-            <div className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed max-h-[300px] overflow-y-auto">
-              {validationReport}
-            </div>
-          )}
         </div>
       )}
 
-      {/* Inline Upload Panel — avoids nested dialog focus trap issues */}
+      {validationReport && !isValidating && (
+        <ValidationReportCard report={validationReport} onDismiss={() => setValidationReport(null)} />
+      )}
+
+      {/* Past reports history */}
+      {showHistory && pastReports.length > 0 && (
+        <div className="space-y-3">
+          <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Previous Reports</h4>
+          {pastReports.map((report) => (
+            <ValidationReportCard key={report.id} report={report} />
+          ))}
+        </div>
+      )}
+
+      {/* Inline Upload Panel */}
       {showUploadDialog && pendingFiles.length > 0 && (
         <div className="border border-primary/30 bg-primary/5 rounded-lg p-4 space-y-3">
           <div>
@@ -1739,89 +1914,83 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
               {pendingFiles.length} file{pendingFiles.length > 1 ? 's' : ''}: {pendingFiles.map((f) => f.name).join(', ')}
             </p>
           </div>
-          <div>
-            <Label htmlFor="doc-type-inline">Document Type</Label>
-            <Select value={selectedDocType} onValueChange={setSelectedDocType}>
-              <SelectTrigger id="doc-type-inline" className="mt-1">
-                <SelectValue placeholder="Select document type" />
-              </SelectTrigger>
-              <SelectContent>
-                {DOCUMENT_TYPE_OPTIONS.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex justify-end gap-2">
+          <Select value={selectedDocType} onValueChange={setSelectedDocType}>
+            <SelectTrigger className="w-full h-9 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {DOCUMENT_TYPE_OPTIONS.map((t) => (
+                <SelectItem key={t} value={t}>{t}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex gap-2 justify-end">
             <Button size="sm" variant="outline" onClick={cancelUpload}>Cancel</Button>
             <Button size="sm" onClick={confirmUpload}>Upload</Button>
           </div>
         </div>
       )}
 
+      {/* Document List */}
       {isLoading ? (
         <div className="space-y-2">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg gap-2">
-              <div className="flex items-center gap-3 flex-1">
-                <Skeleton className="h-8 w-8 rounded" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-3 w-20" />
-                </div>
-              </div>
-              <Skeleton className="h-8 w-24" />
-            </div>
-          ))}
+          {[1,2,3].map(i => <Skeleton key={i} className="h-12 w-full" />)}
         </div>
       ) : documents.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
-          <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-          <p>No documents yet</p>
+        <div className="text-center py-8 text-muted-foreground text-sm">
+          <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+          No documents uploaded yet
         </div>
       ) : (
         <div className="space-y-2">
           {documents.map((doc) => (
-            <div 
-              key={doc.id} 
-              className="flex items-center justify-between p-3 bg-muted/50 rounded-lg gap-2"
-            >
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate">{doc.file_name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatFileSize(doc.file_size)}
-                  </p>
+            <div key={doc.id} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+              <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{doc.file_name}</p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  {formatFileSize(doc.file_size)}
+                  {doc.uploaded_by && <span>by {doc.uploaded_by}</span>}
                 </div>
               </div>
               <Select
                 value={doc.document_type || "Unassigned"}
-                onValueChange={(value) => handleUpdateDocType(doc.id, value)}
+                onValueChange={(val) => handleUpdateDocType(doc.id, val)}
               >
                 <SelectTrigger className="w-[180px] h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {DOCUMENT_TYPE_OPTIONS.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
+                  {DOCUMENT_TYPE_OPTIONS.map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" onClick={() => handlePreview(doc)} title="Preview">
-                  <Eye className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={() => handleDownload(doc)} title="Download">
-                  <Download className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={() => handleDelete(doc)}>
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
+              <div className="flex gap-1">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handlePreview(doc)}>
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Preview</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleDownload(doc)}>
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Download</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => handleDelete(doc)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Delete</TooltipContent>
+                </Tooltip>
               </div>
             </div>
           ))}
@@ -1830,5 +1999,4 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
     </div>
   );
 };
-
 export default OpportunityDetailModal;

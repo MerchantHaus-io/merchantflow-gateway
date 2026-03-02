@@ -1747,6 +1747,56 @@ export type Database = {
         }
         Relationships: []
       }
+      validation_reports: {
+        Row: {
+          classification_issues: Json
+          created_at: string
+          data_gaps: Json
+          document_completeness: Json
+          id: string
+          opportunity_id: string
+          readiness_score: string
+          recommended_actions: Json
+          risk_flags: Json
+          summary: string | null
+          triggered_by: string
+        }
+        Insert: {
+          classification_issues?: Json
+          created_at?: string
+          data_gaps?: Json
+          document_completeness?: Json
+          id?: string
+          opportunity_id: string
+          readiness_score?: string
+          recommended_actions?: Json
+          risk_flags?: Json
+          summary?: string | null
+          triggered_by: string
+        }
+        Update: {
+          classification_issues?: Json
+          created_at?: string
+          data_gaps?: Json
+          document_completeness?: Json
+          id?: string
+          opportunity_id?: string
+          readiness_score?: string
+          recommended_actions?: Json
+          risk_flags?: Json
+          summary?: string | null
+          triggered_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "validation_reports_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
