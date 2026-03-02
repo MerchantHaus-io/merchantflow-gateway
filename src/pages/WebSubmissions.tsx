@@ -621,10 +621,10 @@ export default function WebSubmissions() {
         console.error("Document migration (non-blocking):", docMigrateErr);
       }
 
-      // 7. Delete the application entry
+      // 7. Mark the application as approved (not deleted — FK constraints from merchants, principals, etc.)
       await supabase
         .from("applications")
-        .delete()
+        .update({ status: "approved" })
         .eq("id", app.id);
 
       toast({
