@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Dialog,
   DialogContent,
@@ -32,13 +34,15 @@ import {
   TrendingUp,
   AlertTriangle,
   MessageSquare,
-  ArrowRight,
   Eye,
   Trash2,
+  CalendarIcon,
+  Clock,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export default function Outreach() {
   const { user } = useAuth();
@@ -50,6 +54,8 @@ export default function Outreach() {
   const [bodyHtml, setBodyHtml] = useState("");
   const [fromName, setFromName] = useState("Merchant Haus");
   const [fromEmail, setFromEmail] = useState("outreach@merchanthaus.io");
+  const [scheduledDate, setScheduledDate] = useState<Date | undefined>();
+  const [scheduledTime, setScheduledTime] = useState("09:00");
 
   const { data: campaigns = [], isLoading } = useQuery({
     queryKey: ["outreach-campaigns"],
@@ -65,6 +71,14 @@ export default function Outreach() {
 
   const createCampaign = useMutation({
     mutationFn: async () => {
+      let scheduled_at: string | null = null;
+      if (scheduledDate) {
+        const [hours, minutes] = scheduledTime.split(":").map(Number);
+        const dt = new Date(scheduledDate);
+        dt.setHours(hours, minutes, 0, 0);
+        scheduled_at = dt.toISOString();
+      }
+
       const { error } = await supabase.from("outreach_campaigns").insert({
         name,
         subject,
@@ -73,6 +87,7 @@ export default function Outreach() {
         from_email: fromEmail,
         created_by: user?.id || "",
         created_by_email: user?.email || "",
+        scheduled_at,
       });
       if (error) throw error;
     },
@@ -82,6 +97,8 @@ export default function Outreach() {
       setName("");
       setSubject("");
       setBodyHtml("");
+      setScheduledDate(undefined);
+      setScheduledTime("09:00");
       toast.success("Campaign created");
     },
     onError: (err: Error) => toast.error(err.message),
@@ -106,6 +123,7 @@ export default function Outreach() {
   const statusColor = (s: string) => {
     switch (s) {
       case "draft": return "secondary";
+      case "scheduled": return "outline";
       case "sending": return "default";
       case "sent": return "default";
       case "completed": return "default";
@@ -125,7 +143,7 @@ export default function Outreach() {
             <DialogTrigger asChild>
               <Button><Plus className="h-4 w-4 mr-2" />New Campaign</Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create Campaign</DialogTitle>
               </DialogHeader>
@@ -160,12 +178,53 @@ export default function Outreach() {
                     Use {"{{first_name}}"}, {"{{last_name}}"}, {"{{company}}"} as merge tags
                   </p>
                 </div>
+
+                {/* Schedule */}
+                <div>
+                  <Label>Schedule (optional)</Label>
+                  <div className="flex gap-2 mt-1">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className={cn("flex-1 justify-start text-left font-normal", !scheduledDate && "text-muted-foreground")}>
+                          <CalendarIcon className="h-4 w-4 mr-2" />
+                          {scheduledDate ? format(scheduledDate, "PPP") : "Pick a date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={scheduledDate}
+                          onSelect={setScheduledDate}
+                          disabled={(date) => date < new Date()}
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <Input
+                      type="time"
+                      value={scheduledTime}
+                      onChange={(e) => setScheduledTime(e.target.value)}
+                      className="w-28"
+                    />
+                  </div>
+                  {scheduledDate && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3 inline mr-1" />
+                        Emails will send on {format(scheduledDate, "MMM d, yyyy")} at {scheduledTime}
+                      </p>
+                      <Button variant="ghost" size="sm" className="h-5 text-xs px-1" onClick={() => setScheduledDate(undefined)}>Clear</Button>
+                    </div>
+                  )}
+                </div>
+
                 <Button
                   className="w-full"
                   onClick={() => createCampaign.mutate()}
                   disabled={!name || !subject || !bodyHtml || createCampaign.isPending}
                 >
-                  Create Campaign
+                  {scheduledDate ? "Schedule Campaign" : "Create Campaign"}
                 </Button>
               </div>
             </DialogContent>
@@ -241,6 +300,7 @@ export default function Outreach() {
                     <TableRow>
                       <TableHead>Campaign</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Schedule</TableHead>
                       <TableHead className="text-center">Contacts</TableHead>
                       <TableHead className="text-center">Sent</TableHead>
                       <TableHead className="text-center">Bounced</TableHead>
@@ -259,7 +319,15 @@ export default function Outreach() {
                       >
                         <TableCell className="font-medium">{c.name}</TableCell>
                         <TableCell>
-                          <Badge variant={statusColor(c.status)}>{c.status}</Badge>
+                          <Badge variant={statusColor(c.status) as any}>{c.status}</Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {(c as any).scheduled_at ? (
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {format(new Date((c as any).scheduled_at), "MMM d, HH:mm")}
+                            </span>
+                          ) : "—"}
                         </TableCell>
                         <TableCell className="text-center">{c.total_contacts}</TableCell>
                         <TableCell className="text-center">{c.sent_count}</TableCell>
