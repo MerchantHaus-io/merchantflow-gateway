@@ -40,6 +40,8 @@ import LiveBilling from "./pages/LiveBilling";
 import LiveAccountDetail from "./pages/LiveAccountDetail";
 import SupportedProcessors from "./pages/SupportedProcessors";
 import Analytics from "./pages/Analytics";
+import Outreach from "./pages/Outreach";
+import OutreachDetail from "./pages/OutreachDetail";
 import NetlifyHub from "./pages/NetlifyHub";
 import { IncomingCallToast } from "./components/IncomingCallToast";
 import { IncomingMessageToast } from "./components/IncomingMessageToast";
@@ -97,6 +99,8 @@ const App = () => (
                 <Route path="/tools/terminal-updates" element={<ProtectedRoute><TerminalUpdates /></ProtectedRoute>} />
                 <Route path="/tools/netlify" element={<ProtectedRoute><NetlifyHub /></ProtectedRoute>} />
                 <Route path="/supported-processors" element={<ProtectedRoute><SupportedProcessors /></ProtectedRoute>} />
+                <Route path="/outreach" element={<ProtectedRoute><Outreach /></ProtectedRoute>} />
+                <Route path="/outreach/:id" element={<ProtectedRoute><OutreachDetail /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </TasksProvider>

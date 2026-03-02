@@ -1290,6 +1290,138 @@ export type Database = {
           },
         ]
       }
+      outreach_campaigns: {
+        Row: {
+          body_html: string
+          bounced_count: number
+          converted_count: number
+          created_at: string
+          created_by: string
+          created_by_email: string
+          from_email: string
+          from_name: string
+          id: string
+          name: string
+          replied_count: number
+          sent_count: number
+          status: string
+          subject: string
+          total_contacts: number
+          updated_at: string
+        }
+        Insert: {
+          body_html: string
+          bounced_count?: number
+          converted_count?: number
+          created_at?: string
+          created_by: string
+          created_by_email: string
+          from_email?: string
+          from_name?: string
+          id?: string
+          name: string
+          replied_count?: number
+          sent_count?: number
+          status?: string
+          subject: string
+          total_contacts?: number
+          updated_at?: string
+        }
+        Update: {
+          body_html?: string
+          bounced_count?: number
+          converted_count?: number
+          created_at?: string
+          created_by?: string
+          created_by_email?: string
+          from_email?: string
+          from_name?: string
+          id?: string
+          name?: string
+          replied_count?: number
+          sent_count?: number
+          status?: string
+          subject?: string
+          total_contacts?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      outreach_contacts: {
+        Row: {
+          bounce_reason: string | null
+          bounced_at: string | null
+          campaign_id: string
+          company: string | null
+          converted_at: string | null
+          created_at: string
+          email: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+          opportunity_id: string | null
+          replied_at: string | null
+          reply_snippet: string | null
+          resend_message_id: string | null
+          sent_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          bounce_reason?: string | null
+          bounced_at?: string | null
+          campaign_id: string
+          company?: string | null
+          converted_at?: string | null
+          created_at?: string
+          email: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          opportunity_id?: string | null
+          replied_at?: string | null
+          reply_snippet?: string | null
+          resend_message_id?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          bounce_reason?: string | null
+          bounced_at?: string | null
+          campaign_id?: string
+          company?: string | null
+          converted_at?: string | null
+          created_at?: string
+          email?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          opportunity_id?: string | null
+          replied_at?: string | null
+          reply_snippet?: string | null
+          resend_message_id?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_contacts_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_contacts_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       principals: {
         Row: {
           application_id: string
