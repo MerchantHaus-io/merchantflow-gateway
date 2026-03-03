@@ -452,32 +452,138 @@ export default function MerchantApply() {
         clientIp = ipData.ip || 'unknown';
       } catch { /* non-blocking */ }
 
-      // 1. Generate a client-side UUID so we don't need .select() (which requires auth)
-      const applicationId = crypto.randomUUID();
+      // Build validated payload based on service type
+      let payload: Record<string, any>;
 
-      // Document Submission Only flow — simplified
       if (isDocSubmission) {
-        const { error: appError } = await supabase
-          .from("applications")
-          .insert({
-            id: applicationId,
-            full_name: `${form.dba_contact_first_name} ${form.dba_contact_last_name}`.trim(),
-            email: form.dba_contact_email,
-            service_type: "document_submission",
-            status: "pending",
-            notes: form.additional_notes || null,
-          });
-        if (appError) throw appError;
+        payload = {
+          service_type: "document_submission",
+          dba_contact_first_name: form.dba_contact_first_name,
+          dba_contact_last_name: form.dba_contact_last_name,
+          dba_contact_email: form.dba_contact_email,
+          additional_notes: form.additional_notes,
+        };
+      } else if (isGatewayOnly) {
+        payload = {
+          service_type: "gateway_only",
+          dba_name: form.dba_name,
+          dba_contact_first_name: form.dba_contact_first_name,
+          dba_contact_last_name: form.dba_contact_last_name,
+          dba_contact_phone: form.dba_contact_phone,
+          dba_contact_email: form.dba_contact_email,
+          dba_address_line1: form.dba_address_line1,
+          dba_address_line2: form.dba_address_line2,
+          dba_city: form.dba_city,
+          dba_state: form.dba_state,
+          dba_zip: form.dba_zip,
+          dba_country: form.dba_country,
+          username: form.username,
+          current_processor: form.current_processor,
+          additional_notes: form.additional_notes,
+          pricing_plan: form.pricing_plan,
+        };
+      } else {
+        payload = {
+          service_type: "processing",
+          dba_name: form.dba_name,
+          product_description: form.product_description,
+          nature_of_business: form.nature_of_business,
+          dba_contact_first_name: form.dba_contact_first_name,
+          dba_contact_last_name: form.dba_contact_last_name,
+          dba_contact_phone: form.dba_contact_phone,
+          dba_contact_email: form.dba_contact_email,
+          dba_address_line1: form.dba_address_line1,
+          dba_address_line2: form.dba_address_line2,
+          dba_city: form.dba_city,
+          dba_state: form.dba_state,
+          dba_zip: form.dba_zip,
+          dba_country: form.dba_country,
+          legal_entity_name: form.legal_entity_name,
+          federal_tax_id: form.federal_tax_id,
+          ownership_type: form.ownership_type,
+          business_formation_date: form.business_formation_date,
+          state_incorporated: form.state_incorporated,
+          tax_exempt: form.tax_exempt,
+          legal_address_line1: form.legal_address_line1,
+          legal_address_line2: form.legal_address_line2,
+          legal_city: form.legal_city,
+          legal_state: form.legal_state,
+          legal_zip: form.legal_zip,
+          legal_country: form.legal_country,
+          monthly_volume: form.monthly_volume,
+          average_transaction: form.average_transaction,
+          high_ticket: form.high_ticket,
+          percent_swiped: form.percent_swiped,
+          percent_keyed: form.percent_keyed,
+          percent_moto: form.percent_moto,
+          percent_ecommerce: form.percent_ecommerce,
+          percent_b2b: form.percent_b2b,
+          percent_b2c: form.percent_b2c,
+          website_url: form.website_url,
+          sic_mcc_code: form.sic_mcc_code,
+          principals: form.principals.map(p => ({
+            principal_first_name: p.principal_first_name,
+            principal_last_name: p.principal_last_name,
+            principal_title: p.principal_title,
+            ownership_percent: p.ownership_percent,
+            principal_phone: p.principal_phone,
+            principal_email: p.principal_email,
+            principal_address_line1: p.principal_address_line1,
+            principal_address_line2: p.principal_address_line2,
+            principal_city: p.principal_city,
+            principal_state: p.principal_state,
+            principal_zip: p.principal_zip,
+            principal_country: p.principal_country,
+            date_of_birth: p.date_of_birth,
+            ssn_full: p.ssn_full,
+          })),
+          bank_name: form.bank_name,
+          account_holder_name: form.account_holder_name,
+          routing_number: form.routing_number,
+          account_number: form.account_number,
+          merchant_agreement_accepted: form.merchant_agreement_accepted,
+          account_authorization_accepted: form.account_authorization_accepted,
+          beneficial_owner_certification: form.beneficial_owner_certification,
+          additional_notes: form.additional_notes,
+          pricing_plan: form.pricing_plan,
+        };
+      }
 
-        // Upload documents with audit trail
+      // Add audit metadata
+      payload.client_ip = clientIp;
+      payload.user_agent = navigator.userAgent;
+
+      // Call server-side validated edge function
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const res = await fetch(`${supabaseUrl}/functions/v1/submit-merchant-application`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${anonKey}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        const msg = result.issues
+          ? result.issues.map((i: any) => `${i.field}: ${i.message}`).join(", ")
+          : result.error || "Submission failed";
+        throw new Error(msg);
+      }
+
+      const applicationId = result.application_id;
+
+      // Upload documents client-side (files can't go through JSON)
+      if (isDocSubmission) {
         for (const doc of form.general_docs) {
           const filePath = `applications/${applicationId}/${Date.now()}_${doc.name}`;
           const { error: storageError } = await supabase.storage
             .from('opportunity-documents')
             .upload(filePath, doc);
-          if (storageError) {
-            console.error(`Doc upload error (${doc.name}):`, storageError);
-          } else {
+          if (!storageError) {
             await supabase.from('application_documents' as any).insert({
               application_id: applicationId,
               file_name: doc.name,
@@ -490,177 +596,17 @@ export default function MerchantApply() {
             });
           }
         }
-
-        setIsSubmitted(true);
-        window.location.href = "https://merchanthaus.io";
-        return;
-      }
-
-      const { error: appError } = await supabase
-        .from("applications")
-        .insert({
-          id: applicationId,
-          full_name: `${form.dba_contact_first_name} ${form.dba_contact_last_name}`.trim(),
-          email: form.dba_contact_email,
-          phone: form.dba_contact_phone,
-          company_name: form.dba_name,
-          service_type: isGatewayOnly ? "gateway_only" : "processing",
-          status: "pending",
-          dba_name: form.dba_name || null,
-          nature_of_business: form.nature_of_business || null,
-          monthly_volume: form.monthly_volume || null,
-          notes: isGatewayOnly
-            ? `[Gateway Only] Processor: ${form.current_processor || ''}. Username: ${form.username || ''}. ${form.additional_notes || ""}`.trim()
-            : (form.additional_notes || null),
-          // Populate address/legal fields so conversion can read them
-          address: form.dba_address_line1 || null,
-          address2: form.dba_address_line2 || null,
-          city: form.dba_city || null,
-          state: form.dba_state || null,
-          zip: form.dba_zip || null,
-          website: form.website_url || null,
-          legal_name: form.legal_entity_name || null,
-          federal_tax_id: form.federal_tax_id || null,
-          state_of_incorporation: form.state_incorporated || null,
-          business_structure: form.ownership_type || null,
-          date_established: form.business_formation_date || null,
-          avg_ticket: form.average_transaction || null,
-          high_ticket: form.high_ticket || null,
-          products: form.product_description || null,
-          in_person_percent: form.percent_swiped || null,
-          keyed_percent: form.percent_keyed || null,
-          ecommerce_percent: form.percent_ecommerce || null,
-          // Owner info from first principal
-          owner_name: form.principals[0] ? `${form.principals[0].principal_first_name} ${form.principals[0].principal_last_name}`.trim() : null,
-          owner_title: form.principals[0]?.principal_title || null,
-          owner_dob: form.principals[0]?.date_of_birth || null,
-          owner_ssn_last4: form.principals[0]?.ssn_full ? form.principals[0].ssn_full.slice(-4) : null,
-          owner_address: form.principals[0]?.principal_address_line1 || null,
-          owner_city: form.principals[0]?.principal_city || null,
-          owner_state: form.principals[0]?.principal_state || null,
-          owner_zip: form.principals[0]?.principal_zip || null,
-        });
-
-      if (appError) throw appError;
-
-      if (!isGatewayOnly) {
-        // 2. Insert into merchants table (canonical keys match column names)
-        const { error: merchantError } = await supabase
-          .from("merchants")
-          .insert({
-            application_id: applicationId,
-            dba_name: form.dba_name,
-            product_description: form.product_description,
-            nature_of_business: form.nature_of_business,
-            dba_contact_first_name: form.dba_contact_first_name,
-            dba_contact_last_name: form.dba_contact_last_name,
-            dba_contact_phone: form.dba_contact_phone,
-            dba_contact_email: form.dba_contact_email,
-            dba_address_line1: form.dba_address_line1,
-            dba_address_line2: form.dba_address_line2 || null,
-            dba_city: form.dba_city,
-            dba_state: form.dba_state,
-            dba_zip: form.dba_zip,
-            dba_country: form.dba_country || "US",
-            legal_entity_name: form.legal_entity_name,
-            federal_tax_id: form.federal_tax_id,
-            ownership_type: form.ownership_type,
-            business_formation_date: form.business_formation_date,
-            state_incorporated: form.state_incorporated,
-            tax_exempt: form.tax_exempt,
-            legal_address_line1: form.legal_address_line1,
-            legal_address_line2: form.legal_address_line2 || null,
-            legal_city: form.legal_city,
-            legal_state: form.legal_state,
-            legal_zip: form.legal_zip,
-            legal_country: form.legal_country || "US",
-            monthly_volume: form.monthly_volume,
-            average_transaction: form.average_transaction,
-            high_ticket: form.high_ticket,
-            percent_swiped: form.percent_swiped,
-            percent_keyed: form.percent_keyed,
-            percent_moto: form.percent_moto,
-            percent_ecommerce: form.percent_ecommerce,
-            percent_b2b: form.percent_b2b || null,
-            percent_b2c: form.percent_b2c || null,
-            website_url: form.website_url || null,
-            sic_mcc_code: form.sic_mcc_code || null,
-          });
-        if (merchantError) console.error("Merchant insert error:", merchantError);
-
-        // 3. Insert principals
-        for (const principal of form.principals) {
-          const { error: principalError } = await supabase
-            .from("principals")
-            .insert({
-              application_id: applicationId,
-              principal_first_name: principal.principal_first_name,
-              principal_last_name: principal.principal_last_name,
-              principal_title: principal.principal_title,
-              ownership_percent: parseFloat(principal.ownership_percent) || 0,
-              principal_phone: principal.principal_phone || null,
-              principal_email: principal.principal_email || null,
-              principal_address_line1: principal.principal_address_line1 || null,
-              principal_address_line2: principal.principal_address_line2 || null,
-              principal_city: principal.principal_city || null,
-              principal_state: principal.principal_state || null,
-              principal_zip: principal.principal_zip || null,
-              principal_country: principal.principal_country || "US",
-              date_of_birth: principal.date_of_birth,
-              ssn_last4: principal.ssn_full ? principal.ssn_full.slice(-4) : null,
-            });
-          if (principalError) console.error("Principal insert error:", principalError);
-        }
-
-        // 4. Insert bank account
-        const { error: bankError } = await supabase
-          .from("bank_accounts")
-          .insert({
-            application_id: applicationId,
-            bank_name: form.bank_name,
-            account_holder_name: form.account_holder_name,
-            account_last4: form.account_number ? form.account_number.slice(-4) : null,
-          });
-        if (bankError) console.error("Bank account insert error:", bankError);
-
-        // 5. Encrypt sensitive data via edge function
-        const hasSensitive = form.principals.some(p => p.ssn_full) || form.routing_number || form.account_number;
-        if (hasSensitive) {
-          const encryptPayload: Record<string, string> = { application_id: applicationId };
-          // Combine all SSNs (for now, primary principal's SSN)
-          const primarySsn = form.principals[0]?.ssn_full;
-          if (primarySsn) encryptPayload.ssn_full = primarySsn;
-          if (form.routing_number) encryptPayload.routing_number = form.routing_number;
-          if (form.account_number) encryptPayload.account_number = form.account_number;
-
-          try {
-            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-            const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-            await fetch(`${supabaseUrl}/functions/v1/encrypt-secrets`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${anonKey}` },
-              body: JSON.stringify(encryptPayload),
-            });
-          } catch (encErr) {
-            console.error("Encryption call failed (non-blocking):", encErr);
-          }
-        }
-        // 6. Upload supporting documents
+      } else if (!isGatewayOnly) {
         const allDocs = [
           ...form.statement_docs.map(f => ({ file: f, type: 'Bank Statement' })),
           ...form.void_check_docs.map(f => ({ file: f, type: 'Voided Check / Bank Confirmation Letter' })),
         ];
-        let docUploadErrors = 0;
         for (const doc of allDocs) {
           const filePath = `applications/${applicationId}/${Date.now()}_${doc.file.name}`;
           const { error: storageError } = await supabase.storage
             .from('opportunity-documents')
             .upload(filePath, doc.file);
-          if (storageError) {
-            console.error(`Doc upload error (${doc.file.name}):`, storageError);
-            docUploadErrors++;
-          } else {
-            // Audit trail for uploaded document
+          if (!storageError) {
             await supabase.from('application_documents' as any).insert({
               application_id: applicationId,
               file_name: doc.file.name,
@@ -673,11 +619,7 @@ export default function MerchantApply() {
             });
           }
         }
-        if (docUploadErrors > 0) {
-          console.warn(`${docUploadErrors} of ${allDocs.length} document uploads failed`);
-        }
       } else {
-        // Gateway only — upload VAR sheets and voided checks
         const gwDocs = [
           ...form.gateway_var_docs.map(f => ({ file: f, type: 'VAR Sheet' })),
           ...form.gateway_void_docs.map(f => ({ file: f, type: 'Voided Check / Bank Confirmation Letter' })),
@@ -687,10 +629,7 @@ export default function MerchantApply() {
           const { error: storageError } = await supabase.storage
             .from('opportunity-documents')
             .upload(filePath, doc.file);
-          if (storageError) {
-            console.error(`GW doc upload error (${doc.file.name}):`, storageError);
-          } else {
-            // Audit trail for uploaded document
+          if (!storageError) {
             await supabase.from('application_documents' as any).insert({
               application_id: applicationId,
               file_name: doc.file.name,
@@ -702,26 +641,6 @@ export default function MerchantApply() {
               user_agent: navigator.userAgent,
             });
           }
-        }
-      }
-
-      // Record consent for all service types
-      {
-        try {
-          await supabase.from("merchant_consents" as any).insert({
-            application_id: applicationId,
-            applicant_name: `${form.dba_contact_first_name} ${form.dba_contact_last_name}`.trim(),
-            applicant_email: form.dba_contact_email,
-            consent_type: 'merchant_agreement',
-            ip_address: clientIp,
-            user_agent: navigator.userAgent,
-            terms_version: '1.0',
-            beneficial_ownership_accepted: form.beneficial_owner_certification,
-            merchant_agreement_accepted: form.merchant_agreement_accepted,
-            account_authorization_accepted: form.account_authorization_accepted,
-          });
-        } catch (consentErr) {
-          console.error("Consent record (non-blocking):", consentErr);
         }
       }
 
