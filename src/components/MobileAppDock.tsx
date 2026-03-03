@@ -148,17 +148,21 @@ export function MobileAppDock() {
     window.dispatchEvent(new CustomEvent(eventName));
   }, []);
 
-  if (hidden) return null;
-
   return (
-    <div
-      className="fixed z-[55]"
-      style={{
-        left: pos.x,
-        bottom: -pos.y,
-        touchAction: "none",
-      }}
-    >
+    <AnimatePresence>
+      {!hidden && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.8 }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
+          className="fixed z-[55]"
+          style={{
+            left: pos.x,
+            bottom: -pos.y,
+            touchAction: "none",
+          }}
+        >
       {/* Fan items */}
       <AnimatePresence>
         {isOpen && FAN_ITEMS.map((item, i) => (
@@ -224,6 +228,8 @@ export function MobileAppDock() {
           </span>
         )}
       </button>
-    </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
