@@ -41,6 +41,7 @@ export function MobileAppDock() {
   const [pos, setPos] = useState<DockPosition>(loadPosition);
   const [isDragging, setIsDragging] = useState(false);
   const [longPressed, setLongPressed] = useState(false);
+  const [hidden, setHidden] = useState(false);
   const dragRef = useRef<{
     startX: number;
     startY: number;
@@ -51,6 +52,18 @@ export function MobileAppDock() {
   } | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tabRef = useRef<HTMLButtonElement>(null);
+
+  // Hide dock when any sub-app opens, show when it closes
+  useEffect(() => {
+    const hide = () => { setHidden(true); setIsOpen(false); };
+    const show = () => setHidden(false);
+    window.addEventListener("dockAppOpened", hide);
+    window.addEventListener("dockAppClosed", show);
+    return () => {
+      window.removeEventListener("dockAppOpened", hide);
+      window.removeEventListener("dockAppClosed", show);
+    };
+  }, []);
 
   // Close fan on outside tap
   useEffect(() => {
@@ -134,6 +147,8 @@ export function MobileAppDock() {
     setIsOpen(false);
     window.dispatchEvent(new CustomEvent(eventName));
   }, []);
+
+  if (hidden) return null;
 
   return (
     <div

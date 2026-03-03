@@ -94,6 +94,11 @@ const FloatingChat: React.FC = () => {
     return () => window.removeEventListener('openFloatingChat', handleOpenChat);
   }, []);
 
+  // Notify dock of open/close state
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent(isOpen ? "dockAppOpened" : "dockAppClosed"));
+  }, [isOpen]);
+
   const formatMessageDate = useCallback((dateString: string) => {
     const date = new Date(dateString);
     if (isToday(date)) return "Today";

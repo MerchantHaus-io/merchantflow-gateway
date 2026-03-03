@@ -60,6 +60,11 @@ export const Dialler = () => {
     window.addEventListener("openDialler", handler);
     return () => window.removeEventListener("openDialler", handler);
   }, []);
+
+  // Notify dock of open/close state
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent(open ? "dockAppOpened" : "dockAppClosed"));
+  }, [open]);
   const [number, setNumber] = useState("");
   const [quoNumbers, setQuoNumbers] = useState<QuoPhoneNumber[]>([]);
   const [selectedLineId, setSelectedLineId] = useState<string>("");
