@@ -371,10 +371,14 @@ export default function OfficeChat({
   const [nearby,     setNearby]     = useState<CRMUser | null>(null);
   const [nearDesk,   setNearDesk]   = useState(false);
   const [showTerminal, setShowTerminal] = useState(false);
+  const showTerminalRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const currentUser = USERS.find(u => u.email === currentUserEmail)!;
   const others      = USERS.filter(u => u.email !== currentUserEmail);
+
+  // Keep terminal ref in sync with state
+  useEffect(() => { showTerminalRef.current = showTerminal; }, [showTerminal]);
 
   // Scroll chat to bottom when messages change
   useEffect(() => {
@@ -523,16 +527,25 @@ export default function OfficeChat({
       euler.set(state.pitch, state.yaw, 0, "YXZ");
       camera.quaternion.setFromEuler(euler);
 
-      // Movement (yaw-relative, no vertical drift)
+      // Movement (yaw-relative, no vertical drift) — disabled when terminal is open
       const yawEuler = new THREE.Euler(0, state.yaw, 0, "YXZ");
       const fwd = new THREE.Vector3(0, 0, -1).applyEuler(yawEuler);
       const rgt = new THREE.Vector3(1, 0,  0).applyEuler(yawEuler);
       const spd = 3.5 * dt;
+      const isMoving = state.keys.has("w") || state.keys.has("s") || state.keys.has("a") || state.keys.has("d");
 
-      if (state.keys.has("w")) state.playerPos.addScaledVector(fwd,  spd);
-      if (state.keys.has("s")) state.playerPos.addScaledVector(fwd, -spd);
-      if (state.keys.has("a")) state.playerPos.addScaledVector(rgt, -spd);
-      if (state.keys.has("d")) state.playerPos.addScaledVector(rgt,  spd);
+      if (isMoving && showTerminalRef.current) {
+        // Movement disengages the terminal
+        showTerminalRef.current = false;
+        setShowTerminal(false);
+      }
+
+      if (!showTerminalRef.current) {
+        if (state.keys.has("w")) state.playerPos.addScaledVector(fwd,  spd);
+        if (state.keys.has("s")) state.playerPos.addScaledVector(fwd, -spd);
+        if (state.keys.has("a")) state.playerPos.addScaledVector(rgt, -spd);
+        if (state.keys.has("d")) state.playerPos.addScaledVector(rgt,  spd);
+      }
 
       state.playerPos.x = Math.max(-ROOM, Math.min(ROOM, state.playerPos.x));
       state.playerPos.z = Math.max(-ROOM, Math.min(ROOM, state.playerPos.z));
