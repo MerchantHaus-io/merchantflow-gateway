@@ -29,17 +29,18 @@ const FAN_ITEMS = [
   { id: "chat", icon: MessageCircle, label: "Chat", event: "openFloatingChat" },
 ];
 
-// Fan positions relative to the tab center (angles: ~135°, ~90°, ~45° — upper arc)
+// Fan positions — vertical stack above the FAB
 const FAN_OFFSETS = [
-  { x: -20, y: -65 },  // upper-left
-  { x: 30, y: -75 },   // straight up
-  { x: 70, y: -45 },   // upper-right
+  { x: 0, y: -64 },   // closest
+  { x: 0, y: -120 },  // middle
+  { x: 0, y: -176 },  // farthest
 ];
 
 export function MobileAppDock() {
   const [isOpen, setIsOpen] = useState(false);
   const [pos, setPos] = useState<DockPosition>(loadPosition);
   const [isDragging, setIsDragging] = useState(false);
+  const [longPressed, setLongPressed] = useState(false);
   const dragRef = useRef<{
     startX: number;
     startY: number;
@@ -48,6 +49,7 @@ export function MobileAppDock() {
     startTime: number;
     moved: boolean;
   } | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tabRef = useRef<HTMLButtonElement>(null);
 
   // Close fan on outside tap
@@ -75,6 +77,14 @@ export function MobileAppDock() {
       startTime: Date.now(),
       moved: false,
     };
+    // Start long-press timer (500ms)
+    longPressTimer.current = setTimeout(() => {
+      setLongPressed(true);
+      setIsDragging(true);
+      setIsOpen(false);
+      // Haptic feedback if available
+      if (navigator.vibrate) navigator.vibrate(30);
+    }, 500);
   }, [pos]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
@@ -83,29 +93,42 @@ export function MobileAppDock() {
     const dx = touch.clientX - dragRef.current.startX;
     const dy = touch.clientY - dragRef.current.startY;
 
-    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
-      dragRef.current.moved = true;
-      setIsDragging(true);
-      setIsOpen(false);
+    // Cancel long-press if finger moves before timer fires
+    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
     }
 
+    // Only allow dragging after long press
+    if (!longPressed && !isDragging) return;
+
+    dragRef.current.moved = true;
     const newX = Math.max(0, Math.min(window.innerWidth - 56, dragRef.current.startPosX + dx));
     const newY = Math.max(-(window.innerHeight - 56), Math.min(-16, dragRef.current.startPosY - dy));
     setPos({ x: newX, y: newY });
-  }, []);
+  }, [longPressed, isDragging]);
 
   const handleTouchEnd = useCallback(() => {
+    // Clear long-press timer
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+
     if (!dragRef.current) return;
-    const wasDrag = dragRef.current.moved;
+    const wasDrag = dragRef.current.moved || isDragging;
     dragRef.current = null;
     setIsDragging(false);
+    setLongPressed(false);
 
     if (wasDrag) {
       savePosition(pos);
     } else {
       setIsOpen((o) => !o);
     }
-  }, [pos]);
+  }, [pos, isDragging]);
 
   const handleFanItemTap = useCallback((eventName: string) => {
     setIsOpen(false);
