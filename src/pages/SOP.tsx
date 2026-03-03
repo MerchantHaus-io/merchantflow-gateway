@@ -90,7 +90,7 @@ const SOP = () => {
 | Encryption | AES-256-GCM for PII (server-side) |
 
 ### SaaS Ecosystem
-Resend (email), Netlify (hosting), GitHub (source control), OpenPhone (telephony), Google Workspace, Gemini AI, Lovable (development platform)
+Resend (email), Netlify (hosting), GitHub (source control), OpenPhone (telephony via Quo API), Google Workspace, Gemini AI (via Lovable AI gateway), Lovable (development platform)
 
 ---
 
@@ -141,11 +141,12 @@ Resend (email), Netlify (hosting), GitHub (source control), OpenPhone (telephony
 | \`documents\` | Files per opportunity (private bucket) |
 | \`activities\` | Audit trail per opportunity |
 | \`comments\` | Discussion threads per opportunity |
+| \`validation_reports\` | AI-powered underwriting readiness assessments |
 
 ### Onboarding & Compliance
 | Table | Purpose |
 |-------|---------|
-| \`applications\` | Public merchant submissions |
+| \`applications\` | Public merchant submissions (web form intake) |
 | \`merchants\` | Detailed business profiles (1:1 with application) |
 | \`principals\` | Beneficial owners (1:many with application) |
 | \`bank_accounts\` | Settlement details (1:1 with application) |
@@ -159,9 +160,16 @@ Resend (email), Netlify (hosting), GitHub (source control), OpenPhone (telephony
 | \`chat_channels\` + \`chat_messages\` | Team chat (realtime) |
 | \`direct_messages\` | 1:1 DMs (realtime) |
 | \`message_reactions\` | Emoji reactions |
-| \`notifications\` | In-app notification feed |
+| \`notifications\` | In-app bell notifications (tasks, assignments, notices, web submissions) |
 | \`push_subscriptions\` | Web push registration (VAPID) |
-| \`call_logs\` | Phone call records |
+| \`call_logs\` | Phone call records with transcripts (OpenPhone/Quo) |
+
+### Outreach
+| Table | Purpose |
+|-------|---------|
+| \`outreach_campaigns\` | Email campaign definitions |
+| \`outreach_contacts\` | Campaign recipient tracking |
+| \`cadence_steps\` | Multi-step email cadence configuration |
 
 ### System
 | Table | Purpose |
@@ -169,14 +177,60 @@ Resend (email), Netlify (hosting), GitHub (source control), OpenPhone (telephony
 | \`profiles\` | User display data (auto-created on signup via trigger) |
 | \`user_roles\` | Role assignments (admin/user enum) |
 | \`user_sessions\` | Login/logout tracking |
-| \`action_items\` | Dashboard action items |
+| \`action_items\` | Team notice board (shared to-dos with file attachments) |
 | \`deletion_requests\` | Soft-delete approval queue |
 | \`broadcast_acknowledgments\` | System announcement tracking |
 | \`terminal_updates\` | Changelog entries |
+| \`onboarding_wizard_states\` | Auto-saved preboarding form progress |
 
 ---
 
-## 4. Security Model
+## 4. Notification Routing
+
+### Bell Notifications (in-app)
+Triggered by database triggers, the bell icon shows notifications for:
+- **Task assignments** — when a task is assigned to a team member
+- **Notice board tags** — when a user is @-mentioned in a notice
+- **Pipeline assignments** — when an opportunity is assigned to a team member
+- **New web submissions** — when a new merchant application is submitted
+
+### Excluded from Bell
+- Channel messages → shown as unread counts in the chat sidebar
+- Direct messages → shown as unread indicators in the DM list
+
+### Push Notifications (web push via VAPID)
+- Channel messages and DMs trigger push notifications to offline users
+
+### Email Notifications (via Resend)
+- Task assignments, stage changes, and opportunity assignments send transactional emails
+
+---
+
+## 5. AI Assistant — Atria
+
+### Overview
+Atria is an AI teammate accessible via the #atria-ai channel in the team messenger. Powered by Google Gemini (via Lovable AI gateway), she has full read access to live CRM data and can take actions.
+
+### Read Access (Live Snapshot)
+- Full account roster with inception dates, contacts, and metadata
+- Complete pipeline with stage/status/assignment breakdown
+- All documents across all opportunities (file names, types, upload dates)
+- Latest AI validation reports with readiness scores
+- Open tasks, team members, and activity
+
+### Write Actions (Tool-Calling)
+Atria can execute the following actions when asked:
+- **Create tasks** — with title, description, assignee, priority, due date, and linked opportunity
+- **Update opportunity stage** — move deals between discovery, qualification, preboarding, underwriting, boarding, live
+- **Assign opportunities** — assign deals to any team member
+- **Update opportunity status** — set to active, dead, or closed-lost
+
+### AI Document Validation
+A separate "AI Validate" action in the Documents tab triggers Gemini to cross-reference uploaded files against application data, generating structured readiness reports (🟢/🟡/🔴) stored in \`validation_reports\`.
+
+---
+
+## 6. Security Model
 
 ### Data Protection
 - RLS enabled on every table — no exceptions
@@ -189,9 +243,13 @@ Resend (email), Netlify (hosting), GitHub (source control), OpenPhone (telephony
 ### Edge Functions
 | Function | Purpose |
 |----------|---------|
+| \`ai-assistant\` | Atria AI teammate (chat + tool-calling + document validation) |
 | \`encrypt-secrets\` | Server-side AES-256-GCM encryption of SSN, routing, account numbers |
 | \`send-notification-email\` | Transactional emails via Resend |
 | \`send-push-notification\` | Web push notifications via VAPID |
+| \`send-outreach-emails\` | Outreach campaign email sending |
+| \`process-scheduled-campaigns\` | Scheduled campaign execution |
+| \`resend-outreach-webhook\` | Inbound webhook for email tracking (bounces, replies) |
 | \`export-data\` | Admin-only ZIP export of all tables |
 | \`force-password-reset\` | Admin-triggered password resets |
 | \`quo-proxy\` / \`quo-webhook\` | Telephony integration (OpenPhone) |
@@ -200,23 +258,23 @@ Resend (email), Netlify (hosting), GitHub (source control), OpenPhone (telephony
 
 ---
 
-## 5. Pipeline & Workflow
+## 7. Pipeline & Workflow
 
 ### Service Types
 - **Processing** — Full merchant onboarding with underwriting
 - **Gateway Only** — Simplified gateway configuration flow
 - **Document Submission** — Compliance document uploads only
 
-### Pipeline Stages
-- **Processing:** Discovery → Qualified → App Prep → Docs Submitted → Underwriting → Approved → Live → Won
-- **Gateway:** Discovery → Qualified → Config → Testing → Live → Won
+### Pipeline Stages (Database Values)
+\`discovery\` → \`qualification\` → \`preboarding\` → \`underwriting\` → \`boarding\` → \`live\`
 
 ### Automation
 - SLA tracking: Automatic 24-hour SLA tasks on stage entry
 - Realtime: Pipeline board, chat, and notifications use WebSocket subscriptions
 - Auto-assignment: Web submissions at 100% completion assigned to support@merchanthaus.io
 - Stage change notifications: Email + in-app + push notifications on assignment and stage transitions
-- System messages: Automated chat posts for assignments and key events
+- System messages: Automated chat posts to #ops-updates for assignments and key events
+- AI validation: On-demand document readiness checks via Gemini
 
 ---
 
@@ -1968,6 +2026,7 @@ Sales Support`,
                             <li><strong className="text-foreground">Forms:</strong> React Hook Form + Zod validation</li>
                             <li><strong className="text-foreground">Charts:</strong> Recharts</li>
                             <li><strong className="text-foreground">Animation:</strong> Framer Motion</li>
+                            <li><strong className="text-foreground">Mobile:</strong> Capacitor (Android wrapper)</li>
                           </ul>
                         </div>
                         <div>
@@ -2013,7 +2072,7 @@ Sales Support`,
                                 <Shield className="h-4 w-4 text-primary" />
                                 <strong className="text-foreground">Admin</strong>
                               </div>
-                              <p className="text-muted-foreground text-xs">Full CRUD on all data. Master exports. User management. Channel administration. Deletion request approval. Stored in <code className="bg-background px-1 rounded">user_roles</code> table (enum: admin/user).</p>
+                              <p className="text-muted-foreground text-xs">Full CRUD on all data. Master exports. User management. Channel administration. Deletion request approval.</p>
                               <p className="text-muted-foreground text-xs mt-1">Users: admin@merchanthaus.io, darryn@merchanthaus.io</p>
                             </div>
                             <div className="p-3 rounded border border-border bg-background/50">
@@ -2021,7 +2080,7 @@ Sales Support`,
                                 <Users className="h-4 w-4 text-cyan-400" />
                                 <strong className="text-foreground">User (Standard)</strong>
                               </div>
-                              <p className="text-muted-foreground text-xs">Pipeline management. Task creation & completion. Chat & DMs. Document upload. Contact editing. Cannot manage roles, approve deletions, or export master data.</p>
+                              <p className="text-muted-foreground text-xs">Pipeline management. Task creation. Chat & DMs. Document upload. Contact editing.</p>
                               <p className="text-muted-foreground text-xs mt-1">Users: support@, sales@, taryn@merchanthaus.io</p>
                             </div>
                           </div>
@@ -2031,11 +2090,11 @@ Sales Support`,
                       <div className="mt-4 p-3 rounded border border-border bg-background/50">
                         <h4 className="font-semibold text-foreground mb-2">Access Control Architecture</h4>
                         <ul className="space-y-1 text-muted-foreground text-xs">
-                          <li>• <strong className="text-foreground">Allowlist:</strong> Only 5 authorized emails can authenticate (<code className="bg-background px-1 rounded">ALLOWED_EMAILS</code> constant + <code className="bg-background px-1 rounded">isEmailAllowed()</code> utility)</li>
-                          <li>• <strong className="text-foreground">RLS:</strong> All tables enforce <code className="bg-background px-1 rounded">auth.uid() IS NOT NULL</code> for read/write operations</li>
-                          <li>• <strong className="text-foreground">Admin check:</strong> <code className="bg-background px-1 rounded">is_admin_email()</code> SQL function (security definer) for admin-only policies</li>
-                          <li>• <strong className="text-foreground">Role check:</strong> <code className="bg-background px-1 rounded">has_role(uuid, app_role)</code> SQL function — separate <code className="bg-background px-1 rounded">user_roles</code> table (never stored on profiles)</li>
-                          <li>• <strong className="text-foreground">Public forms:</strong> INSERT-only policies (no <code className="bg-background px-1 rounded">.select()</code>) for merchant applications & consents</li>
+                          <li>• <strong className="text-foreground">Allowlist:</strong> Only 5 authorized emails can authenticate</li>
+                          <li>• <strong className="text-foreground">RLS:</strong> All tables enforce <code className="bg-background px-1 rounded">auth.uid() IS NOT NULL</code></li>
+                          <li>• <strong className="text-foreground">Admin check:</strong> <code className="bg-background px-1 rounded">is_admin_email()</code> SQL function (security definer)</li>
+                          <li>• <strong className="text-foreground">Role check:</strong> <code className="bg-background px-1 rounded">has_role(uuid, app_role)</code> — separate <code className="bg-background px-1 rounded">user_roles</code> table</li>
+                          <li>• <strong className="text-foreground">Public forms:</strong> INSERT-only policies for merchant applications & consents</li>
                         </ul>
                       </div>
                     </div>
@@ -2050,10 +2109,11 @@ Sales Support`,
                             <li><code className="bg-background px-1 rounded">accounts</code> — Merchant businesses</li>
                             <li><code className="bg-background px-1 rounded">contacts</code> — People linked to accounts</li>
                             <li><code className="bg-background px-1 rounded">opportunities</code> — Pipeline deals (FK → accounts, contacts)</li>
-                            <li><code className="bg-background px-1 rounded">tasks</code> — Assignable work items (FK → opportunities, contacts)</li>
+                            <li><code className="bg-background px-1 rounded">tasks</code> — Assignable work items</li>
                             <li><code className="bg-background px-1 rounded">documents</code> — Files per opportunity (private bucket)</li>
                             <li><code className="bg-background px-1 rounded">activities</code> — Audit trail per opportunity</li>
-                            <li><code className="bg-background px-1 rounded">comments</code> — Discussion threads per opportunity</li>
+                            <li><code className="bg-background px-1 rounded">comments</code> — Discussion threads</li>
+                            <li><code className="bg-background px-1 rounded">validation_reports</code> — AI readiness assessments</li>
                           </ul>
                         </div>
                         <div>
@@ -2061,8 +2121,8 @@ Sales Support`,
                           <ul className="space-y-1 text-muted-foreground text-xs">
                             <li><code className="bg-background px-1 rounded">applications</code> — Public merchant submissions</li>
                             <li><code className="bg-background px-1 rounded">merchants</code> — Detailed business profiles (1:1 with app)</li>
-                            <li><code className="bg-background px-1 rounded">principals</code> — Beneficial owners (1:many with app)</li>
-                            <li><code className="bg-background px-1 rounded">bank_accounts</code> — Settlement details (1:1 with app)</li>
+                            <li><code className="bg-background px-1 rounded">principals</code> — Beneficial owners (1:many)</li>
+                            <li><code className="bg-background px-1 rounded">bank_accounts</code> — Settlement details (1:1)</li>
                             <li><code className="bg-background px-1 rounded">application_secrets</code> — Encrypted PII (auto-purged)</li>
                             <li><code className="bg-background px-1 rounded">merchant_consents</code> — Legal agreements with IP/UA</li>
                             <li><code className="bg-background px-1 rounded">application_documents</code> — File audit trail</li>
@@ -2070,36 +2130,100 @@ Sales Support`,
                         </div>
                       </div>
 
-                      <div className="grid md:grid-cols-2 gap-6 mt-4">
+                      <div className="grid md:grid-cols-3 gap-6 mt-4">
                         <div>
                           <h4 className="font-semibold text-foreground mb-2">Communication</h4>
                           <ul className="space-y-1 text-muted-foreground text-xs">
-                            <li><code className="bg-background px-1 rounded">chat_channels</code> + <code className="bg-background px-1 rounded">chat_messages</code> — Team chat (realtime)</li>
-                            <li><code className="bg-background px-1 rounded">direct_messages</code> — 1:1 DMs (realtime)</li>
+                            <li><code className="bg-background px-1 rounded">chat_channels</code> + <code className="bg-background px-1 rounded">chat_messages</code> — Team chat</li>
+                            <li><code className="bg-background px-1 rounded">direct_messages</code> — 1:1 DMs</li>
                             <li><code className="bg-background px-1 rounded">message_reactions</code> — Emoji reactions</li>
-                            <li><code className="bg-background px-1 rounded">notifications</code> — In-app notification feed</li>
-                            <li><code className="bg-background px-1 rounded">push_subscriptions</code> — Web push registration</li>
-                            <li><code className="bg-background px-1 rounded">call_logs</code> — Phone call records</li>
+                            <li><code className="bg-background px-1 rounded">notifications</code> — Bell notifications</li>
+                            <li><code className="bg-background px-1 rounded">push_subscriptions</code> — Web push</li>
+                            <li><code className="bg-background px-1 rounded">call_logs</code> — Phone records + transcripts</li>
+                          </ul>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-foreground mb-2">Outreach</h4>
+                          <ul className="space-y-1 text-muted-foreground text-xs">
+                            <li><code className="bg-background px-1 rounded">outreach_campaigns</code> — Campaign definitions</li>
+                            <li><code className="bg-background px-1 rounded">outreach_contacts</code> — Recipient tracking</li>
+                            <li><code className="bg-background px-1 rounded">cadence_steps</code> — Multi-step email cadences</li>
                           </ul>
                         </div>
                         <div>
                           <h4 className="font-semibold text-foreground mb-2">System</h4>
                           <ul className="space-y-1 text-muted-foreground text-xs">
-                            <li><code className="bg-background px-1 rounded">profiles</code> — User display data (auto-created on signup)</li>
-                            <li><code className="bg-background px-1 rounded">user_roles</code> — Role assignments (admin/user enum)</li>
-                            <li><code className="bg-background px-1 rounded">user_sessions</code> — Login/logout tracking</li>
-                            <li><code className="bg-background px-1 rounded">action_items</code> — Dashboard action items</li>
-                            <li><code className="bg-background px-1 rounded">deletion_requests</code> — Soft-delete approval queue</li>
-                            <li><code className="bg-background px-1 rounded">broadcast_acknowledgments</code> — System announcements</li>
-                            <li><code className="bg-background px-1 rounded">terminal_updates</code> — Changelog entries</li>
+                            <li><code className="bg-background px-1 rounded">profiles</code> — User data (auto-created)</li>
+                            <li><code className="bg-background px-1 rounded">user_roles</code> — Role assignments</li>
+                            <li><code className="bg-background px-1 rounded">user_sessions</code> — Login tracking</li>
+                            <li><code className="bg-background px-1 rounded">action_items</code> — Notice board</li>
+                            <li><code className="bg-background px-1 rounded">deletion_requests</code> — Soft-delete queue</li>
+                            <li><code className="bg-background px-1 rounded">onboarding_wizard_states</code> — Wizard progress</li>
                           </ul>
                         </div>
                       </div>
                     </div>
 
-                    {/* 4. Security */}
+                    {/* 4. Notification Routing */}
                     <div>
-                      <h3 className="text-cyan-400 font-bold mb-3 text-base">4. Security Model</h3>
+                      <h3 className="text-cyan-400 font-bold mb-3 text-base">4. Notification Routing</h3>
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div>
+                          <h4 className="font-semibold text-foreground mb-2">Bell Notifications (In-App)</h4>
+                          <ul className="space-y-1.5 text-muted-foreground">
+                            <li>• Task assignments → bell + email + system DM</li>
+                            <li>• Notice board tags → bell + system DM</li>
+                            <li>• Pipeline assignments → bell + email + system DM</li>
+                            <li>• New web submissions → bell (all team members)</li>
+                          </ul>
+                          <div className="mt-3 p-2 rounded border border-border bg-background/50">
+                            <p className="text-xs text-muted-foreground"><strong className="text-foreground">Excluded:</strong> Channel messages and DMs use their own unread indicators in the messenger — no bell notifications.</p>
+                          </div>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-foreground mb-2">Other Channels</h4>
+                          <ul className="space-y-1.5 text-muted-foreground">
+                            <li>• <strong className="text-foreground">Push (VAPID):</strong> Channel messages + DMs to offline users</li>
+                            <li>• <strong className="text-foreground">Email (Resend):</strong> Task assignments, stage changes, opportunity assignments</li>
+                            <li>• <strong className="text-foreground">System DMs:</strong> Automated messages from Ops-Update bot</li>
+                            <li>• <strong className="text-foreground">#ops-updates:</strong> System channel for pipeline events</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 5. AI Assistant */}
+                    <div>
+                      <h3 className="text-cyan-400 font-bold mb-3 text-base">5. AI Assistant — Atria</h3>
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div>
+                          <h4 className="font-semibold text-foreground mb-2">Read Access (Live Snapshot)</h4>
+                          <ul className="space-y-1.5 text-muted-foreground">
+                            <li>• Full account roster with inception dates & contacts</li>
+                            <li>• Complete pipeline with stage/status/assignment data</li>
+                            <li>• All documents across all opportunities</li>
+                            <li>• Latest AI validation reports with readiness scores</li>
+                            <li>• Open tasks, team members, and activity</li>
+                          </ul>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-foreground mb-2">Write Actions (Tool-Calling)</h4>
+                          <ul className="space-y-1.5 text-muted-foreground">
+                            <li>• <strong className="text-foreground">Create tasks</strong> — title, assignee, priority, due date, linked opportunity</li>
+                            <li>• <strong className="text-foreground">Update stage</strong> — move deals between pipeline stages</li>
+                            <li>• <strong className="text-foreground">Assign deals</strong> — assign to any team member</li>
+                            <li>• <strong className="text-foreground">Update status</strong> — active, dead, closed-lost</li>
+                          </ul>
+                          <div className="mt-3 p-2 rounded border border-border bg-background/50">
+                            <p className="text-xs text-muted-foreground">Accessible via <strong className="text-foreground">#atria-ai</strong> channel. Powered by Google Gemini via Lovable AI gateway.</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 6. Security */}
+                    <div>
+                      <h3 className="text-cyan-400 font-bold mb-3 text-base">6. Security Model</h3>
                       <div className="grid md:grid-cols-2 gap-6">
                         <div>
                           <h4 className="font-semibold text-foreground mb-2">Data Protection</h4>
@@ -2115,27 +2239,29 @@ Sales Support`,
                         <div>
                           <h4 className="font-semibold text-foreground mb-2">Edge Functions</h4>
                           <ul className="space-y-1.5 text-muted-foreground">
+                            <li><code className="text-xs bg-background px-1 rounded">ai-assistant</code> — Atria (chat + tools + validation)</li>
                             <li><code className="text-xs bg-background px-1 rounded">encrypt-secrets</code> — Server-side PII encryption</li>
-                            <li><code className="text-xs bg-background px-1 rounded">send-notification-email</code> — Transactional emails (Resend)</li>
-                            <li><code className="text-xs bg-background px-1 rounded">send-push-notification</code> — Web push via VAPID</li>
-                            <li><code className="text-xs bg-background px-1 rounded">export-data</code> — Admin-only ZIP exports</li>
-                            <li><code className="text-xs bg-background px-1 rounded">force-password-reset</code> — Admin password resets</li>
-                            <li><code className="text-xs bg-background px-1 rounded">quo-proxy</code> / <code className="text-xs bg-background px-1 rounded">quo-webhook</code> — Telephony integration</li>
+                            <li><code className="text-xs bg-background px-1 rounded">send-notification-email</code> — Transactional emails</li>
+                            <li><code className="text-xs bg-background px-1 rounded">send-push-notification</code> — Web push (VAPID)</li>
+                            <li><code className="text-xs bg-background px-1 rounded">send-outreach-emails</code> — Campaign emails</li>
+                            <li><code className="text-xs bg-background px-1 rounded">export-data</code> — Admin ZIP exports</li>
+                            <li><code className="text-xs bg-background px-1 rounded">quo-proxy</code> / <code className="text-xs bg-background px-1 rounded">quo-webhook</code> — Telephony</li>
                           </ul>
                         </div>
                       </div>
                     </div>
 
-                    {/* 5. Pipeline */}
+                    {/* 7. Pipeline */}
                     <div>
-                      <h3 className="text-cyan-400 font-bold mb-3 text-base">5. Pipeline & Workflow</h3>
+                      <h3 className="text-cyan-400 font-bold mb-3 text-base">7. Pipeline & Workflow</h3>
                       <ul className="space-y-1.5 text-muted-foreground">
                         <li>• <strong className="text-foreground">Service Types:</strong> Processing, Gateway Only, Document Submission</li>
-                        <li>• <strong className="text-foreground">Processing Pipeline:</strong> Discovery → Qualified → App Prep → Docs Submitted → Underwriting → Approved → Live → Won</li>
-                        <li>• <strong className="text-foreground">Gateway Pipeline:</strong> Discovery → Qualified → Config → Testing → Live → Won</li>
+                        <li>• <strong className="text-foreground">Pipeline Stages (DB):</strong> <code className="text-xs bg-background px-1 rounded">discovery</code> → <code className="text-xs bg-background px-1 rounded">qualification</code> → <code className="text-xs bg-background px-1 rounded">preboarding</code> → <code className="text-xs bg-background px-1 rounded">underwriting</code> → <code className="text-xs bg-background px-1 rounded">boarding</code> → <code className="text-xs bg-background px-1 rounded">live</code></li>
                         <li>• <strong className="text-foreground">SLA Tracking:</strong> Automatic 24-hour SLA tasks on stage entry</li>
-                        <li>• <strong className="text-foreground">Realtime:</strong> Pipeline board, chat, and notifications use WebSocket subscriptions</li>
-                        <li>• <strong className="text-foreground">Auto-assignment:</strong> Web submissions at 100% completion assigned to support@merchanthaus.io</li>
+                        <li>• <strong className="text-foreground">Realtime:</strong> Pipeline board, chat, and notifications via WebSocket</li>
+                        <li>• <strong className="text-foreground">Auto-assignment:</strong> Web submissions at 100% assigned to support@merchanthaus.io</li>
+                        <li>• <strong className="text-foreground">System Messages:</strong> Automated posts to #ops-updates for assignments and events</li>
+                        <li>• <strong className="text-foreground">AI Validation:</strong> On-demand document readiness checks via Gemini</li>
                       </ul>
                     </div>
                   </div>
