@@ -24,22 +24,34 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Verify user is admin using their token
+    // Verify user identity
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    
+
     const { data: { user }, error: userError } = await userClient.auth.getUser();
-    const adminEmails = ["admin@merchanthaus.io", "darryn@merchanthaus.io"];
-    if (userError || !user || !adminEmails.includes(user.email || "")) {
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Check admin role via user_roles table (service client bypasses RLS)
+    const adminClient = createClient(supabaseUrl, supabaseServiceKey);
+    const { data: roleData } = await adminClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    if (!roleData) {
       return new Response(JSON.stringify({ error: "Admin access required" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    // Use service role to bypass RLS
-    const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
     console.log("Starting data export for admin:", user.email);
 
