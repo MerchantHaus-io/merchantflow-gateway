@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ClipboardCheck, Phone, MessageCircle } from "lucide-react";
+import { ClipboardCheck, Phone, MessageCircle, Gamepad2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +27,7 @@ const FAN_ITEMS = [
   { id: "notice", icon: ClipboardCheck, label: "Notice Board", event: "openNoticeBoard" },
   { id: "dialler", icon: Phone, label: "Dialler", event: "openDialler" },
   { id: "chat", icon: MessageCircle, label: "Chat", event: "openFloatingChat" },
+  { id: "simulator", icon: Gamepad2, label: "Simulator", event: "openOfficeSimulator" },
 ];
 
 // Fan positions — vertical stack above the FAB
@@ -34,6 +35,7 @@ const FAN_OFFSETS = [
   { x: 0, y: -64 },   // closest
   { x: 0, y: -120 },  // middle
   { x: 0, y: -176 },  // farthest
+  { x: 0, y: -232 },  // fourth item
 ];
 
 export function MobileAppDock() {
