@@ -27,6 +27,7 @@ import {
   Clock,
   Users,
   Mail,
+  Bot,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -293,9 +294,9 @@ A separate "AI Validate" action in the Documents tab triggers Gemini to cross-re
 
 Thank you for taking the time to connect.
 
-I’d love to learn more about your business and what you’re looking for in a payments/processing partner so we can see how best to support you.
+I'd love to learn more about your business and what you're looking for in a payments/processing partner so we can see how best to support you.
 
-Are you available for a quick call in the next few days? If email is easier, you’re welcome to reply with a brief overview of your business (what you sell, how you accept payments today, and your typical monthly volume), and we’ll take it from there.
+Are you available for a quick call in the next few days? If email is easier, you're welcome to reply with a brief overview of your business (what you sell, how you accept payments today, and your typical monthly volume), and we'll take it from there.
 
 Best regards,
 Sales Support`,
@@ -309,7 +310,7 @@ Just following up on our recent connection.
 
 When you have a moment, could you please reply with a quick overview of your business (what you sell, how you take payments today, and your approximate monthly volume)? That will help us confirm the best fit and next steps.
 
-If you’d prefer a quick call instead, you’re welcome to share a few times that work for you, and we’ll schedule something.
+If you'd prefer a quick call instead, you're welcome to share a few times that work for you, and we'll schedule something.
 
 Best regards,
 Sales Support`,
@@ -330,7 +331,7 @@ To make next steps easy, you can book a quick discovery call at a time that work
 
 https://calendar.app.google/6F1xCy8DcVh8B4aR7
 
-On this call, we’ll review your business model, products/services, and any specific requirements so we can recommend the best solution.
+On this call, we'll review your business model, products/services, and any specific requirements so we can recommend the best solution.
 
 If you prefer to continue over email instead, just reply with a brief description of your business and any questions you have.
 
@@ -357,7 +358,7 @@ Please complete the attached form and return it along with:
 - 3 most recent months of processing statements, if available
 - Voided check or bank letter showing your account and routing details
 - Articles of Organization (or equivalent formation document)
-- Copy of the owner’s driver’s license or passport
+- Copy of the owner's driver's license or passport
 - Social Security Number (SSN) for the principal owner
 - A brief overview of your products and services, including:
   - What you sell
@@ -367,11 +368,11 @@ Please complete the attached form and return it along with:
 
 Please share as much detail as you can about your products and services — this helps underwriting understand your business clearly and speeds up approval.
 
-You can reply to this email with the documents attached, or let us know if you’d prefer to use a secure upload method and we’ll provide details.
+You can reply to this email with the documents attached, or let us know if you'd prefer to use a secure upload method and we'll provide details.
 
-Once we have everything, we’ll submit your file for review right away and update you on the next steps.
+Once we have everything, we'll submit your file for review right away and update you on the next steps.
 
-If you have any questions while gathering these items, please reach out — we’re here to help.
+If you have any questions while gathering these items, please reach out — we're here to help.
 
 Thanks,
 Sales Support`,
@@ -388,7 +389,7 @@ Because your business is pre-launch or has limited processing history, underwrit
 - 3 most recent months of bank statements (business or personal)
 - Voided check or bank letter showing your account and routing details
 - Articles of Organization (or equivalent formation document)
-- Copy of the owner’s driver’s license or passport
+- Copy of the owner's driver's license or passport
 - Social Security Number (SSN) for the principal owner
 - A detailed overview of your products and services, including:
   - What you will sell
@@ -400,11 +401,11 @@ Because your business is pre-launch or has limited processing history, underwrit
 
 Please share as much detail as you can about your products and services — the more clarity we have, the easier it is for underwriting to approve and set the right parameters.
 
-You can reply to this email with the documents attached, or let us know if you’d prefer to use a secure upload method and we’ll provide details.
+You can reply to this email with the documents attached, or let us know if you'd prefer to use a secure upload method and we'll provide details.
 
-Once we have everything, we’ll submit your file for review right away and update you on the next steps.
+Once we have everything, we'll submit your file for review right away and update you on the next steps.
 
-If you have any questions while gathering these items, please reach out — we’re here to help.
+If you have any questions while gathering these items, please reach out — we're here to help.
 
 Thanks,
 Sales Support`,
@@ -421,11 +422,11 @@ Sales Support`,
 
 Thank you for sending through your documents.
 
-We’ve received your application and supporting information and have submitted your file to our processing/underwriting team for review. Your application is now officially in process.
+We've received your application and supporting information and have submitted your file to our processing/underwriting team for review. Your application is now officially in process.
 
-If anything additional is required, we’ll reach out right away. Otherwise, we’ll provide an update as soon as the review is complete.
+If anything additional is required, we'll reach out right away. Otherwise, we'll provide an update as soon as the review is complete.
 
-In the meantime, if you have any questions about timelines or next steps, just reply to this email and we’ll be happy to help.
+In the meantime, if you have any questions about timelines or next steps, just reply to this email and we'll be happy to help.
 
 Best regards,
 Sales Support`,
@@ -463,6 +464,13 @@ Sales Support`,
     },
   ];
 
+  /* ─── Section header helper ─── */
+  const SectionHeader = ({ children, gold = false }: { children: React.ReactNode; gold?: boolean }) => (
+    <h2 className={`font-['Playfair_Display'] text-2xl font-bold text-foreground border-b-2 ${gold ? 'border-[hsl(var(--gold))]' : 'border-primary'} inline-block mb-6 pb-1`}>
+      {children}
+    </h2>
+  );
+
   return (
     <AppLayout pageTitle="Standard Operating Procedures">
       <div className="flex-1 flex min-h-0">
@@ -471,13 +479,13 @@ Sales Support`,
               <nav className="p-4 space-y-1">
                 <a
                   href="#index"
-                  className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-none transition-colors"
+                  className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 rounded-none transition-colors"
                 >
                   Document Index
                 </a>
                 <a
                   href="#principles"
-                  className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-none transition-colors"
+                  className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 rounded-none transition-colors"
                 >
                   1. Principles
                 </a>
@@ -490,16 +498,16 @@ Sales Support`,
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <div className="space-y-1">
-                      <a href="#step1" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-none transition-colors">
+                      <a href="#step1" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 rounded-none transition-colors">
                         2.1 Intro & Discovery
                       </a>
-                      <a href="#step1-2" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-none transition-colors">
+                      <a href="#step1-2" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 rounded-none transition-colors">
                         2.2 Call Scheduling
                       </a>
-                      <a href="#step2" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-none transition-colors">
+                      <a href="#step2" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 rounded-none transition-colors">
                         2.3 Request for Documents
                       </a>
-                      <a href="#step3" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-none transition-colors">
+                      <a href="#step3" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 rounded-none transition-colors">
                         2.4 Application in Process
                       </a>
                     </div>
@@ -514,10 +522,10 @@ Sales Support`,
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <div className="space-y-1">
-                      <a href="#pipeline-stages" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-none transition-colors">
+                      <a href="#pipeline-stages" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 rounded-none transition-colors">
                         Stage Management Guide
                       </a>
-                      <a href="#underwriting-checklist" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-none transition-colors">
+                      <a href="#underwriting-checklist" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 rounded-none transition-colors">
                         2.5 Pre-Underwriting Checklist
                       </a>
                     </div>
@@ -532,16 +540,19 @@ Sales Support`,
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <div className="space-y-1">
-                      <a href="#ps-terminal" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-none transition-colors">
+                      <a href="#atria-ai" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 rounded-none transition-colors">
+                        3.0 Atria AI Assistant
+                      </a>
+                      <a href="#ps-terminal" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 rounded-none transition-colors">
                         3.1 PS Terminal Usage Guide
                       </a>
-                      <a href="#microsite-application" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-none transition-colors">
+                      <a href="#microsite-application" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 rounded-none transition-colors">
                         3.2 NMI Microsite Application
                       </a>
-                      <a href="#step4" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-none transition-colors">
+                      <a href="#step4" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 rounded-none transition-colors">
                         3.3 Processing & Gateway Setup
                       </a>
-                      <a href="#action-items" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-none transition-colors">
+                      <a href="#action-items" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 rounded-none transition-colors">
                         3.4 Action Items & Standards
                       </a>
                     </div>
@@ -556,13 +567,13 @@ Sales Support`,
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <div className="space-y-1">
-                      <a href="#services-overview" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-none transition-colors">
+                      <a href="#services-overview" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 rounded-none transition-colors">
                         4. Services Overview
                       </a>
-                      <a href="#appendix" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-none transition-colors">
+                      <a href="#appendix" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 rounded-none transition-colors">
                         5. Appendices
                       </a>
-                      <a href="#tech-stack" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-none transition-colors">
+                      <a href="#tech-stack" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 rounded-none transition-colors">
                         6. Systems & Tech Stack
                       </a>
                     </div>
@@ -575,28 +586,23 @@ Sales Support`,
             <div className="flex-1 overflow-y-auto scroll-smooth">
               <div className="max-w-4xl mx-auto p-6 md:p-12 space-y-10">
                 {/* Document Index */}
-                <section
-                  id="index"
-                  className="bg-card rounded-xl border border-border shadow-sm p-8"
-                >
-                  <h2 className="text-2xl font-bold text-primary border-b-4 border-cyan-500 inline-block mb-6 pb-1">
-                    Document Index
-                  </h2>
+                <section id="index" className="bg-card rounded-none border border-border p-8">
+                  <SectionHeader gold>Document Index</SectionHeader>
                   <div className="grid md:grid-cols-2 gap-8 text-sm">
                     <div>
-                      <h3 className="font-bold text-foreground mb-3 uppercase tracking-wide text-xs">
+                      <h3 className="font-bold text-foreground mb-3 uppercase tracking-[0.3em] text-[10px]">
                         Section 1 — Principles & Foundation
                       </h3>
-                      <ul className="space-y-2 text-muted-foreground pl-2 border-l-2 border-border">
+                      <ul className="space-y-2 text-muted-foreground pl-2 border-l-2 border-[hsl(var(--gold))]">
                         <li>
                           <a href="#principles" className="hover:text-primary transition-colors cursor-pointer"><strong>1.1</strong> — Foreword: The Four Agreements</a>
                         </li>
                       </ul>
 
-                      <h3 className="font-bold text-foreground mt-6 mb-3 uppercase tracking-wide text-xs">
+                      <h3 className="font-bold text-foreground mt-6 mb-3 uppercase tracking-[0.3em] text-[10px]">
                         Section 2 — Sales Operating Procedures
                       </h3>
-                      <ul className="space-y-2 text-muted-foreground pl-2 border-l-2 border-border">
+                      <ul className="space-y-2 text-muted-foreground pl-2 border-l-2 border-[hsl(var(--gold))]">
                         <li>
                           <a href="#step1" className="hover:text-primary transition-colors cursor-pointer"><strong>2.1</strong> — Step 1: Intro & Discovery (Email Templates)</a>
                         </li>
@@ -615,10 +621,13 @@ Sales Support`,
                       </ul>
                     </div>
                     <div>
-                      <h3 className="font-bold text-foreground mb-3 uppercase tracking-wide text-xs">
+                      <h3 className="font-bold text-foreground mb-3 uppercase tracking-[0.3em] text-[10px]">
                         Section 3 — Internal Operations & Systems
                       </h3>
-                      <ul className="space-y-2 text-muted-foreground pl-2 border-l-2 border-border">
+                      <ul className="space-y-2 text-muted-foreground pl-2 border-l-2 border-[hsl(var(--gold))]">
+                        <li>
+                          <a href="#atria-ai" className="hover:text-primary transition-colors cursor-pointer"><strong>3.0</strong> — Atria AI Assistant</a>
+                        </li>
                         <li>
                           <a href="#ps-terminal" className="hover:text-primary transition-colors cursor-pointer"><strong>3.1</strong> — PS Terminal Usage Guide</a>
                         </li>
@@ -633,10 +642,10 @@ Sales Support`,
                         </li>
                       </ul>
 
-                      <h3 className="font-bold text-foreground mt-6 mb-3 uppercase tracking-wide text-xs">
+                      <h3 className="font-bold text-foreground mt-6 mb-3 uppercase tracking-[0.3em] text-[10px]">
                         Section 4 — Services & Pricing Reference
                       </h3>
-                      <ul className="space-y-2 text-muted-foreground pl-2 border-l-2 border-border">
+                      <ul className="space-y-2 text-muted-foreground pl-2 border-l-2 border-[hsl(var(--gold))]">
                         <li>
                           <a href="#services-overview" className="hover:text-primary transition-colors cursor-pointer"><strong>4.1</strong> — MerchantHaus Services Overview</a>
                         </li>
@@ -645,10 +654,10 @@ Sales Support`,
                         </li>
                       </ul>
 
-                      <h3 className="font-bold text-foreground mt-6 mb-3 uppercase tracking-wide text-xs">
+                      <h3 className="font-bold text-foreground mt-6 mb-3 uppercase tracking-[0.3em] text-[10px]">
                         Section 5 — Appendices & Reference
                       </h3>
-                      <ul className="space-y-2 text-muted-foreground pl-2 border-l-2 border-border">
+                      <ul className="space-y-2 text-muted-foreground pl-2 border-l-2 border-[hsl(var(--gold))]">
                         <li>
                           <a href="#appendix" className="hover:text-primary transition-colors cursor-pointer"><strong>5.1</strong> — SOP Structure & Best Practices</a>
                         </li>
@@ -660,10 +669,10 @@ Sales Support`,
                         </li>
                       </ul>
 
-                      <h3 className="font-bold text-foreground mt-6 mb-3 uppercase tracking-wide text-xs">
+                      <h3 className="font-bold text-foreground mt-6 mb-3 uppercase tracking-[0.3em] text-[10px]">
                         Section 6 — External Artifacts
                       </h3>
-                      <ul className="space-y-2 text-cyan-400 pl-2 border-l-2 border-border">
+                      <ul className="space-y-2 text-[hsl(var(--gold))] pl-2 border-l-2 border-[hsl(var(--gold))]">
                         <li>
                           <a
                             href="https://docs.google.com/spreadsheets/d/1OuQwgzkEGHYemHRv3fuyte1jracU2nJGgVVAb5HlQ3A/edit?gid=0#gid=0"
@@ -671,8 +680,7 @@ Sales Support`,
                             rel="noopener noreferrer"
                             className="hover:underline flex items-center gap-1"
                           >
-                            <ExternalLink className="w-3 h-3" /> Lead Stages
-                            Document
+                            <ExternalLink className="w-3 h-3" /> Lead Stages Document
                           </a>
                         </li>
                         <li>
@@ -682,8 +690,7 @@ Sales Support`,
                             rel="noopener noreferrer"
                             className="hover:underline flex items-center gap-1"
                           >
-                            <ExternalLink className="w-3 h-3" /> Form Responses
-                            Sheet
+                            <ExternalLink className="w-3 h-3" /> Form Responses Sheet
                           </a>
                         </li>
                         <li>
@@ -732,57 +739,44 @@ Sales Support`,
                 </section>
 
                 {/* Foreword */}
-                <section
-                  id="principles"
-                  className="bg-card rounded-xl border border-border shadow-sm p-8"
-                >
-                  <h2 className="text-2xl font-bold text-primary border-b-4 border-cyan-500 inline-block mb-6 pb-1">
-                    Foreword — The Four Agreements
-                  </h2>
-                  <p className="text-muted-foreground mb-6 italic border-l-4 border-cyan-500 pl-4 bg-cyan-500/10 py-2 pr-2 rounded-r">
+                <section id="principles" className="bg-card rounded-none border border-border p-8">
+                  <SectionHeader>Foreword — The Four Agreements</SectionHeader>
+                  <p className="text-muted-foreground mb-6 italic border-l-4 border-[hsl(var(--gold))] pl-4 bg-[hsl(var(--gold))]/10 py-2 pr-2">
                     The following principles serve as the foundational mindset and
                     ethical framework that guide all MerchantHaus operations.
                   </p>
 
                   <div className="grid md:grid-cols-2 gap-6">
-                    <div className="bg-accent/50 p-5 rounded-lg border border-border">
+                    <div className="bg-secondary/50 p-5 rounded-none border border-border">
                       <h3 className="font-bold text-foreground mb-2 flex items-center gap-2">
-                        <MessageSquare className="w-4 h-4 text-primary" /> 1. Be
-                        Impeccable With Your Word
+                        <MessageSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> 1. Be Impeccable With Your Word
                       </h3>
                       <p className="text-sm text-muted-foreground">
-                        Mean what you say and say what you mean. Speak with
-                        integrity. Avoid gossip and self-criticism.
+                        Mean what you say and say what you mean. Speak with integrity. Avoid gossip and self-criticism.
                       </p>
                     </div>
-                    <div className="bg-accent/50 p-5 rounded-lg border border-border">
+                    <div className="bg-secondary/50 p-5 rounded-none border border-border">
                       <h3 className="font-bold text-foreground mb-2 flex items-center gap-2">
-                        <Shield className="w-4 h-4 text-primary" /> 2. Don't Take
-                        Anything Personally
+                        <Shield className="w-4 h-4 text-[hsl(var(--gold))]" /> 2. Don't Take Anything Personally
                       </h3>
                       <p className="text-sm text-muted-foreground">
-                        What others think is a reflection of their reality, not
-                        yours. Feedback is for growth, not attack.
+                        What others think is a reflection of their reality, not yours. Feedback is for growth, not attack.
                       </p>
                     </div>
-                    <div className="bg-accent/50 p-5 rounded-lg border border-border">
+                    <div className="bg-secondary/50 p-5 rounded-none border border-border">
                       <h3 className="font-bold text-foreground mb-2 flex items-center gap-2">
-                        <HelpCircle className="w-4 h-4 text-primary" /> 3. Don't
-                        Make Assumptions
+                        <HelpCircle className="w-4 h-4 text-[hsl(var(--gold))]" /> 3. Don't Make Assumptions
                       </h3>
                       <p className="text-sm text-muted-foreground">
-                        Do not guess. Ask questions. Clear communication eliminates
-                        misunderstandings.
+                        Do not guess. Ask questions. Clear communication eliminates misunderstandings.
                       </p>
                     </div>
-                    <div className="bg-accent/50 p-5 rounded-lg border border-border">
+                    <div className="bg-secondary/50 p-5 rounded-none border border-border">
                       <h3 className="font-bold text-foreground mb-2 flex items-center gap-2">
-                        <Activity className="w-4 h-4 text-primary" /> 4. Always Do
-                        Your Best
+                        <Activity className="w-4 h-4 text-[hsl(var(--gold))]" /> 4. Always Do Your Best
                       </h3>
                       <p className="text-sm text-muted-foreground">
-                        Your best will vary. Doing your best prevents regret and
-                        self-judgment.
+                        Your best will vary. Doing your best prevents regret and self-judgment.
                       </p>
                     </div>
                   </div>
@@ -803,7 +797,7 @@ Sales Support`,
                   return (
                     <section key={step.id} id={step.id}>
                       <div className="flex items-center justify-between mb-3">
-                        <h2 className="text-xl font-bold text-foreground">
+                        <h2 className="font-['Playfair_Display'] text-xl font-bold text-foreground">
                           {step.title}
                         </h2>
                         <div className="flex items-center gap-2">
@@ -813,30 +807,26 @@ Sales Support`,
                                 <Button
                                   key={key}
                                   type="button"
-                                  variant={
-                                    key === activeVariantKey ? "default" : "outline"
-                                  }
+                                  variant={key === activeVariantKey ? "default" : "outline"}
                                   size="sm"
-                                  className="text-[10px] px-2 py-1 h-7"
-                                  onClick={() =>
-                                    handleVariantChange(step.templateKey, key)
-                                  }
+                                  className="text-[10px] px-2 py-1 h-7 rounded-none"
+                                  onClick={() => handleVariantChange(step.templateKey, key)}
                                 >
                                   {variant.label}
                                 </Button>
                               ))}
                             </div>
                           )}
-                          <span className="bg-blue-500/20 text-blue-400 text-xs font-semibold px-2.5 py-0.5 rounded">
+                          <span className="bg-[hsl(var(--gold))]/20 text-[hsl(var(--gold))] text-xs font-semibold px-2.5 py-0.5 rounded-none">
                             {hasVariants ? "Email Templates" : "Email Template"}
                           </span>
                         </div>
                       </div>
 
-                      <div className="bg-card rounded-xl border border-border shadow-lg overflow-hidden">
-                        <div className="bg-accent/50 px-6 py-3 border-b border-border flex justify-between items-center">
+                      <div className="bg-card rounded-none border-2 border-border overflow-hidden">
+                        <div className="bg-secondary/50 px-6 py-3 border-b border-border flex justify-between items-center">
                           <div>
-                            <span className="text-xs font-bold text-muted-foreground uppercase">
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em]">
                               Subject
                             </span>
                             <p className="font-medium text-foreground">
@@ -847,16 +837,10 @@ Sales Support`,
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() =>
-                              copyToClipboard(activeTemplate.subject, subjectCopyId)
-                            }
-                            className="text-xs"
+                            onClick={() => copyToClipboard(activeTemplate.subject, subjectCopyId)}
+                            className="text-xs rounded-none"
                           >
-                            {copiedId === subjectCopyId ? (
-                              <Check className="w-3 h-3 mr-1" />
-                            ) : (
-                              <Copy className="w-3 h-3 mr-1" />
-                            )}
+                            {copiedId === subjectCopyId ? <Check className="w-3 h-3 mr-1" /> : <Copy className="w-3 h-3 mr-1" />}
                             Copy
                           </Button>
                         </div>
@@ -865,16 +849,10 @@ Sales Support`,
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() =>
-                              copyToClipboard(activeTemplate.body, bodyCopyId)
-                            }
-                            className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition text-xs"
+                            onClick={() => copyToClipboard(activeTemplate.body, bodyCopyId)}
+                            className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition text-xs rounded-none"
                           >
-                            {copiedId === bodyCopyId ? (
-                              <Check className="w-3 h-3 mr-1" />
-                            ) : (
-                              <Copy className="w-3 h-3 mr-1" />
-                            )}
+                            {copiedId === bodyCopyId ? <Check className="w-3 h-3 mr-1" /> : <Copy className="w-3 h-3 mr-1" />}
                             Copy Body
                           </Button>
                           <div className="text-muted-foreground whitespace-pre-wrap font-sans">
@@ -882,20 +860,16 @@ Sales Support`,
                           </div>
                         </div>
                         {step.note && (
-                          <div className="bg-yellow-500/10 px-6 py-4 border-t border-yellow-500/20 text-sm text-yellow-200">
+                          <div className="bg-[hsl(var(--gold))]/10 px-6 py-4 border-t border-[hsl(var(--gold))]/20 text-sm text-foreground">
                             <strong>{step.note.text}</strong>
                             <br />
                             Booking Link:{" "}
-                            <a
-                              href={step.note.link}
-                              className="underline font-bold"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
+                            <a href={step.note.link} className="underline font-bold text-[hsl(var(--gold))]"
+                              target="_blank" rel="noopener noreferrer">
                               {step.note.linkText}
                             </a>
                             <br />
-                            <em>{step.note.skipNote}</em>
+                            <em className="text-muted-foreground">{step.note.skipNote}</em>
                           </div>
                         )}
                       </div>
@@ -906,218 +880,129 @@ Sales Support`,
                 {/* Pre-Underwriting Checklist */}
                 <UnderwritingChecklist />
 
-                {/* Pipeline Stage Management Guide */}
-                <section
-                  id="pipeline-stages"
-                  className="bg-card rounded-xl border border-border shadow-sm p-8"
-                >
-                  <h2 className="text-2xl font-bold text-primary border-b-4 border-cyan-500 inline-block mb-6 pb-1">
-                    Pipeline Stage Management Guide
-                  </h2>
-                  <p className="text-muted-foreground mb-8 italic border-l-4 border-cyan-500 pl-4 bg-cyan-500/10 py-2 pr-2 rounded-r">
+                {/* ═══════════════════════════════════════════
+                    PIPELINE STAGE MANAGEMENT GUIDE
+                    Corrected to match actual DB stages:
+                    discovery → qualification → preboarding → underwriting → boarding → live
+                ═══════════════════════════════════════════ */}
+                <section id="pipeline-stages" className="bg-card rounded-none border border-border p-8">
+                  <SectionHeader gold>Pipeline Stage Management Guide</SectionHeader>
+                  <p className="text-muted-foreground mb-8 italic border-l-4 border-[hsl(var(--gold))] pl-4 bg-[hsl(var(--gold))]/10 py-2 pr-2">
                     Follow these guidelines for managing opportunities through each pipeline stage. 
                     Each stage has specific actions, CTAs, and criteria for advancement.
                   </p>
 
-                  {/* Stage 1: New / Application Started */}
-                  <div className="mb-8 bg-accent/30 rounded-lg border border-border overflow-hidden">
-                    <div className="bg-blue-500/20 px-6 py-4 border-b border-border flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center">
-                        <FileText className="w-5 h-5 text-white" />
+                  {/* Stage flow visualisation */}
+                  <div className="flex flex-wrap items-center gap-2 mb-8 text-xs font-bold">
+                    {[
+                      { label: "Discovery", color: "bg-blue-500" },
+                      { label: "Qualification", color: "bg-indigo-500" },
+                      { label: "Preboarding", color: "bg-teal-500" },
+                      { label: "Underwriting", color: "bg-purple-500" },
+                      { label: "Boarding", color: "bg-orange-500" },
+                      { label: "Live", color: "bg-green-500" },
+                    ].map((s, i) => (
+                      <div key={s.label} className="flex items-center gap-2">
+                        <span className={`${s.color} text-white px-3 py-1.5 rounded-none`}>{s.label}</span>
+                        {i < 5 && <ArrowRight className="w-4 h-4 text-muted-foreground" />}
                       </div>
-                      <div>
-                        <h3 className="font-bold text-foreground text-lg">Stage 1: New</h3>
-                        <p className="text-sm text-muted-foreground">Application Started — Initial lead capture</p>
-                      </div>
-                      <span className="ml-auto bg-blue-500/30 text-blue-400 text-xs font-semibold px-2.5 py-1 rounded flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> SLA: 24 hours
-                      </span>
-                    </div>
-                    <div className="p-6 space-y-4">
-                      <div>
-                        <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                          <CheckSquare className="w-4 h-4 text-cyan-500" /> Required Actions
-                        </h4>
-                        <ul className="space-y-2 text-sm text-muted-foreground">
-                          <li className="flex gap-2 items-start">
-                            <span className="text-blue-500">•</span>
-                            <span>Review incoming lead/application details</span>
-                          </li>
-                          <li className="flex gap-2 items-start">
-                            <span className="text-blue-500">•</span>
-                            <span>Verify contact information is complete and accurate</span>
-                          </li>
-                          <li className="flex gap-2 items-start">
-                            <span className="text-blue-500">•</span>
-                            <span>Assign opportunity to appropriate team member</span>
-                          </li>
-                          <li className="flex gap-2 items-start">
-                            <span className="text-blue-500">•</span>
-                            <span>Send initial contact email using <strong className="text-foreground">Step 1 — Intro & Discovery</strong> template</span>
-                          </li>
-                        </ul>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <span className="bg-blue-500/20 text-blue-400 text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1">
-                          <Mail className="w-3 h-3" /> Send Intro Email
-                        </span>
-                        <span className="bg-secondary text-secondary-foreground text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1">
-                          <Users className="w-3 h-3" /> Assign Owner
-                        </span>
-                      </div>
-                      <div className="bg-muted/50 rounded-md p-3 text-sm">
-                        <strong className="text-foreground">Advance to Discovery when:</strong>
-                        <span className="text-muted-foreground"> Initial contact has been made and response received.</span>
-                      </div>
-                    </div>
+                    ))}
                   </div>
 
-                  {/* Stage 2: Discovery */}
-                  <div className="mb-8 bg-accent/30 rounded-lg border border-border overflow-hidden">
-                    <div className="bg-indigo-500/20 px-6 py-4 border-b border-border flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center">
+                  {/* Stage 1: Discovery */}
+                  <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
+                    <div className="bg-blue-500/20 px-6 py-4 border-b border-border flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-none bg-blue-500 flex items-center justify-center">
                         <Search className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-foreground text-lg">Stage 2: Discovery</h3>
-                        <p className="text-sm text-muted-foreground">Understanding merchant needs and business model</p>
+                        <h3 className="font-bold text-foreground text-lg">Stage 1: Discovery</h3>
+                        <p className="text-sm text-muted-foreground">Initial contact and information gathering</p>
                       </div>
-                      <span className="ml-auto bg-indigo-500/30 text-indigo-400 text-xs font-semibold px-2.5 py-1 rounded flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> SLA: 48 hours
-                      </span>
-                    </div>
-                    <div className="p-6 space-y-4">
-                      <div>
-                        <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                          <CheckSquare className="w-4 h-4 text-cyan-500" /> Required Actions
-                        </h4>
-                        <ul className="space-y-2 text-sm text-muted-foreground">
-                          <li className="flex gap-2 items-start">
-                            <span className="text-indigo-500">•</span>
-                            <span>Conduct discovery call or gather info via email</span>
-                          </li>
-                          <li className="flex gap-2 items-start">
-                            <span className="text-indigo-500">•</span>
-                            <span>Document: Business type, monthly volume, current processor</span>
-                          </li>
-                          <li className="flex gap-2 items-start">
-                            <span className="text-indigo-500">•</span>
-                            <span>Identify processing needs: Gateway only vs Full Processing</span>
-                          </li>
-                          <li className="flex gap-2 items-start">
-                            <span className="text-indigo-500">•</span>
-                            <span>Use <strong className="text-foreground">Step 1.2 — Call Scheduling</strong> if call needed</span>
-                          </li>
-                        </ul>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <span className="bg-indigo-500/20 text-indigo-400 text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1">
-                          <Phone className="w-3 h-3" /> Schedule Discovery Call
-                        </span>
-                        <span className="bg-secondary text-secondary-foreground text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1">
-                          <FileText className="w-3 h-3" /> Update Notes
-                        </span>
-                      </div>
-                      <div className="bg-muted/50 rounded-md p-3 text-sm">
-                        <strong className="text-foreground">Advance to Qualified when:</strong>
-                        <span className="text-muted-foreground"> Business model understood and solution fit confirmed.</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Stage 3: Qualified */}
-                  <div className="mb-8 bg-accent/30 rounded-lg border border-border overflow-hidden">
-                    <div className="bg-cyan-500/20 px-6 py-4 border-b border-border flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-cyan-500 flex items-center justify-center">
-                        <CheckCircle className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-foreground text-lg">Stage 3: Qualified</h3>
-                        <p className="text-sm text-muted-foreground">Merchant confirmed as viable opportunity</p>
-                      </div>
-                      <span className="ml-auto bg-cyan-500/30 text-cyan-400 text-xs font-semibold px-2.5 py-1 rounded flex items-center gap-1">
+                      <span className="ml-auto bg-blue-500/30 text-blue-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
                         <Clock className="w-3 h-3" /> SLA: 24 hours
                       </span>
                     </div>
                     <div className="p-6 space-y-4">
                       <div>
                         <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                          <CheckSquare className="w-4 h-4 text-cyan-500" /> Required Actions
+                          <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
                         </h4>
                         <ul className="space-y-2 text-sm text-muted-foreground">
-                          <li className="flex gap-2 items-start">
-                            <span className="text-cyan-500">•</span>
-                            <span>Confirm merchant interest and commitment to proceed</span>
-                          </li>
-                          <li className="flex gap-2 items-start">
-                            <span className="text-cyan-500">•</span>
-                            <span>Set appropriate pipeline: Processing or Gateway Only</span>
-                          </li>
-                          <li className="flex gap-2 items-start">
-                            <span className="text-cyan-500">•</span>
-                            <span>Send <strong className="text-foreground">Step 2 — Request for Documents</strong> email</span>
-                          </li>
-                          <li className="flex gap-2 items-start">
-                            <span className="text-cyan-500">•</span>
-                            <span>Create tasks for document follow-up</span>
-                          </li>
+                          <li className="flex gap-2 items-start"><span className="text-blue-500">•</span><span>Send <strong className="text-foreground">Step 1 — Intro & Discovery</strong> email template</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-blue-500">•</span><span>Document business type, monthly volume, current processor</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-blue-500">•</span><span>Identify processing needs: Gateway only vs Full Processing</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-blue-500">•</span><span>Schedule a discovery call if needed (Step 1.2)</span></li>
                         </ul>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        <span className="bg-cyan-500/20 text-cyan-400 text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1">
-                          <Mail className="w-3 h-3" /> Send Doc Request
-                        </span>
-                        <span className="bg-secondary text-secondary-foreground text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1">
-                          <Zap className="w-3 h-3" /> Set Pipeline Type
-                        </span>
+                      <div className="bg-muted/50 rounded-none p-3 text-sm">
+                        <strong className="text-foreground">Advance to Qualification when:</strong>
+                        <span className="text-muted-foreground"> Business model understood, solution fit confirmed, merchant interested in proceeding.</span>
                       </div>
-                      <div className="bg-muted/50 rounded-md p-3 text-sm">
-                        <strong className="text-foreground">Advance to App Prep when:</strong>
+                    </div>
+                  </div>
+
+                  {/* Stage 2: Qualification */}
+                  <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
+                    <div className="bg-indigo-500/20 px-6 py-4 border-b border-border flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-none bg-indigo-500 flex items-center justify-center">
+                        <CheckCircle className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-foreground text-lg">Stage 2: Qualification</h3>
+                        <p className="text-sm text-muted-foreground">Merchant confirmed as viable opportunity</p>
+                      </div>
+                      <span className="ml-auto bg-indigo-500/30 text-indigo-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> SLA: 24 hours
+                      </span>
+                    </div>
+                    <div className="p-6 space-y-4">
+                      <div>
+                        <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                          <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
+                        </h4>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          <li className="flex gap-2 items-start"><span className="text-indigo-500">•</span><span>Confirm merchant interest and commitment to proceed</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-indigo-500">•</span><span>Set appropriate pipeline: Processing or Gateway Only</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-indigo-500">•</span><span>Send <strong className="text-foreground">Step 2 — Request for Documents</strong> email</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-indigo-500">•</span><span>Create tasks for document follow-up</span></li>
+                        </ul>
+                      </div>
+                      <div className="bg-muted/50 rounded-none p-3 text-sm">
+                        <strong className="text-foreground">Advance to Preboarding when:</strong>
                         <span className="text-muted-foreground"> Document request sent and acknowledged by merchant.</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Stage 4: Application Prep */}
-                  <div className="mb-8 bg-accent/30 rounded-lg border border-border overflow-hidden">
+                  {/* Stage 3: Preboarding */}
+                  <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
                     <div className="bg-teal-500/20 px-6 py-4 border-b border-border flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-teal-500 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-none bg-teal-500 flex items-center justify-center">
                         <ClipboardCheck className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-foreground text-lg">Stage 4: App Prep</h3>
-                        <p className="text-sm text-muted-foreground">Collecting and verifying documentation</p>
+                        <h3 className="font-bold text-foreground text-lg">Stage 3: Preboarding</h3>
+                        <p className="text-sm text-muted-foreground">Collecting documents and completing the preboarding wizard</p>
                       </div>
-                      <span className="ml-auto bg-teal-500/30 text-teal-400 text-xs font-semibold px-2.5 py-1 rounded flex items-center gap-1">
+                      <span className="ml-auto bg-teal-500/30 text-teal-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
                         <Clock className="w-3 h-3" /> SLA: 72 hours
                       </span>
                     </div>
                     <div className="p-6 space-y-4">
                       <div>
                         <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                          <CheckSquare className="w-4 h-4 text-cyan-500" /> Required Actions
+                          <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
                         </h4>
                         <ul className="space-y-2 text-sm text-muted-foreground">
-                          <li className="flex gap-2 items-start">
-                            <span className="text-teal-500">•</span>
-                            <span>Collect all required documents (see Document Checklist)</span>
-                          </li>
-                          <li className="flex gap-2 items-start">
-                            <span className="text-teal-500">•</span>
-                            <span>Verify document completeness and quality</span>
-                          </li>
-                          <li className="flex gap-2 items-start">
-                            <span className="text-teal-500">•</span>
-                            <span>Complete onboarding wizard / application form</span>
-                          </li>
-                          <li className="flex gap-2 items-start">
-                            <span className="text-teal-500">•</span>
-                            <span>Send <strong className="text-foreground">Step 3 — Application in Process</strong> when ready</span>
-                          </li>
+                          <li className="flex gap-2 items-start"><span className="text-teal-500">•</span><span>Collect all required documents (see Document Checklist)</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-teal-500">•</span><span>Verify document completeness and quality</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-teal-500">•</span><span>Complete the Preboarding Wizard (auto-saves progress)</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-teal-500">•</span><span>Send <strong className="text-foreground">Step 3 — Application in Process</strong> when ready</span></li>
                         </ul>
                       </div>
-                      <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-md p-3 text-sm">
-                        <strong className="text-yellow-400 flex items-center gap-1">
+                      <div className="bg-[hsl(var(--gold))]/10 border border-[hsl(var(--gold))]/30 rounded-none p-3 text-sm">
+                        <strong className="text-[hsl(var(--gold))] flex items-center gap-1">
                           <AlertTriangle className="w-4 h-4" /> Document Checklist:
                         </strong>
                         <ul className="mt-2 text-muted-foreground grid md:grid-cols-2 gap-1">
@@ -1129,391 +1014,276 @@ Sales Support`,
                           <li>✓ SSN for principal owner</li>
                         </ul>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        <span className="bg-teal-500/20 text-teal-400 text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1">
-                          <FileText className="w-3 h-3" /> Upload Documents
-                        </span>
-                        <span className="bg-secondary text-secondary-foreground text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1">
-                          <ClipboardCheck className="w-3 h-3" /> Complete Wizard
-                        </span>
-                      </div>
-                      <div className="bg-muted/50 rounded-md p-3 text-sm">
+                      <div className="bg-muted/50 rounded-none p-3 text-sm">
                         <strong className="text-foreground">Advance to Underwriting when:</strong>
-                        <span className="text-muted-foreground"> All documents collected and application submitted.</span>
+                        <span className="text-muted-foreground"> All documents collected, wizard completed, and application submitted via NMI microsite.</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Stage 5: Underwriting Review */}
-                  <div className="mb-8 bg-accent/30 rounded-lg border border-border overflow-hidden">
+                  {/* Stage 4: Underwriting */}
+                  <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
                     <div className="bg-purple-500/20 px-6 py-4 border-b border-border flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-none bg-purple-500 flex items-center justify-center">
                         <Shield className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-foreground text-lg">Stage 5: Underwriting</h3>
+                        <h3 className="font-bold text-foreground text-lg">Stage 4: Underwriting</h3>
                         <p className="text-sm text-muted-foreground">Application under review by processor</p>
                       </div>
-                      <span className="ml-auto bg-purple-500/30 text-purple-400 text-xs font-semibold px-2.5 py-1 rounded flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> SLA: 3-5 days
+                      <span className="ml-auto bg-purple-500/30 text-purple-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> SLA: 3–5 days
                       </span>
                     </div>
                     <div className="p-6 space-y-4">
                       <div>
                         <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                          <CheckSquare className="w-4 h-4 text-cyan-500" /> Required Actions
+                          <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
                         </h4>
                         <ul className="space-y-2 text-sm text-muted-foreground">
-                          <li className="flex gap-2 items-start">
-                            <span className="text-purple-500">•</span>
-                            <span>Monitor underwriting status daily</span>
-                          </li>
-                          <li className="flex gap-2 items-start">
-                            <span className="text-purple-500">•</span>
-                            <span>Respond promptly to any stipulation requests</span>
-                          </li>
-                          <li className="flex gap-2 items-start">
-                            <span className="text-purple-500">•</span>
-                            <span>Keep merchant informed of progress</span>
-                          </li>
-                          <li className="flex gap-2 items-start">
-                            <span className="text-purple-500">•</span>
-                            <span>Document any additional information requested</span>
-                          </li>
+                          <li className="flex gap-2 items-start"><span className="text-purple-500">•</span><span>Monitor underwriting status daily</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-purple-500">•</span><span>Respond promptly to any stipulation requests</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-purple-500">•</span><span>Keep merchant informed of progress</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-purple-500">•</span><span>Run AI Validate to generate readiness report</span></li>
                         </ul>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        <span className="bg-purple-500/20 text-purple-400 text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1">
-                          <Activity className="w-3 h-3" /> Check Status
-                        </span>
-                        <span className="bg-secondary text-secondary-foreground text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1">
-                          <Mail className="w-3 h-3" /> Send Update
-                        </span>
-                      </div>
-                      <div className="bg-muted/50 rounded-md p-3 text-sm">
-                        <strong className="text-foreground">Advance to Approved when:</strong>
+                      <div className="bg-muted/50 rounded-none p-3 text-sm">
+                        <strong className="text-foreground">Advance to Boarding when:</strong>
                         <span className="text-muted-foreground"> Processor confirms approval and MID assigned.</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Stage 6: Processor Approval */}
-                  <div className="mb-8 bg-accent/30 rounded-lg border border-border overflow-hidden">
-                    <div className="bg-pink-500/20 px-6 py-4 border-b border-border flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-pink-500 flex items-center justify-center">
-                        <CheckCircle className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-foreground text-lg">Stage 6: Approved</h3>
-                        <p className="text-sm text-muted-foreground">Processing approved, ready for setup</p>
-                      </div>
-                      <span className="ml-auto bg-pink-500/30 text-pink-400 text-xs font-semibold px-2.5 py-1 rounded flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> SLA: 24 hours
-                      </span>
-                    </div>
-                    <div className="p-6 space-y-4">
-                      <div>
-                        <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                          <CheckSquare className="w-4 h-4 text-cyan-500" /> Required Actions
-                        </h4>
-                        <ul className="space-y-2 text-sm text-muted-foreground">
-                          <li className="flex gap-2 items-start">
-                            <span className="text-pink-500">•</span>
-                            <span>Confirm MID assignment and rate structure</span>
-                          </li>
-                          <li className="flex gap-2 items-start">
-                            <span className="text-pink-500">•</span>
-                            <span>Initiate gateway application (NMI / other)</span>
-                          </li>
-                          <li className="flex gap-2 items-start">
-                            <span className="text-pink-500">•</span>
-                            <span>Notify merchant of approval with timeline for activation</span>
-                          </li>
-                          <li className="flex gap-2 items-start">
-                            <span className="text-pink-500">•</span>
-                            <span>Begin integration planning with merchant</span>
-                          </li>
-                        </ul>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <span className="bg-pink-500/20 text-pink-400 text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1">
-                          <Zap className="w-3 h-3" /> Apply Gateway
-                        </span>
-                        <span className="bg-secondary text-secondary-foreground text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1">
-                          <Mail className="w-3 h-3" /> Notify Merchant
-                        </span>
-                      </div>
-                      <div className="bg-muted/50 rounded-md p-3 text-sm">
-                        <strong className="text-foreground">Advance to Integration when:</strong>
-                        <span className="text-muted-foreground"> Gateway approved and credentials ready.</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Stage 7: Integration Setup */}
-                  <div className="mb-8 bg-accent/30 rounded-lg border border-border overflow-hidden">
+                  {/* Stage 5: Boarding */}
+                  <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
                     <div className="bg-orange-500/20 px-6 py-4 border-b border-border flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-none bg-orange-500 flex items-center justify-center">
                         <Settings className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-foreground text-lg">Stage 7: Integration</h3>
-                        <p className="text-sm text-muted-foreground">Technical setup and configuration</p>
+                        <h3 className="font-bold text-foreground text-lg">Stage 5: Boarding</h3>
+                        <p className="text-sm text-muted-foreground">Gateway setup, integration, and test transactions</p>
                       </div>
-                      <span className="ml-auto bg-orange-500/30 text-orange-400 text-xs font-semibold px-2.5 py-1 rounded flex items-center gap-1">
+                      <span className="ml-auto bg-orange-500/30 text-orange-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
                         <Clock className="w-3 h-3" /> SLA: 48 hours
                       </span>
                     </div>
                     <div className="p-6 space-y-4">
                       <div>
                         <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                          <CheckSquare className="w-4 h-4 text-cyan-500" /> Required Actions
+                          <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
                         </h4>
                         <ul className="space-y-2 text-sm text-muted-foreground">
-                          <li className="flex gap-2 items-start">
-                            <span className="text-orange-500">•</span>
-                            <span>Configure gateway credentials and API keys</span>
-                          </li>
-                          <li className="flex gap-2 items-start">
-                            <span className="text-orange-500">•</span>
-                            <span>Set up webhooks and callbacks as needed</span>
-                          </li>
-                          <li className="flex gap-2 items-start">
-                            <span className="text-orange-500">•</span>
-                            <span>Configure fraud filters and risk settings</span>
-                          </li>
-                          <li className="flex gap-2 items-start">
-                            <span className="text-orange-500">•</span>
-                            <span>Run test transactions to verify connectivity</span>
-                          </li>
+                          <li className="flex gap-2 items-start"><span className="text-orange-500">•</span><span>Confirm MID assignment and rate structure</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-orange-500">•</span><span>Apply for NMI Gateway (Flat Rate or Interchange+)</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-orange-500">•</span><span>Configure gateway credentials, API keys, webhooks</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-orange-500">•</span><span>Configure fraud filters and risk settings</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-orange-500">•</span><span>Run test transactions to verify connectivity</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-orange-500">•</span><span>Notify merchant of approval with timeline for activation</span></li>
                         </ul>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        <span className="bg-orange-500/20 text-orange-400 text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1">
-                          <Settings className="w-3 h-3" /> Configure Gateway
-                        </span>
-                        <span className="bg-secondary text-secondary-foreground text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1">
-                          <Zap className="w-3 h-3" /> Test Transaction
-                        </span>
-                      </div>
-                      <div className="bg-muted/50 rounded-md p-3 text-sm">
+                      <div className="bg-muted/50 rounded-none p-3 text-sm">
                         <strong className="text-foreground">Advance to Live when:</strong>
-                        <span className="text-muted-foreground"> Test transactions successful and merchant ready to go live.</span>
+                        <span className="text-muted-foreground"> Test transactions successful, gateway configured, and merchant ready to process.</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Stage 8: Live Activated */}
-                  <div className="mb-8 bg-accent/30 rounded-lg border border-border overflow-hidden">
+                  {/* Stage 6: Live */}
+                  <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
                     <div className="bg-green-500/20 px-6 py-4 border-b border-border flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-none bg-green-500 flex items-center justify-center">
                         <Rocket className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-foreground text-lg">Stage 8: Live</h3>
+                        <h3 className="font-bold text-foreground text-lg">Stage 6: Live</h3>
                         <p className="text-sm text-muted-foreground">Merchant processing live transactions</p>
                       </div>
-                      <span className="ml-auto bg-green-500/30 text-green-400 text-xs font-semibold px-2.5 py-1 rounded flex items-center gap-1">
+                      <span className="ml-auto bg-green-500/30 text-green-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
                         <CheckCircle className="w-3 h-3" /> Active
                       </span>
                     </div>
                     <div className="p-6 space-y-4">
                       <div>
                         <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                          <CheckSquare className="w-4 h-4 text-cyan-500" /> Required Actions
+                          <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
                         </h4>
                         <ul className="space-y-2 text-sm text-muted-foreground">
-                          <li className="flex gap-2 items-start">
-                            <span className="text-green-500">•</span>
-                            <span>Confirm first live transaction processed successfully</span>
-                          </li>
-                          <li className="flex gap-2 items-start">
-                            <span className="text-green-500">•</span>
-                            <span>Provide merchant with support contacts and resources</span>
-                          </li>
-                          <li className="flex gap-2 items-start">
-                            <span className="text-green-500">•</span>
-                            <span>Initiate PCI compliance workflow (SAQ)</span>
-                          </li>
-                          <li className="flex gap-2 items-start">
-                            <span className="text-green-500">•</span>
-                            <span>Schedule 30-day check-in for ongoing support</span>
-                          </li>
+                          <li className="flex gap-2 items-start"><span className="text-green-500">•</span><span>Confirm first live transaction processed successfully</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-green-500">•</span><span>Provide merchant with support contacts and resources</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-green-500">•</span><span>Initiate PCI compliance workflow (SAQ)</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-green-500">•</span><span>Schedule 30-day check-in for ongoing support</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-green-500">•</span><span>Update account status to Active and hand off to support team</span></li>
                         </ul>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <span className="bg-green-500/20 text-green-400 text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1">
-                          <Trophy className="w-3 h-3" /> Celebrate Win!
-                        </span>
-                        <span className="bg-secondary text-secondary-foreground text-xs font-medium px-3 py-1.5 rounded-full flex items-center gap-1">
-                          <ShieldCheck className="w-3 h-3" /> Start PCI
-                        </span>
-                      </div>
-                      <div className="bg-muted/50 rounded-md p-3 text-sm">
-                        <strong className="text-foreground">Move to Closed Won when:</strong>
-                        <span className="text-muted-foreground"> Merchant fully onboarded and processing consistently.</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Closed States */}
+                  {/* Status States */}
                   <div className="grid md:grid-cols-2 gap-6">
-                    <div className="bg-emerald-500/10 rounded-lg border border-emerald-500/30 p-5">
+                    <div className="bg-destructive/10 rounded-none border border-destructive/30 p-5">
                       <div className="flex items-center gap-3 mb-4">
-                        <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center">
-                          <Trophy className="w-4 h-4 text-white" />
-                        </div>
-                        <h3 className="font-bold text-foreground">Closed Won</h3>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        Merchant successfully onboarded and processing. Archive opportunity and transfer to account management.
-                      </p>
-                      <ul className="text-sm text-muted-foreground space-y-1">
-                        <li>• Document final setup details</li>
-                        <li>• Update account status to Active</li>
-                        <li>• Hand off to support team</li>
-                      </ul>
-                    </div>
-                    <div className="bg-red-500/10 rounded-lg border border-red-500/30 p-5">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-none bg-destructive flex items-center justify-center">
                           <XCircle className="w-4 h-4 text-white" />
                         </div>
-                        <h3 className="font-bold text-foreground">Closed Lost</h3>
+                        <h3 className="font-bold text-foreground">Status: Dead</h3>
                       </div>
                       <p className="text-sm text-muted-foreground mb-3">
-                        Opportunity did not proceed. Document reason for loss and lessons learned.
+                        Opportunity did not proceed. Can be set at any stage.
                       </p>
                       <ul className="text-sm text-muted-foreground space-y-1">
                         <li>• Record loss reason in notes</li>
-                        <li>• Set status to "dead"</li>
+                        <li>• Set opportunity status to "dead"</li>
                         <li>• Consider re-engagement timeline</li>
+                      </ul>
+                    </div>
+                    <div className="bg-destructive/10 rounded-none border border-destructive/30 p-5">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-8 h-8 rounded-none bg-destructive flex items-center justify-center">
+                          <XCircle className="w-4 h-4 text-white" />
+                        </div>
+                        <h3 className="font-bold text-foreground">Status: Closed-Lost</h3>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Underwriting declined or merchant withdrew.
+                      </p>
+                      <ul className="text-sm text-muted-foreground space-y-1">
+                        <li>• Document decline reason and underwriting feedback</li>
+                        <li>• Set opportunity status to "closed-lost"</li>
+                        <li>• Assess if re-application is viable</li>
                       </ul>
                     </div>
                   </div>
                 </section>
 
-                {/* PS Terminal Usage Guide */}
-                <section
-                  id="ps-terminal"
-                  className="bg-card rounded-xl border border-border shadow-sm p-8"
-                >
+                {/* ═══ ATRIA AI ASSISTANT SECTION ═══ */}
+                <section id="atria-ai" className="bg-card rounded-none border-2 border-purple-500/30 p-8">
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold text-primary border-b-4 border-cyan-500 inline-block pb-1">
-                      3.1 — PS Terminal Usage Guide
-                    </h2>
-                    <span className="bg-cyan-500/20 text-cyan-400 text-xs font-semibold px-2.5 py-0.5 rounded flex items-center gap-1">
+                    <SectionHeader>3.0 — Atria AI Assistant</SectionHeader>
+                    <span className="bg-purple-500/20 text-purple-400 text-xs font-semibold px-2.5 py-0.5 rounded-none flex items-center gap-1">
+                      <Bot className="w-3 h-3" /> AI Teammate
+                    </span>
+                  </div>
+
+                  <p className="text-muted-foreground mb-6 italic border-l-4 border-purple-500 pl-4 bg-purple-500/10 py-2 pr-2">
+                    Atria is an AI teammate accessible via the <strong className="text-foreground">#atria-ai</strong> channel in the team messenger. She has full visibility into live CRM data and can take actions on your behalf.
+                  </p>
+
+                  <div className="grid md:grid-cols-2 gap-6 mb-6">
+                    <div className="bg-secondary/30 rounded-none border border-border p-5">
+                      <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
+                        <Search className="w-4 h-4 text-purple-400" /> What Atria Can See
+                      </h3>
+                      <ul className="space-y-2 text-sm text-muted-foreground">
+                        <li className="flex gap-2 items-start"><span className="text-purple-500">•</span><span>Full account roster with inception dates, contacts, and metadata</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-purple-500">•</span><span>Complete pipeline with stage, status, and assignment data</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-purple-500">•</span><span>All documents across all opportunities</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-purple-500">•</span><span>Latest AI validation reports with readiness scores</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-purple-500">•</span><span>Open tasks, team members, and activity</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-purple-500">•</span><span>SOP procedures, email templates, and checklists</span></li>
+                      </ul>
+                    </div>
+                    <div className="bg-secondary/30 rounded-none border border-border p-5">
+                      <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
+                        <Zap className="w-4 h-4 text-purple-400" /> What Atria Can Do
+                      </h3>
+                      <ul className="space-y-2 text-sm text-muted-foreground">
+                        <li className="flex gap-2 items-start"><span className="text-purple-500">•</span><span><strong className="text-foreground">Create tasks</strong> — with title, assignee, priority, due date, linked opportunity</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-purple-500">•</span><span><strong className="text-foreground">Update opportunity stage</strong> — move deals between pipeline stages</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-purple-500">•</span><span><strong className="text-foreground">Assign opportunities</strong> — assign deals to any team member</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-purple-500">•</span><span><strong className="text-foreground">Update opportunity status</strong> — set to active, dead, or closed-lost</span></li>
+                      </ul>
+                      <div className="mt-4 p-3 rounded-none border border-purple-500/20 bg-purple-500/5">
+                        <p className="text-xs text-muted-foreground">
+                          <strong className="text-foreground">Example:</strong> "Assign the ABC Corp deal to Wesley" or "Create a high priority task for Yaseen to follow up on documents for XYZ account."
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-secondary/30 rounded-none border border-border p-5">
+                    <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
+                      <Shield className="w-4 h-4 text-purple-400" /> AI Document Validation
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      A separate "AI Validate" action in the Documents tab triggers Gemini to cross-reference uploaded files against application data, generating structured readiness reports stored in the system.
+                    </p>
+                    <div className="flex gap-4 text-xs mt-3">
+                      <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-green-500 inline-block" /> Ready</span>
+                      <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-yellow-500 inline-block" /> Needs Attention</span>
+                      <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-500 inline-block" /> Not Ready</span>
+                    </div>
+                  </div>
+                </section>
+
+                {/* PS Terminal Usage Guide */}
+                <section id="ps-terminal" className="bg-card rounded-none border border-border p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <SectionHeader gold>3.1 — PS Terminal Usage Guide</SectionHeader>
+                    <span className="bg-[hsl(var(--gold))]/20 text-[hsl(var(--gold))] text-xs font-semibold px-2.5 py-0.5 rounded-none flex items-center gap-1">
                       <Settings className="w-3 h-3" /> Internal Tool
                     </span>
                   </div>
                   
-                  <p className="text-muted-foreground mb-6 italic border-l-4 border-cyan-500 pl-4 bg-cyan-500/10 py-2 pr-2 rounded-r">
+                  <p className="text-muted-foreground mb-6 italic border-l-4 border-[hsl(var(--gold))] pl-4 bg-[hsl(var(--gold))]/10 py-2 pr-2">
                     The PS Terminal is the internal CRM and pipeline management system for tracking opportunities from lead to live merchant.
                   </p>
 
                   <div className="grid md:grid-cols-2 gap-6 mb-8">
-                    <div className="bg-accent/30 rounded-lg border border-border p-5">
+                    <div className="bg-secondary/30 rounded-none border border-border p-5">
                       <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
-                        <Rocket className="w-4 h-4 text-cyan-500" /> Getting Started
+                        <Rocket className="w-4 h-4 text-[hsl(var(--gold))]" /> Getting Started
                       </h3>
                       <ul className="space-y-2 text-sm text-muted-foreground">
-                        <li className="flex gap-2 items-start">
-                          <span className="text-cyan-500">1.</span>
-                          <span>Sign in with your MerchantHaus Google account</span>
-                        </li>
-                        <li className="flex gap-2 items-start">
-                          <span className="text-cyan-500">2.</span>
-                          <span>The <strong className="text-foreground">Pipeline</strong> view shows dual boards: Gateway and Processing</span>
-                        </li>
-                        <li className="flex gap-2 items-start">
-                          <span className="text-cyan-500">3.</span>
-                          <span>Click <strong className="text-foreground">+New</strong> to create an opportunity (accessible from any page)</span>
-                        </li>
-                        <li className="flex gap-2 items-start">
-                          <span className="text-cyan-500">4.</span>
-                          <span>Use the sidebar to navigate between Pipeline, Opportunities, Tasks, Accounts, Contacts, and Reports</span>
-                        </li>
+                        <li className="flex gap-2 items-start"><span className="text-[hsl(var(--gold))]">1.</span><span>Sign in with your MerchantHaus account credentials</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-[hsl(var(--gold))]">2.</span><span>The <strong className="text-foreground">Pipeline</strong> view shows dual boards: Gateway and Processing</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-[hsl(var(--gold))]">3.</span><span>Click <strong className="text-foreground">+New</strong> to create an opportunity (accessible from any page)</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-[hsl(var(--gold))]">4.</span><span>Use the sidebar to navigate between Pipeline, Opportunities, Tasks, Accounts, Contacts, and Reports</span></li>
                       </ul>
                     </div>
 
-                    <div className="bg-accent/30 rounded-lg border border-border p-5">
+                    <div className="bg-secondary/30 rounded-none border border-border p-5">
                       <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-cyan-500" /> Creating Opportunities
+                        <FileText className="w-4 h-4 text-[hsl(var(--gold))]" /> Creating Opportunities
                       </h3>
                       <ul className="space-y-2 text-sm text-muted-foreground">
-                        <li className="flex gap-2 items-start">
-                          <span className="text-cyan-500">•</span>
-                          <span>Fill in <strong className="text-foreground">Account Name</strong> (business name) and <strong className="text-foreground">Contact</strong> details</span>
-                        </li>
-                        <li className="flex gap-2 items-start">
-                          <span className="text-cyan-500">•</span>
-                          <span>Select <strong className="text-foreground">Pipeline Type</strong>: Gateway (existing processor) or Processing (full stack)</span>
-                        </li>
-                        <li className="flex gap-2 items-start">
-                          <span className="text-cyan-500">•</span>
-                          <span>Assign an <strong className="text-foreground">Owner</strong> (team member responsible)</span>
-                        </li>
-                        <li className="flex gap-2 items-start">
-                          <span className="text-cyan-500">•</span>
-                          <span>The opportunity starts in <strong className="text-foreground">New</strong> stage</span>
-                        </li>
+                        <li className="flex gap-2 items-start"><span className="text-[hsl(var(--gold))]">•</span><span>Fill in <strong className="text-foreground">Account Name</strong> (business name) and <strong className="text-foreground">Contact</strong> details</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-[hsl(var(--gold))]">•</span><span>Select <strong className="text-foreground">Pipeline Type</strong>: Gateway (existing processor) or Processing (full stack)</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-[hsl(var(--gold))]">•</span><span>Assign an <strong className="text-foreground">Owner</strong> (team member responsible)</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-[hsl(var(--gold))]">•</span><span>The opportunity starts in <strong className="text-foreground">Discovery</strong> stage</span></li>
                       </ul>
                     </div>
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-6 mb-8">
-                    <div className="bg-accent/30 rounded-lg border border-border p-5">
+                    <div className="bg-secondary/30 rounded-none border border-border p-5">
                       <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
-                        <ClipboardCheck className="w-4 h-4 text-cyan-500" /> Preboarding Wizard
+                        <ClipboardCheck className="w-4 h-4 text-[hsl(var(--gold))]" /> Preboarding Wizard
                       </h3>
                       <ul className="space-y-2 text-sm text-muted-foreground">
-                        <li className="flex gap-2 items-start">
-                          <span className="text-cyan-500">•</span>
-                          <span>Access from opportunity detail modal → <strong className="text-foreground">Open Wizard</strong></span>
-                        </li>
-                        <li className="flex gap-2 items-start">
-                          <span className="text-cyan-500">•</span>
-                          <span>Use as <strong className="text-foreground">application readiness form</strong> before microsite submission</span>
-                        </li>
-                        <li className="flex gap-2 items-start">
-                          <span className="text-cyan-500">•</span>
-                          <span>Captures: Business info, ownership details, processing needs, banking, and agreement</span>
-                        </li>
-                        <li className="flex gap-2 items-start">
-                          <span className="text-cyan-500">•</span>
-                          <span>Progress auto-saves and syncs to the opportunity</span>
-                        </li>
+                        <li className="flex gap-2 items-start"><span className="text-[hsl(var(--gold))]">•</span><span>Access from opportunity detail modal → <strong className="text-foreground">Open Wizard</strong></span></li>
+                        <li className="flex gap-2 items-start"><span className="text-[hsl(var(--gold))]">•</span><span>Use as <strong className="text-foreground">application readiness form</strong> before microsite submission</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-[hsl(var(--gold))]">•</span><span>Captures: Business info, ownership details, processing needs, banking, and agreement</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-[hsl(var(--gold))]">•</span><span>Progress auto-saves and syncs to the opportunity</span></li>
                       </ul>
                     </div>
 
-                    <div className="bg-accent/30 rounded-lg border border-border p-5">
+                    <div className="bg-secondary/30 rounded-none border border-border p-5">
                       <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
-                        <Activity className="w-4 h-4 text-cyan-500" /> Managing Pipeline
+                        <Activity className="w-4 h-4 text-[hsl(var(--gold))]" /> Managing Pipeline
                       </h3>
                       <ul className="space-y-2 text-sm text-muted-foreground">
-                        <li className="flex gap-2 items-start">
-                          <span className="text-cyan-500">•</span>
-                          <span>Drag cards between stages to update progress</span>
-                        </li>
-                        <li className="flex gap-2 items-start">
-                          <span className="text-cyan-500">•</span>
-                          <span>Click any card to open full details, notes, tasks, and documents</span>
-                        </li>
-                        <li className="flex gap-2 items-start">
-                          <span className="text-cyan-500">•</span>
-                          <span>Add <strong className="text-foreground">Notes</strong> for each interaction</span>
-                        </li>
-                        <li className="flex gap-2 items-start">
-                          <span className="text-cyan-500">•</span>
-                          <span>Create <strong className="text-foreground">Tasks</strong> to track follow-ups</span>
-                        </li>
+                        <li className="flex gap-2 items-start"><span className="text-[hsl(var(--gold))]">•</span><span>Drag cards between stages to update progress</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-[hsl(var(--gold))]">•</span><span>Click any card to open full details, notes, tasks, and documents</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-[hsl(var(--gold))]">•</span><span>Add <strong className="text-foreground">Notes</strong> for each interaction</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-[hsl(var(--gold))]">•</span><span>Create <strong className="text-foreground">Tasks</strong> to track follow-ups</span></li>
                       </ul>
                     </div>
                   </div>
 
-                  <div className="bg-blue-500/10 rounded-lg border border-blue-500/30 p-5">
+                  <div className="bg-[hsl(var(--gold))]/10 rounded-none border border-[hsl(var(--gold))]/30 p-5">
                     <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
-                      <Zap className="w-4 h-4 text-blue-400" /> Key Features
+                      <Zap className="w-4 h-4 text-[hsl(var(--gold))]" /> Key Features
                     </h3>
                     <div className="grid md:grid-cols-3 gap-4 text-sm text-muted-foreground">
                       <div>
@@ -1533,25 +1303,20 @@ Sales Support`,
                 </section>
 
                 {/* NMI Microsite Application Process */}
-                <section
-                  id="microsite-application"
-                  className="bg-card rounded-xl border-2 border-primary/30 shadow-sm p-8"
-                >
+                <section id="microsite-application" className="bg-card rounded-none border-2 border-primary/30 p-8">
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-2xl font-bold text-primary border-b-4 border-primary inline-block pb-1">
-                      3.2 — NMI Microsite Application Process
-                    </h2>
-                    <span className="bg-red-500/20 text-red-400 text-xs font-semibold px-2.5 py-0.5 rounded flex items-center gap-1">
+                    <SectionHeader>3.2 — NMI Microsite Application Process</SectionHeader>
+                    <span className="bg-destructive/20 text-destructive text-xs font-semibold px-2.5 py-0.5 rounded-none flex items-center gap-1">
                       <Lock className="w-3 h-3" /> Internal Only
                     </span>
                   </div>
 
-                  <p className="text-muted-foreground mb-6 italic border-l-4 border-primary pl-4 bg-primary/10 py-2 pr-2 rounded-r">
+                  <p className="text-muted-foreground mb-6 italic border-l-4 border-primary pl-4 bg-primary/10 py-2 pr-2">
                     The NMI microsites are used internally to submit processing applications. The Preboarding Wizard should be completed first to gather all required merchant information.
                   </p>
 
                   <div className="grid md:grid-cols-2 gap-6 mb-8">
-                    <div className="bg-accent/30 rounded-lg border border-border p-5">
+                    <div className="bg-secondary/30 rounded-none border border-border p-5">
                       <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
                         <Zap className="w-4 h-4 text-green-500" /> Flat Rate Microsite
                       </h3>
@@ -1562,10 +1327,9 @@ Sales Support`,
                         href="https://merchanthaus-fr.nmipays.com/form/MerchantHaus-fr"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 bg-green-500/20 text-green-400 px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-500/30 transition-colors"
+                        className="inline-flex items-center gap-2 bg-green-500/20 text-green-400 px-4 py-2 rounded-none text-sm font-medium hover:bg-green-500/30 transition-colors"
                       >
-                        <ExternalLink className="w-4 h-4" />
-                        Open Flat Rate Form
+                        <ExternalLink className="w-4 h-4" /> Open Flat Rate Form
                       </a>
                       <ul className="mt-4 space-y-1 text-sm text-muted-foreground">
                         <li>• Best for: Small businesses, predictable volume</li>
@@ -1574,7 +1338,7 @@ Sales Support`,
                       </ul>
                     </div>
 
-                    <div className="bg-accent/30 rounded-lg border border-border p-5">
+                    <div className="bg-secondary/30 rounded-none border border-border p-5">
                       <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
                         <Activity className="w-4 h-4 text-blue-500" /> Interchange+ Microsite
                       </h3>
@@ -1585,10 +1349,9 @@ Sales Support`,
                         href="https://merchanthaus-ic.nmipays.com/form/MerchantHaus-ic"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 bg-blue-500/20 text-blue-400 px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-500/30 transition-colors"
+                        className="inline-flex items-center gap-2 bg-blue-500/20 text-blue-400 px-4 py-2 rounded-none text-sm font-medium hover:bg-blue-500/30 transition-colors"
                       >
-                        <ExternalLink className="w-4 h-4" />
-                        Open Interchange+ Form
+                        <ExternalLink className="w-4 h-4" /> Open Interchange+ Form
                       </a>
                       <ul className="mt-4 space-y-1 text-sm text-muted-foreground">
                         <li>• Best for: High volume, B2B, large ticket</li>
@@ -1598,35 +1361,35 @@ Sales Support`,
                     </div>
                   </div>
 
-                  <div className="bg-yellow-500/10 rounded-lg border border-yellow-500/30 p-5 mb-6">
+                  <div className="bg-[hsl(var(--gold))]/10 rounded-none border border-[hsl(var(--gold))]/30 p-5 mb-6">
                     <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4 text-yellow-400" /> Application Workflow
+                      <AlertTriangle className="w-4 h-4 text-[hsl(var(--gold))]" /> Application Workflow
                     </h3>
                     <ol className="space-y-3 text-sm text-muted-foreground">
                       <li className="flex gap-3 items-start">
-                        <span className="bg-yellow-500/30 text-yellow-400 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0">1</span>
+                        <span className="bg-[hsl(var(--gold))]/30 text-[hsl(var(--gold))] w-6 h-6 rounded-none flex items-center justify-center text-xs font-bold shrink-0">1</span>
                         <span><strong className="text-foreground">Complete Preboarding Wizard:</strong> Ensure all merchant details are captured in the PS Terminal wizard before proceeding.</span>
                       </li>
                       <li className="flex gap-3 items-start">
-                        <span className="bg-yellow-500/30 text-yellow-400 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0">2</span>
+                        <span className="bg-[hsl(var(--gold))]/30 text-[hsl(var(--gold))] w-6 h-6 rounded-none flex items-center justify-center text-xs font-bold shrink-0">2</span>
                         <span><strong className="text-foreground">Choose Pricing Model:</strong> Select Flat Rate or Interchange+ based on merchant volume and business type.</span>
                       </li>
                       <li className="flex gap-3 items-start">
-                        <span className="bg-yellow-500/30 text-yellow-400 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0">3</span>
+                        <span className="bg-[hsl(var(--gold))]/30 text-[hsl(var(--gold))] w-6 h-6 rounded-none flex items-center justify-center text-xs font-bold shrink-0">3</span>
                         <span><strong className="text-foreground">Submit Microsite Application:</strong> Transfer all information from wizard to the appropriate NMI microsite form.</span>
                       </li>
                       <li className="flex gap-3 items-start">
-                        <span className="bg-yellow-500/30 text-yellow-400 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0">4</span>
+                        <span className="bg-[hsl(var(--gold))]/30 text-[hsl(var(--gold))] w-6 h-6 rounded-none flex items-center justify-center text-xs font-bold shrink-0">4</span>
                         <span><strong className="text-foreground">Update Pipeline Stage:</strong> Move opportunity to "Underwriting" stage in PS Terminal.</span>
                       </li>
                       <li className="flex gap-3 items-start">
-                        <span className="bg-yellow-500/30 text-yellow-400 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0">5</span>
+                        <span className="bg-[hsl(var(--gold))]/30 text-[hsl(var(--gold))] w-6 h-6 rounded-none flex items-center justify-center text-xs font-bold shrink-0">5</span>
                         <span><strong className="text-foreground">Monitor for Approval:</strong> Track status via NMI partner portal and update PS Terminal accordingly.</span>
                       </li>
                     </ol>
                   </div>
 
-                  <div className="bg-muted/50 rounded-md p-4 text-sm">
+                  <div className="bg-muted/50 rounded-none p-4 text-sm">
                     <strong className="text-foreground">Important:</strong>
                     <span className="text-muted-foreground"> Never share microsite links directly with merchants. These forms are for internal use only. The Preboarding Wizard serves as the merchant-facing application readiness tool.</span>
                   </div>
@@ -1635,46 +1398,31 @@ Sales Support`,
                 {/* Step 4 Internal - now 3.3 */}
                 <section id="step4">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold text-foreground">
+                    <h2 className="font-['Playfair_Display'] text-xl font-bold text-foreground">
                       3.3 — Processing & Gateway Setup
                     </h2>
-                    <span className="bg-red-500/20 text-red-400 text-xs font-semibold px-2.5 py-0.5 rounded flex items-center gap-1">
+                    <span className="bg-destructive/20 text-destructive text-xs font-semibold px-2.5 py-0.5 rounded-none flex items-center gap-1">
                       <Lock className="w-3 h-3" /> Internal Only
                     </span>
                   </div>
 
-                  <div className="bg-card rounded-xl border-2 border-red-500/30 shadow-sm p-6">
-                    <p className="text-red-400 font-bold mb-4 text-sm uppercase tracking-wide">
+                  <div className="bg-card rounded-none border-2 border-destructive/30 p-6">
+                    <p className="text-destructive font-bold mb-4 text-[10px] uppercase tracking-[0.3em]">
                       Do not send to merchant
                     </p>
                     <div className="text-muted-foreground">
                       <p className="mb-2">
-                        Once Step 3 (Application in Process email) is complete and
-                        all documents are collected:
+                        Once Step 3 (Application in Process email) is complete and all documents are collected:
                       </p>
                       <ol className="list-decimal pl-5 space-y-2 mb-4">
                         <li>
-                          Apply for the{" "}
-                          <strong className="text-foreground">
-                            processing account
-                          </strong>{" "}
-                          using the MerchantHaus microsite.
+                          Apply for the <strong className="text-foreground">processing account</strong> using the MerchantHaus microsite.
                         </li>
                         <li>
                           After processing approval, choose setup path:
                           <ul className="list-disc pl-5 mt-1 text-sm">
-                            <li>
-                              <strong className="text-foreground">Path A:</strong>{" "}
-                              Use approved processing details to apply for NMI
-                              Gateway.
-                            </li>
-                            <li>
-                              <strong className="text-foreground">
-                                Path B (Existing):
-                              </strong>{" "}
-                              Use VAR sheet to apply for NMI Gateway and map
-                              configuration.
-                            </li>
+                            <li><strong className="text-foreground">Path A:</strong> Use approved processing details to apply for NMI Gateway.</li>
+                            <li><strong className="text-foreground">Path B (Existing):</strong> Use VAR sheet to apply for NMI Gateway and map configuration.</li>
                           </ul>
                         </li>
                         <li>Confirm submission and move file to the next workflow stage.</li>
@@ -1684,202 +1432,68 @@ Sales Support`,
                 </section>
 
                 {/* Action Items */}
-                <section
-                  id="action-items"
-                  className="bg-card rounded-xl border border-border shadow-sm p-8"
-                >
-                  <h2 className="text-2xl font-bold text-primary border-b-4 border-cyan-500 inline-block mb-6 pb-1">
-                    3.4 — Action Items & Standards
-                  </h2>
+                <section id="action-items" className="bg-card rounded-none border border-border p-8">
+                  <SectionHeader gold>3.4 — Action Items & Standards</SectionHeader>
 
                   <div className="grid md:grid-cols-2 gap-8">
                     <div>
                       <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
-                        <CheckSquare className="w-5 h-5 text-cyan-500" /> Required
-                        Actions
+                        <CheckSquare className="w-5 h-5 text-[hsl(var(--gold))]" /> Required Actions
                       </h3>
                       <ul className="space-y-3 text-sm text-muted-foreground">
-                        <li className="flex gap-2 items-start">
-                          <span className="text-primary">•</span>
-                          <span>
-                            <strong className="text-foreground">Banking:</strong>{" "}
-                            Add details, verify deposit/withdrawal routing.
-                          </span>
-                        </li>
-                        <li className="flex gap-2 items-start">
-                          <span className="text-primary">•</span>
-                          <span>
-                            <strong className="text-foreground">Gateway:</strong>{" "}
-                            Configure access links, deliver secure credentials.
-                          </span>
-                        </li>
-                        <li className="flex gap-2 items-start">
-                          <span className="text-primary">•</span>
-                          <span>
-                            <strong className="text-foreground">API:</strong> Enable
-                            keys/webhooks for integrations.
-                          </span>
-                        </li>
-                        <li className="flex gap-2 items-start">
-                          <span className="text-primary">•</span>
-                          <span>
-                            <strong className="text-foreground">MID:</strong> Confirm
-                            assignment & descriptor alignment.
-                          </span>
-                        </li>
-                        <li className="flex gap-2 items-start">
-                          <span className="text-primary">•</span>
-                          <span>
-                            <strong className="text-foreground">VAR:</strong> Upload
-                            sheet, confirm mapping.
-                          </span>
-                        </li>
-                        <li className="flex gap-2 items-start">
-                          <span className="text-primary">•</span>
-                          <span>
-                            <strong className="text-foreground">Test:</strong> Run
-                            transaction to verify connectivity.
-                          </span>
-                        </li>
-                        <li className="flex gap-2 items-start">
-                          <span className="text-primary">•</span>
-                          <span>
-                            <strong className="text-foreground">PCI:</strong> Initiate
-                            compliance workflow (SAQ).
-                          </span>
-                        </li>
-                        <li className="flex gap-2 items-start">
-                          <span className="text-primary">•</span>
-                          <span>
-                            <strong className="text-foreground">CRM:</strong> Verify
-                            notes & attach documents.
-                          </span>
-                        </li>
+                        <li className="flex gap-2 items-start"><span className="text-primary">•</span><span><strong className="text-foreground">Banking:</strong> Add details, verify deposit/withdrawal routing.</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-primary">•</span><span><strong className="text-foreground">Gateway:</strong> Configure access links, deliver secure credentials.</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-primary">•</span><span><strong className="text-foreground">API:</strong> Enable keys/webhooks for integrations.</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-primary">•</span><span><strong className="text-foreground">MID:</strong> Confirm assignment & descriptor alignment.</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-primary">•</span><span><strong className="text-foreground">VAR:</strong> Upload sheet, confirm mapping.</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-primary">•</span><span><strong className="text-foreground">Test:</strong> Run transaction to verify connectivity.</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-primary">•</span><span><strong className="text-foreground">PCI:</strong> Initiate compliance workflow (SAQ).</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-primary">•</span><span><strong className="text-foreground">CRM:</strong> Verify notes & attach documents.</span></li>
                       </ul>
                     </div>
                     <div>
                       <h3 className="font-bold text-foreground mb-4 flex items-center gap-2">
-                        <ShieldCheck className="w-5 h-5 text-cyan-500" /> Industry
-                        Standards
+                        <ShieldCheck className="w-5 h-5 text-[hsl(var(--gold))]" /> Industry Standards
                       </h3>
                       <ul className="space-y-3 text-sm text-muted-foreground">
-                        <li className="flex gap-2 items-start">
-                          <span className="text-muted-foreground">→</span>
-                          <span>
-                            <strong className="text-foreground">KYC/KYB:</strong>{" "}
-                            Identity & corporate structure validated.
-                          </span>
-                        </li>
-                        <li className="flex gap-2 items-start">
-                          <span className="text-muted-foreground">→</span>
-                          <span>
-                            <strong className="text-foreground">Risk:</strong> Fraud
-                            filters, AVS/CVV rules, velocity checks set.
-                          </span>
-                        </li>
-                        <li className="flex gap-2 items-start">
-                          <span className="text-muted-foreground">→</span>
-                          <span>
-                            <strong className="text-foreground">Descriptors:</strong>{" "}
-                            Soft/Hard descriptors accurate.
-                          </span>
-                        </li>
-                        <li className="flex gap-2 items-start">
-                          <span className="text-muted-foreground">→</span>
-                          <span>
-                            <strong className="text-foreground">Settlement:</strong>{" "}
-                            Schedule set by volume/risk.
-                          </span>
-                        </li>
-                        <li className="flex gap-2 items-start">
-                          <span className="text-muted-foreground">→</span>
-                          <span>
-                            <strong className="text-foreground">Disputes:</strong>{" "}
-                            Portal access granted, timelines explained.
-                          </span>
-                        </li>
-                        <li className="flex gap-2 items-start">
-                          <span className="text-muted-foreground">→</span>
-                          <span>
-                            <strong className="text-foreground">Handoff:</strong>{" "}
-                            Support contacts provided.
-                          </span>
-                        </li>
+                        <li className="flex gap-2 items-start"><span className="text-muted-foreground">→</span><span><strong className="text-foreground">KYC/KYB:</strong> Identity & corporate structure validated.</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-muted-foreground">→</span><span><strong className="text-foreground">Risk:</strong> Fraud filters, AVS/CVV rules, velocity checks set.</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-muted-foreground">→</span><span><strong className="text-foreground">Descriptors:</strong> Soft/Hard descriptors accurate.</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-muted-foreground">→</span><span><strong className="text-foreground">Settlement:</strong> Schedule set by volume/risk.</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-muted-foreground">→</span><span><strong className="text-foreground">Disputes:</strong> Portal access granted, timelines explained.</span></li>
+                        <li className="flex gap-2 items-start"><span className="text-muted-foreground">→</span><span><strong className="text-foreground">Handoff:</strong> Support contacts provided.</span></li>
                       </ul>
                     </div>
                   </div>
                 </section>
 
                 {/* Services Overview */}
-                <section
-                  id="services-overview"
-                  className="bg-card rounded-xl border border-border shadow-sm p-8"
-                >
-                  <h2 className="text-2xl font-bold text-primary border-b-4 border-cyan-500 inline-block mb-6 pb-1">
-                    4. MerchantHaus Services Overview
-                  </h2>
-                  <p className="text-muted-foreground mb-6 italic border-l-4 border-cyan-500 pl-4 bg-cyan-500/10 py-2 pr-2 rounded-r">
+                <section id="services-overview" className="bg-card rounded-none border border-border p-8">
+                  <SectionHeader gold>4. MerchantHaus Services Overview</SectionHeader>
+                  <p className="text-muted-foreground mb-6 italic border-l-4 border-[hsl(var(--gold))] pl-4 bg-[hsl(var(--gold))]/10 py-2 pr-2">
                     Reference guide for core services offered through MerchantHaus. Use this information when discussing solutions with merchants.
                   </p>
 
                   <div className="grid md:grid-cols-3 gap-4 mb-8">
-                    <div className="bg-accent/30 rounded-lg border border-border p-4">
-                      <h3 className="font-bold text-foreground mb-2 text-sm">Payment Processing</h3>
-                      <p className="text-xs text-muted-foreground">
-                        Accept all major credit cards, debit cards, and digital wallets with competitive rates and instant settlements.
-                      </p>
-                    </div>
-                    <div className="bg-accent/30 rounded-lg border border-border p-4">
-                      <h3 className="font-bold text-foreground mb-2 text-sm">Fraud Detection</h3>
-                      <p className="text-xs text-muted-foreground">
-                        Multi-layered fraud prevention with AI-powered scoring (Kount), 3D Secure, and rule-based risk controls.
-                      </p>
-                    </div>
-                    <div className="bg-accent/30 rounded-lg border border-border p-4">
-                      <h3 className="font-bold text-foreground mb-2 text-sm">Mobile Solutions</h3>
-                      <p className="text-xs text-muted-foreground">
-                        Mobile-ready technology and POS systems for on-the-go businesses with TXT2PAY billing tools.
-                      </p>
-                    </div>
-                    <div className="bg-accent/30 rounded-lg border border-border p-4">
-                      <h3 className="font-bold text-foreground mb-2 text-sm">Global Payments</h3>
-                      <p className="text-xs text-muted-foreground">
-                        Multi-currency support and local payment methods in over 200 countries through 175+ processor connections.
-                      </p>
-                    </div>
-                    <div className="bg-accent/30 rounded-lg border border-border p-4">
-                      <h3 className="font-bold text-foreground mb-2 text-sm">Network Tokenization</h3>
-                      <p className="text-xs text-muted-foreground">
-                        Enhanced payment security and approval rates with Customer Token Vault for recurring billing.
-                      </p>
-                    </div>
-                    <div className="bg-accent/30 rounded-lg border border-border p-4">
-                      <h3 className="font-bold text-foreground mb-2 text-sm">Ecommerce Solutions</h3>
-                      <p className="text-xs text-muted-foreground">
-                        200+ shopping cart integrations including Shopify, Magento, WooCommerce, Wix, and Squarespace.
-                      </p>
-                    </div>
-                    <div className="bg-accent/30 rounded-lg border border-border p-4">
-                      <h3 className="font-bold text-foreground mb-2 text-sm">Subscription Billing</h3>
-                      <p className="text-xs text-muted-foreground">
-                        Automated recurring billing with Automatic Card Updater to reduce failed payments and churn.
-                      </p>
-                    </div>
-                    <div className="bg-accent/30 rounded-lg border border-border p-4">
-                      <h3 className="font-bold text-foreground mb-2 text-sm">Chargeback Management</h3>
-                      <p className="text-xs text-muted-foreground">
-                        Automated dispute handling with up to 70% reduction in chargebacks using built-in fraud protection.
-                      </p>
-                    </div>
-                    <div className="bg-accent/30 rounded-lg border border-border p-4">
-                      <h3 className="font-bold text-foreground mb-2 text-sm">Data & Analytics</h3>
-                      <p className="text-xs text-muted-foreground">
-                        Real-time transaction analytics, custom reporting dashboards, and Level III data optimization.
-                      </p>
-                    </div>
+                    {[
+                      { title: "Payment Processing", desc: "Accept all major credit cards, debit cards, and digital wallets with competitive rates and instant settlements." },
+                      { title: "Fraud Detection", desc: "Multi-layered fraud prevention with AI-powered scoring (Kount), 3D Secure, and rule-based risk controls." },
+                      { title: "Mobile Solutions", desc: "Mobile-ready technology and POS systems for on-the-go businesses with TXT2PAY billing tools." },
+                      { title: "Global Payments", desc: "Multi-currency support and local payment methods in over 200 countries through 175+ processor connections." },
+                      { title: "Network Tokenization", desc: "Enhanced payment security and approval rates with Customer Token Vault for recurring billing." },
+                      { title: "Ecommerce Solutions", desc: "200+ shopping cart integrations including Shopify, Magento, WooCommerce, Wix, and Squarespace." },
+                      { title: "Subscription Billing", desc: "Automated recurring billing with Automatic Card Updater to reduce failed payments and churn." },
+                      { title: "Chargeback Management", desc: "Automated dispute handling with up to 70% reduction in chargebacks using built-in fraud protection." },
+                      { title: "Data & Analytics", desc: "Real-time transaction analytics, custom reporting dashboards, and Level III data optimization." },
+                    ].map((svc) => (
+                      <div key={svc.title} className="bg-secondary/30 rounded-none border border-border p-4">
+                        <h3 className="font-bold text-foreground mb-2 text-sm">{svc.title}</h3>
+                        <p className="text-xs text-muted-foreground">{svc.desc}</p>
+                      </div>
+                    ))}
                   </div>
 
-                  <div className="bg-gradient-to-r from-primary/10 to-cyan-500/10 rounded-lg border border-border p-6">
+                  <div className="bg-gradient-to-r from-primary/10 to-[hsl(var(--gold))]/10 rounded-none border border-border p-6">
                     <h3 className="font-bold text-foreground mb-4">Platform Highlights</h3>
                     <div className="grid md:grid-cols-4 gap-4 text-center">
                       <div>
@@ -1887,7 +1501,7 @@ Sales Support`,
                         <p className="text-xs text-muted-foreground">Uptime</p>
                       </div>
                       <div>
-                        <span className="text-2xl font-bold text-cyan-400">175+</span>
+                        <span className="text-2xl font-bold text-[hsl(var(--gold))]">175+</span>
                         <p className="text-xs text-muted-foreground">Processor Connections</p>
                       </div>
                       <div>
@@ -1895,14 +1509,14 @@ Sales Support`,
                         <p className="text-xs text-muted-foreground">PCI DSS Certified</p>
                       </div>
                       <div>
-                        <span className="text-2xl font-bold text-yellow-400">7-10 Days</span>
+                        <span className="text-2xl font-bold text-[hsl(var(--gold))]">7-10 Days</span>
                         <p className="text-xs text-muted-foreground">ACH Settlement</p>
                       </div>
                     </div>
                   </div>
 
                   <div className="mt-6 grid md:grid-cols-2 gap-4">
-                    <div className="bg-muted/50 rounded-md p-4">
+                    <div className="bg-muted/50 rounded-none p-4">
                       <h4 className="font-bold text-foreground text-sm mb-2">Pricing Tiers</h4>
                       <ul className="text-xs text-muted-foreground space-y-1">
                         <li><strong className="text-foreground">Starter ($59/mo):</strong> Fraud-first foundation, mobile gateway, TXT2PAY</li>
@@ -1911,11 +1525,11 @@ Sales Support`,
                         <li><strong className="text-foreground">Enterprise (Custom):</strong> + SLA guarantees, multi-entity, dedicated engineering</li>
                       </ul>
                     </div>
-                    <div className="bg-muted/50 rounded-md p-4">
+                    <div className="bg-muted/50 rounded-none p-4">
                       <h4 className="font-bold text-foreground text-sm mb-2">Key Integrations</h4>
                       <div className="flex flex-wrap gap-1.5">
                         {["Shopify", "Magento", "WooCommerce", "Wix", "Squarespace", "QuickBooks", "FreshBooks", "Salesforce", "HubSpot", "Zoho CRM", "Clover", "NCR"].map((item) => (
-                          <span key={item} className="bg-background px-1.5 py-0.5 rounded border border-border text-xs text-muted-foreground">
+                          <span key={item} className="bg-background px-1.5 py-0.5 rounded-none border border-border text-xs text-muted-foreground">
                             {item}
                           </span>
                         ))}
@@ -1925,46 +1539,24 @@ Sales Support`,
                 </section>
 
                 {/* Appendices */}
-                <section
-                  id="appendix"
-                  className="bg-accent/50 rounded-xl border border-border p-8"
-                >
-                  <h2 className="text-xl font-bold text-foreground mb-6">
+                <section id="appendix" className="bg-secondary/50 rounded-none border border-border p-8">
+                  <h2 className="font-['Playfair_Display'] text-xl font-bold text-foreground mb-6">
                     Appendix — SOP Structure
                   </h2>
                   <div className="grid md:grid-cols-2 gap-6 text-sm">
                     <div>
-                      <h4 className="font-bold text-foreground mb-2">
-                        Best Practices
-                      </h4>
+                      <h4 className="font-bold text-foreground mb-2">Best Practices</h4>
                       <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
-                        <li>
-                          <strong>Structure:</strong> Title, Purpose, Trigger, Owner,
-                          Output.
-                        </li>
-                        <li>
-                          <strong>Version Control:</strong> Maintain revision logs.
-                        </li>
-                        <li>
-                          <strong>Alignment:</strong> Sync Ops, Risk, Underwriting,
-                          Eng.
-                        </li>
-                        <li>
-                          <strong>Dependencies:</strong> Map prerequisites clearly.
-                        </li>
-                        <li>
-                          <strong>KPIs:</strong> Track turnaround, approval rates.
-                        </li>
-                        <li>
-                          <strong>Compliance:</strong> Tie PCI/KYC directly to
-                          checkpoints.
-                        </li>
+                        <li><strong>Structure:</strong> Title, Purpose, Trigger, Owner, Output.</li>
+                        <li><strong>Version Control:</strong> Maintain revision logs.</li>
+                        <li><strong>Alignment:</strong> Sync Ops, Risk, Underwriting, Eng.</li>
+                        <li><strong>Dependencies:</strong> Map prerequisites clearly.</li>
+                        <li><strong>KPIs:</strong> Track turnaround, approval rates.</li>
+                        <li><strong>Compliance:</strong> Tie PCI/KYC directly to checkpoints.</li>
                       </ul>
                     </div>
                     <div>
-                      <h4 className="font-bold text-foreground mb-2">
-                        Process Mapping Needs
-                      </h4>
+                      <h4 className="font-bold text-foreground mb-2">Process Mapping Needs</h4>
                       <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
                         <li>Lead intake → CRM</li>
                         <li>Discovery → Solution fit</li>
@@ -1979,18 +1571,15 @@ Sales Support`,
                 </section>
 
                 {/* CRM Architecture & Tech Stack Document */}
-                <section
-                  id="tech-stack"
-                  className="bg-sidebar rounded-xl p-8 shadow-lg"
-                >
+                <section id="tech-stack" className="bg-sidebar rounded-none p-8 border border-border">
                   <div className="flex items-center justify-between mb-6 border-b border-border pb-2">
-                    <h2 className="text-xl font-bold text-foreground">
+                    <h2 className="font-['Playfair_Display'] text-xl font-bold text-foreground">
                       CRM Architecture & Technical Reference
                     </h2>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="gap-2"
+                      className="gap-2 rounded-none"
                       onClick={() => {
                         const docContent = generateArchitectureDoc();
                         const blob = new Blob([docContent], { type: 'text/markdown' });
@@ -2011,7 +1600,7 @@ Sales Support`,
                   <div className="space-y-8 text-sm">
                     {/* 1. Tech Stack */}
                     <div>
-                      <h3 className="text-cyan-400 font-bold mb-3 text-base">1. Technology Stack</h3>
+                      <h3 className="text-[hsl(var(--gold))] font-bold mb-3 text-base">1. Technology Stack</h3>
                       <div className="grid md:grid-cols-2 gap-6">
                         <div>
                           <h4 className="font-semibold text-foreground mb-2">Frontend</h4>
@@ -2043,7 +1632,7 @@ Sales Support`,
                           <h4 className="font-semibold text-foreground mt-4 mb-2">SaaS Ecosystem</h4>
                           <div className="flex flex-wrap gap-2">
                             {["Resend", "Netlify", "GitHub", "OpenPhone", "Google Workspace", "Gemini AI", "Lovable"].map((item) => (
-                              <span key={item} className="bg-background px-2 py-1 rounded border border-border text-muted-foreground">{item}</span>
+                              <span key={item} className="bg-background px-2 py-1 rounded-none border border-border text-muted-foreground">{item}</span>
                             ))}
                           </div>
                         </div>
@@ -2052,22 +1641,22 @@ Sales Support`,
 
                     {/* 2. Auth & Roles */}
                     <div>
-                      <h3 className="text-cyan-400 font-bold mb-3 text-base">2. Authentication & User Roles</h3>
+                      <h3 className="text-[hsl(var(--gold))] font-bold mb-3 text-base">2. Authentication & User Roles</h3>
                       <div className="grid md:grid-cols-2 gap-6">
                         <div>
                           <h4 className="font-semibold text-foreground mb-2">Auth Flow</h4>
                           <ul className="space-y-1.5 text-muted-foreground">
                             <li>Email + password sign-in (no anonymous signups)</li>
                             <li>Email verification required before first login</li>
-                            <li>Password reset via email link → <code className="text-xs bg-background px-1 rounded">/update-password</code></li>
+                            <li>Password reset via email link → <code className="text-xs bg-background px-1 rounded-none">/update-password</code></li>
                             <li>Force-password-change on first login (admin-triggered)</li>
-                            <li>Session tracking in <code className="text-xs bg-background px-1 rounded">user_sessions</code> table</li>
+                            <li>Session tracking in <code className="text-xs bg-background px-1 rounded-none">user_sessions</code> table</li>
                           </ul>
                         </div>
                         <div>
                           <h4 className="font-semibold text-foreground mb-2">Role Types</h4>
                           <div className="space-y-3">
-                            <div className="p-3 rounded border border-border bg-background/50">
+                            <div className="p-3 rounded-none border border-border bg-background/50">
                               <div className="flex items-center gap-2 mb-1">
                                 <Shield className="h-4 w-4 text-primary" />
                                 <strong className="text-foreground">Admin</strong>
@@ -2075,9 +1664,9 @@ Sales Support`,
                               <p className="text-muted-foreground text-xs">Full CRUD on all data. Master exports. User management. Channel administration. Deletion request approval.</p>
                               <p className="text-muted-foreground text-xs mt-1">Users: admin@merchanthaus.io, darryn@merchanthaus.io</p>
                             </div>
-                            <div className="p-3 rounded border border-border bg-background/50">
+                            <div className="p-3 rounded-none border border-border bg-background/50">
                               <div className="flex items-center gap-2 mb-1">
-                                <Users className="h-4 w-4 text-cyan-400" />
+                                <Users className="h-4 w-4 text-[hsl(var(--gold))]" />
                                 <strong className="text-foreground">User (Standard)</strong>
                               </div>
                               <p className="text-muted-foreground text-xs">Pipeline management. Task creation. Chat & DMs. Document upload. Contact editing.</p>
@@ -2087,13 +1676,13 @@ Sales Support`,
                         </div>
                       </div>
 
-                      <div className="mt-4 p-3 rounded border border-border bg-background/50">
+                      <div className="mt-4 p-3 rounded-none border border-border bg-background/50">
                         <h4 className="font-semibold text-foreground mb-2">Access Control Architecture</h4>
                         <ul className="space-y-1 text-muted-foreground text-xs">
                           <li>• <strong className="text-foreground">Allowlist:</strong> Only 5 authorized emails can authenticate</li>
-                          <li>• <strong className="text-foreground">RLS:</strong> All tables enforce <code className="bg-background px-1 rounded">auth.uid() IS NOT NULL</code></li>
-                          <li>• <strong className="text-foreground">Admin check:</strong> <code className="bg-background px-1 rounded">is_admin_email()</code> SQL function (security definer)</li>
-                          <li>• <strong className="text-foreground">Role check:</strong> <code className="bg-background px-1 rounded">has_role(uuid, app_role)</code> — separate <code className="bg-background px-1 rounded">user_roles</code> table</li>
+                          <li>• <strong className="text-foreground">RLS:</strong> All tables enforce <code className="bg-background px-1 rounded-none">auth.uid() IS NOT NULL</code></li>
+                          <li>• <strong className="text-foreground">Admin check:</strong> <code className="bg-background px-1 rounded-none">is_admin_email()</code> SQL function (security definer)</li>
+                          <li>• <strong className="text-foreground">Role check:</strong> <code className="bg-background px-1 rounded-none">has_role(uuid, app_role)</code> — separate <code className="bg-background px-1 rounded-none">user_roles</code> table</li>
                           <li>• <strong className="text-foreground">Public forms:</strong> INSERT-only policies for merchant applications & consents</li>
                         </ul>
                       </div>
@@ -2101,31 +1690,31 @@ Sales Support`,
 
                     {/* 3. Data Architecture */}
                     <div>
-                      <h3 className="text-cyan-400 font-bold mb-3 text-base">3. Data Architecture</h3>
+                      <h3 className="text-[hsl(var(--gold))] font-bold mb-3 text-base">3. Data Architecture</h3>
                       <div className="grid md:grid-cols-2 gap-6">
                         <div>
                           <h4 className="font-semibold text-foreground mb-2">Core Tables</h4>
                           <ul className="space-y-1 text-muted-foreground text-xs">
-                            <li><code className="bg-background px-1 rounded">accounts</code> — Merchant businesses</li>
-                            <li><code className="bg-background px-1 rounded">contacts</code> — People linked to accounts</li>
-                            <li><code className="bg-background px-1 rounded">opportunities</code> — Pipeline deals (FK → accounts, contacts)</li>
-                            <li><code className="bg-background px-1 rounded">tasks</code> — Assignable work items</li>
-                            <li><code className="bg-background px-1 rounded">documents</code> — Files per opportunity (private bucket)</li>
-                            <li><code className="bg-background px-1 rounded">activities</code> — Audit trail per opportunity</li>
-                            <li><code className="bg-background px-1 rounded">comments</code> — Discussion threads</li>
-                            <li><code className="bg-background px-1 rounded">validation_reports</code> — AI readiness assessments</li>
+                            <li><code className="bg-background px-1 rounded-none">accounts</code> — Merchant businesses</li>
+                            <li><code className="bg-background px-1 rounded-none">contacts</code> — People linked to accounts</li>
+                            <li><code className="bg-background px-1 rounded-none">opportunities</code> — Pipeline deals (FK → accounts, contacts)</li>
+                            <li><code className="bg-background px-1 rounded-none">tasks</code> — Assignable work items</li>
+                            <li><code className="bg-background px-1 rounded-none">documents</code> — Files per opportunity (private bucket)</li>
+                            <li><code className="bg-background px-1 rounded-none">activities</code> — Audit trail per opportunity</li>
+                            <li><code className="bg-background px-1 rounded-none">comments</code> — Discussion threads</li>
+                            <li><code className="bg-background px-1 rounded-none">validation_reports</code> — AI readiness assessments</li>
                           </ul>
                         </div>
                         <div>
                           <h4 className="font-semibold text-foreground mb-2">Onboarding & Compliance</h4>
                           <ul className="space-y-1 text-muted-foreground text-xs">
-                            <li><code className="bg-background px-1 rounded">applications</code> — Public merchant submissions</li>
-                            <li><code className="bg-background px-1 rounded">merchants</code> — Detailed business profiles (1:1 with app)</li>
-                            <li><code className="bg-background px-1 rounded">principals</code> — Beneficial owners (1:many)</li>
-                            <li><code className="bg-background px-1 rounded">bank_accounts</code> — Settlement details (1:1)</li>
-                            <li><code className="bg-background px-1 rounded">application_secrets</code> — Encrypted PII (auto-purged)</li>
-                            <li><code className="bg-background px-1 rounded">merchant_consents</code> — Legal agreements with IP/UA</li>
-                            <li><code className="bg-background px-1 rounded">application_documents</code> — File audit trail</li>
+                            <li><code className="bg-background px-1 rounded-none">applications</code> — Public merchant submissions</li>
+                            <li><code className="bg-background px-1 rounded-none">merchants</code> — Detailed business profiles (1:1 with app)</li>
+                            <li><code className="bg-background px-1 rounded-none">principals</code> — Beneficial owners (1:many)</li>
+                            <li><code className="bg-background px-1 rounded-none">bank_accounts</code> — Settlement details (1:1)</li>
+                            <li><code className="bg-background px-1 rounded-none">application_secrets</code> — Encrypted PII (auto-purged)</li>
+                            <li><code className="bg-background px-1 rounded-none">merchant_consents</code> — Legal agreements with IP/UA</li>
+                            <li><code className="bg-background px-1 rounded-none">application_documents</code> — File audit trail</li>
                           </ul>
                         </div>
                       </div>
@@ -2134,31 +1723,31 @@ Sales Support`,
                         <div>
                           <h4 className="font-semibold text-foreground mb-2">Communication</h4>
                           <ul className="space-y-1 text-muted-foreground text-xs">
-                            <li><code className="bg-background px-1 rounded">chat_channels</code> + <code className="bg-background px-1 rounded">chat_messages</code> — Team chat</li>
-                            <li><code className="bg-background px-1 rounded">direct_messages</code> — 1:1 DMs</li>
-                            <li><code className="bg-background px-1 rounded">message_reactions</code> — Emoji reactions</li>
-                            <li><code className="bg-background px-1 rounded">notifications</code> — Bell notifications</li>
-                            <li><code className="bg-background px-1 rounded">push_subscriptions</code> — Web push</li>
-                            <li><code className="bg-background px-1 rounded">call_logs</code> — Phone records + transcripts</li>
+                            <li><code className="bg-background px-1 rounded-none">chat_channels</code> + <code className="bg-background px-1 rounded-none">chat_messages</code> — Team chat</li>
+                            <li><code className="bg-background px-1 rounded-none">direct_messages</code> — 1:1 DMs</li>
+                            <li><code className="bg-background px-1 rounded-none">message_reactions</code> — Emoji reactions</li>
+                            <li><code className="bg-background px-1 rounded-none">notifications</code> — Bell notifications</li>
+                            <li><code className="bg-background px-1 rounded-none">push_subscriptions</code> — Web push</li>
+                            <li><code className="bg-background px-1 rounded-none">call_logs</code> — Phone records + transcripts</li>
                           </ul>
                         </div>
                         <div>
                           <h4 className="font-semibold text-foreground mb-2">Outreach</h4>
                           <ul className="space-y-1 text-muted-foreground text-xs">
-                            <li><code className="bg-background px-1 rounded">outreach_campaigns</code> — Campaign definitions</li>
-                            <li><code className="bg-background px-1 rounded">outreach_contacts</code> — Recipient tracking</li>
-                            <li><code className="bg-background px-1 rounded">cadence_steps</code> — Multi-step email cadences</li>
+                            <li><code className="bg-background px-1 rounded-none">outreach_campaigns</code> — Campaign definitions</li>
+                            <li><code className="bg-background px-1 rounded-none">outreach_contacts</code> — Recipient tracking</li>
+                            <li><code className="bg-background px-1 rounded-none">cadence_steps</code> — Multi-step email cadences</li>
                           </ul>
                         </div>
                         <div>
                           <h4 className="font-semibold text-foreground mb-2">System</h4>
                           <ul className="space-y-1 text-muted-foreground text-xs">
-                            <li><code className="bg-background px-1 rounded">profiles</code> — User data (auto-created)</li>
-                            <li><code className="bg-background px-1 rounded">user_roles</code> — Role assignments</li>
-                            <li><code className="bg-background px-1 rounded">user_sessions</code> — Login tracking</li>
-                            <li><code className="bg-background px-1 rounded">action_items</code> — Notice board</li>
-                            <li><code className="bg-background px-1 rounded">deletion_requests</code> — Soft-delete queue</li>
-                            <li><code className="bg-background px-1 rounded">onboarding_wizard_states</code> — Wizard progress</li>
+                            <li><code className="bg-background px-1 rounded-none">profiles</code> — User data (auto-created)</li>
+                            <li><code className="bg-background px-1 rounded-none">user_roles</code> — Role assignments</li>
+                            <li><code className="bg-background px-1 rounded-none">user_sessions</code> — Login tracking</li>
+                            <li><code className="bg-background px-1 rounded-none">action_items</code> — Notice board</li>
+                            <li><code className="bg-background px-1 rounded-none">deletion_requests</code> — Soft-delete queue</li>
+                            <li><code className="bg-background px-1 rounded-none">onboarding_wizard_states</code> — Wizard progress</li>
                           </ul>
                         </div>
                       </div>
@@ -2166,7 +1755,7 @@ Sales Support`,
 
                     {/* 4. Notification Routing */}
                     <div>
-                      <h3 className="text-cyan-400 font-bold mb-3 text-base">4. Notification Routing</h3>
+                      <h3 className="text-[hsl(var(--gold))] font-bold mb-3 text-base">4. Notification Routing</h3>
                       <div className="grid md:grid-cols-2 gap-6">
                         <div>
                           <h4 className="font-semibold text-foreground mb-2">Bell Notifications (In-App)</h4>
@@ -2176,7 +1765,7 @@ Sales Support`,
                             <li>• Pipeline assignments → bell + email + system DM</li>
                             <li>• New web submissions → bell (all team members)</li>
                           </ul>
-                          <div className="mt-3 p-2 rounded border border-border bg-background/50">
+                          <div className="mt-3 p-2 rounded-none border border-border bg-background/50">
                             <p className="text-xs text-muted-foreground"><strong className="text-foreground">Excluded:</strong> Channel messages and DMs use their own unread indicators in the messenger — no bell notifications.</p>
                           </div>
                         </div>
@@ -2194,7 +1783,7 @@ Sales Support`,
 
                     {/* 5. AI Assistant */}
                     <div>
-                      <h3 className="text-cyan-400 font-bold mb-3 text-base">5. AI Assistant — Atria</h3>
+                      <h3 className="text-[hsl(var(--gold))] font-bold mb-3 text-base">5. AI Assistant — Atria</h3>
                       <div className="grid md:grid-cols-2 gap-6">
                         <div>
                           <h4 className="font-semibold text-foreground mb-2">Read Access (Live Snapshot)</h4>
@@ -2204,6 +1793,7 @@ Sales Support`,
                             <li>• All documents across all opportunities</li>
                             <li>• Latest AI validation reports with readiness scores</li>
                             <li>• Open tasks, team members, and activity</li>
+                            <li>• SOP procedures, checklists, and email templates</li>
                           </ul>
                         </div>
                         <div>
@@ -2214,7 +1804,7 @@ Sales Support`,
                             <li>• <strong className="text-foreground">Assign deals</strong> — assign to any team member</li>
                             <li>• <strong className="text-foreground">Update status</strong> — active, dead, closed-lost</li>
                           </ul>
-                          <div className="mt-3 p-2 rounded border border-border bg-background/50">
+                          <div className="mt-3 p-2 rounded-none border border-border bg-background/50">
                             <p className="text-xs text-muted-foreground">Accessible via <strong className="text-foreground">#atria-ai</strong> channel. Powered by Google Gemini via Lovable AI gateway.</p>
                           </div>
                         </div>
@@ -2223,29 +1813,27 @@ Sales Support`,
 
                     {/* 6. Security */}
                     <div>
-                      <h3 className="text-cyan-400 font-bold mb-3 text-base">6. Security Model</h3>
+                      <h3 className="text-[hsl(var(--gold))] font-bold mb-3 text-base">6. Security Model</h3>
                       <div className="grid md:grid-cols-2 gap-6">
                         <div>
                           <h4 className="font-semibold text-foreground mb-2">Data Protection</h4>
                           <ul className="space-y-1.5 text-muted-foreground">
                             <li>• RLS enabled on every table — no exceptions</li>
-                            <li>• Sensitive PII encrypted at rest (AES-256-GCM)</li>
-                            <li>• Auto-purge trigger on status → underwriting</li>
-                            <li>• 24-hour insertion window for secret submissions</li>
-                            <li>• Private storage buckets with signed URL access</li>
-                            <li>• Deletion requests require admin approval</li>
+                            <li>• AES-256-GCM encryption for PII in <code className="text-xs bg-background px-1 rounded-none">application_secrets</code></li>
+                            <li>• Auto-purge trigger on underwriting status change</li>
+                            <li>• Private storage with signed URL access</li>
+                            <li>• Soft-delete workflow with admin approval</li>
                           </ul>
                         </div>
                         <div>
                           <h4 className="font-semibold text-foreground mb-2">Edge Functions</h4>
                           <ul className="space-y-1.5 text-muted-foreground">
-                            <li><code className="text-xs bg-background px-1 rounded">ai-assistant</code> — Atria (chat + tools + validation)</li>
-                            <li><code className="text-xs bg-background px-1 rounded">encrypt-secrets</code> — Server-side PII encryption</li>
-                            <li><code className="text-xs bg-background px-1 rounded">send-notification-email</code> — Transactional emails</li>
-                            <li><code className="text-xs bg-background px-1 rounded">send-push-notification</code> — Web push (VAPID)</li>
-                            <li><code className="text-xs bg-background px-1 rounded">send-outreach-emails</code> — Campaign emails</li>
-                            <li><code className="text-xs bg-background px-1 rounded">export-data</code> — Admin ZIP exports</li>
-                            <li><code className="text-xs bg-background px-1 rounded">quo-proxy</code> / <code className="text-xs bg-background px-1 rounded">quo-webhook</code> — Telephony</li>
+                            <li>• <code className="text-xs bg-background px-1 rounded-none">ai-assistant</code> — Atria AI (chat + tools + validation)</li>
+                            <li>• <code className="text-xs bg-background px-1 rounded-none">encrypt-secrets</code> — PII encryption</li>
+                            <li>• <code className="text-xs bg-background px-1 rounded-none">send-notification-email</code> — Transactional emails</li>
+                            <li>• <code className="text-xs bg-background px-1 rounded-none">send-push-notification</code> — Web push</li>
+                            <li>• <code className="text-xs bg-background px-1 rounded-none">export-data</code> — Admin ZIP export</li>
+                            <li>• <code className="text-xs bg-background px-1 rounded-none">quo-proxy</code> — Telephony integration</li>
                           </ul>
                         </div>
                       </div>
@@ -2253,26 +1841,29 @@ Sales Support`,
 
                     {/* 7. Pipeline */}
                     <div>
-                      <h3 className="text-cyan-400 font-bold mb-3 text-base">7. Pipeline & Workflow</h3>
+                      <h3 className="text-[hsl(var(--gold))] font-bold mb-3 text-base">7. Pipeline & Workflow</h3>
+                      <div className="flex flex-wrap items-center gap-2 mb-4 text-xs font-bold">
+                        {["discovery", "qualification", "preboarding", "underwriting", "boarding", "live"].map((s, i) => (
+                          <div key={s} className="flex items-center gap-2">
+                            <code className="bg-background px-2 py-1 border border-border text-foreground">{s}</code>
+                            {i < 5 && <ArrowRight className="w-3 h-3 text-muted-foreground" />}
+                          </div>
+                        ))}
+                      </div>
                       <ul className="space-y-1.5 text-muted-foreground">
                         <li>• <strong className="text-foreground">Service Types:</strong> Processing, Gateway Only, Document Submission</li>
-                        <li>• <strong className="text-foreground">Pipeline Stages (DB):</strong> <code className="text-xs bg-background px-1 rounded">discovery</code> → <code className="text-xs bg-background px-1 rounded">qualification</code> → <code className="text-xs bg-background px-1 rounded">preboarding</code> → <code className="text-xs bg-background px-1 rounded">underwriting</code> → <code className="text-xs bg-background px-1 rounded">boarding</code> → <code className="text-xs bg-background px-1 rounded">live</code></li>
                         <li>• <strong className="text-foreground">SLA Tracking:</strong> Automatic 24-hour SLA tasks on stage entry</li>
-                        <li>• <strong className="text-foreground">Realtime:</strong> Pipeline board, chat, and notifications via WebSocket</li>
-                        <li>• <strong className="text-foreground">Auto-assignment:</strong> Web submissions at 100% assigned to support@merchanthaus.io</li>
-                        <li>• <strong className="text-foreground">System Messages:</strong> Automated posts to #ops-updates for assignments and events</li>
+                        <li>• <strong className="text-foreground">Realtime:</strong> Pipeline, chat, notifications use WebSocket subscriptions</li>
+                        <li>• <strong className="text-foreground">Auto-assignment:</strong> Web submissions at 100% completion → support@merchanthaus.io</li>
                         <li>• <strong className="text-foreground">AI Validation:</strong> On-demand document readiness checks via Gemini</li>
                       </ul>
                     </div>
                   </div>
                 </section>
 
-                <footer className="text-center text-muted-foreground text-sm pb-10">
-                  <p>MerchantHaus Internal SOP — Confidential</p>
-                </footer>
               </div>
             </div>
-          </div>
+      </div>
     </AppLayout>
   );
 };
