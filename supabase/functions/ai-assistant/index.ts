@@ -43,28 +43,31 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
     contactCountRes,
   ] = await Promise.all([
     // Pipeline stage counts
-    supabase.from("opportunities").select("stage, status, assigned_to, account_id").eq("status", "active"),
-    // Recent opportunities with account names
+    supabase.from("opportunities").select("stage, status, assigned_to, account_id"),
+    // Recent opportunities with account names (all statuses)
     supabase.from("opportunities")
-      .select("id, stage, assigned_to, created_at, accounts!inner(name), contacts!inner(first_name, last_name)")
-      .eq("status", "active")
+      .select("id, stage, status, assigned_to, created_at, accounts!inner(name), contacts!inner(first_name, last_name)")
       .order("created_at", { ascending: false })
-      .limit(15),
+      .limit(25),
     // Open tasks
     supabase.from("tasks").select("title, assignee, status, priority, due_at").neq("status", "done").order("created_at", { ascending: false }).limit(15),
     // Team members
     supabase.from("profiles").select("email, full_name, last_seen"),
-    // Counts
-    supabase.from("accounts").select("id", { count: "exact", head: true }),
+    // Counts (all accounts including dead)
+    supabase.from("accounts").select("id, status", { count: "exact", head: false }),
     supabase.from("contacts").select("id", { count: "exact", head: true }),
   ]);
 
   // Pipeline summary
   const opps = pipelineRes.data || [];
+  const activeOpps = opps.filter((o: any) => o.status === "active");
+  const deadOpps = opps.filter((o: any) => o.status === "dead" || o.status === "closed-lost");
   const stageCounts: Record<string, number> = {};
+  const statusCounts: Record<string, number> = {};
   const assigneeCounts: Record<string, number> = {};
   for (const o of opps) {
     stageCounts[o.stage] = (stageCounts[o.stage] || 0) + 1;
+    statusCounts[o.status || "unknown"] = (statusCounts[o.status || "unknown"] || 0) + 1;
     if (o.assigned_to) assigneeCounts[o.assigned_to] = (assigneeCounts[o.assigned_to] || 0) + 1;
   }
 
@@ -78,7 +81,7 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
 
   // Recent deals
   const recentDeals = (recentOppsRes.data || [])
-    .map((o: any) => `  - ${o.accounts?.name || "Unknown"} (${o.stage}) → ${o.assigned_to || "Unassigned"} | Contact: ${[o.contacts?.first_name, o.contacts?.last_name].filter(Boolean).join(" ") || "N/A"}`)
+    .map((o: any) => `  - ${o.accounts?.name || "Unknown"} (${o.stage} | ${o.status || "active"}) → ${o.assigned_to || "Unassigned"} | Contact: ${[o.contacts?.first_name, o.contacts?.last_name].filter(Boolean).join(" ") || "N/A"}`)
     .join("\n");
 
   // Open tasks
@@ -92,17 +95,30 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
     .map((p: any) => `  - ${p.full_name || p.email} (${p.email})${p.last_seen ? " — last seen " + new Date(p.last_seen).toLocaleDateString() : ""}`)
     .join("\n");
 
+  // Account status breakdown
+  const accounts = accountCountRes.data || [];
+  const activeAccounts = accounts.filter((a: any) => a.status === "active" || !a.status).length;
+  const deadAccounts = accounts.filter((a: any) => a.status === "dead").length;
+
+  const statusSummary = Object.entries(statusCounts)
+    .map(([status, count]) => `  ${status}: ${count}`)
+    .join("\n");
+
   return `
 
 ━━━ LIVE CRM DATA SNAPSHOT ━━━
 
-PIPELINE OVERVIEW (${opps.length} active deals):
-${pipelineSummary || "  No active deals"}
+PIPELINE OVERVIEW (${opps.length} total opportunities):
+By Stage:
+${pipelineSummary || "  No deals"}
+
+By Status:
+${statusSummary || "  No deals"}
 
 DEALS BY ASSIGNEE:
 ${assigneeSummary || "  No assignments"}
 
-RECENT DEALS (newest first):
+RECENT DEALS (newest first, all statuses):
 ${recentDeals || "  None"}
 
 OPEN TASKS (${tasksRes.data?.length || 0}):
@@ -112,9 +128,9 @@ TEAM MEMBERS:
 ${team || "  None"}
 
 TOTALS:
-  Accounts: ${accountCountRes.count ?? "Unknown"}
+  Accounts: ${accounts.length} total (${activeAccounts} active, ${deadAccounts} dead)
   Contacts: ${contactCountRes.count ?? "Unknown"}
-  Active Opportunities: ${opps.length}
+  All Opportunities: ${opps.length} (${activeOpps.length} active, ${deadOpps.length} dead/closed-lost)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 }
 
