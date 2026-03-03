@@ -371,6 +371,54 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_entries: {
+        Row: {
+          audit_date: string
+          created_at: string
+          description: string
+          expected_outcome: string
+          id: string
+          item_id: string
+          prompt: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          audit_date?: string
+          created_at?: string
+          description?: string
+          expected_outcome?: string
+          id?: string
+          item_id: string
+          prompt?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          title: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          audit_date?: string
+          created_at?: string
+          description?: string
+          expected_outcome?: string
+          id?: string
+          item_id?: string
+          prompt?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bank_accounts: {
         Row: {
           account_holder_name: string | null
