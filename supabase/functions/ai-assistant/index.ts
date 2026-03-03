@@ -42,9 +42,11 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
     accountsFullRes,
     contactsFullRes,
     contactCountRes,
+    documentsRes,
+    validationReportsRes,
   ] = await Promise.all([
     // Pipeline stage counts
-    supabase.from("opportunities").select("stage, status, assigned_to, account_id"),
+    supabase.from("opportunities").select("id, stage, status, assigned_to, account_id"),
     // Recent opportunities with account names (all statuses)
     supabase.from("opportunities")
       .select("id, stage, status, assigned_to, created_at, accounts!inner(name), contacts!inner(first_name, last_name)")
@@ -59,6 +61,10 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
     // Full contacts roster with details
     supabase.from("contacts").select("id, account_id, first_name, last_name, email, phone, created_at").order("created_at", { ascending: true }),
     supabase.from("contacts").select("id", { count: "exact", head: true }),
+    // All documents across all opportunities
+    supabase.from("documents").select("id, opportunity_id, file_name, document_type, content_type, file_size, created_at, uploaded_by").order("created_at", { ascending: false }),
+    // Latest validation reports
+    supabase.from("validation_reports").select("opportunity_id, readiness_score, summary, created_at").order("created_at", { ascending: false }).limit(50),
   ]);
 
   // Pipeline summary
@@ -127,6 +133,51 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
     .map(([status, count]) => `  ${status}: ${count}`)
     .join("\n");
 
+  // Build document roster grouped by opportunity (mapped to account name)
+  const allDocs = documentsRes.data || [];
+  const allValidations = validationReportsRes.data || [];
+
+  // Map opportunity_id to account name
+  const accountIdToName: Record<string, string> = {};
+  for (const a of allAccounts) accountIdToName[a.id] = a.name;
+
+  const oppToAccount: Record<string, string> = {};
+  for (const o of (recentOppsRes.data || [])) {
+    oppToAccount[o.id] = (o as any).accounts?.name || "Unknown Account";
+  }
+  // Also map from full pipeline data for docs that belong to older opps
+  for (const o of opps) {
+    if (!oppToAccount[(o as any).id]) {
+      oppToAccount[(o as any).id] = accountIdToName[(o as any).account_id] || "Unknown Account";
+    }
+  }
+
+  // Group docs by opportunity
+  const docsByOpp: Record<string, any[]> = {};
+  for (const d of allDocs) {
+    if (!docsByOpp[d.opportunity_id]) docsByOpp[d.opportunity_id] = [];
+    docsByOpp[d.opportunity_id].push(d);
+  }
+
+  const documentRoster = Object.entries(docsByOpp)
+    .map(([oppId, docs]) => {
+      const acctName = oppToAccount[oppId] || "Unknown Account";
+      const docLines = docs
+        .map((d: any) => `      ${d.file_name} (${d.document_type || "Unassigned"}) — uploaded ${d.created_at ? new Date(d.created_at).toLocaleDateString() : "unknown"}${d.uploaded_by ? " by " + d.uploaded_by : ""}`)
+        .join("\n");
+      return `  ${acctName} (${docs.length} docs):\n${docLines}`;
+    })
+    .join("\n");
+
+  // Validation report summaries
+  const validationSummary = allValidations
+    .map((v: any) => {
+      const acctName = oppToAccount[v.opportunity_id] || "Unknown Account";
+      const score = v.readiness_score === "ready" ? "🟢" : v.readiness_score === "needs_attention" ? "🟡" : "🔴";
+      return `  ${score} ${acctName} — ${v.summary || "No summary"} (${new Date(v.created_at).toLocaleDateString()})`;
+    })
+    .join("\n");
+
   return `
 
 ━━━ LIVE CRM DATA SNAPSHOT ━━━
@@ -147,6 +198,12 @@ ${assigneeSummary || "  No assignments"}
 RECENT DEALS (newest first, all statuses):
 ${recentDeals || "  None"}
 
+DOCUMENT INVENTORY (${allDocs.length} documents across all deals):
+${documentRoster || "  No documents on file"}
+
+LATEST VALIDATION REPORTS:
+${validationSummary || "  No validation reports yet"}
+
 OPEN TASKS (${tasksRes.data?.length || 0}):
 ${openTasks || "  None"}
 
@@ -157,6 +214,7 @@ TOTALS:
   Accounts: ${allAccounts.length} total (${activeAccounts} active, ${deadAccounts} dead)
   Contacts: ${contactCountRes.count ?? "Unknown"}
   All Opportunities: ${opps.length} (${activeOpps.length} active, ${deadOpps.length} dead/closed-lost)
+  Documents: ${allDocs.length} total
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 }
 
