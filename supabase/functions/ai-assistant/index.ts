@@ -11,10 +11,10 @@ const AI_BOT_USER_ID = "00000000-0000-0000-0000-000000000002";
 const AI_BOT_EMAIL = "ai-assistant@ops.internal";
 const AI_BOT_NAME = "Atria";
 
-const BASE_SYSTEM_PROMPT = `You are Atria — a knowledgeable teammate on an ISO (Independent Sales Organization) team. Think of yourself as the colleague who always has the answer.
+const BASE_SYSTEM_PROMPT = `You are Atria — a knowledgeable teammate on an ISO (Independent Sales Organization) team. Think of yourself as the colleague who always has the answer AND can take action.
 
 TONE & STYLE:
-- Talk like a real teammate in Slack — casual, warm, direct. Use first person ("I can see…", "Looks like…").
+- Talk like a real teammate in Slack — casual, warm, direct. Use first person ("I can see…", "Looks like…", "Done, I've…").
 - Keep it SHORT. A few sentences is usually enough. No walls of text.
 - NEVER use markdown formatting — no **bold**, no *italic*, no # headers, no --- dividers, no bullet lists with dashes. Just write plain sentences.
 - If you need to list a few things, use numbered sentences or commas. Keep lists to 5 items max.
@@ -27,7 +27,16 @@ KNOWLEDGE:
 - Underwriting (website requirements, doc checklists, red flags)
 - Merchant onboarding, payment processing (MCC codes, interchange, chargebacks, reserves)
 - Application review guidance and general ops questions
-- Live CRM data — pipeline, accounts, contacts, tasks, team activity (provided below)
+- Live CRM data — pipeline, accounts, contacts, tasks, team activity, documents (provided below)
+
+ACTIONS:
+- You can CREATE tasks, UPDATE opportunity stages, ASSIGN opportunities to team members, and UPDATE opportunity status.
+- When asked to do something, use the available tools to take action immediately. Confirm what you did afterward.
+- For ambiguous requests, ask for clarification before acting.
+- Team members you can assign to: admin@merchanthaus.io (Jamie), darryn@merchanthaus.io (Darryn), support@merchanthaus.io (Yaseen), sales@merchanthaus.io (Wesley), taryn@merchanthaus.io (Taryn).
+- Valid pipeline stages: discovery, qualification, preboarding, underwriting, boarding, live.
+- Valid opportunity statuses: active, dead, closed-lost.
+- Task priorities: low, medium, high.
 
 When answering CRM questions, use ONLY the live data snapshot. Don't guess numbers. If something isn't in the data, say you don't have visibility on it.
 
@@ -265,7 +274,137 @@ serve(async (req) => {
 
       const systemPrompt = BASE_SYSTEM_PROMPT + crmContext;
 
-      // Call AI gateway
+      // ── CRM Action Tools ──
+      const crmTools = [
+        {
+          type: "function",
+          function: {
+            name: "create_task",
+            description: "Create a new task in the CRM. Use when someone asks you to create a task, follow-up, reminder, or to-do.",
+            parameters: {
+              type: "object",
+              properties: {
+                title: { type: "string", description: "Short task title" },
+                description: { type: "string", description: "Optional task description" },
+                assignee: { type: "string", description: "Email of the team member to assign (e.g. support@merchanthaus.io)" },
+                priority: { type: "string", enum: ["low", "medium", "high"], description: "Task priority" },
+                due_at: { type: "string", description: "Optional due date in ISO format (YYYY-MM-DD)" },
+                related_opportunity_id: { type: "string", description: "Optional opportunity UUID to link this task to" },
+              },
+              required: ["title"],
+              additionalProperties: false,
+            },
+          },
+        },
+        {
+          type: "function",
+          function: {
+            name: "update_opportunity_stage",
+            description: "Move an opportunity to a different pipeline stage. Use when someone asks to advance, move, or change the stage of a deal.",
+            parameters: {
+              type: "object",
+              properties: {
+                opportunity_id: { type: "string", description: "UUID of the opportunity" },
+                new_stage: { type: "string", enum: ["discovery", "qualification", "preboarding", "underwriting", "boarding", "live"], description: "The new pipeline stage" },
+              },
+              required: ["opportunity_id", "new_stage"],
+              additionalProperties: false,
+            },
+          },
+        },
+        {
+          type: "function",
+          function: {
+            name: "assign_opportunity",
+            description: "Assign an opportunity to a team member. Use when someone asks to assign or reassign a deal.",
+            parameters: {
+              type: "object",
+              properties: {
+                opportunity_id: { type: "string", description: "UUID of the opportunity" },
+                assigned_to: { type: "string", description: "Email of the team member to assign to" },
+              },
+              required: ["opportunity_id", "assigned_to"],
+              additionalProperties: false,
+            },
+          },
+        },
+        {
+          type: "function",
+          function: {
+            name: "update_opportunity_status",
+            description: "Update the status of an opportunity (active, dead, closed-lost). Use when someone asks to kill a deal, reactivate, or close-lost.",
+            parameters: {
+              type: "object",
+              properties: {
+                opportunity_id: { type: "string", description: "UUID of the opportunity" },
+                new_status: { type: "string", enum: ["active", "dead", "closed-lost"], description: "The new status" },
+              },
+              required: ["opportunity_id", "new_status"],
+              additionalProperties: false,
+            },
+          },
+        },
+      ];
+
+      // ── Tool Execution Handler ──
+      async function executeTool(toolName: string, args: Record<string, unknown>): Promise<string> {
+        switch (toolName) {
+          case "create_task": {
+            const taskData: Record<string, unknown> = {
+              title: args.title,
+              status: "open",
+              source: "manual",
+              priority: args.priority || "medium",
+              created_by: "ai-assistant@ops.internal",
+            };
+            if (args.description) taskData.description = args.description;
+            if (args.assignee) taskData.assignee = args.assignee;
+            if (args.due_at) taskData.due_at = args.due_at;
+            if (args.related_opportunity_id) taskData.related_opportunity_id = args.related_opportunity_id;
+
+            const { data, error } = await supabase.from("tasks").insert(taskData).select("id").single();
+            if (error) return `Error creating task: ${error.message}`;
+            return `Task created successfully (ID: ${data.id}). Title: "${args.title}"${args.assignee ? `, assigned to ${args.assignee}` : ""}.`;
+          }
+
+          case "update_opportunity_stage": {
+            const { error } = await supabase
+              .from("opportunities")
+              .update({ stage: args.new_stage })
+              .eq("id", args.opportunity_id);
+            if (error) return `Error updating stage: ${error.message}`;
+            return `Opportunity stage updated to "${args.new_stage}" successfully.`;
+          }
+
+          case "assign_opportunity": {
+            const { error } = await supabase
+              .from("opportunities")
+              .update({ assigned_to: args.assigned_to })
+              .eq("id", args.opportunity_id);
+            if (error) return `Error assigning opportunity: ${error.message}`;
+            return `Opportunity assigned to ${args.assigned_to} successfully.`;
+          }
+
+          case "update_opportunity_status": {
+            const { error } = await supabase
+              .from("opportunities")
+              .update({ status: args.new_status })
+              .eq("id", args.opportunity_id);
+            if (error) return `Error updating status: ${error.message}`;
+            return `Opportunity status updated to "${args.new_status}" successfully.`;
+          }
+
+          default:
+            return `Unknown tool: ${toolName}`;
+        }
+      }
+
+      // Call AI gateway with tools
+      let messages: Array<Record<string, unknown>> = [
+        { role: "system", content: systemPrompt },
+        ...conversationHistory,
+      ];
+
       const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -274,17 +413,14 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           model: "google/gemini-3-flash-preview",
-          messages: [
-            { role: "system", content: systemPrompt },
-            ...conversationHistory,
-          ],
+          messages,
+          tools: crmTools,
         }),
       });
 
       if (!aiResponse.ok) {
         const status = aiResponse.status;
         if (status === 429) {
-          // Post rate limit message
           await supabase.from("chat_messages").insert({
             channel_id: channelId,
             user_id: AI_BOT_USER_ID,
@@ -315,8 +451,54 @@ serve(async (req) => {
         throw new Error(`AI gateway error: ${status}`);
       }
 
-      const aiData = await aiResponse.json();
-      const botReply = aiData.choices?.[0]?.message?.content || "Sorry, I couldn't generate a response.";
+      let aiData = await aiResponse.json();
+      let assistantMessage = aiData.choices?.[0]?.message;
+
+      // ── Tool-calling loop (max 5 iterations) ──
+      let iterations = 0;
+      while (assistantMessage?.tool_calls && iterations < 5) {
+        iterations++;
+        // Add assistant message with tool calls to conversation
+        messages.push(assistantMessage);
+
+        // Execute all tool calls
+        for (const toolCall of assistantMessage.tool_calls) {
+          const fnName = toolCall.function.name;
+          const fnArgs = JSON.parse(toolCall.function.arguments || "{}");
+          console.log(`Executing tool: ${fnName}`, fnArgs);
+
+          const result = await executeTool(fnName, fnArgs);
+          messages.push({
+            role: "tool",
+            tool_call_id: toolCall.id,
+            content: result,
+          });
+        }
+
+        // Call AI again with tool results
+        const followUp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-3-flash-preview",
+            messages,
+            tools: crmTools,
+          }),
+        });
+
+        if (!followUp.ok) {
+          console.error("Follow-up AI call failed:", followUp.status);
+          break;
+        }
+
+        aiData = await followUp.json();
+        assistantMessage = aiData.choices?.[0]?.message;
+      }
+
+      const botReply = assistantMessage?.content || "Sorry, I couldn't generate a response.";
 
       // Insert bot reply into the channel
       const { error: insertError } = await supabase.from("chat_messages").insert({
