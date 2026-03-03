@@ -140,6 +140,7 @@ const SPAWN: Record<string, THREE.Vector3> = { ...DESK_POS };
 
 const ROOM = 5.5; // half-extent of room
 const INTERACT_DIST = 2.2;
+const TV_POS = new THREE.Vector3(5.2, 0, 0); // right wall TV — player stands here
 
 function buildCharacterMesh(user: CRMUser, isPlayer: boolean): THREE.Group {
   const g = new THREE.Group();
@@ -338,6 +339,24 @@ function buildRoom(): THREE.Group {
     leaves.position.set(px, 0.65, pz); g.add(leaves);
   });
 
+  // Wall-mounted TV on right wall
+  const tvBezel = new THREE.Mesh(
+    new THREE.BoxGeometry(0.08, 1.6, 2.6),
+    new THREE.MeshStandardMaterial({ color: 0x0a0a0a })
+  );
+  tvBezel.position.set(5.44, 2.4, 0); g.add(tvBezel);
+  const tvScreen = new THREE.Mesh(
+    new THREE.BoxGeometry(0.04, 1.4, 2.4),
+    new THREE.MeshStandardMaterial({ color: 0x111122, emissive: 0x111133, emissiveIntensity: 0.3 })
+  );
+  tvScreen.position.set(5.41, 2.4, 0); g.add(tvScreen);
+  // TV stand bracket
+  const bracket = new THREE.Mesh(
+    new THREE.BoxGeometry(0.15, 0.1, 0.4),
+    new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.8, roughness: 0.3 })
+  );
+  bracket.position.set(5.48, 1.55, 0); g.add(bracket);
+
   return g;
 }
 
@@ -371,6 +390,8 @@ export default function OfficeChat({
   const [nearby,     setNearby]     = useState<CRMUser | null>(null);
   const [nearDesk,   setNearDesk]   = useState(false);
   const [showTerminal, setShowTerminal] = useState(false);
+  const [nearTV,      setNearTV]      = useState(false);
+  const [tvUnmuted,   setTvUnmuted]   = useState(false);
   const showTerminalRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -590,6 +611,10 @@ export default function OfficeChat({
         setNearDesk(false);
       }
 
+      // TV proximity
+      const tvDist = state.playerPos.distanceTo(TV_POS);
+      setNearTV(tvDist < INTERACT_DIST && !closestUser);
+
       renderer.render(scene, camera);
     };
     state.raf = requestAnimationFrame(loop);
@@ -606,7 +631,7 @@ export default function OfficeChat({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUserEmail]);
 
-  // "E" key opens chat with nearby NPC or terminal at empty desk
+  // "E" key opens chat with nearby NPC, terminal at empty desk, or toggles TV
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement).tagName === "INPUT") return;
@@ -614,6 +639,8 @@ export default function OfficeChat({
         if (nearby && !activeChat && !showTerminal) {
           setActiveChat(nearby);
           document.exitPointerLock();
+        } else if (nearTV && !activeChat && !showTerminal) {
+          setTvUnmuted(prev => !prev);
         } else if (nearDesk && !activeChat && !showTerminal) {
           setShowTerminal(true);
           document.exitPointerLock();
@@ -625,7 +652,7 @@ export default function OfficeChat({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [nearby, activeChat, nearDesk, showTerminal]);
+  }, [nearby, activeChat, nearDesk, showTerminal, nearTV]);
 
   // Update online indicators + visibility when presence changes
   useEffect(() => {
@@ -686,6 +713,15 @@ export default function OfficeChat({
         <div className="absolute bottom-24 left-1/2 -translate-x-1/2 pointer-events-none">
           <Badge className="bg-black/80 text-white border-0 text-sm px-4 py-2">
             Press <kbd className="mx-1 px-1 bg-white/20 rounded">E</kbd> to use terminal
+          </Badge>
+        </div>
+      )}
+
+      {/* Near TV prompt */}
+      {nearTV && !activeChat && !showTerminal && (
+        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 pointer-events-none">
+          <Badge className="bg-black/80 text-white border-0 text-sm px-4 py-2">
+            Press <kbd className="mx-1 px-1 bg-white/20 rounded">E</kbd> to {tvUnmuted ? "mute" : "unmute"} TV
           </Badge>
         </div>
       )}
@@ -828,6 +864,28 @@ export default function OfficeChat({
           </button>
         </div>
       )}
+
+      {/* Always-on YouTube TV — MrBallen playlist */}
+      <div className="absolute bottom-3 left-3 z-10" style={{ width: 220 }}>
+        <div className="rounded-lg overflow-hidden shadow-lg" style={{ background: "#0a0a0a", padding: "4px 4px 2px 4px", border: "1px solid #333" }}>
+          <div className="flex items-center justify-between px-1 mb-1">
+            <span className="text-[8px] font-bold tracking-widest text-white/30 uppercase">Office TV</span>
+            <div className="flex items-center gap-1">
+              <div className={`w-1.5 h-1.5 rounded-full ${tvUnmuted ? "bg-green-500" : "bg-red-500/60"}`} />
+              <span className="text-[8px] text-white/20">{tvUnmuted ? "🔊" : "🔇"}</span>
+            </div>
+          </div>
+          <iframe
+            key={tvUnmuted ? "unmuted" : "muted"}
+            src={`https://www.youtube.com/embed/videoseries?list=PLgRgJShyo_y6TjE1Sfyrh0ljWQcHutPOg&autoplay=1&${tvUnmuted ? "" : "mute=1&"}loop=1&controls=0&modestbranding=1&rel=0`}
+            className="w-full border-0 rounded-sm"
+            style={{ aspectRatio: "16/9" }}
+            title="Office TV"
+            allow="autoplay; encrypted-media"
+            referrerPolicy="no-referrer"
+          />
+        </div>
+      </div>
 
       {/* Controls hint */}
       <div className="absolute top-3 left-3 pointer-events-none">
