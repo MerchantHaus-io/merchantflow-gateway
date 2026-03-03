@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-const AI_CHANNEL_NAME = "ask-ai";
+const AI_CHANNEL_NAME = "atria-ai";
 const AI_BOT_EMAIL = "ai-assistant@ops.internal";
 
 /**
