@@ -80,11 +80,11 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                   >
                     <div className={cn(
                       "w-10 h-10 rounded-full flex items-center justify-center shrink-0",
-                      ch.name.toLowerCase() === "ask-ai"
+                      ch.name.toLowerCase() === "atria-ai"
                         ? "bg-purple-500"
                         : "bg-[hsl(var(--wa-accent))]"
                     )}>
-                      {ch.name.toLowerCase() === "ask-ai" ? (
+                      {ch.name.toLowerCase() === "atria-ai" ? (
                         <Bot className="h-5 w-5 text-white" />
                       ) : (
                         <Hash className="h-5 w-5 text-white" />
