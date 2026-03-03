@@ -144,7 +144,7 @@ const PipelineColumn = ({
       {/* Scrollable Cards Area */}
       <div
         className={cn(
-          "flex-1 overflow-y-auto overscroll-contain min-h-0 no-scrollbar",
+          "flex-1 overflow-y-auto overscroll-contain min-h-0 no-scrollbar animate-stagger",
           isCompact ? "p-1 space-y-1" : "p-1.5 space-y-1.5"
         )}
         style={{ WebkitOverflowScrolling: "touch", touchAction: "auto" }}
