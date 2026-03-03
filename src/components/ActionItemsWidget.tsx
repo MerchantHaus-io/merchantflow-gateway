@@ -42,6 +42,13 @@ export function ActionItemsWidget() {
   const [items, setItems] = useState<ActionItem[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+
+  // Listen for external open event (from MobileAppDock)
+  useEffect(() => {
+    const handler = () => setIsOpen(true);
+    window.addEventListener("openNoticeBoard", handler);
+    return () => window.removeEventListener("openNoticeBoard", handler);
+  }, []);
   const [newTitle, setNewTitle] = useState("");
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [showUserPicker, setShowUserPicker] = useState(false);
@@ -199,21 +206,8 @@ export function ActionItemsWidget() {
         onChange={handleFileSelect}
       />
 
-      {/* Mobile: floating circle icon / Desktop: tab bar like Dialler & Messenger */}
-      {isMobile ? (
-        <button
-          onClick={() => setIsOpen((o) => !o)}
-          className="fixed bottom-[8.5rem] left-4 z-50 w-14 h-14 rounded-full flex items-center justify-center bg-haus-charcoal text-white hover:bg-foreground shadow-lg transition-colors"
-          aria-label="Toggle notice board"
-        >
-          <ClipboardCheck className="h-5 w-5" />
-          {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-gold text-haus-charcoal text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
-              {unreadCount}
-            </span>
-          )}
-        </button>
-      ) : !isOpen ? (
+      {/* Desktop: tab bar / Mobile: controlled by MobileAppDock (no FAB here) */}
+      {!isMobile && !isOpen ? (
         <button
           onClick={() => setIsOpen(true)}
           className={cn(

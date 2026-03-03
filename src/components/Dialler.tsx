@@ -53,6 +53,13 @@ export const Dialler = () => {
   const isMobile = useIsMobile();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
+
+  // Listen for external open event (from MobileAppDock)
+  useEffect(() => {
+    const handler = () => setOpen(true);
+    window.addEventListener("openDialler", handler);
+    return () => window.removeEventListener("openDialler", handler);
+  }, []);
   const [number, setNumber] = useState("");
   const [quoNumbers, setQuoNumbers] = useState<QuoPhoneNumber[]>([]);
   const [selectedLineId, setSelectedLineId] = useState<string>("");
@@ -222,36 +229,21 @@ export const Dialler = () => {
 
   return (
     <>
-      {/* Trigger: matches FloatingChat style */}
-      {!open && (
-        isMobile ? (
-          <button
-            onClick={() => setOpen(true)}
-            className={cn(
-              "fixed bottom-20 left-4 z-50 w-14 h-14 rounded-full flex items-center justify-center",
-              "bg-slate-800 dark:bg-slate-700 text-white shadow-xl hover:shadow-2xl",
-              "hover:scale-105 transition-all duration-200 ease-out",
-              "border border-slate-600"
-            )}
-            aria-label="Open dialler"
-          >
-            <Phone className="h-6 w-6" />
-          </button>
-        ) : (
-          <button
-            onClick={() => setOpen(true)}
-            className={cn(
-              "fixed bottom-0 right-[358px] z-50 w-[240px] h-12 rounded-t-xl flex items-center gap-3 px-4",
-              "bg-gradient-to-r from-slate-800 to-slate-700 dark:from-slate-900 dark:to-slate-800",
-              "text-white shadow-xl hover:shadow-2xl transition-all duration-200 ease-out",
-              "border border-b-0 border-slate-600"
-            )}
-            aria-label="Open dialler"
-          >
-            <Phone className="h-5 w-5 shrink-0" />
-            <span className="font-semibold text-sm">Quo Dialler</span>
-          </button>
-        )
+      {/* Trigger: Desktop only — mobile uses MobileAppDock */}
+      {!open && !isMobile && (
+        <button
+          onClick={() => setOpen(true)}
+          className={cn(
+            "fixed bottom-0 right-[358px] z-50 w-[240px] h-12 rounded-t-xl flex items-center gap-3 px-4",
+            "bg-gradient-to-r from-slate-800 to-slate-700 dark:from-slate-900 dark:to-slate-800",
+            "text-white shadow-xl hover:shadow-2xl transition-all duration-200 ease-out",
+            "border border-b-0 border-slate-600"
+          )}
+          aria-label="Open dialler"
+        >
+          <Phone className="h-5 w-5 shrink-0" />
+          <span className="font-semibold text-sm">Quo Dialler</span>
+        </button>
       )}
 
       <Sheet open={open} onOpenChange={setOpen}>

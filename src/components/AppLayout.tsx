@@ -1,10 +1,13 @@
 import { ReactNode, useRef, useCallback } from "react";
+import { useLocation } from "react-router-dom";
 import { MegaMenuHeader } from "@/components/MegaMenuHeader";
 import FloatingChat from "@/components/FloatingChat";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { ActionItemsWidget } from "@/components/ActionItemsWidget";
 import { BroadcastPopup } from "@/components/BroadcastPopup";
+import { MobileAppDock } from "@/components/MobileAppDock";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -27,7 +30,9 @@ export function AppLayout({
   focusMode = false,
 }: AppLayoutProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-
+  const isMobile = useIsMobile();
+  const location = useLocation();
+  const isChatRoute = location.pathname === "/chat";
   const handleRefresh = useCallback(async () => {
     window.location.reload();
   }, []);
@@ -82,6 +87,7 @@ export function AppLayout({
       {!focusMode && <FloatingChat />}
       {!focusMode && <ActionItemsWidget />}
       {!focusMode && <BroadcastPopup />}
+      {!focusMode && isMobile && !isChatRoute && <MobileAppDock />}
     </div>
   );
 }

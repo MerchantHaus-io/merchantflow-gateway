@@ -725,41 +725,24 @@ const FloatingChat: React.FC = () => {
 
   return (
     <TooltipProvider>
-      {!isOpen && (
-        isMobile ? (
-          <button
-            onClick={() => setIsOpen(true)}
-            className={cn(
-              "fixed bottom-20 right-4 z-50 w-14 h-14 rounded-full flex items-center justify-center",
-              "bg-[hsl(var(--wa-accent))] text-white shadow-xl hover:shadow-2xl",
-              "hover:scale-105 transition-all duration-200 ease-out"
-            )}
-          >
-            <MessageCircle className="h-6 w-6" />
-            {totalUnreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-medium w-5 h-5 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-                {totalUnreadCount > 9 ? "9+" : totalUnreadCount}
-              </span>
-            )}
-          </button>
-        ) : (
-          <button
-            onClick={() => setIsOpen(true)}
-            className={cn(
-              "fixed bottom-0 right-6 z-50 w-[340px] h-11 rounded-t-xl flex items-center gap-3 px-4",
-              "bg-[hsl(var(--wa-header))] text-[hsl(var(--wa-header-foreground))]",
-              "shadow-xl hover:shadow-2xl transition-all duration-200 ease-out"
-            )}
-          >
-            <MessageCircle className="h-5 w-5 shrink-0" />
-            <span className="font-semibold text-sm">Messaging</span>
-            {totalUnreadCount > 0 && (
-              <span className="ml-auto bg-white/20 text-white text-xs font-medium min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center">
-                {totalUnreadCount > 9 ? "9+" : totalUnreadCount}
-              </span>
-            )}
-          </button>
-        )
+      {/* Desktop trigger only — mobile uses MobileAppDock */}
+      {!isOpen && !isMobile && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className={cn(
+            "fixed bottom-0 right-6 z-50 w-[340px] h-11 rounded-t-xl flex items-center gap-3 px-4",
+            "bg-[hsl(var(--wa-header))] text-[hsl(var(--wa-header-foreground))]",
+            "shadow-xl hover:shadow-2xl transition-all duration-200 ease-out"
+          )}
+        >
+          <MessageCircle className="h-5 w-5 shrink-0" />
+          <span className="font-semibold text-sm">Messaging</span>
+          {totalUnreadCount > 0 && (
+            <span className="ml-auto bg-white/20 text-white text-xs font-medium min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center">
+              {totalUnreadCount > 9 ? "9+" : totalUnreadCount}
+            </span>
+          )}
+        </button>
       )}
 
       {isOpen && (
