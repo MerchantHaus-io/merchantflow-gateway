@@ -11,17 +11,105 @@ const AI_BOT_USER_ID = "00000000-0000-0000-0000-000000000002";
 const AI_BOT_EMAIL = "ai-assistant@ops.internal";
 const AI_BOT_NAME = "MerchantHaus AI";
 
-const SYSTEM_PROMPT = `You are MerchantHaus AI — an internal assistant for a merchant services ISO (Independent Sales Organization). You help the team with:
+const BASE_SYSTEM_PROMPT = `You are MerchantHaus AI — an internal assistant for a merchant services ISO (Independent Sales Organization). You help the team with:
 
 - Underwriting questions (website requirements, document checklists, red flags)
 - Merchant onboarding processes and best practices
 - Payment processing terminology (MCC codes, interchange, chargebacks, reserves)
 - Application review guidance
 - General business operations questions
+- Answering questions about current pipeline, accounts, contacts, tasks, and team activity using the LIVE CRM DATA provided below
 
 Keep answers concise, practical, and specific to payment processing / merchant services. Use bullet points when listing items. If you don't know something, say so — don't make up compliance or regulatory information.
 
+When answering questions about CRM data (pipeline, deals, tasks, accounts), use ONLY the live data snapshot provided. Do not guess or fabricate numbers.
+
 You are NOT a customer-facing bot. You assist internal team members only.`;
+
+async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promise<string> {
+  const [
+    pipelineRes,
+    recentOppsRes,
+    tasksRes,
+    profilesRes,
+    accountCountRes,
+    contactCountRes,
+  ] = await Promise.all([
+    // Pipeline stage counts
+    supabase.from("opportunities").select("stage, status, assigned_to, account_id").eq("status", "active"),
+    // Recent opportunities with account names
+    supabase.from("opportunities")
+      .select("id, stage, assigned_to, created_at, accounts!inner(name), contacts!inner(first_name, last_name)")
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
+      .limit(15),
+    // Open tasks
+    supabase.from("tasks").select("title, assignee, status, priority, due_at").neq("status", "done").order("created_at", { ascending: false }).limit(15),
+    // Team members
+    supabase.from("profiles").select("email, full_name, last_seen"),
+    // Counts
+    supabase.from("accounts").select("id", { count: "exact", head: true }),
+    supabase.from("contacts").select("id", { count: "exact", head: true }),
+  ]);
+
+  // Pipeline summary
+  const opps = pipelineRes.data || [];
+  const stageCounts: Record<string, number> = {};
+  const assigneeCounts: Record<string, number> = {};
+  for (const o of opps) {
+    stageCounts[o.stage] = (stageCounts[o.stage] || 0) + 1;
+    if (o.assigned_to) assigneeCounts[o.assigned_to] = (assigneeCounts[o.assigned_to] || 0) + 1;
+  }
+
+  const pipelineSummary = Object.entries(stageCounts)
+    .map(([stage, count]) => `  ${stage}: ${count}`)
+    .join("\n");
+
+  const assigneeSummary = Object.entries(assigneeCounts)
+    .map(([email, count]) => `  ${email}: ${count} deals`)
+    .join("\n");
+
+  // Recent deals
+  const recentDeals = (recentOppsRes.data || [])
+    .map((o: any) => `  - ${o.accounts?.name || "Unknown"} (${o.stage}) → ${o.assigned_to || "Unassigned"} | Contact: ${[o.contacts?.first_name, o.contacts?.last_name].filter(Boolean).join(" ") || "N/A"}`)
+    .join("\n");
+
+  // Open tasks
+  const openTasks = (tasksRes.data || [])
+    .map((t: any) => `  - [${t.priority || "medium"}] ${t.title} → ${t.assignee || "Unassigned"} (${t.status})${t.due_at ? " due " + t.due_at.split("T")[0] : ""}`)
+    .join("\n");
+
+  // Team
+  const team = (profilesRes.data || [])
+    .filter((p: any) => p.email)
+    .map((p: any) => `  - ${p.full_name || p.email} (${p.email})${p.last_seen ? " — last seen " + new Date(p.last_seen).toLocaleDateString() : ""}`)
+    .join("\n");
+
+  return `
+
+━━━ LIVE CRM DATA SNAPSHOT ━━━
+
+PIPELINE OVERVIEW (${opps.length} active deals):
+${pipelineSummary || "  No active deals"}
+
+DEALS BY ASSIGNEE:
+${assigneeSummary || "  No assignments"}
+
+RECENT DEALS (newest first):
+${recentDeals || "  None"}
+
+OPEN TASKS (${tasksRes.data?.length || 0}):
+${openTasks || "  None"}
+
+TEAM MEMBERS:
+${team || "  None"}
+
+TOTALS:
+  Accounts: ${accountCountRes.count ?? "Unknown"}
+  Contacts: ${contactCountRes.count ?? "Unknown"}
+  Active Opportunities: ${opps.length}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -48,15 +136,18 @@ serve(async (req) => {
         });
       }
 
-      // Fetch recent channel history for context (last 20 messages)
-      const { data: history } = await supabase
-        .from("chat_messages")
-        .select("user_name, user_email, content")
-        .eq("channel_id", channelId)
-        .order("created_at", { ascending: false })
-        .limit(20);
+      // Fetch CRM context and channel history in parallel
+      const [crmContext, historyRes] = await Promise.all([
+        buildCRMContext(supabase),
+        supabase
+          .from("chat_messages")
+          .select("user_name, user_email, content")
+          .eq("channel_id", channelId)
+          .order("created_at", { ascending: false })
+          .limit(20),
+      ]);
 
-      const conversationHistory = (history || [])
+      const conversationHistory = (historyRes.data || [])
         .reverse()
         .map((m) => ({
           role: m.user_email === AI_BOT_EMAIL ? "assistant" as const : "user" as const,
@@ -64,6 +155,8 @@ serve(async (req) => {
             ? m.content
             : `[${m.user_name || m.user_email}]: ${m.content}`,
         }));
+
+      const systemPrompt = BASE_SYSTEM_PROMPT + crmContext;
 
       // Call AI gateway
       const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -75,7 +168,7 @@ serve(async (req) => {
         body: JSON.stringify({
           model: "google/gemini-3-flash-preview",
           messages: [
-            { role: "system", content: SYSTEM_PROMPT },
+            { role: "system", content: systemPrompt },
             ...conversationHistory,
           ],
         }),
