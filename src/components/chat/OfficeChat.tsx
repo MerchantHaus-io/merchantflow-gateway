@@ -121,6 +121,17 @@ const USERS: CRMUser[] = [
     skinColor: 0xffdbac,
     scale: 1.0,
   },
+  {
+    email: "atria@merchanthaus.io",
+    name: "Atria",
+    title: "AI Assistant",
+    shirtColor: 0x7c3aed,
+    hairColor: 0xc0c0ff,
+    skinColor: 0xe8d8f0,
+    hairstyle: "bob",
+    scale: 0.95,
+    online: true, // Atria is always online
+  },
 ];
 
 // ── SPAWN POSITIONS (desk positions — NPCs sit here) ──────────────────────────
@@ -131,6 +142,7 @@ const DESK_POS: Record<string, THREE.Vector3> = {
   "sales@merchanthaus.io":   new THREE.Vector3(4,  0, -5),
   "support@merchanthaus.io": new THREE.Vector3(-2, 0,  2),
   "darryn@merchanthaus.io":  new THREE.Vector3(2,  0,  2),
+  "atria@merchanthaus.io":   new THREE.Vector3(0,  0,  5.5),
 };
 
 // Aliases so existing SPAWN references still work for the player
@@ -276,63 +288,102 @@ function buildRoom(): THREE.Group {
   };
 
   // Floor
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(11, 11), new THREE.MeshStandardMaterial({ color: 0xe8e0d4, roughness: 0.8 }));
+  const FS = 15;
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(FS, FS), new THREE.MeshStandardMaterial({ color: 0xe8e0d4, roughness: 0.8 }));
   floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; g.add(floor);
   const t1 = new THREE.MeshStandardMaterial({ color: 0xf2ece4 });
   const t2 = new THREE.MeshStandardMaterial({ color: 0xe4ddd4 });
-  for (let x = -5; x < 6; x += 2) for (let z = -5; z < 6; z += 2) {
+  for (let x = -7; x < 8; x += 2) for (let z = -7; z < 8; z += 2) {
     const tile = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), ((x + z) / 2) % 2 === 0 ? t1 : t2);
     tile.position.set(x + 1, 0.01, z + 1); tile.rotation.x = -Math.PI / 2; g.add(tile);
   }
 
   // Walls
-  addPlane(11, 5, 0, 2.5, -5.5);
-  addPlane(11, 5, -5.5, 2.5, 0, Math.PI / 2);
-  addPlane(11, 5,  5.5, 2.5, 0, -Math.PI / 2);
-  addPlane(11, 5, 0, 2.5,  5.5, Math.PI);
+  const wOff = FS / 2;
+  addPlane(FS, 5, 0, 2.5, -wOff);
+  addPlane(FS, 5, -wOff, 2.5, 0, Math.PI / 2);
+  addPlane(FS, 5,  wOff, 2.5, 0, -Math.PI / 2);
+  addPlane(FS, 5, 0, 2.5,  wOff, Math.PI);
 
   // Windows
-  ([-2, 2] as number[]).forEach(x => {
-    addPlane(2, 1.4, x, 2.8, -5.45, 0, winG);
+  ([-3, 3] as number[]).forEach(x => {
+    addPlane(2, 1.4, x, 2.8, -(wOff - 0.05), 0, winG);
     ([1.1, -1.1] as number[]).forEach(oy => {
       const b = new THREE.Mesh(new THREE.BoxGeometry(2.15, 0.07, 0.05), frame);
-      b.position.set(x, 2.8 + oy * 0.5, -5.42); g.add(b);
+      b.position.set(x, 2.8 + oy * 0.5, -(wOff - 0.08)); g.add(b);
     });
     ([-1.15, 1.15] as number[]).forEach(ox => {
       const b = new THREE.Mesh(new THREE.BoxGeometry(0.07, 1.5, 0.05), frame);
-      b.position.set(x + ox, 2.8, -5.42); g.add(b);
+      b.position.set(x + ox, 2.8, -(wOff - 0.08)); g.add(b);
     });
   });
 
   // Whiteboard
   const wb = new THREE.Mesh(new THREE.BoxGeometry(2.5, 1.4, 0.08), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 }));
-  wb.position.set(0, 2.2, -5.4); g.add(wb);
+  wb.position.set(0, 2.2, -(wOff - 0.1)); g.add(wb);
 
-  // Desks
-  const makeDesk = (x: number, z: number) => {
-    const dg = new THREE.Group();
-    const top = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.1, 1.2), wood);
-    top.position.y = 0.75; top.castShadow = true; top.receiveShadow = true; dg.add(top);
-    ([-1.05, 1.05] as number[]).forEach(lx => ([-0.55, 0.55] as number[]).forEach(lz => {
-      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.7, 0.06), metal);
-      leg.position.set(lx, 0.35, lz); leg.castShadow = true; dg.add(leg);
+  // Cubicle builder
+  const cubWall = new THREE.MeshStandardMaterial({ color: 0x7a8a9a, roughness: 0.9 });
+  const cubTrim = new THREE.MeshStandardMaterial({ color: 0x555555 });
+
+  const makeCubicle = (cx: number, cz: number) => {
+    const cg = new THREE.Group();
+    const pH = 1.4;
+    const pT = 0.06;
+
+    // Left partition
+    const lp = new THREE.Mesh(new THREE.BoxGeometry(pT, pH, 1.6), cubWall);
+    lp.position.set(-1.2, pH / 2, 0); lp.castShadow = true; cg.add(lp);
+    const lt = new THREE.Mesh(new THREE.BoxGeometry(pT + 0.02, 0.04, 1.64), cubTrim);
+    lt.position.set(-1.2, pH, 0); cg.add(lt);
+
+    // Right partition
+    const rp = new THREE.Mesh(new THREE.BoxGeometry(pT, pH, 1.6), cubWall);
+    rp.position.set(1.2, pH / 2, 0); rp.castShadow = true; cg.add(rp);
+    const rt = new THREE.Mesh(new THREE.BoxGeometry(pT + 0.02, 0.04, 1.64), cubTrim);
+    rt.position.set(1.2, pH, 0); cg.add(rt);
+
+    // Back partition
+    const bp = new THREE.Mesh(new THREE.BoxGeometry(2.46, pH, pT), cubWall);
+    bp.position.set(0, pH / 2, -0.8); bp.castShadow = true; cg.add(bp);
+    const bt = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.04, pT + 0.02), cubTrim);
+    bt.position.set(0, pH, -0.8); cg.add(bt);
+
+    // Desk surface
+    const top = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.06, 1.0), wood);
+    top.position.y = 0.75; top.castShadow = true; top.receiveShadow = true; cg.add(top);
+    ([-1.0, 1.0] as number[]).forEach(lx => ([-0.45, 0.45] as number[]).forEach(lz => {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.72, 0.05), metal);
+      leg.position.set(lx, 0.36, lz); leg.castShadow = true; cg.add(leg);
     }));
-    const screen = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.6, 0.05), dark);
-    screen.position.set(0, 1.25, 0); dg.add(screen);
-    const kb = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.02, 0.14), metal);
-    kb.position.set(0, 0.81, 0.25); dg.add(kb);
+
+    // Monitor
+    const scr = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.55, 0.04), dark);
+    scr.position.set(0, 1.2, -0.3); cg.add(scr);
+    const stand = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.18, 0.06), metal);
+    stand.position.set(0, 0.9, -0.3); cg.add(stand);
+
+    // Keyboard
+    const kb = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.02, 0.12), metal);
+    kb.position.set(0, 0.79, 0.1); cg.add(kb);
+
+    // Chair
     const seat = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, 0.5), new THREE.MeshStandardMaterial({ color: 0x2a2a2a }));
-    seat.position.set(0, 0.5, 0.75); dg.add(seat);
-    const bk = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.06), new THREE.MeshStandardMaterial({ color: 0x2a2a2a }));
-    bk.position.set(0, 0.8, 0.98); dg.add(bk);
-    dg.position.set(x, 0, z);
-    return dg;
+    seat.position.set(0, 0.5, 0.65); cg.add(seat);
+    const bk = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.55, 0.05), new THREE.MeshStandardMaterial({ color: 0x2a2a2a }));
+    bk.position.set(0, 0.78, 0.88); cg.add(bk);
+
+    cg.position.set(cx, 0, cz);
+    return cg;
   };
 
-  g.add(makeDesk(-2.5, -3), makeDesk(0, -3), makeDesk(2.5, -3), makeDesk(-1.5, 1.5), makeDesk(1.5, 1.5));
+  // Place cubicles at desk positions
+  g.add(makeCubicle(-4, -5), makeCubicle(0, -5), makeCubicle(4, -5));
+  g.add(makeCubicle(-2, 2), makeCubicle(2, 2));
+  g.add(makeCubicle(0, 5.5)); // Atria's cubicle
 
   // Plants
-  ([[-4.5, -4.5], [4.5, -4.5], [0, 4.5]] as [number, number][]).forEach(([px, pz]) => {
+  ([[-6.5, -6.5], [6.5, -6.5], [-6.5, 6.5], [6.5, 6.5]] as [number, number][]).forEach(([px, pz]) => {
     const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.18, 0.3, 8), new THREE.MeshStandardMaterial({ color: 0x7a4f2a }));
     pot.position.set(px, 0.15, pz); g.add(pot);
     const leaves = new THREE.Mesh(new THREE.SphereGeometry(0.45, 6, 5), new THREE.MeshStandardMaterial({ color: 0x2d7a2d }));
@@ -344,18 +395,17 @@ function buildRoom(): THREE.Group {
     new THREE.BoxGeometry(0.08, 1.6, 2.6),
     new THREE.MeshStandardMaterial({ color: 0x0a0a0a })
   );
-  tvBezel.position.set(5.44, 2.4, 0); g.add(tvBezel);
+  tvBezel.position.set(wOff - 0.06, 2.4, 0); g.add(tvBezel);
   const tvScreen = new THREE.Mesh(
     new THREE.BoxGeometry(0.04, 1.4, 2.4),
     new THREE.MeshStandardMaterial({ color: 0x111122, emissive: 0x111133, emissiveIntensity: 0.3 })
   );
-  tvScreen.position.set(5.41, 2.4, 0); g.add(tvScreen);
-  // TV stand bracket
+  tvScreen.position.set(wOff - 0.09, 2.4, 0); g.add(tvScreen);
   const bracket = new THREE.Mesh(
     new THREE.BoxGeometry(0.15, 0.1, 0.4),
     new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.8, roughness: 0.3 })
   );
-  bracket.position.set(5.48, 1.55, 0); g.add(bracket);
+  bracket.position.set(wOff - 0.02, 1.55, 0); g.add(bracket);
 
   return g;
 }
@@ -511,8 +561,9 @@ export default function OfficeChat({
         const hitObj = hits[0].object;
         let root: THREE.Object3D | null = hitObj;
         while (root && !root.userData.email) root = root.parent;
-        // fallback: find which npc group contains this object
+        // fallback: find which npc group contains this object — only if visible (online)
         npcMeshes.forEach((mesh, email) => {
+          if (!mesh.visible) return; // skip offline users
           if (mesh === root || mesh.getObjectById(hitObj.id)) {
             const user = USERS.find(u => u.email === email);
             if (user) setActiveChat(user);
@@ -659,12 +710,12 @@ export default function OfficeChat({
     const s = stateRef.current;
     if (!s) return;
     s.npcMeshes.forEach((mesh, email) => {
-      const isOnline = presence[email] ?? false; // default offline
-      // Show/hide the entire NPC mesh
+      // Atria is always online
+      const isOnline = email === "atria@merchanthaus.io" ? true : (presence[email] ?? false);
       mesh.visible = isOnline;
     });
     s.onlineIndicators.forEach((dot, email) => {
-      const isOnline = presence[email] ?? false;
+      const isOnline = email === "atria@merchanthaus.io" ? true : (presence[email] ?? false);
       (dot.material as THREE.MeshStandardMaterial).color.setHex(isOnline ? 0x22cc44 : 0x666666);
       (dot.material as THREE.MeshStandardMaterial).emissive.setHex(isOnline ? 0x22cc44 : 0x333333);
     });
