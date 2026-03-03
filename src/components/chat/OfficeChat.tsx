@@ -369,6 +369,8 @@ export default function OfficeChat({
   const [inputVal,   setInputVal]   = useState("");
   const [locked,     setLocked]     = useState(false);
   const [nearby,     setNearby]     = useState<CRMUser | null>(null);
+  const [nearDesk,   setNearDesk]   = useState(false);
+  const [showTerminal, setShowTerminal] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const currentUser = USERS.find(u => u.email === currentUserEmail)!;
@@ -560,6 +562,21 @@ export default function OfficeChat({
       });
       setNearby(closestUser);
 
+      // Desk proximity — check if near any desk without an online NPC
+      if (!closestUser) {
+        let deskNear = false;
+        Object.entries(DESK_POS).forEach(([email, pos]) => {
+          if (email === currentUserEmail) return;
+          const isOnline = npcMeshes.get(email)?.visible ?? false;
+          if (isOnline) return; // occupied desk — NPC is there
+          const d = state.playerPos.distanceTo(pos);
+          if (d < INTERACT_DIST) deskNear = true;
+        });
+        setNearDesk(deskNear);
+      } else {
+        setNearDesk(false);
+      }
+
       renderer.render(scene, camera);
     };
     state.raf = requestAnimationFrame(loop);
@@ -576,18 +593,26 @@ export default function OfficeChat({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUserEmail]);
 
-  // "E" key opens chat with nearby NPC
+  // "E" key opens chat with nearby NPC or terminal at empty desk
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement).tagName === "INPUT") return;
-      if (e.key.toLowerCase() === "e" && nearby && !activeChat) {
-        setActiveChat(nearby);
-        document.exitPointerLock();
+      if (e.key.toLowerCase() === "e") {
+        if (nearby && !activeChat && !showTerminal) {
+          setActiveChat(nearby);
+          document.exitPointerLock();
+        } else if (nearDesk && !activeChat && !showTerminal) {
+          setShowTerminal(true);
+          document.exitPointerLock();
+        }
+      }
+      if (e.key === "Escape" && showTerminal) {
+        setShowTerminal(false);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [nearby, activeChat]);
+  }, [nearby, activeChat, nearDesk, showTerminal]);
 
   // Update online indicators + visibility when presence changes
   useEffect(() => {
@@ -643,8 +668,17 @@ export default function OfficeChat({
         </div>
       )}
 
-      {/* Nearby prompt */}
-      {nearby && !activeChat && (
+      {/* Nearby desk prompt (empty desk) */}
+      {nearDesk && !activeChat && !showTerminal && (
+        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 pointer-events-none">
+          <Badge className="bg-black/80 text-white border-0 text-sm px-4 py-2">
+            Press <kbd className="mx-1 px-1 bg-white/20 rounded">E</kbd> to use terminal
+          </Badge>
+        </div>
+      )}
+
+      {/* Nearby NPC prompt */}
+      {nearby && !activeChat && !showTerminal && (
         <div className="absolute bottom-24 left-1/2 -translate-x-1/2 pointer-events-none">
           <Badge className="bg-black/80 text-white border-0 text-sm px-4 py-2">
             Press <kbd className="mx-1 px-1 bg-white/20 rounded">E</kbd> or click to chat with {nearby.name}
@@ -724,10 +758,68 @@ export default function OfficeChat({
         </div>
       )}
 
+      {/* Fake monitor — OPS Terminal */}
+      {showTerminal && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/60">
+          <div className="relative flex flex-col items-center">
+            <div
+              className="rounded-xl overflow-hidden shadow-2xl"
+              style={{
+                background: "linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 50%, #0e0e0e 100%)",
+                padding: "18px 18px 8px 18px",
+                border: "2px solid #333",
+              }}
+            >
+              <div className="flex items-center justify-between mb-2 px-1">
+                <span className="text-[10px] font-bold tracking-widest text-white/30 uppercase">OPS Terminal</span>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-[9px] text-white/20">ONLINE</span>
+                </div>
+              </div>
+              <div
+                className="relative rounded-sm overflow-hidden"
+                style={{
+                  width: "min(75vw, 900px)",
+                  height: "min(65vh, 560px)",
+                  boxShadow: "inset 0 0 60px rgba(0,0,0,0.5), 0 0 20px rgba(100,130,255,0.08)",
+                }}
+              >
+                <div
+                  className="absolute inset-0 z-10 pointer-events-none"
+                  style={{ background: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px)" }}
+                />
+                <div
+                  className="absolute inset-0 z-10 pointer-events-none"
+                  style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 50%, rgba(255,255,255,0.02) 100%)" }}
+                />
+                <iframe
+                  src={window.location.origin + "/dashboard"}
+                  className="w-full h-full border-0"
+                  title="OPS Terminal"
+                  style={{ borderRadius: "2px" }}
+                />
+              </div>
+              <div className="flex items-center justify-center pt-2 pb-1">
+                <div className="w-8 h-1 rounded-full bg-white/10" />
+              </div>
+            </div>
+            <div className="w-16 h-8" style={{ background: "linear-gradient(180deg, #1a1a1a, #111)", clipPath: "polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)" }} />
+            <div className="w-28 h-2 rounded-full" style={{ background: "linear-gradient(180deg, #222, #0e0e0e)" }} />
+          </div>
+          <button
+            onClick={() => setShowTerminal(false)}
+            className="absolute top-6 right-6 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-colors backdrop-blur-sm"
+          >
+            ESC to close
+          </button>
+        </div>
+      )}
+
       {/* Controls hint */}
       <div className="absolute top-3 left-3 pointer-events-none">
         <Badge variant="outline" className="bg-black/60 text-white/60 border-white/10 text-xs">
-          WASD move · Mouse look · E / click to chat · ESC release
+          WASD move · Mouse look · E to interact · ESC release
         </Badge>
       </div>
     </div>
