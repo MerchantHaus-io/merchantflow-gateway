@@ -49,6 +49,11 @@ export function ActionItemsWidget() {
     window.addEventListener("openNoticeBoard", handler);
     return () => window.removeEventListener("openNoticeBoard", handler);
   }, []);
+
+  // Notify dock of open/close state
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent(isOpen ? "dockAppOpened" : "dockAppClosed"));
+  }, [isOpen]);
   const [newTitle, setNewTitle] = useState("");
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [showUserPicker, setShowUserPicker] = useState(false);
