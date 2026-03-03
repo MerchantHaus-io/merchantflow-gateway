@@ -123,15 +123,18 @@ const USERS: CRMUser[] = [
   },
 ];
 
-// ── SPAWN POSITIONS ───────────────────────────────────────────────────────────
+// ── SPAWN POSITIONS (desk positions — NPCs sit here) ──────────────────────────
 
-const SPAWN: Record<string, THREE.Vector3> = {
-  "taryn@merchanthaus.io":   new THREE.Vector3(-2.5, 0, -1),
-  "admin@merchanthaus.io":   new THREE.Vector3(0,    0, -1),
-  "sales@merchanthaus.io":   new THREE.Vector3(2.5,  0, -1),
-  "support@merchanthaus.io": new THREE.Vector3(-1.5, 0,  3),
-  "darryn@merchanthaus.io":  new THREE.Vector3(1.5,  0,  3),
+const DESK_POS: Record<string, THREE.Vector3> = {
+  "taryn@merchanthaus.io":   new THREE.Vector3(-2.5, 0, -3),
+  "admin@merchanthaus.io":   new THREE.Vector3(0,    0, -3),
+  "sales@merchanthaus.io":   new THREE.Vector3(2.5,  0, -3),
+  "support@merchanthaus.io": new THREE.Vector3(-1.5, 0,  1.5),
+  "darryn@merchanthaus.io":  new THREE.Vector3(1.5,  0,  1.5),
 };
+
+// Aliases so existing SPAWN references still work for the player
+const SPAWN: Record<string, THREE.Vector3> = { ...DESK_POS };
 
 // ── THREE HELPERS ─────────────────────────────────────────────────────────────
 
@@ -417,7 +420,10 @@ export default function OfficeChat({
 
     others.forEach(u => {
       const mesh = buildCharacterMesh(u, false);
-      mesh.position.copy(SPAWN[u.email]);
+      const deskPos = DESK_POS[u.email] || new THREE.Vector3(0, 0, 0);
+      mesh.position.copy(deskPos);
+      // Start hidden — presence effect will show online users
+      mesh.visible = false;
       scene.add(mesh);
       npcMeshes.set(u.email, mesh);
 
@@ -536,15 +542,17 @@ export default function OfficeChat({
       // Face camera direction (yaw only)
       playerMesh.rotation.y = state.yaw + Math.PI;
 
-      // NPC idle bob
+      // NPC idle bob (only visible/online ones)
       npcMeshes.forEach((mesh) => {
+        if (!mesh.visible) return;
         mesh.position.y = Math.abs(Math.sin(t * 0.0008 + mesh.position.x)) * 0.03;
       });
 
-      // Nearby detection — "E to chat" hint
+      // Nearby detection — only consider visible (online) NPCs
       let closestUser: CRMUser | null = null;
       let closestD = Infinity;
       npcMeshes.forEach((mesh, email) => {
+        if (!mesh.visible) return;
         const d = state.playerPos.distanceTo(mesh.position);
         if (d < INTERACT_DIST && d < closestD) {
           closestD = d;
@@ -582,12 +590,17 @@ export default function OfficeChat({
     return () => window.removeEventListener("keydown", onKey);
   }, [nearby, activeChat]);
 
-  // Update online indicators when presence changes
+  // Update online indicators + visibility when presence changes
   useEffect(() => {
     const s = stateRef.current;
     if (!s) return;
+    s.npcMeshes.forEach((mesh, email) => {
+      const isOnline = presence[email] ?? false; // default offline
+      // Show/hide the entire NPC mesh
+      mesh.visible = isOnline;
+    });
     s.onlineIndicators.forEach((dot, email) => {
-      const isOnline = presence[email] ?? true;
+      const isOnline = presence[email] ?? false;
       (dot.material as THREE.MeshStandardMaterial).color.setHex(isOnline ? 0x22cc44 : 0x666666);
       (dot.material as THREE.MeshStandardMaterial).emissive.setHex(isOnline ? 0x22cc44 : 0x333333);
     });
