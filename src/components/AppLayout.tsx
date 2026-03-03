@@ -6,6 +6,7 @@ import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { ActionItemsWidget } from "@/components/ActionItemsWidget";
 import { BroadcastPopup } from "@/components/BroadcastPopup";
 import { MobileAppDock } from "@/components/MobileAppDock";
+import { PageTransition } from "@/components/PageTransition";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { RefreshCw } from "lucide-react";
@@ -80,7 +81,9 @@ export function AppLayout({
           ref={scrollRef}
           className={focusMode ? "flex-1 min-h-0 overflow-hidden" : "flex-1 min-h-0 overflow-y-auto scroll-smooth pb-16 lg:pb-0"}
         >
-          {children}
+          <PageTransition key={location.pathname}>
+            {children}
+          </PageTransition>
         </div>
       </main>
       {!focusMode && <MobileBottomNav />}

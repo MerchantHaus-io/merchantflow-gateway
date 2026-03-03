@@ -1045,3 +1045,57 @@ All colors MUST be HSL.
     min-width: 56px;
   }
 }
+
+/* ─── Global Micro-Interactions ─── */
+
+/* Cards: subtle lift on hover */
+.group\/card,
+[data-slot="card"] {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.group\/card:hover,
+[data-slot="card"]:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -2px hsl(var(--foreground) / 0.08);
+}
+
+/* Table rows: smooth highlight */
+tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+/* Inputs & textareas: smooth border focus */
+input, textarea, select {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Badges: subtle scale on hover */
+[data-slot="badge"] {
+  transition: transform 0.15s ease;
+}
+[data-slot="badge"]:hover {
+  transform: scale(1.04);
+}
+
+/* Staggered list children animation utility */
+.animate-stagger > * {
+  animation: fade-in 0.35s ease-out both;
+}
+.animate-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.animate-stagger > *:nth-child(2) { animation-delay: 40ms; }
+.animate-stagger > *:nth-child(3) { animation-delay: 80ms; }
+.animate-stagger > *:nth-child(4) { animation-delay: 120ms; }
+.animate-stagger > *:nth-child(5) { animation-delay: 160ms; }
+.animate-stagger > *:nth-child(6) { animation-delay: 200ms; }
+.animate-stagger > *:nth-child(7) { animation-delay: 240ms; }
+.animate-stagger > *:nth-child(8) { animation-delay: 280ms; }
+.animate-stagger > *:nth-child(n+9) { animation-delay: 320ms; }
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
