@@ -39,7 +39,8 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
     recentOppsRes,
     tasksRes,
     profilesRes,
-    accountCountRes,
+    accountsFullRes,
+    contactsFullRes,
     contactCountRes,
   ] = await Promise.all([
     // Pipeline stage counts
@@ -53,8 +54,10 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
     supabase.from("tasks").select("title, assignee, status, priority, due_at").neq("status", "done").order("created_at", { ascending: false }).limit(15),
     // Team members
     supabase.from("profiles").select("email, full_name, last_seen"),
-    // Counts (all accounts including dead)
-    supabase.from("accounts").select("id, status", { count: "exact", head: false }),
+    // Full accounts roster with details
+    supabase.from("accounts").select("id, name, status, website, city, state, created_at").order("created_at", { ascending: true }),
+    // Full contacts roster with details
+    supabase.from("contacts").select("id, account_id, first_name, last_name, email, phone, created_at").order("created_at", { ascending: true }),
     supabase.from("contacts").select("id", { count: "exact", head: true }),
   ]);
 
@@ -95,10 +98,30 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
     .map((p: any) => `  - ${p.full_name || p.email} (${p.email})${p.last_seen ? " — last seen " + new Date(p.last_seen).toLocaleDateString() : ""}`)
     .join("\n");
 
-  // Account status breakdown
-  const accounts = accountCountRes.data || [];
-  const activeAccounts = accounts.filter((a: any) => a.status === "active" || !a.status).length;
-  const deadAccounts = accounts.filter((a: any) => a.status === "dead").length;
+  // Build full account + contact roster
+  const allAccounts = accountsFullRes.data || [];
+  const allContacts = contactsFullRes.data || [];
+  const activeAccounts = allAccounts.filter((a: any) => a.status === "active" || !a.status).length;
+  const deadAccounts = allAccounts.filter((a: any) => a.status === "dead").length;
+
+  // Group contacts by account_id
+  const contactsByAccount: Record<string, any[]> = {};
+  for (const c of allContacts) {
+    if (!contactsByAccount[c.account_id]) contactsByAccount[c.account_id] = [];
+    contactsByAccount[c.account_id].push(c);
+  }
+
+  // Build account roster with contacts
+  const accountRoster = allAccounts
+    .map((a: any) => {
+      const created = a.created_at ? new Date(a.created_at).toLocaleDateString() : "Unknown";
+      const contacts = contactsByAccount[a.id] || [];
+      const contactLines = contacts
+        .map((c: any) => `      ${[c.first_name, c.last_name].filter(Boolean).join(" ") || "Unnamed"} | ${c.email || "no email"} | ${c.phone || "no phone"}`)
+        .join("\n");
+      return `  ${a.name} (${a.status || "active"}) — since ${created}${a.city && a.state ? ` | ${a.city}, ${a.state}` : ""}${a.website ? ` | ${a.website}` : ""}\n${contactLines || "      No contacts on file"}`;
+    })
+    .join("\n");
 
   const statusSummary = Object.entries(statusCounts)
     .map(([status, count]) => `  ${status}: ${count}`)
@@ -107,6 +130,9 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
   return `
 
 ━━━ LIVE CRM DATA SNAPSHOT ━━━
+
+FULL ACCOUNT ROSTER (${allAccounts.length} accounts, from inception to today):
+${accountRoster || "  No accounts"}
 
 PIPELINE OVERVIEW (${opps.length} total opportunities):
 By Stage:
@@ -128,7 +154,7 @@ TEAM MEMBERS:
 ${team || "  None"}
 
 TOTALS:
-  Accounts: ${accounts.length} total (${activeAccounts} active, ${deadAccounts} dead)
+  Accounts: ${allAccounts.length} total (${activeAccounts} active, ${deadAccounts} dead)
   Contacts: ${contactCountRes.count ?? "Unknown"}
   All Opportunities: ${opps.length} (${activeOpps.length} active, ${deadOpps.length} dead/closed-lost)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
