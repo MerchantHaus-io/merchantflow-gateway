@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   MessageCircle, X, Send, Hash, ChevronLeft, Search, Bell, BellOff,
-  ArrowDown, WifiOff, RefreshCw, Volume2, VolumeX, Minus
+  ArrowDown, WifiOff, RefreshCw, Volume2, VolumeX, Minus, Gamepad2
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
@@ -836,6 +836,14 @@ const FloatingChat: React.FC = () => {
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>{soundEnabled ? "Mute sounds" : "Unmute sounds"}</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button onClick={() => { setIsOpen(false); setTimeout(() => window.dispatchEvent(new CustomEvent("openOfficeSimulator")), 100); }} className="hover:bg-white/10 p-2 rounded-full transition-colors" aria-label="Office Simulator">
+                    <Gamepad2 className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Office Simulator</TooltipContent>
               </Tooltip>
               {(view === "chat" || view === "dm") && (
                 <button onClick={() => setShowSearch(!showSearch)} className={cn("hover:bg-white/10 p-2 rounded-full transition-colors", showSearch && "bg-white/10")}>

@@ -7,6 +7,7 @@ import { ActionItemsWidget } from "@/components/ActionItemsWidget";
 import { BroadcastPopup } from "@/components/BroadcastPopup";
 import { MobileAppDock } from "@/components/MobileAppDock";
 import { PageTransition } from "@/components/PageTransition";
+import { OfficeSimulatorOverlay } from "@/components/chat/OfficeSimulatorOverlay";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { RefreshCw } from "lucide-react";
@@ -91,6 +92,7 @@ export function AppLayout({
       {!focusMode && <ActionItemsWidget />}
       {!focusMode && <BroadcastPopup />}
       {!focusMode && isMobile && !isChatRoute && <MobileAppDock />}
+      {!focusMode && <OfficeSimulatorOverlay />}
     </div>
   );
 }
