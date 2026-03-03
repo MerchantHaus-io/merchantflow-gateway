@@ -126,11 +126,11 @@ const USERS: CRMUser[] = [
 // ── SPAWN POSITIONS (desk positions — NPCs sit here) ──────────────────────────
 
 const DESK_POS: Record<string, THREE.Vector3> = {
-  "taryn@merchanthaus.io":   new THREE.Vector3(-2.5, 0, -3),
-  "admin@merchanthaus.io":   new THREE.Vector3(0,    0, -3),
-  "sales@merchanthaus.io":   new THREE.Vector3(2.5,  0, -3),
-  "support@merchanthaus.io": new THREE.Vector3(-1.5, 0,  1.5),
-  "darryn@merchanthaus.io":  new THREE.Vector3(1.5,  0,  1.5),
+  "taryn@merchanthaus.io":   new THREE.Vector3(-4, 0, -5),
+  "admin@merchanthaus.io":   new THREE.Vector3(0,  0, -5),
+  "sales@merchanthaus.io":   new THREE.Vector3(4,  0, -5),
+  "support@merchanthaus.io": new THREE.Vector3(-2, 0,  2),
+  "darryn@merchanthaus.io":  new THREE.Vector3(2,  0,  2),
 };
 
 // Aliases so existing SPAWN references still work for the player
@@ -138,9 +138,9 @@ const SPAWN: Record<string, THREE.Vector3> = { ...DESK_POS };
 
 // ── THREE HELPERS ─────────────────────────────────────────────────────────────
 
-const ROOM = 5.5; // half-extent of room
+const ROOM = 7.5; // half-extent of room (larger)
 const INTERACT_DIST = 2.2;
-const TV_POS = new THREE.Vector3(5.2, 0, 0); // right wall TV — player stands here
+const TV_POS = new THREE.Vector3(7.2, 0, 0); // right wall TV
 
 function buildCharacterMesh(user: CRMUser, isPlayer: boolean): THREE.Group {
   const g = new THREE.Group();
@@ -415,7 +415,7 @@ export default function OfficeChat({
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x1a1a1a);
-    scene.fog = new THREE.Fog(0x1a1a1a, 6, 18);
+    scene.fog = new THREE.Fog(0x1a1a1a, 8, 25);
 
     const camera = new THREE.PerspectiveCamera(70, W / H, 0.1, 100);
     camera.position.set(
