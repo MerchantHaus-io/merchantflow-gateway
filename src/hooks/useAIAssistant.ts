@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const AI_CHANNEL_NAME = "atria-ai";
 const AI_BOT_EMAIL = "ai-assistant@ops.internal";
@@ -32,10 +33,12 @@ export const useAIAssistant = () => {
 
       if (error) {
         console.error("AI assistant error:", error);
+        toast.error("Atria couldn't respond — please try again");
       }
       return data;
     } catch (err) {
       console.error("Failed to trigger AI response:", err);
+      toast.error("Atria couldn't respond — please try again");
     } finally {
       setIsThinking(false);
     }
