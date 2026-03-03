@@ -243,8 +243,7 @@ function buildCharacterMesh(user: CRMUser, isPlayer: boolean): THREE.Group {
   const cv = document.createElement("canvas");
   cv.width = 256; cv.height = 64;
   const ctx = cv.getContext("2d")!;
-  ctx.fillStyle = "rgba(20,20,20,0.85)";
-  ctx.fillRect(0, 0, 256, 64);
+  ctx.clearRect(0, 0, 256, 64);
   ctx.fillStyle = isPlayer ? "#ffd700" : "#ffffff";
   ctx.font = "bold 20px Arial";
   ctx.textAlign = "center";
