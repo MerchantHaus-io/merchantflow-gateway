@@ -120,20 +120,26 @@ const FloatingChat: React.FC = () => {
     return groups;
   }, [formatMessageDate]);
 
+  const stickyDateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
     const nearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 100;
     setIsNearBottom(nearBottom);
     setShowScrollButton(!nearBottom);
-    const dateSeparators = target.querySelectorAll('[data-date-separator]');
-    let currentDate: string | null = null;
-    dateSeparators.forEach((separator) => {
-      const rect = separator.getBoundingClientRect();
-      const containerRect = target.getBoundingClientRect();
-      if (rect.top <= containerRect.top + 50) currentDate = separator.getAttribute('data-date-separator');
-    });
-    setStickyDate(currentDate);
-    setShowStickyDate(target.scrollTop > 50 && currentDate !== null);
+    // Throttle date separator queries to avoid layout thrashing
+    if (stickyDateTimeoutRef.current) return;
+    stickyDateTimeoutRef.current = setTimeout(() => {
+      stickyDateTimeoutRef.current = null;
+      const dateSeparators = target.querySelectorAll('[data-date-separator]');
+      let currentDate: string | null = null;
+      dateSeparators.forEach((separator) => {
+        const rect = separator.getBoundingClientRect();
+        const containerRect = target.getBoundingClientRect();
+        if (rect.top <= containerRect.top + 50) currentDate = separator.getAttribute('data-date-separator');
+      });
+      setStickyDate(currentDate);
+      setShowStickyDate(target.scrollTop > 50 && currentDate !== null);
+    }, 100);
   }, []);
 
   const scrollToBottom = useCallback((smooth = true) => {
@@ -272,10 +278,11 @@ const FloatingChat: React.FC = () => {
 
   useEffect(() => { if (channels.length > 0) fetchChannelUnreadCounts(); }, [channels, fetchChannelUnreadCounts]);
 
+  // Refresh online status periodically instead of subscribing to every profile UPDATE
   useEffect(() => {
     if (!user) return;
-    const profileChannel = supabase.channel('profiles-last-seen').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, () => { fetchProfiles(); }).subscribe();
-    return () => { supabase.removeChannel(profileChannel); };
+    const interval = setInterval(() => { fetchProfiles(); }, 30000);
+    return () => clearInterval(interval);
   }, [user, fetchProfiles]);
 
   useEffect(() => { if (currentChannelId && view === "chat") fetchChannelMessages(); }, [currentChannelId, view, fetchChannelMessages]);
@@ -573,11 +580,13 @@ const FloatingChat: React.FC = () => {
     return data?.signedUrl || storedUrl;
   }, []);
 
+  const signedUrlsRef = useRef(signedUrls);
+  signedUrlsRef.current = signedUrls;
   const resolveAttachmentUrl = useCallback(async (msgId: string, storedUrl: string) => {
-    if (signedUrls[msgId]) return;
+    if (signedUrlsRef.current[msgId]) return;
     const url = await getSignedAttachmentUrl(storedUrl);
     setSignedUrls(prev => ({ ...prev, [msgId]: url }));
-  }, [signedUrls, getSignedAttachmentUrl]);
+  }, [getSignedAttachmentUrl]);
 
   const currentChannel = channels.find(ch => ch.id === currentChannelId);
   const currentDMUser = onlineUsers.find(u => u.id === currentDMUserId);
