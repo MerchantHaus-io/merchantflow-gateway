@@ -90,14 +90,18 @@ export const StatusBlockerPanel = ({ opportunity, wizardProgress, compact = true
   const StatusIcon = statusConfig.icon;
 
   const handleSaveBlocker = async () => {
+    if (!user) {
+      toast.error("You must be logged in");
+      return;
+    }
     try {
       if (blockerReason.trim()) {
         await supabase.from("activities").insert({
           opportunity_id: opportunity.id,
           type: "blocker",
           description: blockerReason.trim(),
-          user_id: user?.id,
-          user_email: user?.email,
+          user_id: user.id,
+          user_email: user.email,
         });
         setCurrentBlocker(blockerReason.trim());
         toast.success("Blocker saved");
@@ -106,8 +110,8 @@ export const StatusBlockerPanel = ({ opportunity, wizardProgress, compact = true
           opportunity_id: opportunity.id,
           type: "blocker_cleared",
           description: "Blocker cleared",
-          user_id: user?.id,
-          user_email: user?.email,
+          user_id: user.id,
+          user_email: user.email,
         });
         setCurrentBlocker(null);
         toast.success("Blocker cleared");
