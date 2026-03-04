@@ -31,9 +31,11 @@ KNOWLEDGE:
 - Full SOP procedures, email templates, checklists (provided below)
 
 ACTIONS:
-- You can CREATE tasks, UPDATE opportunity stages, ASSIGN opportunities to team members, and UPDATE opportunity status.
+- You can CREATE tasks, UPDATE opportunity stages, ASSIGN opportunities to team members, UPDATE opportunity status, UPDATE account/contact/opportunity records, and ADD NOTES to opportunities.
 - When asked to do something, use the available tools to take action immediately. Confirm what you did afterward.
 - For ambiguous requests, ask for clarification before acting.
+- When updating records, you can change fields like name, website, city, state, status on accounts; first_name, last_name, email, phone on contacts; and service_type, referral_source, language, timezone on opportunities.
+- When adding notes, they are saved as comments on the opportunity and logged as activity.
 - Team members you can assign to: admin@merchanthaus.io (Jamie), darryn@merchanthaus.io (Darryn), support@merchanthaus.io (Yaseen), sales@merchanthaus.io (Wesley), taryn@merchanthaus.io (Taryn).
 - Valid pipeline stages: discovery, qualification, preboarding, underwriting, boarding, live.
 - Valid opportunity statuses: active, dead, closed-lost.
@@ -378,6 +380,85 @@ serve(async (req) => {
             },
           },
         },
+        {
+          type: "function",
+          function: {
+            name: "update_account",
+            description: "Update fields on an account record. Use when someone asks to change an account's name, website, address, city, state, zip, country, or status.",
+            parameters: {
+              type: "object",
+              properties: {
+                account_id: { type: "string", description: "UUID of the account" },
+                name: { type: "string", description: "New account name" },
+                website: { type: "string", description: "New website URL" },
+                address1: { type: "string", description: "New address line 1" },
+                city: { type: "string", description: "New city" },
+                state: { type: "string", description: "New state" },
+                zip: { type: "string", description: "New zip code" },
+                country: { type: "string", description: "New country" },
+                status: { type: "string", enum: ["active", "dead"], description: "New account status" },
+              },
+              required: ["account_id"],
+              additionalProperties: false,
+            },
+          },
+        },
+        {
+          type: "function",
+          function: {
+            name: "update_contact",
+            description: "Update fields on a contact record. Use when someone asks to change a contact's name, email, phone, or fax.",
+            parameters: {
+              type: "object",
+              properties: {
+                contact_id: { type: "string", description: "UUID of the contact" },
+                first_name: { type: "string", description: "New first name" },
+                last_name: { type: "string", description: "New last name" },
+                email: { type: "string", description: "New email" },
+                phone: { type: "string", description: "New phone number" },
+                fax: { type: "string", description: "New fax number" },
+              },
+              required: ["contact_id"],
+              additionalProperties: false,
+            },
+          },
+        },
+        {
+          type: "function",
+          function: {
+            name: "update_opportunity",
+            description: "Update miscellaneous fields on an opportunity. Use when someone asks to change service_type, referral_source, language, timezone, or username on a deal.",
+            parameters: {
+              type: "object",
+              properties: {
+                opportunity_id: { type: "string", description: "UUID of the opportunity" },
+                service_type: { type: "string", enum: ["processing", "gateway"], description: "Service type" },
+                referral_source: { type: "string", description: "Referral source" },
+                language: { type: "string", description: "Language preference" },
+                timezone: { type: "string", description: "Timezone" },
+                username: { type: "string", description: "Username" },
+              },
+              required: ["opportunity_id"],
+              additionalProperties: false,
+            },
+          },
+        },
+        {
+          type: "function",
+          function: {
+            name: "add_note",
+            description: "Add a note/comment to an opportunity. Use when someone asks to add a note, comment, or log information on a deal or account.",
+            parameters: {
+              type: "object",
+              properties: {
+                opportunity_id: { type: "string", description: "UUID of the opportunity to add the note to" },
+                content: { type: "string", description: "The note content" },
+              },
+              required: ["opportunity_id", "content"],
+              additionalProperties: false,
+            },
+          },
+        },
       ];
 
       // ── Tool Execution Handler ──
@@ -426,6 +507,62 @@ serve(async (req) => {
               .eq("id", args.opportunity_id);
             if (error) return `Error updating status: ${error.message}`;
             return `Opportunity status updated to "${args.new_status}" successfully.`;
+          }
+
+          case "update_account": {
+            const { account_id, ...fields } = args;
+            const updateData: Record<string, unknown> = {};
+            for (const [key, val] of Object.entries(fields)) {
+              if (val !== undefined && val !== null) updateData[key] = val;
+            }
+            if (Object.keys(updateData).length === 0) return "No fields provided to update.";
+            const { error } = await supabase.from("accounts").update(updateData).eq("id", account_id);
+            if (error) return `Error updating account: ${error.message}`;
+            return `Account updated successfully. Changed: ${Object.keys(updateData).join(", ")}.`;
+          }
+
+          case "update_contact": {
+            const { contact_id, ...fields } = args;
+            const updateData: Record<string, unknown> = {};
+            for (const [key, val] of Object.entries(fields)) {
+              if (val !== undefined && val !== null) updateData[key] = val;
+            }
+            if (Object.keys(updateData).length === 0) return "No fields provided to update.";
+            const { error } = await supabase.from("contacts").update(updateData).eq("id", contact_id);
+            if (error) return `Error updating contact: ${error.message}`;
+            return `Contact updated successfully. Changed: ${Object.keys(updateData).join(", ")}.`;
+          }
+
+          case "update_opportunity": {
+            const { opportunity_id, ...fields } = args;
+            const updateData: Record<string, unknown> = {};
+            for (const [key, val] of Object.entries(fields)) {
+              if (val !== undefined && val !== null) updateData[key] = val;
+            }
+            if (Object.keys(updateData).length === 0) return "No fields provided to update.";
+            const { error } = await supabase.from("opportunities").update(updateData).eq("id", opportunity_id);
+            if (error) return `Error updating opportunity: ${error.message}`;
+            return `Opportunity updated successfully. Changed: ${Object.keys(updateData).join(", ")}.`;
+          }
+
+          case "add_note": {
+            const { opportunity_id, content } = args;
+            const { error: commentError } = await supabase.from("comments").insert({
+              opportunity_id,
+              content,
+              user_id: AI_BOT_USER_ID,
+              user_email: AI_BOT_EMAIL,
+            });
+            if (commentError) return `Error adding note: ${commentError.message}`;
+            // Also log as activity
+            await supabase.from("activities").insert({
+              opportunity_id,
+              type: "note_added",
+              description: `Atria added note: ${(content as string).substring(0, 100)}${(content as string).length > 100 ? "..." : ""}`,
+              user_id: AI_BOT_USER_ID,
+              user_email: AI_BOT_EMAIL,
+            });
+            return `Note added to opportunity successfully.`;
           }
 
           default:
