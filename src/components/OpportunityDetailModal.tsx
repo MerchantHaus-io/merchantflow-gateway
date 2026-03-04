@@ -1429,8 +1429,52 @@ const DOC_STATUS_ICON: Record<string, { icon: React.ReactNode; color: string }> 
   unverified: { icon: <AlertTriangle className="h-3.5 w-3.5" />, color: "text-amber-500" },
 };
 
-const ValidationReportCard = ({ report, onDismiss }: { report: ValidationReport; onDismiss?: () => void }) => {
+const ValidationReportCard = ({ report, onDismiss, opportunityId }: { report: ValidationReport; onDismiss?: () => void; opportunityId?: string }) => {
   const readiness = READINESS_CONFIG[report.readiness_score] || READINESS_CONFIG.unknown;
+  const { user } = useAuth();
+  const [isSavingNote, setIsSavingNote] = useState(false);
+  const [noteSaved, setNoteSaved] = useState(false);
+
+  const handleSaveAsNote = async () => {
+    if (!opportunityId || !user) return;
+    setIsSavingNote(true);
+    try {
+      // Build a concise text summary
+      const lines: string[] = [
+        `AI Validation — ${readiness.emoji} ${readiness.label}`,
+      ];
+      if (report.summary) lines.push(report.summary);
+      if (report.data_gaps?.length) lines.push(`Missing data: ${report.data_gaps.join(", ")}`);
+      if (report.risk_flags?.length) lines.push(`Risk flags: ${report.risk_flags.map(r => `${r.flag} (${r.severity})`).join("; ")}`);
+      if (report.recommended_actions?.length) lines.push(`Actions: ${report.recommended_actions.join("; ")}`);
+
+      const noteContent = lines.join("\n");
+
+      const { error } = await supabase.from("comments").insert({
+        opportunity_id: opportunityId,
+        content: noteContent,
+        user_id: user.id,
+        user_email: user.email,
+      });
+      if (error) throw error;
+
+      await supabase.from("activities").insert({
+        opportunity_id: opportunityId,
+        type: "note_added",
+        description: `AI Validation report saved as note (${readiness.label})`,
+        user_id: user.id,
+        user_email: user.email,
+      });
+
+      setNoteSaved(true);
+      toast.success("Validation saved as note");
+    } catch (err) {
+      console.error("Failed to save note:", err);
+      toast.error("Failed to save as note");
+    } finally {
+      setIsSavingNote(false);
+    }
+  };
 
   return (
     <div className="border rounded-lg overflow-hidden">
@@ -1542,11 +1586,40 @@ const ValidationReportCard = ({ report, onDismiss }: { report: ValidationReport;
           </div>
         )}
 
-        {report.triggered_by && (
-          <p className="text-[11px] text-muted-foreground pt-1 border-t">
-            Run by {report.triggered_by}
-          </p>
-        )}
+        {/* Footer: triggered by + save as note */}
+        <div className="flex items-center justify-between pt-1 border-t">
+          {report.triggered_by ? (
+            <p className="text-[11px] text-muted-foreground">
+              Run by {report.triggered_by}
+            </p>
+          ) : <span />}
+          {opportunityId && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs h-7"
+              onClick={handleSaveAsNote}
+              disabled={isSavingNote || noteSaved}
+            >
+              {noteSaved ? (
+                <>
+                  <Check className="h-3 w-3 mr-1" />
+                  Saved
+                </>
+              ) : isSavingNote ? (
+                <>
+                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <MessageSquare className="h-3 w-3 mr-1" />
+                  Add as Note
+                </>
+              )}
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -1892,7 +1965,7 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
       )}
 
       {validationReport && !isValidating && (
-        <ValidationReportCard report={validationReport} onDismiss={() => setValidationReport(null)} />
+        <ValidationReportCard report={validationReport} onDismiss={() => setValidationReport(null)} opportunityId={opportunityId} />
       )}
 
       {/* Past reports history */}
@@ -1900,7 +1973,7 @@ const DocumentsTab = ({ opportunityId }: { opportunityId: string }) => {
         <div className="space-y-3">
           <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Previous Reports</h4>
           {pastReports.map((report) => (
-            <ValidationReportCard key={report.id} report={report} />
+            <ValidationReportCard key={report.id} report={report} opportunityId={opportunityId} />
           ))}
         </div>
       )}
