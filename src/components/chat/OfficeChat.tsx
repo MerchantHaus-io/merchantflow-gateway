@@ -1029,12 +1029,13 @@ export default function OfficeChat({
             </div>
             <iframe
               key={tvUnmuted ? "unmuted" : "muted"}
-              src={`https://www.youtube.com/embed/videoseries?list=PLgRgJShyo_y6TjE1Sfyrh0ljWQcHutPOg&autoplay=1&${tvUnmuted ? "" : "mute=1&"}loop=1&controls=0&modestbranding=1&rel=0`}
+              src={`https://www.youtube-nocookie.com/embed/videoseries?list=PLgRgJShyo_y6TjE1Sfyrh0ljWQcHutPOg&autoplay=1&${tvUnmuted ? "" : "mute=1&"}loop=1&controls=0&modestbranding=1&rel=0&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`}
               className="w-full border-0 rounded-sm"
               style={{ aspectRatio: "16/9" }}
               title="Office TV"
-              allow="autoplay; encrypted-media"
+              allow="autoplay; encrypted-media; picture-in-picture"
               referrerPolicy="no-referrer"
+              sandbox="allow-scripts allow-same-origin allow-popups allow-presentation"
             />
           </div>
         </div>
