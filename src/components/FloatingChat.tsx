@@ -94,6 +94,13 @@ const FloatingChat: React.FC = () => {
     return () => window.removeEventListener('openFloatingChat', handleOpenChat);
   }, []);
 
+  // Auto-open chat when on /chat route
+  useEffect(() => {
+    if (window.location.pathname === "/chat") {
+      setIsOpen(true);
+    }
+  }, []);
+
   // Notify dock of open/close state
   useEffect(() => {
     window.dispatchEvent(new CustomEvent(isOpen ? "dockAppOpened" : "dockAppClosed"));
