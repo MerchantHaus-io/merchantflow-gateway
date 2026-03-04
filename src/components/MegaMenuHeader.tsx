@@ -108,6 +108,7 @@ const navMain: NavGroup[] = [
       { title: "Reports", url: "/reports", icon: BarChart3, description: "Performance & analytics" },
       { title: "Analytics", url: "/admin/analytics", icon: Activity, description: "Login tracking & broadcasts" },
       { title: "Live & Billing", url: "/live-billing", icon: BadgeDollarSign, description: "Live accounts & billing" },
+      { title: "Supported Processors", url: "/supported-processors", icon: Globe, description: "Processor compatibility list" },
     ],
   },
 ];

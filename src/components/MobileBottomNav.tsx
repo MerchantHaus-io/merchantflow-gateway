@@ -61,6 +61,7 @@ const moreItems: MoreItem[] = [
   { title: "Documents", url: "/documents", icon: FileText },
   { title: "Reports", url: "/reports", icon: BarChart3 },
   { title: "Live & Billing", url: "/live-billing", icon: BadgeDollarSign },
+  { title: "Processors", url: "/supported-processors", icon: CreditCard },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 

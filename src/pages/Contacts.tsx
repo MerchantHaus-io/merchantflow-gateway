@@ -41,6 +41,16 @@ import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
 import { SortableTableHead } from "@/components/SortableTableHead";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -112,6 +122,8 @@ const Contacts = () => {
   // Bulk selection state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkAssignee, setBulkAssignee] = useState<string>('');
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -340,10 +352,8 @@ const Contacts = () => {
   // Bulk delete handler
   const handleBulkDelete = async () => {
     if (selectedIds.size === 0) return;
-    const confirmDelete = window.confirm(`Are you sure you want to delete ${selectedIds.size} contact(s)?`);
-    if (!confirmDelete) return;
-
     try {
+      const count = selectedIds.size;
       const { error } = await supabase
         .from('contacts')
         .delete()
@@ -356,7 +366,8 @@ const Contacts = () => {
 
       setContacts(prev => prev.filter(c => !selectedIds.has(c.id)));
       setSelectedIds(new Set());
-      toast.success(`${selectedIds.size} contact(s) deleted`);
+      setBulkDeleteConfirm(false);
+      toast.success(`${count} contact(s) deleted`);
     } catch (err) {
       console.error(err);
       toast.error('An unexpected error occurred');
@@ -426,8 +437,6 @@ const Contacts = () => {
   };
 
   const handleDeleteContact = async (contactId: string) => {
-    const confirmDelete = window.confirm('Are you sure you want to delete this contact?');
-    if (!confirmDelete) return;
     try {
       const { error } = await supabase.from('contacts').delete().eq('id', contactId);
       if (error) {
@@ -435,6 +444,7 @@ const Contacts = () => {
         return;
       }
       setContacts((prev) => prev.filter((c) => c.id !== contactId));
+      setDeleteConfirmId(null);
       toast.success('Contact deleted');
     } catch (err) {
       console.error(err);
@@ -679,7 +689,7 @@ const Contacts = () => {
                   <Button 
                     size="sm" 
                     variant="destructive"
-                    onClick={handleBulkDelete}
+                    onClick={() => setBulkDeleteConfirm(true)}
                   >
                     <Trash className="h-4 w-4 mr-1" />
                     Delete
@@ -845,7 +855,7 @@ const Contacts = () => {
                                     )}
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem 
-                                      onClick={() => handleDeleteContact(contact.id)}
+                                      onClick={() => setDeleteConfirmId(contact.id)}
                                       className="text-destructive"
                                     >
                                       <Trash className="h-4 w-4 mr-2" />
@@ -1289,6 +1299,48 @@ const Contacts = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Single delete confirmation */}
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Contact</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this contact? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteConfirmId && handleDeleteContact(deleteConfirmId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk delete confirmation */}
+      <AlertDialog open={bulkDeleteConfirm} onOpenChange={setBulkDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedIds.size} Contact(s)</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedIds.size} selected contact(s)? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 };
