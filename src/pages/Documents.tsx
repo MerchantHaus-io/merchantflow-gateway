@@ -215,15 +215,7 @@ const DocumentsPage = () => {
    * display toast notifications.
    */
   const handleDelete = async (doc: Document) => {
-    // Remove the file from storage
-    const { error: storageError } = await supabase.storage
-      .from("opportunity-documents")
-      .remove([doc.file_path]);
-    if (storageError) {
-      toast.error("Failed to delete file");
-      return;
-    }
-    // Remove the database record
+    // Remove the database record first to avoid orphaned records
     const { error: dbError } = await supabase
       .from("documents")
       .delete()
@@ -232,7 +224,16 @@ const DocumentsPage = () => {
       toast.error("Failed to delete document record");
       return;
     }
-    toast.success("Document deleted");
+    // Then remove the file from storage
+    const { error: storageError } = await supabase.storage
+      .from("opportunity-documents")
+      .remove([doc.file_path]);
+    if (storageError) {
+      console.warn("Document record deleted but file removal failed:", storageError);
+      toast.warning("Document removed but file cleanup failed — an admin may need to clean up storage.");
+    } else {
+      toast.success("Document deleted");
+    }
     fetchDocuments();
   };
 

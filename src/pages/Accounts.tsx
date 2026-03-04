@@ -54,7 +54,7 @@ const Accounts = () => {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [editingAccount, setEditingAccount] = useState<AccountWithContacts | null>(null);
-  const [selectedContactId, setSelectedContactId] = useState<string>('');
+  
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -165,7 +165,6 @@ const Accounts = () => {
 
   const openEditDialog = (account: AccountWithContacts) => {
     setEditingAccount(account);
-    setSelectedContactId('');
     setFormData({
       name: account.name || '',
       address1: account.address1 || '',
