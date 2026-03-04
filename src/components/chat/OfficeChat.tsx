@@ -13,8 +13,6 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as THREE from "three";
-import { Card } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -446,6 +444,9 @@ export default function OfficeChat({
   const [tvUnmuted,   setTvUnmuted]   = useState(false);
   const showTerminalRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  // 3D speech bubble sprites mapped by NPC email
+  const speechBubblesRef = useRef<Map<string, { sprite: THREE.Sprite; timeout: ReturnType<typeof setTimeout> }>>(new Map());
+  const prevMsgCountRef = useRef<number>(0);
 
   // Mobile touch refs
   const joystickRef = useRef({ x: 0, y: 0, active: false });
@@ -763,6 +764,83 @@ export default function OfficeChat({
     });
   }, [presence]);
 
+  // 3D speech bubbles above NPCs when new messages arrive
+  useEffect(() => {
+    const s = stateRef.current;
+    if (!s || messages.length <= prevMsgCountRef.current) {
+      prevMsgCountRef.current = messages.length;
+      return;
+    }
+    // Find new messages
+    const newMsgs = messages.slice(prevMsgCountRef.current);
+    prevMsgCountRef.current = messages.length;
+
+    newMsgs.forEach(msg => {
+      const senderEmail = msg.fromEmail;
+      if (senderEmail === currentUserEmail) return; // don't show own messages as 3D bubbles
+      const npcMesh = s.npcMeshes.get(senderEmail);
+      if (!npcMesh || !npcMesh.visible) return;
+
+      // Remove old bubble for this NPC
+      const existing = speechBubblesRef.current.get(senderEmail);
+      if (existing) {
+        npcMesh.remove(existing.sprite);
+        clearTimeout(existing.timeout);
+      }
+
+      // Create speech bubble sprite
+      const cv = document.createElement("canvas");
+      cv.width = 512; cv.height = 128;
+      const ctx = cv.getContext("2d")!;
+      // Bubble background
+      const pad = 16;
+      ctx.fillStyle = "rgba(255,255,255,0.92)";
+      const w = cv.width - pad * 2, h = cv.height - pad * 2;
+      const r = 20;
+      ctx.beginPath();
+      ctx.moveTo(pad + r, pad);
+      ctx.lineTo(pad + w - r, pad);
+      ctx.quadraticCurveTo(pad + w, pad, pad + w, pad + r);
+      ctx.lineTo(pad + w, pad + h - r);
+      ctx.quadraticCurveTo(pad + w, pad + h, pad + w - r, pad + h);
+      // Tail
+      ctx.lineTo(pad + w * 0.35, pad + h);
+      ctx.lineTo(pad + w * 0.25, pad + h + 14);
+      ctx.lineTo(pad + w * 0.2, pad + h);
+      ctx.lineTo(pad + r, pad + h);
+      ctx.quadraticCurveTo(pad, pad + h, pad, pad + h - r);
+      ctx.lineTo(pad, pad + r);
+      ctx.quadraticCurveTo(pad, pad, pad + r, pad);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = "rgba(0,0,0,0.15)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      // Text
+      ctx.fillStyle = "#1a1a1a";
+      ctx.font = "bold 22px Arial";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      const text = msg.body.length > 40 ? msg.body.slice(0, 37) + "…" : msg.body;
+      ctx.fillText(text, cv.width / 2, cv.height / 2);
+
+      const tex = new THREE.CanvasTexture(cv);
+      const spriteMat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+      const sprite = new THREE.Sprite(spriteMat);
+      const userScale = USERS.find(u => u.email === senderEmail)?.scale ?? 1;
+      sprite.position.y = 2.4 / userScale;
+      sprite.scale.set(3 / userScale, 0.8 / userScale, 1);
+      npcMesh.add(sprite);
+
+      const timeout = setTimeout(() => {
+        npcMesh.remove(sprite);
+        speechBubblesRef.current.delete(senderEmail);
+      }, 8000);
+
+      speechBubblesRef.current.set(senderEmail, { sprite, timeout });
+    });
+  }, [messages, currentUserEmail]);
+
   const handleSend = useCallback(() => {
     if (!inputVal.trim() || !activeChat) return;
     onSendMessage?.(activeChat.email, inputVal.trim());
@@ -828,75 +906,55 @@ export default function OfficeChat({
         </div>
       )}
 
-      {/* Chat panel */}
+      {/* Speech bubble chat — floating at bottom */}
       {activeChat && (
-        <div className={`absolute z-10 ${isMobile ? "inset-x-2 bottom-2" : "bottom-4 right-4 w-80"}`}>
-          <Card className="flex flex-col shadow-2xl border border-white/10 bg-black/90 text-white overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-              <div className="flex items-center gap-2">
-                <div
-                  className="w-2.5 h-2.5 rounded-full"
-                  style={{ background: (presence[activeChat.email] ?? true) ? "#22cc44" : "#666" }}
-                />
-                <span className="font-semibold text-sm">{activeChat.name}</span>
-                <span className="text-xs text-white/40">{activeChat.title}</span>
-              </div>
-              <button
-                onClick={() => setActiveChat(null)}
-                className="text-white/40 hover:text-white text-lg leading-none"
-              >×</button>
-            </div>
+        <div className={`absolute z-10 ${isMobile ? "inset-x-2 bottom-2" : "bottom-4 left-1/2 -translate-x-1/2 w-[480px] max-w-[90vw]"}`}>
+          {/* Recent messages as floating speech bubbles (last 4) */}
+          <div ref={scrollRef} className="flex flex-col gap-1.5 mb-2 max-h-40 overflow-hidden">
+            {chatMessages.slice(-4).map(msg => {
+              const isMe = msg.fromEmail === currentUserEmail;
+              return (
+                <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+                  <div className={`relative max-w-[80%] px-3 py-1.5 text-sm leading-snug ${
+                    isMe
+                      ? "bg-primary/90 text-primary-foreground rounded-2xl rounded-br-sm"
+                      : "bg-black/80 text-white rounded-2xl rounded-bl-sm"
+                  }`}
+                  style={{ backdropFilter: "blur(8px)" }}
+                  >
+                    {!isMe && (
+                      <span className="text-[10px] font-semibold text-white/60 block -mb-0.5">{activeChat.name}</span>
+                    )}
+                    <span className="line-clamp-2">{msg.body}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
 
-            {/* Messages */}
-            <ScrollArea className="h-56 px-4 py-3">
-              <div ref={scrollRef} className="flex flex-col gap-2">
-                {chatMessages.length === 0 && (
-                  <p className="text-xs text-white/30 text-center mt-8">
-                    No messages yet — say hi! 👋
-                  </p>
-                )}
-                {chatMessages.map(msg => {
-                  const isMe = msg.fromEmail === currentUserEmail;
-                  return (
-                    <div key={msg.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
-                      <div
-                        className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
-                          isMe
-                            ? "bg-indigo-600 text-white rounded-br-sm"
-                            : "bg-white/10 text-white rounded-bl-sm"
-                        }`}
-                      >
-                        {msg.body}
-                      </div>
-                      <span className="text-[10px] text-white/25 mt-0.5 px-1">
-                        {msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </ScrollArea>
-
-            {/* Input */}
-            <div className="flex gap-2 px-3 py-3 border-t border-white/10">
-              <Input
-                className="flex-1 bg-white/10 border-white/10 text-white placeholder:text-white/30 text-sm h-9"
-                placeholder={`Message ${activeChat.name}…`}
-                value={inputVal}
-                onChange={e => setInputVal(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter") handleSend(); }}
-                autoFocus
-              />
-              <Button
-                size="sm"
-                className="h-9 bg-indigo-600 hover:bg-indigo-500 text-white"
-                onClick={handleSend}
-              >
-                Send
-              </Button>
-            </div>
-          </Card>
+          {/* Compact input bar */}
+          <div className="flex gap-2 items-center bg-black/80 backdrop-blur-md rounded-full px-3 py-1.5 border border-white/10">
+            <span className="text-xs text-white/40 shrink-0">{activeChat.name}</span>
+            <Input
+              className="flex-1 bg-transparent border-0 text-white placeholder:text-white/30 text-sm h-7 focus-visible:ring-0 px-1"
+              placeholder="Type a message…"
+              value={inputVal}
+              onChange={e => setInputVal(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") handleSend(); }}
+              autoFocus
+            />
+            <Button
+              size="sm"
+              className="h-7 px-3 rounded-full bg-primary hover:bg-primary/80 text-primary-foreground text-xs"
+              onClick={handleSend}
+            >
+              Send
+            </Button>
+            <button
+              onClick={() => setActiveChat(null)}
+              className="text-white/40 hover:text-white text-sm leading-none ml-1"
+            >✕</button>
+          </div>
         </div>
       )}
 
