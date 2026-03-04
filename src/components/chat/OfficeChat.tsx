@@ -1029,7 +1029,7 @@ export default function OfficeChat({
             </div>
             <iframe
               key={tvUnmuted ? "unmuted" : "muted"}
-              src={`https://www.youtube.com/embed/videoseries?list=PLgRgJShyo_y6TjE1Sfyrh0ljWQcHutPOg&autoplay=1&${tvUnmuted ? "" : "mute=1&"}loop=1&controls=0&modestbranding=1&rel=0`}
+              src={`https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=1&${tvUnmuted ? "" : "mute=1&"}loop=1&playlist=dQw4w9WgXcQ&controls=0&modestbranding=1&rel=0`}
               className="w-full border-0 rounded-sm"
               style={{ aspectRatio: "16/9" }}
               title="Office TV"
