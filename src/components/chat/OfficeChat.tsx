@@ -18,6 +18,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // ── TYPES ─────────────────────────────────────────────────────────────────────
 
@@ -434,6 +435,7 @@ export default function OfficeChat({
     onlineIndicators: Map<string, THREE.Mesh>;
   } | null>(null);
 
+  const isMobile = useIsMobile();
   const [activeChat, setActiveChat] = useState<CRMUser | null>(null);
   const [inputVal,   setInputVal]   = useState("");
   const [locked,     setLocked]     = useState(false);
@@ -444,6 +446,10 @@ export default function OfficeChat({
   const [tvUnmuted,   setTvUnmuted]   = useState(false);
   const showTerminalRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Mobile touch refs
+  const joystickRef = useRef({ x: 0, y: 0, active: false });
+  const touchLookRef = useRef({ lastX: 0, lastY: 0, active: false });
 
   const currentUser = USERS.find(u => u.email === currentUserEmail)!;
   const others      = USERS.filter(u => u.email !== currentUserEmail);
@@ -523,19 +529,49 @@ export default function OfficeChat({
     };
     stateRef.current = state;
 
-    // Pointer lock
-    renderer.domElement.addEventListener("click", () => {
-      if (!activeChat) renderer.domElement.requestPointerLock();
-    });
-    document.addEventListener("pointerlockchange", () => {
-      state.locked = document.pointerLockElement === renderer.domElement;
-      setLocked(state.locked);
-    });
-    document.addEventListener("mousemove", (e) => {
-      if (!state.locked) return;
-      state.yaw   -= e.movementX * 0.002;
-      state.pitch  = Math.max(-1.1, Math.min(1.1, state.pitch - e.movementY * 0.002));
-    });
+    // Pointer lock (desktop only)
+    if (!isMobile) {
+      renderer.domElement.addEventListener("click", () => {
+        if (!activeChat) renderer.domElement.requestPointerLock();
+      });
+      document.addEventListener("pointerlockchange", () => {
+        state.locked = document.pointerLockElement === renderer.domElement;
+        setLocked(state.locked);
+      });
+      document.addEventListener("mousemove", (e) => {
+        if (!state.locked) return;
+        state.yaw   -= e.movementX * 0.002;
+        state.pitch  = Math.max(-1.1, Math.min(1.1, state.pitch - e.movementY * 0.002));
+      });
+    } else {
+      // Mobile: always "locked" for rendering crosshair-free
+      state.locked = true;
+      setLocked(true);
+
+      // Touch look — right side of screen
+      const onTouchStart = (e: TouchEvent) => {
+        const t = e.changedTouches[0];
+        if (!t) return;
+        // Only handle touches on the right half (look) that aren't on UI
+        if ((e.target as HTMLElement).closest('.mobile-joystick, .mobile-interact-btn, [class*="Card"], button, input')) return;
+        touchLookRef.current = { lastX: t.clientX, lastY: t.clientY, active: true };
+      };
+      const onTouchMove = (e: TouchEvent) => {
+        if (!touchLookRef.current.active) return;
+        const t = e.changedTouches[0];
+        if (!t) return;
+        const dx = t.clientX - touchLookRef.current.lastX;
+        const dy = t.clientY - touchLookRef.current.lastY;
+        state.yaw -= dx * 0.004;
+        state.pitch = Math.max(-1.1, Math.min(1.1, state.pitch - dy * 0.004));
+        touchLookRef.current.lastX = t.clientX;
+        touchLookRef.current.lastY = t.clientY;
+      };
+      const onTouchEnd = () => { touchLookRef.current.active = false; };
+      renderer.domElement.addEventListener("touchstart", onTouchStart, { passive: true });
+      renderer.domElement.addEventListener("touchmove", onTouchMove, { passive: true });
+      renderer.domElement.addEventListener("touchend", onTouchEnd, { passive: true });
+    }
 
     // Keys
     const onDown = (e: KeyboardEvent) => {
@@ -604,10 +640,11 @@ export default function OfficeChat({
       const fwd = new THREE.Vector3(0, 0, -1).applyEuler(yawEuler);
       const rgt = new THREE.Vector3(1, 0,  0).applyEuler(yawEuler);
       const spd = 3.5 * dt;
-      const isMoving = state.keys.has("w") || state.keys.has("s") || state.keys.has("a") || state.keys.has("d");
+      const jx = joystickRef.current.x;
+      const jy = joystickRef.current.y;
+      const isMoving = state.keys.has("w") || state.keys.has("s") || state.keys.has("a") || state.keys.has("d") || joystickRef.current.active;
 
       if (isMoving && showTerminalRef.current) {
-        // Movement disengages the terminal
         showTerminalRef.current = false;
         setShowTerminal(false);
       }
@@ -617,6 +654,11 @@ export default function OfficeChat({
         if (state.keys.has("s")) state.playerPos.addScaledVector(fwd, -spd);
         if (state.keys.has("a")) state.playerPos.addScaledVector(rgt, -spd);
         if (state.keys.has("d")) state.playerPos.addScaledVector(rgt,  spd);
+        // Mobile joystick input
+        if (joystickRef.current.active) {
+          state.playerPos.addScaledVector(fwd, -jy * spd);
+          state.playerPos.addScaledVector(rgt,  jx * spd);
+        }
       }
 
       state.playerPos.x = Math.max(-ROOM, Math.min(ROOM, state.playerPos.x));
@@ -740,8 +782,8 @@ export default function OfficeChat({
       {/* Three.js canvas */}
       <div ref={mountRef} className="w-full h-full" />
 
-      {/* Lock hint */}
-      {!locked && !activeChat && (
+      {/* Lock hint (desktop only) */}
+      {!isMobile && !locked && !activeChat && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <Badge variant="secondary" className="text-sm px-4 py-2 bg-black/70 text-white border-0">
             🖱️ Click to look around
@@ -749,8 +791,8 @@ export default function OfficeChat({
         </div>
       )}
 
-      {/* Crosshair */}
-      {locked && (
+      {/* Crosshair (desktop only) */}
+      {!isMobile && locked && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="w-4 h-4 relative">
             <div className="absolute left-1/2 top-0 w-px h-full bg-white/70 -translate-x-1/2" />
@@ -760,7 +802,7 @@ export default function OfficeChat({
       )}
 
       {/* Nearby desk prompt (empty desk) */}
-      {nearDesk && !activeChat && !showTerminal && (
+      {nearDesk && !activeChat && !showTerminal && !isMobile && (
         <div className="absolute bottom-24 left-1/2 -translate-x-1/2 pointer-events-none">
           <Badge className="bg-black/80 text-white border-0 text-sm px-4 py-2">
             Press <kbd className="mx-1 px-1 bg-white/20 rounded">E</kbd> to use terminal
@@ -769,7 +811,7 @@ export default function OfficeChat({
       )}
 
       {/* Near TV prompt */}
-      {nearTV && !activeChat && !showTerminal && (
+      {nearTV && !activeChat && !showTerminal && !isMobile && (
         <div className="absolute bottom-24 left-1/2 -translate-x-1/2 pointer-events-none">
           <Badge className="bg-black/80 text-white border-0 text-sm px-4 py-2">
             Press <kbd className="mx-1 px-1 bg-white/20 rounded">E</kbd> to {tvUnmuted ? "mute" : "unmute"} TV
@@ -778,7 +820,7 @@ export default function OfficeChat({
       )}
 
       {/* Nearby NPC prompt */}
-      {nearby && !activeChat && !showTerminal && (
+      {nearby && !activeChat && !showTerminal && !isMobile && (
         <div className="absolute bottom-24 left-1/2 -translate-x-1/2 pointer-events-none">
           <Badge className="bg-black/80 text-white border-0 text-sm px-4 py-2">
             Press <kbd className="mx-1 px-1 bg-white/20 rounded">E</kbd> or click to chat with {nearby.name}
@@ -788,7 +830,7 @@ export default function OfficeChat({
 
       {/* Chat panel */}
       {activeChat && (
-        <div className="absolute bottom-4 right-4 w-80 z-10">
+        <div className={`absolute z-10 ${isMobile ? "inset-x-2 bottom-2" : "bottom-4 right-4 w-80"}`}>
           <Card className="flex flex-col shadow-2xl border border-white/10 bg-black/90 text-white overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
@@ -916,34 +958,121 @@ export default function OfficeChat({
         </div>
       )}
 
-      {/* Always-on YouTube TV — MrBallen playlist */}
-      <div className="absolute bottom-3 left-3 z-10" style={{ width: 220 }}>
-        <div className="rounded-lg overflow-hidden shadow-lg" style={{ background: "#0a0a0a", padding: "4px 4px 2px 4px", border: "1px solid #333" }}>
-          <div className="flex items-center justify-between px-1 mb-1">
-            <span className="text-[8px] font-bold tracking-widest text-white/30 uppercase">Office TV</span>
-            <div className="flex items-center gap-1">
-              <div className={`w-1.5 h-1.5 rounded-full ${tvUnmuted ? "bg-green-500" : "bg-red-500/60"}`} />
-              <span className="text-[8px] text-white/20">{tvUnmuted ? "🔊" : "🔇"}</span>
+      {/* Always-on YouTube TV — MrBallen playlist (hidden on mobile — conflicts with joystick) */}
+      {!isMobile && (
+        <div className="absolute bottom-3 left-3 z-10" style={{ width: 220 }}>
+          <div className="rounded-lg overflow-hidden shadow-lg" style={{ background: "#0a0a0a", padding: "4px 4px 2px 4px", border: "1px solid #333" }}>
+            <div className="flex items-center justify-between px-1 mb-1">
+              <span className="text-[8px] font-bold tracking-widest text-white/30 uppercase">Office TV</span>
+              <div className="flex items-center gap-1">
+                <div className={`w-1.5 h-1.5 rounded-full ${tvUnmuted ? "bg-green-500" : "bg-red-500/60"}`} />
+                <span className="text-[8px] text-white/20">{tvUnmuted ? "🔊" : "🔇"}</span>
+              </div>
+            </div>
+            <iframe
+              key={tvUnmuted ? "unmuted" : "muted"}
+              src={`https://www.youtube.com/embed/videoseries?list=PLgRgJShyo_y6TjE1Sfyrh0ljWQcHutPOg&autoplay=1&${tvUnmuted ? "" : "mute=1&"}loop=1&controls=0&modestbranding=1&rel=0`}
+              className="w-full border-0 rounded-sm"
+              style={{ aspectRatio: "16/9" }}
+              title="Office TV"
+              allow="autoplay; encrypted-media"
+              referrerPolicy="no-referrer"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Controls hint (desktop) */}
+      {!isMobile && (
+        <div className="absolute top-3 left-3 pointer-events-none">
+          <Badge variant="outline" className="bg-black/60 text-white/60 border-white/10 text-xs">
+            WASD move · Mouse look · E to interact · ESC release
+          </Badge>
+        </div>
+      )}
+
+      {/* ── MOBILE CONTROLS ── */}
+      {isMobile && !activeChat && !showTerminal && (
+        <>
+          {/* Virtual Joystick — bottom left */}
+          <div
+            className="mobile-joystick absolute bottom-6 left-6 z-20"
+            style={{ width: 120, height: 120 }}
+            onTouchStart={(e) => {
+              e.stopPropagation();
+              const rect = e.currentTarget.getBoundingClientRect();
+              const cx = rect.left + rect.width / 2;
+              const cy = rect.top + rect.height / 2;
+              const t = e.touches[0];
+              const dx = (t.clientX - cx) / (rect.width / 2);
+              const dy = (t.clientY - cy) / (rect.height / 2);
+              joystickRef.current = { x: Math.max(-1, Math.min(1, dx)), y: Math.max(-1, Math.min(1, dy)), active: true };
+            }}
+            onTouchMove={(e) => {
+              e.stopPropagation();
+              const rect = e.currentTarget.getBoundingClientRect();
+              const cx = rect.left + rect.width / 2;
+              const cy = rect.top + rect.height / 2;
+              const t = e.touches[0];
+              const dx = (t.clientX - cx) / (rect.width / 2);
+              const dy = (t.clientY - cy) / (rect.height / 2);
+              joystickRef.current = { x: Math.max(-1, Math.min(1, dx)), y: Math.max(-1, Math.min(1, dy)), active: true };
+            }}
+            onTouchEnd={() => { joystickRef.current = { x: 0, y: 0, active: false }; }}
+          >
+            {/* Joystick base */}
+            <div className="w-full h-full rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
+              {/* Joystick knob */}
+              <div className="w-12 h-12 rounded-full bg-white/30 border border-white/40" />
             </div>
           </div>
-          <iframe
-            key={tvUnmuted ? "unmuted" : "muted"}
-            src={`https://www.youtube.com/embed/videoseries?list=PLgRgJShyo_y6TjE1Sfyrh0ljWQcHutPOg&autoplay=1&${tvUnmuted ? "" : "mute=1&"}loop=1&controls=0&modestbranding=1&rel=0`}
-            className="w-full border-0 rounded-sm"
-            style={{ aspectRatio: "16/9" }}
-            title="Office TV"
-            allow="autoplay; encrypted-media"
-            referrerPolicy="no-referrer"
-          />
-        </div>
-      </div>
 
-      {/* Controls hint */}
-      <div className="absolute top-3 left-3 pointer-events-none">
-        <Badge variant="outline" className="bg-black/60 text-white/60 border-white/10 text-xs">
-          WASD move · Mouse look · E to interact · ESC release
-        </Badge>
-      </div>
+          {/* Interact button — bottom right */}
+          {(nearby || nearDesk || nearTV) && (
+            <button
+              className="mobile-interact-btn absolute bottom-8 right-8 z-20 w-16 h-16 rounded-full bg-primary/80 text-white font-bold text-xs flex items-center justify-center border-2 border-white/30 active:scale-90 transition-transform"
+              onTouchStart={(e) => {
+                e.stopPropagation();
+                if (nearby) {
+                  setActiveChat(nearby);
+                } else if (nearTV) {
+                  setTvUnmuted(prev => !prev);
+                } else if (nearDesk) {
+                  setShowTerminal(true);
+                }
+              }}
+            >
+              {nearby ? `Chat\n${nearby.name}` : nearTV ? (tvUnmuted ? "Mute" : "Unmute") : "Terminal"}
+            </button>
+          )}
+
+          {/* Mobile proximity indicator */}
+          {(nearby || nearDesk || nearTV) && (
+            <div className="absolute bottom-28 left-1/2 -translate-x-1/2 pointer-events-none z-20">
+              <Badge className="bg-black/80 text-white border-0 text-xs px-3 py-1">
+                {nearby ? `Near ${nearby.name}` : nearTV ? "Near TV" : "Near Terminal"}
+              </Badge>
+            </div>
+          )}
+
+          {/* Mobile hint */}
+          <div className="absolute top-3 left-3 pointer-events-none z-20">
+            <Badge variant="outline" className="bg-black/60 text-white/60 border-white/10 text-[10px]">
+              Drag to look · Joystick to move
+            </Badge>
+          </div>
+        </>
+      )}
+
+      {/* Mobile close button for terminal */}
+      {isMobile && showTerminal && (
+        <button
+          onClick={() => setShowTerminal(false)}
+          className="absolute top-4 right-4 z-30 px-3 py-2 rounded-lg bg-white/10 text-white text-xs font-medium backdrop-blur-sm"
+        >
+          ✕ Close
+        </button>
+      )}
     </div>
   );
 }
