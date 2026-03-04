@@ -54,22 +54,32 @@ const CsvImport = () => {
 
   useEffect(() => {
     const loadExistingData = async () => {
-      const { data: accounts } = await supabase.from("accounts").select("id, name");
-      const { data: contacts } = await supabase.from("contacts").select("email, phone");
+      try {
+        const { data: accounts, error: accountsErr } = await supabase.from("accounts").select("id, name");
+        const { data: contacts, error: contactsErr } = await supabase.from("contacts").select("email, phone");
 
-      const accountMap: Record<string, string> = {};
-      accounts?.forEach((account) => {
-        if (account.name) accountMap[account.name.toLowerCase()] = account.id;
-      });
-      const contactEmails = new Set<string>();
-      const contactPhones = new Set<string>();
-      contacts?.forEach((contact) => {
-        if (contact.email) contactEmails.add(contact.email.toLowerCase());
-        if (contact.phone) contactPhones.add(contact.phone.toLowerCase());
-      });
+        if (accountsErr || contactsErr) {
+          toast.error("Failed to load existing data for duplicate detection. Duplicates may not be flagged.");
+          console.error("CSV duplicate-detection query error:", accountsErr || contactsErr);
+        }
 
-      setExistingAccounts(accountMap);
-      setExistingContacts({ email: contactEmails, phone: contactPhones });
+        const accountMap: Record<string, string> = {};
+        (accounts || []).forEach((account) => {
+          if (account.name) accountMap[account.name.toLowerCase()] = account.id;
+        });
+        const contactEmails = new Set<string>();
+        const contactPhones = new Set<string>();
+        (contacts || []).forEach((contact) => {
+          if (contact.email) contactEmails.add(contact.email.toLowerCase());
+          if (contact.phone) contactPhones.add(contact.phone.toLowerCase());
+        });
+
+        setExistingAccounts(accountMap);
+        setExistingContacts({ email: contactEmails, phone: contactPhones });
+      } catch (err) {
+        console.error("Failed to load existing data:", err);
+        toast.error("Failed to load existing data for duplicate detection.");
+      }
     };
 
     loadExistingData();
