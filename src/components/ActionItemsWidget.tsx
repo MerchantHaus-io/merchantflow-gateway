@@ -170,16 +170,23 @@ export function ActionItemsWidget() {
 
   // Toggle completion
   const toggleItem = async (item: ActionItem) => {
-    await supabase.from("action_items").update({
+    const { error } = await supabase.from("action_items").update({
       completed: !item.completed,
       completed_at: !item.completed ? new Date().toISOString() : null,
     }).eq("id", item.id);
+    if (error) {
+      toast.error("Failed to update item");
+      return;
+    }
     playNoticeBoardSound();
   };
 
   // Delete item
   const deleteItem = async (id: string) => {
-    await supabase.from("action_items").delete().eq("id", id);
+    const { error } = await supabase.from("action_items").delete().eq("id", id);
+    if (error) {
+      toast.error("Failed to delete item");
+    }
   };
 
   const toggleUser = (email: string) => {

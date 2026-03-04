@@ -95,7 +95,7 @@ const CommentsTab = ({ opportunityId }: CommentsTabProps) => {
 
     const { error } = await supabase
       .from('comments')
-      .update({ content: editContent.trim() })
+      .update({ content: editContent.trim(), updated_at: new Date().toISOString() })
       .eq('id', id);
 
     if (error) {
