@@ -722,6 +722,7 @@ export default function OfficeChat({
   const [nearTV, setNearTV] = useState(false);
   const [tvUnmuted, setTvUnmuted] = useState(false);
   const tvOverlayRef = useRef<HTMLDivElement>(null);
+  const tvOverlayVisibleRef = useRef(false);
   const [nearInteract, setNearInteract] = useState<InteractionPoint | null>(null);
   const [isSitting, setIsSitting] = useState(false);
   const [showWhiteboard, setShowWhiteboard] = useState(false);
@@ -1096,13 +1097,22 @@ export default function OfficeChat({
           const tvCenter = new THREE.Vector3(ROOM - 0.14, 2.8, 6);
           const tvTL = new THREE.Vector3(ROOM - 0.14, 2.8 + 1.15, 6 - 2.0);
           const tvBR = new THREE.Vector3(ROOM - 0.14, 2.8 - 1.15, 6 + 2.0);
-          
+
           const toTV = tvCenter.clone().sub(camera.position);
           const camDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
           const dot = toTV.normalize().dot(camDir);
           const dist = camera.position.distanceTo(tvCenter);
-          
-          if (dot > 0.1 && dist < 30) {
+
+          const centerCam = tvCenter.clone().applyMatrix4(camera.matrixWorldInverse);
+          const tlCam = tvTL.clone().applyMatrix4(camera.matrixWorldInverse);
+          const brCam = tvBR.clone().applyMatrix4(camera.matrixWorldInverse);
+          const nearClipBuffer = camera.near + 0.06;
+          const fullyInFrontOfNearPlane =
+            centerCam.z < -nearClipBuffer &&
+            tlCam.z < -nearClipBuffer &&
+            brCam.z < -nearClipBuffer;
+
+          if (dot > 0.12 && dist < 30 && fullyInFrontOfNearPlane) {
             const tl = tvTL.clone().project(camera);
             const br = tvBR.clone().project(camera);
             const cw = renderer.domElement.clientWidth;
@@ -1111,22 +1121,44 @@ export default function OfficeChat({
             const sy1 = (-tl.y * 0.5 + 0.5) * ch;
             const sx2 = (br.x * 0.5 + 0.5) * cw;
             const sy2 = (-br.y * 0.5 + 0.5) * ch;
-            const w = Math.abs(sx2 - sx1);
-            const h = Math.abs(sy2 - sy1);
-            const x = Math.min(sx1, sx2);
-            const y = Math.min(sy1, sy2);
-            
-            if (w > 20 && h > 12) {
-              tvEl.style.display = 'block';
-              tvEl.style.left = `${x}px`;
-              tvEl.style.top = `${y}px`;
-              tvEl.style.width = `${w}px`;
-              tvEl.style.height = `${h}px`;
-            } else {
-              tvEl.style.display = 'none';
+
+            let x = Math.min(sx1, sx2);
+            let y = Math.min(sy1, sy2);
+            let w = Math.abs(sx2 - sx1);
+            let h = Math.abs(sy2 - sy1);
+
+            // Clamp to viewport to prevent unstable giant rects at close range
+            const maxX = cw - 2;
+            const maxY = ch - 2;
+            const clampedX = Math.max(0, Math.min(maxX, x));
+            const clampedY = Math.max(0, Math.min(maxY, y));
+            const clampedW = Math.max(0, Math.min(w, cw - clampedX));
+            const clampedH = Math.max(0, Math.min(h, ch - clampedY));
+
+            if (
+              Number.isFinite(clampedX) &&
+              Number.isFinite(clampedY) &&
+              Number.isFinite(clampedW) &&
+              Number.isFinite(clampedH) &&
+              clampedW > 20 &&
+              clampedH > 12
+            ) {
+              tvOverlayVisibleRef.current = true;
+              tvEl.style.visibility = 'visible';
+              tvEl.style.opacity = '1';
+              tvEl.style.left = `${clampedX}px`;
+              tvEl.style.top = `${clampedY}px`;
+              tvEl.style.width = `${clampedW}px`;
+              tvEl.style.height = `${clampedH}px`;
+            } else if (tvOverlayVisibleRef.current) {
+              tvOverlayVisibleRef.current = false;
+              tvEl.style.visibility = 'hidden';
+              tvEl.style.opacity = '0';
             }
-          } else {
-            tvEl.style.display = 'none';
+          } else if (tvOverlayVisibleRef.current) {
+            tvOverlayVisibleRef.current = false;
+            tvEl.style.visibility = 'hidden';
+            tvEl.style.opacity = '0';
           }
         }
       }
@@ -1427,7 +1459,7 @@ export default function OfficeChat({
       <div
         ref={tvOverlayRef}
         className="absolute z-10 overflow-hidden pointer-events-none"
-        style={{ display: 'none' }}
+        style={{ visibility: 'hidden', opacity: 0, transition: 'opacity 120ms linear', willChange: 'transform, width, height' }}
       >
         <iframe
           src={`https://www.youtube-nocookie.com/embed/T0C9d8anDT4?autoplay=1&mute=${tvUnmuted ? "0" : "1"}&loop=1&playlist=T0C9d8anDT4&controls=0&modestbranding=1&rel=0&playsinline=1&enablejsapi=1`}
