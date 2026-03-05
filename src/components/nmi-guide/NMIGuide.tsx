@@ -273,11 +273,20 @@ const StatusPill = ({ status }: { status: string }) => {
 // ─────────────────────────────────────────────────────────────────
 // REFERENCE CONTENT
 // ─────────────────────────────────────────────────────────────────
-const ReferenceContent = ({ scrollTo }: { scrollTo: string | null }) => {
+const ReferenceContent = ({ scrollTo, viewportRef }: { scrollTo: string | null; viewportRef?: React.RefObject<HTMLDivElement> }) => {
   const refs = useRef<Record<string, HTMLElement | null>>({});
   useEffect(() => {
-    if (scrollTo && refs.current[scrollTo]) refs.current[scrollTo]!.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, [scrollTo]);
+    if (scrollTo && refs.current[scrollTo]) {
+      const el = refs.current[scrollTo]!;
+      const viewport = viewportRef?.current;
+      if (viewport) {
+        const top = el.offsetTop - viewport.offsetTop;
+        viewport.scrollTo({ top: Math.max(0, top - 8), behavior: 'smooth' });
+      } else {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  }, [scrollTo, viewportRef]);
   const ref = (id: string) => (el: HTMLElement | null) => { refs.current[id] = el; };
 
   return (
@@ -705,6 +714,7 @@ const WalkthroughPane = () => {
 // MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────────
 const NMIGuide: React.FC = () => {
+  const contentViewportRef = useRef<HTMLDivElement>(null);
   const [mode, setMode] = useState<GuideMode>('reference');
   const [query, setQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -898,8 +908,8 @@ const NMIGuide: React.FC = () => {
         </div>
 
         {/* Content */}
-        <ScrollArea className="flex-1">
-          {mode === 'reference' ? <ReferenceContent scrollTo={scrollTarget} /> : <WalkthroughPane />}
+        <ScrollArea className="flex-1" viewportRef={contentViewportRef}>
+          {mode === 'reference' ? <ReferenceContent scrollTo={scrollTarget} viewportRef={contentViewportRef} /> : <WalkthroughPane />}
         </ScrollArea>
       </div>
     </div>
