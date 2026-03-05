@@ -1393,7 +1393,7 @@ export default function OfficeChat({
             </div>
             <iframe
               key={tvUnmuted ? "unmuted" : "muted"}
-              src={`https://www.youtube-nocookie.com/embed/videoseries?list=PLofht4PTcKYnaH8w5olJCI-wUVxuoMHqM&autoplay=1&mute=${tvUnmuted ? "0" : "1"}&loop=1&controls=0&modestbranding=1&rel=0&playsinline=1&enablejsapi=1`}
+              src={`https://www.youtube-nocookie.com/embed/T0C9d8anDT4?autoplay=1&mute=${tvUnmuted ? "0" : "1"}&loop=1&playlist=T0C9d8anDT4&controls=0&modestbranding=1&rel=0&playsinline=1&enablejsapi=1`}
               className="w-full border-0 rounded-sm" style={{ aspectRatio: "16/9" }} title="Office TV"
               allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
               allowFullScreen
