@@ -183,8 +183,8 @@ const INTERACT_POINTS: InteractionPoint[] = [
   { id: "whiteboard", pos: new THREE.Vector3(0, 0, -20.5), label: "Use whiteboard", action: "whiteboard", radius: 2.5 },
   // Meeting room table
   { id: "meeting-sit", pos: new THREE.Vector3(16, 0, 8), label: "Join meeting", action: "sit", radius: 2 },
-  // TV
-  { id: "tv", pos: new THREE.Vector3(20, 0, 6), label: "Toggle TV", action: "tv", radius: 3.5 },
+  // TV lounge couch — watch TV
+  { id: "tv-couch", pos: new THREE.Vector3(17, 0, 6), label: "Watch TV", action: "tv", radius: 2.5 },
 ];
 
 const INTERACT_DIST = 2.5;
@@ -640,12 +640,29 @@ function buildRoom(): THREE.Group {
   // Bezel
   const tvBezel = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.5, 4.2), new THREE.MeshStandardMaterial({ color: 0x0a0a0a }));
   tvBezel.position.set(wOff - 0.08, 2.8, 6); g.add(tvBezel);
-  // Screen
-  const tvScreen = new THREE.Mesh(new THREE.BoxGeometry(0.06, 2.3, 4.0), new THREE.MeshStandardMaterial({ color: 0x0d1117, emissive: 0x1a2a3a, emissiveIntensity: 0.6 }));
+  // Screen — idle image texture
+  const tvIdleTex = new THREE.TextureLoader().load('/tv-idle-screen.jpg');
+  const tvScreenMat = new THREE.MeshStandardMaterial({ map: tvIdleTex, emissive: 0xffffff, emissiveMap: tvIdleTex, emissiveIntensity: 0.5 });
+  const tvScreen = new THREE.Mesh(new THREE.BoxGeometry(0.06, 2.3, 4.0), tvScreenMat);
   tvScreen.position.set(wOff - 0.12, 2.8, 6); g.add(tvScreen);
   // TV bottom strip
   const tvStrip = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 4.2), new THREE.MeshStandardMaterial({ color: 0x111111 }));
   tvStrip.position.set(wOff - 0.08, 1.55, 6); g.add(tvStrip);
+
+  // ── TV Lounge Couch (facing east wall TV) ──
+  const tvCouchGroup = new THREE.Group();
+  const couchSeat = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.35, 3.0), couchMat);
+  couchSeat.position.y = 0.32; tvCouchGroup.add(couchSeat);
+  const couchBack = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.65, 3.0), couchMat);
+  couchBack.position.set(-0.38, 0.62, 0); tvCouchGroup.add(couchBack);
+  ([-1.55, 1.55] as number[]).forEach(az => {
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.3, 0.12), couchMat);
+    arm.position.set(0, 0.45, az); tvCouchGroup.add(arm);
+  });
+  tvCouchGroup.position.set(17, 0, 6);
+  tvCouchGroup.rotation.y = Math.PI / 2; // face east wall
+  g.add(tvCouchGroup);
+  addCollider(17, 6, 1.5, 0.5); // couch collider
 
   // ── Plants ──
   const plantPositions: [number, number][] = [
@@ -721,6 +738,8 @@ export default function OfficeChat({
   const [showTerminal, setShowTerminal] = useState(false);
   const [nearTV, setNearTV] = useState(false);
   const [tvUnmuted, setTvUnmuted] = useState(false);
+  const [watchingTV, setWatchingTV] = useState(false);
+  const watchingTVRef = useRef(false);
   const tvOverlayRef = useRef<HTMLDivElement>(null);
   const [nearInteract, setNearInteract] = useState<InteractionPoint | null>(null);
   const [isSitting, setIsSitting] = useState(false);
@@ -928,6 +947,7 @@ export default function OfficeChat({
       if (isPlayerMoving) {
         setIsSitting(false);
         setShowWhiteboard(false);
+        if (watchingTVRef.current) { watchingTVRef.current = false; setWatchingTV(false); }
       }
 
       if (!showTerminalRef.current) {
@@ -1156,7 +1176,10 @@ export default function OfficeChat({
           setActiveChat(nearby);
           document.exitPointerLock();
         } else if (nearTV && !activeChat && !showTerminal) {
-          setTvUnmuted(prev => !prev);
+          watchingTVRef.current = !watchingTVRef.current;
+          setWatchingTV(watchingTVRef.current);
+          setTvUnmuted(watchingTVRef.current);
+          if (watchingTVRef.current) document.exitPointerLock();
         } else if (nearDesk && !activeChat && !showTerminal) {
           setShowTerminal(true);
           document.exitPointerLock();
@@ -1170,13 +1193,17 @@ export default function OfficeChat({
             setCoffeeEmote(true);
             setTimeout(() => setCoffeeEmote(false), 3000);
           } else if (nearInteract.action === "tv") {
-            setTvUnmuted(prev => !prev);
+            watchingTVRef.current = !watchingTVRef.current;
+            setWatchingTV(watchingTVRef.current);
+            setTvUnmuted(watchingTVRef.current);
+            if (watchingTVRef.current) document.exitPointerLock();
           }
         }
       }
       if (e.key === "Escape") {
         if (showTerminal) setShowTerminal(false);
         if (showWhiteboard) setShowWhiteboard(false);
+        if (watchingTVRef.current) { watchingTVRef.current = false; setWatchingTV(false); setTvUnmuted(false); }
       }
     };
     window.addEventListener("keydown", onKey);
@@ -1329,10 +1356,19 @@ export default function OfficeChat({
       )}
 
       {/* Near TV */}
-      {nearTV && !activeChat && !showTerminal && !isMobile && (
+      {nearTV && !activeChat && !showTerminal && !watchingTV && !isMobile && (
         <div className="absolute bottom-24 left-1/2 -translate-x-1/2 pointer-events-none">
           <Badge className="bg-black/80 text-white border-0 text-sm px-4 py-2">
-            Press <kbd className="mx-1 px-1 bg-white/20 rounded">E</kbd> to {tvUnmuted ? "mute" : "unmute"} TV
+            Press <kbd className="mx-1 px-1 bg-white/20 rounded">E</kbd> to {watchingTV ? "stop watching" : "watch"} TV
+          </Badge>
+        </div>
+      )}
+
+      {/* Watching TV overlay */}
+      {watchingTV && !isMobile && (
+        <div className="absolute top-3 right-3 z-20 pointer-events-none">
+          <Badge className="bg-black/80 text-white border-0 text-sm px-4 py-2 animate-pulse">
+            📺 Watching TV — press <kbd className="mx-1 px-1 bg-white/20 rounded">ESC</kbd> or move to exit
           </Badge>
         </div>
       )}
@@ -1423,20 +1459,22 @@ export default function OfficeChat({
         </div>
       )}
 
-      {/* TV — projected onto 3D wall via ref (no React re-renders) */}
-      <div
-        ref={tvOverlayRef}
-        className="absolute z-10 overflow-hidden pointer-events-none"
-        style={{ display: 'none' }}
-      >
-        <iframe
-          src={`https://www.youtube-nocookie.com/embed/T0C9d8anDT4?autoplay=1&mute=${tvUnmuted ? "0" : "1"}&loop=1&playlist=T0C9d8anDT4&controls=0&modestbranding=1&rel=0&playsinline=1&enablejsapi=1`}
-          className="w-full h-full border-0 pointer-events-none"
-          title="Office TV"
-          allow="autoplay; encrypted-media; picture-in-picture"
-          style={{ pointerEvents: "none" }}
-        />
-      </div>
+      {/* TV — projected onto 3D wall via ref, only when watching */}
+      {watchingTV && (
+        <div
+          ref={tvOverlayRef}
+          className="absolute z-10 overflow-hidden pointer-events-none"
+          style={{ display: 'none' }}
+        >
+          <iframe
+            src={`https://www.youtube-nocookie.com/embed/T0C9d8anDT4?autoplay=1&mute=0&loop=1&playlist=T0C9d8anDT4&controls=0&modestbranding=1&rel=0&playsinline=1&enablejsapi=1`}
+            className="w-full h-full border-0 pointer-events-none"
+            title="Office TV"
+            allow="autoplay; encrypted-media; picture-in-picture"
+            style={{ pointerEvents: "none" }}
+          />
+        </div>
+      )}
 
       {/* Controls hint */}
       {!isMobile && (
