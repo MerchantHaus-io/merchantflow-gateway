@@ -184,11 +184,11 @@ const INTERACT_POINTS: InteractionPoint[] = [
   // Meeting room table
   { id: "meeting-sit", pos: new THREE.Vector3(16, 0, 8), label: "Join meeting", action: "sit", radius: 2 },
   // TV
-  { id: "tv", pos: new THREE.Vector3(0, 0, 14), label: "Toggle TV", action: "tv", radius: 3.5 },
+  { id: "tv", pos: new THREE.Vector3(20, 0, 6), label: "Toggle TV", action: "tv", radius: 3.5 },
 ];
 
 const INTERACT_DIST = 2.5;
-const TV_POS = new THREE.Vector3(0, 0, 14);  // South end of lobby, visible from open floor
+const TV_POS = new THREE.Vector3(20, 0, 6);  // East wall, visible from open floor
 
 // ── CHARACTER BUILDER ─────────────────────────────────────────────────────────
 
@@ -633,19 +633,19 @@ function buildRoom(): THREE.Group {
   signSprite.scale.set(5, 1.25, 1);
   g.add(signSprite);
 
-  // ── TV (south wall above reception, facing north into lobby) ──
+  // ── TV (east wall, facing west into the office) ──
   // Mount bracket
-  const tvBracket = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.06, 0.3), new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.2 }));
-  tvBracket.position.set(0, 2.4, wOff - 0.3); g.add(tvBracket);
-  // Bezel (wider TV, portrait-landscape 16:9)
-  const tvBezel = new THREE.Mesh(new THREE.BoxGeometry(4.2, 2.5, 0.1), new THREE.MeshStandardMaterial({ color: 0x0a0a0a }));
-  tvBezel.position.set(0, 2.8, wOff - 0.08); g.add(tvBezel);
+  const tvBracket = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.06, 0.15), new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.2 }));
+  tvBracket.position.set(wOff - 0.3, 2.4, 6); g.add(tvBracket);
+  // Bezel
+  const tvBezel = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.5, 4.2), new THREE.MeshStandardMaterial({ color: 0x0a0a0a }));
+  tvBezel.position.set(wOff - 0.08, 2.8, 6); g.add(tvBezel);
   // Screen
-  const tvScreen = new THREE.Mesh(new THREE.BoxGeometry(4.0, 2.3, 0.06), new THREE.MeshStandardMaterial({ color: 0x0d1117, emissive: 0x1a2a3a, emissiveIntensity: 0.6 }));
-  tvScreen.position.set(0, 2.8, wOff - 0.12); g.add(tvScreen);
-  // TV legs / stand strip
-  const tvStrip = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.04, 0.04), new THREE.MeshStandardMaterial({ color: 0x111111 }));
-  tvStrip.position.set(0, 1.55, wOff - 0.08); g.add(tvStrip);
+  const tvScreen = new THREE.Mesh(new THREE.BoxGeometry(0.06, 2.3, 4.0), new THREE.MeshStandardMaterial({ color: 0x0d1117, emissive: 0x1a2a3a, emissiveIntensity: 0.6 }));
+  tvScreen.position.set(wOff - 0.12, 2.8, 6); g.add(tvScreen);
+  // TV bottom strip
+  const tvStrip = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 4.2), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+  tvStrip.position.set(wOff - 0.08, 1.55, 6); g.add(tvStrip);
 
   // ── Plants ──
   const plantPositions: [number, number][] = [
