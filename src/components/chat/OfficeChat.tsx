@@ -704,15 +704,16 @@ function buildRoom(): THREE.Group {
   coolerJug.position.set(-6, 1.2, 0); g.add(coolerJug);
   addCollider(-6, 0, 0.3, 0.3);
 
-  // ── Ceiling lights ──
+  // ── Ceiling lights (flush-mount, subtle) ──
   const lightPositions: [number, number][] = [
     [-10, -14], [0, -14], [10, -14],
     [-14, 6], [0, 0], [16, 8],
     [0, 16], [-10, 10], [10, -6],
   ];
   lightPositions.forEach(([lx, lz]) => {
-    const fixture = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.06, 0.4), new THREE.MeshStandardMaterial({ color: 0xeeeedd, emissive: 0xffffee, emissiveIntensity: 0.3 }));
-    fixture.position.set(lx, 4.9, lz); g.add(fixture);
+    // Thin recessed panel — dark frame so it doesn't flash white
+    const fixture = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.02, 0.4), new THREE.MeshStandardMaterial({ color: 0x333333, emissive: 0xddddc0, emissiveIntensity: 0.15 }));
+    fixture.position.set(lx, 4.97, lz); g.add(fixture);
   });
 
   return g;
