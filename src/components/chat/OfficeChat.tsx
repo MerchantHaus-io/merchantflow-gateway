@@ -1093,9 +1093,17 @@ export default function OfficeChat({
       {
         const tvEl = tvOverlayRef.current;
         if (tvEl) {
-          const tvCenter = new THREE.Vector3(ROOM - 0.14, 2.8, 6);
-          const tvTL = new THREE.Vector3(ROOM - 0.14, 2.8 + 1.15, 6 - 2.0);
-          const tvBR = new THREE.Vector3(ROOM - 0.14, 2.8 - 1.15, 6 + 2.0);
+          // Match exact tvScreen mesh: pos (wOff-0.12, 2.8, 6), size (0.06, 2.3, 4.0)
+          // wOff = ROOM = 22, so screen x = 21.88, half-h = 1.15, half-w = 2.0
+          // Shrink projection corners slightly inward to crop tightly to visible screen area
+          const screenX = ROOM - 0.12;
+          const screenY = 2.8;
+          const screenZ = 6;
+          const halfH = 1.1;  // slightly less than 1.15 to crop bezel overlap
+          const halfW = 1.92; // slightly less than 2.0 to crop bezel overlap
+          const tvCenter = new THREE.Vector3(screenX, screenY, screenZ);
+          const tvTL = new THREE.Vector3(screenX, screenY + halfH, screenZ - halfW);
+          const tvBR = new THREE.Vector3(screenX, screenY - halfH, screenZ + halfW);
 
           const toTV = tvCenter.clone().sub(camera.position);
           const camDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
