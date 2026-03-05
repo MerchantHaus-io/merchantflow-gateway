@@ -1,15 +1,6 @@
-// OfficeChat.tsx
-// Drop into your Vite + TypeScript + ShadCN project.
+// OfficeChat.tsx — Upgraded office simulator with expanded world, collisions,
+// articulated characters, and interaction system.
 // Peer deps: three, @types/three
-// ShadCN components used: Card, ScrollArea, Input, Button, Badge
-//
-// Usage:
-//   <OfficeChat currentUserEmail="taryn@merchanthaus.io" />
-//
-// Wire up:
-//   - Replace `mockMessages` / `sendMessage` with your real CRM chat API
-//   - Replace `USERS[x].online` with live presence from your backend
-// ─────────────────────────────────────────────────────────────────────────────
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import * as THREE from "three";
@@ -34,7 +25,6 @@ export interface CRMUser {
   stubbleColor?: number;
   hairstyle?: "bob" | "default";
   prostheticLeg?: boolean;
-  /** Controlled externally — swap with live presence */
   online?: boolean;
 }
 
@@ -55,117 +45,109 @@ export interface RemotePosition {
 }
 
 interface OfficeChatProps {
-  /** Email of the authenticated user */
   currentUserEmail: string;
   messages?: ChatMessage[];
   onSendMessage?: (to: string, body: string) => void;
   presence?: Record<string, boolean>;
-  /** Called each frame with the player's current position — broadcast to other clients */
   onPositionUpdate?: (pos: { x: number; z: number; yaw: number }) => void;
-  /** Positions received from other connected clients */
   remotePositions?: Record<string, RemotePosition>;
 }
 
-// ── USER DEFINITIONS ──────────────────────────────────────────────────────────
+// ── USERS ─────────────────────────────────────────────────────────────────────
 
 const USERS: CRMUser[] = [
-  {
-    email: "taryn@merchanthaus.io",
-    name: "Taryn",
-    title: "Operations",
-    shirtColor: 0xe05a2b,
-    hairColor: 0x3a1a08,
-    skinColor: 0xffcba8,
-    hairstyle: "bob",
-    scale: 1.0,
-  },
-  {
-    email: "admin@merchanthaus.io",
-    name: "Jamie",
-    title: "Admin",
-    shirtColor: 0x3a7bd5,
-    hairColor: 0xd4b96a,
-    skinColor: 0xffe0bb,
-    stubble: true,
-    stubbleColor: 0xc8aa70,
-    scale: 1.0,
-  },
-  {
-    email: "sales@merchanthaus.io",
-    name: "Dylan",
-    title: "Sales",
-    shirtColor: 0x2eaa5e,
-    hairColor: 0x1a3a1a,
-    skinColor: 0xffdbac,
-    prostheticLeg: true,
-    scale: 1.15,
-  },
-  {
-    email: "support@merchanthaus.io",
-    name: "Sheiky",
-    title: "Support",
-    shirtColor: 0x9b30d0,
-    hairColor: 0x2a1a40,
-    skinColor: 0xd4a574,
-    beard: true,
-    beardColor: 0x9a9a9a,
-    scale: 1.08,
-  },
-  {
-    email: "darryn@merchanthaus.io",
-    name: "Darryn",
-    title: "Dev",
-    shirtColor: 0xd03060,
-    hairColor: 0x3a1010,
-    skinColor: 0xffdbac,
-    scale: 1.0,
-  },
-  {
-    email: "atria@merchanthaus.io",
-    name: "Atria",
-    title: "AI Assistant",
-    shirtColor: 0x7c3aed,
-    hairColor: 0xc0c0ff,
-    skinColor: 0xe8d8f0,
-    hairstyle: "bob",
-    scale: 0.95,
-    online: true, // Atria is always online
-  },
+  { email: "taryn@merchanthaus.io", name: "Taryn", title: "Operations", shirtColor: 0xe05a2b, hairColor: 0x3a1a08, skinColor: 0xffcba8, hairstyle: "bob", scale: 1.0 },
+  { email: "admin@merchanthaus.io", name: "Jamie", title: "Admin", shirtColor: 0x3a7bd5, hairColor: 0xd4b96a, skinColor: 0xffe0bb, stubble: true, stubbleColor: 0xc8aa70, scale: 1.0 },
+  { email: "sales@merchanthaus.io", name: "Dylan", title: "Sales", shirtColor: 0x2eaa5e, hairColor: 0x1a3a1a, skinColor: 0xffdbac, prostheticLeg: true, scale: 1.15 },
+  { email: "support@merchanthaus.io", name: "Sheiky", title: "Support", shirtColor: 0x9b30d0, hairColor: 0x2a1a40, skinColor: 0xd4a574, beard: true, beardColor: 0x9a9a9a, scale: 1.08 },
+  { email: "darryn@merchanthaus.io", name: "Darryn", title: "Dev", shirtColor: 0xd03060, hairColor: 0x3a1010, skinColor: 0xffdbac, scale: 1.0 },
+  { email: "atria@merchanthaus.io", name: "Atria", title: "AI Assistant", shirtColor: 0x7c3aed, hairColor: 0xc0c0ff, skinColor: 0xe8d8f0, hairstyle: "bob", scale: 0.95, online: true },
 ];
 
-// ── SPAWN POSITIONS (desk positions — NPCs sit here) ──────────────────────────
+// ── WORLD LAYOUT ──────────────────────────────────────────────────────────────
 
+const ROOM = 22; // half-extent of world
+
+// Desk positions (cubicle area — top of map)
 const DESK_POS: Record<string, THREE.Vector3> = {
-  "taryn@merchanthaus.io":   new THREE.Vector3(-8, 0, -10),
-  "admin@merchanthaus.io":   new THREE.Vector3(0,  0, -10),
-  "sales@merchanthaus.io":   new THREE.Vector3(8,  0, -10),
-  "support@merchanthaus.io": new THREE.Vector3(-5, 0,  4),
-  "darryn@merchanthaus.io":  new THREE.Vector3(5,  0,  4),
-  "atria@merchanthaus.io":   new THREE.Vector3(0,  0,  10),
+  "taryn@merchanthaus.io":   new THREE.Vector3(-10, 0, -16),
+  "admin@merchanthaus.io":   new THREE.Vector3(-2,  0, -16),
+  "sales@merchanthaus.io":   new THREE.Vector3(6,   0, -16),
+  "support@merchanthaus.io": new THREE.Vector3(-6,  0, -8),
+  "darryn@merchanthaus.io":  new THREE.Vector3(2,   0, -8),
+  "atria@merchanthaus.io":   new THREE.Vector3(10,  0, -8),
 };
-
-// Aliases so existing SPAWN references still work for the player
 const SPAWN: Record<string, THREE.Vector3> = { ...DESK_POS };
 
-// ── NPC WANDERING AI ──────────────────────────────────────────────────────────
+// ── COLLISION SYSTEM (AABB) ───────────────────────────────────────────────────
+
+interface AABB { minX: number; maxX: number; minZ: number; maxZ: number; }
+
+const COLLIDERS: AABB[] = [];
+
+function addCollider(cx: number, cz: number, hw: number, hd: number) {
+  COLLIDERS.push({ minX: cx - hw, maxX: cx + hw, minZ: cz - hd, maxZ: cz + hd });
+}
+
+function resolveCollision(pos: THREE.Vector3, radius: number): THREE.Vector3 {
+  const resolved = pos.clone();
+  // World bounds
+  resolved.x = Math.max(-ROOM + radius, Math.min(ROOM - radius, resolved.x));
+  resolved.z = Math.max(-ROOM + radius, Math.min(ROOM - radius, resolved.z));
+
+  for (const c of COLLIDERS) {
+    const nearX = Math.max(c.minX, Math.min(c.maxX, resolved.x));
+    const nearZ = Math.max(c.minZ, Math.min(c.maxZ, resolved.z));
+    const dx = resolved.x - nearX;
+    const dz = resolved.z - nearZ;
+    const dist = Math.sqrt(dx * dx + dz * dz);
+    if (dist < radius && dist > 0.001) {
+      const push = radius - dist;
+      resolved.x += (dx / dist) * push;
+      resolved.z += (dz / dist) * push;
+    } else if (dist < 0.001) {
+      // Player is inside AABB — push out along shortest axis
+      const pushX1 = c.maxX - resolved.x + radius;
+      const pushX2 = resolved.x - c.minX + radius;
+      const pushZ1 = c.maxZ - resolved.z + radius;
+      const pushZ2 = resolved.z - c.minZ + radius;
+      const minPush = Math.min(pushX1, pushX2, pushZ1, pushZ2);
+      if (minPush === pushX1) resolved.x = c.maxX + radius;
+      else if (minPush === pushX2) resolved.x = c.minX - radius;
+      else if (minPush === pushZ1) resolved.z = c.maxZ + radius;
+      else resolved.z = c.minZ - radius;
+    }
+  }
+  return resolved;
+}
+
+const PLAYER_RADIUS = 0.35;
+
+// ── NPC WANDER ────────────────────────────────────────────────────────────────
 
 interface NPCWanderState {
   currentTarget: THREE.Vector3;
   atDesk: boolean;
-  deskTimer: number;    // time spent at desk before wandering
-  wanderTimer: number;  // time spent wandering before returning
+  deskTimer: number;
+  wanderTimer: number;
   speed: number;
-  idleTimer: number;    // pause at waypoint
+  idleTimer: number;
   state: "walking" | "idle_at_waypoint" | "at_desk";
 }
 
-const ROOM_HALF = 14; // half-extent for wandering bounds (slightly inside walls)
-
 function randomWanderTarget(): THREE.Vector3 {
+  // Wander in common areas (lobby / break room / meeting room corridors)
+  const zones = [
+    { cx: 0, cz: 2, hw: 8, hd: 4 },      // Lobby
+    { cx: -14, cz: 6, hw: 5, hd: 5 },     // Break room
+    { cx: 14, cz: 6, hw: 4, hd: 4 },      // Meeting room corridor
+    { cx: 0, cz: 14, hw: 6, hd: 4 },      // Reception
+  ];
+  const zone = zones[Math.floor(Math.random() * zones.length)];
   return new THREE.Vector3(
-    (Math.random() - 0.5) * (ROOM_HALF * 2 - 4),
+    zone.cx + (Math.random() - 0.5) * zone.hw * 2,
     0,
-    (Math.random() - 0.5) * (ROOM_HALF * 2 - 4)
+    zone.cz + (Math.random() - 0.5) * zone.hd * 2,
   );
 }
 
@@ -173,302 +155,524 @@ function createWanderState(): NPCWanderState {
   return {
     currentTarget: randomWanderTarget(),
     atDesk: false,
-    deskTimer: Math.random() * 20 + 10,     // 10-30s at desk
-    wanderTimer: Math.random() * 15 + 8,    // 8-23s wandering
-    speed: 1.2 + Math.random() * 0.8,       // 1.2-2.0 units/s
+    deskTimer: Math.random() * 20 + 10,
+    wanderTimer: Math.random() * 15 + 8,
+    speed: 1.2 + Math.random() * 0.8,
     idleTimer: 0,
     state: "walking",
   };
 }
 
-// ── THREE HELPERS ─────────────────────────────────────────────────────────────
+// ── INTERACTION POINTS ────────────────────────────────────────────────────────
 
-const ROOM = 15; // half-extent of room (much larger)
+interface InteractionPoint {
+  id: string;
+  pos: THREE.Vector3;
+  label: string;
+  action: string; // "sit" | "whiteboard" | "coffee" | "terminal" | "tv"
+  radius: number;
+}
+
+const INTERACT_POINTS: InteractionPoint[] = [
+  // Break room chairs
+  { id: "chair-1", pos: new THREE.Vector3(-16, 0, 4), label: "Sit down", action: "sit", radius: 1.5 },
+  { id: "chair-2", pos: new THREE.Vector3(-12, 0, 4), label: "Sit down", action: "sit", radius: 1.5 },
+  // Coffee machine
+  { id: "coffee", pos: new THREE.Vector3(-18, 0, 10), label: "Get coffee ☕", action: "coffee", radius: 2 },
+  // Whiteboard
+  { id: "whiteboard", pos: new THREE.Vector3(0, 0, -20.5), label: "Use whiteboard", action: "whiteboard", radius: 2.5 },
+  // Meeting room table
+  { id: "meeting-sit", pos: new THREE.Vector3(16, 0, 8), label: "Join meeting", action: "sit", radius: 2 },
+  // TV
+  { id: "tv", pos: new THREE.Vector3(21.5, 0, 0), label: "Toggle TV", action: "tv", radius: 3 },
+];
+
 const INTERACT_DIST = 2.5;
-const TV_POS = new THREE.Vector3(14.5, 0, 0); // right wall TV
+const TV_POS = new THREE.Vector3(21.5, 0, 0);
+
+// ── CHARACTER BUILDER ─────────────────────────────────────────────────────────
 
 function buildCharacterMesh(user: CRMUser, isPlayer: boolean): THREE.Group {
   const g = new THREE.Group();
   const s = user.scale ?? 1;
-
   const skin  = new THREE.MeshStandardMaterial({ color: user.skinColor });
   const shirt = new THREE.MeshStandardMaterial({ color: user.shirtColor });
   const pants = new THREE.MeshStandardMaterial({ color: 0x2c3e50 });
   const hair  = new THREE.MeshStandardMaterial({ color: user.hairColor });
+  const shoes = new THREE.MeshStandardMaterial({ color: 0x1a1a1a });
   const metal = new THREE.MeshStandardMaterial({ color: 0x8a8a8a, roughness: 0.3, metalness: 0.8 });
-  const carbon= new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.4, metalness: 0.6 });
+  const carbon = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.4, metalness: 0.6 });
 
-  // Legs
+  // ── Articulated legs (separate upper/lower for walk cycle) ──
+  const leftLegGroup = new THREE.Group();
+  leftLegGroup.position.set(-0.12, 0.78, 0);
+  const rightLegGroup = new THREE.Group();
+  rightLegGroup.position.set(0.12, 0.78, 0);
+
   if (user.prostheticLeg) {
-    // Natural right leg
-    const rl = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.8, 6), pants);
-    rl.position.set(0.15, 0.4, 0); rl.castShadow = true; g.add(rl);
-    // Prosthetic left
-    const upper = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.1, 0.4, 8), pants);
-    upper.position.set(-0.15, 0.6, 0); upper.castShadow = true; g.add(upper);
-    const pylon = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.38, 8), metal);
-    pylon.position.set(-0.15, 0.26, 0); pylon.castShadow = true; g.add(pylon);
-    const knee = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), metal);
-    knee.position.set(-0.15, 0.42, 0); g.add(knee);
-    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 0.28), carbon);
-    blade.position.set(-0.15, 0.07, 0.06); g.add(blade);
+    // Right leg (natural)
+    const rUpper = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.09, 0.4, 6), pants);
+    rUpper.position.y = -0.2; rightLegGroup.add(rUpper);
+    const rLower = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.08, 0.4, 6), pants);
+    rLower.position.y = -0.58; rightLegGroup.add(rLower);
+    const rShoe = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.06, 0.22), shoes);
+    rShoe.position.set(0, -0.8, 0.03); rightLegGroup.add(rShoe);
+
+    // Left leg (prosthetic)
+    const lUpper = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.09, 0.4, 6), pants);
+    lUpper.position.y = -0.2; leftLegGroup.add(lUpper);
+    const pylon = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.35, 8), metal);
+    pylon.position.y = -0.55; leftLegGroup.add(pylon);
+    const knee = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), metal);
+    knee.position.y = -0.38; leftLegGroup.add(knee);
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 0.24), carbon);
+    blade.position.set(0, -0.76, 0.04); leftLegGroup.add(blade);
   } else {
-    ([-0.15, 0.15] as number[]).forEach(x => {
-      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.8, 6), pants);
-      leg.position.set(x, 0.4, 0); leg.castShadow = true; g.add(leg);
+    [leftLegGroup, rightLegGroup].forEach(lg => {
+      const upper = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.09, 0.4, 6), pants);
+      upper.position.y = -0.2; lg.add(upper);
+      const lower = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.08, 0.4, 6), pants);
+      lower.position.y = -0.58; lg.add(lower);
+      const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.06, 0.22), shoes);
+      shoe.position.set(0, -0.8, 0.03); lg.add(shoe);
     });
   }
 
-  // Torso
-  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.3, 0.8, 8), shirt);
-  torso.position.y = 0.6; torso.castShadow = true; g.add(torso);
+  g.add(leftLegGroup, rightLegGroup);
+  g.userData.leftLeg = leftLegGroup;
+  g.userData.rightLeg = rightLegGroup;
 
-  // Arms
-  const lA = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.6, 6), shirt);
-  lA.position.set(-0.32, 0.7, 0); lA.rotation.z = Math.PI / 8; lA.castShadow = true; g.add(lA);
-  const rA = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.6, 6), shirt);
-  rA.position.set(0.32, 0.7, 0); rA.rotation.z = -Math.PI / 8; rA.castShadow = true; g.add(rA);
-  g.userData.leftArm = lA;
-  g.userData.rightArm = rA;
+  // ── Torso with slight taper ──
+  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.28, 0.7, 8), shirt);
+  torso.position.y = 1.15; torso.castShadow = true; g.add(torso);
 
-  // Head
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.25, 10, 8), skin);
-  head.position.y = 1.25; head.castShadow = true; g.add(head);
+  // Shoulders
+  const shoulderGeo = new THREE.SphereGeometry(0.1, 6, 6);
+  const lShoulder = new THREE.Mesh(shoulderGeo, shirt);
+  lShoulder.position.set(-0.3, 1.45, 0); g.add(lShoulder);
+  const rShoulder = new THREE.Mesh(shoulderGeo, shirt);
+  rShoulder.position.set(0.3, 1.45, 0); g.add(rShoulder);
+
+  // ── Articulated arms ──
+  const leftArmGroup = new THREE.Group();
+  leftArmGroup.position.set(-0.3, 1.42, 0);
+  const lUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.06, 0.3, 6), shirt);
+  lUpperArm.position.y = -0.18; leftArmGroup.add(lUpperArm);
+  const lForearm = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.05, 0.28, 6), skin);
+  lForearm.position.y = -0.42; leftArmGroup.add(lForearm);
+  const lHand = new THREE.Mesh(new THREE.SphereGeometry(0.05, 5, 5), skin);
+  lHand.position.y = -0.58; leftArmGroup.add(lHand);
+  g.add(leftArmGroup);
+  g.userData.leftArm = leftArmGroup;
+
+  const rightArmGroup = new THREE.Group();
+  rightArmGroup.position.set(0.3, 1.42, 0);
+  const rUpperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.06, 0.3, 6), shirt);
+  rUpperArm.position.y = -0.18; rightArmGroup.add(rUpperArm);
+  const rForearm = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.05, 0.28, 6), skin);
+  rForearm.position.y = -0.42; rightArmGroup.add(rForearm);
+  const rHand = new THREE.Mesh(new THREE.SphereGeometry(0.05, 5, 5), skin);
+  rHand.position.y = -0.58; rightArmGroup.add(rHand);
+  g.add(rightArmGroup);
+  g.userData.rightArm = rightArmGroup;
+
+  // ── Head ──
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), skin);
+  head.position.y = 1.72; head.castShadow = true; g.add(head);
+
+  // Neck
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.12, 6), skin);
+  neck.position.y = 1.54; g.add(neck);
 
   // Hair
   if (user.hairstyle === "bob") {
-    const bobMat = hair;
-    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.27, 10, 8), bobMat);
-    cap.position.y = 1.36; cap.scale.y = 0.55; g.add(cap);
-    const side = new THREE.Mesh(new THREE.SphereGeometry(0.29, 10, 8), bobMat);
-    side.position.y = 1.18; side.scale.set(1.15, 0.7, 1.05); g.add(side);
-    const bk = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.22, 0.22, 10), bobMat);
-    bk.position.set(0, 1.05, -0.03); g.add(bk);
-    const bun = new THREE.Mesh(new THREE.SphereGeometry(0.07, 6, 5), bobMat);
-    bun.position.set(0, 1.08, -0.27); g.add(bun);
-    const band = new THREE.Mesh(new THREE.TorusGeometry(0.07, 0.015, 6, 12), new THREE.MeshStandardMaterial({ color: 0x111111 }));
-    band.position.set(0, 1.08, -0.27); band.rotation.x = Math.PI / 2; g.add(band);
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.24, 10, 8), hair);
+    cap.position.y = 1.82; cap.scale.y = 0.55; g.add(cap);
+    const side = new THREE.Mesh(new THREE.SphereGeometry(0.26, 10, 8), hair);
+    side.position.y = 1.66; side.scale.set(1.1, 0.65, 1.0); g.add(side);
+    const bun = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 5), hair);
+    bun.position.set(0, 1.56, -0.24); g.add(bun);
+    const band = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.012, 6, 12), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+    band.position.set(0, 1.56, -0.24); band.rotation.x = Math.PI / 2; g.add(band);
   } else {
-    const h = new THREE.Mesh(new THREE.SphereGeometry(0.27, 10, 8), hair);
-    h.position.y = 1.36; h.scale.y = 0.55; g.add(h);
+    const h = new THREE.Mesh(new THREE.SphereGeometry(0.24, 10, 8), hair);
+    h.position.y = 1.82; h.scale.y = 0.55; g.add(h);
   }
 
   // Eyes
   const eyeM = new THREE.MeshStandardMaterial({ color: 0x111111 });
-  ([-0.08, 0.08] as number[]).forEach(x => {
-    const e = new THREE.Mesh(new THREE.SphereGeometry(0.03, 4, 4), eyeM);
-    e.position.set(x, 1.25, 0.22); g.add(e);
+  ([-0.07, 0.07] as number[]).forEach(x => {
+    const e = new THREE.Mesh(new THREE.SphereGeometry(0.028, 5, 5), eyeM);
+    e.position.set(x, 1.73, 0.19); g.add(e);
   });
 
   // Beard / stubble
   if (user.beard) {
     const bMat = new THREE.MeshStandardMaterial({ color: user.beardColor ?? 0x555555, roughness: 0.9 });
-    const b = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 6), bMat);
-    b.position.set(0, 1.1, 0.18); b.scale.set(1, 0.55, 0.7); g.add(b);
-    const m = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.03, 0.04), bMat);
-    m.position.set(0, 1.19, 0.24); g.add(m);
+    const b = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 6), bMat);
+    b.position.set(0, 1.58, 0.15); b.scale.set(1, 0.5, 0.65); g.add(b);
   }
   if (user.stubble) {
     const sMat = new THREE.MeshStandardMaterial({ color: user.stubbleColor ?? 0xc8b89a, roughness: 1 });
-    const st = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 6), sMat);
-    st.position.set(0, 1.1, 0.19); st.scale.set(1, 0.45, 0.65); g.add(st);
+    const st = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 6), sMat);
+    st.position.set(0, 1.58, 0.16); st.scale.set(1, 0.4, 0.6); g.add(st);
   }
 
-  // "YOU" indicator ring for the player
+  // Player ring
   if (isPlayer) {
     const ring = new THREE.Mesh(
       new THREE.TorusGeometry(0.35, 0.04, 8, 24),
       new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0xffd700, emissiveIntensity: 0.6 })
     );
-    ring.rotation.x = Math.PI / 2;
-    ring.position.y = 0.05;
-    g.add(ring);
+    ring.rotation.x = Math.PI / 2; ring.position.y = 0.05; g.add(ring);
   }
 
-  // Name label sprite
+  // Name label
   const cv = document.createElement("canvas");
   cv.width = 256; cv.height = 64;
   const ctx = cv.getContext("2d")!;
   ctx.clearRect(0, 0, 256, 64);
   ctx.fillStyle = isPlayer ? "#ffd700" : "#ffffff";
-  ctx.font = "bold 20px Arial";
-  ctx.textAlign = "center";
+  ctx.font = "bold 20px Arial"; ctx.textAlign = "center";
   ctx.fillText(isPlayer ? `${user.name} (You)` : user.name, 128, 24);
-  ctx.fillStyle = "#aaaaaa";
-  ctx.font = "14px Arial";
+  ctx.fillStyle = "#aaaaaa"; ctx.font = "14px Arial";
   ctx.fillText(user.title, 128, 46);
   const lbl = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv) }));
-  lbl.position.y = 1.9 / s;
-  lbl.scale.set(2.2 / s, 0.6 / s, 1);
-  g.add(lbl);
+  lbl.position.y = 2.2 / s; lbl.scale.set(2.2 / s, 0.6 / s, 1); g.add(lbl);
 
   g.scale.setScalar(s);
   return g;
 }
 
+// ── ANIMATE CHARACTER ─────────────────────────────────────────────────────────
+
+function animateCharacter(mesh: THREE.Group, t: number, isMoving: boolean, isSitting: boolean) {
+  const leftLeg = mesh.userData.leftLeg as THREE.Group | undefined;
+  const rightLeg = mesh.userData.rightLeg as THREE.Group | undefined;
+  const leftArm = mesh.userData.leftArm as THREE.Group | undefined;
+  const rightArm = mesh.userData.rightArm as THREE.Group | undefined;
+
+  if (isSitting) {
+    // Seated pose
+    if (leftLeg) leftLeg.rotation.x = -Math.PI / 2;
+    if (rightLeg) rightLeg.rotation.x = -Math.PI / 2;
+    if (leftArm) leftArm.rotation.x = -0.3;
+    if (rightArm) rightArm.rotation.x = -0.3;
+    return;
+  }
+
+  if (isMoving) {
+    const walkCycle = t * 0.008;
+    // Leg swing
+    if (leftLeg) leftLeg.rotation.x = Math.sin(walkCycle) * 0.5;
+    if (rightLeg) rightLeg.rotation.x = -Math.sin(walkCycle) * 0.5;
+    // Arm swing (opposite to legs)
+    if (leftArm) leftArm.rotation.x = -Math.sin(walkCycle) * 0.4;
+    if (rightArm) rightArm.rotation.x = Math.sin(walkCycle) * 0.4;
+    // Body bob
+    mesh.position.y = Math.abs(Math.sin(walkCycle * 2)) * 0.06;
+  } else {
+    // Idle breathing
+    const breath = Math.sin(t * 0.002) * 0.01;
+    mesh.position.y = breath;
+    // Ease limbs back to rest
+    if (leftLeg) leftLeg.rotation.x *= 0.9;
+    if (rightLeg) rightLeg.rotation.x *= 0.9;
+    if (leftArm) leftArm.rotation.x *= 0.9;
+    if (rightArm) rightArm.rotation.x *= 0.9;
+  }
+}
+
+// ── BUILD WORLD ───────────────────────────────────────────────────────────────
+
 function buildRoom(): THREE.Group {
   const g = new THREE.Group();
-  const wall = new THREE.MeshStandardMaterial({ color: 0x2e2e2e, roughness: 0.85 });
-  const winG  = new THREE.MeshStandardMaterial({ color: 0x88bbdd, transparent: true, opacity: 0.35 });
-  const frame = new THREE.MeshStandardMaterial({ color: 0x0a0a0a });
-  const wood  = new THREE.MeshStandardMaterial({ color: 0x9b7a4a, roughness: 0.6 });
-  const metal = new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.3, metalness: 0.8 });
-  const dark  = new THREE.MeshStandardMaterial({ color: 0x111111 });
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0x2e2e2e, roughness: 0.85 });
+  const floorMat = new THREE.MeshStandardMaterial({ color: 0xe8e0d4, roughness: 0.8 });
+  const wood = new THREE.MeshStandardMaterial({ color: 0x9b7a4a, roughness: 0.6 });
+  const metalM = new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.3, metalness: 0.8 });
+  const darkM = new THREE.MeshStandardMaterial({ color: 0x111111 });
+  const winG = new THREE.MeshStandardMaterial({ color: 0x88bbdd, transparent: true, opacity: 0.35 });
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0x0a0a0a });
+  const cubWall = new THREE.MeshStandardMaterial({ color: 0x7a8a9a, roughness: 0.9 });
+  const cubTrim = new THREE.MeshStandardMaterial({ color: 0x555555 });
+  const couchMat = new THREE.MeshStandardMaterial({ color: 0x4a4a6a, roughness: 0.8 });
+  const partitionMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.7 });
+  const glassMat = new THREE.MeshStandardMaterial({ color: 0x88bbdd, transparent: true, opacity: 0.25 });
+  const carpetMat = new THREE.MeshStandardMaterial({ color: 0x3a5a3a, roughness: 0.95 });
+  const tileMat1 = new THREE.MeshStandardMaterial({ color: 0xf2ece4 });
+  const tileMat2 = new THREE.MeshStandardMaterial({ color: 0xe4ddd4 });
 
-  const addPlane = (w: number, h: number, x: number, y: number, z: number, ry = 0, mat = wall) => {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
-    m.position.set(x, y, z); m.rotation.y = ry; m.receiveShadow = true; g.add(m);
-  };
+  // Clear colliders for fresh build
+  COLLIDERS.length = 0;
 
-  // Floor
-  const FS = 30;
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(FS, FS), new THREE.MeshStandardMaterial({ color: 0xe8e0d4, roughness: 0.8 }));
+  const FS = ROOM * 2;
+  const wOff = ROOM;
+
+  // ── Floor ──
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(FS, FS), floorMat);
   floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; g.add(floor);
-  const t1 = new THREE.MeshStandardMaterial({ color: 0xf2ece4 });
-  const t2 = new THREE.MeshStandardMaterial({ color: 0xe4ddd4 });
-  for (let x = -14; x < 15; x += 2) for (let z = -14; z < 15; z += 2) {
-    const tile = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), ((x + z) / 2) % 2 === 0 ? t1 : t2);
+
+  // Floor tiles
+  for (let x = -ROOM; x < ROOM; x += 2) for (let z = -ROOM; z < ROOM; z += 2) {
+    const tile = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), ((x + z) / 2) % 2 === 0 ? tileMat1 : tileMat2);
     tile.position.set(x + 1, 0.01, z + 1); tile.rotation.x = -Math.PI / 2; g.add(tile);
   }
 
-  // Walls
-  const wOff = FS / 2;
-  addPlane(FS, 5, 0, 2.5, -wOff);
-  addPlane(FS, 5, -wOff, 2.5, 0, Math.PI / 2);
-  addPlane(FS, 5,  wOff, 2.5, 0, -Math.PI / 2);
-  addPlane(FS, 5, 0, 2.5,  wOff, Math.PI);
+  // ── Outer walls ──
+  const addWall = (w: number, h: number, x: number, y: number, z: number, ry: number) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), wallMat);
+    m.position.set(x, y, z); m.rotation.y = ry; m.receiveShadow = true; g.add(m);
+  };
+  addWall(FS, 5, 0, 2.5, -wOff, 0);        // North
+  addWall(FS, 5, -wOff, 2.5, 0, Math.PI / 2);  // West
+  addWall(FS, 5, wOff, 2.5, 0, -Math.PI / 2);  // East
+  addWall(FS, 5, 0, 2.5, wOff, Math.PI);    // South
 
-  // Windows
-  ([-3, 3] as number[]).forEach(x => {
-    addPlane(2, 1.4, x, 2.8, -(wOff - 0.05), 0, winG);
-    ([1.1, -1.1] as number[]).forEach(oy => {
-      const b = new THREE.Mesh(new THREE.BoxGeometry(2.15, 0.07, 0.05), frame);
-      b.position.set(x, 2.8 + oy * 0.5, -(wOff - 0.08)); g.add(b);
+  // Wall colliders (thin)
+  addCollider(0, -wOff, wOff, 0.3);   // North
+  addCollider(0, wOff, wOff, 0.3);    // South
+  addCollider(-wOff, 0, 0.3, wOff);   // West
+  addCollider(wOff, 0, 0.3, wOff);    // East
+
+  // ── Windows (north wall) ──
+  ([-6, 0, 6] as number[]).forEach(x => {
+    const win = new THREE.Mesh(new THREE.PlaneGeometry(2.5, 1.6), winG);
+    win.position.set(x, 3, -(wOff - 0.05)); g.add(win);
+    // Frame
+    ([-0.85, 0.85] as number[]).forEach(oy => {
+      const b = new THREE.Mesh(new THREE.BoxGeometry(2.65, 0.06, 0.05), frameMat);
+      b.position.set(x, 3 + oy, -(wOff - 0.08)); g.add(b);
     });
-    ([-1.15, 1.15] as number[]).forEach(ox => {
-      const b = new THREE.Mesh(new THREE.BoxGeometry(0.07, 1.5, 0.05), frame);
-      b.position.set(x + ox, 2.8, -(wOff - 0.08)); g.add(b);
+    ([-1.35, 1.35] as number[]).forEach(ox => {
+      const b = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.7, 0.05), frameMat);
+      b.position.set(x + ox, 3, -(wOff - 0.08)); g.add(b);
     });
   });
 
-  // Whiteboard
-  const wb = new THREE.Mesh(new THREE.BoxGeometry(2.5, 1.4, 0.08), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 }));
+  // ── Whiteboard (north wall center) ──
+  const wb = new THREE.Mesh(new THREE.BoxGeometry(3.5, 1.8, 0.08), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 }));
   wb.position.set(0, 2.2, -(wOff - 0.1)); g.add(wb);
+  // Whiteboard tray
+  const wbTray = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.05, 0.12), metalM);
+  wbTray.position.set(0, 1.28, -(wOff - 0.08)); g.add(wbTray);
 
-  // Cubicle builder
-  const cubWall = new THREE.MeshStandardMaterial({ color: 0x7a8a9a, roughness: 0.9 });
-  const cubTrim = new THREE.MeshStandardMaterial({ color: 0x555555 });
-
+  // ── CUBICLE BUILDER ──
   const makeCubicle = (cx: number, cz: number) => {
     const cg = new THREE.Group();
-    const pH = 1.4;
-    const pT = 0.06;
+    const pH = 1.4, pT = 0.06;
 
-    // Left partition
+    // Partitions: left, right, back
     const lp = new THREE.Mesh(new THREE.BoxGeometry(pT, pH, 1.6), cubWall);
-    lp.position.set(-1.2, pH / 2, 0); lp.castShadow = true; cg.add(lp);
+    lp.position.set(-1.3, pH / 2, 0); cg.add(lp);
     const lt = new THREE.Mesh(new THREE.BoxGeometry(pT + 0.02, 0.04, 1.64), cubTrim);
-    lt.position.set(-1.2, pH, 0); cg.add(lt);
-
-    // Right partition
+    lt.position.set(-1.3, pH, 0); cg.add(lt);
     const rp = new THREE.Mesh(new THREE.BoxGeometry(pT, pH, 1.6), cubWall);
-    rp.position.set(1.2, pH / 2, 0); rp.castShadow = true; cg.add(rp);
+    rp.position.set(1.3, pH / 2, 0); cg.add(rp);
     const rt = new THREE.Mesh(new THREE.BoxGeometry(pT + 0.02, 0.04, 1.64), cubTrim);
-    rt.position.set(1.2, pH, 0); cg.add(rt);
+    rt.position.set(1.3, pH, 0); cg.add(rt);
+    const bp = new THREE.Mesh(new THREE.BoxGeometry(2.66, pH, pT), cubWall);
+    bp.position.set(0, pH / 2, -0.8); cg.add(bp);
 
-    // Back partition
-    const bp = new THREE.Mesh(new THREE.BoxGeometry(2.46, pH, pT), cubWall);
-    bp.position.set(0, pH / 2, -0.8); bp.castShadow = true; cg.add(bp);
-    const bt = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.04, pT + 0.02), cubTrim);
-    bt.position.set(0, pH, -0.8); cg.add(bt);
-
-    // Desk surface
-    const top = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.06, 1.0), wood);
-    top.position.y = 0.75; top.castShadow = true; top.receiveShadow = true; cg.add(top);
+    // Desk
+    const top = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.06, 1.0), wood);
+    top.position.y = 0.75; top.castShadow = true; cg.add(top);
     ([-1.0, 1.0] as number[]).forEach(lx => ([-0.45, 0.45] as number[]).forEach(lz => {
-      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.72, 0.05), metal);
-      leg.position.set(lx, 0.36, lz); leg.castShadow = true; cg.add(leg);
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.72, 0.05), metalM);
+      leg.position.set(lx, 0.36, lz); cg.add(leg);
     }));
 
     // Monitor
-    const scr = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.55, 0.04), dark);
+    const scr = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.55, 0.04), darkM);
     scr.position.set(0, 1.2, -0.3); cg.add(scr);
-    const stand = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.18, 0.06), metal);
+    const stand = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.18, 0.06), metalM);
     stand.position.set(0, 0.9, -0.3); cg.add(stand);
-
-    // Keyboard
-    const kb = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.02, 0.12), metal);
+    const kb = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.02, 0.12), metalM);
     kb.position.set(0, 0.79, 0.1); cg.add(kb);
 
     // Chair
-    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, 0.5), new THREE.MeshStandardMaterial({ color: 0x2a2a2a }));
+    const seatM = new THREE.MeshStandardMaterial({ color: 0x2a2a2a });
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, 0.5), seatM);
     seat.position.set(0, 0.5, 0.65); cg.add(seat);
-    const bk = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.55, 0.05), new THREE.MeshStandardMaterial({ color: 0x2a2a2a }));
+    const bk = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.55, 0.05), seatM);
     bk.position.set(0, 0.78, 0.88); cg.add(bk);
 
     cg.position.set(cx, 0, cz);
+
+    // Collider for the desk
+    addCollider(cx, cz - 0.2, 1.3, 0.8);
+
     return cg;
   };
 
-  // Place cubicles at desk positions
-  g.add(makeCubicle(-8, -10), makeCubicle(0, -10), makeCubicle(8, -10));
-  g.add(makeCubicle(-5, 4), makeCubicle(5, 4));
-  g.add(makeCubicle(0, 10)); // Atria's cubicle
-
-  // Plants — spread around the larger room
-  ([[-13, -13], [13, -13], [-13, 13], [13, 13], [-8, 0], [8, 0], [0, -5], [0, 7]] as [number, number][]).forEach(([px, pz]) => {
-    const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.18, 0.3, 8), new THREE.MeshStandardMaterial({ color: 0x7a4f2a }));
-    pot.position.set(px, 0.15, pz); g.add(pot);
-    const leaves = new THREE.Mesh(new THREE.SphereGeometry(0.45, 6, 5), new THREE.MeshStandardMaterial({ color: 0x2d7a2d }));
-    leaves.position.set(px, 0.65, pz); g.add(leaves);
+  // Place cubicles
+  Object.values(DESK_POS).forEach(pos => {
+    g.add(makeCubicle(pos.x, pos.z));
   });
 
-  // Water cooler
-  const coolerBody = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.9, 8), new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.3 }));
-  coolerBody.position.set(-12, 0.55, -3); g.add(coolerBody);
-  const coolerJug = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.18, 0.4, 8), new THREE.MeshStandardMaterial({ color: 0x88bbdd, transparent: true, opacity: 0.4 }));
-  coolerJug.position.set(-12, 1.2, -3); g.add(coolerJug);
+  // ── BREAK ROOM (south-west area) ──
+  // Floor carpet
+  const breakCarpet = new THREE.Mesh(new THREE.PlaneGeometry(12, 10), carpetMat);
+  breakCarpet.rotation.x = -Math.PI / 2; breakCarpet.position.set(-14, 0.02, 6); g.add(breakCarpet);
 
-  // Lounge area — couches
-  const couchMat = new THREE.MeshStandardMaterial({ color: 0x4a4a6a, roughness: 0.8 });
+  // Partition walls separating break room
+  const breakWall1 = new THREE.Mesh(new THREE.BoxGeometry(0.15, 3.5, 12), partitionMat);
+  breakWall1.position.set(-8, 1.75, 6); g.add(breakWall1);
+  addCollider(-8, 6, 0.15, 6);
+  // Glass top section
+  const breakGlass1 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.5, 12), glassMat);
+  breakGlass1.position.set(-8, 4, 6); g.add(breakGlass1);
+
+  // Doorway gap in south partition (leave opening at z=2)
+  const breakWall2a = new THREE.Mesh(new THREE.BoxGeometry(12, 3.5, 0.15), partitionMat);
+  breakWall2a.position.set(-14, 1.75, 1); g.add(breakWall2a);
+  addCollider(-14, 1, 6, 0.15);
+
+  // Couches
   const makeCouch = (cx: number, cz: number, ry: number) => {
     const cg = new THREE.Group();
-    const seatC = new THREE.Mesh(new THREE.BoxGeometry(2, 0.3, 0.8), couchMat);
-    seatC.position.y = 0.3; cg.add(seatC);
-    const backC = new THREE.Mesh(new THREE.BoxGeometry(2, 0.6, 0.15), couchMat);
-    backC.position.set(0, 0.6, -0.35); cg.add(backC);
-    cg.position.set(cx, 0, cz);
-    cg.rotation.y = ry;
+    const seatC = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.35, 0.85), couchMat);
+    seatC.position.y = 0.32; cg.add(seatC);
+    const backC = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.65, 0.18), couchMat);
+    backC.position.set(0, 0.62, -0.38); cg.add(backC);
+    // Armrests
+    ([-1.15, 1.15] as number[]).forEach(ax => {
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.3, 0.85), couchMat);
+      arm.position.set(ax, 0.45, 0); cg.add(arm);
+    });
+    cg.position.set(cx, 0, cz); cg.rotation.y = ry;
+    addCollider(cx, cz, 1.3, 0.6);
     return cg;
   };
-  g.add(makeCouch(10, -4, 0));
-  g.add(makeCouch(12, -2, Math.PI / 2));
+  g.add(makeCouch(-16, 4, 0));
+  g.add(makeCouch(-12, 4, 0));
+  g.add(makeCouch(-14, 8, Math.PI));
 
   // Coffee table
-  const coffeeTable = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.05, 0.6), wood);
-  coffeeTable.position.set(10.5, 0.35, -2.5); g.add(coffeeTable);
-  const ctLeg = new THREE.MeshStandardMaterial({ color: 0x333333 });
-  ([[-0.5, -0.25], [0.5, -0.25], [-0.5, 0.25], [0.5, 0.25]] as [number, number][]).forEach(([lx, lz]) => {
-    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.32, 4), ctLeg);
-    leg.position.set(10.5 + lx, 0.16, -2.5 + lz); g.add(leg);
+  const ct = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.05, 0.8), wood);
+  ct.position.set(-14, 0.38, 6); g.add(ct);
+  addCollider(-14, 6, 0.9, 0.4);
+  ([[-0.8, -0.3], [0.8, -0.3], [-0.8, 0.3], [0.8, 0.3]] as [number, number][]).forEach(([lx, lz]) => {
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.36, 4), metalM);
+    leg.position.set(-14 + lx, 0.18, 6 + lz); g.add(leg);
   });
 
-  // Wall-mounted TV on right wall
-  const tvBezel = new THREE.Mesh(
-    new THREE.BoxGeometry(0.08, 1.6, 2.6),
-    new THREE.MeshStandardMaterial({ color: 0x0a0a0a })
-  );
-  tvBezel.position.set(wOff - 0.06, 2.4, 0); g.add(tvBezel);
-  const tvScreen = new THREE.Mesh(
-    new THREE.BoxGeometry(0.04, 1.4, 2.4),
-    new THREE.MeshStandardMaterial({ color: 0x111122, emissive: 0x111133, emissiveIntensity: 0.3 })
-  );
-  tvScreen.position.set(wOff - 0.09, 2.4, 0); g.add(tvScreen);
-  const bracket = new THREE.Mesh(
-    new THREE.BoxGeometry(0.15, 0.1, 0.4),
-    new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.8, roughness: 0.3 })
-  );
-  bracket.position.set(wOff - 0.02, 1.55, 0); g.add(bracket);
+  // Coffee machine
+  const coffeeMachine = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.8, 0.4), new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.3, metalness: 0.6 }));
+  coffeeMachine.position.set(-18, 0.9, 10); g.add(coffeeMachine);
+  const coffeeCounter = new THREE.Mesh(new THREE.BoxGeometry(2, 0.06, 0.8), wood);
+  coffeeCounter.position.set(-18, 0.5, 10); g.add(coffeeCounter);
+  addCollider(-18, 10, 1, 0.5);
+  // Coffee cups
+  const cupMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+  ([-0.3, 0.3] as number[]).forEach(ox => {
+    const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.035, 0.1, 8), cupMat);
+    cup.position.set(-18 + ox, 0.58, 10); g.add(cup);
+  });
+
+  // ── MEETING ROOM (south-east area) ──
+  const meetCarpet = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), new THREE.MeshStandardMaterial({ color: 0x3a3a5a, roughness: 0.95 }));
+  meetCarpet.rotation.x = -Math.PI / 2; meetCarpet.position.set(16, 0.02, 8); g.add(meetCarpet);
+
+  // Glass partition walls
+  const meetWall1 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 3.5, 10), glassMat);
+  meetWall1.position.set(11, 1.75, 8); g.add(meetWall1);
+  // Frame strips
+  const meetFrame1 = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.06, 10), frameMat);
+  meetFrame1.position.set(11, 3.5, 8); g.add(meetFrame1);
+  addCollider(11, 8, 0.12, 5);
+
+  // Doorway opening at z=4
+  const meetWall2a = new THREE.Mesh(new THREE.BoxGeometry(10, 3.5, 0.12), glassMat);
+  meetWall2a.position.set(16, 1.75, 3); g.add(meetWall2a);
+  addCollider(16, 3, 5, 0.12);
+
+  // Meeting table
+  const meetTable = new THREE.Mesh(new THREE.BoxGeometry(4, 0.08, 2), wood);
+  meetTable.position.set(16, 0.75, 8); g.add(meetTable);
+  addCollider(16, 8, 2, 1);
+  // Table legs
+  ([[-1.8, -0.8], [1.8, -0.8], [-1.8, 0.8], [1.8, 0.8]] as [number, number][]).forEach(([lx, lz]) => {
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.72, 6), metalM);
+    leg.position.set(16 + lx, 0.36, 8 + lz); g.add(leg);
+  });
+
+  // Meeting chairs (around table)
+  const chairMat = new THREE.MeshStandardMaterial({ color: 0x2a2a3a });
+  ([[-1.5, -1.5], [0, -1.5], [1.5, -1.5], [-1.5, 1.5], [0, 1.5], [1.5, 1.5]] as [number, number][]).forEach(([cx, cz]) => {
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, 0.5), chairMat);
+    seat.position.set(16 + cx, 0.48, 8 + cz); g.add(seat);
+    const back = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.05), chairMat);
+    back.position.set(16 + cx, 0.73, 8 + cz + (cz > 0 ? 0.27 : -0.27)); g.add(back);
+  });
+
+  // Presentation screen in meeting room
+  const presScreen = new THREE.Mesh(new THREE.BoxGeometry(3, 1.8, 0.06), darkM);
+  presScreen.position.set(16, 2.5, 12.9); g.add(presScreen);
+
+  // ── RECEPTION / LOBBY (south center) ──
+  const receptionDesk = new THREE.Mesh(new THREE.BoxGeometry(4, 1.1, 1.2), new THREE.MeshStandardMaterial({ color: 0x5a4a3a, roughness: 0.6 }));
+  receptionDesk.position.set(0, 0.55, 16); g.add(receptionDesk);
+  addCollider(0, 16, 2, 0.6);
+  // Reception sign
+  const signCv = document.createElement("canvas");
+  signCv.width = 512; signCv.height = 128;
+  const signCtx = signCv.getContext("2d")!;
+  signCtx.fillStyle = "#1a1a2e";
+  signCtx.fillRect(0, 0, 512, 128);
+  signCtx.fillStyle = "#ffd700";
+  signCtx.font = "bold 36px Arial";
+  signCtx.textAlign = "center";
+  signCtx.fillText("MERCHANT HAUS", 256, 55);
+  signCtx.fillStyle = "#888";
+  signCtx.font = "18px Arial";
+  signCtx.fillText("Operations Terminal", 256, 90);
+  const signTex = new THREE.CanvasTexture(signCv);
+  const signSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: signTex }));
+  signSprite.position.set(0, 3.5, wOff - 0.5);
+  signSprite.scale.set(5, 1.25, 1);
+  g.add(signSprite);
+
+  // ── TV (east wall) ──
+  const tvBezel = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.8, 3), new THREE.MeshStandardMaterial({ color: 0x0a0a0a }));
+  tvBezel.position.set(wOff - 0.06, 2.6, 0); g.add(tvBezel);
+  const tvScreen = new THREE.Mesh(new THREE.BoxGeometry(0.04, 1.6, 2.8), new THREE.MeshStandardMaterial({ color: 0x111122, emissive: 0x111133, emissiveIntensity: 0.3 }));
+  tvScreen.position.set(wOff - 0.09, 2.6, 0); g.add(tvScreen);
+
+  // ── Plants ──
+  const plantPositions: [number, number][] = [
+    [-20, -20], [20, -20], [-20, 20], [20, 20],
+    [-10, 0], [10, 0], [0, -5], [0, 10],
+    [-18, -10], [18, -10], [-5, 16], [5, 16],
+    [-14, -16], [14, -16],
+  ];
+  plantPositions.forEach(([px, pz]) => {
+    const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.18, 0.35, 8), new THREE.MeshStandardMaterial({ color: 0x7a4f2a }));
+    pot.position.set(px, 0.175, pz); g.add(pot);
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.06, 0.4, 6), new THREE.MeshStandardMaterial({ color: 0x5a3a1a }));
+    trunk.position.set(px, 0.55, pz); g.add(trunk);
+    const leaves = new THREE.Mesh(new THREE.SphereGeometry(0.5, 7, 6), new THREE.MeshStandardMaterial({ color: 0x2d7a2d }));
+    leaves.position.set(px, 0.95, pz); g.add(leaves);
+    addCollider(px, pz, 0.3, 0.3);
+  });
+
+  // ── Water cooler ──
+  const coolerBody = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.9, 8), new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.3 }));
+  coolerBody.position.set(-6, 0.55, 0); g.add(coolerBody);
+  const coolerJug = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.18, 0.4, 8), new THREE.MeshStandardMaterial({ color: 0x88bbdd, transparent: true, opacity: 0.4 }));
+  coolerJug.position.set(-6, 1.2, 0); g.add(coolerJug);
+  addCollider(-6, 0, 0.3, 0.3);
+
+  // ── Ceiling lights ──
+  const lightPositions: [number, number][] = [
+    [-10, -14], [0, -14], [10, -14],
+    [-14, 6], [0, 0], [16, 8],
+    [0, 16], [-10, 10], [10, -6],
+  ];
+  lightPositions.forEach(([lx, lz]) => {
+    const fixture = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.06, 0.4), new THREE.MeshStandardMaterial({ color: 0xeeeedd, emissive: 0xffffee, emissiveIntensity: 0.3 }));
+    fixture.position.set(lx, 4.9, lz); g.add(fixture);
+  });
 
   return g;
 }
@@ -483,8 +687,8 @@ export default function OfficeChat({
   onPositionUpdate,
   remotePositions = {},
 }: OfficeChatProps) {
-  const mountRef   = useRef<HTMLDivElement>(null);
-  const stateRef   = useRef<{
+  const mountRef = useRef<HTMLDivElement>(null);
+  const stateRef = useRef<{
     renderer: THREE.WebGLRenderer;
     scene: THREE.Scene;
     camera: THREE.PerspectiveCamera;
@@ -502,24 +706,23 @@ export default function OfficeChat({
 
   const isMobile = useIsMobile();
   const [activeChat, setActiveChat] = useState<CRMUser | null>(null);
-  const [inputVal,   setInputVal]   = useState("");
-  const [locked,     setLocked]     = useState(false);
-  const [nearby,     setNearby]     = useState<CRMUser | null>(null);
-  const [nearDesk,   setNearDesk]   = useState(false);
+  const [inputVal, setInputVal] = useState("");
+  const [locked, setLocked] = useState(false);
+  const [nearby, setNearby] = useState<CRMUser | null>(null);
+  const [nearDesk, setNearDesk] = useState(false);
   const [showTerminal, setShowTerminal] = useState(false);
-  const [nearTV,      setNearTV]      = useState(false);
-  const [tvUnmuted,   setTvUnmuted]   = useState(false);
+  const [nearTV, setNearTV] = useState(false);
+  const [tvUnmuted, setTvUnmuted] = useState(false);
+  const [nearInteract, setNearInteract] = useState<InteractionPoint | null>(null);
+  const [isSitting, setIsSitting] = useState(false);
+  const [showWhiteboard, setShowWhiteboard] = useState(false);
+  const [coffeeEmote, setCoffeeEmote] = useState(false);
   const showTerminalRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  // 3D speech bubble sprites mapped by NPC email
   const speechBubblesRef = useRef<Map<string, { sprite: THREE.Sprite; timeout: ReturnType<typeof setTimeout> }>>(new Map());
   const prevMsgCountRef = useRef<number>(0);
-
-  // Mobile touch refs
   const joystickRef = useRef({ x: 0, y: 0, active: false });
   const touchLookRef = useRef({ lastX: 0, lastY: 0, active: false });
-  
-  // Refs for callbacks & remote data (avoid stale closures in game loop)
   const onPositionUpdateRef = useRef(onPositionUpdate);
   onPositionUpdateRef.current = onPositionUpdate;
   const remotePositionsRef = useRef(remotePositions);
@@ -527,12 +730,9 @@ export default function OfficeChat({
   const lastBroadcastRef = useRef(0);
 
   const currentUser = USERS.find(u => u.email === currentUserEmail)!;
-  const others      = USERS.filter(u => u.email !== currentUserEmail);
+  const others = USERS.filter(u => u.email !== currentUserEmail);
 
-  // Keep terminal ref in sync with state
   useEffect(() => { showTerminalRef.current = showTerminal; }, [showTerminal]);
-
-  // Scroll chat to bottom when messages change
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, activeChat]);
@@ -546,32 +746,36 @@ export default function OfficeChat({
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x1a1a1a);
-    scene.fog = new THREE.Fog(0x1a1a1a, 15, 40);
+    scene.fog = new THREE.Fog(0x1a1a1a, 20, 55);
 
-    const camera = new THREE.PerspectiveCamera(70, W / H, 0.1, 100);
-    camera.position.set(
-      SPAWN[currentUserEmail].x,
-      1.6,
-      SPAWN[currentUserEmail].z + 1.5
-    );
+    const camera = new THREE.PerspectiveCamera(70, W / H, 0.1, 120);
+    camera.position.set(SPAWN[currentUserEmail].x, 1.6, SPAWN[currentUserEmail].z + 1.5);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(W, H);
     renderer.shadowMap.enabled = true;
     mountRef.current.appendChild(renderer.domElement);
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-    const sun = new THREE.DirectionalLight(0xfff8f0, 0.7);
-    sun.position.set(4, 10, 4); sun.castShadow = true; scene.add(sun);
+    // Lighting
+    scene.add(new THREE.AmbientLight(0xffffff, 0.45));
+    const sun = new THREE.DirectionalLight(0xfff8f0, 0.65);
+    sun.position.set(8, 15, 8); sun.castShadow = true;
+    sun.shadow.mapSize.setScalar(1024);
+    sun.shadow.camera.left = -ROOM; sun.shadow.camera.right = ROOM;
+    sun.shadow.camera.top = ROOM; sun.shadow.camera.bottom = -ROOM;
+    scene.add(sun);
+    // Fill light
+    const fill = new THREE.DirectionalLight(0x8888ff, 0.15);
+    fill.position.set(-10, 8, -5); scene.add(fill);
 
     scene.add(buildRoom());
 
-    // Player mesh
+    // Player
     const playerMesh = buildCharacterMesh(currentUser, true);
     playerMesh.position.copy(SPAWN[currentUserEmail]);
     scene.add(playerMesh);
 
-    // NPC meshes + online indicators
+    // NPCs
     const npcMeshes = new Map<string, THREE.Group>();
     const onlineIndicators = new Map<string, THREE.Mesh>();
 
@@ -579,39 +783,33 @@ export default function OfficeChat({
       const mesh = buildCharacterMesh(u, false);
       const deskPos = DESK_POS[u.email] || new THREE.Vector3(0, 0, 0);
       mesh.position.copy(deskPos);
-      // Start hidden — presence effect will show online users
       mesh.visible = false;
       scene.add(mesh);
       npcMeshes.set(u.email, mesh);
 
-      // Online/offline dot above head
       const dot = new THREE.Mesh(
         new THREE.SphereGeometry(0.07, 8, 8),
         new THREE.MeshStandardMaterial({ color: 0x22cc44, emissive: 0x22cc44, emissiveIntensity: 1 })
       );
-      dot.position.set(0, 2.1 / (u.scale ?? 1), 0);
+      dot.position.set(0, 2.4 / (u.scale ?? 1), 0);
       mesh.add(dot);
       onlineIndicators.set(u.email, dot);
     });
 
-    // Initialize NPC wander states
+    // NPC wander
     const npcWander = new Map<string, NPCWanderState>();
-    others.forEach(u => {
-      npcWander.set(u.email, createWanderState());
-    });
+    others.forEach(u => { npcWander.set(u.email, createWanderState()); });
 
     const state = {
       renderer, scene, camera, playerMesh, npcMeshes,
       yaw: 0, pitch: 0, locked: false,
       keys: new Set<string>(),
       playerPos: SPAWN[currentUserEmail].clone(),
-      raf: 0,
-      onlineIndicators,
-      npcWander,
+      raf: 0, onlineIndicators, npcWander,
     };
     stateRef.current = state;
 
-    // Pointer lock (desktop only)
+    // Pointer lock (desktop)
     if (!isMobile) {
       renderer.domElement.addEventListener("click", () => {
         if (!activeChat) renderer.domElement.requestPointerLock();
@@ -622,32 +820,22 @@ export default function OfficeChat({
       });
       document.addEventListener("mousemove", (e) => {
         if (!state.locked) return;
-        state.yaw   -= e.movementX * 0.002;
-        state.pitch  = Math.max(-1.1, Math.min(1.1, state.pitch - e.movementY * 0.002));
+        state.yaw -= e.movementX * 0.002;
+        state.pitch = Math.max(-1.1, Math.min(1.1, state.pitch - e.movementY * 0.002));
       });
     } else {
-      // Mobile: always "locked" for rendering crosshair-free
-      state.locked = true;
-      setLocked(true);
-
-      // Touch look — right side of screen
+      state.locked = true; setLocked(true);
       const onTouchStart = (e: TouchEvent) => {
-        const t = e.changedTouches[0];
-        if (!t) return;
-        // Only handle touches on the right half (look) that aren't on UI
+        const t = e.changedTouches[0]; if (!t) return;
         if ((e.target as HTMLElement).closest('.mobile-joystick, .mobile-interact-btn, [class*="Card"], button, input')) return;
         touchLookRef.current = { lastX: t.clientX, lastY: t.clientY, active: true };
       };
       const onTouchMove = (e: TouchEvent) => {
         if (!touchLookRef.current.active) return;
-        const t = e.changedTouches[0];
-        if (!t) return;
-        const dx = t.clientX - touchLookRef.current.lastX;
-        const dy = t.clientY - touchLookRef.current.lastY;
-        state.yaw -= dx * 0.004;
-        state.pitch = Math.max(-1.1, Math.min(1.1, state.pitch - dy * 0.004));
-        touchLookRef.current.lastX = t.clientX;
-        touchLookRef.current.lastY = t.clientY;
+        const t = e.changedTouches[0]; if (!t) return;
+        state.yaw -= (t.clientX - touchLookRef.current.lastX) * 0.004;
+        state.pitch = Math.max(-1.1, Math.min(1.1, state.pitch - (t.clientY - touchLookRef.current.lastY) * 0.004));
+        touchLookRef.current.lastX = t.clientX; touchLookRef.current.lastY = t.clientY;
       };
       const onTouchEnd = () => { touchLookRef.current.active = false; };
       renderer.domElement.addEventListener("touchstart", onTouchStart, { passive: true });
@@ -659,52 +847,40 @@ export default function OfficeChat({
     const onDown = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement).tagName === "INPUT") return;
       state.keys.add(e.key.toLowerCase());
-      if (e.key === "Escape") {
-        document.exitPointerLock();
-        setActiveChat(null);
-      }
+      if (e.key === "Escape") { document.exitPointerLock(); setActiveChat(null); }
     };
     const onUp = (e: KeyboardEvent) => state.keys.delete(e.key.toLowerCase());
     document.addEventListener("keydown", onDown);
-    document.addEventListener("keyup",   onUp);
+    document.addEventListener("keyup", onUp);
 
-    // Click on NPC to chat
+    // Raycaster for clicking NPCs
     const raycaster = new THREE.Raycaster();
     const center = new THREE.Vector2(0, 0);
     renderer.domElement.addEventListener("click", () => {
       raycaster.setFromCamera(center, camera);
-      const meshList = Array.from(npcMeshes.values());
-      const hits = raycaster.intersectObjects(meshList, true);
+      const hits = raycaster.intersectObjects(Array.from(npcMeshes.values()), true);
       if (hits.length) {
-        const hitObj = hits[0].object;
-        let root: THREE.Object3D | null = hitObj;
-        while (root && !root.userData.email) root = root.parent;
-        // fallback: find which npc group contains this object — only if visible (online)
         npcMeshes.forEach((mesh, email) => {
-          if (!mesh.visible) return; // skip offline users
-          if (mesh === root || mesh.getObjectById(hitObj.id)) {
+          if (!mesh.visible) return;
+          if (mesh === hits[0].object || mesh.getObjectById(hits[0].object.id)) {
             const user = USERS.find(u => u.email === email);
             if (user) setActiveChat(user);
           }
         });
       }
     });
-
-    // Tag npc meshes for raycasting
     npcMeshes.forEach((mesh, email) => { mesh.userData.email = email; });
 
     // Resize
     const onResize = () => {
       if (!mountRef.current) return;
-      const w = mountRef.current.clientWidth;
-      const h = mountRef.current.clientHeight;
-      camera.aspect = w / h;
+      camera.aspect = mountRef.current.clientWidth / mountRef.current.clientHeight;
       camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
+      renderer.setSize(mountRef.current.clientWidth, mountRef.current.clientHeight);
     };
     window.addEventListener("resize", onResize);
 
-    // ── LOOP ────────────────────────────────────────────────────────────────
+    // ── GAME LOOP ──
     const euler = new THREE.Euler(0, 0, 0, "YXZ");
     let lastT = 0;
 
@@ -713,105 +889,85 @@ export default function OfficeChat({
       const dt = Math.min((t - lastT) / 1000, 0.05);
       lastT = t;
 
-      // Camera rotation
+      // Camera
       euler.set(state.pitch, state.yaw, 0, "YXZ");
       camera.quaternion.setFromEuler(euler);
 
-      // Movement (yaw-relative, no vertical drift) — disabled when terminal is open
+      // Movement
       const yawEuler = new THREE.Euler(0, state.yaw, 0, "YXZ");
       const fwd = new THREE.Vector3(0, 0, -1).applyEuler(yawEuler);
-      const rgt = new THREE.Vector3(1, 0,  0).applyEuler(yawEuler);
-      const spd = 3.5 * dt;
+      const rgt = new THREE.Vector3(1, 0, 0).applyEuler(yawEuler);
+      const spd = 4.5 * dt;
       const jx = joystickRef.current.x;
       const jy = joystickRef.current.y;
-      const isMoving = state.keys.has("w") || state.keys.has("s") || state.keys.has("a") || state.keys.has("d") || joystickRef.current.active;
+      const isPlayerMoving = state.keys.has("w") || state.keys.has("s") || state.keys.has("a") || state.keys.has("d") || joystickRef.current.active;
 
-      if (isMoving && showTerminalRef.current) {
+      if (isPlayerMoving && showTerminalRef.current) {
         showTerminalRef.current = false;
         setShowTerminal(false);
       }
+      // Stand up if sitting and moving
+      if (isPlayerMoving) {
+        setIsSitting(false);
+        setShowWhiteboard(false);
+      }
 
       if (!showTerminalRef.current) {
-        if (state.keys.has("w")) state.playerPos.addScaledVector(fwd,  spd);
+        if (state.keys.has("w")) state.playerPos.addScaledVector(fwd, spd);
         if (state.keys.has("s")) state.playerPos.addScaledVector(fwd, -spd);
         if (state.keys.has("a")) state.playerPos.addScaledVector(rgt, -spd);
-        if (state.keys.has("d")) state.playerPos.addScaledVector(rgt,  spd);
-        // Mobile joystick input
+        if (state.keys.has("d")) state.playerPos.addScaledVector(rgt, spd);
         if (joystickRef.current.active) {
           state.playerPos.addScaledVector(fwd, -jy * spd);
-          state.playerPos.addScaledVector(rgt,  jx * spd);
+          state.playerPos.addScaledVector(rgt, jx * spd);
         }
       }
 
-      state.playerPos.x = Math.max(-ROOM, Math.min(ROOM, state.playerPos.x));
-      state.playerPos.z = Math.max(-ROOM, Math.min(ROOM, state.playerPos.z));
+      // Apply collision
+      const resolved = resolveCollision(state.playerPos, PLAYER_RADIUS);
+      state.playerPos.copy(resolved);
 
       camera.position.set(state.playerPos.x, 1.6, state.playerPos.z);
-      playerMesh.position.copy(state.playerPos);
-
-      // Face camera direction (yaw only)
+      playerMesh.position.set(state.playerPos.x, 0, state.playerPos.z);
       playerMesh.rotation.y = state.yaw + Math.PI;
 
-      // Broadcast player position (throttled to ~10fps)
+      // Animate player
+      animateCharacter(playerMesh, t, isPlayerMoving, false);
+
+      // Broadcast position (~10fps)
       if (t - lastBroadcastRef.current > 100) {
         lastBroadcastRef.current = t;
-        onPositionUpdateRef.current?.({
-          x: state.playerPos.x,
-          z: state.playerPos.z,
-          yaw: state.yaw,
-        });
+        onPositionUpdateRef.current?.({ x: state.playerPos.x, z: state.playerPos.z, yaw: state.yaw });
       }
 
-      // NPC movement: use remote positions for real users, AI wandering as fallback
+      // NPC movement
       const remotePos = remotePositionsRef.current;
       const now = Date.now();
 
       npcMeshes.forEach((mesh, email) => {
         if (!mesh.visible) return;
-
         const remote = remotePos[email];
-        const isRemoteActive = remote && (now - remote.timestamp < 5000); // 5s staleness threshold
+        const isRemoteActive = remote && (now - remote.timestamp < 5000);
 
         if (isRemoteActive) {
-          // ── Real user online in simulator — lerp to their broadcast position ──
-          const lerpSpeed = 8 * dt; // smooth interpolation
+          const lerpSpeed = 8 * dt;
           mesh.position.x += (remote.x - mesh.position.x) * lerpSpeed;
           mesh.position.z += (remote.z - mesh.position.z) * lerpSpeed;
-          
-          // Detect if they're moving
           const dx = remote.x - mesh.position.x;
           const dz = remote.z - mesh.position.z;
-          const isMoving = Math.abs(dx) > 0.01 || Math.abs(dz) > 0.01;
-
-          if (isMoving) {
-            // Walking bob + arm swing
-            mesh.position.y = Math.abs(Math.sin(t * 0.006)) * 0.08;
-            const leftArm = mesh.userData.leftArm as THREE.Mesh | undefined;
-            const rightArm = mesh.userData.rightArm as THREE.Mesh | undefined;
-            if (leftArm) leftArm.rotation.x = Math.sin(t * 0.006) * 0.4;
-            if (rightArm) rightArm.rotation.x = -Math.sin(t * 0.006) * 0.4;
-          } else {
-            // Idle bob
-            mesh.position.y = Math.abs(Math.sin(t * 0.001 + mesh.position.x)) * 0.02;
-            const leftArm = mesh.userData.leftArm as THREE.Mesh | undefined;
-            const rightArm = mesh.userData.rightArm as THREE.Mesh | undefined;
-            if (leftArm) leftArm.rotation.x *= 0.9; // ease back to rest
-            if (rightArm) rightArm.rotation.x *= 0.9;
-          }
-
-          // Face their yaw direction
+          const moving = Math.abs(dx) > 0.01 || Math.abs(dz) > 0.01;
+          animateCharacter(mesh, t, moving, false);
           mesh.rotation.y = remote.yaw + Math.PI;
         } else {
-          // ── AI wandering fallback for NPCs not broadcasting ──
+          // AI wander
           const ws = state.npcWander.get(email);
           if (!ws) return;
-
           const deskPos = DESK_POS[email] || new THREE.Vector3(0, 0, 0);
 
           if (ws.state === "at_desk") {
             mesh.position.x = deskPos.x;
             mesh.position.z = deskPos.z;
-            mesh.position.y = Math.abs(Math.sin(t * 0.0008 + mesh.position.x)) * 0.02;
+            animateCharacter(mesh, t, false, true); // Sitting at desk
             ws.deskTimer -= dt;
             if (ws.deskTimer <= 0) {
               ws.state = "walking";
@@ -819,10 +975,9 @@ export default function OfficeChat({
               ws.wanderTimer = Math.random() * 15 + 8;
             }
           } else if (ws.state === "idle_at_waypoint") {
-            mesh.position.y = Math.abs(Math.sin(t * 0.001 + mesh.position.x)) * 0.02;
+            animateCharacter(mesh, t, false, false);
             ws.idleTimer -= dt;
             if (ws.idleTimer <= 0) {
-              ws.wanderTimer -= ws.idleTimer;
               ws.state = "walking";
               ws.currentTarget = randomWanderTarget();
             }
@@ -843,25 +998,20 @@ export default function OfficeChat({
               }
             } else {
               const moveSpeed = ws.speed * dt;
-              const nx = wdx / dist;
-              const nz = wdz / dist;
-              mesh.position.x += nx * moveSpeed;
-              mesh.position.z += nz * moveSpeed;
-              mesh.position.x = Math.max(-ROOM_HALF, Math.min(ROOM_HALF, mesh.position.x));
-              mesh.position.z = Math.max(-ROOM_HALF, Math.min(ROOM_HALF, mesh.position.z));
-              mesh.rotation.y = Math.atan2(nx, nz);
-              mesh.position.y = Math.abs(Math.sin(t * 0.006)) * 0.08;
-              const leftArm = mesh.userData.leftArm as THREE.Mesh | undefined;
-              const rightArm = mesh.userData.rightArm as THREE.Mesh | undefined;
-              if (leftArm) leftArm.rotation.x = Math.sin(t * 0.006) * 0.4;
-              if (rightArm) rightArm.rotation.x = -Math.sin(t * 0.006) * 0.4;
+              mesh.position.x += (wdx / dist) * moveSpeed;
+              mesh.position.z += (wdz / dist) * moveSpeed;
+              // NPC collision
+              const npcResolved = resolveCollision(mesh.position, 0.3);
+              mesh.position.copy(npcResolved);
+              mesh.rotation.y = Math.atan2(wdx / dist, wdz / dist);
+              animateCharacter(mesh, t, true, false);
+              ws.wanderTimer -= dt;
             }
-            ws.wanderTimer -= dt;
           }
         }
       });
 
-      // Nearby detection — only consider visible (online) NPCs
+      // Nearby NPC detection
       let closestUser: CRMUser | null = null;
       let closestD = Infinity;
       npcMeshes.forEach((mesh, email) => {
@@ -874,19 +1024,16 @@ export default function OfficeChat({
       });
       setNearby(closestUser);
 
-      // Desk proximity — check if near any desk where the NPC is away (wandering) or offline
+      // Desk proximity
       if (!closestUser) {
         let deskNear = false;
         Object.entries(DESK_POS).forEach(([email, pos]) => {
           if (email === currentUserEmail) return;
-          const npcMesh = npcMeshes.get(email);
-          const isOnline = npcMesh?.visible ?? false;
-          // Desk is "available" if NPC is offline OR if online NPC is wandering (not at desk)
           const ws = state.npcWander.get(email);
-          const npcAtDesk = isOnline && ws?.state === "at_desk";
-          if (npcAtDesk) return; // NPC is sitting there
-          const d = state.playerPos.distanceTo(pos);
-          if (d < INTERACT_DIST) deskNear = true;
+          const npcMesh = npcMeshes.get(email);
+          const npcAtDesk = npcMesh?.visible && ws?.state === "at_desk";
+          if (npcAtDesk) return;
+          if (state.playerPos.distanceTo(pos) < INTERACT_DIST) deskNear = true;
         });
         setNearDesk(deskNear);
       } else {
@@ -894,8 +1041,19 @@ export default function OfficeChat({
       }
 
       // TV proximity
-      const tvDist = state.playerPos.distanceTo(TV_POS);
-      setNearTV(tvDist < INTERACT_DIST && !closestUser);
+      setNearTV(state.playerPos.distanceTo(TV_POS) < 3.5 && !closestUser);
+
+      // Interaction point proximity
+      let closestIP: InteractionPoint | null = null;
+      let closestIPDist = Infinity;
+      for (const ip of INTERACT_POINTS) {
+        const d = state.playerPos.distanceTo(ip.pos);
+        if (d < ip.radius && d < closestIPDist) {
+          closestIPDist = d;
+          closestIP = ip;
+        }
+      }
+      setNearInteract(closestIP);
 
       renderer.render(scene, camera);
     };
@@ -904,7 +1062,7 @@ export default function OfficeChat({
     return () => {
       cancelAnimationFrame(state.raf);
       document.removeEventListener("keydown", onDown);
-      document.removeEventListener("keyup",   onUp);
+      document.removeEventListener("keyup", onUp);
       window.removeEventListener("resize", onResize);
       renderer.dispose();
       if (mountRef.current) mountRef.current.innerHTML = "";
@@ -913,7 +1071,7 @@ export default function OfficeChat({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUserEmail]);
 
-  // "E" key opens chat with nearby NPC, terminal at empty desk, or toggles TV
+  // "E" key interactions
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement).tagName === "INPUT") return;
@@ -926,24 +1084,34 @@ export default function OfficeChat({
         } else if (nearDesk && !activeChat && !showTerminal) {
           setShowTerminal(true);
           document.exitPointerLock();
+        } else if (nearInteract && !activeChat && !showTerminal) {
+          if (nearInteract.action === "sit") {
+            setIsSitting(prev => !prev);
+          } else if (nearInteract.action === "whiteboard") {
+            setShowWhiteboard(true);
+            document.exitPointerLock();
+          } else if (nearInteract.action === "coffee") {
+            setCoffeeEmote(true);
+            setTimeout(() => setCoffeeEmote(false), 3000);
+          } else if (nearInteract.action === "tv") {
+            setTvUnmuted(prev => !prev);
+          }
         }
       }
-      if (e.key === "Escape" && showTerminal) {
-        setShowTerminal(false);
+      if (e.key === "Escape") {
+        if (showTerminal) setShowTerminal(false);
+        if (showWhiteboard) setShowWhiteboard(false);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [nearby, activeChat, nearDesk, showTerminal, nearTV]);
+  }, [nearby, activeChat, nearDesk, showTerminal, nearTV, nearInteract, showWhiteboard]);
 
-  // Update online indicators + visibility when presence changes
+  // Presence sync
   useEffect(() => {
-    const s = stateRef.current;
-    if (!s) return;
+    const s = stateRef.current; if (!s) return;
     s.npcMeshes.forEach((mesh, email) => {
-      // Atria is always online
-      const isOnline = email === "atria@merchanthaus.io" ? true : (presence[email] ?? false);
-      mesh.visible = isOnline;
+      mesh.visible = email === "atria@merchanthaus.io" ? true : (presence[email] ?? false);
     });
     s.onlineIndicators.forEach((dot, email) => {
       const isOnline = email === "atria@merchanthaus.io" ? true : (presence[email] ?? false);
@@ -952,79 +1120,45 @@ export default function OfficeChat({
     });
   }, [presence]);
 
-  // 3D speech bubbles above NPCs when new messages arrive
+  // 3D speech bubbles
   useEffect(() => {
     const s = stateRef.current;
     if (!s || messages.length <= prevMsgCountRef.current) {
-      prevMsgCountRef.current = messages.length;
-      return;
+      prevMsgCountRef.current = messages.length; return;
     }
-    // Find new messages
     const newMsgs = messages.slice(prevMsgCountRef.current);
     prevMsgCountRef.current = messages.length;
 
     newMsgs.forEach(msg => {
       const senderEmail = msg.fromEmail;
-      if (senderEmail === currentUserEmail) return; // don't show own messages as 3D bubbles
+      if (senderEmail === currentUserEmail) return;
       const npcMesh = s.npcMeshes.get(senderEmail);
       if (!npcMesh || !npcMesh.visible) return;
-
-      // Remove old bubble for this NPC
       const existing = speechBubblesRef.current.get(senderEmail);
-      if (existing) {
-        npcMesh.remove(existing.sprite);
-        clearTimeout(existing.timeout);
-      }
-
-      // Create speech bubble sprite
+      if (existing) { npcMesh.remove(existing.sprite); clearTimeout(existing.timeout); }
       const cv = document.createElement("canvas");
       cv.width = 512; cv.height = 128;
       const ctx = cv.getContext("2d")!;
-      // Bubble background
-      const pad = 16;
       ctx.fillStyle = "rgba(255,255,255,0.92)";
-      const w = cv.width - pad * 2, h = cv.height - pad * 2;
-      const r = 20;
+      const pad = 16, w = cv.width - pad * 2, h = cv.height - pad * 2, r = 20;
       ctx.beginPath();
-      ctx.moveTo(pad + r, pad);
-      ctx.lineTo(pad + w - r, pad);
+      ctx.moveTo(pad + r, pad); ctx.lineTo(pad + w - r, pad);
       ctx.quadraticCurveTo(pad + w, pad, pad + w, pad + r);
       ctx.lineTo(pad + w, pad + h - r);
       ctx.quadraticCurveTo(pad + w, pad + h, pad + w - r, pad + h);
-      // Tail
-      ctx.lineTo(pad + w * 0.35, pad + h);
-      ctx.lineTo(pad + w * 0.25, pad + h + 14);
-      ctx.lineTo(pad + w * 0.2, pad + h);
-      ctx.lineTo(pad + r, pad + h);
+      ctx.lineTo(pad + w * 0.35, pad + h); ctx.lineTo(pad + w * 0.25, pad + h + 14);
+      ctx.lineTo(pad + w * 0.2, pad + h); ctx.lineTo(pad + r, pad + h);
       ctx.quadraticCurveTo(pad, pad + h, pad, pad + h - r);
-      ctx.lineTo(pad, pad + r);
-      ctx.quadraticCurveTo(pad, pad, pad + r, pad);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = "rgba(0,0,0,0.15)";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      // Text
-      ctx.fillStyle = "#1a1a1a";
-      ctx.font = "bold 22px Arial";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      const text = msg.body.length > 40 ? msg.body.slice(0, 37) + "…" : msg.body;
-      ctx.fillText(text, cv.width / 2, cv.height / 2);
-
+      ctx.lineTo(pad, pad + r); ctx.quadraticCurveTo(pad, pad, pad + r, pad);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "#1a1a1a"; ctx.font = "bold 22px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(msg.body.length > 40 ? msg.body.slice(0, 37) + "…" : msg.body, cv.width / 2, cv.height / 2);
       const tex = new THREE.CanvasTexture(cv);
-      const spriteMat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
-      const sprite = new THREE.Sprite(spriteMat);
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
       const userScale = USERS.find(u => u.email === senderEmail)?.scale ?? 1;
-      sprite.position.y = 2.4 / userScale;
-      sprite.scale.set(3 / userScale, 0.8 / userScale, 1);
+      sprite.position.y = 2.8 / userScale; sprite.scale.set(3 / userScale, 0.8 / userScale, 1);
       npcMesh.add(sprite);
-
-      const timeout = setTimeout(() => {
-        npcMesh.remove(sprite);
-        speechBubblesRef.current.delete(senderEmail);
-      }, 8000);
-
+      const timeout = setTimeout(() => { npcMesh.remove(sprite); speechBubblesRef.current.delete(senderEmail); }, 8000);
       speechBubblesRef.current.set(senderEmail, { sprite, timeout });
     });
   }, [messages, currentUserEmail]);
@@ -1036,19 +1170,22 @@ export default function OfficeChat({
   }, [inputVal, activeChat, onSendMessage]);
 
   const chatMessages = activeChat
-    ? messages.filter(
-        m =>
-          (m.fromEmail === currentUserEmail && m.toEmail === activeChat.email) ||
-          (m.fromEmail === activeChat.email  && m.toEmail === currentUserEmail)
+    ? messages.filter(m =>
+        (m.fromEmail === currentUserEmail && m.toEmail === activeChat.email) ||
+        (m.fromEmail === activeChat.email && m.toEmail === currentUserEmail)
       )
     : [];
 
+  // Determine current interaction prompt
+  const interactPrompt = nearInteract && !activeChat && !showTerminal && !showWhiteboard
+    ? nearInteract.label
+    : null;
+
   return (
     <div className="relative w-full h-full select-none">
-      {/* Three.js canvas */}
       <div ref={mountRef} className="w-full h-full" />
 
-      {/* Lock hint (desktop only) */}
+      {/* Lock hint */}
       {!isMobile && !locked && !activeChat && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <Badge variant="secondary" className="text-sm px-4 py-2 bg-black/70 text-white border-0">
@@ -1057,7 +1194,7 @@ export default function OfficeChat({
         </div>
       )}
 
-      {/* Crosshair (desktop only) */}
+      {/* Crosshair */}
       {!isMobile && locked && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="w-4 h-4 relative">
@@ -1067,7 +1204,32 @@ export default function OfficeChat({
         </div>
       )}
 
-      {/* Nearby desk prompt (empty desk) */}
+      {/* Coffee emote */}
+      {coffeeEmote && (
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 pointer-events-none z-30 animate-bounce">
+          <span className="text-5xl">☕</span>
+        </div>
+      )}
+
+      {/* Sitting indicator */}
+      {isSitting && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 pointer-events-none z-10">
+          <Badge className="bg-primary/80 text-primary-foreground border-0 text-xs px-3 py-1">
+            🪑 Sitting — move to stand up
+          </Badge>
+        </div>
+      )}
+
+      {/* Interaction prompt (generic) */}
+      {!isMobile && interactPrompt && !nearby && !nearDesk && !nearTV && (
+        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 pointer-events-none">
+          <Badge className="bg-black/80 text-white border-0 text-sm px-4 py-2">
+            Press <kbd className="mx-1 px-1 bg-white/20 rounded">E</kbd> {interactPrompt}
+          </Badge>
+        </div>
+      )}
+
+      {/* Nearby desk prompt */}
       {nearDesk && !activeChat && !showTerminal && !isMobile && (
         <div className="absolute bottom-24 left-1/2 -translate-x-1/2 pointer-events-none">
           <Badge className="bg-black/80 text-white border-0 text-sm px-4 py-2">
@@ -1076,7 +1238,7 @@ export default function OfficeChat({
         </div>
       )}
 
-      {/* Near TV prompt */}
+      {/* Near TV */}
       {nearTV && !activeChat && !showTerminal && !isMobile && (
         <div className="absolute bottom-24 left-1/2 -translate-x-1/2 pointer-events-none">
           <Badge className="bg-black/80 text-white border-0 text-sm px-4 py-2">
@@ -1085,7 +1247,7 @@ export default function OfficeChat({
         </div>
       )}
 
-      {/* Nearby NPC prompt */}
+      {/* Near NPC */}
       {nearby && !activeChat && !showTerminal && !isMobile && (
         <div className="absolute bottom-24 left-1/2 -translate-x-1/2 pointer-events-none">
           <Badge className="bg-black/80 text-white border-0 text-sm px-4 py-2">
@@ -1094,33 +1256,24 @@ export default function OfficeChat({
         </div>
       )}
 
-      {/* Speech bubble chat — floating at bottom */}
+      {/* Chat UI */}
       {activeChat && (
         <div className={`absolute z-10 ${isMobile ? "inset-x-2 bottom-2" : "bottom-4 left-1/2 -translate-x-1/2 w-[480px] max-w-[90vw]"}`}>
-          {/* Recent messages as floating speech bubbles (last 4) */}
           <div ref={scrollRef} className="flex flex-col gap-1.5 mb-2 max-h-40 overflow-hidden">
             {chatMessages.slice(-4).map(msg => {
               const isMe = msg.fromEmail === currentUserEmail;
               return (
                 <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
                   <div className={`relative max-w-[80%] px-3 py-1.5 text-sm leading-snug ${
-                    isMe
-                      ? "bg-primary/90 text-primary-foreground rounded-2xl rounded-br-sm"
-                      : "bg-black/80 text-white rounded-2xl rounded-bl-sm"
-                  }`}
-                  style={{ backdropFilter: "blur(8px)" }}
-                  >
-                    {!isMe && (
-                      <span className="text-[10px] font-semibold text-white/60 block -mb-0.5">{activeChat.name}</span>
-                    )}
+                    isMe ? "bg-primary/90 text-primary-foreground rounded-2xl rounded-br-sm" : "bg-black/80 text-white rounded-2xl rounded-bl-sm"
+                  }`} style={{ backdropFilter: "blur(8px)" }}>
+                    {!isMe && <span className="text-[10px] font-semibold text-white/60 block -mb-0.5">{activeChat.name}</span>}
                     <span className="line-clamp-2">{msg.body}</span>
                   </div>
                 </div>
               );
             })}
           </div>
-
-          {/* Compact input bar */}
           <div className="flex gap-2 items-center bg-black/80 backdrop-blur-md rounded-full px-3 py-1.5 border border-white/10">
             <span className="text-xs text-white/40 shrink-0">{activeChat.name}</span>
             <Input
@@ -1131,33 +1284,19 @@ export default function OfficeChat({
               onKeyDown={e => { if (e.key === "Enter") handleSend(); }}
               autoFocus
             />
-            <Button
-              size="sm"
-              className="h-7 px-3 rounded-full bg-primary hover:bg-primary/80 text-primary-foreground text-xs"
-              onClick={handleSend}
-            >
+            <Button size="sm" className="h-7 px-3 rounded-full bg-primary hover:bg-primary/80 text-primary-foreground text-xs" onClick={handleSend}>
               Send
             </Button>
-            <button
-              onClick={() => setActiveChat(null)}
-              className="text-white/40 hover:text-white text-sm leading-none ml-1"
-            >✕</button>
+            <button onClick={() => setActiveChat(null)} className="text-white/40 hover:text-white text-sm leading-none ml-1">✕</button>
           </div>
         </div>
       )}
 
-      {/* Fake monitor — OPS Terminal */}
+      {/* Terminal */}
       {showTerminal && (
         <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/60">
           <div className="relative flex flex-col items-center">
-            <div
-              className="rounded-xl overflow-hidden shadow-2xl"
-              style={{
-                background: "linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 50%, #0e0e0e 100%)",
-                padding: "18px 18px 8px 18px",
-                border: "2px solid #333",
-              }}
-            >
+            <div className="rounded-xl overflow-hidden shadow-2xl" style={{ background: "linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 50%, #0e0e0e 100%)", padding: "18px 18px 8px 18px", border: "2px solid #333" }}>
               <div className="flex items-center justify-between mb-2 px-1">
                 <span className="text-[10px] font-bold tracking-widest text-white/30 uppercase">OPS Terminal</span>
                 <div className="flex items-center gap-1.5">
@@ -1165,46 +1304,36 @@ export default function OfficeChat({
                   <span className="text-[9px] text-white/20">ONLINE</span>
                 </div>
               </div>
-              <div
-                className="relative rounded-sm overflow-hidden"
-                style={{
-                  width: "min(75vw, 900px)",
-                  height: "min(65vh, 560px)",
-                  boxShadow: "inset 0 0 60px rgba(0,0,0,0.5), 0 0 20px rgba(100,130,255,0.08)",
-                }}
-              >
-                <div
-                  className="absolute inset-0 z-10 pointer-events-none"
-                  style={{ background: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px)" }}
-                />
-                <div
-                  className="absolute inset-0 z-10 pointer-events-none"
-                  style={{ background: "linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 50%, rgba(255,255,255,0.02) 100%)" }}
-                />
-                <iframe
-                  src={window.location.origin + "/dashboard"}
-                  className="w-full h-full border-0"
-                  title="OPS Terminal"
-                  style={{ borderRadius: "2px" }}
-                />
-              </div>
-              <div className="flex items-center justify-center pt-2 pb-1">
-                <div className="w-8 h-1 rounded-full bg-white/10" />
+              <div className="relative rounded-sm overflow-hidden" style={{ width: "min(75vw, 900px)", height: "min(65vh, 560px)", boxShadow: "inset 0 0 60px rgba(0,0,0,0.5)" }}>
+                <div className="absolute inset-0 z-10 pointer-events-none" style={{ background: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px)" }} />
+                <iframe src={window.location.origin + "/dashboard"} className="w-full h-full border-0" title="OPS Terminal" />
               </div>
             </div>
             <div className="w-16 h-8" style={{ background: "linear-gradient(180deg, #1a1a1a, #111)", clipPath: "polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)" }} />
             <div className="w-28 h-2 rounded-full" style={{ background: "linear-gradient(180deg, #222, #0e0e0e)" }} />
           </div>
-          <button
-            onClick={() => setShowTerminal(false)}
-            className="absolute top-6 right-6 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-colors backdrop-blur-sm"
-          >
+          <button onClick={() => setShowTerminal(false)} className="absolute top-6 right-6 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-colors backdrop-blur-sm">
             ESC to close
           </button>
         </div>
       )}
 
-      {/* Always-on YouTube TV — MrBallen playlist (hidden on mobile — conflicts with joystick) */}
+      {/* Whiteboard overlay */}
+      {showWhiteboard && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/60">
+          <div className="bg-white rounded-xl shadow-2xl p-6" style={{ width: "min(80vw, 700px)", height: "min(60vh, 500px)" }}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-lg text-gray-900">📋 Whiteboard</h3>
+              <button onClick={() => setShowWhiteboard(false)} className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm text-gray-700">Close</button>
+            </div>
+            <div className="w-full h-[calc(100%-48px)] bg-gray-50 rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400">
+              <p className="text-center">Whiteboard — collaborative space coming soon<br/><span className="text-xs">Use the chat to share ideas with your team</span></p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TV */}
       {!isMobile && (
         <div className="absolute bottom-3 left-3 z-10" style={{ width: 220 }}>
           <div className="rounded-lg overflow-hidden shadow-lg" style={{ background: "#0a0a0a", padding: "4px 4px 2px 4px", border: "1px solid #333" }}>
@@ -1218,90 +1347,97 @@ export default function OfficeChat({
             <iframe
               key={tvUnmuted ? "unmuted" : "muted"}
               src={`https://www.youtube-nocookie.com/embed/videoseries?list=PLofht4PTcKYnaH8w5olJCI-wUVxuoMHqM&autoplay=1&${tvUnmuted ? "" : "mute=1&"}loop=1&controls=0&modestbranding=1&rel=0`}
-              className="w-full border-0 rounded-sm"
-              style={{ aspectRatio: "16/9" }}
-              title="Office TV"
-              allow="autoplay; encrypted-media; picture-in-picture"
-              allowFullScreen
+              className="w-full border-0 rounded-sm" style={{ aspectRatio: "16/9" }} title="Office TV"
+              allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen
             />
           </div>
         </div>
       )}
 
-      {/* Controls hint (desktop) */}
+      {/* Controls hint */}
       {!isMobile && (
         <div className="absolute top-3 left-3 pointer-events-none">
           <Badge variant="outline" className="bg-black/60 text-white/60 border-white/10 text-xs">
-            WASD move · Mouse look · E to interact · ESC release
+            WASD move · Mouse look · E interact · ESC release
           </Badge>
         </div>
       )}
 
-      {/* ── MOBILE CONTROLS ── */}
-      {isMobile && !activeChat && !showTerminal && (
+      {/* Minimap */}
+      {!isMobile && locked && (
+        <div className="absolute top-3 right-3 z-10">
+          <div className="w-32 h-32 rounded-lg bg-black/70 border border-white/10 overflow-hidden relative">
+            <span className="absolute top-0.5 left-1 text-[7px] text-white/30 uppercase tracking-wider">Map</span>
+            {/* Player dot */}
+            <div className="absolute w-2 h-2 rounded-full bg-yellow-400 shadow-sm shadow-yellow-400/50" style={{
+              left: `${((stateRef.current?.playerPos.x ?? 0) / ROOM + 1) * 50}%`,
+              top: `${(1 - (stateRef.current?.playerPos.z ?? 0) / ROOM) * 50}%`,
+              transform: "translate(-50%, -50%)",
+            }} />
+            {/* Room outlines */}
+            <div className="absolute border border-white/10" style={{ left: "2%", top: "2%", width: "96%", height: "96%" }} />
+            {/* Break room */}
+            <div className="absolute border border-white/8 bg-white/5" style={{ left: "4%", top: "36%", width: "30%", height: "30%" }} />
+            {/* Meeting room */}
+            <div className="absolute border border-white/8 bg-white/5" style={{ left: "66%", top: "36%", width: "30%", height: "30%" }} />
+          </div>
+        </div>
+      )}
+
+      {/* Mobile controls */}
+      {isMobile && !activeChat && !showTerminal && !showWhiteboard && (
         <>
-          {/* Virtual Joystick — bottom left */}
           <div
             className="mobile-joystick absolute bottom-6 left-6 z-20"
             style={{ width: 120, height: 120 }}
             onTouchStart={(e) => {
               e.stopPropagation();
               const rect = e.currentTarget.getBoundingClientRect();
-              const cx = rect.left + rect.width / 2;
-              const cy = rect.top + rect.height / 2;
+              const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
               const t = e.touches[0];
-              const dx = (t.clientX - cx) / (rect.width / 2);
-              const dy = (t.clientY - cy) / (rect.height / 2);
-              joystickRef.current = { x: Math.max(-1, Math.min(1, dx)), y: Math.max(-1, Math.min(1, dy)), active: true };
+              joystickRef.current = { x: Math.max(-1, Math.min(1, (t.clientX - cx) / (rect.width / 2))), y: Math.max(-1, Math.min(1, (t.clientY - cy) / (rect.height / 2))), active: true };
             }}
             onTouchMove={(e) => {
               e.stopPropagation();
               const rect = e.currentTarget.getBoundingClientRect();
-              const cx = rect.left + rect.width / 2;
-              const cy = rect.top + rect.height / 2;
+              const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
               const t = e.touches[0];
-              const dx = (t.clientX - cx) / (rect.width / 2);
-              const dy = (t.clientY - cy) / (rect.height / 2);
-              joystickRef.current = { x: Math.max(-1, Math.min(1, dx)), y: Math.max(-1, Math.min(1, dy)), active: true };
+              joystickRef.current = { x: Math.max(-1, Math.min(1, (t.clientX - cx) / (rect.width / 2))), y: Math.max(-1, Math.min(1, (t.clientY - cy) / (rect.height / 2))), active: true };
             }}
             onTouchEnd={() => { joystickRef.current = { x: 0, y: 0, active: false }; }}
           >
-            {/* Joystick base */}
             <div className="w-full h-full rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
-              {/* Joystick knob */}
               <div className="w-12 h-12 rounded-full bg-white/30 border border-white/40" />
             </div>
           </div>
 
-          {/* Interact button — bottom right */}
-          {(nearby || nearDesk || nearTV) && (
+          {(nearby || nearDesk || nearTV || nearInteract) && (
             <button
               className="mobile-interact-btn absolute bottom-8 right-8 z-20 w-16 h-16 rounded-full bg-primary/80 text-white font-bold text-xs flex items-center justify-center border-2 border-white/30 active:scale-90 transition-transform"
               onTouchStart={(e) => {
                 e.stopPropagation();
-                if (nearby) {
-                  setActiveChat(nearby);
-                } else if (nearTV) {
-                  setTvUnmuted(prev => !prev);
-                } else if (nearDesk) {
-                  setShowTerminal(true);
+                if (nearby) setActiveChat(nearby);
+                else if (nearTV) setTvUnmuted(prev => !prev);
+                else if (nearDesk) setShowTerminal(true);
+                else if (nearInteract) {
+                  if (nearInteract.action === "sit") setIsSitting(prev => !prev);
+                  else if (nearInteract.action === "whiteboard") setShowWhiteboard(true);
+                  else if (nearInteract.action === "coffee") { setCoffeeEmote(true); setTimeout(() => setCoffeeEmote(false), 3000); }
                 }
               }}
             >
-              {nearby ? `Chat\n${nearby.name}` : nearTV ? (tvUnmuted ? "Mute" : "Unmute") : "Terminal"}
+              {nearby ? `Chat\n${nearby.name}` : nearTV ? (tvUnmuted ? "Mute" : "Unmute") : nearDesk ? "Terminal" : nearInteract?.label ?? "Interact"}
             </button>
           )}
 
-          {/* Mobile proximity indicator */}
-          {(nearby || nearDesk || nearTV) && (
+          {(nearby || nearDesk || nearTV || nearInteract) && (
             <div className="absolute bottom-28 left-1/2 -translate-x-1/2 pointer-events-none z-20">
               <Badge className="bg-black/80 text-white border-0 text-xs px-3 py-1">
-                {nearby ? `Near ${nearby.name}` : nearTV ? "Near TV" : "Near Terminal"}
+                {nearby ? `Near ${nearby.name}` : nearTV ? "Near TV" : nearDesk ? "Near Terminal" : nearInteract?.label ?? ""}
               </Badge>
             </div>
           )}
 
-          {/* Mobile hint */}
           <div className="absolute top-3 left-3 pointer-events-none z-20">
             <Badge variant="outline" className="bg-black/60 text-white/60 border-white/10 text-[10px]">
               Drag to look · Joystick to move
@@ -1310,14 +1446,12 @@ export default function OfficeChat({
         </>
       )}
 
-      {/* Mobile close button for terminal */}
+      {/* Mobile close buttons */}
       {isMobile && showTerminal && (
-        <button
-          onClick={() => setShowTerminal(false)}
-          className="absolute top-4 right-4 z-30 px-3 py-2 rounded-lg bg-white/10 text-white text-xs font-medium backdrop-blur-sm"
-        >
-          ✕ Close
-        </button>
+        <button onClick={() => setShowTerminal(false)} className="absolute top-4 right-4 z-30 px-3 py-2 rounded-lg bg-white/10 text-white text-xs font-medium backdrop-blur-sm">✕ Close</button>
+      )}
+      {isMobile && showWhiteboard && (
+        <button onClick={() => setShowWhiteboard(false)} className="absolute top-4 right-4 z-30 px-3 py-2 rounded-lg bg-white/10 text-white text-xs font-medium backdrop-blur-sm">✕ Close</button>
       )}
     </div>
   );
