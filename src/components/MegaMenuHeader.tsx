@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, NavLink as RouterNavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
+  BookMarked,
   Building2,
   Users,
   FileText,
@@ -115,6 +116,7 @@ const navMain: NavGroup[] = [
 
 const toolsItems: NavItem[] = [
   { title: "SOP", url: "/sop", icon: BookOpen, description: "Standard operating procedures" },
+  { title: "Partner Portal Guide", url: "/tools/gateway-guide", icon: BookMarked, description: "Interactive NMI portal walkthrough" },
   { title: "Preboarding Wizard", url: "/tools/preboarding-wizard", icon: ClipboardList, description: "Application readiness form" },
   { title: "Revenue Calculator", url: "/tools/revenue-calculator", icon: Calculator, description: "Estimate processing revenue" },
   { title: "CSV Import", url: "/tools/csv-import", icon: FileSpreadsheet, description: "Bulk import data" },

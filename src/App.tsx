@@ -32,6 +32,7 @@ import Opportunities from "./pages/Opportunities";
 import OpportunityDetail from "./pages/OpportunityDetail";
 
 import NMIPaymentsExplained from "./pages/NMIPaymentsExplained";
+import GatewayGuide from "./pages/GatewayGuide";
 import TerminalUpdates from "./pages/TerminalUpdates";
 import WebSubmissions from "./pages/WebSubmissions";
 import MerchantApply from "./pages/MerchantApply";
@@ -96,6 +97,7 @@ const App = () => (
                 <Route path="/live-billing/:id" element={<ProtectedRoute><LiveAccountDetail /></ProtectedRoute>} />
                 <Route path="/chat" element={<ProtectedRoute><Index /></ProtectedRoute>} />
                 <Route path="/tools/nmi-payments" element={<ProtectedRoute><NMIPaymentsExplained /></ProtectedRoute>} />
+                <Route path="/tools/gateway-guide" element={<ProtectedRoute><GatewayGuide /></ProtectedRoute>} />
                 <Route path="/tools/terminal-updates" element={<ProtectedRoute><TerminalUpdates /></ProtectedRoute>} />
                 <Route path="/tools/netlify" element={<ProtectedRoute><NetlifyHub /></ProtectedRoute>} />
                 <Route path="/supported-processors" element={<ProtectedRoute><SupportedProcessors /></ProtectedRoute>} />
