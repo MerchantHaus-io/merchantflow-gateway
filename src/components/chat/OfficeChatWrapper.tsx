@@ -1,16 +1,18 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import OfficeChat, { ChatMessage } from "./OfficeChat";
+import OfficeChat, { ChatMessage, RemotePosition } from "./OfficeChat";
 
 /**
  * Wrapper that connects the 3D OfficeChat component to real Supabase
- * direct messages and presence data.
+ * direct messages, presence data, and real-time position broadcasting.
  */
 export default function OfficeChatWrapper() {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [presence, setPresence] = useState<Record<string, boolean>>({});
+  const [remotePositions, setRemotePositions] = useState<Record<string, RemotePosition>>({});
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const currentUserEmail = user?.email || "";
 
@@ -26,7 +28,6 @@ export default function OfficeChatWrapper() {
 
     if (error || !data) return;
 
-    // We need to map sender/receiver UUIDs to emails via profiles
     const userIds = new Set<string>();
     data.forEach((m) => {
       userIds.add(m.sender_id);
@@ -96,11 +97,57 @@ export default function OfficeChatWrapper() {
     return () => clearInterval(interval);
   }, [user]);
 
+  // ── Real-time position broadcasting via Supabase Realtime broadcast ──
+  useEffect(() => {
+    if (!user || !currentUserEmail) return;
+
+    const channel = supabase.channel("office-positions", {
+      config: { broadcast: { self: false } },
+    });
+
+    channel
+      .on("broadcast", { event: "position" }, (payload) => {
+        const data = payload.payload as RemotePosition;
+        if (data.email && data.email !== currentUserEmail) {
+          setRemotePositions((prev) => ({
+            ...prev,
+            [data.email]: { ...data, timestamp: Date.now() },
+          }));
+        }
+      })
+      .subscribe();
+
+    channelRef.current = channel;
+
+    return () => {
+      supabase.removeChannel(channel);
+      channelRef.current = null;
+    };
+  }, [user, currentUserEmail]);
+
+  // Position broadcast callback — called from game loop (~10fps)
+  const handlePositionUpdate = useCallback(
+    (pos: { x: number; z: number; yaw: number }) => {
+      if (!channelRef.current || !currentUserEmail) return;
+      channelRef.current.send({
+        type: "broadcast",
+        event: "position",
+        payload: {
+          email: currentUserEmail,
+          x: pos.x,
+          z: pos.z,
+          yaw: pos.yaw,
+          timestamp: Date.now(),
+        },
+      });
+    },
+    [currentUserEmail]
+  );
+
   // Send message handler
   const handleSendMessage = useCallback(
     async (toEmail: string, body: string) => {
       if (!user) return;
-      // Look up receiver profile by email
       const { data: receiverProfile } = await supabase
         .from("profiles")
         .select("id")
@@ -127,6 +174,8 @@ export default function OfficeChatWrapper() {
       messages={messages}
       onSendMessage={handleSendMessage}
       presence={presence}
+      onPositionUpdate={handlePositionUpdate}
+      remotePositions={remotePositions}
     />
   );
 }

@@ -46,24 +46,24 @@ export interface ChatMessage {
   timestamp: Date;
 }
 
+export interface RemotePosition {
+  email: string;
+  x: number;
+  z: number;
+  yaw: number;
+  timestamp: number;
+}
+
 interface OfficeChatProps {
   /** Email of the authenticated user */
   currentUserEmail: string;
-  /**
-   * Provide real messages from your CRM here.
-   * Re-render with updated array to refresh the panel.
-   */
   messages?: ChatMessage[];
-  /**
-   * Called when the user sends a message.
-   * Integrate with your CRM send endpoint here.
-   */
   onSendMessage?: (to: string, body: string) => void;
-  /**
-   * Map of email → online status from your presence system.
-   * Falls back to `true` for everyone if omitted.
-   */
   presence?: Record<string, boolean>;
+  /** Called each frame with the player's current position — broadcast to other clients */
+  onPositionUpdate?: (pos: { x: number; z: number; yaw: number }) => void;
+  /** Positions received from other connected clients */
+  remotePositions?: Record<string, RemotePosition>;
 }
 
 // ── USER DEFINITIONS ──────────────────────────────────────────────────────────
@@ -480,6 +480,8 @@ export default function OfficeChat({
   messages = [],
   onSendMessage,
   presence = {},
+  onPositionUpdate,
+  remotePositions = {},
 }: OfficeChatProps) {
   const mountRef   = useRef<HTMLDivElement>(null);
   const stateRef   = useRef<{
@@ -516,6 +518,13 @@ export default function OfficeChat({
   // Mobile touch refs
   const joystickRef = useRef({ x: 0, y: 0, active: false });
   const touchLookRef = useRef({ lastX: 0, lastY: 0, active: false });
+  
+  // Refs for callbacks & remote data (avoid stale closures in game loop)
+  const onPositionUpdateRef = useRef(onPositionUpdate);
+  onPositionUpdateRef.current = onPositionUpdate;
+  const remotePositionsRef = useRef(remotePositions);
+  remotePositionsRef.current = remotePositions;
+  const lastBroadcastRef = useRef(0);
 
   const currentUser = USERS.find(u => u.email === currentUserEmail)!;
   const others      = USERS.filter(u => u.email !== currentUserEmail);
@@ -743,72 +752,112 @@ export default function OfficeChat({
       // Face camera direction (yaw only)
       playerMesh.rotation.y = state.yaw + Math.PI;
 
-      // NPC wandering AI + walking animation
+      // Broadcast player position (throttled to ~10fps)
+      if (t - lastBroadcastRef.current > 100) {
+        lastBroadcastRef.current = t;
+        onPositionUpdateRef.current?.({
+          x: state.playerPos.x,
+          z: state.playerPos.z,
+          yaw: state.yaw,
+        });
+      }
+
+      // NPC movement: use remote positions for real users, AI wandering as fallback
+      const remotePos = remotePositionsRef.current;
+      const now = Date.now();
+
       npcMeshes.forEach((mesh, email) => {
         if (!mesh.visible) return;
-        const ws = state.npcWander.get(email);
-        if (!ws) return;
 
-        const deskPos = DESK_POS[email] || new THREE.Vector3(0, 0, 0);
+        const remote = remotePos[email];
+        const isRemoteActive = remote && (now - remote.timestamp < 5000); // 5s staleness threshold
 
-        if (ws.state === "at_desk") {
-          // Sitting at desk — idle bob
-          mesh.position.x = deskPos.x;
-          mesh.position.z = deskPos.z;
-          mesh.position.y = Math.abs(Math.sin(t * 0.0008 + mesh.position.x)) * 0.02;
-          ws.deskTimer -= dt;
-          if (ws.deskTimer <= 0) {
-            ws.state = "walking";
-            ws.currentTarget = randomWanderTarget();
-            ws.wanderTimer = Math.random() * 15 + 8;
-          }
-        } else if (ws.state === "idle_at_waypoint") {
-          // Paused at a waypoint
-          mesh.position.y = Math.abs(Math.sin(t * 0.001 + mesh.position.x)) * 0.02;
-          ws.idleTimer -= dt;
-          if (ws.idleTimer <= 0) {
-            ws.wanderTimer -= ws.idleTimer; // don't double-subtract
-            ws.state = "walking";
-            ws.currentTarget = randomWanderTarget();
-          }
-        } else {
-          // Walking toward target
-          const dx = ws.currentTarget.x - mesh.position.x;
-          const dz = ws.currentTarget.z - mesh.position.z;
-          const dist = Math.sqrt(dx * dx + dz * dz);
+        if (isRemoteActive) {
+          // ── Real user online in simulator — lerp to their broadcast position ──
+          const lerpSpeed = 8 * dt; // smooth interpolation
+          mesh.position.x += (remote.x - mesh.position.x) * lerpSpeed;
+          mesh.position.z += (remote.z - mesh.position.z) * lerpSpeed;
+          
+          // Detect if they're moving
+          const dx = remote.x - mesh.position.x;
+          const dz = remote.z - mesh.position.z;
+          const isMoving = Math.abs(dx) > 0.01 || Math.abs(dz) > 0.01;
 
-          if (dist < 0.3) {
-            // Reached waypoint — pause or go to desk
-            ws.wanderTimer -= dt;
-            if (ws.wanderTimer <= 0) {
-              ws.state = "at_desk";
-              ws.deskTimer = Math.random() * 20 + 10;
-            } else {
-              ws.state = "idle_at_waypoint";
-              ws.idleTimer = Math.random() * 3 + 1; // 1-4s pause
-              ws.currentTarget = randomWanderTarget();
-            }
-          } else {
-            // Move toward target
-            const moveSpeed = ws.speed * dt;
-            const nx = dx / dist;
-            const nz = dz / dist;
-            mesh.position.x += nx * moveSpeed;
-            mesh.position.z += nz * moveSpeed;
-            // Clamp to room
-            mesh.position.x = Math.max(-ROOM_HALF, Math.min(ROOM_HALF, mesh.position.x));
-            mesh.position.z = Math.max(-ROOM_HALF, Math.min(ROOM_HALF, mesh.position.z));
-            // Face walking direction
-            mesh.rotation.y = Math.atan2(nx, nz);
-            // Walking bob
+          if (isMoving) {
+            // Walking bob + arm swing
             mesh.position.y = Math.abs(Math.sin(t * 0.006)) * 0.08;
-            // Arm swing
             const leftArm = mesh.userData.leftArm as THREE.Mesh | undefined;
             const rightArm = mesh.userData.rightArm as THREE.Mesh | undefined;
             if (leftArm) leftArm.rotation.x = Math.sin(t * 0.006) * 0.4;
             if (rightArm) rightArm.rotation.x = -Math.sin(t * 0.006) * 0.4;
+          } else {
+            // Idle bob
+            mesh.position.y = Math.abs(Math.sin(t * 0.001 + mesh.position.x)) * 0.02;
+            const leftArm = mesh.userData.leftArm as THREE.Mesh | undefined;
+            const rightArm = mesh.userData.rightArm as THREE.Mesh | undefined;
+            if (leftArm) leftArm.rotation.x *= 0.9; // ease back to rest
+            if (rightArm) rightArm.rotation.x *= 0.9;
           }
-          ws.wanderTimer -= dt;
+
+          // Face their yaw direction
+          mesh.rotation.y = remote.yaw + Math.PI;
+        } else {
+          // ── AI wandering fallback for NPCs not broadcasting ──
+          const ws = state.npcWander.get(email);
+          if (!ws) return;
+
+          const deskPos = DESK_POS[email] || new THREE.Vector3(0, 0, 0);
+
+          if (ws.state === "at_desk") {
+            mesh.position.x = deskPos.x;
+            mesh.position.z = deskPos.z;
+            mesh.position.y = Math.abs(Math.sin(t * 0.0008 + mesh.position.x)) * 0.02;
+            ws.deskTimer -= dt;
+            if (ws.deskTimer <= 0) {
+              ws.state = "walking";
+              ws.currentTarget = randomWanderTarget();
+              ws.wanderTimer = Math.random() * 15 + 8;
+            }
+          } else if (ws.state === "idle_at_waypoint") {
+            mesh.position.y = Math.abs(Math.sin(t * 0.001 + mesh.position.x)) * 0.02;
+            ws.idleTimer -= dt;
+            if (ws.idleTimer <= 0) {
+              ws.wanderTimer -= ws.idleTimer;
+              ws.state = "walking";
+              ws.currentTarget = randomWanderTarget();
+            }
+          } else {
+            const wdx = ws.currentTarget.x - mesh.position.x;
+            const wdz = ws.currentTarget.z - mesh.position.z;
+            const dist = Math.sqrt(wdx * wdx + wdz * wdz);
+
+            if (dist < 0.3) {
+              ws.wanderTimer -= dt;
+              if (ws.wanderTimer <= 0) {
+                ws.state = "at_desk";
+                ws.deskTimer = Math.random() * 20 + 10;
+              } else {
+                ws.state = "idle_at_waypoint";
+                ws.idleTimer = Math.random() * 3 + 1;
+                ws.currentTarget = randomWanderTarget();
+              }
+            } else {
+              const moveSpeed = ws.speed * dt;
+              const nx = wdx / dist;
+              const nz = wdz / dist;
+              mesh.position.x += nx * moveSpeed;
+              mesh.position.z += nz * moveSpeed;
+              mesh.position.x = Math.max(-ROOM_HALF, Math.min(ROOM_HALF, mesh.position.x));
+              mesh.position.z = Math.max(-ROOM_HALF, Math.min(ROOM_HALF, mesh.position.z));
+              mesh.rotation.y = Math.atan2(nx, nz);
+              mesh.position.y = Math.abs(Math.sin(t * 0.006)) * 0.08;
+              const leftArm = mesh.userData.leftArm as THREE.Mesh | undefined;
+              const rightArm = mesh.userData.rightArm as THREE.Mesh | undefined;
+              if (leftArm) leftArm.rotation.x = Math.sin(t * 0.006) * 0.4;
+              if (rightArm) rightArm.rotation.x = -Math.sin(t * 0.006) * 0.4;
+            }
+            ws.wanderTimer -= dt;
+          }
         }
       });
 
