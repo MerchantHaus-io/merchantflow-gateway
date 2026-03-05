@@ -704,16 +704,31 @@ function buildRoom(): THREE.Group {
   coolerJug.position.set(-6, 1.2, 0); g.add(coolerJug);
   addCollider(-6, 0, 0.3, 0.3);
 
-  // ── Ceiling lights (flush-mount, subtle) ──
+  // ── Ceiling spotlights (warm downlighters) ──
   const lightPositions: [number, number][] = [
     [-10, -14], [0, -14], [10, -14],
     [-14, 6], [0, 0], [16, 8],
     [0, 16], [-10, 10], [10, -6],
   ];
   lightPositions.forEach(([lx, lz]) => {
-    // Thin recessed panel — dark frame so it doesn't flash white
-    const fixture = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.02, 0.4), new THREE.MeshStandardMaterial({ color: 0x333333, emissive: 0xddddc0, emissiveIntensity: 0.15 }));
-    fixture.position.set(lx, 4.97, lz); g.add(fixture);
+    // Small recessed housing — dark, nearly invisible
+    const housing = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.15, 0.18, 0.06, 8),
+      new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 })
+    );
+    housing.position.set(lx, 4.97, lz); g.add(housing);
+    // Warm bulb glow dot
+    const bulb = new THREE.Mesh(
+      new THREE.SphereGeometry(0.06, 6, 6),
+      new THREE.MeshStandardMaterial({ color: 0x332200, emissive: 0xffcc66, emissiveIntensity: 0.5 })
+    );
+    bulb.position.set(lx, 4.94, lz); g.add(bulb);
+    // Spotlight pointing down
+    const spot = new THREE.SpotLight(0xffe8c0, 0.6, 12, Math.PI / 5, 0.6, 1.5);
+    spot.position.set(lx, 4.9, lz);
+    spot.target.position.set(lx, 0, lz);
+    g.add(spot);
+    g.add(spot.target);
   });
 
   return g;
