@@ -1,0 +1,1 @@
+UPDATE opportunities SET stage = 'application_prep' WHERE stage = 'preboarding_complete';
