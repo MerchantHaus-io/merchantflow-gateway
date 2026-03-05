@@ -22,7 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Search, Users, Trash, Mail, Phone, ExternalLink } from "lucide-react";
+import { Pencil, Search, Users, Trash, Mail, Phone, ExternalLink, Check, X, Plus } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -70,6 +70,39 @@ const Accounts = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  // Inline editing state
+  const [inlineEditId, setInlineEditId] = useState<string | null>(null);
+  const [inlineEditField, setInlineEditField] = useState<string | null>(null);
+  const [inlineEditValue, setInlineEditValue] = useState<string>('');
+
+  const startInlineEdit = (accountId: string, field: string, currentValue: string) => {
+    setInlineEditId(accountId);
+    setInlineEditField(field);
+    setInlineEditValue(currentValue || '');
+  };
+
+  const cancelInlineEdit = () => {
+    setInlineEditId(null);
+    setInlineEditField(null);
+    setInlineEditValue('');
+  };
+
+  const commitInlineEdit = async () => {
+    if (!inlineEditId || !inlineEditField) return;
+    const { error } = await supabase
+      .from('accounts')
+      .update({ [inlineEditField]: inlineEditValue || null })
+      .eq('id', inlineEditId);
+    if (error) {
+      toast.error('Failed to save');
+    } else {
+      setAccounts(prev => prev.map(a =>
+        a.id === inlineEditId ? { ...a, [inlineEditField]: inlineEditValue } : a
+      ));
+      toast.success('Saved');
+    }
+    cancelInlineEdit();
+  };
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -302,14 +335,19 @@ const Accounts = () => {
     <AppLayout
       pageTitle="Accounts"
       headerActions={
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search accounts..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8 w-48 lg:w-64"
-          />
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search accounts..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8 w-48 lg:w-64"
+            />
+          </div>
+          <Button size="sm" onClick={() => toast.info('Use New Application on the Pipeline to create accounts')}>
+            <Plus className="h-4 w-4 mr-1" /> Add Account
+          </Button>
         </div>
       }
     >
@@ -346,7 +384,10 @@ const Accounts = () => {
 
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Account directory</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">Account directory</CardTitle>
+                  <span className="text-xs text-muted-foreground hidden sm:inline">Click any cell to edit inline · Pencil icon opens full form</span>
+                </div>
               </CardHeader>
               <CardContent className="p-0">
                 <Table>
@@ -367,12 +408,33 @@ const Accounts = () => {
                       <TableRow key={account.id} className={cn("hover:bg-muted/50", account.status === 'dead' && "opacity-60")}>
                         <TableCell className="text-muted-foreground text-sm">{index + 1}</TableCell>
                         <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            {account.name}
-                            {account.status === 'dead' && (
-                              <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Dead</Badge>
-                            )}
-                          </div>
+                          {inlineEditId === account.id && inlineEditField === 'name' ? (
+                            <div className="flex items-center gap-1">
+                              <Input
+                                autoFocus
+                                value={inlineEditValue}
+                                onChange={e => setInlineEditValue(e.target.value)}
+                                onKeyDown={e => { if (e.key === 'Enter') commitInlineEdit(); if (e.key === 'Escape') cancelInlineEdit(); }}
+                                className="h-7 text-sm py-0 px-2 w-40"
+                              />
+                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={commitInlineEdit}><Check className="h-3 w-3 text-success" /></Button>
+                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={cancelInlineEdit}><X className="h-3 w-3 text-muted-foreground" /></Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 group/cell">
+                              <span
+                                className="cursor-pointer hover:text-primary transition-colors"
+                                onClick={() => startInlineEdit(account.id, 'name', account.name)}
+                                title="Click to edit"
+                              >
+                                {account.name}
+                              </span>
+                              {account.status === 'dead' && (
+                                <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Dead</Badge>
+                              )}
+                              <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover/cell:opacity-60 transition-opacity" />
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell>
                           {account.contacts && account.contacts.length > 0 ? (
@@ -420,16 +482,57 @@ const Accounts = () => {
                             <Badge variant="outline" className="bg-muted/40 text-muted-foreground">No contacts</Badge>
                           )}
                         </TableCell>
-                        <TableCell>{account.city || '-'}</TableCell>
-                        <TableCell>{account.state || '-'}</TableCell>
-                        <TableCell>{account.country || '-'}</TableCell>
                         <TableCell>
-                          {account.website ? (
-                            <a href={account.website} target="_blank" rel="noopener noreferrer" className="text-primary underline">
-                              {account.website}
-                            </a>
+                          {inlineEditId === account.id && inlineEditField === 'city' ? (
+                            <div className="flex items-center gap-1">
+                              <Input autoFocus value={inlineEditValue} onChange={e => setInlineEditValue(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') commitInlineEdit(); if (e.key === 'Escape') cancelInlineEdit(); }} className="h-7 text-sm py-0 px-2 w-28" />
+                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={commitInlineEdit}><Check className="h-3 w-3 text-success" /></Button>
+                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={cancelInlineEdit}><X className="h-3 w-3 text-muted-foreground" /></Button>
+                            </div>
                           ) : (
-                            <span className="text-muted-foreground">—</span>
+                            <span className="cursor-pointer hover:text-primary transition-colors text-sm" onClick={() => startInlineEdit(account.id, 'city', account.city || '')} title="Click to edit">{account.city || <span className="text-muted-foreground">—</span>}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {inlineEditId === account.id && inlineEditField === 'state' ? (
+                            <div className="flex items-center gap-1">
+                              <Input autoFocus value={inlineEditValue} onChange={e => setInlineEditValue(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') commitInlineEdit(); if (e.key === 'Escape') cancelInlineEdit(); }} className="h-7 text-sm py-0 px-2 w-20" />
+                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={commitInlineEdit}><Check className="h-3 w-3 text-success" /></Button>
+                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={cancelInlineEdit}><X className="h-3 w-3 text-muted-foreground" /></Button>
+                            </div>
+                          ) : (
+                            <span className="cursor-pointer hover:text-primary transition-colors text-sm" onClick={() => startInlineEdit(account.id, 'state', account.state || '')} title="Click to edit">{account.state || <span className="text-muted-foreground">—</span>}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {inlineEditId === account.id && inlineEditField === 'country' ? (
+                            <div className="flex items-center gap-1">
+                              <Input autoFocus value={inlineEditValue} onChange={e => setInlineEditValue(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') commitInlineEdit(); if (e.key === 'Escape') cancelInlineEdit(); }} className="h-7 text-sm py-0 px-2 w-24" />
+                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={commitInlineEdit}><Check className="h-3 w-3 text-success" /></Button>
+                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={cancelInlineEdit}><X className="h-3 w-3 text-muted-foreground" /></Button>
+                            </div>
+                          ) : (
+                            <span className="cursor-pointer hover:text-primary transition-colors text-sm" onClick={() => startInlineEdit(account.id, 'country', account.country || '')} title="Click to edit">{account.country || <span className="text-muted-foreground">—</span>}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {inlineEditId === account.id && inlineEditField === 'website' ? (
+                            <div className="flex items-center gap-1">
+                              <Input autoFocus value={inlineEditValue} onChange={e => setInlineEditValue(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') commitInlineEdit(); if (e.key === 'Escape') cancelInlineEdit(); }} className="h-7 text-sm py-0 px-2 w-36" placeholder="https://" />
+                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={commitInlineEdit}><Check className="h-3 w-3 text-success" /></Button>
+                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={cancelInlineEdit}><X className="h-3 w-3 text-muted-foreground" /></Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 group/cell">
+                              {account.website ? (
+                                <a href={account.website} target="_blank" rel="noopener noreferrer" className="text-primary underline text-sm truncate max-w-[140px]" title={account.website}>
+                                  {account.website.replace(/^https?:\/\//, '')}
+                                </a>
+                              ) : (
+                                <span className="text-muted-foreground text-sm cursor-pointer hover:text-primary" onClick={() => startInlineEdit(account.id, 'website', account.website || '')}>—</span>
+                              )}
+                              <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover/cell:opacity-60 transition-opacity cursor-pointer" onClick={() => startInlineEdit(account.id, 'website', account.website || '')} />
+                            </div>
                           )}
                         </TableCell>
                         <TableCell>
