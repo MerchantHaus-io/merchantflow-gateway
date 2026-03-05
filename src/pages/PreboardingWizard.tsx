@@ -459,10 +459,10 @@ export default function PreboardingWizard() {
     if (!selectedOpportunityId) return;
     await saveWizardState();
 
-    // Advance opportunity stage to underwriting_review (next valid pipeline stage)
+    // Keep opportunity in application_prep stage, just update timestamp
     const { error: stageError } = await supabase
       .from('opportunities')
-      .update({ stage: 'underwriting_review', stage_entered_at: new Date().toISOString() })
+      .update({ stage: 'application_prep', stage_entered_at: new Date().toISOString() })
       .eq('id', selectedOpportunityId);
 
     if (stageError) {
@@ -475,13 +475,13 @@ export default function PreboardingWizard() {
     await supabase.from('activities').insert({
       opportunity_id: selectedOpportunityId,
       type: 'stage_change',
-      description: 'Preboarding complete — advanced to Underwriting Review',
+      description: 'Preboarding checklist marked complete',
       user_id: user?.id ?? null,
       user_email: user?.email ?? null,
     });
 
     sonnerToast.success("Preboarding complete!", {
-      description: "Stage advanced to Underwriting Review.",
+      description: "Checklist complete. Card remains in App Prep.",
     });
   };
 
