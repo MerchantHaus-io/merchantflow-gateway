@@ -782,9 +782,10 @@ export default function OfficeChat({
 
     scene.add(buildRoom());
 
-    // Player
+    // Player mesh hidden in FP view (camera IS the player)
     const playerMesh = buildCharacterMesh(currentUser, true);
     playerMesh.position.copy(SPAWN[currentUserEmail]);
+    playerMesh.visible = false;
     scene.add(playerMesh);
 
     // NPCs
@@ -949,9 +950,6 @@ export default function OfficeChat({
       camera.position.set(state.playerPos.x, 1.65, state.playerPos.z);
       playerMesh.position.set(state.playerPos.x, 0, state.playerPos.z);
       playerMesh.rotation.y = state.yaw + Math.PI;
-
-      // Animate player
-      animateCharacter(playerMesh, t, isPlayerMoving, false);
 
       // Broadcast position (~10fps)
       if (t - lastBroadcastRef.current > 100) {
