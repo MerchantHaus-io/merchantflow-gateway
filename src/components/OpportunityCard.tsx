@@ -65,6 +65,8 @@ const OpportunityCard = ({
 
   const isLive = opportunity.stage === "live_activated";
   const serviceType = getServiceType(opportunity);
+  const wizardProgress = (opportunity.wizard_state?.progress as number) ?? 0;
+  const isComplete = wizardProgress >= 100;
 
   // Deal value: 33% of 2.92% processing fee + $1 per 10 transactions
   const dealValue = useMemo(() => {
@@ -187,10 +189,12 @@ const OpportunityCard = ({
       className={cn(
         // Focus-mode inspired card: indigo glow, rounded-xl, hover intensifies glow
         "cursor-grab active:cursor-grabbing group touch-manipulation relative",
-        "rounded-xl bg-card",
+        "rounded-xl",
         isLive
           ? "pipeline-card-live bg-gradient-to-br from-amber-50 via-yellow-50/80 to-amber-100/60 dark:from-amber-950/40 dark:via-yellow-950/30 dark:to-amber-900/20"
-          : cn("pipeline-card border-l-[4px]", teamColors.border)
+          : isComplete
+            ? "pipeline-card border-l-[4px] border-l-emerald-500 bg-emerald-600 dark:bg-emerald-700"
+            : cn("pipeline-card border-l-[4px]", teamColors.border, "bg-card")
       )}
     >
       {/* Delete (trash) icon — fades in on hover, top-right */}
@@ -208,7 +212,7 @@ const OpportunityCard = ({
       <div className="p-2 md:p-2.5 space-y-1">
         {/* Deal Name + Service Type */}
         <div className="flex items-center justify-between gap-1">
-          <h3 className="font-bold text-[10px] md:text-xs lg:text-sm text-foreground truncate leading-tight flex-1 group-hover:text-indigo-600 transition-colors">
+          <h3 className={cn("font-bold text-[10px] md:text-xs lg:text-sm truncate leading-tight flex-1 transition-colors", isComplete ? "text-white" : "text-foreground group-hover:text-indigo-600")}>
             {account?.name || "Unknown"}
           </h3>
           <div className="flex items-center gap-1 flex-shrink-0">
