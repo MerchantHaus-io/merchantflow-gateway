@@ -306,29 +306,57 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     setActiveSection(id as ModalSection);
   }, []);
 
+  // Helper: merge account/contact with wizard data, wizard takes precedence when available
+  const resolvedAccount = useMemo(() => {
+    if (!account) return undefined;
+    const ws = wizardFormState;
+    return {
+      ...account,
+      name: (ws.dba_name as string) || account.name,
+      address1: (ws.dba_address_line1 as string) || account.address1,
+      address2: account.address2,
+      city: (ws.dba_city as string) || account.city,
+      state: (ws.dba_state as string) || account.state,
+      zip: (ws.dba_zip as string) || account.zip,
+      website: (ws.website_url as string) || account.website,
+    };
+  }, [account, wizardFormState]);
+
+  const resolvedContact = useMemo(() => {
+    if (!contact) return undefined;
+    const ws = wizardFormState;
+    return {
+      ...contact,
+      first_name: (ws.dba_contact_first_name as string) || contact.first_name,
+      last_name: (ws.dba_contact_last_name as string) || contact.last_name,
+      email: (ws.dba_contact_email as string) || contact.email,
+      phone: (ws.dba_contact_phone as string) || contact.phone,
+    };
+  }, [contact, wizardFormState]);
+
   const startEditing = () => {
-    // Populate form with current values
-    setAccountName(account?.name || "");
-    setWebsite(account?.website || "");
-    setAddress1(account?.address1 || "");
-    setAddress2(account?.address2 || "");
-    setCity(account?.city || "");
-    setState(account?.state || "");
-    setZip(account?.zip || "");
-    setCountry(account?.country || "");
+    // Populate form with resolved (synced) values
+    setAccountName(resolvedAccount?.name || "");
+    setWebsite(resolvedAccount?.website || "");
+    setAddress1(resolvedAccount?.address1 || "");
+    setAddress2(resolvedAccount?.address2 || "");
+    setCity(resolvedAccount?.city || "");
+    setState(resolvedAccount?.state || "");
+    setZip(resolvedAccount?.zip || "");
+    setCountry(resolvedAccount?.country || "");
     
-    setFirstName(contact?.first_name || "");
-    setLastName(contact?.last_name || "");
-    setEmail(contact?.email || "");
-    setPhone(contact?.phone || "");
-    setFax(contact?.fax || "");
+    setFirstName(resolvedContact?.first_name || "");
+    setLastName(resolvedContact?.last_name || "");
+    setEmail(resolvedContact?.email || "");
+    setPhone(resolvedContact?.phone || "");
+    setFax(resolvedContact?.fax || "");
     
     setUsername(opportunity.username || "");
     setReferralSource(opportunity.referral_source || "");
     setTimezone(opportunity.timezone || "");
     setLanguage(opportunity.language || "");
 
-    // Populate wizard fields
+    // Populate wizard fields from resolved data
     const wf: Record<string, string> = {};
     const wizardKeys = [
       'dba_name', 'product_description', 'nature_of_business',
@@ -412,21 +440,21 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     lines.push(`Assigned To: ${opportunity.assigned_to || '—'}`);
 
     section('Account');
-    add('Company Name', account?.name);
-    add('Website', account?.website);
-    add('Address', account?.address1);
-    add('Address 2', account?.address2);
-    add('City', account?.city);
-    add('State', account?.state);
-    add('Zip', account?.zip);
-    add('Country', account?.country);
+    add('Company Name', resolvedAccount?.name);
+    add('Website', resolvedAccount?.website);
+    add('Address', resolvedAccount?.address1);
+    add('Address 2', resolvedAccount?.address2);
+    add('City', resolvedAccount?.city);
+    add('State', resolvedAccount?.state);
+    add('Zip', resolvedAccount?.zip);
+    add('Country', resolvedAccount?.country);
 
     section('Contact');
-    add('First Name', contact?.first_name);
-    add('Last Name', contact?.last_name);
-    add('Email', contact?.email);
-    add('Phone', contact?.phone);
-    add('Fax', contact?.fax);
+    add('First Name', resolvedContact?.first_name);
+    add('Last Name', resolvedContact?.last_name);
+    add('Email', resolvedContact?.email);
+    add('Phone', resolvedContact?.phone);
+    add('Fax', resolvedContact?.fax);
 
     section('Opportunity');
     add('Username', opportunity.username);
@@ -487,7 +515,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     a.click();
     URL.revokeObjectURL(url);
     toast.success('Details downloaded');
-  }, [opportunity, account, contact, wizardFormState]);
+  }, [opportunity, resolvedAccount, resolvedContact, wizardFormState]);
 
   // Auto-save callback
   const handleAutoSave = useCallback(async (data: typeof formData) => {
@@ -541,8 +569,30 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     
     if (oppError) throw oppError;
 
-    // Update wizard state if wizard fields changed
-    if (data.wizardFields && Object.keys(data.wizardFields).length > 0) {
+    // Update wizard state — cross-sync account/contact fields into wizard form_state
+    const crossSyncFields: Record<string, string> = {
+      ...(data.wizardFields || {}),
+      // Sync account fields → wizard fields
+      dba_name: data.accountName || data.wizardFields?.dba_name || '',
+      dba_address_line1: data.address1 || data.wizardFields?.dba_address_line1 || '',
+      dba_city: data.city || data.wizardFields?.dba_city || '',
+      dba_state: data.state || data.wizardFields?.dba_state || '',
+      dba_zip: data.zip || data.wizardFields?.dba_zip || '',
+      website_url: data.website || data.wizardFields?.website_url || '',
+      // Sync contact fields → wizard fields
+      dba_contact_first_name: data.firstName || data.wizardFields?.dba_contact_first_name || '',
+      dba_contact_last_name: data.lastName || data.wizardFields?.dba_contact_last_name || '',
+      dba_contact_email: data.email || data.wizardFields?.dba_contact_email || '',
+      dba_contact_phone: data.phone || data.wizardFields?.dba_contact_phone || '',
+    };
+
+    // Remove empty strings so we don't overwrite existing values with blanks
+    const cleanedSync: Record<string, string> = {};
+    for (const [k, v] of Object.entries(crossSyncFields)) {
+      if (v) cleanedSync[k] = v;
+    }
+
+    if (Object.keys(cleanedSync).length > 0) {
       const { data: ws } = await supabase
         .from('onboarding_wizard_states')
         .select('id, form_state')
@@ -551,27 +601,24 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
 
       if (ws) {
         const currentForm = (ws.form_state as Record<string, unknown>) ?? {};
-        const mergedForm = { ...currentForm, ...data.wizardFields };
+        const mergedForm = { ...currentForm, ...cleanedSync };
         const { error: wizErr } = await supabase
           .from('onboarding_wizard_states')
           .update({ form_state: mergedForm as never, updated_at: new Date().toISOString() } as never)
           .eq('id', ws.id);
         if (wizErr) throw wizErr;
       } else {
-        // Create wizard state if it doesn't exist
         const { error: wizErr } = await supabase
           .from('onboarding_wizard_states')
           .insert({
             opportunity_id: opportunity.id,
-            form_state: data.wizardFields as never,
+            form_state: cleanedSync as never,
             progress: 0,
             step_index: 0,
           } as never);
         if (wizErr) throw wizErr;
       }
     }
-
-    // Update local state
     onUpdate({
       ...opportunity,
       username: data.username || undefined,
@@ -599,7 +646,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
       } : undefined,
       wizard_state: opportunity.wizard_state ? {
         ...opportunity.wizard_state,
-        form_state: { ...(opportunity.wizard_state.form_state as Record<string, unknown>), ...data.wizardFields },
+        form_state: { ...(opportunity.wizard_state.form_state as Record<string, unknown>), ...cleanedSync },
       } : undefined,
     });
   }, [opportunity, account, contact, onUpdate]);
@@ -1144,14 +1191,14 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                       </div>
                     ) : (
                       <div className="grid grid-cols-2 gap-4">
-                        <InfoItem label="Company Name" value={account?.name} />
-                        <InfoItem label="Website" value={account?.website} />
-                        <InfoItem label="Address" value={account?.address1} />
-                        <InfoItem label="Address 2" value={account?.address2} />
-                        <InfoItem label="City" value={account?.city} />
-                        <InfoItem label="State" value={account?.state} />
-                        <InfoItem label="Zip" value={account?.zip} />
-                        <InfoItem label="Country" value={account?.country} />
+                        <InfoItem label="Company Name" value={resolvedAccount?.name} />
+                        <InfoItem label="Website" value={resolvedAccount?.website} />
+                        <InfoItem label="Address" value={resolvedAccount?.address1} />
+                        <InfoItem label="Address 2" value={resolvedAccount?.address2} />
+                        <InfoItem label="City" value={resolvedAccount?.city} />
+                        <InfoItem label="State" value={resolvedAccount?.state} />
+                        <InfoItem label="Zip" value={resolvedAccount?.zip} />
+                        <InfoItem label="Country" value={resolvedAccount?.country} />
                       </div>
                     )}
                   </div>
@@ -1172,11 +1219,11 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                       </div>
                     ) : (
                       <div className="grid grid-cols-2 gap-4">
-                        <InfoItem label="First Name" value={contact?.first_name} />
-                        <InfoItem label="Last Name" value={contact?.last_name} />
-                        <InfoItem label="Email" value={contact?.email} />
-                        <InfoItem label="Phone" value={contact?.phone} />
-                        <InfoItem label="Fax" value={contact?.fax} />
+                        <InfoItem label="First Name" value={resolvedContact?.first_name} />
+                        <InfoItem label="Last Name" value={resolvedContact?.last_name} />
+                        <InfoItem label="Email" value={resolvedContact?.email} />
+                        <InfoItem label="Phone" value={resolvedContact?.phone} />
+                        <InfoItem label="Fax" value={resolvedContact?.fax} />
                       </div>
                     )}
                   </div>
