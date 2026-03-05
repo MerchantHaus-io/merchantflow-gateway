@@ -570,22 +570,42 @@ function buildRoom(): THREE.Group {
     cup.position.set(-18 + ox, 0.58, 10); g.add(cup);
   });
 
-  // ── MEETING ROOM (south-east area) ──
+  // ── MEETING ROOM (south-east area, against east wall) ──
+  // Room spans roughly x:11→22(east wall), z:3→13
   const meetCarpet = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), new THREE.MeshStandardMaterial({ color: 0x3a3a5a, roughness: 0.95 }));
   meetCarpet.rotation.x = -Math.PI / 2; meetCarpet.position.set(16, 0.02, 8); g.add(meetCarpet);
 
-  // Glass partition walls
-  const meetWall1 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 3.5, 10), glassMat);
-  meetWall1.position.set(11, 1.75, 8); g.add(meetWall1);
-  // Frame strips
-  const meetFrame1 = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.06, 10), frameMat);
-  meetFrame1.position.set(11, 3.5, 8); g.add(meetFrame1);
-  addCollider(11, 8, 0.12, 5);
+  // West glass wall (x=11, z:3→13) with doorway gap at z=7→9
+  const meetWestA = new THREE.Mesh(new THREE.BoxGeometry(0.12, 3.5, 4), glassMat);
+  meetWestA.position.set(11, 1.75, 5); g.add(meetWestA); // z:3→7
+  addCollider(11, 5, 0.12, 2);
+  const meetWestB = new THREE.Mesh(new THREE.BoxGeometry(0.12, 3.5, 4), glassMat);
+  meetWestB.position.set(11, 1.75, 11); g.add(meetWestB); // z:9→13
+  addCollider(11, 11, 0.12, 2);
+  // Frame strips on west wall
+  const meetFrameWA = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.06, 4), frameMat);
+  meetFrameWA.position.set(11, 3.5, 5); g.add(meetFrameWA);
+  const meetFrameWB = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.06, 4), frameMat);
+  meetFrameWB.position.set(11, 3.5, 11); g.add(meetFrameWB);
+  // Doorway header
+  const meetDoorHeader = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.8, 2), glassMat);
+  meetDoorHeader.position.set(11, 3.1, 8); g.add(meetDoorHeader);
 
-  // Doorway opening at z=4
-  const meetWall2a = new THREE.Mesh(new THREE.BoxGeometry(10, 3.5, 0.12), glassMat);
-  meetWall2a.position.set(16, 1.75, 3); g.add(meetWall2a);
+  // South glass wall (z=3, x:11→21)
+  const meetSouth = new THREE.Mesh(new THREE.BoxGeometry(10, 3.5, 0.12), glassMat);
+  meetSouth.position.set(16, 1.75, 3); g.add(meetSouth);
   addCollider(16, 3, 5, 0.12);
+  const meetFrameS = new THREE.Mesh(new THREE.BoxGeometry(10, 0.06, 0.14), frameMat);
+  meetFrameS.position.set(16, 3.5, 3); g.add(meetFrameS);
+
+  // North glass wall (z=13, x:11→21)
+  const meetNorth = new THREE.Mesh(new THREE.BoxGeometry(10, 3.5, 0.12), glassMat);
+  meetNorth.position.set(16, 1.75, 13); g.add(meetNorth);
+  addCollider(16, 13, 5, 0.12);
+  const meetFrameN = new THREE.Mesh(new THREE.BoxGeometry(10, 0.06, 0.14), frameMat);
+  meetFrameN.position.set(16, 3.5, 13); g.add(meetFrameN);
+
+  // East side is the outer wall — no glass needed
 
   // Meeting table
   const meetTable = new THREE.Mesh(new THREE.BoxGeometry(4, 0.08, 2), wood);
@@ -606,9 +626,9 @@ function buildRoom(): THREE.Group {
     back.position.set(16 + cx, 0.73, 8 + cz + (cz > 0 ? 0.27 : -0.27)); g.add(back);
   });
 
-  // Presentation screen in meeting room
-  const presScreen = new THREE.Mesh(new THREE.BoxGeometry(3, 1.8, 0.06), darkM);
-  presScreen.position.set(16, 2.5, 12.9); g.add(presScreen);
+  // Presentation screen on east wall inside meeting room
+  const presScreen = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.8, 3), darkM);
+  presScreen.position.set(wOff - 0.05, 2.5, 10); g.add(presScreen);
 
   // ── RECEPTION / LOBBY (south center) ──
   const receptionDesk = new THREE.Mesh(new THREE.BoxGeometry(4, 1.1, 1.2), new THREE.MeshStandardMaterial({ color: 0x5a4a3a, roughness: 0.6 }));
