@@ -716,7 +716,7 @@ All colors MUST be HSL.
 
   /* Dark mode: use background image (except mono) */
   .dark body {
-    background-image: url('/src/assets/Background.png');
+    background-image: linear-gradient(hsla(0 0% 0% / 0.3), hsla(0 0% 0% / 0.3)), url('/src/assets/Background.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
