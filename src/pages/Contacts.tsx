@@ -615,68 +615,45 @@ const Contacts = () => {
         </Button>
       }
     >
-      <div className="p-4 lg:p-6 space-y-6">
-        {/* Stats - Compact header-style badges */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <Badge variant="secondary" className="h-6 px-2 text-xs font-medium gap-1">
-              <Users className="h-3 w-3" />Total {stats.total}
-            </Badge>
-            <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-emerald-500/30 text-emerald-500">
-              <UserCheck className="h-3 w-3" />Assigned {stats.assigned}
-            </Badge>
-            <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-blue-500/30 text-blue-500">
-              <Link2 className="h-3 w-3" />Linked {stats.linked}
-            </Badge>
-          </div>
-
-          {/* Filters */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex flex-wrap gap-4 items-center">
-                <div className="relative flex-1 min-w-[200px]">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search by name, email, account..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-
-                <Select value={assignmentFilter} onValueChange={setAssignmentFilter}>
-                  <SelectTrigger className="w-[160px]">
-                    <SelectValue placeholder="Assignment" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover">
-                    <SelectItem value="all">All Assignments</SelectItem>
-                    <SelectItem value="assigned">Assigned</SelectItem>
-                    <SelectItem value="unassigned">Unassigned</SelectItem>
-                    <DropdownMenuSeparator />
-                    {TEAM_MEMBERS.map(member => (
-                      <SelectItem key={member} value={member}>{member}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select value={accountFilter} onValueChange={setAccountFilter}>
-                  <SelectTrigger className="w-[160px]">
-                    <SelectValue placeholder="Account" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover">
-                    <SelectItem value="all">All Accounts</SelectItem>
-                    {accounts.map(account => (
-                      <SelectItem key={account.id} value={account.id}>{account.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Button onClick={openNewDialog} className="ml-auto">
-                  <Plus className="h-4 w-4 mr-1" />
-                  New Contact
-                </Button>
+      <div className="p-4 lg:p-6 space-y-4">
+        {/* Compact toolbar: stats + filters inline */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <button onClick={() => setAssignmentFilter('all')} className={cn("text-sm font-semibold transition-colors", assignmentFilter === 'all' ? "text-foreground" : "text-muted-foreground hover:text-foreground")}>
+                {stats.total} Contacts
+              </button>
+              <span className="text-muted-foreground/30">·</span>
+              <button onClick={() => setAssignmentFilter('unassigned')} className={cn("text-xs transition-colors", assignmentFilter === 'unassigned' ? "text-amber-500 font-medium" : "text-muted-foreground hover:text-foreground")}>
+                {stats.total - stats.assigned} unassigned
+              </button>
+              {stats.total - stats.linked > 0 && (
+                <><span className="text-muted-foreground/30">·</span>
+                <span className="text-xs text-muted-foreground">{stats.total - stats.linked} no deal</span></>
+              )}
+            </div>
+            <div className="flex items-center gap-2 ml-auto flex-wrap">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input placeholder="Search…" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-8 h-8 w-48 text-sm" />
               </div>
-            </CardContent>
-          </Card>
+              <Select value={assignmentFilter} onValueChange={setAssignmentFilter}>
+                <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue placeholder="Owner" /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="all">All Owners</SelectItem>
+                  <SelectItem value="assigned">Assigned</SelectItem>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {TEAM_MEMBERS.map(member => (<SelectItem key={member} value={member} className="text-xs">{member}</SelectItem>))}
+                </SelectContent>
+              </Select>
+              <Select value={accountFilter} onValueChange={setAccountFilter}>
+                <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue placeholder="Account" /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="all">All Accounts</SelectItem>
+                  {accounts.map(account => (<SelectItem key={account.id} value={account.id} className="text-xs">{account.name}</SelectItem>))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
           {/* Bulk Actions Bar */}
           {selectedIds.size > 0 && viewMode === 'table' && (
@@ -731,25 +708,25 @@ const Contacts = () => {
 
           {/* Results */}
           <Card>
-            <CardHeader className="pb-3">
+            <CardHeader className="pb-2 pt-3 px-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base">
-                  {filteredContacts.length} Contacts
-                  {totalPages > 1 && (
-                    <span className="text-muted-foreground font-normal ml-2">
-                      (Page {currentPage} of {totalPages})
-                    </span>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-semibold">{filteredContacts.length} contacts</span>
+                  {totalPages > 1 && <span className="text-xs text-muted-foreground">p.{currentPage}/{totalPages}</span>}
+                  {(assignmentFilter !== 'all' || accountFilter !== 'all' || searchQuery) && (
+                    <button onClick={() => { setAssignmentFilter('all'); setAccountFilter('all'); setSearchQuery(''); }}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                      Clear ×
+                    </button>
                   )}
-                </CardTitle>
-                <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'table' | 'cards')}>
-                  <TabsList className="h-8">
-                    <TabsTrigger value="table" className="text-xs px-3">Table</TabsTrigger>
-                    <TabsTrigger value="cards" className="text-xs px-3">Cards</TabsTrigger>
-                  </TabsList>
-                </Tabs>
+                </div>
+                <div className="flex items-center gap-1 bg-muted rounded-md p-0.5">
+                  <button onClick={() => setViewMode('table')} className={cn("px-2 py-1 text-xs rounded transition-colors", viewMode === 'table' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground")}>Table</button>
+                  <button onClick={() => setViewMode('cards')} className={cn("px-2 py-1 text-xs rounded transition-colors", viewMode === 'cards' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground")}>Cards</button>
+                </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-2">
               {fetchError ? (
                 <QueryErrorCard message={fetchError} onRetry={() => { setLoading(true); fetchContacts(); }} />
               ) : loading ? (
@@ -763,7 +740,7 @@ const Contacts = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-12">
+                        <TableHead className="w-8">
                           <Checkbox 
                             checked={allOnPageSelected}
                             onCheckedChange={toggleSelectAll}
@@ -771,66 +748,48 @@ const Contacts = () => {
                             className={someOnPageSelected && !allOnPageSelected ? "data-[state=checked]:bg-primary/50" : ""}
                           />
                         </TableHead>
-                        <TableHead className="w-12">#</TableHead>
-                        <SortableTableHead field="first_name" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>First Name</SortableTableHead>
-                        <SortableTableHead field="last_name" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Last Name</SortableTableHead>
+                        <SortableTableHead field="first_name" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Name</SortableTableHead>
                         <SortableTableHead field="email" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Email</SortableTableHead>
                         <SortableTableHead field="phone" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Phone</SortableTableHead>
                         <SortableTableHead field="account" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Account</SortableTableHead>
-                        <SortableTableHead field="assigned_to" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Assigned To</SortableTableHead>
-                        <SortableTableHead field="stage" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Stage</SortableTableHead>
-                        <SortableTableHead field="last_activity" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Last Activity</SortableTableHead>
-                        <TableHead className="w-[50px]"></TableHead>
+                        <SortableTableHead field="stage" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Deal Stage</SortableTableHead>
+                        <SortableTableHead field="assigned_to" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Owner</SortableTableHead>
+                        <SortableTableHead field="last_activity" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Activity</SortableTableHead>
+                        <TableHead className="w-[40px]"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {paginatedContacts.length ? (
-                        paginatedContacts.map((contact, index) => {
+                        paginatedContacts.map((contact) => {
                           const stageConfig = contact.stage
                             ? STAGE_CONFIG[contact.stage as OpportunityStage]
                             : null;
-                          const globalIndex = (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
 
                           return (
                             <TableRow
                               key={contact.id}
                               className={cn(
-                                "cursor-pointer hover:bg-muted/50",
-                                selectedIds.has(contact.id) && "bg-primary/10"
+                                "cursor-pointer hover:bg-muted/30 transition-colors",
+                                selectedIds.has(contact.id) && "bg-primary/5"
                               )}
                               onClick={() => setSelectedContact(contact)}
                             >
-                              <TableCell onClick={(e) => e.stopPropagation()}>
+                              <TableCell onClick={(e) => e.stopPropagation()} className="py-2">
                                 <Checkbox 
                                   checked={selectedIds.has(contact.id)}
                                   onCheckedChange={() => toggleSelect(contact.id)}
                                   aria-label={`Select ${contact.first_name || contact.last_name || 'contact'}`}
                                 />
                               </TableCell>
-                              <TableCell className="text-muted-foreground text-sm">{globalIndex}</TableCell>
-                              <TableCell className="font-medium">
-                                {inlineEditId === contact.id && inlineEditField === 'first_name' ? (
-                                  <div className="flex items-center gap-1">
-                                    <Input autoFocus value={inlineEditValue} onChange={e => setInlineEditValue(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') commitInlineEdit(); if (e.key === 'Escape') cancelInlineEdit(); }} className="h-7 text-sm py-0 px-2 w-28" />
-                                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={commitInlineEdit}><Check className="h-3 w-3 text-success" /></Button>
-                                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={cancelInlineEdit}><X className="h-3 w-3 text-muted-foreground" /></Button>
-                                  </div>
-                                ) : (
-                                  <span className="cursor-pointer hover:text-primary transition-colors" onClick={() => startInlineEdit(contact.id, 'first_name', contact.first_name || '')} title="Click to edit">{contact.first_name || <span className="text-muted-foreground">—</span>}</span>
-                                )}
+                              {/* Name merged */}
+                              <TableCell className="py-2 font-medium">
+                                <div className="flex items-center gap-2 group/cell">
+                                  <span className="text-sm">
+                                    {[contact.first_name, contact.last_name].filter(Boolean).join(' ') || <span className="text-muted-foreground italic">Unnamed</span>}
+                                  </span>
+                                </div>
                               </TableCell>
-                              <TableCell>
-                                {inlineEditId === contact.id && inlineEditField === 'last_name' ? (
-                                  <div className="flex items-center gap-1">
-                                    <Input autoFocus value={inlineEditValue} onChange={e => setInlineEditValue(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') commitInlineEdit(); if (e.key === 'Escape') cancelInlineEdit(); }} className="h-7 text-sm py-0 px-2 w-28" />
-                                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={commitInlineEdit}><Check className="h-3 w-3 text-success" /></Button>
-                                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={cancelInlineEdit}><X className="h-3 w-3 text-muted-foreground" /></Button>
-                                  </div>
-                                ) : (
-                                  <span className="cursor-pointer hover:text-primary transition-colors" onClick={() => startInlineEdit(contact.id, 'last_name', contact.last_name || '')} title="Click to edit">{contact.last_name || <span className="text-muted-foreground">—</span>}</span>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-sm">
+                              <TableCell className="py-2 text-sm">
                                 {inlineEditId === contact.id && inlineEditField === 'email' ? (
                                   <div className="flex items-center gap-1">
                                     <Input autoFocus type="email" value={inlineEditValue} onChange={e => setInlineEditValue(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') commitInlineEdit(); if (e.key === 'Escape') cancelInlineEdit(); }} className="h-7 text-sm py-0 px-2 w-40" />
@@ -839,82 +798,72 @@ const Contacts = () => {
                                   </div>
                                 ) : (
                                   <div className="flex items-center gap-1.5 group/cell">
-                                    {contact.email ? <a href={`mailto:${contact.email}`} className="text-muted-foreground hover:text-primary transition-colors truncate max-w-[160px]" title={contact.email}>{contact.email}</a> : <span className="text-muted-foreground">—</span>}
-                                    <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover/cell:opacity-60 cursor-pointer transition-opacity" onClick={() => startInlineEdit(contact.id, 'email', contact.email || '')} />
+                                    {contact.email
+                                      ? <a href={`mailto:${contact.email}`} className="text-muted-foreground hover:text-primary transition-colors truncate max-w-[160px]" onClick={e => e.stopPropagation()} title={contact.email}>{contact.email}</a>
+                                      : <span className="text-muted-foreground/40">—</span>}
+                                    <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover/cell:opacity-60 cursor-pointer transition-opacity" onClick={(e) => { e.stopPropagation(); startInlineEdit(contact.id, 'email', contact.email || ''); }} />
                                   </div>
                                 )}
                               </TableCell>
-                              <TableCell className="text-sm">
-                                <div className="flex items-center gap-1">
-                                  {contact.phone || '-'}
-                                  <ClickToCall 
-                                    phoneNumber={contact.phone} 
-                                    contactName={`${contact.first_name || ''} ${contact.last_name || ''}`.trim()}
-                                  />
+                              <TableCell className="py-2 text-sm text-muted-foreground">
+                                <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                  {contact.phone || <span className="text-muted-foreground/40">—</span>}
+                                  {contact.phone && (
+                                    <ClickToCall 
+                                      phoneNumber={contact.phone} 
+                                      contactName={`${contact.first_name || ''} ${contact.last_name || ''}`.trim()}
+                                    />
+                                  )}
                                 </div>
                               </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <Building2 className="h-4 w-4 text-muted-foreground" />
-                                  <span>{contact.account?.name || '-'}</span>
-                                </div>
+                              <TableCell className="py-2 text-sm">
+                                {contact.account?.name
+                                  ? <span className="text-muted-foreground">{contact.account.name}</span>
+                                  : <span className="text-muted-foreground/40">—</span>}
                               </TableCell>
-                              <TableCell>
-                                {contact.assigned_to ? (
-                                  <Badge variant="outline" className="bg-background/60 border-border/60">
-                                    {contact.assigned_to}
-                                  </Badge>
-                                ) : (
-                                  <span className="text-muted-foreground text-sm">Unassigned</span>
-                                )}
-                              </TableCell>
-                              <TableCell>
+                              {/* Deal stage with color dot — much more scannable */}
+                              <TableCell className="py-2">
                                 {stageConfig ? (
-                                  <Badge
-                                    variant="outline"
-                                    className={cn("text-xs", stageConfig?.colorClass && "border-current")}
-                                    style={{ color: stageConfig?.color }}
-                                  >
-                                    {stageConfig.label}
-                                  </Badge>
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: stageConfig.color }} />
+                                    <span className="text-xs text-muted-foreground">{stageConfig.label}</span>
+                                  </div>
                                 ) : (
-                                  <span className="text-muted-foreground text-sm">-</span>
+                                  <span className="text-xs text-muted-foreground/40">—</span>
                                 )}
                               </TableCell>
-                              <TableCell className="text-sm text-muted-foreground">
-                                {contact.last_activity_at
-                                  ? formatDistanceToNow(new Date(contact.last_activity_at), { addSuffix: true })
-                                  : '-'}
+                              <TableCell className="py-2">
+                                {contact.assigned_to
+                                  ? <span className="text-xs text-muted-foreground">{contact.assigned_to}</span>
+                                  : <span className="text-xs text-muted-foreground/40">Unassigned</span>}
                               </TableCell>
-                              <TableCell onClick={(e) => e.stopPropagation()}>
+                              <TableCell className="py-2 text-xs text-muted-foreground">
+                                {contact.last_activity_at
+                                  ? formatDistanceToNow(new Date(contact.last_activity_at), { addSuffix: true }).replace('about ', '')
+                                  : <span className="text-muted-foreground/40">—</span>}
+                              </TableCell>
+                              <TableCell onClick={(e) => e.stopPropagation()} className="py-2">
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover/row:opacity-100 transition-opacity">
                                       <MoreHorizontal className="h-4 w-4" />
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end" className="bg-popover">
                                     <DropdownMenuItem onClick={() => setSelectedContact(contact)}>
-                                      <Eye className="h-4 w-4 mr-2" />
-                                      View Details
+                                      <Eye className="h-4 w-4 mr-2" />View Details
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => openEditDialog(contact)}>
-                                      <Pencil className="h-4 w-4 mr-2" />
-                                      Edit
+                                      <Pencil className="h-4 w-4 mr-2" />Edit
                                     </DropdownMenuItem>
                                     {!contact.opportunity_id && contact.account_id && (
                                       <DropdownMenuItem onClick={() => handleConvertToOpportunity(contact)}>
-                                        <ArrowRightCircle className="h-4 w-4 mr-2" />
-                                        Convert to Opportunity
+                                        <ArrowRightCircle className="h-4 w-4 mr-2" />Convert to Opportunity
                                       </DropdownMenuItem>
                                     )}
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuItem 
-                                      onClick={() => setDeleteConfirmId(contact.id)}
-                                      className="text-destructive"
-                                    >
-                                      <Trash className="h-4 w-4 mr-2" />
-                                      Delete
+                                    <DropdownMenuItem onClick={() => setDeleteConfirmId(contact.id)} className="text-destructive">
+                                      <Trash className="h-4 w-4 mr-2" />Delete
                                     </DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>
@@ -933,83 +882,80 @@ const Contacts = () => {
                   </Table>
                 </div>
               ) : (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                   {paginatedContacts.map(contact => {
                     const stageConfig = contact.stage
                       ? STAGE_CONFIG[contact.stage as OpportunityStage]
                       : null;
+                    const fullName = [contact.first_name, contact.last_name].filter(Boolean).join(' ');
+                    const initials = [contact.first_name?.[0], contact.last_name?.[0]].filter(Boolean).join('').toUpperCase() || '?';
 
                     return (
-                      <Card 
-                        key={contact.id} 
-                        className="cursor-pointer hover:shadow-md transition-shadow"
+                      <div
+                        key={contact.id}
+                        className="rounded-xl border border-border bg-card hover:border-border/80 transition-all cursor-pointer group/card"
                         onClick={() => setSelectedContact(contact)}
+                        style={stageConfig ? { borderLeft: `3px solid ${stageConfig.color}` } : {}}
                       >
-                        <CardContent className="p-4">
-                          <div className="flex items-start justify-between mb-3">
-                            <div>
-                              <h3 className="font-medium">
-                                {contact.first_name || contact.last_name 
-                                  ? `${contact.first_name || ''} ${contact.last_name || ''}`.trim()
-                                  : 'Unnamed Contact'}
-                              </h3>
-                              <p className="text-xs text-muted-foreground">{contact.email || '-'}</p>
+                        <div className="p-4">
+                          {/* Header row */}
+                          <div className="flex items-start gap-3 mb-3">
+                            <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-sm font-bold text-muted-foreground shrink-0">
+                              {initials}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-sm truncate">{fullName || <span className="italic text-muted-foreground">Unnamed</span>}</p>
+                              <p className="text-xs text-muted-foreground truncate">{contact.account?.name || 'No account'}</p>
                             </div>
                             {stageConfig && (
-                              <Badge 
-                                variant="outline"
-                                style={{ borderColor: stageConfig?.color, color: stageConfig?.color }}
-                              >
-                                {stageConfig?.label}
-                              </Badge>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: stageConfig.color }} />
+                                <span className="text-[10px] text-muted-foreground">{stageConfig.label}</span>
+                              </div>
                             )}
                           </div>
-                          
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">Account</span>
-                              <span>{contact.account?.name || '-'}</span>
-                            </div>
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">Phone</span>
-                              <span>{contact.phone || '-'}</span>
-                            </div>
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">Owner</span>
-                              <span>{contact.assigned_to || 'Unassigned'}</span>
-                            </div>
-                          </div>
-                          
-                          <div className="mt-3 pt-3 border-t flex items-center gap-2">
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="flex-1"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openEditDialog(contact);
-                              }}
-                            >
-                              <Pencil className="h-3 w-3 mr-1" />
-                              Edit
-                            </Button>
-                            {!contact.opportunity_id && contact.account_id && (
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                className="flex-1"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleConvertToOpportunity(contact);
-                                }}
-                              >
-                                <ArrowRightCircle className="h-3 w-3 mr-1" />
-                                Convert
-                              </Button>
+                          {/* Contact info */}
+                          <div className="space-y-1.5 mb-3">
+                            {contact.email && (
+                              <a href={`mailto:${contact.email}`} onClick={e => e.stopPropagation()}
+                                className="flex items-center gap-2 text-xs text-muted-foreground hover:text-primary transition-colors">
+                                <Mail className="h-3 w-3 shrink-0" />
+                                <span className="truncate">{contact.email}</span>
+                              </a>
+                            )}
+                            {contact.phone && (
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground" onClick={e => e.stopPropagation()}>
+                                <Phone className="h-3 w-3 shrink-0" />
+                                <span>{contact.phone}</span>
+                                <ClickToCall phoneNumber={contact.phone} contactName={fullName} />
+                              </div>
                             )}
                           </div>
-                        </CardContent>
-                      </Card>
+                          {/* Footer */}
+                          <div className="flex items-center justify-between pt-2.5 border-t border-border/50">
+                            <span className="text-[10px] text-muted-foreground/60">
+                              {contact.assigned_to || 'Unassigned'}
+                            </span>
+                            <div className="flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+                              {contact.email && (
+                                <a href={`mailto:${contact.email}`} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+                                  <Mail className="h-3.5 w-3.5" />
+                                </a>
+                              )}
+                              {!contact.opportunity_id && contact.account_id && (
+                                <button onClick={() => handleConvertToOpportunity(contact)}
+                                  className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="Convert to opportunity">
+                                  <ArrowRightCircle className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+                              <button onClick={() => openEditDialog(contact)}
+                                className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+                                <Pencil className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     );
                   })}
                 </div>

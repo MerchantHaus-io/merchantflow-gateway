@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Account, Contact } from "@/types/opportunity";
+import { Account, Contact, STAGE_CONFIG } from "@/types/opportunity";
 import { AppLayout } from "@/components/AppLayout";
 import { QueryErrorCard } from "@/components/QueryErrorCard";
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from "@/components/ui/table";
@@ -22,7 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Search, Users, Trash, Mail, Phone, ExternalLink, Check, X, Plus } from "lucide-react";
+import { Pencil, Search, Users, Trash, Mail, Phone, ExternalLink, Check, X, Plus, TrendingUp, Globe, MapPin } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -74,6 +74,7 @@ const Accounts = () => {
   const [inlineEditId, setInlineEditId] = useState<string | null>(null);
   const [inlineEditField, setInlineEditField] = useState<string | null>(null);
   const [inlineEditValue, setInlineEditValue] = useState<string>('');
+  const [accountOpportunities, setAccountOpportunities] = useState<Record<string, { stage: string; label: string; color: string; assigned_to?: string }>>({});
 
   const startInlineEdit = (accountId: string, field: string, currentValue: string) => {
     setInlineEditId(accountId);
@@ -192,6 +193,22 @@ const Accounts = () => {
       setFetchError('Failed to load accounts. Please try again.');
     } else if (data) {
       setAccounts(data as AccountWithContacts[]);
+    }
+    // Also fetch latest opportunity per account
+    const { data: oppData } = await supabase
+      .from('opportunities')
+      .select('account_id, stage, assigned_to, status, updated_at')
+      .neq('status', 'dead')
+      .order('updated_at', { ascending: false });
+    if (oppData) {
+      const map: Record<string, { stage: string; label: string; color: string; assigned_to?: string }> = {};
+      oppData.forEach((opp: any) => {
+        if (!map[opp.account_id]) {
+          const cfg = STAGE_CONFIG[opp.stage as keyof typeof STAGE_CONFIG];
+          if (cfg) map[opp.account_id] = { stage: opp.stage, label: cfg.label, color: cfg.color, assigned_to: opp.assigned_to };
+        }
+      });
+      setAccountOpportunities(map);
     }
     setLoading(false);
   };
@@ -351,63 +368,40 @@ const Accounts = () => {
         </div>
       }
     >
-      <div className="p-4 lg:p-6 space-y-6">
-            <div className="grid gap-4 md:grid-cols-3 mb-6">
-              <Card className="border-muted/70">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm text-muted-foreground">Total accounts</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="text-2xl font-semibold">{totalAccounts}</div>
-                  <p className="text-xs text-muted-foreground mt-1">Merchant profiles captured</p>
-                </CardContent>
-              </Card>
-              <Card className="border-muted/70">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm text-muted-foreground">With contacts</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="text-2xl font-semibold">{accountsWithContacts}</div>
-                  <p className="text-xs text-muted-foreground mt-1">Linked to at least one contact</p>
-                </CardContent>
-              </Card>
-              <Card className="border-muted/70">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm text-muted-foreground">With websites</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="text-2xl font-semibold">{accountsWithWebsites}</div>
-                  <p className="text-xs text-muted-foreground mt-1">Ready for research</p>
-                </CardContent>
-              </Card>
+      <div className="p-4 lg:p-6 space-y-4">
+            {/* Compact stat row */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-sm font-semibold text-foreground">{totalAccounts} Accounts</span>
+              <span className="text-muted-foreground/40">·</span>
+              <span className="text-sm text-muted-foreground">{accountsWithContacts} with contacts</span>
+              <span className="text-muted-foreground/40">·</span>
+              <span className="text-sm text-muted-foreground">{Object.keys(accountOpportunities).length} with active deals</span>
             </div>
 
             <Card>
-              <CardHeader className="pb-3">
+              <CardHeader className="pb-0 pt-3 px-4">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">Account directory</CardTitle>
-                  <span className="text-xs text-muted-foreground hidden sm:inline">Click any cell to edit inline · Pencil icon opens full form</span>
+                  <span className="text-xs text-muted-foreground">Click any cell to edit inline · Deal stage shown from latest active opportunity</span>
                 </div>
               </CardHeader>
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-12">#</TableHead>
-                      <SortableTableHead field="name" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Name</SortableTableHead>
+                      <SortableTableHead field="name" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Account</SortableTableHead>
+                      <TableHead>Active Deal</TableHead>
                       <SortableTableHead field="contacts" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Contacts</SortableTableHead>
-                      <SortableTableHead field="city" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>City</SortableTableHead>
-                      <SortableTableHead field="state" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>State</SortableTableHead>
-                      <SortableTableHead field="country" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Country</SortableTableHead>
+                      <TableHead>Location</TableHead>
                       <SortableTableHead field="website" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Website</SortableTableHead>
-                      <TableHead className="w-16">Actions</TableHead>
+                      <TableHead className="w-16"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredAccounts.map((account, index) => (
-                      <TableRow key={account.id} className={cn("hover:bg-muted/50", account.status === 'dead' && "opacity-60")}>
-                        <TableCell className="text-muted-foreground text-sm">{index + 1}</TableCell>
-                        <TableCell className="font-medium">
+                    {filteredAccounts.map((account) => {
+                      const activeDeal = accountOpportunities[account.id];
+                      return (
+                      <TableRow key={account.id} className={cn("hover:bg-muted/30 group/row", account.status === 'dead' && "opacity-50")}>
+                        <TableCell className="font-medium py-2.5">
                           {inlineEditId === account.id && inlineEditField === 'name' ? (
                             <div className="flex items-center gap-1">
                               <Input
@@ -436,84 +430,62 @@ const Accounts = () => {
                             </div>
                           )}
                         </TableCell>
-                        <TableCell>
+                        {/* Active deal */}
+                        <TableCell className="py-2.5">
+                          {activeDeal ? (
+                            <button
+                              onClick={() => navigate('/opportunities')}
+                              className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
+                            >
+                              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: activeDeal.color }} />
+                              <span className="text-xs font-medium">{activeDeal.label}</span>
+                              {activeDeal.assigned_to && (
+                                <span className="text-xs text-muted-foreground hidden lg:inline">· {activeDeal.assigned_to}</span>
+                              )}
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => navigate('/opportunities?new=true')}
+                              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-teal transition-colors opacity-0 group-hover/row:opacity-100"
+                            >
+                              <Plus className="h-3 w-3" /> New deal
+                            </button>
+                          )}
+                        </TableCell>
+                        {/* Contacts */}
+                        <TableCell className="py-2.5">
                           {account.contacts && account.contacts.length > 0 ? (
                             <Popover>
                               <PopoverTrigger asChild>
-                                <Button variant="outline" size="sm" className="gap-1.5 bg-secondary">
-                                  <Users className="h-3.5 w-3.5 text-muted-foreground" />
-                                  {account.contacts.length} contact{account.contacts.length !== 1 ? 's' : ''}
+                                <Button variant="ghost" size="sm" className="h-6 gap-1.5 px-2 text-xs hover:bg-muted">
+                                  <Users className="h-3 w-3 text-muted-foreground" />
+                                  {account.contacts.length}
                                 </Button>
                               </PopoverTrigger>
-                              <PopoverContent className="w-64 p-0" align="start">
+                              <PopoverContent className="w-56 p-0" align="start">
                                 <div className="p-2 border-b border-border">
-                                  <p className="text-xs font-medium text-muted-foreground">Contacts for {account.name}</p>
+                                  <p className="text-xs font-medium text-muted-foreground">{account.name}</p>
                                 </div>
                                 <div className="max-h-48 overflow-y-auto">
                                   {account.contacts.map((contact) => (
-                                    <button
-                                      key={contact.id}
-                                      className="w-full text-left px-3 py-2 hover:bg-muted/50 transition-colors flex flex-col gap-0.5 border-b border-border/50 last:border-0"
-                                      onClick={() => navigate(`/contacts?highlight=${contact.id}`)}
-                                    >
-                                      <span className="text-sm font-medium">{contact.first_name} {contact.last_name}</span>
-                                      {contact.email && (
-                                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                          <Mail className="h-3 w-3" />{contact.email}
-                                        </span>
-                                      )}
+                                    <button key={contact.id} className="w-full text-left px-3 py-2 hover:bg-muted/50 flex flex-col gap-0.5 border-b border-border/40 last:border-0"
+                                      onClick={() => navigate(`/contacts?highlight=${contact.id}`)}>
+                                      <span className="text-xs font-medium">{contact.first_name} {contact.last_name}</span>
+                                      {contact.email && <span className="text-[10px] text-muted-foreground">{contact.email}</span>}
                                     </button>
                                   ))}
-                                </div>
-                                <div className="p-1.5 border-t border-border">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="w-full text-xs gap-1"
-                                    onClick={() => navigate('/contacts')}
-                                  >
-                                    <ExternalLink className="h-3 w-3" />
-                                    View all contacts
-                                  </Button>
                                 </div>
                               </PopoverContent>
                             </Popover>
                           ) : (
-                            <Badge variant="outline" className="bg-muted/40 text-muted-foreground">No contacts</Badge>
+                            <span className="text-xs text-muted-foreground">—</span>
                           )}
                         </TableCell>
-                        <TableCell>
-                          {inlineEditId === account.id && inlineEditField === 'city' ? (
-                            <div className="flex items-center gap-1">
-                              <Input autoFocus value={inlineEditValue} onChange={e => setInlineEditValue(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') commitInlineEdit(); if (e.key === 'Escape') cancelInlineEdit(); }} className="h-7 text-sm py-0 px-2 w-28" />
-                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={commitInlineEdit}><Check className="h-3 w-3 text-success" /></Button>
-                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={cancelInlineEdit}><X className="h-3 w-3 text-muted-foreground" /></Button>
-                            </div>
-                          ) : (
-                            <span className="cursor-pointer hover:text-primary transition-colors text-sm" onClick={() => startInlineEdit(account.id, 'city', account.city || '')} title="Click to edit">{account.city || <span className="text-muted-foreground">—</span>}</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {inlineEditId === account.id && inlineEditField === 'state' ? (
-                            <div className="flex items-center gap-1">
-                              <Input autoFocus value={inlineEditValue} onChange={e => setInlineEditValue(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') commitInlineEdit(); if (e.key === 'Escape') cancelInlineEdit(); }} className="h-7 text-sm py-0 px-2 w-20" />
-                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={commitInlineEdit}><Check className="h-3 w-3 text-success" /></Button>
-                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={cancelInlineEdit}><X className="h-3 w-3 text-muted-foreground" /></Button>
-                            </div>
-                          ) : (
-                            <span className="cursor-pointer hover:text-primary transition-colors text-sm" onClick={() => startInlineEdit(account.id, 'state', account.state || '')} title="Click to edit">{account.state || <span className="text-muted-foreground">—</span>}</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {inlineEditId === account.id && inlineEditField === 'country' ? (
-                            <div className="flex items-center gap-1">
-                              <Input autoFocus value={inlineEditValue} onChange={e => setInlineEditValue(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') commitInlineEdit(); if (e.key === 'Escape') cancelInlineEdit(); }} className="h-7 text-sm py-0 px-2 w-24" />
-                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={commitInlineEdit}><Check className="h-3 w-3 text-success" /></Button>
-                              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={cancelInlineEdit}><X className="h-3 w-3 text-muted-foreground" /></Button>
-                            </div>
-                          ) : (
-                            <span className="cursor-pointer hover:text-primary transition-colors text-sm" onClick={() => startInlineEdit(account.id, 'country', account.country || '')} title="Click to edit">{account.country || <span className="text-muted-foreground">—</span>}</span>
-                          )}
+                        {/* Location combined */}
+                        <TableCell className="py-2.5">
+                          <span className="text-xs text-muted-foreground">
+                            {[account.city, account.state, account.country].filter(Boolean).join(', ') || '—'}
+                          </span>
                         </TableCell>
                         <TableCell>
                           {inlineEditId === account.id && inlineEditField === 'website' ? (
@@ -554,7 +526,8 @@ const Accounts = () => {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))}
+                    );
+                    })}
                   </TableBody>
                 </Table>
               </CardContent>

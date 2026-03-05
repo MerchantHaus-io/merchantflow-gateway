@@ -721,7 +721,7 @@ export default function OfficeChat({
   const [showTerminal, setShowTerminal] = useState(false);
   const [nearTV, setNearTV] = useState(false);
   const [tvUnmuted, setTvUnmuted] = useState(false);
-  const [tvScreen3D, setTvScreen3D] = useState<{ x: number; y: number; w: number; h: number; visible: boolean } | null>(null);
+  const tvOverlayRef = useRef<HTMLDivElement>(null);
   const [nearInteract, setNearInteract] = useState<InteractionPoint | null>(null);
   const [isSitting, setIsSitting] = useState(false);
   const [showWhiteboard, setShowWhiteboard] = useState(false);
@@ -1089,45 +1089,45 @@ export default function OfficeChat({
         return closestIP;
       });
 
-      // Project TV screen onto 2D overlay
+      // Project TV screen onto 2D overlay — direct DOM manipulation to avoid re-renders
       {
-        const tvCenter = new THREE.Vector3(ROOM - 0.14, 2.8, 6); // matches tvScreen position
-        const tvTL = new THREE.Vector3(ROOM - 0.14, 2.8 + 1.15, 6 - 2.0);
-        const tvBR = new THREE.Vector3(ROOM - 0.14, 2.8 - 1.15, 6 + 2.0);
-        
-        // Check if TV is in front of camera
-        const toTV = tvCenter.clone().sub(camera.position);
-        const camDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-        const dot = toTV.normalize().dot(camDir);
-        const dist = camera.position.distanceTo(tvCenter);
-        
-        if (dot > 0.1 && dist < 30) {
-          const tl = tvTL.clone().project(camera);
-          const br = tvBR.clone().project(camera);
+        const tvEl = tvOverlayRef.current;
+        if (tvEl) {
+          const tvCenter = new THREE.Vector3(ROOM - 0.14, 2.8, 6);
+          const tvTL = new THREE.Vector3(ROOM - 0.14, 2.8 + 1.15, 6 - 2.0);
+          const tvBR = new THREE.Vector3(ROOM - 0.14, 2.8 - 1.15, 6 + 2.0);
           
-          const cw = renderer.domElement.clientWidth;
-          const ch = renderer.domElement.clientHeight;
+          const toTV = tvCenter.clone().sub(camera.position);
+          const camDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+          const dot = toTV.normalize().dot(camDir);
+          const dist = camera.position.distanceTo(tvCenter);
           
-          const sx1 = (tl.x * 0.5 + 0.5) * cw;
-          const sy1 = (-tl.y * 0.5 + 0.5) * ch;
-          const sx2 = (br.x * 0.5 + 0.5) * cw;
-          const sy2 = (-br.y * 0.5 + 0.5) * ch;
-          
-          const w = Math.abs(sx2 - sx1);
-          const h = Math.abs(sy2 - sy1);
-          const x = Math.min(sx1, sx2);
-          const y = Math.min(sy1, sy2);
-          
-          if (w > 20 && h > 12) {
-            setTvScreen3D(prev => {
-              if (prev && Math.abs(prev.x - x) < 1 && Math.abs(prev.y - y) < 1 && Math.abs(prev.w - w) < 1) return prev;
-              return { x, y, w, h, visible: true };
-            });
+          if (dot > 0.1 && dist < 30) {
+            const tl = tvTL.clone().project(camera);
+            const br = tvBR.clone().project(camera);
+            const cw = renderer.domElement.clientWidth;
+            const ch = renderer.domElement.clientHeight;
+            const sx1 = (tl.x * 0.5 + 0.5) * cw;
+            const sy1 = (-tl.y * 0.5 + 0.5) * ch;
+            const sx2 = (br.x * 0.5 + 0.5) * cw;
+            const sy2 = (-br.y * 0.5 + 0.5) * ch;
+            const w = Math.abs(sx2 - sx1);
+            const h = Math.abs(sy2 - sy1);
+            const x = Math.min(sx1, sx2);
+            const y = Math.min(sy1, sy2);
+            
+            if (w > 20 && h > 12) {
+              tvEl.style.display = 'block';
+              tvEl.style.left = `${x}px`;
+              tvEl.style.top = `${y}px`;
+              tvEl.style.width = `${w}px`;
+              tvEl.style.height = `${h}px`;
+            } else {
+              tvEl.style.display = 'none';
+            }
           } else {
-            setTvScreen3D(prev => prev?.visible === false ? prev : { x: 0, y: 0, w: 0, h: 0, visible: false });
+            tvEl.style.display = 'none';
           }
-        } else {
-          setTvScreen3D(prev => prev?.visible === false ? prev : { x: 0, y: 0, w: 0, h: 0, visible: false });
         }
       }
 
@@ -1423,27 +1423,20 @@ export default function OfficeChat({
         </div>
       )}
 
-      {/* TV — projected onto 3D wall */}
-      {tvScreen3D?.visible && (
-        <div
-          className="absolute z-10 overflow-hidden pointer-events-none"
-          style={{
-            left: tvScreen3D.x,
-            top: tvScreen3D.y,
-            width: tvScreen3D.w,
-            height: tvScreen3D.h,
-          }}
-        >
-          <iframe
-            key={tvUnmuted ? "unmuted" : "muted"}
-            src={`https://www.youtube-nocookie.com/embed/T0C9d8anDT4?autoplay=1&mute=${tvUnmuted ? "0" : "1"}&loop=1&playlist=T0C9d8anDT4&controls=0&modestbranding=1&rel=0&playsinline=1&enablejsapi=1`}
-            className="w-full h-full border-0 pointer-events-none"
-            title="Office TV"
-            allow="autoplay; encrypted-media; picture-in-picture"
-            style={{ pointerEvents: "none" }}
-          />
-        </div>
-      )}
+      {/* TV — projected onto 3D wall via ref (no React re-renders) */}
+      <div
+        ref={tvOverlayRef}
+        className="absolute z-10 overflow-hidden pointer-events-none"
+        style={{ display: 'none' }}
+      >
+        <iframe
+          src={`https://www.youtube-nocookie.com/embed/T0C9d8anDT4?autoplay=1&mute=${tvUnmuted ? "0" : "1"}&loop=1&playlist=T0C9d8anDT4&controls=0&modestbranding=1&rel=0&playsinline=1&enablejsapi=1`}
+          className="w-full h-full border-0 pointer-events-none"
+          title="Office TV"
+          allow="autoplay; encrypted-media; picture-in-picture"
+          style={{ pointerEvents: "none" }}
+        />
+      </div>
 
       {/* Controls hint */}
       {!isMobile && (
