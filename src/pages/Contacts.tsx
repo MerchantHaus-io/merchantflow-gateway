@@ -31,7 +31,9 @@ import {
   MoreHorizontal,
   ChevronLeft,
   ChevronRight,
-  UserPlus
+  UserPlus,
+  Check,
+  X
 } from "lucide-react";
 import { toast } from "sonner";
 import CommentsTab from "@/components/CommentsTab";
@@ -100,6 +102,26 @@ const Contacts = () => {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [editingContact, setEditingContact] = useState<ContactWithAccount | null>(null);
   const [isNewDialogOpen, setIsNewDialogOpen] = useState(false);
+  // Inline editing
+  const [inlineEditId, setInlineEditId] = useState<string | null>(null);
+  const [inlineEditField, setInlineEditField] = useState<string | null>(null);
+  const [inlineEditValue, setInlineEditValue] = useState<string>('');
+
+  const startInlineEdit = (id: string, field: string, value: string) => {
+    setInlineEditId(id);
+    setInlineEditField(field);
+    setInlineEditValue(value || '');
+  };
+  const cancelInlineEdit = () => { setInlineEditId(null); setInlineEditField(null); setInlineEditValue(''); };
+  const commitInlineEdit = async () => {
+    if (!inlineEditId || !inlineEditField) return;
+    const { error } = await supabase.from('contacts').update({ [inlineEditField]: inlineEditValue || null }).eq('id', inlineEditId);
+    if (error) { toast.error('Failed to save'); } else {
+      setContacts((prev: ContactWithAccount[]) => prev.map(c => c.id === inlineEditId ? { ...c, [inlineEditField!]: inlineEditValue } : c));
+      toast.success('Saved');
+    }
+    cancelInlineEdit();
+  };
   const [isNewAccount, setIsNewAccount] = useState(false);
   const [newAccountName, setNewAccountName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -786,9 +808,42 @@ const Contacts = () => {
                                 />
                               </TableCell>
                               <TableCell className="text-muted-foreground text-sm">{globalIndex}</TableCell>
-                              <TableCell className="font-medium">{contact.first_name || '-'}</TableCell>
-                              <TableCell>{contact.last_name || '-'}</TableCell>
-                              <TableCell className="text-sm text-muted-foreground">{contact.email || '-'}</TableCell>
+                              <TableCell className="font-medium">
+                                {inlineEditId === contact.id && inlineEditField === 'first_name' ? (
+                                  <div className="flex items-center gap-1">
+                                    <Input autoFocus value={inlineEditValue} onChange={e => setInlineEditValue(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') commitInlineEdit(); if (e.key === 'Escape') cancelInlineEdit(); }} className="h-7 text-sm py-0 px-2 w-28" />
+                                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={commitInlineEdit}><Check className="h-3 w-3 text-success" /></Button>
+                                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={cancelInlineEdit}><X className="h-3 w-3 text-muted-foreground" /></Button>
+                                  </div>
+                                ) : (
+                                  <span className="cursor-pointer hover:text-primary transition-colors" onClick={() => startInlineEdit(contact.id, 'first_name', contact.first_name || '')} title="Click to edit">{contact.first_name || <span className="text-muted-foreground">—</span>}</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {inlineEditId === contact.id && inlineEditField === 'last_name' ? (
+                                  <div className="flex items-center gap-1">
+                                    <Input autoFocus value={inlineEditValue} onChange={e => setInlineEditValue(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') commitInlineEdit(); if (e.key === 'Escape') cancelInlineEdit(); }} className="h-7 text-sm py-0 px-2 w-28" />
+                                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={commitInlineEdit}><Check className="h-3 w-3 text-success" /></Button>
+                                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={cancelInlineEdit}><X className="h-3 w-3 text-muted-foreground" /></Button>
+                                  </div>
+                                ) : (
+                                  <span className="cursor-pointer hover:text-primary transition-colors" onClick={() => startInlineEdit(contact.id, 'last_name', contact.last_name || '')} title="Click to edit">{contact.last_name || <span className="text-muted-foreground">—</span>}</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-sm">
+                                {inlineEditId === contact.id && inlineEditField === 'email' ? (
+                                  <div className="flex items-center gap-1">
+                                    <Input autoFocus type="email" value={inlineEditValue} onChange={e => setInlineEditValue(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') commitInlineEdit(); if (e.key === 'Escape') cancelInlineEdit(); }} className="h-7 text-sm py-0 px-2 w-40" />
+                                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={commitInlineEdit}><Check className="h-3 w-3 text-success" /></Button>
+                                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={cancelInlineEdit}><X className="h-3 w-3 text-muted-foreground" /></Button>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-1.5 group/cell">
+                                    {contact.email ? <a href={`mailto:${contact.email}`} className="text-muted-foreground hover:text-primary transition-colors truncate max-w-[160px]" title={contact.email}>{contact.email}</a> : <span className="text-muted-foreground">—</span>}
+                                    <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover/cell:opacity-60 cursor-pointer transition-opacity" onClick={() => startInlineEdit(contact.id, 'email', contact.email || '')} />
+                                  </div>
+                                )}
+                              </TableCell>
                               <TableCell className="text-sm">
                                 <div className="flex items-center gap-1">
                                   {contact.phone || '-'}
