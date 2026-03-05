@@ -640,6 +640,19 @@ function buildRoom(): THREE.Group {
   // Bezel
   const tvBezel = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.5, 4.2), new THREE.MeshStandardMaterial({ color: 0x0a0a0a }));
   tvBezel.position.set(wOff - 0.08, 2.8, 6); g.add(tvBezel);
+  // Bezel glow — thin emissive strip around inner edge
+  const glowMat = new THREE.MeshStandardMaterial({ color: 0x1a2a3a, emissive: 0x2266aa, emissiveIntensity: 0.45, transparent: true, opacity: 0.7 });
+  const glowTop = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.04, 4.05), glowMat);
+  glowTop.position.set(wOff - 0.14, 2.8 + 1.17, 6); g.add(glowTop);
+  const glowBot = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.04, 4.05), glowMat);
+  glowBot.position.set(wOff - 0.14, 2.8 - 1.17, 6); g.add(glowBot);
+  const glowLeft = new THREE.Mesh(new THREE.BoxGeometry(0.02, 2.3, 0.04), glowMat);
+  glowLeft.position.set(wOff - 0.14, 2.8, 6 - 2.03); g.add(glowLeft);
+  const glowRight = new THREE.Mesh(new THREE.BoxGeometry(0.02, 2.3, 0.04), glowMat);
+  glowRight.position.set(wOff - 0.14, 2.8, 6 + 2.03); g.add(glowRight);
+  // Ambient glow light behind TV
+  const tvGlow = new THREE.PointLight(0x2266aa, 0.6, 6);
+  tvGlow.position.set(wOff - 0.5, 2.8, 6); g.add(tvGlow);
   // Screen
   const tvScreen = new THREE.Mesh(new THREE.BoxGeometry(0.06, 2.3, 4.0), new THREE.MeshStandardMaterial({ color: 0x0d1117, emissive: 0x1a2a3a, emissiveIntensity: 0.6 }));
   tvScreen.position.set(wOff - 0.12, 2.8, 6); g.add(tvScreen);
@@ -1476,16 +1489,29 @@ export default function OfficeChat({
       {/* TV — projected onto 3D wall via ref (no React re-renders) */}
       <div
         ref={tvOverlayRef}
-        className="absolute z-10 overflow-hidden pointer-events-none bg-black"
-        style={{ visibility: 'hidden', opacity: 0, transition: 'opacity 120ms linear', willChange: 'transform, width, height' }}
+        className="absolute z-10 overflow-hidden pointer-events-none"
+        style={{ visibility: 'hidden', opacity: 0, transition: 'opacity 120ms linear', willChange: 'transform, width, height', backgroundColor: '#0d1117' }}
       >
         <iframe
           src={`https://www.youtube-nocookie.com/embed/T0C9d8anDT4?autoplay=1&mute=${tvUnmuted ? "0" : "1"}&loop=1&playlist=T0C9d8anDT4&controls=0&modestbranding=1&rel=0&playsinline=1&enablejsapi=1`}
-          className="w-full h-full border-0 pointer-events-none bg-black"
+          className="w-full h-full border-0 pointer-events-none"
           title="Office TV"
           allow="autoplay; encrypted-media; picture-in-picture"
-          style={{ pointerEvents: "none", backgroundColor: "#000" }}
+          style={{ pointerEvents: "none", backgroundColor: "#0d1117" }}
         />
+        {/* Scanline overlay */}
+        <div className="absolute inset-0 pointer-events-none" style={{
+          background: 'repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px)',
+          mixBlendMode: 'multiply',
+        }} />
+        {/* Subtle vignette */}
+        <div className="absolute inset-0 pointer-events-none" style={{
+          background: 'radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.35) 100%)',
+        }} />
+        {/* Inner bezel glow edge */}
+        <div className="absolute inset-0 pointer-events-none rounded-sm" style={{
+          boxShadow: 'inset 0 0 8px 2px rgba(34,102,170,0.25), inset 0 0 20px 4px rgba(0,0,0,0.4)',
+        }} />
       </div>
 
       {/* Controls hint */}
