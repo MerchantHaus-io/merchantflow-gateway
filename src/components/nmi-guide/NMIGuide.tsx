@@ -276,15 +276,20 @@ const StatusPill = ({ status }: { status: string }) => {
 const ReferenceContent = ({ scrollTo, viewportRef }: { scrollTo: string | null; viewportRef?: React.RefObject<HTMLDivElement> }) => {
   const refs = useRef<Record<string, HTMLElement | null>>({});
   useEffect(() => {
-    if (scrollTo && refs.current[scrollTo]) {
-      const el = refs.current[scrollTo]!;
-      const viewport = viewportRef?.current;
-      if (viewport) {
-        const top = el.offsetTop - viewport.offsetTop;
-        viewport.scrollTo({ top: Math.max(0, top - 8), behavior: 'smooth' });
-      } else {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (!scrollTo || !refs.current[scrollTo]) return;
+    const el = refs.current[scrollTo]!;
+    const viewport = viewportRef?.current;
+    if (viewport) {
+      // Walk up offsetParents to compute position relative to the viewport
+      let top = 0;
+      let node: HTMLElement | null = el;
+      while (node && node !== viewport) {
+        top += node.offsetTop;
+        node = node.offsetParent as HTMLElement | null;
       }
+      viewport.scrollTo({ top: Math.max(0, top - 8), behavior: 'smooth' });
+    } else {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [scrollTo, viewportRef]);
   const ref = (id: string) => (el: HTMLElement | null) => { refs.current[id] = el; };
@@ -781,7 +786,7 @@ const NMIGuide: React.FC = () => {
   ];
 
   return (
-    <div className="flex h-full min-h-0 overflow-hidden">
+    <div className="flex h-full min-h-0 overflow-hidden backdrop-blur-md bg-background/40 dark:backdrop-blur-none dark:bg-transparent">
       {/* ── SIDEBAR ── */}
       <aside className="w-48 shrink-0 flex flex-col overflow-hidden" style={{
         background: BG, borderRight: '1px solid hsl(var(--border))',
