@@ -136,22 +136,56 @@ const USERS: CRMUser[] = [
 // ── SPAWN POSITIONS (desk positions — NPCs sit here) ──────────────────────────
 
 const DESK_POS: Record<string, THREE.Vector3> = {
-  "taryn@merchanthaus.io":   new THREE.Vector3(-4, 0, -5),
-  "admin@merchanthaus.io":   new THREE.Vector3(0,  0, -5),
-  "sales@merchanthaus.io":   new THREE.Vector3(4,  0, -5),
-  "support@merchanthaus.io": new THREE.Vector3(-2, 0,  2),
-  "darryn@merchanthaus.io":  new THREE.Vector3(2,  0,  2),
-  "atria@merchanthaus.io":   new THREE.Vector3(0,  0,  5.5),
+  "taryn@merchanthaus.io":   new THREE.Vector3(-8, 0, -10),
+  "admin@merchanthaus.io":   new THREE.Vector3(0,  0, -10),
+  "sales@merchanthaus.io":   new THREE.Vector3(8,  0, -10),
+  "support@merchanthaus.io": new THREE.Vector3(-5, 0,  4),
+  "darryn@merchanthaus.io":  new THREE.Vector3(5,  0,  4),
+  "atria@merchanthaus.io":   new THREE.Vector3(0,  0,  10),
 };
 
 // Aliases so existing SPAWN references still work for the player
 const SPAWN: Record<string, THREE.Vector3> = { ...DESK_POS };
 
+// ── NPC WANDERING AI ──────────────────────────────────────────────────────────
+
+interface NPCWanderState {
+  currentTarget: THREE.Vector3;
+  atDesk: boolean;
+  deskTimer: number;    // time spent at desk before wandering
+  wanderTimer: number;  // time spent wandering before returning
+  speed: number;
+  idleTimer: number;    // pause at waypoint
+  state: "walking" | "idle_at_waypoint" | "at_desk";
+}
+
+const ROOM_HALF = 14; // half-extent for wandering bounds (slightly inside walls)
+
+function randomWanderTarget(): THREE.Vector3 {
+  return new THREE.Vector3(
+    (Math.random() - 0.5) * (ROOM_HALF * 2 - 4),
+    0,
+    (Math.random() - 0.5) * (ROOM_HALF * 2 - 4)
+  );
+}
+
+function createWanderState(): NPCWanderState {
+  return {
+    currentTarget: randomWanderTarget(),
+    atDesk: false,
+    deskTimer: Math.random() * 20 + 10,     // 10-30s at desk
+    wanderTimer: Math.random() * 15 + 8,    // 8-23s wandering
+    speed: 1.2 + Math.random() * 0.8,       // 1.2-2.0 units/s
+    idleTimer: 0,
+    state: "walking",
+  };
+}
+
 // ── THREE HELPERS ─────────────────────────────────────────────────────────────
 
-const ROOM = 7.5; // half-extent of room (larger)
-const INTERACT_DIST = 2.2;
-const TV_POS = new THREE.Vector3(7.2, 0, 0); // right wall TV
+const ROOM = 15; // half-extent of room (much larger)
+const INTERACT_DIST = 2.5;
+const TV_POS = new THREE.Vector3(14.5, 0, 0); // right wall TV
 
 function buildCharacterMesh(user: CRMUser, isPlayer: boolean): THREE.Group {
   const g = new THREE.Group();
@@ -287,12 +321,12 @@ function buildRoom(): THREE.Group {
   };
 
   // Floor
-  const FS = 15;
+  const FS = 30;
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(FS, FS), new THREE.MeshStandardMaterial({ color: 0xe8e0d4, roughness: 0.8 }));
   floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; g.add(floor);
   const t1 = new THREE.MeshStandardMaterial({ color: 0xf2ece4 });
   const t2 = new THREE.MeshStandardMaterial({ color: 0xe4ddd4 });
-  for (let x = -7; x < 8; x += 2) for (let z = -7; z < 8; z += 2) {
+  for (let x = -14; x < 15; x += 2) for (let z = -14; z < 15; z += 2) {
     const tile = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), ((x + z) / 2) % 2 === 0 ? t1 : t2);
     tile.position.set(x + 1, 0.01, z + 1); tile.rotation.x = -Math.PI / 2; g.add(tile);
   }
@@ -377,16 +411,46 @@ function buildRoom(): THREE.Group {
   };
 
   // Place cubicles at desk positions
-  g.add(makeCubicle(-4, -5), makeCubicle(0, -5), makeCubicle(4, -5));
-  g.add(makeCubicle(-2, 2), makeCubicle(2, 2));
-  g.add(makeCubicle(0, 5.5)); // Atria's cubicle
+  g.add(makeCubicle(-8, -10), makeCubicle(0, -10), makeCubicle(8, -10));
+  g.add(makeCubicle(-5, 4), makeCubicle(5, 4));
+  g.add(makeCubicle(0, 10)); // Atria's cubicle
 
-  // Plants
-  ([[-6.5, -6.5], [6.5, -6.5], [-6.5, 6.5], [6.5, 6.5]] as [number, number][]).forEach(([px, pz]) => {
+  // Plants — spread around the larger room
+  ([[-13, -13], [13, -13], [-13, 13], [13, 13], [-8, 0], [8, 0], [0, -5], [0, 7]] as [number, number][]).forEach(([px, pz]) => {
     const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.18, 0.3, 8), new THREE.MeshStandardMaterial({ color: 0x7a4f2a }));
     pot.position.set(px, 0.15, pz); g.add(pot);
     const leaves = new THREE.Mesh(new THREE.SphereGeometry(0.45, 6, 5), new THREE.MeshStandardMaterial({ color: 0x2d7a2d }));
     leaves.position.set(px, 0.65, pz); g.add(leaves);
+  });
+
+  // Water cooler
+  const coolerBody = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.9, 8), new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.3 }));
+  coolerBody.position.set(-12, 0.55, -3); g.add(coolerBody);
+  const coolerJug = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.18, 0.4, 8), new THREE.MeshStandardMaterial({ color: 0x88bbdd, transparent: true, opacity: 0.4 }));
+  coolerJug.position.set(-12, 1.2, -3); g.add(coolerJug);
+
+  // Lounge area — couches
+  const couchMat = new THREE.MeshStandardMaterial({ color: 0x4a4a6a, roughness: 0.8 });
+  const makeCouch = (cx: number, cz: number, ry: number) => {
+    const cg = new THREE.Group();
+    const seatC = new THREE.Mesh(new THREE.BoxGeometry(2, 0.3, 0.8), couchMat);
+    seatC.position.y = 0.3; cg.add(seatC);
+    const backC = new THREE.Mesh(new THREE.BoxGeometry(2, 0.6, 0.15), couchMat);
+    backC.position.set(0, 0.6, -0.35); cg.add(backC);
+    cg.position.set(cx, 0, cz);
+    cg.rotation.y = ry;
+    return cg;
+  };
+  g.add(makeCouch(10, -4, 0));
+  g.add(makeCouch(12, -2, Math.PI / 2));
+
+  // Coffee table
+  const coffeeTable = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.05, 0.6), wood);
+  coffeeTable.position.set(10.5, 0.35, -2.5); g.add(coffeeTable);
+  const ctLeg = new THREE.MeshStandardMaterial({ color: 0x333333 });
+  ([[-0.5, -0.25], [0.5, -0.25], [-0.5, 0.25], [0.5, 0.25]] as [number, number][]).forEach(([lx, lz]) => {
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.32, 4), ctLeg);
+    leg.position.set(10.5 + lx, 0.16, -2.5 + lz); g.add(leg);
   });
 
   // Wall-mounted TV on right wall
@@ -431,6 +495,7 @@ export default function OfficeChat({
     playerPos: THREE.Vector3;
     raf: number;
     onlineIndicators: Map<string, THREE.Mesh>;
+    npcWander: Map<string, NPCWanderState>;
   } | null>(null);
 
   const isMobile = useIsMobile();
@@ -472,7 +537,7 @@ export default function OfficeChat({
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x1a1a1a);
-    scene.fog = new THREE.Fog(0x1a1a1a, 8, 25);
+    scene.fog = new THREE.Fog(0x1a1a1a, 15, 40);
 
     const camera = new THREE.PerspectiveCamera(70, W / H, 0.1, 100);
     camera.position.set(
@@ -520,6 +585,12 @@ export default function OfficeChat({
       onlineIndicators.set(u.email, dot);
     });
 
+    // Initialize NPC wander states
+    const npcWander = new Map<string, NPCWanderState>();
+    others.forEach(u => {
+      npcWander.set(u.email, createWanderState());
+    });
+
     const state = {
       renderer, scene, camera, playerMesh, npcMeshes,
       yaw: 0, pitch: 0, locked: false,
@@ -527,6 +598,7 @@ export default function OfficeChat({
       playerPos: SPAWN[currentUserEmail].clone(),
       raf: 0,
       onlineIndicators,
+      npcWander,
     };
     stateRef.current = state;
 
@@ -671,10 +743,73 @@ export default function OfficeChat({
       // Face camera direction (yaw only)
       playerMesh.rotation.y = state.yaw + Math.PI;
 
-      // NPC idle bob (only visible/online ones)
-      npcMeshes.forEach((mesh) => {
+      // NPC wandering AI + walking animation
+      npcMeshes.forEach((mesh, email) => {
         if (!mesh.visible) return;
-        mesh.position.y = Math.abs(Math.sin(t * 0.0008 + mesh.position.x)) * 0.03;
+        const ws = state.npcWander.get(email);
+        if (!ws) return;
+
+        const deskPos = DESK_POS[email] || new THREE.Vector3(0, 0, 0);
+
+        if (ws.state === "at_desk") {
+          // Sitting at desk — idle bob
+          mesh.position.x = deskPos.x;
+          mesh.position.z = deskPos.z;
+          mesh.position.y = Math.abs(Math.sin(t * 0.0008 + mesh.position.x)) * 0.02;
+          ws.deskTimer -= dt;
+          if (ws.deskTimer <= 0) {
+            ws.state = "walking";
+            ws.currentTarget = randomWanderTarget();
+            ws.wanderTimer = Math.random() * 15 + 8;
+          }
+        } else if (ws.state === "idle_at_waypoint") {
+          // Paused at a waypoint
+          mesh.position.y = Math.abs(Math.sin(t * 0.001 + mesh.position.x)) * 0.02;
+          ws.idleTimer -= dt;
+          if (ws.idleTimer <= 0) {
+            ws.wanderTimer -= ws.idleTimer; // don't double-subtract
+            ws.state = "walking";
+            ws.currentTarget = randomWanderTarget();
+          }
+        } else {
+          // Walking toward target
+          const dx = ws.currentTarget.x - mesh.position.x;
+          const dz = ws.currentTarget.z - mesh.position.z;
+          const dist = Math.sqrt(dx * dx + dz * dz);
+
+          if (dist < 0.3) {
+            // Reached waypoint — pause or go to desk
+            ws.wanderTimer -= dt;
+            if (ws.wanderTimer <= 0) {
+              ws.state = "at_desk";
+              ws.deskTimer = Math.random() * 20 + 10;
+            } else {
+              ws.state = "idle_at_waypoint";
+              ws.idleTimer = Math.random() * 3 + 1; // 1-4s pause
+              ws.currentTarget = randomWanderTarget();
+            }
+          } else {
+            // Move toward target
+            const moveSpeed = ws.speed * dt;
+            const nx = dx / dist;
+            const nz = dz / dist;
+            mesh.position.x += nx * moveSpeed;
+            mesh.position.z += nz * moveSpeed;
+            // Clamp to room
+            mesh.position.x = Math.max(-ROOM_HALF, Math.min(ROOM_HALF, mesh.position.x));
+            mesh.position.z = Math.max(-ROOM_HALF, Math.min(ROOM_HALF, mesh.position.z));
+            // Face walking direction
+            mesh.rotation.y = Math.atan2(nx, nz);
+            // Walking bob
+            mesh.position.y = Math.abs(Math.sin(t * 0.006)) * 0.08;
+            // Arm swing
+            const leftArm = mesh.userData.leftArm as THREE.Mesh | undefined;
+            const rightArm = mesh.userData.rightArm as THREE.Mesh | undefined;
+            if (leftArm) leftArm.rotation.x = Math.sin(t * 0.006) * 0.4;
+            if (rightArm) rightArm.rotation.x = -Math.sin(t * 0.006) * 0.4;
+          }
+          ws.wanderTimer -= dt;
+        }
       });
 
       // Nearby detection — only consider visible (online) NPCs
@@ -690,13 +825,17 @@ export default function OfficeChat({
       });
       setNearby(closestUser);
 
-      // Desk proximity — check if near any desk without an online NPC
+      // Desk proximity — check if near any desk where the NPC is away (wandering) or offline
       if (!closestUser) {
         let deskNear = false;
         Object.entries(DESK_POS).forEach(([email, pos]) => {
           if (email === currentUserEmail) return;
-          const isOnline = npcMeshes.get(email)?.visible ?? false;
-          if (isOnline) return; // occupied desk — NPC is there
+          const npcMesh = npcMeshes.get(email);
+          const isOnline = npcMesh?.visible ?? false;
+          // Desk is "available" if NPC is offline OR if online NPC is wandering (not at desk)
+          const ws = state.npcWander.get(email);
+          const npcAtDesk = isOnline && ws?.state === "at_desk";
+          if (npcAtDesk) return; // NPC is sitting there
           const d = state.playerPos.distanceTo(pos);
           if (d < INTERACT_DIST) deskNear = true;
         });
