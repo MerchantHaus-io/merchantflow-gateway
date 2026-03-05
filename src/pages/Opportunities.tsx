@@ -366,106 +366,72 @@ const Opportunities = () => {
             </button>
           </div>
         </div>
-        {/* Stats - Compact header-style badges */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <Badge variant="secondary" className="h-6 px-2 text-xs font-medium gap-1">
-              <TrendingUp className="h-3 w-3" />Active {stats.total}
-            </Badge>
-            <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-blue-500/30 text-blue-500">
-              <Plus className="h-3 w-3" />New {stats.new}
-            </Badge>
-            <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-amber-500/30 text-amber-500">
-              <AlertCircle className="h-3 w-3" />In Progress {stats.inProgress}
-            </Badge>
-            <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-emerald-500/30 text-emerald-500">
-              <CheckCircle2 className="h-3 w-3" />Won {stats.won}
-            </Badge>
-            <Badge variant="outline" className="h-6 px-2 text-xs font-medium gap-1 border-destructive/30 text-destructive">
-              <XCircle className="h-3 w-3" />Closed {stats.lost}
-            </Badge>
-          </div>
-
-          {/* Filters */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex flex-wrap gap-4 items-center">
-                <div className="relative flex-1 min-w-[200px]">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search by name, email..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-                
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[140px]">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover">
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="dead">Archived</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select value={stageFilter} onValueChange={setStageFilter}>
-                  <SelectTrigger className="w-[160px]">
-                    <SelectValue placeholder="Stage" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover">
-                    <SelectItem value="all">All Stages</SelectItem>
-                    {Object.entries(STAGE_CONFIG).map(([key, config]) => (
-                      <SelectItem key={key} value={key}>{config.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-                  <SelectTrigger className="w-[140px]">
-                    <SelectValue placeholder="Owner" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover">
-                    <SelectItem value="all">All Owners</SelectItem>
-                    <SelectItem value="unassigned">Unassigned</SelectItem>
-                    {TEAM_MEMBERS.map(member => (
-                      <SelectItem key={member} value={member}>{member}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select value={pipelineFilter} onValueChange={setPipelineFilter}>
-                  <SelectTrigger className="w-[140px]">
-                    <SelectValue placeholder="Pipeline" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover">
-                    <SelectItem value="all">All Pipelines</SelectItem>
-                    <SelectItem value="processing">Processing</SelectItem>
-                    <SelectItem value="gateway_only">Gateway</SelectItem>
-                  </SelectContent>
-                </Select>
-
+        {/* Compact stats + search in one row */}
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Live stat pills */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button onClick={() => setStageFilter('all')} className={cn("text-xs px-2 py-1 rounded-md font-medium transition-colors", stageFilter === 'all' ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground")}>
+                {stats.total} Active
+              </button>
+              <span className="text-muted-foreground/30">·</span>
+              <span className="text-xs text-amber-500 font-medium">{stats.inProgress} in progress</span>
+              <span className="text-muted-foreground/30">·</span>
+              <span className="text-xs text-emerald-500 font-medium">{stats.won} won</span>
+              {stats.lost > 0 && <><span className="text-muted-foreground/30">·</span><span className="text-xs text-destructive font-medium">{stats.lost} closed</span></>}
+            </div>
+            <div className="flex items-center gap-2 ml-auto flex-wrap">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input placeholder="Search…" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-8 h-8 w-48 text-sm" />
               </div>
-            </CardContent>
-          </Card>
+              <Select value={stageFilter} onValueChange={setStageFilter}>
+                <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue placeholder="Stage" /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="all">All Stages</SelectItem>
+                  {Object.entries(STAGE_CONFIG).map(([key, config]) => (
+                    <SelectItem key={key} value={key} className="text-xs">{config.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+                <SelectTrigger className="h-8 w-[120px] text-xs"><SelectValue placeholder="Owner" /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="all">All Owners</SelectItem>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {TEAM_MEMBERS.map(member => (<SelectItem key={member} value={member} className="text-xs">{member}</SelectItem>))}
+                </SelectContent>
+              </Select>
+              <Select value={pipelineFilter} onValueChange={setPipelineFilter}>
+                <SelectTrigger className="h-8 w-[110px] text-xs"><SelectValue placeholder="Pipeline" /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="all">All Pipelines</SelectItem>
+                  <SelectItem value="processing">Processing</SelectItem>
+                  <SelectItem value="gateway_only">Gateway</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
           {/* Results */}
           <Card>
-            <CardHeader className="pb-3">
+            <CardHeader className="pb-2 pt-3 px-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base">
-                  {filteredOpportunities.length} Opportunities
-                </CardTitle>
-                <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'table' | 'cards')}>
-                  <TabsList className="h-8">
-                    <TabsTrigger value="table" className="text-xs px-3">Table</TabsTrigger>
-                    <TabsTrigger value="cards" className="text-xs px-3">Cards</TabsTrigger>
-                  </TabsList>
-                </Tabs>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-semibold">{filteredOpportunities.length} {filteredOpportunities.length === 1 ? 'opportunity' : 'opportunities'}</span>
+                  {(stageFilter !== 'all' || ownerFilter !== 'all' || pipelineFilter !== 'all' || searchQuery) && (
+                    <button onClick={() => { setStageFilter('all'); setOwnerFilter('all'); setPipelineFilter('all'); setSearchQuery(''); }}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                      Clear filters ×
+                    </button>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 bg-muted rounded-md p-0.5">
+                  <button onClick={() => setViewMode('table')} className={cn("px-2 py-1 text-xs rounded transition-colors", viewMode === 'table' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground")}>Table</button>
+                  <button onClick={() => setViewMode('cards')} className={cn("px-2 py-1 text-xs rounded transition-colors", viewMode === 'cards' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground")}>Cards</button>
+                </div>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-2">
               {fetchError ? (
                 <QueryErrorCard message={fetchError} onRetry={fetchOpportunities} />
               ) : loading ? (
@@ -479,7 +445,6 @@ const Opportunities = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-12">#</TableHead>
                         <SortableTableHead field="name" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Account</SortableTableHead>
                         <SortableTableHead field="stage" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Stage</SortableTableHead>
                         <SortableTableHead field="pipeline" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Pipeline</SortableTableHead>
@@ -498,36 +463,30 @@ const Opportunities = () => {
                         const taskCount = getTaskCount(opp.id);
                         const progress = opp.wizard_state?.progress || 0;
                         
-                          const progressBg = progress >= 75 
-                            ? 'bg-green-500/8 hover:bg-green-500/15 dark:bg-green-500/10 dark:hover:bg-green-500/20' 
-                            : progress >= 40 
-                              ? 'bg-amber-500/8 hover:bg-amber-500/15 dark:bg-amber-500/10 dark:hover:bg-amber-500/20' 
-                              : 'bg-red-500/8 hover:bg-red-500/15 dark:bg-red-500/10 dark:hover:bg-red-500/20';
+                          // Staleness: days since last update
+                          const daysSinceUpdate = Math.floor((Date.now() - new Date(opp.updated_at).getTime()) / 86400000);
+                          const isStale = daysSinceUpdate > 7 && !['live_activated', 'closed_won', 'closed_lost'].includes(opp.stage);
                         
                         return (
                           <TableRow 
                             key={opp.id} 
-                            className={cn("cursor-pointer", progressBg)}
+                            className={cn("cursor-pointer hover:bg-muted/30 transition-colors", isStale && "opacity-75")}
                             onClick={() => navigateToOpportunity(opp)}
                           >
-                            <TableCell className="text-muted-foreground text-sm">{index + 1}</TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <Building2 className="h-4 w-4 text-muted-foreground" />
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <p className="font-medium">{opp.account?.name || 'Unknown'}</p>
-                                    {opp.status === 'dead' && (
-                                      <Badge variant="outline" className="text-[10px] h-5 px-1.5 border-amber-500/50 text-amber-600 dark:text-amber-400 gap-1">
-                                        <RotateCcw className="h-2.5 w-2.5" />
-                                        Assign to reactivate
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  <p className="text-xs text-muted-foreground">
-                                    {opp.contact?.email || '-'}
-                                  </p>
+                            <TableCell className="py-2.5">
+                              <div>
+                                <div className="flex items-center gap-1.5 mb-0.5">
+                                  <p className="font-medium text-sm leading-tight">{opp.account?.name || 'Unknown'}</p>
+                                  {opp.status === 'dead' && (
+                                    <Badge variant="outline" className="text-[9px] h-4 px-1 border-amber-500/40 text-amber-600 dark:text-amber-400">archived</Badge>
+                                  )}
+                                  {isStale && (
+                                    <Badge variant="outline" className="text-[9px] h-4 px-1 border-muted text-muted-foreground">{daysSinceUpdate}d</Badge>
+                                  )}
                                 </div>
+                                <p className="text-xs text-muted-foreground leading-none">
+                                  {opp.contact?.first_name ? `${opp.contact.first_name} ${opp.contact.last_name || ''}`.trim() : opp.contact?.email || '—'}
+                                </p>
                               </div>
                             </TableCell>
                             <TableCell onClick={(e) => e.stopPropagation()}>
@@ -624,38 +583,29 @@ const Opportunities = () => {
                                 </SelectContent>
                               </Select>
                             </TableCell>
-                            <TableCell>
-                              {taskCount > 0 && (
-                                <Badge variant="secondary" className="text-xs">
-                                  {taskCount} open
+                            <TableCell onClick={(e) => e.stopPropagation()} className="py-2.5">
+                              {taskCount > 0 ? (
+                                <Badge className="text-xs bg-destructive/10 text-destructive border-destructive/20 border hover:bg-destructive/15">
+                                  {taskCount}
                                 </Badge>
-                              )}
+                              ) : <span className="text-xs text-muted-foreground/40">—</span>}
                             </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
+                            <TableCell className="py-2.5">
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-12 h-1 bg-muted rounded-full overflow-hidden">
                                   <div 
-                                    className={cn(
-                                      "h-full rounded-full transition-all",
-                                      progress >= 100 ? "bg-emerald-500" : progress >= 50 ? "bg-amber-500" : "bg-primary"
-                                    )}
+                                    className={cn("h-full rounded-full", progress >= 100 ? "bg-emerald-500" : progress >= 50 ? "bg-amber-500" : "bg-primary")}
                                     style={{ width: `${Math.min(progress, 100)}%` }}
                                   />
                                 </div>
-                                <span className="text-xs text-muted-foreground">{progress}%</span>
+                                {progress > 0 && <span className="text-[10px] text-muted-foreground">{progress}%</span>}
                               </div>
                             </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                <Calendar className="h-3 w-3" />
-                                {format(new Date(opp.created_at), 'MMM d, yyyy')}
-                              </div>
+                            <TableCell className="py-2.5 text-xs text-muted-foreground">
+                              {format(new Date(opp.created_at), 'MMM d')}
                             </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                <Clock className="h-3 w-3" />
-                                {formatDistanceToNow(new Date(opp.updated_at), { addSuffix: true })}
-                              </div>
+                            <TableCell className="py-2.5 text-xs text-muted-foreground">
+                              {formatDistanceToNow(new Date(opp.updated_at), { addSuffix: true }).replace('about ', '').replace('less than a minute ago', 'just now')}
                             </TableCell>
                             <TableCell onClick={(e) => e.stopPropagation()}>
                               <DropdownMenu>
@@ -691,6 +641,9 @@ const Opportunities = () => {
                     const stageConfig = STAGE_CONFIG[opp.stage as OpportunityStage];
                     const serviceType = getServiceType(opp);
                     const progress = opp.wizard_state?.progress || 0;
+                    const daysSince = Math.floor((Date.now() - new Date(opp.updated_at).getTime()) / 86400000);
+                    const isStale = daysSince > 7;
+                    const taskCnt = tasks.filter(t => t.relatedOpportunityId === opp.id && t.status !== 'done').length;
                     
                     return (
                       <Card 
@@ -698,125 +651,54 @@ const Opportunities = () => {
                         className="cursor-pointer hover:shadow-md transition-shadow"
                         onClick={() => navigateToOpportunity(opp)}
                       >
-                        <CardContent className="p-4">
-                          <div className="flex items-start justify-between mb-3">
-                            <div>
-                              <h3 className="font-medium">{opp.account?.name || 'Unknown'}</h3>
-                              <p className="text-xs text-muted-foreground">{opp.contact?.email}</p>
-                              {opp.status === 'dead' && (
-                                <Badge variant="outline" className="mt-1 text-[10px] h-5 px-1.5 border-amber-500/50 text-amber-600 dark:text-amber-400 gap-1">
-                                  <RotateCcw className="h-2.5 w-2.5" />
-                                  Assign to reactivate
-                                </Badge>
-                              )}
+                        <CardContent className="p-0">
+                          {/* Stage colored header strip */}
+                          <div className="px-4 pt-3 pb-2 flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 mb-0.5">
+                                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: stageConfig?.color }} />
+                                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">{stageConfig?.label}</span>
+                                {isStale && <span className="text-[10px] text-muted-foreground/50">{daysSince}d idle</span>}
+                              </div>
+                              <h3 className="font-semibold text-sm leading-tight">{opp.account?.name || 'Unknown'}</h3>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {opp.contact?.first_name ? `${opp.contact.first_name} ${opp.contact.last_name || ''}`.trim() : opp.contact?.email || '—'}
+                              </p>
                             </div>
                             <div onClick={(e) => e.stopPropagation()}>
-                              <Select
-                                value={opp.stage}
-                                onValueChange={async (value) => {
-                                  const newStage = value as OpportunityStage;
-                                  const oldStage = opp.stage;
-                                  
-                                  const { error } = await supabase
-                                    .from('opportunities')
-                                    .update({ stage: newStage })
-                                    .eq('id', opp.id);
-                                  
-                                  if (error) {
-                                    toast({ title: "Failed to update stage", variant: "destructive" });
-                                    return;
-                                  }
-                                  
-                                  await supabase.from('activities').insert({
-                                    opportunity_id: opp.id,
-                                    type: 'stage_change',
-                                    description: `Moved from ${STAGE_CONFIG[oldStage as OpportunityStage].label} to ${STAGE_CONFIG[newStage].label}`,
-                                    user_id: user?.id,
-                                    user_email: user?.email,
-                                  });
-                                  
-                                  if (opp.assigned_to) {
-                                    sendStageChangeEmail(
-                                      opp.assigned_to,
-                                      opp.account?.name || 'Unknown Account',
-                                      oldStage,
-                                      newStage,
-                                      user?.email
-                                    ).catch(err => console.error("Failed to send stage change email:", err));
-                                  }
-                                  
-                                  toast({ title: `Stage updated to ${STAGE_CONFIG[newStage].label}` });
-                                }}
-                              >
-                                <SelectTrigger className="h-7 w-auto border-0 bg-transparent hover:bg-muted/50 px-2 text-xs gap-1">
-                                  <div 
-                                    className="w-2 h-2 rounded-full flex-shrink-0" 
-                                    style={{ backgroundColor: stageConfig?.color }}
-                                  />
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="bg-popover z-50">
-                                  {(serviceType === 'gateway_only' ? GATEWAY_ONLY_PIPELINE_STAGES : PROCESSING_PIPELINE_STAGES).map((stage) => (
-                                    <SelectItem key={stage} value={stage} className="text-xs">
-                                      <div className="flex items-center gap-2">
-                                        <div 
-                                          className="w-2 h-2 rounded-full" 
-                                          style={{ backgroundColor: STAGE_CONFIG[stage].color }}
-                                        />
-                                        {STAGE_CONFIG[stage].label}
-                                      </div>
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between text-sm" onClick={(e) => e.stopPropagation()}>
-                              <span className="text-muted-foreground">Owner</span>
-                              <Select
-                                value={opp.assigned_to || 'unassigned'}
-                                onValueChange={(value) => handleAssignmentChange(opp, value)}
-                              >
-                                <SelectTrigger className="h-6 w-auto border-0 bg-transparent hover:bg-muted/50 px-1 text-xs">
+                              <Select value={opp.assigned_to || 'unassigned'} onValueChange={(value) => handleAssignmentChange(opp, value)}>
+                                <SelectTrigger className="h-6 w-auto border-0 bg-transparent hover:bg-muted/50 px-1.5 text-[10px] gap-1">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className="bg-popover z-50">
                                   <SelectItem value="unassigned">Unassigned</SelectItem>
-                                  {TEAM_MEMBERS.map(member => (
-                                    <SelectItem key={member} value={member}>{member}</SelectItem>
-                                  ))}
+                                  {TEAM_MEMBERS.map(member => (<SelectItem key={member} value={member}>{member}</SelectItem>))}
                                 </SelectContent>
                               </Select>
                             </div>
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">Pipeline</span>
-                              <div className="flex items-center gap-1">
-                                {serviceType === 'gateway_only' ? (
-                                  <><Zap className="h-3 w-3 text-amber-500" />Gateway</>
-                                ) : (
-                                  <><CreditCard className="h-3 w-3 text-blue-500" />Processing</>
-                                )}
+                          </div>
+                          {/* Progress bar */}
+                          {progress > 0 && (
+                            <div className="px-4 pb-2">
+                              <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
+                                <div className={cn("h-full rounded-full", progress >= 100 ? "bg-emerald-500" : progress >= 50 ? "bg-amber-500" : "bg-primary")}
+                                  style={{ width: `${Math.min(progress, 100)}%` }} />
                               </div>
                             </div>
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">Progress</span>
-                              <span>{progress}%</span>
+                          )}
+                          {/* Footer */}
+                          <div className="px-4 py-2.5 border-t border-border/50 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] text-muted-foreground">
+                                {serviceType === 'gateway_only' ? '⚡ Gateway' : '💳 Processing'}
+                              </span>
+                              {taskCnt > 0 && (
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-destructive/10 text-destructive">{taskCnt} task{taskCnt !== 1 ? 's' : ''}</span>
+                              )}
                             </div>
-                            <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                              <div 
-                                className={cn(
-                                  "h-full rounded-full",
-                                  progress >= 100 ? "bg-emerald-500" : progress >= 50 ? "bg-amber-500" : "bg-primary"
-                                )}
-                                style={{ width: `${Math.min(progress, 100)}%` }}
-                              />
-                            </div>
-                          </div>
-                          
-                          <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
-                            Updated {formatDistanceToNow(new Date(opp.updated_at), { addSuffix: true })}
+                            <span className="text-[10px] text-muted-foreground/50">
+                              {formatDistanceToNow(new Date(opp.updated_at), { addSuffix: true }).replace('about ', '')}
+                            </span>
                           </div>
                         </CardContent>
                       </Card>
