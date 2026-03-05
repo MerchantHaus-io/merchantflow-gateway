@@ -1,290 +1,368 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  LayoutDashboard,
-  Briefcase,
-  ListChecks,
-  MoreHorizontal,
-  Building2,
-  Users,
-  FileText,
-  BarChart3,
-  Settings,
-  BookOpen,
-  ClipboardList,
-  Calculator,
-  FileSpreadsheet,
-  Download,
-  CreditCard,
-  Activity,
-  Globe,
-  Trash2,
-  LogOut,
-  ExternalLink,
-  X,
-  BadgeDollarSign,
-  Cloud,
-  Send,
-  type LucideIcon,
+  LayoutDashboard, Briefcase, ListChecks, Building2, Users, FileText,
+  BarChart3, Settings, BookOpen, ClipboardList, Calculator, FileSpreadsheet,
+  Download, CreditCard, Activity, Trash2, LogOut, BadgeDollarSign, Cloud,
+  Send, Globe, Search, X, ChevronRight, type LucideIcon,
 } from "lucide-react";
-import { Sheet, SheetContent, SheetClose } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { cn } from "@/lib/utils";
 
-interface TabItem {
-  title: string;
-  url: string;
-  icon: LucideIcon;
-  matchPaths?: string[];
-}
+// ── NAV ITEMS ──────────────────────────────────────────────────────────────
 
-const primaryTabs: TabItem[] = [
-  { title: "Pipeline", url: "/", icon: LayoutDashboard },
-  { title: "Deals", url: "/opportunities", icon: Briefcase },
-  { title: "Tasks", url: "/tasks", icon: ListChecks },
-];
-
-interface MoreItem {
+interface NavItem {
   title: string;
   url: string;
   icon: LucideIcon;
   external?: boolean;
+  badge?: string;
 }
 
-const moreItems: MoreItem[] = [
-  { title: "Email Outreach", url: "/outreach", icon: Send },
-  { title: "Web Submissions", url: "/admin/web-submissions", icon: Globe },
+// Primary 4 — always visible in tab bar
+const PRIMARY: NavItem[] = [
+  { title: "Pipeline", url: "/", icon: LayoutDashboard },
+  { title: "Deals", url: "/opportunities", icon: Briefcase },
+  { title: "Tasks", url: "/tasks", icon: ListChecks },
   { title: "Accounts", url: "/accounts", icon: Building2 },
-  { title: "Contacts", url: "/contacts", icon: Users },
-  { title: "Documents", url: "/documents", icon: FileText },
-  { title: "Reports", url: "/reports", icon: BarChart3 },
-  { title: "Live & Billing", url: "/live-billing", icon: BadgeDollarSign },
-  { title: "Processors", url: "/supported-processors", icon: CreditCard },
-  { title: "Settings", url: "/settings", icon: Settings },
 ];
 
-const toolItems: MoreItem[] = [
-  { title: "SOP", url: "/sop", icon: BookOpen },
-  { title: "Preboarding Wizard", url: "/tools/preboarding-wizard", icon: ClipboardList },
-  { title: "Revenue Calculator", url: "/tools/revenue-calculator", icon: Calculator },
-  { title: "CSV Import", url: "/tools/csv-import", icon: FileSpreadsheet },
-  { title: "Data Export", url: "/admin/data-export", icon: Download },
-  { title: "NMI Payments", url: "/tools/nmi-payments", icon: CreditCard },
-  { title: "NMI Status", url: "https://statusgator.com/services/nmi", icon: Activity, external: true },
-  { title: "Netlify", url: "/tools/netlify", icon: Cloud },
+// Secondary — appear in the launcher sheet, grouped
+const GROUPS: { label: string; items: NavItem[] }[] = [
+  {
+    label: "CRM",
+    items: [
+      { title: "Contacts", url: "/contacts", icon: Users },
+      { title: "Documents", url: "/documents", icon: FileText },
+      { title: "Reports", url: "/reports", icon: BarChart3 },
+      { title: "Live & Billing", url: "/live-billing", icon: BadgeDollarSign },
+      { title: "Outreach", url: "/outreach", icon: Send },
+      { title: "Web Submissions", url: "/admin/web-submissions", icon: Globe },
+    ],
+  },
+  {
+    label: "Tools",
+    items: [
+      { title: "SOP", url: "/sop", icon: BookOpen },
+      { title: "Preboarding", url: "/tools/preboarding-wizard", icon: ClipboardList },
+      { title: "Revenue Calc", url: "/tools/revenue-calculator", icon: Calculator },
+      { title: "CSV Import", url: "/tools/csv-import", icon: FileSpreadsheet },
+      { title: "Data Export", url: "/admin/data-export", icon: Download },
+      { title: "Netlify", url: "/tools/netlify", icon: Cloud },
+    ],
+  },
+  {
+    label: "Gateway",
+    items: [
+      { title: "Partner Guide", url: "/tools/gateway-guide", icon: CreditCard },
+      { title: "NMI Payments", url: "/tools/nmi-payments", icon: CreditCard },
+      { title: "Processors", url: "/supported-processors", icon: CreditCard },
+      { title: "NMI Status", url: "https://statusgator.com/services/nmi", icon: Activity, external: true },
+    ],
+  },
+  {
+    label: "System",
+    items: [
+      { title: "Settings", url: "/settings", icon: Settings },
+    ],
+  },
 ];
+
+// ── COMPONENT ──────────────────────────────────────────────────────────────
 
 export function MobileBottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [moreOpen, setMoreOpen] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const { signOut } = useAuth();
   const { isAdmin } = useUserRole();
+  const searchRef = useRef<HTMLInputElement>(null);
 
-  const isActive = (url: string) => {
+  const isActive = useCallback((url: string) => {
     if (url === "/") return location.pathname === "/";
     return location.pathname.startsWith(url);
-  };
+  }, [location.pathname]);
 
-  const isMoreActive = [...moreItems, ...toolItems].some(
-    (item) => !item.external && isActive(item.url)
+  // Is current page in the "more" group?
+  const isMoreActive = GROUPS.flatMap(g => g.items).some(
+    i => !i.external && isActive(i.url)
   );
 
+  const handleNav = useCallback((url: string, external?: boolean) => {
+    setOpen(false);
+    setSearch("");
+    if (external) {
+      window.open(url, "_blank", "noopener,noreferrer");
+    } else {
+      navigate(url);
+    }
+  }, [navigate]);
+
   const handleLogout = async () => {
+    setOpen(false);
     await signOut();
     navigate("/auth");
   };
 
+  const handleOpenLauncher = () => {
+    setOpen(true);
+    setTimeout(() => searchRef.current?.focus(), 200);
+  };
+
+  // Filter all items by search
+  const allItems: NavItem[] = [
+    ...PRIMARY,
+    ...GROUPS.flatMap(g => g.items),
+    ...(isAdmin ? [{ title: "Deletion Requests", url: "/admin/deletion-requests", icon: Trash2 }] : []),
+  ];
+
+  const filtered = search.trim()
+    ? allItems.filter(i => i.title.toLowerCase().includes(search.toLowerCase()))
+    : null;
+
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-background border-t border-border safe-area-bottom">
-        <div className="flex items-stretch justify-around h-14">
-          {primaryTabs.map((tab) => {
+      {/* ── FIXED TAB BAR ── */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden" style={{
+        background: "hsl(var(--background))",
+        borderTop: "1px solid hsl(var(--border))",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+      }}>
+        <div className="flex items-stretch h-[56px]">
+          {PRIMARY.map(tab => {
             const active = isActive(tab.url);
             return (
               <button
                 key={tab.title}
                 onClick={() => navigate(tab.url)}
                 className={cn(
-                  "flex flex-col items-center justify-center flex-1 gap-0.5 text-[10px] font-medium transition-colors relative",
-                  active
-                    ? "text-primary"
-                    : "text-muted-foreground active:text-foreground"
+                  "flex flex-col items-center justify-center flex-1 gap-[3px] text-[10px] font-medium transition-all duration-200 relative",
+                  active ? "text-teal" : "text-muted-foreground"
                 )}
               >
+                {/* Active indicator dot */}
                 {active && (
-                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary rounded-full" />
+                  <motion.span
+                    layoutId="tab-indicator"
+                    className="absolute top-0 left-1/2 h-[2px] w-8 rounded-full bg-teal"
+                    style={{ transform: "translateX(-50%)" }}
+                    transition={{ type: "spring", stiffness: 400, damping: 35 }}
+                  />
                 )}
-                <tab.icon className="h-5 w-5" />
-                <span>{tab.title}</span>
+                <motion.div
+                  animate={{ scale: active ? 1.08 : 1 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                >
+                  <tab.icon className={cn("h-[22px] w-[22px]", active && "stroke-[2.2px]")} />
+                </motion.div>
+                <span className={cn("leading-none", active && "font-semibold")}>{tab.title}</span>
               </button>
             );
           })}
 
-          {/* More button */}
+          {/* Grid launcher button */}
           <button
-            onClick={() => setMoreOpen(true)}
+            onClick={handleOpenLauncher}
             className={cn(
-              "flex flex-col items-center justify-center flex-1 gap-0.5 text-[10px] font-medium transition-colors relative",
-              moreOpen || isMoreActive
-                ? "text-primary"
-                : "text-muted-foreground active:text-foreground"
+              "flex flex-col items-center justify-center flex-1 gap-[3px] text-[10px] font-medium transition-all duration-200 relative",
+              isMoreActive ? "text-teal" : "text-muted-foreground"
             )}
           >
-            {isMoreActive && !moreOpen && (
-              <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary rounded-full" />
+            {isMoreActive && (
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 h-[2px] w-8 rounded-full bg-teal" />
             )}
-            <MoreHorizontal className="h-5 w-5" />
+            {/* 2x2 grid icon */}
+            <div className="grid grid-cols-2 gap-[3px] h-[22px] w-[22px]">
+              {[0,1,2,3].map(i => (
+                <div key={i} className={cn(
+                  "rounded-[2px] transition-all",
+                  isMoreActive ? "bg-teal/70" : "bg-current opacity-60",
+                  open && "opacity-100"
+                )} />
+              ))}
+            </div>
             <span>More</span>
           </button>
         </div>
       </nav>
 
-      {/* More sheet - slides up from bottom */}
-      <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
-        <SheetContent side="bottom" className="rounded-t-2xl p-0 max-h-[80vh]">
-          <div className="flex flex-col">
-            {/* Handle bar */}
-            <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
-            </div>
+      {/* ── LAUNCHER SHEET ── */}
+      <AnimatePresence>
+        {open && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              className="fixed inset-0 z-[60] lg:hidden"
+              style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => { setOpen(false); setSearch(""); }}
+            />
 
-            <div className="flex items-center justify-between px-4 pb-2">
-              <h3 className="text-sm font-semibold text-foreground">More</h3>
-              <SheetClose asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <X className="h-4 w-4" />
-                </Button>
-              </SheetClose>
-            </div>
+            {/* Sheet */}
+            <motion.div
+              className="fixed bottom-0 left-0 right-0 z-[70] lg:hidden rounded-t-2xl overflow-hidden flex flex-col"
+              style={{
+                background: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
+                borderBottom: "none",
+                maxHeight: "82vh",
+              }}
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", stiffness: 420, damping: 38 }}
+            >
+              {/* Handle + header */}
+              <div className="flex flex-col gap-0 shrink-0">
+                <div className="flex justify-center pt-3 pb-2">
+                  <div className="w-9 h-1 rounded-full bg-muted-foreground/25" />
+                </div>
 
-            <div className="overflow-auto px-2 pb-6">
-              {/* Main items as a grid */}
-              <div className="grid grid-cols-3 gap-1 p-2">
-                {moreItems.map((item) => {
-                  const active = isActive(item.url);
-                  return (
-                    <SheetClose key={item.title} asChild>
-                      <button
-                        onClick={() => navigate(item.url)}
-                        className={cn(
-                          "flex flex-col items-center gap-1.5 p-3 rounded-xl text-xs transition-colors",
-                          active
-                            ? "bg-primary/10 text-primary font-medium"
-                            : "hover:bg-muted text-foreground"
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            "flex h-10 w-10 items-center justify-center rounded-xl",
-                            active ? "bg-primary text-primary-foreground" : "bg-muted"
-                          )}
-                        >
-                          <item.icon className="h-5 w-5" />
-                        </div>
-                        <span className="leading-tight text-center">{item.title}</span>
+                {/* Search bar */}
+                <div className="px-4 pb-3">
+                  <div className="flex items-center gap-2 px-3 h-10 rounded-xl"
+                    style={{ background: "hsl(var(--muted))", border: "1px solid hsl(var(--border))" }}>
+                    <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <input
+                      ref={searchRef}
+                      value={search}
+                      onChange={e => setSearch(e.target.value)}
+                      placeholder="Search all pages…"
+                      className="flex-1 bg-transparent text-sm outline-none text-foreground placeholder:text-muted-foreground/60"
+                    />
+                    {search && (
+                      <button onClick={() => setSearch("")} className="text-muted-foreground">
+                        <X className="h-4 w-4" />
                       </button>
-                    </SheetClose>
-                  );
-                })}
-
-                {isAdmin && (
-                  <SheetClose asChild>
-                    <button
-                      onClick={() => navigate("/admin/deletion-requests")}
-                      className={cn(
-                        "flex flex-col items-center gap-1.5 p-3 rounded-xl text-xs transition-colors",
-                        isActive("/admin/deletion-requests")
-                          ? "bg-primary/10 text-primary font-medium"
-                          : "hover:bg-muted text-foreground"
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          "flex h-10 w-10 items-center justify-center rounded-xl",
-                          isActive("/admin/deletion-requests")
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted"
-                        )}
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </div>
-                      <span className="leading-tight text-center">Deletions</span>
-                    </button>
-                  </SheetClose>
-                )}
-              </div>
-
-              {/* Tools section */}
-              <div className="mt-2 pt-2 border-t border-border/50">
-                <p className="px-4 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
-                  Tools
-                </p>
-                <div className="grid grid-cols-3 gap-1 p-2">
-                  {toolItems.map((tool) => {
-                    if (tool.external) {
-                      return (
-                        <a
-                          key={tool.title}
-                          href={tool.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={() => setMoreOpen(false)}
-                          className="flex flex-col items-center gap-1.5 p-3 rounded-xl text-xs hover:bg-muted text-foreground transition-colors relative"
-                        >
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted">
-                            <tool.icon className="h-5 w-5" />
-                          </div>
-                          <span className="leading-tight text-center">{tool.title}</span>
-                          <ExternalLink className="h-2.5 w-2.5 absolute top-2 right-2 text-muted-foreground" />
-                        </a>
-                      );
-                    }
-                    const active = isActive(tool.url);
-                    return (
-                      <SheetClose key={tool.title} asChild>
-                        <button
-                          onClick={() => navigate(tool.url)}
-                          className={cn(
-                            "flex flex-col items-center gap-1.5 p-3 rounded-xl text-xs transition-colors",
-                            active
-                              ? "bg-primary/10 text-primary font-medium"
-                              : "hover:bg-muted text-foreground"
-                          )}
-                        >
-                          <div
-                            className={cn(
-                              "flex h-10 w-10 items-center justify-center rounded-xl",
-                              active ? "bg-primary text-primary-foreground" : "bg-muted"
-                            )}
-                          >
-                            <tool.icon className="h-5 w-5" />
-                          </div>
-                          <span className="leading-tight text-center">{tool.title}</span>
-                        </button>
-                      </SheetClose>
-                    );
-                  })}
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Sign out */}
-              <div className="mt-2 px-2">
-                <Button
-                  variant="outline"
-                  className="w-full h-11 text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
-                  onClick={handleLogout}
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Sign Out
-                </Button>
+              {/* Scrollable content */}
+              <div className="overflow-y-auto overscroll-contain flex-1 pb-6" style={{
+                paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 24px)"
+              }}>
+                {filtered ? (
+                  // Search results — list view
+                  <div className="px-4 space-y-1">
+                    {filtered.length === 0 ? (
+                      <p className="text-center text-sm text-muted-foreground py-8">No results for "{search}"</p>
+                    ) : filtered.map(item => {
+                      const active = !item.external && isActive(item.url);
+                      return (
+                        <button
+                          key={item.url}
+                          onClick={() => handleNav(item.url, item.external)}
+                          className={cn(
+                            "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm transition-colors",
+                            active ? "bg-teal/10 text-teal font-medium" : "hover:bg-muted text-foreground"
+                          )}
+                        >
+                          <div className={cn(
+                            "flex h-9 w-9 items-center justify-center rounded-xl shrink-0",
+                            active ? "bg-teal text-teal-foreground" : "bg-muted"
+                          )}>
+                            <item.icon className="h-4 w-4" />
+                          </div>
+                          <span className="flex-1 text-left">{item.title}</span>
+                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  // Browse mode — grouped grid
+                  <div className="px-4 space-y-5">
+                    {GROUPS.map(group => (
+                      <div key={group.label}>
+                        <p className="text-[10px] font-black uppercase tracking-[0.12em] text-muted-foreground/60 mb-2 px-1">
+                          {group.label}
+                        </p>
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {group.items.map(item => {
+                            const active = !item.external && isActive(item.url);
+                            return (
+                              <button
+                                key={item.url}
+                                onClick={() => handleNav(item.url, item.external)}
+                                className={cn(
+                                  "flex flex-col items-center gap-1.5 py-2.5 px-1 rounded-xl text-[11px] font-medium transition-all active:scale-95",
+                                  active ? "bg-teal/10 text-teal" : "text-foreground hover:bg-muted"
+                                )}
+                              >
+                                <div className={cn(
+                                  "flex h-11 w-11 items-center justify-center rounded-xl",
+                                  active ? "bg-teal text-teal-foreground" : "bg-muted"
+                                )}>
+                                  <item.icon className="h-5 w-5" />
+                                </div>
+                                <span className="leading-tight text-center line-clamp-2">{item.title}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Admin section */}
+                    {isAdmin && (
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.12em] text-muted-foreground/60 mb-2 px-1">
+                          Admin
+                        </p>
+                        <div className="grid grid-cols-4 gap-1.5">
+                          {[
+                            { title: "Deletions", url: "/admin/deletion-requests", icon: Trash2 },
+                          ].map(item => {
+                            const active = isActive(item.url);
+                            return (
+                              <button
+                                key={item.url}
+                                onClick={() => handleNav(item.url)}
+                                className={cn(
+                                  "flex flex-col items-center gap-1.5 py-2.5 px-1 rounded-xl text-[11px] font-medium transition-all active:scale-95",
+                                  active ? "bg-teal/10 text-teal" : "text-foreground hover:bg-muted"
+                                )}
+                              >
+                                <div className={cn(
+                                  "flex h-11 w-11 items-center justify-center rounded-xl",
+                                  active ? "bg-teal text-teal-foreground" : "bg-muted"
+                                )}>
+                                  <item.icon className="h-5 w-5" />
+                                </div>
+                                <span className="leading-tight text-center">{item.title}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Sign out */}
+                    <div className="pt-1 border-t border-border/50">
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-3 w-full px-3 py-3 rounded-xl text-sm text-destructive hover:bg-destructive/8 transition-colors"
+                      >
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-destructive/10">
+                          <LogOut className="h-4 w-4" />
+                        </div>
+                        <span className="font-medium">Sign Out</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </>
   );
 }

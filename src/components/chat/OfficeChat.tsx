@@ -184,11 +184,11 @@ const INTERACT_POINTS: InteractionPoint[] = [
   // Meeting room table
   { id: "meeting-sit", pos: new THREE.Vector3(16, 0, 8), label: "Join meeting", action: "sit", radius: 2 },
   // TV
-  { id: "tv", pos: new THREE.Vector3(21.5, 0, 0), label: "Toggle TV", action: "tv", radius: 3 },
+  { id: "tv", pos: new THREE.Vector3(0, 0, 14), label: "Toggle TV", action: "tv", radius: 3.5 },
 ];
 
 const INTERACT_DIST = 2.5;
-const TV_POS = new THREE.Vector3(21.5, 0, 0);
+const TV_POS = new THREE.Vector3(0, 0, 14);  // South end of lobby, visible from open floor
 
 // ── CHARACTER BUILDER ─────────────────────────────────────────────────────────
 
@@ -633,11 +633,19 @@ function buildRoom(): THREE.Group {
   signSprite.scale.set(5, 1.25, 1);
   g.add(signSprite);
 
-  // ── TV (east wall) ──
-  const tvBezel = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.8, 3), new THREE.MeshStandardMaterial({ color: 0x0a0a0a }));
-  tvBezel.position.set(wOff - 0.06, 2.6, 0); g.add(tvBezel);
-  const tvScreen = new THREE.Mesh(new THREE.BoxGeometry(0.04, 1.6, 2.8), new THREE.MeshStandardMaterial({ color: 0x111122, emissive: 0x111133, emissiveIntensity: 0.3 }));
-  tvScreen.position.set(wOff - 0.09, 2.6, 0); g.add(tvScreen);
+  // ── TV (south wall above reception, facing north into lobby) ──
+  // Mount bracket
+  const tvBracket = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.06, 0.3), new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.2 }));
+  tvBracket.position.set(0, 2.4, wOff - 0.3); g.add(tvBracket);
+  // Bezel (wider TV, portrait-landscape 16:9)
+  const tvBezel = new THREE.Mesh(new THREE.BoxGeometry(4.2, 2.5, 0.1), new THREE.MeshStandardMaterial({ color: 0x0a0a0a }));
+  tvBezel.position.set(0, 2.8, wOff - 0.08); g.add(tvBezel);
+  // Screen
+  const tvScreen = new THREE.Mesh(new THREE.BoxGeometry(4.0, 2.3, 0.06), new THREE.MeshStandardMaterial({ color: 0x0d1117, emissive: 0x1a2a3a, emissiveIntensity: 0.6 }));
+  tvScreen.position.set(0, 2.8, wOff - 0.12); g.add(tvScreen);
+  // TV legs / stand strip
+  const tvStrip = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.04, 0.04), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+  tvStrip.position.set(0, 1.55, wOff - 0.08); g.add(tvStrip);
 
   // ── Plants ──
   const plantPositions: [number, number][] = [
@@ -748,11 +756,13 @@ export default function OfficeChat({
     scene.background = new THREE.Color(0x1a1a1a);
     scene.fog = new THREE.Fog(0x1a1a1a, 20, 55);
 
-    const camera = new THREE.PerspectiveCamera(70, W / H, 0.1, 120);
-    camera.position.set(SPAWN[currentUserEmail].x, 1.6, SPAWN[currentUserEmail].z + 1.5);
+    const camera = new THREE.PerspectiveCamera(78, W / H, 0.1, 120); // 78 FOV = more natural FPS
+    camera.position.set(SPAWN[currentUserEmail].x, 1.65, SPAWN[currentUserEmail].z + 2.0); // slightly behind desk
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(W, H);
+    // Cap pixel ratio — chat view doesn't need retina rendering at full resolution
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.shadowMap.enabled = true;
     mountRef.current.appendChild(renderer.domElement);
 
@@ -796,9 +806,13 @@ export default function OfficeChat({
       onlineIndicators.set(u.email, dot);
     });
 
-    // NPC wander
+    // NPC wander — only Atria is autonomous; real users tracked via remotePositions
     const npcWander = new Map<string, NPCWanderState>();
-    others.forEach(u => { npcWander.set(u.email, createWanderState()); });
+    others.forEach(u => {
+      if (u.email === "atria@merchanthaus.io") {
+        npcWander.set(u.email, createWanderState());
+      }
+    });
 
     const state = {
       renderer, scene, camera, playerMesh, npcMeshes,
@@ -874,9 +888,12 @@ export default function OfficeChat({
     // Resize
     const onResize = () => {
       if (!mountRef.current) return;
-      camera.aspect = mountRef.current.clientWidth / mountRef.current.clientHeight;
+      const w = mountRef.current.clientWidth;
+      const h = mountRef.current.clientHeight;
+      camera.aspect = w / h;
       camera.updateProjectionMatrix();
-      renderer.setSize(mountRef.current.clientWidth, mountRef.current.clientHeight);
+      renderer.setSize(w, h);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     };
     window.addEventListener("resize", onResize);
 
@@ -927,7 +944,7 @@ export default function OfficeChat({
       const resolved = resolveCollision(state.playerPos, PLAYER_RADIUS);
       state.playerPos.copy(resolved);
 
-      camera.position.set(state.playerPos.x, 1.6, state.playerPos.z);
+      camera.position.set(state.playerPos.x, 1.65, state.playerPos.z);
       playerMesh.position.set(state.playerPos.x, 0, state.playerPos.z);
       playerMesh.rotation.y = state.yaw + Math.PI;
 
@@ -948,26 +965,17 @@ export default function OfficeChat({
         if (!mesh.visible) return;
         const remote = remotePos[email];
         const isRemoteActive = remote && (now - remote.timestamp < 5000);
+        const isAtria = email === "atria@merchanthaus.io";
 
-        if (isRemoteActive) {
-          const lerpSpeed = 8 * dt;
-          mesh.position.x += (remote.x - mesh.position.x) * lerpSpeed;
-          mesh.position.z += (remote.z - mesh.position.z) * lerpSpeed;
-          const dx = remote.x - mesh.position.x;
-          const dz = remote.z - mesh.position.z;
-          const moving = Math.abs(dx) > 0.01 || Math.abs(dz) > 0.01;
-          animateCharacter(mesh, t, moving, false);
-          mesh.rotation.y = remote.yaw + Math.PI;
-        } else {
-          // AI wander
+        if (isAtria) {
+          // ── ATRIA: fully autonomous AI wander ──
           const ws = state.npcWander.get(email);
           if (!ws) return;
           const deskPos = DESK_POS[email] || new THREE.Vector3(0, 0, 0);
-
           if (ws.state === "at_desk") {
             mesh.position.x = deskPos.x;
             mesh.position.z = deskPos.z;
-            animateCharacter(mesh, t, false, true); // Sitting at desk
+            animateCharacter(mesh, t, false, true);
             ws.deskTimer -= dt;
             if (ws.deskTimer <= 0) {
               ws.state = "walking";
@@ -985,7 +993,6 @@ export default function OfficeChat({
             const wdx = ws.currentTarget.x - mesh.position.x;
             const wdz = ws.currentTarget.z - mesh.position.z;
             const dist = Math.sqrt(wdx * wdx + wdz * wdz);
-
             if (dist < 0.3) {
               ws.wanderTimer -= dt;
               if (ws.wanderTimer <= 0) {
@@ -1000,7 +1007,6 @@ export default function OfficeChat({
               const moveSpeed = ws.speed * dt;
               mesh.position.x += (wdx / dist) * moveSpeed;
               mesh.position.z += (wdz / dist) * moveSpeed;
-              // NPC collision
               const npcResolved = resolveCollision(mesh.position, 0.3);
               mesh.position.copy(npcResolved);
               mesh.rotation.y = Math.atan2(wdx / dist, wdz / dist);
@@ -1008,6 +1014,21 @@ export default function OfficeChat({
               ws.wanderTimer -= dt;
             }
           }
+        } else if (isRemoteActive) {
+          // ── REAL USER: live position from Supabase presence ──
+          const lerpSpeed = 8 * dt;
+          mesh.position.x += (remote.x - mesh.position.x) * lerpSpeed;
+          mesh.position.z += (remote.z - mesh.position.z) * lerpSpeed;
+          const dx = remote.x - mesh.position.x;
+          const dz = remote.z - mesh.position.z;
+          const moving = Math.abs(dx) > 0.05 || Math.abs(dz) > 0.05;
+          animateCharacter(mesh, t, moving, false);
+          mesh.rotation.y = remote.yaw + Math.PI;
+        } else {
+          // ── REAL USER: offline — stand idle at desk ──
+          const deskPos = DESK_POS[email] || new THREE.Vector3(0, 0, 0);
+          mesh.position.lerp(deskPos, 4 * dt);
+          animateCharacter(mesh, t, false, true); // sitting at desk
         }
       });
 
@@ -1022,26 +1043,34 @@ export default function OfficeChat({
           closestUser = USERS.find(u => u.email === email) ?? null;
         }
       });
-      setNearby(closestUser);
+      // Only trigger re-render when the nearby user actually changes
+      setNearby(prev => {
+        const prevEmail = prev?.email ?? null;
+        const nextEmail = closestUser?.email ?? null;
+        return prevEmail === nextEmail ? prev : closestUser;
+      });
 
-      // Desk proximity
-      if (!closestUser) {
+      // Desk proximity — only update React state when value changes
+      {
         let deskNear = false;
-        Object.entries(DESK_POS).forEach(([email, pos]) => {
-          if (email === currentUserEmail) return;
-          const ws = state.npcWander.get(email);
-          const npcMesh = npcMeshes.get(email);
-          const npcAtDesk = npcMesh?.visible && ws?.state === "at_desk";
-          if (npcAtDesk) return;
-          if (state.playerPos.distanceTo(pos) < INTERACT_DIST) deskNear = true;
-        });
-        setNearDesk(deskNear);
-      } else {
-        setNearDesk(false);
+        if (!closestUser) {
+          Object.entries(DESK_POS).forEach(([email, pos]) => {
+            if (email === currentUserEmail) return;
+            const ws = state.npcWander.get(email);
+            const npcMesh = npcMeshes.get(email);
+            const npcAtDesk = npcMesh?.visible && ws?.state === "at_desk";
+            if (npcAtDesk) return;
+            if (state.playerPos.distanceTo(pos) < INTERACT_DIST) deskNear = true;
+          });
+        }
+        setNearDesk(prev => prev === deskNear ? prev : deskNear);
       }
 
       // TV proximity
-      setNearTV(state.playerPos.distanceTo(TV_POS) < 3.5 && !closestUser);
+      {
+        const nextNearTV = state.playerPos.distanceTo(TV_POS) < 3.5 && !closestUser;
+        setNearTV(prev => prev === nextNearTV ? prev : nextNearTV);
+      }
 
       // Interaction point proximity
       let closestIP: InteractionPoint | null = null;
@@ -1053,7 +1082,11 @@ export default function OfficeChat({
           closestIP = ip;
         }
       }
-      setNearInteract(closestIP);
+      setNearInteract(prev => {
+        // Compare by id to avoid unnecessary re-renders
+        if (prev?.id === closestIP?.id) return prev;
+        return closestIP;
+      });
 
       renderer.render(scene, camera);
     };
@@ -1110,13 +1143,27 @@ export default function OfficeChat({
   // Presence sync
   useEffect(() => {
     const s = stateRef.current; if (!s) return;
+    // Real users are ALWAYS visible — greyed out when offline, full color when online
+    // Only Atria is always "online" as she's an AI agent
     s.npcMeshes.forEach((mesh, email) => {
-      mesh.visible = email === "atria@merchanthaus.io" ? true : (presence[email] ?? false);
+      mesh.visible = true; // Always show — offline state shown via grey material tint
+      // Dim offline users by traversing and adjusting material opacity
+      const isOnline = email === "atria@merchanthaus.io" ? true : (presence[email] ?? false);
+      mesh.traverse(child => {
+        if (child instanceof THREE.Mesh) {
+          const mat = child.material as THREE.MeshStandardMaterial;
+          if (mat && typeof mat.opacity !== undefined) {
+            mat.opacity = isOnline ? 1.0 : 0.45;
+            mat.transparent = !isOnline;
+          }
+        }
+      });
     });
     s.onlineIndicators.forEach((dot, email) => {
       const isOnline = email === "atria@merchanthaus.io" ? true : (presence[email] ?? false);
-      (dot.material as THREE.MeshStandardMaterial).color.setHex(isOnline ? 0x22cc44 : 0x666666);
-      (dot.material as THREE.MeshStandardMaterial).emissive.setHex(isOnline ? 0x22cc44 : 0x333333);
+      (dot.material as THREE.MeshStandardMaterial).color.setHex(isOnline ? 0x22cc44 : 0x555555);
+      (dot.material as THREE.MeshStandardMaterial).emissive.setHex(isOnline ? 0x22cc44 : 0x222222);
+      dot.visible = true;
     });
   }, [presence]);
 
@@ -1346,9 +1393,10 @@ export default function OfficeChat({
             </div>
             <iframe
               key={tvUnmuted ? "unmuted" : "muted"}
-              src={`https://www.youtube-nocookie.com/embed/videoseries?list=PLofht4PTcKYnaH8w5olJCI-wUVxuoMHqM&autoplay=1&${tvUnmuted ? "" : "mute=1&"}loop=1&controls=0&modestbranding=1&rel=0`}
+              src={`https://www.youtube-nocookie.com/embed/videoseries?list=PLofht4PTcKYnaH8w5olJCI-wUVxuoMHqM&autoplay=1&mute=${tvUnmuted ? "0" : "1"}&loop=1&controls=0&modestbranding=1&rel=0&playsinline=1&enablejsapi=1`}
               className="w-full border-0 rounded-sm" style={{ aspectRatio: "16/9" }} title="Office TV"
-              allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen
+              allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+              allowFullScreen
             />
           </div>
         </div>
