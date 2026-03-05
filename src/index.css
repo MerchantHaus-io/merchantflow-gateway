@@ -54,7 +54,7 @@ All colors MUST be HSL.
     --input: 217 33% 25%;
     --ring: 348 83% 47%;
 
-    --radius: 0.125rem;
+    --radius: 0.5rem;
 
     /* Merchant Haus Architectural Tokens */
     --gold: 43 51% 58%;
@@ -105,10 +105,10 @@ All colors MUST be HSL.
     --wa-meta: 200 10% 55%;
     --wa-divider: 200 10% 18%;
 
-    --shadow-sm: 0px 1px 1.5px 0px hsla(215, 25%, 27%, 0.1);
-    --shadow: 0px 1px 3px 0px hsla(215, 25%, 27%, 0.1);
-    --shadow-md: 0px 1px 4.5px 0px hsla(215, 25%, 27%, 0.1);
-    --shadow-lg: 0px 1px 7.5px 0px hsla(215, 25%, 27%, 0.1);
+    --shadow-sm: 0 1px 3px 0 rgba(0,0,0,0.3), 0 1px 2px 0 rgba(0,0,0,0.2);
+    --shadow: 0 2px 6px 0 rgba(0,0,0,0.35), 0 1px 3px 0 rgba(0,0,0,0.25);
+    --shadow-md: 0 4px 12px -1px rgba(0,0,0,0.4), 0 2px 6px -1px rgba(0,0,0,0.3);
+    --shadow-lg: 0 10px 24px -3px rgba(0,0,0,0.5), 0 4px 10px -2px rgba(0,0,0,0.35);
   }
 
   /* Dark class - same as root for dark mode (dark-default) */
@@ -181,7 +181,7 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 174 72% 56%;
     --sidebar-border: 217 33% 30%;
     --sidebar-ring: 174 72% 46%;
-    --radius: 0.125rem;
+    --radius: 0.5rem;
 
     /* Merchant Haus Architectural Tokens */
     --gold: 43 51% 58%;
@@ -190,10 +190,10 @@ All colors MUST be HSL.
     --bone-white: 0 0% 99%;
     --canvas-border: 240 6% 96%;
 
-    --shadow-sm: 0px 1px 1.5px 0px hsla(215, 25%, 27%, 0.1);
-    --shadow: 0px 1px 3px 0px hsla(215, 25%, 27%, 0.1);
-    --shadow-md: 0px 1px 4.5px 0px hsla(215, 25%, 27%, 0.1);
-    --shadow-lg: 0px 1px 7.5px 0px hsla(215, 25%, 27%, 0.1);
+    --shadow-sm: 0 1px 3px 0 rgba(0,0,0,0.3), 0 1px 2px 0 rgba(0,0,0,0.2);
+    --shadow: 0 2px 6px 0 rgba(0,0,0,0.35), 0 1px 3px 0 rgba(0,0,0,0.25);
+    --shadow-md: 0 4px 12px -1px rgba(0,0,0,0.4), 0 2px 6px -1px rgba(0,0,0,0.3);
+    --shadow-lg: 0 10px 24px -3px rgba(0,0,0,0.5), 0 4px 10px -2px rgba(0,0,0,0.35);
   }
 
   /* Dark Midnight - Deep blue tones */
@@ -432,7 +432,7 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 348 83% 47%;
     --sidebar-border: 220 13% 84%;
     --sidebar-ring: 348 83% 47%;
-    --radius: 0.125rem;
+    --radius: 0.5rem;
 
     /* Merchant Haus Architectural Tokens */
     --gold: 43 51% 58%;
