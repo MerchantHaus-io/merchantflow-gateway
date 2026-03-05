@@ -267,7 +267,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
 
   const account = opportunity?.account;
   const contact = opportunity?.contact;
-  const stageConfig = opportunity ? STAGE_CONFIG[opportunity.stage] : STAGE_CONFIG.application_started;
+  const stageConfig = opportunity ? (STAGE_CONFIG[opportunity.stage] ?? STAGE_CONFIG.application_prep) : STAGE_CONFIG.application_started;
   const wizardState = opportunity?.wizard_state;
   const wizardFormState = useMemo(
     () => (wizardState?.form_state as Record<string, unknown> | undefined) ?? {},
