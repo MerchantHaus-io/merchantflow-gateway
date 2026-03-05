@@ -29,25 +29,31 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Try to match participant phone number to a CRM contact
+    // OpenPhone sends `from` and `to` — derive the external participant
+    const isIncoming = callData.direction === 'incoming';
+    const externalNumber = isIncoming ? callData.from : callData.to;
+    const participants = [callData.from, callData.to].filter(Boolean);
+
+    console.log('Call direction:', callData.direction, '| External number:', externalNumber, '| From:', callData.from, '| To:', callData.to);
+
+    // Try to match external phone number to a CRM contact
     let contactId: string | null = null;
     let opportunityId: string | null = null;
     let accountId: string | null = null;
 
-    if (callData.participants && callData.participants.length > 0) {
-      const participantPhone = callData.participants[0];
-      // Clean up phone number for matching - try with and without formatting
-      const cleanPhone = participantPhone.replace(/\D/g, '');
-      
+    if (externalNumber) {
+      const cleanPhone = externalNumber.replace(/\D/g, '');
+
       const { data: contacts } = await supabase
         .from('contacts')
         .select('id, account_id, phone')
-        .or(`phone.ilike.%${cleanPhone.slice(-10)}%,phone.ilike.%${participantPhone}%`)
+        .or(`phone.ilike.%${cleanPhone.slice(-10)}%,phone.ilike.%${externalNumber}%`)
         .limit(1);
 
       if (contacts && contacts.length > 0) {
         contactId = contacts[0].id;
         accountId = contacts[0].account_id;
+        console.log('Matched contact:', contactId, '| Account:', accountId);
 
         // Find related opportunity
         const { data: opportunities } = await supabase
@@ -59,6 +65,8 @@ Deno.serve(async (req) => {
         if (opportunities && opportunities.length > 0) {
           opportunityId = opportunities[0].id;
         }
+      } else {
+        console.log('No contact match for:', externalNumber);
       }
     }
 
@@ -74,16 +82,18 @@ Deno.serve(async (req) => {
       direction: callData.direction || 'unknown',
       status,
       duration: callData.duration || 0,
-      phone_number: callData.participants?.[0] || null,
-      participants: callData.participants || [],
+      phone_number: externalNumber || null,
+      participants,
       quo_phone_number_id: callData.phoneNumberId || null,
-      initiated_by: callData.initiatedBy || null,
+      initiated_by: callData.userId || callData.initiatedBy || null,
       answered_at: callData.answeredAt || null,
       completed_at: callData.completedAt || null,
       contact_id: contactId,
       opportunity_id: opportunityId,
       account_id: accountId,
     };
+
+    console.log('Upserting call log:', JSON.stringify(callLog));
 
     const { error } = await supabase
       .from('call_logs')
@@ -101,7 +111,7 @@ Deno.serve(async (req) => {
       await supabase.from('activities').insert({
         opportunity_id: opportunityId,
         type: 'call',
-        description: `${callData.direction === 'incoming' ? 'Incoming' : 'Outgoing'} call (${durationMin}m) - ${callData.participants?.[0] || 'Unknown'}`,
+        description: `${isIncoming ? 'Incoming' : 'Outgoing'} call (${durationMin}m) - ${externalNumber || 'Unknown'}`,
       });
     }
 
@@ -152,14 +162,14 @@ Deno.serve(async (req) => {
     }
 
     // If it's a ringing incoming call, create a notification for all users
-    if (eventType === 'call.ringing' && callData.direction === 'incoming') {
+    if (eventType === 'call.ringing' && isIncoming) {
       const contactName = contactId ? 
         (await supabase.from('contacts').select('first_name, last_name').eq('id', contactId).single())
           .data : null;
       
       const callerDisplay = contactName 
         ? `${contactName.first_name || ''} ${contactName.last_name || ''}`.trim()
-        : callData.participants?.[0] || 'Unknown';
+        : externalNumber || 'Unknown';
 
       // Notify all users
       const { data: profiles } = await supabase.from('profiles').select('id, email');
