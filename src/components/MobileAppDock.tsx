@@ -121,7 +121,7 @@ export function MobileAppDock() {
 
     dragRef.current.moved = true;
     const newX = Math.max(0, Math.min(window.innerWidth - 56, dragRef.current.startPosX + dx));
-    const newY = Math.max(-(window.innerHeight - 56), Math.min(-16, dragRef.current.startPosY - dy));
+    const newY = Math.max(-(window.innerHeight - 56), Math.min(-16, dragRef.current.startPosY + dy));
     setPos({ x: newX, y: newY });
   }, [longPressed, isDragging]);
 
