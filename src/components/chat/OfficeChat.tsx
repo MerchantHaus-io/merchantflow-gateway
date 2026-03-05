@@ -1111,7 +1111,9 @@ export default function OfficeChat({
             tlCam.z < -nearClipBuffer &&
             brCam.z < -nearClipBuffer;
 
-          if (dot > 0.12 && dist < 30 && fullyInFrontOfNearPlane) {
+          const tooCloseToProject = dist < 2.6;
+
+          if (dot > 0.12 && dist < 30 && !tooCloseToProject && fullyInFrontOfNearPlane) {
             const tl = tvTL.clone().project(camera);
             const br = tvBR.clone().project(camera);
             const cw = renderer.domElement.clientWidth;
@@ -1131,8 +1133,9 @@ export default function OfficeChat({
             const clipValid = tl.z >= -1 && tl.z <= 1 && br.z >= -1 && br.z <= 1;
             const onScreen = x >= 0 && y >= 0 && (x + w) <= cw && (y + h) <= ch;
             const bigEnough = w > 20 && h > 12;
+            const notFullscreenSized = w < cw * 0.95 && h < ch * 0.95;
 
-            if (clipValid && onScreen && bigEnough && Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(w) && Number.isFinite(h)) {
+            if (clipValid && onScreen && bigEnough && notFullscreenSized && Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(w) && Number.isFinite(h)) {
               const nx = Math.round(x);
               const ny = Math.round(y);
               const nw = Math.round(w);
