@@ -395,6 +395,100 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
 
   const isGatewayCard = opportunity ? getServiceType(opportunity) === 'gateway_only' : false;
 
+  const handleDownloadDetails = useCallback(() => {
+    if (!opportunity) return;
+
+    const ws = wizardFormState;
+    const serviceType = getServiceType(opportunity);
+    const lines: string[] = [];
+    const add = (label: string, value?: string | null) => {
+      lines.push(`${label}: ${value || '—'}`);
+    };
+    const section = (title: string) => { lines.push(''); lines.push(`=== ${title} ===`); };
+
+    lines.push(`Merchant Details Export — ${new Date().toLocaleDateString()}`);
+    lines.push(`Service Type: ${serviceType === 'gateway_only' ? 'Gateway Only' : 'Processing'}`);
+    lines.push(`Stage: ${(STAGE_CONFIG[opportunity.stage] ?? STAGE_CONFIG.application_prep).label}`);
+    lines.push(`Assigned To: ${opportunity.assigned_to || '—'}`);
+
+    section('Account');
+    add('Company Name', account?.name);
+    add('Website', account?.website);
+    add('Address', account?.address1);
+    add('Address 2', account?.address2);
+    add('City', account?.city);
+    add('State', account?.state);
+    add('Zip', account?.zip);
+    add('Country', account?.country);
+
+    section('Contact');
+    add('First Name', contact?.first_name);
+    add('Last Name', contact?.last_name);
+    add('Email', contact?.email);
+    add('Phone', contact?.phone);
+    add('Fax', contact?.fax);
+
+    section('Opportunity');
+    add('Username', opportunity.username);
+    add('Referral Source', opportunity.referral_source);
+    add('Timezone', opportunity.timezone);
+    add('Language', opportunity.language);
+
+    section('Business Profile');
+    add('DBA Name', ws.dba_name as string);
+    add('Products / Services', ws.product_description as string);
+    add('Nature of Business', ws.nature_of_business as string);
+    add('Contact First Name', ws.dba_contact_first_name as string);
+    add('Contact Last Name', ws.dba_contact_last_name as string);
+    add('Contact Phone', ws.dba_contact_phone as string);
+    add('Contact Email', ws.dba_contact_email as string);
+    add('DBA Address', ws.dba_address_line1 as string);
+    add('DBA City', ws.dba_city as string);
+    add('DBA State', ws.dba_state as string);
+    add('DBA Zip', ws.dba_zip as string);
+
+    if (serviceType !== 'gateway_only') {
+      section('Legal Info');
+      add('Legal Entity Name', ws.legal_entity_name as string);
+      add('Federal Tax ID', ws.federal_tax_id as string);
+      add('Ownership Type', ws.ownership_type as string);
+      add('Formation Date', ws.business_formation_date as string);
+      add('State Incorporated', ws.state_incorporated as string);
+      add('Legal Address', ws.legal_address_line1 as string);
+      add('Legal City', ws.legal_city as string);
+      add('Legal State', ws.legal_state as string);
+      add('Legal Zip', ws.legal_zip as string);
+
+      section('Processing');
+      add('Monthly Volume', ws.monthly_volume as string);
+      add('Avg Transaction', ws.average_transaction as string);
+      add('High Ticket', ws.high_ticket as string);
+      add('% Swiped', ws.percent_swiped as string);
+      add('% Keyed', ws.percent_keyed as string);
+      add('% MOTO', ws.percent_moto as string);
+      add('% eCommerce', ws.percent_ecommerce as string);
+      add('% B2C', ws.percent_b2c as string);
+      add('% B2B', ws.percent_b2b as string);
+      add('Website URL', ws.website_url as string);
+      add('SIC / MCC Code', ws.sic_mcc_code as string);
+    }
+
+    if (serviceType === 'gateway_only') {
+      section('Gateway Details');
+      add('Username', ws.username as string);
+      add('Current Processor', ws.current_processor as string);
+    }
+
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${(account?.name || 'merchant').replace(/\s+/g, '_')}_details.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Details downloaded');
+  }, [opportunity, account, contact, wizardFormState]);
+
   // Auto-save callback
   const handleAutoSave = useCallback(async (data: typeof formData) => {
     if (!opportunity) return;
@@ -918,6 +1012,21 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                       </Tooltip>
                     )}
                     
+                    {/* Download Details */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={handleDownloadDetails}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Download Details</TooltipContent>
+                    </Tooltip>
+
                     {/* Maximize/Minimize */}
                     <Tooltip>
                       <TooltipTrigger asChild>
