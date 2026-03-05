@@ -723,6 +723,7 @@ export default function OfficeChat({
   const [tvUnmuted, setTvUnmuted] = useState(false);
   const tvOverlayRef = useRef<HTMLDivElement>(null);
   const tvOverlayVisibleRef = useRef(false);
+  const tvOverlayRectRef = useRef({ x: -1, y: -1, w: -1, h: -1 });
   const [nearInteract, setNearInteract] = useState<InteractionPoint | null>(null);
   const [isSitting, setIsSitting] = useState(false);
   const [showWhiteboard, setShowWhiteboard] = useState(false);
@@ -1115,39 +1116,47 @@ export default function OfficeChat({
             const br = tvBR.clone().project(camera);
             const cw = renderer.domElement.clientWidth;
             const ch = renderer.domElement.clientHeight;
+
             const sx1 = (tl.x * 0.5 + 0.5) * cw;
             const sy1 = (-tl.y * 0.5 + 0.5) * ch;
             const sx2 = (br.x * 0.5 + 0.5) * cw;
             const sy2 = (-br.y * 0.5 + 0.5) * ch;
 
-            let x = Math.min(sx1, sx2);
-            let y = Math.min(sy1, sy2);
-            let w = Math.abs(sx2 - sx1);
-            let h = Math.abs(sy2 - sy1);
+            const x = Math.min(sx1, sx2);
+            const y = Math.min(sy1, sy2);
+            const w = Math.abs(sx2 - sx1);
+            const h = Math.abs(sy2 - sy1);
 
-            // Clamp to viewport to prevent unstable giant rects at close range
-            const maxX = cw - 2;
-            const maxY = ch - 2;
-            const clampedX = Math.max(0, Math.min(maxX, x));
-            const clampedY = Math.max(0, Math.min(maxY, y));
-            const clampedW = Math.max(0, Math.min(w, cw - clampedX));
-            const clampedH = Math.max(0, Math.min(h, ch - clampedY));
+            // Reject unstable/off-screen projections instead of clamping (prevents edge bars/flashes)
+            const clipValid = tl.z >= -1 && tl.z <= 1 && br.z >= -1 && br.z <= 1;
+            const onScreen = x >= 0 && y >= 0 && (x + w) <= cw && (y + h) <= ch;
+            const bigEnough = w > 20 && h > 12;
 
-            if (
-              Number.isFinite(clampedX) &&
-              Number.isFinite(clampedY) &&
-              Number.isFinite(clampedW) &&
-              Number.isFinite(clampedH) &&
-              clampedW > 20 &&
-              clampedH > 12
-            ) {
-              tvOverlayVisibleRef.current = true;
-              tvEl.style.visibility = 'visible';
-              tvEl.style.opacity = '1';
-              tvEl.style.left = `${clampedX}px`;
-              tvEl.style.top = `${clampedY}px`;
-              tvEl.style.width = `${clampedW}px`;
-              tvEl.style.height = `${clampedH}px`;
+            if (clipValid && onScreen && bigEnough && Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(w) && Number.isFinite(h)) {
+              const nx = Math.round(x);
+              const ny = Math.round(y);
+              const nw = Math.round(w);
+              const nh = Math.round(h);
+              const prev = tvOverlayRectRef.current;
+
+              if (
+                Math.abs(prev.x - nx) > 1 ||
+                Math.abs(prev.y - ny) > 1 ||
+                Math.abs(prev.w - nw) > 1 ||
+                Math.abs(prev.h - nh) > 1
+              ) {
+                tvEl.style.left = `${nx}px`;
+                tvEl.style.top = `${ny}px`;
+                tvEl.style.width = `${nw}px`;
+                tvEl.style.height = `${nh}px`;
+                tvOverlayRectRef.current = { x: nx, y: ny, w: nw, h: nh };
+              }
+
+              if (!tvOverlayVisibleRef.current) {
+                tvOverlayVisibleRef.current = true;
+                tvEl.style.visibility = 'visible';
+                tvEl.style.opacity = '1';
+              }
             } else if (tvOverlayVisibleRef.current) {
               tvOverlayVisibleRef.current = false;
               tvEl.style.visibility = 'hidden';
@@ -1456,15 +1465,15 @@ export default function OfficeChat({
       {/* TV — projected onto 3D wall via ref (no React re-renders) */}
       <div
         ref={tvOverlayRef}
-        className="absolute z-10 overflow-hidden pointer-events-none"
+        className="absolute z-10 overflow-hidden pointer-events-none bg-black"
         style={{ visibility: 'hidden', opacity: 0, transition: 'opacity 120ms linear', willChange: 'transform, width, height' }}
       >
         <iframe
           src={`https://www.youtube-nocookie.com/embed/T0C9d8anDT4?autoplay=1&mute=${tvUnmuted ? "0" : "1"}&loop=1&playlist=T0C9d8anDT4&controls=0&modestbranding=1&rel=0&playsinline=1&enablejsapi=1`}
-          className="w-full h-full border-0 pointer-events-none"
+          className="w-full h-full border-0 pointer-events-none bg-black"
           title="Office TV"
           allow="autoplay; encrypted-media; picture-in-picture"
-          style={{ pointerEvents: "none" }}
+          style={{ pointerEvents: "none", backgroundColor: "#000" }}
         />
       </div>
 
