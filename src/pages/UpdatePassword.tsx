@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,20 +23,38 @@ const UpdatePassword = () => {
   const [isValidSession, setIsValidSession] = useState<boolean | null>(null);
 
   useEffect(() => {
-    // Check if we have a valid recovery session from the email link
+    // Check hash fragments (implicit flow)
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const type = hashParams.get('type');
-    const accessToken = hashParams.get('access_token');
+    const hashType = hashParams.get('type');
 
-    // User must either:
-    // 1. Have clicked the email link (recovery type in URL hash)
-    // 2. Or already be authenticated (session exists)
-    if (type === 'recovery' || session) {
+    // Check query params for PKCE code
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+
+    if (hashType === 'recovery' || session) {
       setIsValidSession(true);
-    } else {
-      setIsValidSession(false);
+      return;
     }
+
+    // If there's a PKCE code, wait for the auth state change to exchange it
+    if (code) {
+      // Don't set invalid yet — Supabase will exchange the code automatically
+      return;
+    }
+
+    // No recovery indicators found
+    setIsValidSession(false);
   }, [session]);
+
+  // Listen for PASSWORD_RECOVERY event from Supabase auth
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsValidSession(true);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
