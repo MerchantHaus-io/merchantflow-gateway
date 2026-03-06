@@ -1105,11 +1105,13 @@ export default function OfficeChat({
         let deskNear = false;
         if (!closestUser) {
           Object.entries(DESK_POS).forEach(([email, pos]) => {
-            if (email === currentUserEmail) return;
-            const ws = state.npcWander.get(email);
-            const npcMesh = npcMeshes.get(email);
-            const npcAtDesk = npcMesh?.visible && ws?.state === "at_desk";
-            if (npcAtDesk) return;
+            // Skip desks where an NPC is currently sitting (occupied)
+            if (email !== currentUserEmail) {
+              const ws = state.npcWander.get(email);
+              const npcMesh = npcMeshes.get(email);
+              const npcAtDesk = npcMesh?.visible && ws?.state === "at_desk";
+              if (npcAtDesk) return;
+            }
             if (state.playerPos.distanceTo(pos) < INTERACT_DIST) deskNear = true;
           });
         }
