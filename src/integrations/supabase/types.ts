@@ -1224,6 +1224,126 @@ export type Database = {
         }
         Relationships: []
       }
+      nmi_boarding_submissions: {
+        Row: {
+          account_id: string | null
+          account_number_last4: string | null
+          account_type: string | null
+          address1: string
+          address2: string | null
+          bank_name: string | null
+          city: string
+          company_name: string
+          country: string
+          created_at: string
+          dba_name: string | null
+          email: string
+          error_message: string | null
+          first_name: string
+          id: string
+          language: string
+          last_name: string
+          merchant_type: string
+          nmi_gateway_id: string | null
+          nmi_response: Json | null
+          nmi_status: string
+          opportunity_id: string | null
+          phone: string
+          routing_number_last4: string | null
+          state: string
+          submitted_by: string
+          submitted_by_email: string
+          timezone: string
+          updated_at: string
+          username: string
+          website_url: string | null
+          zip: string
+        }
+        Insert: {
+          account_id?: string | null
+          account_number_last4?: string | null
+          account_type?: string | null
+          address1: string
+          address2?: string | null
+          bank_name?: string | null
+          city: string
+          company_name: string
+          country?: string
+          created_at?: string
+          dba_name?: string | null
+          email: string
+          error_message?: string | null
+          first_name: string
+          id?: string
+          language?: string
+          last_name: string
+          merchant_type?: string
+          nmi_gateway_id?: string | null
+          nmi_response?: Json | null
+          nmi_status?: string
+          opportunity_id?: string | null
+          phone: string
+          routing_number_last4?: string | null
+          state: string
+          submitted_by: string
+          submitted_by_email: string
+          timezone?: string
+          updated_at?: string
+          username: string
+          website_url?: string | null
+          zip: string
+        }
+        Update: {
+          account_id?: string | null
+          account_number_last4?: string | null
+          account_type?: string | null
+          address1?: string
+          address2?: string | null
+          bank_name?: string | null
+          city?: string
+          company_name?: string
+          country?: string
+          created_at?: string
+          dba_name?: string | null
+          email?: string
+          error_message?: string | null
+          first_name?: string
+          id?: string
+          language?: string
+          last_name?: string
+          merchant_type?: string
+          nmi_gateway_id?: string | null
+          nmi_response?: Json | null
+          nmi_status?: string
+          opportunity_id?: string | null
+          phone?: string
+          routing_number_last4?: string | null
+          state?: string
+          submitted_by?: string
+          submitted_by_email?: string
+          timezone?: string
+          updated_at?: string
+          username?: string
+          website_url?: string | null
+          zip?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nmi_boarding_submissions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nmi_boarding_submissions_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
