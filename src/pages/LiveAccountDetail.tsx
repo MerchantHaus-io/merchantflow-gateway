@@ -190,6 +190,24 @@ const LiveAccountDetail = () => {
     enabled: !!primaryOpp?.assigned_to,
   });
 
+  // Fetch NMI gateway IDs for this account
+  const { data: boardingSubmissions } = useQuery({
+    queryKey: ["nmi-boarding-submissions", accountId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("nmi_boarding_submissions")
+        .select("nmi_gateway_id")
+        .eq("account_id", accountId!)
+        .not("nmi_gateway_id", "is", null);
+      return data || [];
+    },
+    enabled: !!accountId,
+  });
+
+  const accountGatewayIds = (boardingSubmissions || [])
+    .map((s: any) => s.nmi_gateway_id)
+    .filter(Boolean) as string[];
+
   const getInitials = (name: string) =>
     name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
 
