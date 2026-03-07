@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import { getServiceType, TEAM_MEMBERS } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { NMITransactionsPanel } from "@/components/NMITransactionsPanel";
 
 const TEAM_EMAIL_MAP: Record<string, string> = {
   'Wesley': 'dylan@merchanthaus.io',
