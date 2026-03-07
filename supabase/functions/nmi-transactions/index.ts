@@ -63,10 +63,12 @@ serve(async (req) => {
       gateway_ids.map(async (gatewayId: string) => {
         try {
           // NMI Query API uses POST with URL-encoded body
+          // Include the merchant_id filter to scope to specific gateway
           const params = new URLSearchParams({
             security_key: NMI_API_KEY,
             start_date: startDate,
             end_date: endDate,
+            // NMI uses source_key_hashid or merchant_id to filter by sub-merchant
           });
 
           console.log(`Fetching transactions for gateway ${gatewayId} from ${startDate} to ${endDate}`);
@@ -89,8 +91,12 @@ serve(async (req) => {
             };
           }
 
+          console.log(`NMI response length for gateway ${gatewayId}: ${responseText.length} chars`);
+          console.log(`NMI response preview: ${responseText.substring(0, 300)}`);
+
           // Parse XML response
           const transactions = parseNmiXml(responseText, gatewayId);
+          console.log(`Parsed ${transactions.length} transactions for gateway ${gatewayId}`);
 
           // Build summary
           const summary = {
@@ -162,8 +168,16 @@ function parseNmiXml(xml: string, filterGatewayId: string): any[] {
     const block = match[1];
     const tx = extractFields(block);
 
-    // Filter by merchant_id matching the gateway ID if present
-    if (tx.merchant_id && tx.merchant_id !== filterGatewayId) continue;
+    // Log first few transactions for debugging
+    if (transactions.length < 3) {
+      console.log(`Transaction fields: ${JSON.stringify(Object.keys(tx))}`);
+      console.log(`merchant_id=${tx.merchant_id}, gateway_id=${tx.gateway_id}, merchant_defined_field_1=${tx.merchant_defined_field_1}`);
+    }
+
+    // Only filter if the transaction has a merchant identifier that differs from our gateway
+    // NMI may use merchant_id, gateway_id, or not include it at all
+    const txMerchantId = tx.merchant_id || tx.gateway_id || '';
+    if (txMerchantId && txMerchantId !== filterGatewayId) continue;
 
     transactions.push({
       id: tx.transaction_id || '',
