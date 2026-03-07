@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.nmi-transactions]
 verify_jwt = false
+
+[functions.nmi-board-merchant]
+verify_jwt = false
