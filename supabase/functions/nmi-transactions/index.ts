@@ -168,8 +168,16 @@ function parseNmiXml(xml: string, filterGatewayId: string): any[] {
     const block = match[1];
     const tx = extractFields(block);
 
-    // Filter by merchant_id matching the gateway ID if present
-    if (tx.merchant_id && tx.merchant_id !== filterGatewayId) continue;
+    // Log first few transactions for debugging
+    if (transactions.length < 3) {
+      console.log(`Transaction fields: ${JSON.stringify(Object.keys(tx))}`);
+      console.log(`merchant_id=${tx.merchant_id}, gateway_id=${tx.gateway_id}, merchant_defined_field_1=${tx.merchant_defined_field_1}`);
+    }
+
+    // Only filter if the transaction has a merchant identifier that differs from our gateway
+    // NMI may use merchant_id, gateway_id, or not include it at all
+    const txMerchantId = tx.merchant_id || tx.gateway_id || '';
+    if (txMerchantId && txMerchantId !== filterGatewayId) continue;
 
     transactions.push({
       id: tx.transaction_id || '',
