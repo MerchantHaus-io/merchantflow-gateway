@@ -15,6 +15,7 @@ interface PipelineColumnProps {
   onCardClick: (opportunity: Opportunity) => void;
   onAssignmentChange?: (opportunityId: string, assignedTo: string | null) => void;
   onSlaStatusChange?: (opportunityId: string, slaStatus: string | null) => void;
+  onMarkAsDead?: (id: string) => void;
   onAddNew?: () => void;
   hideHeader?: boolean;
   isCompact?: boolean;
@@ -38,6 +39,7 @@ const PipelineColumn = ({
   onAssignmentChange,
   onSlaStatusChange,
   onAddNew,
+  onMarkAsDead,
   hideHeader = false,
   isCompact = false,
   currentUser,
@@ -168,6 +170,7 @@ const PipelineColumn = ({
               onClick={() => onCardClick(opportunity)}
               onAssignmentChange={onAssignmentChange}
               onSlaStatusChange={onSlaStatusChange}
+              onMarkAsDead={onMarkAsDead}
               onTouchDragStart={onTouchDragStart}
               onTouchDragMove={onTouchDragMove}
               onTouchDragEnd={onTouchDragEnd}

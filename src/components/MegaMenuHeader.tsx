@@ -29,7 +29,6 @@ import {
   Maximize,
   Minimize,
   Cloud,
-  Focus,
   Send,
   type LucideIcon,
 } from "lucide-react";
@@ -52,8 +51,6 @@ import {
 } from "@/components/ui/navigation-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -91,7 +88,7 @@ const navMain: NavGroup[] = [
     ],
   },
   {
-    title: "Opportunities",
+    title: "CRM",
     url: "/opportunities",
     icon: Briefcase,
     items: [
@@ -102,7 +99,7 @@ const navMain: NavGroup[] = [
     ],
   },
   {
-    title: "Reporting",
+    title: "Reports",
     url: "/reports",
     icon: BarChart3,
     items: [
@@ -112,19 +109,23 @@ const navMain: NavGroup[] = [
       { title: "Supported Processors", url: "/supported-processors", icon: Globe, description: "Processor compatibility list" },
     ],
   },
-];
-
-const toolsItems: NavItem[] = [
-  { title: "SOP", url: "/sop", icon: BookOpen, description: "Standard operating procedures" },
-  { title: "Partner Portal Guide", url: "/tools/gateway-guide", icon: BookMarked, description: "Interactive NMI portal walkthrough" },
-  { title: "Preboarding Wizard", url: "/tools/preboarding-wizard", icon: ClipboardList, description: "Application readiness form" },
-  { title: "Revenue Calculator", url: "/tools/revenue-calculator", icon: Calculator, description: "Estimate processing revenue" },
-  { title: "CSV Import", url: "/tools/csv-import", icon: FileSpreadsheet, description: "Bulk import data" },
-  { title: "Data Export", url: "/admin/data-export", icon: Download, description: "Export opportunity data" },
-  { title: "Terminal Updates", url: "/tools/terminal-updates", icon: Sparkles, description: "Latest CRM changes & features" },
-  { title: "NMI Status", url: "https://statusgator.com/services/nmi", icon: Activity, description: "System status page", external: true },
-  { title: "Netlify", url: "/tools/netlify", icon: Cloud, description: "Deployment audit & fix prompts" },
-  { title: "NMI Boarding", url: "/tools/nmi-boarding", icon: BadgeDollarSign, description: "Board merchants via NMI gateway" },
+  {
+    title: "Tools",
+    url: "/sop",
+    icon: Wrench,
+    items: [
+      { title: "SOP", url: "/sop", icon: BookOpen, description: "Standard operating procedures" },
+      { title: "Partner Portal Guide", url: "/tools/gateway-guide", icon: BookMarked, description: "Interactive NMI portal walkthrough" },
+      { title: "Preboarding Wizard", url: "/tools/preboarding-wizard", icon: ClipboardList, description: "Application readiness form" },
+      { title: "Revenue Calculator", url: "/tools/revenue-calculator", icon: Calculator, description: "Estimate processing revenue" },
+      { title: "NMI Boarding", url: "/tools/nmi-boarding", icon: BadgeDollarSign, description: "Board merchants via NMI gateway" },
+      { title: "Terminal Updates", url: "/tools/terminal-updates", icon: Sparkles, description: "Latest CRM changes & features" },
+      { title: "CSV Import", url: "/tools/csv-import", icon: FileSpreadsheet, description: "Bulk import data" },
+      { title: "Data Export", url: "/admin/data-export", icon: Download, description: "Export opportunity data" },
+      { title: "Netlify", url: "/tools/netlify", icon: Cloud, description: "Deployment audit & fix prompts" },
+      { title: "NMI Status", url: "https://statusgator.com/services/nmi", icon: Activity, description: "Live system status", external: true },
+    ],
+  },
 ];
 
 interface MegaMenuHeaderProps {
@@ -138,13 +139,9 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
   const { isAdmin } = useUserRole();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [profileName, setProfileName] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
-  // focusOpen state removed — Focus Mode now navigates to pipeline
-
-  // Focus tasks count removed — Focus Mode now triggers pipeline view
 
   useEffect(() => {
     const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
@@ -218,35 +215,50 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
   const userEmail = user?.email?.toLowerCase() || "";
   const displayName = profileName || EMAIL_TO_USER[userEmail] || user?.email?.split("@")[0] || "User";
 
+  const isDark = theme === 'dark';
+
   return (
-    <header className={cn(
-      "sticky top-0 z-50 w-full border-b border-border",
-      theme === 'dark' ? "bg-haus-charcoal text-white" : "bg-background text-foreground shadow-sm"
-    )} style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
-      <div className="flex h-14 items-center px-4 lg:px-6 gap-4">
+    <header
+      className={cn(
+        "sticky top-0 z-50 w-full border-b border-border/60",
+        isDark
+          ? "bg-haus-charcoal/95 text-white backdrop-blur-md"
+          : "bg-background/95 text-foreground backdrop-blur-md shadow-sm"
+      )}
+      style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+    >
+      <div className="flex h-12 items-center px-3 lg:px-5 gap-2">
         {/* Logo */}
-        <Link to="/" className="flex items-center shrink-0">
+        <Link to="/" className="flex items-center shrink-0 mr-1">
           <img src={sidebarIcon} alt="Ops Terminal" className="h-7 w-7 object-contain" />
         </Link>
 
         {/* Desktop Navigation */}
         <NavigationMenu className="hidden lg:flex flex-1">
-          <NavigationMenuList>
+          <NavigationMenuList className="gap-0">
             {navMain.map((item) => {
               if (item.items) {
+                const isTools = item.title === "Tools";
                 return (
                   <NavigationMenuItem key={item.title}>
-                    <NavigationMenuTrigger className={cn(
-                      "bg-transparent",
-                      theme === 'dark' 
-                        ? "text-white/90 hover:text-white hover:bg-white/10 data-[state=open]:bg-white/10"
-                        : "text-foreground/80 hover:text-foreground hover:bg-accent data-[state=open]:bg-accent"
-                    )}>
-                      <item.icon className="h-4 w-4 mr-2" />
+                    <NavigationMenuTrigger
+                      className={cn(
+                        "h-9 px-3 text-sm bg-transparent rounded-md font-medium",
+                        isDark
+                          ? "text-white/75 hover:text-white hover:bg-white/8 data-[state=open]:bg-white/10 data-[state=open]:text-white"
+                          : "text-foreground/65 hover:text-foreground hover:bg-accent data-[state=open]:bg-accent data-[state=open]:text-accent-foreground"
+                      )}
+                    >
+                      <item.icon className="h-3.5 w-3.5 mr-1.5 shrink-0" />
                       {item.title}
                     </NavigationMenuTrigger>
                     <NavigationMenuContent>
-                      <ul className="grid w-[400px] gap-2 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
+                      <ul
+                        className={cn(
+                          "gap-1 p-2",
+                          isTools ? "grid w-[500px] md:grid-cols-2" : "grid w-[340px] md:w-[420px] md:grid-cols-2"
+                        )}
+                      >
                         {item.items.map((subItem) => (
                           <li key={subItem.title}>
                             {subItem.external ? (
@@ -254,29 +266,44 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                                 href={subItem.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                className="flex items-start gap-2.5 rounded-lg p-2.5 text-sm leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
                               >
-                                <div className="flex items-center gap-2 text-sm font-medium leading-none">
-                                  <subItem.icon className="h-4 w-4" />
-                                  {subItem.title}
+                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted/80">
+                                  <subItem.icon className="h-3.5 w-3.5 text-muted-foreground" />
                                 </div>
-                                <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                                  {subItem.description}
-                                </p>
+                                <div className="min-w-0">
+                                  <div className="font-medium leading-none mb-0.5 text-[13px]">{subItem.title}</div>
+                                  {subItem.description && (
+                                    <p className="text-[11px] leading-snug text-muted-foreground line-clamp-1">
+                                      {subItem.description}
+                                    </p>
+                                  )}
+                                </div>
                               </a>
                             ) : (
                               <NavigationMenuLink asChild>
                                 <RouterNavLink
                                   to={subItem.url}
-                                  className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                  className={({ isActive }) =>
+                                    cn(
+                                      "flex items-start gap-2.5 rounded-lg p-2.5 text-sm leading-none no-underline outline-none transition-colors",
+                                      isActive
+                                        ? "bg-accent text-accent-foreground"
+                                        : "hover:bg-accent hover:text-accent-foreground"
+                                    )
+                                  }
                                 >
-                                  <div className="flex items-center gap-2 text-sm font-medium leading-none">
-                                    <subItem.icon className="h-4 w-4" />
-                                    {subItem.title}
+                                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted/80">
+                                    <subItem.icon className="h-3.5 w-3.5 text-muted-foreground" />
                                   </div>
-                                  <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                                    {subItem.description}
-                                  </p>
+                                  <div className="min-w-0">
+                                    <div className="font-medium leading-none mb-0.5 text-[13px]">{subItem.title}</div>
+                                    {subItem.description && (
+                                      <p className="text-[11px] leading-snug text-muted-foreground line-clamp-1">
+                                        {subItem.description}
+                                      </p>
+                                    )}
+                                  </div>
                                 </RouterNavLink>
                               </NavigationMenuLink>
                             )}
@@ -297,77 +324,53 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                       className={({ isActive }) =>
                         cn(
                           navigationMenuTriggerStyle(),
-                          "bg-transparent flex items-center",
-                          theme === 'dark'
-                            ? "text-white/90 hover:text-white hover:bg-white/10"
-                            : "text-foreground/80 hover:text-foreground hover:bg-accent",
-                          isActive && "bg-accent text-accent-foreground"
+                          "h-9 px-3 bg-transparent flex items-center text-sm rounded-md font-medium",
+                          isDark
+                            ? "text-white/75 hover:text-white hover:bg-white/8"
+                            : "text-foreground/65 hover:text-foreground hover:bg-accent",
+                          isActive && (isDark ? "bg-white/10 text-white" : "bg-accent text-accent-foreground")
                         )
                       }
                     >
-                      <item.icon className="h-4 w-4 mr-2 shrink-0" />
+                      <item.icon className="h-3.5 w-3.5 mr-1.5 shrink-0" />
                       {item.title}
                     </RouterNavLink>
                   </NavigationMenuLink>
                 </NavigationMenuItem>
               );
             })}
-            {/* Focus Mode - inline in nav */}
-            <NavigationMenuItem>
-              <Button
-                variant="ghost"
-                onClick={() => navigate('/?focus=true')}
-                className={cn(
-                  "bg-transparent flex items-center gap-2 h-10 px-4 relative group",
-                  theme === 'dark' ? "hover:bg-white/10" : "hover:bg-accent"
-                )}
-              >
-                <Focus className={cn("h-4 w-4", theme === 'dark' ? "text-white" : "text-foreground")} />
-                <span
-                  className="font-bold text-sm bg-clip-text text-transparent"
-                  style={{
-                    backgroundImage: 'linear-gradient(90deg, #f97316, #facc15, #22d3ee, #a78bfa, #f97316)',
-                    backgroundSize: '200% 100%',
-                    animation: 'focusGradient 3s linear infinite',
-                  }}
-                >
-                  Focus Mode
-                </span>
-              </Button>
-            </NavigationMenuItem>
           </NavigationMenuList>
         </NavigationMenu>
 
         {/* Right side actions */}
-        <div className="flex items-center gap-2 ml-auto">
+        <div className="flex items-center gap-1 ml-auto">
           {/* +New dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 size="sm"
-                className="bg-gold text-gold-foreground hover:bg-gold/90 transition-opacity rounded-none"
+                className="h-8 bg-gold text-gold-foreground hover:bg-gold/90 transition-all rounded-md px-3 text-xs font-semibold shadow-sm"
               >
-                <Plus className="h-4 w-4 mr-1" />
+                <Plus className="h-3.5 w-3.5 mr-1" />
                 <span className="hidden sm:inline">New</span>
-                <ChevronDown className="h-3 w-3 ml-1" />
+                <ChevronDown className="h-3 w-3 ml-0.5 opacity-70" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <DropdownMenuItem onClick={() => handleNewClick("opportunity")}>
-                <Briefcase className="h-4 w-4 mr-2" />
-                Create Opportunity
+                <Briefcase className="h-4 w-4 mr-2 text-muted-foreground" />
+                New Opportunity
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleNewClick("account")}>
-                <Building2 className="h-4 w-4 mr-2" />
-                Create Account
+                <Building2 className="h-4 w-4 mr-2 text-muted-foreground" />
+                New Account
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleNewClick("contact")}>
-                <Users className="h-4 w-4 mr-2" />
-                Create Contact
+                <Users className="h-4 w-4 mr-2 text-muted-foreground" />
+                New Contact
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
 
           <NotificationBell />
 
@@ -385,108 +388,91 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                   }
                 }}
                 className={cn(
-                  "h-9 w-9",
-                  theme === 'dark' ? "text-white/70 hover:text-white hover:bg-white/10" : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                  "h-8 w-8 rounded-md",
+                  isDark
+                    ? "text-white/55 hover:text-white hover:bg-white/10"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
                 )}
               >
-                {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+                {isFullscreen ? <Minimize className="h-3.5 w-3.5" /> : <Maximize className="h-3.5 w-3.5" />}
               </Button>
             </TooltipTrigger>
-            <TooltipContent>{isFullscreen ? "Exit Fullscreen" : "Fullscreen"}</TooltipContent>
+            <TooltipContent side="bottom">{isFullscreen ? "Exit Fullscreen" : "Fullscreen"}</TooltipContent>
           </Tooltip>
 
           {/* Theme toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTheme}
-            className={cn(
-              "h-9 w-9",
-              theme === 'dark' ? "text-white/70 hover:text-white hover:bg-white/10" : "text-muted-foreground hover:text-foreground hover:bg-accent"
-            )}
-          >
-            {theme === "dark" ? (
-              <Sun className="h-4 w-4" />
-            ) : (
-              <Moon className="h-4 w-4" />
-            )}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleTheme}
+                className={cn(
+                  "h-8 w-8 rounded-md",
+                  isDark
+                    ? "text-white/55 hover:text-white hover:bg-white/10"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                )}
+              >
+                {isDark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">{isDark ? "Light mode" : "Dark mode"}</TooltipContent>
+          </Tooltip>
 
           {/* Profile dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className={cn(
-                "gap-2 pl-1",
-                theme === 'dark' ? "text-white/90 hover:text-white hover:bg-white/10" : "text-foreground/80 hover:text-foreground hover:bg-accent"
-              )}>
-                <Avatar className="h-7 w-7">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "h-8 gap-1.5 pl-1 pr-2 rounded-md",
+                  isDark
+                    ? "text-white/75 hover:text-white hover:bg-white/10"
+                    : "text-foreground/75 hover:text-foreground hover:bg-accent"
+                )}
+              >
+                <Avatar className="h-6 w-6">
                   <AvatarImage src={avatarUrl || undefined} alt={displayName} />
-                  <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                  <AvatarFallback className="text-[10px] font-bold bg-primary/15 text-primary">
                     {displayName.slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <span className="hidden md:inline">{displayName}</span>
-                <ChevronDown className="h-3 w-3 hidden md:inline" />
+                <span className="hidden md:inline text-sm">{displayName}</span>
+                <ChevronDown className="h-3 w-3 hidden md:inline opacity-50" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="w-52">
+              {/* User info header */}
+              <div className="px-3 py-2.5 border-b border-border/50 mb-1">
+                <p className="text-xs font-semibold">{displayName}</p>
+                <p className="text-[11px] text-muted-foreground truncate mt-0.5">{user?.email}</p>
+              </div>
               <DropdownMenuItem asChild>
                 <RouterNavLink to="/settings" className="cursor-pointer">
-                  <Settings className="h-4 w-4 mr-2" />
+                  <Settings className="h-4 w-4 mr-2 text-muted-foreground" />
                   Settings
                 </RouterNavLink>
               </DropdownMenuItem>
               {isAdmin && (
                 <DropdownMenuItem asChild>
                   <RouterNavLink to="/admin/deletion-requests" className="cursor-pointer">
-                    <Trash2 className="h-4 w-4 mr-2" />
+                    <Trash2 className="h-4 w-4 mr-2 text-muted-foreground" />
                     Deletion Requests
                   </RouterNavLink>
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
-              {/* Tools submenu */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <div className="flex items-center gap-2 px-2 py-1.5 text-sm cursor-pointer hover:bg-accent rounded-sm">
-                    <Wrench className="h-4 w-4" />
-                    Tools
-                    <ChevronDown className="h-3 w-3 ml-auto" />
-                  </div>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent side="left" align="start" className="w-56">
-                  {toolsItems.map((tool) =>
-                    tool.external ? (
-                      <DropdownMenuItem key={tool.title} asChild>
-                        <a
-                          href={tool.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="cursor-pointer"
-                        >
-                          <tool.icon className="h-4 w-4 mr-2" />
-                          {tool.title}
-                        </a>
-                      </DropdownMenuItem>
-                    ) : (
-                      <DropdownMenuItem key={tool.title} asChild>
-                        <RouterNavLink to={tool.url} className="cursor-pointer">
-                          <tool.icon className="h-4 w-4 mr-2" />
-                          {tool.title}
-                        </RouterNavLink>
-                      </DropdownMenuItem>
-                    )
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-destructive">
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
+              >
                 <LogOut className="h-4 w-4 mr-2" />
-                Logout
+                Sign Out
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
         </div>
       </div>
     </header>
