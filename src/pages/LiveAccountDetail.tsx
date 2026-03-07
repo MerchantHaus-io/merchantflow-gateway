@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTheme } from "@/contexts/ThemeContext";
 import ClientInteractionLog from "@/components/ClientInteractionLog";
+import { NMITransactionsPanel } from "@/components/NMITransactionsPanel";
 import logoDark from "@/assets/logo-dark.png";
 import logoLight from "@/assets/logo-light.png";
 import liveBadge from "@/assets/live-badge.webp";
@@ -188,6 +189,24 @@ const LiveAccountDetail = () => {
     },
     enabled: !!primaryOpp?.assigned_to,
   });
+
+  // Fetch NMI gateway IDs for this account
+  const { data: boardingSubmissions } = useQuery({
+    queryKey: ["nmi-boarding-submissions", accountId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("nmi_boarding_submissions")
+        .select("nmi_gateway_id")
+        .eq("account_id", accountId!)
+        .not("nmi_gateway_id", "is", null);
+      return data || [];
+    },
+    enabled: !!accountId,
+  });
+
+  const accountGatewayIds = (boardingSubmissions || [])
+    .map((s: any) => s.nmi_gateway_id)
+    .filter(Boolean) as string[];
 
   const getInitials = (name: string) =>
     name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -538,6 +557,16 @@ const LiveAccountDetail = () => {
               </CardContent>
             </Card>
           </div>
+
+          {/* Gateway Transactions */}
+          {accountGatewayIds.length > 0 && (
+            <div className="mt-6">
+              <NMITransactionsPanel
+                gatewayIds={accountGatewayIds}
+                accountName={account?.name}
+              />
+            </div>
+          )}
 
           {/* Client Interaction Log */}
           <div className="mt-6">

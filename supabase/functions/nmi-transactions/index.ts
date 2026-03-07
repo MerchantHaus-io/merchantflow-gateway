@@ -5,10 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-const NMI_BASE_URL = 'https://secure.nmi.com/api/v4';
-
-// Allowed gateway IDs to prevent arbitrary queries
-const ALLOWED_GATEWAY_IDS = ['1240273', '1279268', '1279623'];
+const NMI_API_URL = 'https://secure.nmi.com/api/v4/transactions/reports';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -21,7 +18,7 @@ serve(async (req) => {
       throw new Error('NMI_API_KEY is not configured');
     }
 
-    // Verify JWT
+    // Verify auth
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -48,10 +45,8 @@ serve(async (req) => {
 
     const { gateway_ids, start_date, end_date } = await req.json();
 
-    // Validate gateway IDs
-    const validIds = (gateway_ids || []).filter((id: string) => ALLOWED_GATEWAY_IDS.includes(id));
-    if (validIds.length === 0) {
-      return new Response(JSON.stringify({ error: 'No valid gateway IDs provided' }), {
+    if (!gateway_ids || !Array.isArray(gateway_ids) || gateway_ids.length === 0) {
+      return new Response(JSON.stringify({ error: 'No gateway IDs provided' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -63,44 +58,65 @@ serve(async (req) => {
     const startDate = start_date || thirtyDaysAgo.toISOString().split('T')[0];
     const endDate = end_date || now.toISOString().split('T')[0];
 
-    // Fetch transactions for each gateway ID in parallel
+    // Fetch transactions for each gateway ID
     const results = await Promise.all(
-      validIds.map(async (gatewayId: string) => {
+      gateway_ids.map(async (gatewayId: string) => {
         try {
-          // Use the v4 transactions reports endpoint
-          const response = await fetch(`${NMI_BASE_URL}/merchants/${gatewayId}/transactions/reports`, {
+          // POST to /v4/transactions/reports with merchantId in body
+          const nmiPayload: Record<string, any> = {
+            merchantId: gatewayId,
+            maxResults: "100",
+            date: {
+              startDate,
+              endDate,
+            },
+          };
+
+          console.log(`Fetching transactions for gateway ${gatewayId}:`, JSON.stringify(nmiPayload));
+
+          const response = await fetch(NMI_API_URL, {
             method: 'POST',
             headers: {
               'Authorization': NMI_API_KEY,
               'Content-Type': 'application/json',
+              'Accept': 'application/json',
             },
-            body: JSON.stringify({
-              startDate,
-              endDate,
-              maxResults: 100,
-            }),
+            body: JSON.stringify(nmiPayload),
           });
 
+          const responseText = await response.text();
+          console.log(`NMI response for gateway ${gatewayId} [${response.status}]:`, responseText.substring(0, 500));
+
           if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`NMI API error for gateway ${gatewayId} [${response.status}]:`, errorText);
             return {
               gateway_id: gatewayId,
-              error: `API error: ${response.status}`,
+              error: `NMI API ${response.status}: ${responseText.substring(0, 200)}`,
               transactions: [],
               summary: null,
             };
           }
 
-          const data = await response.json();
+          let data;
+          try {
+            data = JSON.parse(responseText);
+          } catch {
+            return {
+              gateway_id: gatewayId,
+              error: 'Invalid JSON response from NMI',
+              transactions: [],
+              summary: null,
+            };
+          }
 
-          // Parse transactions from NMI response
-          const transactions = (data.transactions || data.data || data || []);
-          const txList = Array.isArray(transactions) ? transactions : [];
+          // Parse transactions - NMI v4 returns data in various formats
+          const txList = Array.isArray(data) ? data 
+            : Array.isArray(data?.transactions) ? data.transactions
+            : Array.isArray(data?.data) ? data.data
+            : [];
 
           // Build summary
           const summary = {
-            total_count: data.totalResults || txList.length,
+            total_count: data?.totalResults || txList.length,
             approved_count: 0,
             declined_count: 0,
             total_amount: 0,
@@ -108,10 +124,10 @@ serve(async (req) => {
           };
 
           for (const tx of txList) {
-            const amount = parseFloat(tx.amount || tx.requestedAmount || '0');
+            const amount = parseFloat(tx.amount || tx.requestedAmount || tx.authorizedAmount || '0');
             summary.total_amount += amount;
-            const condition = (tx.condition || tx.status || '').toLowerCase();
-            if (condition === 'complete' || condition === 'pending' || condition === 'pendingsettlement' || condition === 'pending_settlement') {
+            const condition = (tx.condition || tx.status || tx.responseText || '').toLowerCase();
+            if (['complete', 'pending', 'pendingsettlement', 'pending_settlement', 'approved'].includes(condition)) {
               summary.approved_count++;
               summary.approved_amount += amount;
             } else {
@@ -123,13 +139,13 @@ serve(async (req) => {
             gateway_id: gatewayId,
             transactions: txList.slice(0, 50).map((tx: any) => ({
               id: tx.transactionId || tx.transaction_id || tx.id,
-              date: tx.date || tx.transactionDate || tx.created_at,
-              amount: tx.amount || tx.requestedAmount,
-              condition: tx.condition || tx.status,
-              type: tx.transactionType || tx.type,
-              card_type: tx.cardType || tx.card_type,
-              last_four: tx.lastFour || tx.last_four || tx.ccLastFour,
-              customer_name: tx.customerName || tx.customer_name || [tx.firstName, tx.lastName].filter(Boolean).join(' '),
+              date: tx.date || tx.transactionDate || tx.dateTime || tx.created_at,
+              amount: tx.amount || tx.requestedAmount || tx.authorizedAmount,
+              condition: tx.condition || tx.status || tx.responseText,
+              type: tx.transactionType || tx.type || tx.actionType,
+              card_type: tx.cardType || tx.card_type || tx.ccType,
+              last_four: tx.lastFour || tx.last_four || tx.ccLastFour || tx.ccLast4,
+              customer_name: tx.customerName || tx.customer_name || [tx.firstName, tx.lastName].filter(Boolean).join(' ') || [tx.billingFirstName, tx.billingLastName].filter(Boolean).join(' '),
             })),
             summary,
           };
