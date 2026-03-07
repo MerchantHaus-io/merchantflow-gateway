@@ -124,6 +124,7 @@ const toolsItems: NavItem[] = [
   { title: "Terminal Updates", url: "/tools/terminal-updates", icon: Sparkles, description: "Latest CRM changes & features" },
   { title: "NMI Status", url: "https://statusgator.com/services/nmi", icon: Activity, description: "System status page", external: true },
   { title: "Netlify", url: "/tools/netlify", icon: Cloud, description: "Deployment audit & fix prompts" },
+  { title: "NMI Boarding", url: "/tools/nmi-boarding", icon: BadgeDollarSign, description: "Board merchants via NMI gateway" },
 ];
 
 interface MegaMenuHeaderProps {
