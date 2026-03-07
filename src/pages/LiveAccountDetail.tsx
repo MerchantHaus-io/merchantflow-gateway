@@ -540,6 +540,16 @@ const LiveAccountDetail = () => {
             </Card>
           </div>
 
+          {/* Gateway Transactions */}
+          {accountGatewayIds.length > 0 && (
+            <div className="mt-6">
+              <NMITransactionsPanel
+                gatewayIds={accountGatewayIds}
+                accountName={account?.name}
+              />
+            </div>
+          )}
+
           {/* Client Interaction Log */}
           <div className="mt-6">
             <ClientInteractionLog
