@@ -91,8 +91,12 @@ serve(async (req) => {
             };
           }
 
+          console.log(`NMI response length for gateway ${gatewayId}: ${responseText.length} chars`);
+          console.log(`NMI response preview: ${responseText.substring(0, 300)}`);
+
           // Parse XML response
           const transactions = parseNmiXml(responseText, gatewayId);
+          console.log(`Parsed ${transactions.length} transactions for gateway ${gatewayId}`);
 
           // Build summary
           const summary = {
