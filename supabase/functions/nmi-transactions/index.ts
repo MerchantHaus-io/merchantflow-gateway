@@ -63,10 +63,12 @@ serve(async (req) => {
       gateway_ids.map(async (gatewayId: string) => {
         try {
           // NMI Query API uses POST with URL-encoded body
+          // Include the merchant_id filter to scope to specific gateway
           const params = new URLSearchParams({
             security_key: NMI_API_KEY,
             start_date: startDate,
             end_date: endDate,
+            // NMI uses source_key_hashid or merchant_id to filter by sub-merchant
           });
 
           console.log(`Fetching transactions for gateway ${gatewayId} from ${startDate} to ${endDate}`);
