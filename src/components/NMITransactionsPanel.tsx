@@ -46,7 +46,7 @@ interface GatewayResult {
 
 export const NMITransactionsPanel = () => {
   const isMobile = useIsMobile();
-  const [activeTab, setActiveTab] = useState(GATEWAY_ACCOUNTS[0].id);
+  const [activeTab, setActiveTab] = useState<string>(GATEWAY_ACCOUNTS[0].id);
 
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ["nmi-transactions"],
