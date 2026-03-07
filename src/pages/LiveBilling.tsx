@@ -361,6 +361,9 @@ const LiveBilling = () => {
             </Table>
           </Card>
         )}
+
+        {/* NMI Gateway Transactions */}
+        <NMITransactionsPanel />
       </div>
     </AppLayout>
   );
