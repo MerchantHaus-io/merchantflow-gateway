@@ -1,12 +1,13 @@
 import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAIAssistant } from "@/hooks/useAIAssistant";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Upload, Download, Trash2, FileText, Loader2, Wand2, Eye } from "lucide-react";
+import { Upload, Download, Trash2, FileText, Loader2, Wand2, Eye, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 
 interface Document {
   id: string;
@@ -44,9 +45,13 @@ interface DocumentsTabProps {
 
 export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
   const { user } = useAuth();
+  const { validateDocuments } = useAIAssistant();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
+  const [validationReport, setValidationReport] = useState<any>(null);
+  const [showReport, setShowReport] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [selectedDocType, setSelectedDocType] = useState("Unassigned");
   const [showUploadDialog, setShowUploadDialog] = useState(false);
@@ -124,6 +129,46 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
     setDocuments(prev => prev.map(d => d.id === docId ? { ...d, document_type: type } : d));
   };
 
+  const handleValidate = async () => {
+    if (documents.length === 0) {
+      toast.error("Upload documents before validating");
+      return;
+    }
+    setIsValidating(true);
+    try {
+      const result = await validateDocuments(opportunityId);
+      setValidationReport(result);
+      setShowReport(true);
+      toast.success("Validation complete");
+    } catch {
+      toast.error("AI validation failed — please try again");
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
+  const fetchLatestReport = async () => {
+    const { data } = await supabase
+      .from("validation_reports")
+      .select("*")
+      .eq("opportunity_id", opportunityId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+    if (data) {
+      setValidationReport(data);
+      setShowReport(true);
+    } else {
+      toast("No previous report found");
+    }
+  };
+
+  const readinessIcon = (score: string) => {
+    if (score === "green") return <CheckCircle2 className="h-4 w-4 text-green-500" />;
+    if (score === "yellow") return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
+    return <XCircle className="h-4 w-4 text-destructive" />;
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -134,6 +179,67 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
 
   return (
     <div className="space-y-4">
+      {/* Actions bar */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <Button size="sm" variant="outline" onClick={handleValidate} disabled={isValidating || documents.length === 0}>
+          {isValidating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Wand2 className="h-3 w-3 mr-1" />}
+          AI Validate
+        </Button>
+        <Button size="sm" variant="ghost" onClick={fetchLatestReport}>
+          <Eye className="h-3 w-3 mr-1" /> View Report
+        </Button>
+      </div>
+
+      {/* Validation Report */}
+      {showReport && validationReport && (
+        <div className="border border-border rounded-lg p-4 bg-card space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {readinessIcon(validationReport.readiness_score)}
+              <h4 className="text-sm font-semibold">
+                Readiness: {validationReport.readiness_score === "green" ? "🟢 Ready" : validationReport.readiness_score === "yellow" ? "🟡 Needs Attention" : "🔴 Not Ready"}
+              </h4>
+            </div>
+            <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setShowReport(false)}>
+              Close
+            </Button>
+          </div>
+          {validationReport.summary && (
+            <p className="text-xs text-muted-foreground">{validationReport.summary}</p>
+          )}
+          {Array.isArray(validationReport.risk_flags) && validationReport.risk_flags.length > 0 && (
+            <div>
+              <p className="text-xs font-medium mb-1">Risk Flags</p>
+              <ul className="text-xs text-muted-foreground space-y-0.5">
+                {(validationReport.risk_flags as string[]).map((f, i) => (
+                  <li key={i} className="flex items-start gap-1"><AlertTriangle className="h-3 w-3 text-yellow-500 shrink-0 mt-0.5" />{f}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {Array.isArray(validationReport.data_gaps) && validationReport.data_gaps.length > 0 && (
+            <div>
+              <p className="text-xs font-medium mb-1">Data Gaps</p>
+              <ul className="text-xs text-muted-foreground space-y-0.5">
+                {(validationReport.data_gaps as string[]).map((g, i) => (
+                  <li key={i} className="flex items-start gap-1"><XCircle className="h-3 w-3 text-destructive shrink-0 mt-0.5" />{g}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {Array.isArray(validationReport.recommended_actions) && validationReport.recommended_actions.length > 0 && (
+            <div>
+              <p className="text-xs font-medium mb-1">Recommended Actions</p>
+              <ul className="text-xs text-muted-foreground space-y-0.5">
+                {(validationReport.recommended_actions as string[]).map((a, i) => (
+                  <li key={i} className="flex items-start gap-1"><CheckCircle2 className="h-3 w-3 text-green-500 shrink-0 mt-0.5" />{a}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Upload area */}
       <div
         className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors"
