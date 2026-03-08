@@ -48,6 +48,7 @@ import NMIBoarding from "./pages/NMIBoarding";
 import { IncomingCallToast } from "./components/IncomingCallToast";
 import { IncomingMessageToast } from "./components/IncomingMessageToast";
 import { Dialler } from "./components/Dialler";
+import { CommandPalette } from "./components/CommandPalette";
 
 const queryClient = new QueryClient();
 
