@@ -102,21 +102,34 @@ function CampaignCard({ c, onOpen, onDelete }: { c: any; onOpen: () => void; onD
   );
 }
 
+interface StepDraft {
+  subject: string;
+  bodyHtml: string;
+  delayDays: number;
+}
+
+const DEFAULT_DELAYS = [0, 2, 3, 4, 5, 7, 7, 10, 10, 14];
+
 export default function Outreach() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [open, setOpen]           = useState(false);
   const [name, setName]           = useState("");
-  const [subject, setSubject]     = useState("");
-  const [bodyHtml, setBodyHtml]   = useState("");
   const [fromName, setFromName]   = useState("Merchant Haus");
   const [fromEmail, setFromEmail] = useState("outreach@merchanthaus.io");
   const [stepCount, setStepCount] = useState(3);
+  const [steps, setSteps]         = useState<StepDraft[]>(() => Array.from({ length: 10 }, (_, i) => ({ subject: "", bodyHtml: "", delayDays: DEFAULT_DELAYS[i] })));
+  const [signature, setSignature] = useState("");
+  const [activeStep, setActiveStep] = useState(0);
   const [schedDate, setSchedDate] = useState<Date | undefined>();
   const [schedTime, setSchedTime] = useState("09:00");
   const [view, setView]           = useState<"grid"|"list">("grid");
   const [filter, setFilter]       = useState("all");
+
+  const updateStep = (idx: number, patch: Partial<StepDraft>) => {
+    setSteps(prev => prev.map((s, i) => i === idx ? { ...s, ...patch } : s));
+  };
 
   const { data: campaigns = [], isLoading } = useQuery({
     queryKey: ["outreach-campaigns"],
