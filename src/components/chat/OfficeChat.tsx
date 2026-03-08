@@ -798,6 +798,7 @@ export default function OfficeChat({
   presence = {},
   onPositionUpdate,
   remotePositions = {},
+  actionItems = [],
 }: OfficeChatProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const stateRef = useRef<{
