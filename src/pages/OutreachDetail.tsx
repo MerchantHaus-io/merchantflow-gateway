@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { GmailEditor } from "@/components/GmailEditor";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -681,10 +682,14 @@ export default function OutreachDetail() {
                                 placeholder="Quick follow-up…" className="mt-1 text-sm" />
                             </div>
                             <div>
-                              <Label className="text-xs">Body (HTML)</Label>
-                              <Textarea value={stepBody} onChange={e => setStepBody(e.target.value)}
-                                placeholder={"<p>Hi {{first_name}}, just circling back…</p>"}
-                                rows={5} className="mt-1 font-mono text-xs" />
+                              <Label className="text-xs">Email Body</Label>
+                              <GmailEditor
+                                value={stepBody}
+                                onChange={setStepBody}
+                                placeholder="Hi {{first_name}}, just circling back…"
+                                minHeight="120px"
+                                className="mt-1"
+                              />
                             </div>
                             <Button className="w-full" size="sm"
                               disabled={!stepSubject || !stepBody || addStep.isPending}
