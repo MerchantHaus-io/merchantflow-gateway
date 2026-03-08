@@ -188,7 +188,7 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
 
   // Map opportunity_id to account name
   const accountIdToName: Record<string, string> = {};
-  for (const a of allAccounts) accountIdToName[a.id] = a.name;
+  for (const a of allAccounts) accountIdToName[String((a as any).id)] = (a as any).name;
 
   const oppToAccount: Record<string, string> = {};
   for (const o of (recentOppsRes.data || [])) {
