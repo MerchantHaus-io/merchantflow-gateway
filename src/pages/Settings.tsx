@@ -126,7 +126,7 @@ const Settings = () => {
     if (data) {
       setAvatarUrl(data.avatar_url);
       setFullName(data.full_name || "");
-      setPhone((data as any).phone || "");
+      setPhone(data.phone || "");
     }
   };
 
