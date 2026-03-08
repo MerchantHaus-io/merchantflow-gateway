@@ -3,541 +3,404 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/AppLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Plus,
-  Mail,
-  Send,
-  Users,
-  TrendingUp,
-  AlertTriangle,
-  MessageSquare,
-  Eye,
-  Trash2,
-  CalendarIcon,
-  Clock,
-  Upload,
-  FileSpreadsheet,
+  Plus, Mail, Send, Users, TrendingUp, MessageSquare, Eye, Trash2,
+  CalendarIcon, Clock, Layers, BarChart3, ChevronRight, Zap, ListFilter,
+  ArrowUpRight,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+const STATUS_CFG: Record<string, { label: string; pill: string; dot: string }> = {
+  draft:     { label: "Draft",     pill: "bg-muted text-muted-foreground border-transparent",                           dot: "bg-muted-foreground" },
+  scheduled: { label: "Scheduled", pill: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",          dot: "bg-blue-500" },
+  sending:   { label: "Sending",   pill: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",      dot: "bg-amber-500 animate-pulse" },
+  sent:      { label: "Active",    pill: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20", dot: "bg-emerald-500" },
+  completed: { label: "Completed", pill: "bg-primary/10 text-primary border-primary/20",                                dot: "bg-primary" },
+};
+
+function StatusPill({ status }: { status: string }) {
+  const c = STATUS_CFG[status] || STATUS_CFG.draft;
+  return (
+    <span className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium border", c.pill)}>
+      <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", c.dot)} />
+      {c.label}
+    </span>
+  );
+}
+
+function CampaignCard({ c, onOpen, onDelete }: { c: any; onOpen: () => void; onDelete: () => void }) {
+  const total  = Math.max(c.total_contacts || 1, 1);
+  const sentPct = Math.round(((c.sent_count || 0) / total) * 100);
+  return (
+    <Card
+      onClick={onOpen}
+      className="group relative cursor-pointer border-border/60 hover:border-primary/40 hover:shadow-md transition-all duration-200 overflow-hidden"
+    >
+      <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-primary to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <StatusPill status={c.status} />
+              {c.scheduled_at && c.status === "draft" && (
+                <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                  <Clock className="h-2.5 w-2.5" />{format(new Date(c.scheduled_at), "MMM d, HH:mm")}
+                </span>
+              )}
+            </div>
+            <p className="font-semibold text-foreground truncate">{c.name}</p>
+            <p className="text-xs text-muted-foreground truncate mt-0.5">{c.subject}</p>
+          </div>
+          <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onOpen}><Eye className="h-3.5 w-3.5" /></Button>
+            <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={onDelete}><Trash2 className="h-3.5 w-3.5" /></Button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-4 gap-1 mt-4 text-center">
+          {[
+            { label: "Leads",     v: c.total_contacts || 0,  cls: "text-foreground" },
+            { label: "Sent",      v: c.sent_count || 0,       cls: "text-blue-500" },
+            { label: "Replied",   v: c.replied_count || 0,    cls: "text-emerald-500" },
+            { label: "Converted", v: c.converted_count || 0,  cls: "text-amber-500" },
+          ].map(m => (
+            <div key={m.label}>
+              <p className={cn("text-lg font-bold leading-none", m.cls)}>{m.v}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{m.label}</p>
+            </div>
+          ))}
+        </div>
+
+        {c.total_contacts > 0 && (
+          <div className="mt-3 space-y-1">
+            <div className="flex justify-between text-[10px] text-muted-foreground">
+              <span>Send progress</span><span>{sentPct}%</span>
+            </div>
+            <Progress value={sentPct} className="h-1" />
+          </div>
+        )}
+
+        <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/40">
+          <span className="text-[10px] text-muted-foreground">{format(new Date(c.created_at), "MMM d, yyyy")}</span>
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-primary transition-colors" />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Outreach() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [createOpen, setCreateOpen] = useState(false);
-  const [csvUploadOpen, setCsvUploadOpen] = useState(false);
-  const [csvFile, setCsvFile] = useState<File | null>(null);
-  const [csvPreview, setCsvPreview] = useState<{ headers: string[]; rows: Record<string, string>[] }>({ headers: [], rows: [] });
-  const [csvCampaignName, setCsvCampaignName] = useState("");
-  const [csvSubject, setCsvSubject] = useState("");
-  const [csvBodyHtml, setCsvBodyHtml] = useState("");
-  const [csvFromName, setCsvFromName] = useState("Merchant Haus");
-  const [csvFromEmail, setCsvFromEmail] = useState("outreach@merchanthaus.io");
-  const [isUploading, setIsUploading] = useState(false);
-  const [name, setName] = useState("");
-  const [subject, setSubject] = useState("");
-  const [bodyHtml, setBodyHtml] = useState("");
-  const [fromName, setFromName] = useState("Merchant Haus");
+  const [open, setOpen]           = useState(false);
+  const [name, setName]           = useState("");
+  const [subject, setSubject]     = useState("");
+  const [bodyHtml, setBodyHtml]   = useState("");
+  const [fromName, setFromName]   = useState("Merchant Haus");
   const [fromEmail, setFromEmail] = useState("outreach@merchanthaus.io");
-  const [scheduledDate, setScheduledDate] = useState<Date | undefined>();
-  const [scheduledTime, setScheduledTime] = useState("09:00");
+  const [stepCount, setStepCount] = useState(3);
+  const [schedDate, setSchedDate] = useState<Date | undefined>();
+  const [schedTime, setSchedTime] = useState("09:00");
+  const [view, setView]           = useState<"grid"|"list">("grid");
+  const [filter, setFilter]       = useState("all");
 
   const { data: campaigns = [], isLoading } = useQuery({
     queryKey: ["outreach-campaigns"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("outreach_campaigns")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("outreach_campaigns").select("*").order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
   });
 
-  const createCampaign = useMutation({
+  const create = useMutation({
     mutationFn: async () => {
       let scheduled_at: string | null = null;
-      if (scheduledDate) {
-        const [hours, minutes] = scheduledTime.split(":").map(Number);
-        const dt = new Date(scheduledDate);
-        dt.setHours(hours, minutes, 0, 0);
+      if (schedDate) {
+        const [h, m] = schedTime.split(":").map(Number);
+        const dt = new Date(schedDate); dt.setHours(h, m, 0, 0);
         scheduled_at = dt.toISOString();
       }
-
       const { error } = await supabase.from("outreach_campaigns").insert({
-        name,
-        subject,
-        body_html: bodyHtml,
-        from_name: fromName,
-        from_email: fromEmail,
-        created_by: user?.id || "",
-        created_by_email: user?.email || "",
-        scheduled_at,
+        name, subject, body_html: bodyHtml, from_name: fromName, from_email: fromEmail,
+        created_by: user?.id || "", created_by_email: user?.email || "", scheduled_at,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["outreach-campaigns"] });
-      setCreateOpen(false);
-      setName("");
-      setSubject("");
-      setBodyHtml("");
-      setScheduledDate(undefined);
-      setScheduledTime("09:00");
-      toast.success("Campaign created");
+      setOpen(false); setName(""); setSubject(""); setBodyHtml(""); setSchedDate(undefined);
+      toast.success("Cadence created — add your lead list and follow-up steps inside.");
     },
-    onError: (err: Error) => toast.error(err.message),
+    onError: (e: Error) => toast.error(e.message),
   });
 
-  const deleteCampaign = useMutation({
+  const del = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("outreach_campaigns").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["outreach-campaigns"] });
-      toast.success("Campaign deleted");
-    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["outreach-campaigns"] }); toast.success("Deleted"); },
   });
 
-  const handleCsvFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setCsvFile(file);
-    file.text().then((text) => {
-      const [headerLine, ...dataRows] = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-      if (!headerLine) return;
-      const headers = headerLine.split(",").map((h) => h.trim().toLowerCase());
-      const rows = dataRows.map((row) => {
-        const cells = row.split(",");
-        return headers.reduce<Record<string, string>>((acc, h, i) => {
-          acc[h] = cells[i]?.trim() || "";
-          return acc;
-        }, {});
-      });
-      setCsvPreview({ headers, rows });
-      if (!csvCampaignName) setCsvCampaignName(file.name.replace(/\.csv$/i, ""));
-    });
-  };
+  const totalLeads  = campaigns.reduce((a, c) => a + (c.total_contacts || 0), 0);
+  const totalSent   = campaigns.reduce((a, c) => a + (c.sent_count || 0), 0);
+  const totalReply  = campaigns.reduce((a, c) => a + (c.replied_count || 0), 0);
+  const totalConv   = campaigns.reduce((a, c) => a + (c.converted_count || 0), 0);
+  const replyRate   = totalSent > 0 ? ((totalReply / totalSent) * 100).toFixed(1) : "0";
 
-  const handleCsvUpload = async () => {
-    if (!csvPreview.rows.length || !csvCampaignName || !csvSubject || !csvBodyHtml) return;
-    setIsUploading(true);
-    try {
-      // Create campaign
-      const { data: campaign, error: cErr } = await supabase.from("outreach_campaigns").insert({
-        name: csvCampaignName,
-        subject: csvSubject,
-        body_html: csvBodyHtml,
-        from_name: csvFromName,
-        from_email: csvFromEmail,
-        created_by: user?.id || "",
-        created_by_email: user?.email || "",
-        total_contacts: csvPreview.rows.length,
-      }).select().single();
-      if (cErr || !campaign) throw cErr || new Error("Failed to create campaign");
-
-      // Map CSV headers to outreach_contacts fields
-      const h = csvPreview.headers;
-      const emailCol = h.find((c) => c === "email") || h.find((c) => c.includes("email")) || "";
-      const firstNameCol = h.find((c) => c === "first_name") || h.find((c) => c.includes("first")) || "";
-      const lastNameCol = h.find((c) => c === "last_name") || h.find((c) => c.includes("last")) || "";
-      const companyCol = h.find((c) => c === "company") || h.find((c) => c.includes("company")) || h.find((c) => c.includes("business")) || "";
-
-      const contacts = csvPreview.rows
-        .filter((r) => r[emailCol]?.includes("@"))
-        .map((r) => ({
-          campaign_id: campaign.id,
-          email: r[emailCol],
-          first_name: r[firstNameCol] || null,
-          last_name: r[lastNameCol] || null,
-          company: r[companyCol] || null,
-          status: "pending" as const,
-        }));
-
-      if (contacts.length > 0) {
-        // Batch insert in chunks of 500
-        for (let i = 0; i < contacts.length; i += 500) {
-          const { error: insertErr } = await supabase.from("outreach_contacts").insert(contacts.slice(i, i + 500));
-          if (insertErr) throw insertErr;
-        }
-        // Update total_contacts with valid count
-        await supabase.from("outreach_campaigns").update({ total_contacts: contacts.length }).eq("id", campaign.id);
-      }
-
-      queryClient.invalidateQueries({ queryKey: ["outreach-campaigns"] });
-      setCsvUploadOpen(false);
-      setCsvFile(null);
-      setCsvPreview({ headers: [], rows: [] });
-      setCsvCampaignName("");
-      setCsvSubject("");
-      setCsvBodyHtml("");
-      toast.success(`Campaign created with ${contacts.length} contacts`);
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err?.message || "CSV upload failed");
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const totalSent = campaigns.reduce((a, c) => a + (c.sent_count || 0), 0);
-  const totalBounced = campaigns.reduce((a, c) => a + (c.bounced_count || 0), 0);
-  const totalReplied = campaigns.reduce((a, c) => a + (c.replied_count || 0), 0);
-  const totalConverted = campaigns.reduce((a, c) => a + (c.converted_count || 0), 0);
-
-  const statusColor = (s: string) => {
-    switch (s) {
-      case "draft": return "secondary";
-      case "scheduled": return "outline";
-      case "sending": return "default";
-      case "sent": return "default";
-      case "completed": return "default";
-      default: return "secondary";
-    }
-  };
+  const filtered = filter === "all" ? campaigns : campaigns.filter(c => c.status === filter);
 
   return (
     <AppLayout>
-      <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
-        <div className="flex items-center justify-between">
+      <div className="flex flex-col h-full overflow-hidden">
+        {/* ── Top bar ── */}
+        <div className="shrink-0 border-b border-border/60 px-6 py-4 flex items-center justify-between gap-4 flex-wrap bg-background">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Email Outreach</h1>
-            <p className="text-muted-foreground text-sm">Campaign tracker & email sender</p>
+            <div className="flex items-center gap-2 mb-0.5">
+              <Zap className="h-4 w-4 text-primary" />
+              <h1 className="text-lg font-bold text-foreground">Sales Cadences</h1>
+            </div>
+            <p className="text-xs text-muted-foreground">Multi-step email sequences · Lead list management · Conversion tracking</p>
           </div>
-          <div className="flex gap-2">
-            {/* CSV Upload Dialog */}
-            <Dialog open={csvUploadOpen} onOpenChange={(open) => { setCsvUploadOpen(open); if (!open) { setCsvFile(null); setCsvPreview({ headers: [], rows: [] }); setCsvCampaignName(""); setCsvSubject(""); setCsvBodyHtml(""); } }}>
-              <DialogTrigger asChild>
-                <Button variant="outline"><Upload className="h-4 w-4 mr-2" />CSV Upload</Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle className="flex items-center gap-2"><FileSpreadsheet className="h-5 w-5" />Import CSV as Campaign</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label>Upload CSV</Label>
-                    <Input type="file" accept=".csv" onChange={handleCsvFileChange} />
-                    <p className="text-xs text-muted-foreground mt-1">CSV should include email, first_name, last_name, company columns</p>
-                  </div>
-
-                  {csvPreview.rows.length > 0 && (
-                    <>
-                      <div className="rounded-md border p-3 bg-muted/30">
-                        <p className="text-sm font-medium">{csvPreview.rows.length} contacts detected</p>
-                        <p className="text-xs text-muted-foreground">Columns: {csvPreview.headers.join(", ")}</p>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <Label>Campaign Name</Label>
-                          <Input value={csvCampaignName} onChange={(e) => setCsvCampaignName(e.target.value)} placeholder="Q1 CSV Upload" />
-                        </div>
-                        <div>
-                          <Label>Subject Line</Label>
-                          <Input value={csvSubject} onChange={(e) => setCsvSubject(e.target.value)} placeholder="Processing solutions for your business" />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <Label>From Name</Label>
-                          <Input value={csvFromName} onChange={(e) => setCsvFromName(e.target.value)} />
-                        </div>
-                        <div>
-                          <Label>From Email</Label>
-                          <Input value={csvFromEmail} onChange={(e) => setCsvFromEmail(e.target.value)} />
-                        </div>
-                      </div>
-                      <div>
-                        <Label>Email Body (HTML)</Label>
-                        <Textarea value={csvBodyHtml} onChange={(e) => setCsvBodyHtml(e.target.value)} placeholder="<p>Hi {{first_name}},</p>" rows={4} />
-                        <p className="text-xs text-muted-foreground mt-1">Use {"{{first_name}}"}, {"{{last_name}}"}, {"{{company}}"} as merge tags</p>
-                      </div>
-
-                      {/* Preview table */}
-                      <div className="rounded-lg border overflow-hidden max-h-48 overflow-y-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              {csvPreview.headers.slice(0, 5).map((h) => (
-                                <TableHead key={h} className="text-xs">{h}</TableHead>
-                              ))}
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {csvPreview.rows.slice(0, 5).map((row, i) => (
-                              <TableRow key={i}>
-                                {csvPreview.headers.slice(0, 5).map((h) => (
-                                  <TableCell key={h} className="text-xs py-1">{row[h] || "—"}</TableCell>
-                                ))}
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                        {csvPreview.rows.length > 5 && (
-                          <p className="text-xs text-muted-foreground text-center py-1">…and {csvPreview.rows.length - 5} more</p>
-                        )}
-                      </div>
-
-                      <Button className="w-full" onClick={handleCsvUpload} disabled={isUploading || !csvCampaignName || !csvSubject || !csvBodyHtml}>
-                        {isUploading ? "Creating campaign…" : `Create Campaign with ${csvPreview.rows.length} contacts`}
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </DialogContent>
-            </Dialog>
-
-            {/* New Campaign Dialog */}
-            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-              <DialogTrigger asChild>
-                <Button><Plus className="h-4 w-4 mr-2" />New Campaign</Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" />New Cadence</Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Create Campaign</DialogTitle>
+                <DialogTitle className="flex items-center gap-2"><Layers className="h-4 w-4 text-primary" />New Sales Cadence</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label>Campaign Name</Label>
-                  <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Q1 Merchant Outreach" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-5 pt-1">
+                {/* Identity */}
+                <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Cadence Identity</p>
                   <div>
-                    <Label>From Name</Label>
-                    <Input value={fromName} onChange={(e) => setFromName(e.target.value)} />
+                    <Label className="text-xs">Cadence Name</Label>
+                    <Input value={name} onChange={e => setName(e.target.value)} placeholder="Q2 Payment Processing Outreach" className="mt-1" />
                   </div>
-                  <div>
-                    <Label>From Email</Label>
-                    <Input value={fromEmail} onChange={(e) => setFromEmail(e.target.value)} />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label className="text-xs">From Name</Label><Input value={fromName} onChange={e => setFromName(e.target.value)} className="mt-1" /></div>
+                    <div><Label className="text-xs">From Email</Label><Input value={fromEmail} onChange={e => setFromEmail(e.target.value)} className="mt-1" /></div>
                   </div>
                 </div>
-                <div>
-                  <Label>Subject Line</Label>
-                  <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Processing solutions for your business" />
+
+                {/* Step 1 */}
+                <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="h-5 w-5 rounded-full bg-primary/15 flex items-center justify-center text-[10px] font-bold text-primary">1</div>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Step 1 — Initial Email</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Subject Line</Label>
+                    <Input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Payment solutions for {{company}}" className="mt-1" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Email Body (HTML)</Label>
+                    <Textarea value={bodyHtml} onChange={e => setBodyHtml(e.target.value)}
+                      placeholder={"<p>Hi {{first_name}},</p>\n<p>I came across {{company}} and thought our payment processing solutions might be a great fit...</p>"}
+                      rows={5} className="mt-1 font-mono text-xs" />
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      Tags: <code className="bg-muted px-1 rounded text-[10px]">{"{{first_name}}"}</code>{" "}
+                      <code className="bg-muted px-1 rounded text-[10px]">{"{{last_name}}"}</code>{" "}
+                      <code className="bg-muted px-1 rounded text-[10px]">{"{{company}}"}</code>
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <Label>Email Body (HTML)</Label>
-                  <Textarea
-                    value={bodyHtml}
-                    onChange={(e) => setBodyHtml(e.target.value)}
-                    placeholder="<p>Hi {{first_name}},</p><p>We'd love to help...</p>"
-                    rows={6}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Use {"{{first_name}}"}, {"{{last_name}}"}, {"{{company}}"} as merge tags
-                  </p>
+
+                {/* Steps config */}
+                <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Cadence Length</p>
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <Label className="text-xs">Total steps (1–10)</Label>
+                      <span className="text-sm font-bold text-primary">{stepCount} steps</span>
+                    </div>
+                    <input type="range" min={1} max={10} value={stepCount} onChange={e => setStepCount(Number(e.target.value))}
+                      className="w-full accent-primary" />
+                    <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                      <span>1</span><span>5</span><span>10</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-2">
+                      Add follow-up steps 2–{stepCount} inside the cadence after creation.
+                    </p>
+                  </div>
                 </div>
 
                 {/* Schedule */}
-                <div>
-                  <Label>Schedule (optional)</Label>
-                  <div className="flex gap-2 mt-1">
+                <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Schedule (Optional)</p>
+                  <div className="flex gap-2">
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" className={cn("flex-1 justify-start text-left font-normal", !scheduledDate && "text-muted-foreground")}>
-                          <CalendarIcon className="h-4 w-4 mr-2" />
-                          {scheduledDate ? format(scheduledDate, "PPP") : "Pick a date"}
+                        <Button variant="outline" className={cn("flex-1 justify-start text-sm font-normal", !schedDate && "text-muted-foreground")}>
+                          <CalendarIcon className="h-4 w-4 mr-2" />{schedDate ? format(schedDate, "PPP") : "Pick a date"}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={scheduledDate}
-                          onSelect={setScheduledDate}
-                          disabled={(date) => date < new Date()}
-                          initialFocus
-                          className={cn("p-3 pointer-events-auto")}
-                        />
+                        <Calendar mode="single" selected={schedDate} onSelect={setSchedDate}
+                          disabled={d => d < new Date()} initialFocus className="p-3 pointer-events-auto" />
                       </PopoverContent>
                     </Popover>
-                    <Input
-                      type="time"
-                      value={scheduledTime}
-                      onChange={(e) => setScheduledTime(e.target.value)}
-                      className="w-28"
-                    />
+                    <Input type="time" value={schedTime} onChange={e => setSchedTime(e.target.value)} className="w-28" />
                   </div>
-                  {scheduledDate && (
-                    <div className="flex items-center gap-2 mt-1">
-                      <p className="text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3 inline mr-1" />
-                        Emails will send on {format(scheduledDate, "MMM d, yyyy")} at {scheduledTime}
+                  {schedDate && (
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Clock className="h-3 w-3" />Step 1 sends {format(schedDate, "MMM d, yyyy")} at {schedTime}
                       </p>
-                      <Button variant="ghost" size="sm" className="h-5 text-xs px-1" onClick={() => setScheduledDate(undefined)}>Clear</Button>
+                      <Button variant="ghost" size="sm" className="h-5 text-xs px-1" onClick={() => setSchedDate(undefined)}>Clear</Button>
                     </div>
                   )}
                 </div>
 
-                <Button
-                  className="w-full"
-                  onClick={() => createCampaign.mutate()}
-                  disabled={!name || !subject || !bodyHtml || createCampaign.isPending}
-                >
-                  {scheduledDate ? "Schedule Campaign" : "Create Campaign"}
+                <Button className="w-full" onClick={() => create.mutate()} disabled={!name || !subject || !bodyHtml || create.isPending}>
+                  <Layers className="h-4 w-4 mr-2" />{schedDate ? "Schedule Cadence" : "Create Cadence"}
                 </Button>
               </div>
             </DialogContent>
           </Dialog>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 space-y-5">
+          {/* ── KPIs ── */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {[
+              { label: "Cadences",   value: campaigns.length, icon: Layers,        color: "text-foreground",    bg: "bg-muted/60" },
+              { label: "Total Leads",value: totalLeads,        icon: Users,         color: "text-blue-500",      bg: "bg-blue-500/10" },
+              { label: "Emails Sent",value: totalSent,         icon: Send,          color: "text-primary",       bg: "bg-primary/10" },
+              { label: "Replied",    value: totalReply,        icon: MessageSquare, color: "text-emerald-500",   bg: "bg-emerald-500/10" },
+              { label: "Reply Rate", value: `${replyRate}%`,   icon: BarChart3,     color: "text-amber-500",     bg: "bg-amber-500/10" },
+              { label: "Converted",  value: totalConv,         icon: TrendingUp,    color: "text-violet-500",    bg: "bg-violet-500/10" },
+            ].map(k => (
+              <Card key={k.label} className="border-border/50">
+                <CardContent className="p-3 flex items-center gap-2.5">
+                  <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center shrink-0", k.bg)}>
+                    <k.icon className={cn("h-4 w-4", k.color)} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className={cn("text-lg font-bold leading-none", k.color)}>{k.value}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{k.label}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-        </div>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10"><Mail className="h-4 w-4 text-primary" /></div>
-              <div>
-                <p className="text-xs text-muted-foreground">Campaigns</p>
-                <p className="text-xl font-bold text-foreground">{campaigns.length}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-500/10"><Send className="h-4 w-4 text-blue-500" /></div>
-              <div>
-                <p className="text-xs text-muted-foreground">Sent</p>
-                <p className="text-xl font-bold text-foreground">{totalSent}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-destructive/10"><AlertTriangle className="h-4 w-4 text-destructive" /></div>
-              <div>
-                <p className="text-xs text-muted-foreground">Bounced</p>
-                <p className="text-xl font-bold text-foreground">{totalBounced}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-emerald-500/10"><MessageSquare className="h-4 w-4 text-emerald-500" /></div>
-              <div>
-                <p className="text-xs text-muted-foreground">Replied</p>
-                <p className="text-xl font-bold text-foreground">{totalReplied}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-amber-500/10"><TrendingUp className="h-4 w-4 text-amber-500" /></div>
-              <div>
-                <p className="text-xs text-muted-foreground">Converted</p>
-                <p className="text-xl font-bold text-foreground">{totalConverted}</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+          {/* ── Filter + view toggle ── */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <ListFilter className="h-3.5 w-3.5 text-muted-foreground" />
+              {["all", "draft", "scheduled", "sending", "sent", "completed"].map(s => (
+                <button key={s} onClick={() => setFilter(s)}
+                  className={cn("px-2.5 py-0.5 rounded-full text-[11px] font-medium border transition-colors",
+                    filter === s ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:text-foreground"
+                  )}>
+                  {s === "all" ? "All" : STATUS_CFG[s]?.label || s}
+                  <span className="ml-1 opacity-60">({s === "all" ? campaigns.length : campaigns.filter(c => c.status === s).length})</span>
+                </button>
+              ))}
+            </div>
+            <div className="flex border border-border rounded-md overflow-hidden">
+              {(["grid","list"] as const).map(v => (
+                <button key={v} onClick={() => setView(v)}
+                  className={cn("px-3 py-1 text-xs font-medium transition-colors capitalize",
+                    view === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                  )}>{v}</button>
+              ))}
+            </div>
+          </div>
 
-        {/* Campaign Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Campaigns</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <p className="text-muted-foreground text-sm">Loading...</p>
-            ) : campaigns.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <Mail className="h-10 w-10 mx-auto mb-3 opacity-40" />
-                <p>No campaigns yet. Create your first one!</p>
-              </div>
-            ) : (
+          {/* ── Content ── */}
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {[...Array(3)].map((_, i) => <div key={i} className="h-48 rounded-xl bg-muted/30 animate-pulse" />)}
+            </div>
+          ) : filtered.length === 0 ? (
+            <Card className="border-dashed border-border/60">
+              <CardContent className="flex flex-col items-center py-16 text-center">
+                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
+                  <Layers className="h-6 w-6 text-primary" />
+                </div>
+                <p className="font-semibold text-foreground mb-1">No cadences yet</p>
+                <p className="text-sm text-muted-foreground mb-4 max-w-xs">Create a sales cadence to start reaching out to leads with automated multi-step email sequences.</p>
+                <Button onClick={() => setOpen(true)} size="sm"><Plus className="h-4 w-4 mr-1.5" />New Cadence</Button>
+              </CardContent>
+            </Card>
+          ) : view === "grid" ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filtered.map(c => (
+                <CampaignCard key={c.id} c={c} onOpen={() => navigate(`/outreach/${c.id}`)} onDelete={() => del.mutate(c.id)} />
+              ))}
+            </div>
+          ) : (
+            <Card className="border-border/60">
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>Campaign</TableHead>
+                    <TableRow className="border-border/60">
+                      <TableHead>Cadence</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Schedule</TableHead>
-                      <TableHead className="text-center">Contacts</TableHead>
+                      <TableHead className="text-center">Leads</TableHead>
                       <TableHead className="text-center">Sent</TableHead>
-                      <TableHead className="text-center">Bounced</TableHead>
                       <TableHead className="text-center">Replied</TableHead>
                       <TableHead className="text-center">Converted</TableHead>
+                      <TableHead className="text-center">Reply %</TableHead>
                       <TableHead>Created</TableHead>
-                      <TableHead></TableHead>
+                      <TableHead />
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {campaigns.map((c) => (
-                      <TableRow
-                        key={c.id}
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => navigate(`/outreach/${c.id}`)}
-                      >
-                        <TableCell className="font-medium">{c.name}</TableCell>
-                        <TableCell>
-                          <Badge variant={statusColor(c.status) as any}>{c.status}</Badge>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {(c as any).scheduled_at ? (
-                            <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {format(new Date((c as any).scheduled_at), "MMM d, HH:mm")}
-                            </span>
-                          ) : "—"}
-                        </TableCell>
-                        <TableCell className="text-center">{c.total_contacts}</TableCell>
-                        <TableCell className="text-center">{c.sent_count}</TableCell>
-                        <TableCell className="text-center">{c.bounced_count}</TableCell>
-                        <TableCell className="text-center">{c.replied_count}</TableCell>
-                        <TableCell className="text-center">{c.converted_count}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {format(new Date(c.created_at), "MMM d, yyyy")}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                            <Button size="icon" variant="ghost" onClick={() => navigate(`/outreach/${c.id}`)}>
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="text-destructive"
-                              onClick={() => deleteCampaign.mutate(c.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {filtered.map(c => {
+                      const rr = c.sent_count > 0 ? Math.round((c.replied_count / c.sent_count) * 100) : 0;
+                      return (
+                        <TableRow key={c.id} className="cursor-pointer hover:bg-muted/30 border-border/40" onClick={() => navigate(`/outreach/${c.id}`)}>
+                          <TableCell>
+                            <p className="font-medium text-foreground text-sm">{c.name}</p>
+                            <p className="text-xs text-muted-foreground truncate max-w-[180px]">{c.subject}</p>
+                          </TableCell>
+                          <TableCell><StatusPill status={c.status} /></TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {c.scheduled_at ? <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{format(new Date(c.scheduled_at), "MMM d, HH:mm")}</span> : "—"}
+                          </TableCell>
+                          <TableCell className="text-center font-semibold text-sm">{c.total_contacts}</TableCell>
+                          <TableCell className="text-center font-semibold text-sm text-blue-500">{c.sent_count}</TableCell>
+                          <TableCell className="text-center font-semibold text-sm text-emerald-500">{c.replied_count}</TableCell>
+                          <TableCell className="text-center font-semibold text-sm text-amber-500">{c.converted_count}</TableCell>
+                          <TableCell className="text-center">
+                            <span className={cn("text-xs font-bold", rr > 20 ? "text-emerald-500" : rr > 10 ? "text-amber-500" : "text-muted-foreground")}>{rr}%</span>
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground">{format(new Date(c.created_at), "MMM d, yyyy")}</TableCell>
+                          <TableCell onClick={e => e.stopPropagation()}>
+                            <div className="flex gap-1">
+                              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => navigate(`/outreach/${c.id}`)}><ArrowUpRight className="h-3.5 w-3.5" /></Button>
+                              <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => del.mutate(c.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </Card>
+          )}
+        </div>
       </div>
     </AppLayout>
   );
