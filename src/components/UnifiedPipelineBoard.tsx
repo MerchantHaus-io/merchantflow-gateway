@@ -283,7 +283,7 @@ const UnifiedPipelineBoard = ({
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div>
-                      <h4 className="font-bold text-gray-900 text-sm">{deal.account?.name || "Unknown"}</h4>
+                      <h4 className="font-bold text-foreground text-sm">{deal.account?.name || "Unknown"}</h4>
                       <span
                         className="text-[10px] font-medium px-2 py-0.5 rounded-full mt-1 inline-block"
                         style={{
