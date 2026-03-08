@@ -446,7 +446,10 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
             <DropdownMenuContent align="end" className="w-52">
               {/* User info header */}
               <div className="px-3 py-2.5 border-b border-border/50 mb-1">
-                <p className="text-xs font-semibold">{displayName}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-semibold">{displayName}</p>
+                  <span className="live-dot shrink-0" />
+                </div>
                 <p className="text-[11px] text-muted-foreground truncate mt-0.5">{user?.email}</p>
               </div>
               <DropdownMenuItem asChild>

@@ -324,7 +324,7 @@ const OpportunityCard = ({
               <Popover>
                 <PopoverTrigger asChild>
                   <button onClick={(e) => e.stopPropagation()} className="shrink-0">
-                    <Avatar className="h-5 w-5 border border-border/50 hover:border-indigo-400 transition-colors">
+                    <Avatar className="h-5 w-5 ring-2 ring-background border border-border/50 hover:border-indigo-400 transition-colors">
                       {avatarUrl && <AvatarImage src={avatarUrl} alt={opportunity.assigned_to || "Unassigned"} />}
                       <AvatarFallback className={cn("text-[8px] font-black", teamColors.bg, teamColors.text)}>
                         {opportunity.assigned_to ? getInitials(opportunity.assigned_to) : "?"}

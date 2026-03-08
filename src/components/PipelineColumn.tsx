@@ -114,19 +114,15 @@ const PipelineColumn = ({
             }}
           >
             <span className="inline-flex items-center gap-1.5 truncate">
-              <span
-                className="w-2 h-2 rounded-full shrink-0"
-                style={{ backgroundColor: config.color || "hsl(var(--primary))" }}
-              />
               {config.label}
             </span>
             <span className="inline-flex items-center gap-1.5 shrink-0">
-              <span className="font-black">{count}</span>
+              <span key={count} className="font-black animate-count inline-block">{count}</span>
               {stage === "application_started" && onAddNew && (
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-5 w-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-sm ml-1"
+                  className="h-5 w-5 bg-indigo-600 hover:bg-indigo-700 hover:shadow-[0_0_12px_hsl(var(--primary)/0.4)] text-white rounded-full shadow-sm ml-1 transition-all"
                   onClick={onAddNew}
                 >
                   <Plus className="h-3 w-3" />

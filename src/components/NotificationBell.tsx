@@ -271,10 +271,10 @@ export const NotificationBell = () => {
                   }
                   handleNotificationClick(notification);
                 }}
-                className={cn(
-                  'p-3 border-b cursor-pointer hover:bg-muted/50 transition-colors',
-                  !notification.read && 'bg-primary/5'
-                )}
+                 className={cn(
+                   'p-3 border-b cursor-pointer hover:bg-muted/50 transition-colors',
+                   !notification.read && 'bg-primary/5 card-accent-left'
+                 )}
               >
                 <div className="flex items-start gap-2">
                   {notificationIcon ? (

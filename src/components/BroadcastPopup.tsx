@@ -80,7 +80,7 @@ export function BroadcastPopup() {
               </h2>
               <button
                 onClick={handleDismiss}
-                className="text-muted-foreground hover:text-foreground transition-colors"
+                className="text-muted-foreground hover:text-destructive transition-colors"
                 aria-label="Dismiss for now"
               >
                 <X className="h-4 w-4" />

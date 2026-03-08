@@ -127,8 +127,10 @@ export function MobileBottomNav() {
     <>
       {/* ── FIXED TAB BAR ── */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden" style={{
-        background: "hsl(var(--background))",
-        borderTop: "1px solid hsl(var(--border))",
+        background: "hsl(var(--background) / 0.8)",
+        backdropFilter: "blur(20px) saturate(180%)",
+        WebkitBackdropFilter: "blur(20px) saturate(180%)",
+        borderTop: "1px solid hsl(var(--border) / 0.4)",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
       }}>
         <div className="flex items-stretch h-[56px]">

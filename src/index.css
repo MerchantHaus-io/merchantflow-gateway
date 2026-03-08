@@ -1268,17 +1268,26 @@ All colors MUST be HSL.
 .group\/card:hover,
 [data-slot="card"]:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px -2px hsl(var(--foreground) / 0.08);
+  box-shadow:
+    inset 0 1px 0 0 hsl(var(--foreground) / 0.04),
+    0 8px 24px -4px hsl(var(--primary) / 0.12);
 }
 
 /* Table rows: smooth highlight */
 tbody tr {
-  transition: background-color 0.15s ease;
+  transition: background-color 0.15s ease, padding-left 0.15s ease;
 }
 
 /* Inputs & textareas: smooth border focus */
 input, textarea, select {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus-visible,
+textarea:focus-visible {
+  border-color: hsl(var(--primary) / 0.7);
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.15);
+  outline: none;
 }
 
 /* Badges: subtle scale on hover */
@@ -1303,11 +1312,130 @@ input, textarea, select {
 .animate-stagger > *:nth-child(8) { animation-delay: 280ms; }
 .animate-stagger > *:nth-child(n+9) { animation-delay: 320ms; }
 
+/* ─── Global Scrollbar Polish ─── */
+:root {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--primary) / 0.3) hsl(var(--border) / 0.1);
+}
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: hsl(var(--border) / 0.08); }
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.25);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--primary) / 0.5); }
+
+/* ─── Animated Background Grid (Dark Mode) ─── */
+.dark body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(hsl(var(--border) / 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--border) / 0.12) 1px, transparent 1px);
+  background-size: 48px 48px;
+  animation: grid-drift 60s linear infinite;
+  will-change: background-position;
+  transform: translateZ(0);
+}
+
+/* No grid on mono dark */
+.dark-mono.dark body::before {
+  display: none;
+}
+
+/* ─── shadcn/ui Component Overrides ─── */
+
+/* Dialog overlay — deeper blur */
+[data-slot="dialog-overlay"] {
+  backdrop-filter: blur(8px) saturate(120%);
+  background: hsl(var(--background) / 0.6);
+}
+
+/* Select/Popover/Dropdown — glass */
+[data-slot="select-content"],
+[data-slot="popover-content"],
+[data-slot="dropdown-menu-content"] {
+  backdrop-filter: blur(16px) saturate(180%);
+  background: hsl(var(--card-glass));
+  border: 1px solid hsl(var(--border) / 0.5);
+  box-shadow: 0 20px 60px -12px hsl(var(--background) / 0.8);
+}
+
+/* Tabs — active tab gets primary underline */
+[data-slot="tabs-trigger"][data-state="active"] {
+  background: transparent;
+  border-bottom: 2px solid hsl(var(--primary));
+  border-radius: 0;
+  color: hsl(var(--primary));
+  font-weight: 600;
+}
+
+/* Tabs list — glass background */
+[data-slot="tabs-list"] {
+  background: hsl(var(--muted) / 0.5);
+  backdrop-filter: blur(8px);
+  border: 1px solid hsl(var(--border) / 0.3);
+}
+
+/* Tooltip — glass style */
+[data-slot="tooltip-content"] {
+  background: hsl(var(--card-glass));
+  backdrop-filter: blur(12px);
+  border: 1px solid hsl(var(--border) / 0.4);
+  color: hsl(var(--foreground));
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* Progress bar — gradient fill */
+[data-slot="progress"] > div {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--primary) / 0.8) 0%,
+    hsl(var(--primary)) 100%
+  );
+  box-shadow: 0 0 8px hsl(var(--primary) / 0.4);
+}
+
+/* Separator — gradient fade */
+[data-slot="separator"] {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(var(--border)) 20%,
+    hsl(var(--border)) 80%,
+    transparent 100%
+  );
+}
+
+/* Switch — glow when on */
+[data-slot="switch"][data-state="checked"] {
+  box-shadow: 0 0 12px hsl(var(--primary) / 0.4);
+}
+
+/* Skeleton — shimmer instead of pulse */
+[data-slot="skeleton"] {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 25%,
+    hsl(var(--border)) 50%,
+    hsl(var(--muted)) 75%
+  );
+  background-size: 200% auto;
+  animation: shimmer 1.5s linear infinite;
+}
+
 /* Reduce motion for accessibility */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+  .dark body::before {
+    animation: none !important;
   }
 }
