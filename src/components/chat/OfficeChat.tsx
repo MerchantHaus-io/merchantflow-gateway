@@ -498,17 +498,56 @@ function buildRoom(): THREE.Group {
     const kb = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.02, 0.12), metalM);
     kb.position.set(0, 0.79, 0.1); cg.add(kb);
 
-    // Chair
+    // Chair (with armrests and wheels)
     const seatM = new THREE.MeshStandardMaterial({ color: 0x2a2a2a });
     const seat = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, 0.5), seatM);
     seat.position.set(0, 0.5, 0.65); cg.add(seat);
     const bk = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.55, 0.05), seatM);
     bk.position.set(0, 0.78, 0.88); cg.add(bk);
+    // Chair armrests
+    ([-0.27, 0.27] as number[]).forEach(ax => {
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 0.35), seatM);
+      arm.position.set(ax, 0.62, 0.72); cg.add(arm);
+    });
+    // Chair base (star)
+    const chairBase = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.46, 6), metalM);
+    chairBase.position.set(0, 0.25, 0.65); cg.add(chairBase);
+
+    // ── Photo frame on desk ──
+    const frameBorder = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.35, 0.03), new THREE.MeshStandardMaterial({ color: 0x5a3a1a, roughness: 0.5 }));
+    frameBorder.position.set(-0.7, 1.0, -0.2); frameBorder.rotation.x = -0.15; cg.add(frameBorder);
+    const framePhoto = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.28, 0.01), new THREE.MeshStandardMaterial({ color: 0x8899aa, roughness: 0.4 }));
+    framePhoto.position.set(-0.7, 1.0, -0.185); framePhoto.rotation.x = -0.15; cg.add(framePhoto);
+
+    // ── Pen holder ──
+    const penHolder = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.035, 0.1, 8), new THREE.MeshStandardMaterial({ color: 0x444444 }));
+    penHolder.position.set(0.65, 0.83, -0.1); cg.add(penHolder);
+    // Pens
+    ([0.01, -0.015, 0.02] as number[]).forEach((px, i) => {
+      const pen = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.14, 4), new THREE.MeshStandardMaterial({ color: [0x2255aa, 0xaa2222, 0x222222][i] }));
+      pen.position.set(0.65 + px, 0.93, -0.1 + (i - 1) * 0.012); cg.add(pen);
+    });
+
+    // ── Coffee mug ──
+    const mug = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.03, 0.08, 8), new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.3 }));
+    mug.position.set(0.4, 0.82, 0.2); cg.add(mug);
+    const mugHandle = new THREE.Mesh(new THREE.TorusGeometry(0.02, 0.005, 6, 8, Math.PI), new THREE.MeshStandardMaterial({ color: 0xeeeeee }));
+    mugHandle.position.set(0.435, 0.82, 0.2); mugHandle.rotation.z = Math.PI / 2; cg.add(mugHandle);
+
+    // ── Sticky notes ──
+    const stickyColors = [0xffeb3b, 0xff9800, 0x4caf50];
+    stickyColors.forEach((col, i) => {
+      const sticky = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.002), new THREE.MeshStandardMaterial({ color: col }));
+      sticky.position.set(-0.35 + i * 0.14, 0.79, 0.3);
+      sticky.rotation.x = -Math.PI / 2;
+      sticky.rotation.z = (i - 1) * 0.15;
+      cg.add(sticky);
+    });
 
     cg.position.set(cx, 0, cz);
 
-    // Collider for the desk
-    addCollider(cx, cz - 0.2, 1.3, 0.8);
+    // Collider for the desk only (not the chair area so player can sit)
+    addCollider(cx, cz - 0.2, 1.3, 0.6);
 
     return cg;
   };
