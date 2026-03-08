@@ -1618,11 +1618,40 @@ export default function OfficeChat({
                 </div>
               </div>
 
-              {/* Sticky notes */}
+              {/* Sticky notes — notice board items */}
               <div className="flex -space-x-1">
-                <div className="w-6 h-6 bg-yellow-400/80 rounded-sm shadow-sm" style={{ transform: "rotate(-5deg)" }} />
-                <div className="w-6 h-6 bg-orange-400/70 rounded-sm shadow-sm" style={{ transform: "rotate(3deg)" }} />
-                <div className="w-6 h-6 bg-green-500/60 rounded-sm shadow-sm" style={{ transform: "rotate(-2deg)" }} />
+                {(() => {
+                  const stickyStyles = [
+                    { bg: "bg-yellow-400/90", rot: "-5deg", text: "text-yellow-900" },
+                    { bg: "bg-orange-400/80", rot: "3deg", text: "text-orange-900" },
+                    { bg: "bg-green-500/70", rot: "-2deg", text: "text-green-900" },
+                  ];
+                  return stickyStyles.map((s, i) => {
+                    const item = actionItems[i];
+                    return (
+                      <div
+                        key={i}
+                        className={`w-10 h-10 ${s.bg} rounded-sm shadow-md cursor-pointer transition-transform hover:scale-125 hover:z-10 relative`}
+                        style={{ transform: `rotate(${s.rot})` }}
+                        onClick={() => item && setSelectedStickyIndex(i)}
+                        title={item ? item.title : "Empty"}
+                      >
+                        {item && (
+                          <>
+                            <div className={`absolute inset-0.5 overflow-hidden ${s.text}`}>
+                              <p className="text-[4px] leading-[5px] font-medium break-words">{item.title}</p>
+                            </div>
+                            {item.completed && (
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <span className="text-[10px] opacity-60">✓</span>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             </div>
 
