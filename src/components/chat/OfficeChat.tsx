@@ -840,19 +840,6 @@ export default function OfficeChat({
   remotePositionsRef.current = remotePositions;
   const lastBroadcastRef = useRef(0);
 
-  // Simulate game stats ticking (exploration-based scoring)
-  useEffect(() => {
-    if (gamePaused) return;
-    const interval = setInterval(() => {
-      const s = gameStatsRef.current;
-      s.score += 10;
-      s.special = Math.min(100, s.special + 0.5);
-      // Slowly regen health when exploring
-      s.health = Math.min(100, s.health + 0.1);
-      setGameStats({ ...s });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [gamePaused]);
 
   const currentUser = USERS.find(u => u.email === currentUserEmail)!;
   const others = USERS.filter(u => u.email !== currentUserEmail);
