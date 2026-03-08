@@ -1432,21 +1432,6 @@ export default function OfficeChat({
     <div className="relative w-full h-full select-none">
       <div ref={mountRef} className="w-full h-full" />
 
-      {/* Game HUD */}
-      <GameHUD
-        score={gameStats.score}
-        health={gameStats.health}
-        maxHealth={100}
-        combo={gameStats.combo}
-        comboMultiplier={1 + gameStats.combo * 0.1}
-        specialPercent={gameStats.special}
-        wave={gameStats.wave}
-        totalWaves={10}
-        enemiesRemaining={gameStats.enemies}
-        powerLevel={gameStats.power}
-        isPaused={gamePaused}
-        onPause={() => setGamePaused(p => !p)}
-      />
 
       {/* Lock hint */}
       {!isMobile && !locked && !activeChat && (
