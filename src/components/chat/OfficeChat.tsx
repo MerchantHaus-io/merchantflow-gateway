@@ -78,7 +78,14 @@ const DESK_POS: Record<string, THREE.Vector3> = {
   "darryn@merchanthaus.io":  new THREE.Vector3(2,   0, -8),
   "atria@merchanthaus.io":   new THREE.Vector3(10,  0, -8),
 };
-const SPAWN: Record<string, THREE.Vector3> = { ...DESK_POS };
+// Chair offset: chairs sit at z+0.65 relative to cubicle center
+const CHAIR_OFFSET = new THREE.Vector3(0, 0, 0.65);
+function chairPos(email: string): THREE.Vector3 {
+  const d = DESK_POS[email];
+  return d ? d.clone().add(CHAIR_OFFSET) : new THREE.Vector3(0, 0, 0);
+}
+const SPAWN: Record<string, THREE.Vector3> = {};
+Object.keys(DESK_POS).forEach(email => { SPAWN[email] = chairPos(email); });
 
 // ── COLLISION SYSTEM (AABB) ───────────────────────────────────────────────────
 
@@ -491,17 +498,56 @@ function buildRoom(): THREE.Group {
     const kb = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.02, 0.12), metalM);
     kb.position.set(0, 0.79, 0.1); cg.add(kb);
 
-    // Chair
+    // Chair (with armrests and wheels)
     const seatM = new THREE.MeshStandardMaterial({ color: 0x2a2a2a });
     const seat = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, 0.5), seatM);
     seat.position.set(0, 0.5, 0.65); cg.add(seat);
     const bk = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.55, 0.05), seatM);
     bk.position.set(0, 0.78, 0.88); cg.add(bk);
+    // Chair armrests
+    ([-0.27, 0.27] as number[]).forEach(ax => {
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 0.35), seatM);
+      arm.position.set(ax, 0.62, 0.72); cg.add(arm);
+    });
+    // Chair base (star)
+    const chairBase = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.46, 6), metalM);
+    chairBase.position.set(0, 0.25, 0.65); cg.add(chairBase);
+
+    // ── Photo frame on desk ──
+    const frameBorder = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.35, 0.03), new THREE.MeshStandardMaterial({ color: 0x5a3a1a, roughness: 0.5 }));
+    frameBorder.position.set(-0.7, 1.0, -0.2); frameBorder.rotation.x = -0.15; cg.add(frameBorder);
+    const framePhoto = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.28, 0.01), new THREE.MeshStandardMaterial({ color: 0x8899aa, roughness: 0.4 }));
+    framePhoto.position.set(-0.7, 1.0, -0.185); framePhoto.rotation.x = -0.15; cg.add(framePhoto);
+
+    // ── Pen holder ──
+    const penHolder = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.035, 0.1, 8), new THREE.MeshStandardMaterial({ color: 0x444444 }));
+    penHolder.position.set(0.65, 0.83, -0.1); cg.add(penHolder);
+    // Pens
+    ([0.01, -0.015, 0.02] as number[]).forEach((px, i) => {
+      const pen = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.14, 4), new THREE.MeshStandardMaterial({ color: [0x2255aa, 0xaa2222, 0x222222][i] }));
+      pen.position.set(0.65 + px, 0.93, -0.1 + (i - 1) * 0.012); cg.add(pen);
+    });
+
+    // ── Coffee mug ──
+    const mug = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.03, 0.08, 8), new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.3 }));
+    mug.position.set(0.4, 0.82, 0.2); cg.add(mug);
+    const mugHandle = new THREE.Mesh(new THREE.TorusGeometry(0.02, 0.005, 6, 8, Math.PI), new THREE.MeshStandardMaterial({ color: 0xeeeeee }));
+    mugHandle.position.set(0.435, 0.82, 0.2); mugHandle.rotation.z = Math.PI / 2; cg.add(mugHandle);
+
+    // ── Sticky notes ──
+    const stickyColors = [0xffeb3b, 0xff9800, 0x4caf50];
+    stickyColors.forEach((col, i) => {
+      const sticky = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.002), new THREE.MeshStandardMaterial({ color: col }));
+      sticky.position.set(-0.35 + i * 0.14, 0.79, 0.3);
+      sticky.rotation.x = -Math.PI / 2;
+      sticky.rotation.z = (i - 1) * 0.15;
+      cg.add(sticky);
+    });
 
     cg.position.set(cx, 0, cz);
 
-    // Collider for the desk
-    addCollider(cx, cz - 0.2, 1.3, 0.8);
+    // Collider for the desk only (not the chair area so player can sit)
+    addCollider(cx, cz - 0.2, 1.3, 0.6);
 
     return cg;
   };
@@ -769,6 +815,9 @@ export default function OfficeChat({
   const [nearby, setNearby] = useState<CRMUser | null>(null);
   const [nearDesk, setNearDesk] = useState(false);
   const [showTerminal, setShowTerminal] = useState(false);
+  const [deskView, setDeskView] = useState<"computer" | "photo" | null>(null);
+  const [photoFrameUrl, setPhotoFrameUrl] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const [nearTV, setNearTV] = useState(false);
   const [tvUnmuted, setTvUnmuted] = useState(false);
   const tvOverlayRef = useRef<HTMLDivElement>(null);
@@ -1040,9 +1089,10 @@ export default function OfficeChat({
           const ws = state.npcWander.get(email);
           if (!ws) return;
           const deskPos = DESK_POS[email] || new THREE.Vector3(0, 0, 0);
-          if (ws.state === "at_desk") {
-            mesh.position.x = deskPos.x;
-            mesh.position.z = deskPos.z;
+        if (ws.state === "at_desk") {
+            const cp = chairPos(email);
+            mesh.position.x = cp.x;
+            mesh.position.z = cp.z;
             animateCharacter(mesh, t, false, true);
             ws.deskTimer -= dt;
             if (ws.deskTimer <= 0) {
@@ -1093,10 +1143,10 @@ export default function OfficeChat({
           animateCharacter(mesh, t, moving, false);
           mesh.rotation.y = remote.yaw + Math.PI;
         } else {
-          // ── REAL USER: offline — stand idle at desk ──
-          const deskPos = DESK_POS[email] || new THREE.Vector3(0, 0, 0);
-          mesh.position.lerp(deskPos, 4 * dt);
-          animateCharacter(mesh, t, false, true); // sitting at desk
+          // ── REAL USER: offline — sitting in chair at desk ──
+          const cp = chairPos(email);
+          mesh.position.lerp(cp, 4 * dt);
+          animateCharacter(mesh, t, false, true); // sitting in chair
         }
       });
 
@@ -1294,7 +1344,7 @@ export default function OfficeChat({
         }
       }
       if (e.key === "Escape") {
-        if (showTerminal) setShowTerminal(false);
+        if (showTerminal) { setShowTerminal(false); setDeskView(null); }
         if (showWhiteboard) setShowWhiteboard(false);
       }
     };
@@ -1458,7 +1508,7 @@ export default function OfficeChat({
       {nearDesk && !activeChat && !showTerminal && !isMobile && (
         <div className="absolute bottom-24 left-1/2 -translate-x-1/2 pointer-events-none">
           <Badge className="bg-black/80 text-white border-0 text-sm px-4 py-2">
-            Press <kbd className="mx-1 px-1 bg-white/20 rounded">E</kbd> to use terminal
+            Press <kbd className="mx-1 px-1 bg-white/20 rounded">E</kbd> to sit at your desk
           </Badge>
         </div>
       )}
@@ -1517,29 +1567,141 @@ export default function OfficeChat({
         </div>
       )}
 
-      {/* Terminal */}
+      {/* Desk View — first-person desk experience */}
       {showTerminal && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/60">
-          <div className="relative flex flex-col items-center">
-            <div className="rounded-xl overflow-hidden shadow-2xl" style={{ background: "linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 50%, #0e0e0e 100%)", padding: "18px 18px 8px 18px", border: "2px solid #333" }}>
-              <div className="flex items-center justify-between mb-2 px-1">
-                <span className="text-[10px] font-bold tracking-widest text-white/30 uppercase">OPS Terminal</span>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-[9px] text-white/20">ONLINE</span>
+        <div className="absolute inset-0 z-20 bg-black/80 backdrop-blur-sm">
+          {/* Hidden file input for photo frame */}
+          <input
+            ref={photoInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                const url = URL.createObjectURL(file);
+                setPhotoFrameUrl(url);
+                setDeskView("photo");
+              }
+            }}
+          />
+
+          {/* Desk surface background */}
+          <div className="absolute inset-0 flex items-end justify-center pb-8" style={{
+            background: "linear-gradient(180deg, rgba(30,25,20,0.95) 0%, rgba(60,50,40,0.9) 60%, rgba(90,75,55,0.85) 100%)"
+          }}>
+            {/* Desk items bar at bottom */}
+            <div className="flex items-end gap-6 mb-4">
+              {/* Monitor / Computer */}
+              <button
+                onClick={() => setDeskView(deskView === "computer" ? null : "computer")}
+                className={`flex flex-col items-center gap-1 px-4 py-3 rounded-lg transition-all ${deskView === "computer" ? "bg-primary/20 ring-2 ring-primary/50" : "bg-white/5 hover:bg-white/10"}`}
+              >
+                <div className="w-12 h-9 rounded-sm border-2 border-white/30 bg-black/60 flex items-center justify-center">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 </div>
+                <div className="w-4 h-1 bg-white/20 rounded-full" />
+                <span className="text-[10px] text-white/60 font-medium tracking-wide uppercase">Computer</span>
+              </button>
+
+              {/* Photo Frame */}
+              <button
+                onClick={() => {
+                  if (deskView === "photo") { setDeskView(null); }
+                  else if (!photoFrameUrl) { photoInputRef.current?.click(); }
+                  else { setDeskView("photo"); }
+                }}
+                className={`flex flex-col items-center gap-1 px-4 py-3 rounded-lg transition-all ${deskView === "photo" ? "bg-primary/20 ring-2 ring-primary/50" : "bg-white/5 hover:bg-white/10"}`}
+              >
+                <div className="w-10 h-12 rounded-sm border-2 border-amber-700/60 bg-black/30 flex items-center justify-center overflow-hidden">
+                  {photoFrameUrl ? (
+                    <img src={photoFrameUrl} alt="Photo" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-white/30 text-lg">🖼️</span>
+                  )}
+                </div>
+                <span className="text-[10px] text-white/60 font-medium tracking-wide uppercase">Photo</span>
+              </button>
+
+              {/* Static desk items (decorative) */}
+              <div className="flex flex-col items-center gap-1 px-4 py-3 opacity-60">
+                <span className="text-2xl">☕</span>
+                <span className="text-[10px] text-white/40 font-medium tracking-wide uppercase">Coffee</span>
               </div>
-              <div className="relative rounded-sm overflow-hidden" style={{ width: "min(75vw, 900px)", height: "min(65vh, 560px)", boxShadow: "inset 0 0 60px rgba(0,0,0,0.5)" }}>
-                <div className="absolute inset-0 z-10 pointer-events-none" style={{ background: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px)" }} />
-                <iframe src={window.location.origin + "/dashboard"} className="w-full h-full border-0" title="OPS Terminal" />
+              <div className="flex flex-col items-center gap-1 px-4 py-3 opacity-60">
+                <span className="text-2xl">🖊️</span>
+                <span className="text-[10px] text-white/40 font-medium tracking-wide uppercase">Pens</span>
+              </div>
+              <div className="flex flex-col items-center gap-1 px-4 py-3 opacity-60">
+                <span className="text-2xl">📋</span>
+                <span className="text-[10px] text-white/40 font-medium tracking-wide uppercase">Notes</span>
               </div>
             </div>
-            <div className="w-16 h-8" style={{ background: "linear-gradient(180deg, #1a1a1a, #111)", clipPath: "polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)" }} />
-            <div className="w-28 h-2 rounded-full" style={{ background: "linear-gradient(180deg, #222, #0e0e0e)" }} />
           </div>
-          <button onClick={() => setShowTerminal(false)} className="absolute top-6 right-6 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-colors backdrop-blur-sm">
-            ESC to close
+
+          {/* Active desk panel */}
+          {deskView === "computer" && (
+            <div className="absolute inset-8 flex items-center justify-center">
+              <div className="relative flex flex-col items-center">
+                <div className="rounded-xl overflow-hidden shadow-2xl" style={{ background: "linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 50%, #0e0e0e 100%)", padding: "18px 18px 8px 18px", border: "2px solid #333" }}>
+                  <div className="flex items-center justify-between mb-2 px-1">
+                    <span className="text-[10px] font-bold tracking-widest text-white/30 uppercase">OPS Terminal</span>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-[9px] text-white/20">ONLINE</span>
+                    </div>
+                  </div>
+                  <div className="relative rounded-sm overflow-hidden" style={{ width: "min(70vw, 860px)", height: "min(55vh, 500px)", boxShadow: "inset 0 0 60px rgba(0,0,0,0.5)" }}>
+                    <div className="absolute inset-0 z-10 pointer-events-none" style={{ background: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px)" }} />
+                    <iframe src={window.location.origin + "/dashboard"} className="w-full h-full border-0" title="OPS Terminal" />
+                  </div>
+                </div>
+                <div className="w-16 h-8" style={{ background: "linear-gradient(180deg, #1a1a1a, #111)", clipPath: "polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)" }} />
+                <div className="w-28 h-2 rounded-full" style={{ background: "linear-gradient(180deg, #222, #0e0e0e)" }} />
+              </div>
+            </div>
+          )}
+
+          {deskView === "photo" && (
+            <div className="absolute inset-8 flex items-center justify-center">
+              <div className="flex flex-col items-center gap-4">
+                <div className="relative rounded-lg overflow-hidden shadow-2xl" style={{
+                  background: "linear-gradient(145deg, #7a5a3a, #5a3a1a)",
+                  padding: "16px",
+                  border: "3px solid #4a3020"
+                }}>
+                  {photoFrameUrl ? (
+                    <img src={photoFrameUrl} alt="My photo" className="max-w-[60vw] max-h-[50vh] object-contain rounded" />
+                  ) : (
+                    <div className="w-64 h-48 bg-black/20 rounded flex items-center justify-center">
+                      <span className="text-white/40 text-sm">No photo yet</span>
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => photoInputRef.current?.click()}
+                  className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-colors backdrop-blur-sm"
+                >
+                  {photoFrameUrl ? "Change Photo" : "Upload Photo"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Close / stand up button */}
+          <button
+            onClick={() => { setShowTerminal(false); setDeskView(null); }}
+            className="absolute top-6 right-6 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-colors backdrop-blur-sm z-30"
+          >
+            🚶 Stand Up {!isMobile && <span className="text-white/40 ml-2">(ESC)</span>}
           </button>
+
+          {/* Sitting indicator */}
+          <div className="absolute top-6 left-6 z-30">
+            <Badge className="bg-primary/20 text-primary-foreground border-primary/30 text-xs px-3 py-1.5">
+              🪑 Sitting at your desk
+            </Badge>
+          </div>
         </div>
       )}
 
@@ -1680,7 +1842,7 @@ export default function OfficeChat({
 
       {/* Mobile close buttons */}
       {isMobile && showTerminal && (
-        <button onClick={() => setShowTerminal(false)} className="absolute top-4 right-4 z-30 px-3 py-2 rounded-lg bg-white/10 text-white text-xs font-medium backdrop-blur-sm">✕ Close</button>
+        <button onClick={() => { setShowTerminal(false); setDeskView(null); }} className="absolute top-4 right-4 z-30 px-3 py-2 rounded-lg bg-white/10 text-white text-xs font-medium backdrop-blur-sm">✕ Stand Up</button>
       )}
       {isMobile && showWhiteboard && (
         <button onClick={() => setShowWhiteboard(false)} className="absolute top-4 right-4 z-30 px-3 py-2 rounded-lg bg-white/10 text-white text-xs font-medium backdrop-blur-sm">✕ Close</button>
