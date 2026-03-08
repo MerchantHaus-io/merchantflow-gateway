@@ -1659,6 +1659,32 @@ export default function OfficeChat({
                 <div className="w-16 h-8" style={{ background: "linear-gradient(180deg, #1a1a1a, #111)", clipPath: "polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)" }} />
                 <div className="w-28 h-2 rounded-full" style={{ background: "linear-gradient(180deg, #222, #0e0e0e)" }} />
               </div>
+
+              {/* Photo frame visible on the desk beside the monitor */}
+              <div
+                className="absolute bottom-16 right-8 flex flex-col items-center gap-1 cursor-pointer group transition-transform hover:scale-105"
+                onClick={() => {
+                  if (!photoFrameUrl) { photoInputRef.current?.click(); }
+                  else { setDeskView("photo"); }
+                }}
+                title={photoFrameUrl ? "View photo" : "Upload photo"}
+              >
+                <div className="rounded-md overflow-hidden shadow-xl" style={{
+                  background: "linear-gradient(145deg, #7a5a3a, #5a3a1a)",
+                  padding: "5px",
+                  border: "2px solid #4a3020",
+                  transform: "perspective(200px) rotateY(-8deg) rotateX(2deg)",
+                }}>
+                  {photoFrameUrl ? (
+                    <img src={photoFrameUrl} alt="Desk photo" className="w-16 h-20 sm:w-20 sm:h-24 object-cover rounded-sm" />
+                  ) : (
+                    <div className="w-16 h-20 sm:w-20 sm:h-24 bg-black/30 rounded-sm flex items-center justify-center">
+                      <span className="text-white/20 text-2xl">🖼️</span>
+                    </div>
+                  )}
+                </div>
+                <span className="text-[9px] text-white/30 font-medium tracking-wider uppercase group-hover:text-white/50 transition-colors">Photo</span>
+              </div>
             </div>
           )}
 
@@ -1678,12 +1704,20 @@ export default function OfficeChat({
                     </div>
                   )}
                 </div>
-                <button
-                  onClick={() => photoInputRef.current?.click()}
-                  className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-colors backdrop-blur-sm"
-                >
-                  {photoFrameUrl ? "Change Photo" : "Upload Photo"}
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => photoInputRef.current?.click()}
+                    className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-colors backdrop-blur-sm"
+                  >
+                    {photoFrameUrl ? "Change Photo" : "Upload Photo"}
+                  </button>
+                  <button
+                    onClick={() => setDeskView("computer")}
+                    className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-colors backdrop-blur-sm"
+                  >
+                    ← Back to Desk
+                  </button>
+                </div>
               </div>
             </div>
           )}
