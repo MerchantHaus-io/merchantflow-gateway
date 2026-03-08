@@ -368,7 +368,7 @@ const UnifiedPipelineBoard = ({
                       <User className="h-4 w-4" />
                       {deal.contact?.last_name || deal.contact?.first_name || "No contact"}
                     </p>
-                    <p className="text-xs text-gray-400 flex items-center gap-1.5 mb-4">
+                    <p className="text-xs text-muted-foreground/60 flex items-center gap-1.5 mb-4">
                       <Calendar className="h-3 w-3" />
                       {format(new Date(deal.created_at), "MMM d, yyyy")}
                     </p>
