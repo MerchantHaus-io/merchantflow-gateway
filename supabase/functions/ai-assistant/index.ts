@@ -192,7 +192,7 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
 
   const oppToAccount: Record<string, string> = {};
   for (const o of (recentOppsRes.data || [])) {
-    oppToAccount[o.id] = (o as any).accounts?.name || "Unknown Account";
+    oppToAccount[String((o as any).id)] = (o as any).accounts?.name || "Unknown Account";
   }
   // Also map from full pipeline data for docs that belong to older opps
   for (const o of opps) {

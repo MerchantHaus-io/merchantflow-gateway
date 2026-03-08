@@ -101,6 +101,9 @@ export const NMITransactionsPanel = ({ gatewayIds, accountName }: NMITransaction
     enabled: gatewayIds.length > 0,
   });
 
+  // Debug info from the edge function (merchant_ids seen in NMI response)
+  const debugInfo = (data as any)?._debug as { total_in_response: number; seen_merchant_ids: string[] } | undefined;
+
   // Merge all gateway results into one unified view
   const merged = data?.reduce<{ transactions: Transaction[]; summary: TransactionSummary; errors: { gateway_id: string; message: string }[] }>(
     (acc, r) => {
@@ -211,6 +214,20 @@ export const NMITransactionsPanel = ({ gatewayIds, accountName }: NMITransaction
           </span>
         ))}
       </div>
+
+      {/* Debug: show NMI merchant_ids seen — helps diagnose ID mismatches */}
+      {debugInfo && (
+        <div className="text-[10px] text-muted-foreground bg-muted/50 rounded-lg px-3 py-2 border border-border/40 space-y-0.5">
+          <p><span className="font-semibold">{debugInfo.total_in_response}</span> total transactions in NMI partner response</p>
+          {debugInfo.seen_merchant_ids.length > 0 ? (
+            <p>Merchant IDs seen: {debugInfo.seen_merchant_ids.map(id => (
+              <span key={id} className={`font-mono ml-1 px-1 rounded ${gatewayIds.includes(id) ? 'bg-green-500/20 text-green-700 dark:text-green-400' : 'bg-amber-500/20 text-amber-700 dark:text-amber-400'}`}>{id}</span>
+            ))}</p>
+          ) : (
+            <p className="text-amber-600 dark:text-amber-400">⚠ No merchant_id field found in NMI response — check Supabase edge function logs for raw XML</p>
+          )}
+        </div>
+      )}
 
       {isLoading ? (
         <div className="space-y-2">
