@@ -45,6 +45,13 @@ export interface RemotePosition {
   timestamp: number;
 }
 
+export interface ActionItemNote {
+  id: string;
+  title: string;
+  completed: boolean;
+  created_by_email: string;
+}
+
 interface OfficeChatProps {
   currentUserEmail: string;
   messages?: ChatMessage[];
@@ -52,6 +59,7 @@ interface OfficeChatProps {
   presence?: Record<string, boolean>;
   onPositionUpdate?: (pos: { x: number; z: number; yaw: number }) => void;
   remotePositions?: Record<string, RemotePosition>;
+  actionItems?: ActionItemNote[];
 }
 
 // ── USERS ─────────────────────────────────────────────────────────────────────
