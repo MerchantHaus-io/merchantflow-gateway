@@ -30,6 +30,7 @@ import {
   Minimize,
   Cloud,
   Send,
+  Search,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -344,6 +345,23 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
 
         {/* Right side actions */}
         <div className="flex items-center gap-1 ml-auto">
+          {/* ⌘K search trigger */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+            className={cn(
+              "hidden lg:inline-flex h-8 gap-1.5 px-2.5 rounded-md text-xs",
+              isDark
+                ? "text-white/45 hover:text-white/70 hover:bg-white/8"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent"
+            )}
+          >
+            <Search className="h-3.5 w-3.5" />
+            <span className="text-muted-foreground/60">Search…</span>
+            <kbd className="text-[10px] font-mono bg-muted/50 px-1 py-0.5 rounded border border-border/50">⌘K</kbd>
+          </Button>
+
           {/* +New dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

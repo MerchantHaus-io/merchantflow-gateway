@@ -77,21 +77,36 @@ const Settings = () => {
   const fetchAdminUsers = async () => {
     setLoadingAdmins(true);
     try {
-      const { data, error } = await supabase
+      // Step 1: Get admin user_ids from user_roles
+      const { data: roles, error: rolesError } = await supabase
         .from("user_roles")
-        .select("user_id, profiles:user_id(id, email, full_name, avatar_url)")
+        .select("user_id")
         .eq("role", "admin");
 
-      if (error) throw error;
+      if (rolesError) throw rolesError;
 
-      const admins = data?.map((item: any) => ({
-        id: item.profiles?.id || item.user_id,
-        email: item.profiles?.email || "Unknown",
-        full_name: item.profiles?.full_name,
-        avatar_url: item.profiles?.avatar_url,
-      })) || [];
+      const adminIds = (roles || []).map((r) => r.user_id);
+      if (adminIds.length === 0) {
+        setAdminUsers([]);
+        return;
+      }
 
-      setAdminUsers(admins);
+      // Step 2: Fetch profiles for those user_ids
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, email, full_name, avatar_url")
+        .in("id", adminIds);
+
+      if (profilesError) throw profilesError;
+
+      setAdminUsers(
+        (profiles || []).map((p) => ({
+          id: p.id,
+          email: p.email || "Unknown",
+          full_name: p.full_name,
+          avatar_url: p.avatar_url,
+        }))
+      );
     } catch (error) {
       console.error("Error fetching admin users:", error);
     } finally {
@@ -185,7 +200,7 @@ const Settings = () => {
     try {
       const { error } = await supabase
         .from("profiles")
-        .update({ full_name: fullName, phone } as any)
+        .update({ full_name: fullName, phone })
         .eq("id", user.id);
 
       if (error) throw error;

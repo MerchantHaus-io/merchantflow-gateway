@@ -758,9 +758,16 @@ const Index = () => {
     }
   };
   if (loading) {
-    return <div className="h-screen flex items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>;
+    return (
+      <AppLayout>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm text-muted-foreground">Loading pipeline…</p>
+          </div>
+        </div>
+      </AppLayout>
+    );
   }
   return (
     <AppLayout onNewApplication={() => setIsModalOpen(true)} focusMode={isFocusMode}>
