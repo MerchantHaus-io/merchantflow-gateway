@@ -1086,9 +1086,10 @@ export default function OfficeChat({
           const ws = state.npcWander.get(email);
           if (!ws) return;
           const deskPos = DESK_POS[email] || new THREE.Vector3(0, 0, 0);
-          if (ws.state === "at_desk") {
-            mesh.position.x = deskPos.x;
-            mesh.position.z = deskPos.z;
+        if (ws.state === "at_desk") {
+            const cp = chairPos(email);
+            mesh.position.x = cp.x;
+            mesh.position.z = cp.z;
             animateCharacter(mesh, t, false, true);
             ws.deskTimer -= dt;
             if (ws.deskTimer <= 0) {
