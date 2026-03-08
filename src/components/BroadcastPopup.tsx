@@ -71,7 +71,7 @@ export function BroadcastPopup() {
             initial={{ scale: 0.9, y: 20 }}
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.9, y: 20 }}
-            className="bg-card border border-border rounded-lg shadow-2xl max-w-md w-full overflow-hidden"
+            className="glass-card gradient-border rounded-lg shadow-2xl max-w-md w-full overflow-hidden"
           >
             {/* Header */}
             <div className="bg-gold/10 border-b border-gold/20 px-6 py-4 flex items-center justify-between">
