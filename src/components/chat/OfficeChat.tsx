@@ -1864,7 +1864,7 @@ export default function OfficeChat({
                 e.stopPropagation();
                 if (nearby) setActiveChat(nearby);
                 else if (nearTV) setTvUnmuted(prev => !prev);
-                else if (nearDesk) setShowTerminal(true);
+                else if (nearDesk) { setShowTerminal(true); setDeskView("computer"); }
                 else if (nearInteract) {
                   if (nearInteract.action === "sit") setIsSitting(prev => !prev);
                   else if (nearInteract.action === "whiteboard") setShowWhiteboard(true);
