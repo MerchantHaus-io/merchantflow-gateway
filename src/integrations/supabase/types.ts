@@ -1922,6 +1922,7 @@ export type Database = {
           data_gaps: Json
           document_completeness: Json
           id: string
+          no_change: boolean
           opportunity_id: string
           readiness_score: string
           recommended_actions: Json
@@ -1935,6 +1936,7 @@ export type Database = {
           data_gaps?: Json
           document_completeness?: Json
           id?: string
+          no_change?: boolean
           opportunity_id: string
           readiness_score?: string
           recommended_actions?: Json
@@ -1948,6 +1950,7 @@ export type Database = {
           data_gaps?: Json
           document_completeness?: Json
           id?: string
+          no_change?: boolean
           opportunity_id?: string
           readiness_score?: string
           recommended_actions?: Json
@@ -1958,6 +1961,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "validation_reports_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      website_scrutiny_reports: {
+        Row: {
+          created_at: string
+          id: string
+          no_change: boolean
+          opportunity_id: string
+          recommendations: Json
+          red_flags: Json
+          requirements_met: Json
+          score: number
+          score_label: string
+          summary: string | null
+          triggered_by: string
+          website_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          no_change?: boolean
+          opportunity_id: string
+          recommendations?: Json
+          red_flags?: Json
+          requirements_met?: Json
+          score?: number
+          score_label?: string
+          summary?: string | null
+          triggered_by?: string
+          website_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          no_change?: boolean
+          opportunity_id?: string
+          recommendations?: Json
+          red_flags?: Json
+          requirements_met?: Json
+          score?: number
+          score_label?: string
+          summary?: string | null
+          triggered_by?: string
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_scrutiny_reports_opportunity_id_fkey"
             columns: ["opportunity_id"]
             isOneToOne: false
             referencedRelation: "opportunities"

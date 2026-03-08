@@ -908,19 +908,36 @@ Return your analysis by calling the "validation_report" function. Be concise and
         } catch { /* ignore */ }
       }
 
+      // Check for no-change against the last report
+      const { data: lastReport } = await supabase
+        .from("validation_reports")
+        .select("readiness_score, data_gaps, risk_flags, document_completeness, summary")
+        .eq("opportunity_id", opportunityId)
+        .eq("no_change", false)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const newScore = (report.readiness_score as string) || "unknown";
+      const isNoChange = lastReport
+        && lastReport.readiness_score === newScore
+        && JSON.stringify(lastReport.data_gaps) === JSON.stringify(report.data_gaps || [])
+        && JSON.stringify(lastReport.risk_flags) === JSON.stringify(report.risk_flags || []);
+
       // Persist to database
       const { data: savedReport, error: saveError } = await supabase
         .from("validation_reports")
         .insert({
           opportunity_id: opportunityId,
           triggered_by: triggeredBy,
-          readiness_score: (report.readiness_score as string) || "unknown",
+          readiness_score: newScore,
           document_completeness: report.document_completeness || [],
           classification_issues: report.classification_issues || [],
           data_gaps: report.data_gaps || [],
           risk_flags: report.risk_flags || [],
           recommended_actions: report.recommended_actions || [],
           summary: (report.summary as string) || null,
+          no_change: !!isNoChange,
         })
         .select()
         .single();
@@ -929,7 +946,14 @@ Return your analysis by calling the "validation_report" function. Be concise and
         console.error("Failed to save validation report:", saveError);
       }
 
-      return new Response(JSON.stringify({ success: true, report, id: savedReport?.id }), {
+      return new Response(JSON.stringify({
+        success: true,
+        report,
+        id: savedReport?.id,
+        triggered_by: triggeredBy,
+        created_at: savedReport?.created_at || new Date().toISOString(),
+        no_change: !!isNoChange,
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -1158,7 +1182,61 @@ Call the "website_scrutiny_report" function with your analysis.`;
         };
       }
 
-      return new Response(JSON.stringify({ success: true, report, website_url: websiteUrl }), {
+      // Get triggering user's email from auth header
+      const wsAuthHeader = req.headers.get("authorization");
+      let wsTriggeredBy = "unknown";
+      if (wsAuthHeader) {
+        try {
+          const { data: { user } } = await supabase.auth.getUser(wsAuthHeader.replace("Bearer ", ""));
+          wsTriggeredBy = user?.email || "unknown";
+        } catch { /* ignore */ }
+      }
+
+      const newScore = (report.score as number) ?? 0;
+
+      // Check for no-change against last website report
+      const { data: lastWsReport } = await supabase
+        .from("website_scrutiny_reports")
+        .select("score, red_flags, requirements_met")
+        .eq("opportunity_id", opportunityId)
+        .eq("no_change", false)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const wsIsNoChange = lastWsReport
+        && Number(lastWsReport.score) === newScore
+        && JSON.stringify(lastWsReport.red_flags) === JSON.stringify(report.red_flags || [])
+        && JSON.stringify(lastWsReport.requirements_met) === JSON.stringify(report.requirements_met || []);
+
+      // Persist website scrutiny report
+      const { data: savedWsReport, error: wsErr } = await supabase
+        .from("website_scrutiny_reports")
+        .insert({
+          opportunity_id: opportunityId,
+          triggered_by: wsTriggeredBy,
+          score: newScore,
+          score_label: (report.score_label as string) || "unknown",
+          summary: (report.summary as string) || null,
+          requirements_met: report.requirements_met || [],
+          red_flags: report.red_flags || [],
+          recommendations: report.recommendations || [],
+          website_url: websiteUrl,
+          no_change: !!wsIsNoChange,
+        })
+        .select()
+        .single();
+
+      if (wsErr) console.error("Failed to save website scrutiny report:", wsErr);
+
+      return new Response(JSON.stringify({
+        success: true,
+        report,
+        website_url: websiteUrl,
+        triggered_by: wsTriggeredBy,
+        created_at: savedWsReport?.created_at || new Date().toISOString(),
+        no_change: !!wsIsNoChange,
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
