@@ -231,9 +231,94 @@ export default function Outreach() {
             <h1 className="text-2xl font-bold text-foreground">Email Outreach</h1>
             <p className="text-muted-foreground text-sm">Campaign tracker & email sender</p>
           </div>
-          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-            <DialogTrigger asChild>
-              <Button><Plus className="h-4 w-4 mr-2" />New Campaign</Button>
+          <div className="flex gap-2">
+            {/* CSV Upload Dialog */}
+            <Dialog open={csvUploadOpen} onOpenChange={(open) => { setCsvUploadOpen(open); if (!open) { setCsvFile(null); setCsvPreview({ headers: [], rows: [] }); setCsvCampaignName(""); setCsvSubject(""); setCsvBodyHtml(""); } }}>
+              <DialogTrigger asChild>
+                <Button variant="outline"><Upload className="h-4 w-4 mr-2" />CSV Upload</Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2"><FileSpreadsheet className="h-5 w-5" />Import CSV as Campaign</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label>Upload CSV</Label>
+                    <Input type="file" accept=".csv" onChange={handleCsvFileChange} />
+                    <p className="text-xs text-muted-foreground mt-1">CSV should include email, first_name, last_name, company columns</p>
+                  </div>
+
+                  {csvPreview.rows.length > 0 && (
+                    <>
+                      <div className="rounded-md border p-3 bg-muted/30">
+                        <p className="text-sm font-medium">{csvPreview.rows.length} contacts detected</p>
+                        <p className="text-xs text-muted-foreground">Columns: {csvPreview.headers.join(", ")}</p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label>Campaign Name</Label>
+                          <Input value={csvCampaignName} onChange={(e) => setCsvCampaignName(e.target.value)} placeholder="Q1 CSV Upload" />
+                        </div>
+                        <div>
+                          <Label>Subject Line</Label>
+                          <Input value={csvSubject} onChange={(e) => setCsvSubject(e.target.value)} placeholder="Processing solutions for your business" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label>From Name</Label>
+                          <Input value={csvFromName} onChange={(e) => setCsvFromName(e.target.value)} />
+                        </div>
+                        <div>
+                          <Label>From Email</Label>
+                          <Input value={csvFromEmail} onChange={(e) => setCsvFromEmail(e.target.value)} />
+                        </div>
+                      </div>
+                      <div>
+                        <Label>Email Body (HTML)</Label>
+                        <Textarea value={csvBodyHtml} onChange={(e) => setCsvBodyHtml(e.target.value)} placeholder="<p>Hi {{first_name}},</p>" rows={4} />
+                        <p className="text-xs text-muted-foreground mt-1">Use {"{{first_name}}"}, {"{{last_name}}"}, {"{{company}}"} as merge tags</p>
+                      </div>
+
+                      {/* Preview table */}
+                      <div className="rounded-lg border overflow-hidden max-h-48 overflow-y-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              {csvPreview.headers.slice(0, 5).map((h) => (
+                                <TableHead key={h} className="text-xs">{h}</TableHead>
+                              ))}
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {csvPreview.rows.slice(0, 5).map((row, i) => (
+                              <TableRow key={i}>
+                                {csvPreview.headers.slice(0, 5).map((h) => (
+                                  <TableCell key={h} className="text-xs py-1">{row[h] || "—"}</TableCell>
+                                ))}
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                        {csvPreview.rows.length > 5 && (
+                          <p className="text-xs text-muted-foreground text-center py-1">…and {csvPreview.rows.length - 5} more</p>
+                        )}
+                      </div>
+
+                      <Button className="w-full" onClick={handleCsvUpload} disabled={isUploading || !csvCampaignName || !csvSubject || !csvBodyHtml}>
+                        {isUploading ? "Creating campaign…" : `Create Campaign with ${csvPreview.rows.length} contacts`}
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* New Campaign Dialog */}
+            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+              <DialogTrigger asChild>
+                <Button><Plus className="h-4 w-4 mr-2" />New Campaign</Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
