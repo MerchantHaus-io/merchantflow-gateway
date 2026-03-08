@@ -584,9 +584,9 @@ export default function OutreachDetail() {
                     <div className="px-4 py-2 border-t border-border/40 flex items-center justify-between">
                       <p className="text-xs text-muted-foreground">{filteredContacts.length} leads shown</p>
                       <Button variant="ghost" size="sm" className="h-6 text-xs gap-1" onClick={() => {
-                        const csv = ["Last Name,First Name,Email,Phone,Company,Status,Step,Sent At",
+                        const csv = ["Last Name,First Name,Email,Company,Status,Step,Sent At",
                           ...filteredContacts.map(c =>
-                            [c.last_name, c.first_name, c.email, c.phone, c.company, c.status, (c as any).current_step, c.sent_at]
+                            [c.last_name, c.first_name, c.email, c.company, c.status, (c as any).current_step, c.sent_at]
                               .map(v => `"${v || ""}"`).join(",")
                           )].join("\n");
                         const a = document.createElement("a");

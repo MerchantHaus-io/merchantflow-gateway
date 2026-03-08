@@ -272,7 +272,7 @@ const Reports = () => {
             <p className="text-xs text-muted-foreground">Pipeline performance · Team productivity · Outreach metrics</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
+            <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} filterBy="created_at" onFilterByChange={() => {}} />
             <Button variant="outline" size="sm" className="gap-1.5" onClick={fetchData}>
               <RefreshCw className="h-3.5 w-3.5" />Refresh
             </Button>
