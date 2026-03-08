@@ -270,7 +270,7 @@ const UnifiedPipelineBoard = ({
               return (
                 <div
                   key={deal.id}
-                  className="bg-floating-card bg-white p-4 rounded-xl w-64 border border-gray-200"
+                  className="bg-floating-card bg-card p-4 rounded-xl w-64 border border-border"
                   style={{
                     left: `${pos.x}%`,
                     top: `${pos.y}%`,
