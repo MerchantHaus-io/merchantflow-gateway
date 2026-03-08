@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
-import GameHUD from "./GameHUD";
+
 
 // ── TYPES ─────────────────────────────────────────────────────────────────────
 
@@ -45,6 +45,13 @@ export interface RemotePosition {
   timestamp: number;
 }
 
+export interface ActionItemNote {
+  id: string;
+  title: string;
+  completed: boolean;
+  created_by_email: string;
+}
+
 interface OfficeChatProps {
   currentUserEmail: string;
   messages?: ChatMessage[];
@@ -52,6 +59,7 @@ interface OfficeChatProps {
   presence?: Record<string, boolean>;
   onPositionUpdate?: (pos: { x: number; z: number; yaw: number }) => void;
   remotePositions?: Record<string, RemotePosition>;
+  actionItems?: ActionItemNote[];
 }
 
 // ── USERS ─────────────────────────────────────────────────────────────────────
@@ -790,6 +798,7 @@ export default function OfficeChat({
   presence = {},
   onPositionUpdate,
   remotePositions = {},
+  actionItems = [],
 }: OfficeChatProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const stateRef = useRef<{
@@ -827,9 +836,7 @@ export default function OfficeChat({
   const [isSitting, setIsSitting] = useState(false);
   const [showWhiteboard, setShowWhiteboard] = useState(false);
   const [coffeeEmote, setCoffeeEmote] = useState(false);
-  const [gamePaused, setGamePaused] = useState(false);
-  const gameStatsRef = useRef({ score: 0, health: 100, combo: 0, special: 0, wave: 1, enemies: 5, power: 1 });
-  const [gameStats, setGameStats] = useState({ score: 0, health: 100, combo: 0, special: 0, wave: 1, enemies: 5, power: 1 });
+  const [selectedStickyIndex, setSelectedStickyIndex] = useState<number | null>(null);
   const showTerminalRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const speechBubblesRef = useRef<Map<string, { sprite: THREE.Sprite; timeout: ReturnType<typeof setTimeout> }>>(new Map());
@@ -842,19 +849,6 @@ export default function OfficeChat({
   remotePositionsRef.current = remotePositions;
   const lastBroadcastRef = useRef(0);
 
-  // Simulate game stats ticking (exploration-based scoring)
-  useEffect(() => {
-    if (gamePaused) return;
-    const interval = setInterval(() => {
-      const s = gameStatsRef.current;
-      s.score += 10;
-      s.special = Math.min(100, s.special + 0.5);
-      // Slowly regen health when exploring
-      s.health = Math.min(100, s.health + 0.1);
-      setGameStats({ ...s });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [gamePaused]);
 
   const currentUser = USERS.find(u => u.email === currentUserEmail)!;
   const others = USERS.filter(u => u.email !== currentUserEmail);
@@ -1447,21 +1441,6 @@ export default function OfficeChat({
     <div className="relative w-full h-full select-none">
       <div ref={mountRef} className="w-full h-full" />
 
-      {/* Game HUD */}
-      <GameHUD
-        score={gameStats.score}
-        health={gameStats.health}
-        maxHealth={100}
-        combo={gameStats.combo}
-        comboMultiplier={1 + gameStats.combo * 0.1}
-        specialPercent={gameStats.special}
-        wave={gameStats.wave}
-        totalWaves={10}
-        enemiesRemaining={gameStats.enemies}
-        powerLevel={gameStats.power}
-        isPaused={gamePaused}
-        onPause={() => setGamePaused(p => !p)}
-      />
 
       {/* Lock hint */}
       {!isMobile && !locked && !activeChat && (
@@ -1639,11 +1618,40 @@ export default function OfficeChat({
                 </div>
               </div>
 
-              {/* Sticky notes */}
+              {/* Sticky notes — notice board items */}
               <div className="flex -space-x-1">
-                <div className="w-6 h-6 bg-yellow-400/80 rounded-sm shadow-sm" style={{ transform: "rotate(-5deg)" }} />
-                <div className="w-6 h-6 bg-orange-400/70 rounded-sm shadow-sm" style={{ transform: "rotate(3deg)" }} />
-                <div className="w-6 h-6 bg-green-500/60 rounded-sm shadow-sm" style={{ transform: "rotate(-2deg)" }} />
+                {(() => {
+                  const stickyStyles = [
+                    { bg: "bg-yellow-400/90", rot: "-5deg", text: "text-yellow-900" },
+                    { bg: "bg-orange-400/80", rot: "3deg", text: "text-orange-900" },
+                    { bg: "bg-green-500/70", rot: "-2deg", text: "text-green-900" },
+                  ];
+                  return stickyStyles.map((s, i) => {
+                    const item = actionItems[i];
+                    return (
+                      <div
+                        key={i}
+                        className={`w-10 h-10 ${s.bg} rounded-sm shadow-md cursor-pointer transition-transform hover:scale-125 hover:z-10 relative`}
+                        style={{ transform: `rotate(${s.rot})` }}
+                        onClick={() => item && setSelectedStickyIndex(i)}
+                        title={item ? item.title : "Empty"}
+                      >
+                        {item && (
+                          <>
+                            <div className={`absolute inset-0.5 overflow-hidden ${s.text}`}>
+                              <p className="text-[4px] leading-[5px] font-medium break-words">{item.title}</p>
+                            </div>
+                            {item.completed && (
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <span className="text-[10px] opacity-60">✓</span>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             </div>
 
@@ -1659,6 +1667,29 @@ export default function OfficeChat({
               </div>
             </div>
           </div>
+
+          {/* Sticky note detail popup */}
+          {selectedStickyIndex !== null && actionItems[selectedStickyIndex] && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setSelectedStickyIndex(null)}>
+              <div
+                className={`relative w-64 min-h-48 p-5 rounded shadow-2xl ${
+                  selectedStickyIndex === 0 ? "bg-yellow-300" : selectedStickyIndex === 1 ? "bg-orange-300" : "bg-green-400"
+                }`}
+                style={{ transform: "rotate(-1deg)", fontFamily: "'Caveat', 'Patrick Hand', cursive" }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button className="absolute top-2 right-2 text-black/40 hover:text-black/80 text-lg" onClick={() => setSelectedStickyIndex(null)}>✕</button>
+                <p className="text-xs text-black/40 font-sans mb-2 uppercase tracking-wide">📌 Notice Board</p>
+                <p className={`text-lg text-black/80 font-bold leading-snug ${actionItems[selectedStickyIndex].completed ? "line-through opacity-60" : ""}`}>
+                  {actionItems[selectedStickyIndex].title}
+                </p>
+                <div className="mt-4 pt-3 border-t border-black/10">
+                  <p className="text-xs text-black/40 font-sans">Posted by {actionItems[selectedStickyIndex].created_by_email.split("@")[0]}</p>
+                  {actionItems[selectedStickyIndex].completed && <p className="text-xs text-black/50 font-sans mt-1">✓ Completed</p>}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Active desk panel */}
           {deskView === "computer" && (
