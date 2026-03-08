@@ -934,6 +934,235 @@ Return your analysis by calling the "validation_report" function. Be concise and
       });
     }
 
+    // ── ACTION: SCRUTINIZE WEBSITE ──
+    if (action === "scrutinize-website") {
+      if (!opportunityId) {
+        return new Response(JSON.stringify({ error: "Missing opportunityId" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Fetch opportunity + account for website URL
+      const { data: opp } = await supabase
+        .from("opportunities")
+        .select("id, account_id, contact_id, service_type")
+        .eq("id", opportunityId)
+        .single();
+
+      if (!opp) {
+        return new Response(JSON.stringify({ error: "Opportunity not found" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const [accountRes, wizardRes] = await Promise.all([
+        supabase.from("accounts").select("*").eq("id", opp.account_id).single(),
+        supabase.from("onboarding_wizard_states").select("form_state").eq("opportunity_id", opportunityId).maybeSingle(),
+      ]);
+
+      const account = accountRes.data;
+      const wizardForm = (wizardRes.data?.form_state as Record<string, unknown>) || {};
+      const websiteUrl = (wizardForm.website_url as string) || account?.website;
+
+      if (!websiteUrl) {
+        return new Response(JSON.stringify({ error: "No website URL found for this merchant. Add a website in the wizard or account details first." }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Fetch the website content
+      let websiteContent = "";
+      let fetchError = "";
+      try {
+        const formattedUrl = websiteUrl.startsWith("http") ? websiteUrl : `https://${websiteUrl}`;
+        const siteRes = await fetch(formattedUrl, {
+          headers: { "User-Agent": "Mozilla/5.0 (compatible; MerchantHaus-Underwriting/1.0)" },
+          redirect: "follow",
+        });
+        if (!siteRes.ok) {
+          fetchError = `Website returned HTTP ${siteRes.status}`;
+        } else {
+          const html = await siteRes.text();
+          // Extract text content, strip tags for analysis (keep first 15k chars)
+          websiteContent = html
+            .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+            .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+            .replace(/<[^>]+>/g, " ")
+            .replace(/\s+/g, " ")
+            .trim()
+            .substring(0, 15000);
+        }
+      } catch (e) {
+        fetchError = `Could not fetch website: ${e instanceof Error ? e.message : "Unknown error"}`;
+      }
+
+      const applicationContext = `
+MERCHANT: ${account?.name || "Unknown"}
+WEBSITE URL: ${websiteUrl}
+SERVICE TYPE: ${opp.service_type || "processing"}
+NATURE OF BUSINESS: ${wizardForm.nature_of_business || wizardForm.product_description || "Not provided"}
+MCC/SIC CODE: ${wizardForm.sic_mcc_code || "Not provided"}
+MONTHLY VOLUME: ${wizardForm.monthly_volume || wizardForm.average_transaction ? `$${wizardForm.monthly_volume}/mo, avg ticket $${wizardForm.average_transaction}` : "Not provided"}
+
+${fetchError ? `WEBSITE FETCH ERROR: ${fetchError}` : `WEBSITE CONTENT (extracted text):\n${websiteContent}`}
+`;
+
+      const scrutinyPrompt = `You are an expert underwriting analyst for a payment processing ISO. Your job is to scrutinize a merchant's website for underwriting readiness.
+
+Analyze the website content and application data below, then provide a score from 0-10:
+- 0: Will definitely be declined. Major red flags, restricted content, or non-functional site.
+- 1-3: High risk of decline. Missing critical elements or significant compliance gaps.
+- 4-5: Borderline. Some issues that need fixing before submission.
+- 6-7: Acceptable with minor fixes needed.
+- 8-9: Strong application. Minor cosmetic suggestions only.
+- 10: Perfect. All underwriting requirements met, low-risk MCC, clean professional site.
+
+UNDERWRITING WEBSITE REQUIREMENTS TO CHECK:
+1. Refund/return policy clearly visible
+2. Contact page with email and phone number
+3. Clear product/service description matching the application
+4. Delivery/fulfillment timeline stated
+5. Terms & conditions page
+6. Privacy policy page
+7. Pricing visible and consistent with application details
+8. Professional appearance (no "coming soon", placeholder, or under construction)
+9. No restricted/prohibited content
+10. If subscription-based: clear recurring billing disclosure, cancellation instructions, trial terms
+
+Also check for RED FLAGS:
+- Products on site don't match application description
+- Aggressive/misleading claims
+- Long delivery times (may trigger reserves)
+- No SSL certificate
+- Thin content / minimal pages
+- Restricted industries or high-risk indicators
+
+${applicationContext}
+
+Call the "website_scrutiny_report" function with your analysis.`;
+
+      const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            { role: "system", content: "You are an expert underwriting website reviewer for payment processing merchant applications. Be thorough and specific." },
+            { role: "user", content: scrutinyPrompt },
+          ],
+          tools: [
+            {
+              type: "function",
+              function: {
+                name: "website_scrutiny_report",
+                description: "Return a structured website scrutiny report for underwriting readiness.",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    score: {
+                      type: "number",
+                      description: "Underwriting readiness score from 0 to 10",
+                    },
+                    score_label: {
+                      type: "string",
+                      enum: ["will_be_declined", "high_risk", "borderline", "acceptable", "strong", "perfect"],
+                      description: "Human-readable label for the score range",
+                    },
+                    summary: {
+                      type: "string",
+                      description: "One or two sentence summary of the website readiness assessment",
+                    },
+                    requirements_met: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          requirement: { type: "string" },
+                          met: { type: "boolean" },
+                          detail: { type: "string" },
+                        },
+                        required: ["requirement", "met"],
+                        additionalProperties: false,
+                      },
+                      description: "Each underwriting requirement and whether it was found on the website",
+                    },
+                    red_flags: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          flag: { type: "string" },
+                          severity: { type: "string", enum: ["low", "medium", "high", "critical"] },
+                          detail: { type: "string" },
+                        },
+                        required: ["flag", "severity"],
+                        additionalProperties: false,
+                      },
+                      description: "Red flags found during website analysis",
+                    },
+                    recommendations: {
+                      type: "array",
+                      items: { type: "string" },
+                      description: "Specific actions to improve the score before submitting to underwriting",
+                    },
+                  },
+                  required: ["score", "score_label", "summary", "requirements_met", "recommendations"],
+                  additionalProperties: false,
+                },
+              },
+            },
+          ],
+          tool_choice: { type: "function", function: { name: "website_scrutiny_report" } },
+        }),
+      });
+
+      if (!aiResponse.ok) {
+        const status = aiResponse.status;
+        if (status === 429) {
+          return new Response(JSON.stringify({ error: "Rate limited. Please try again in a moment." }), {
+            status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (status === 402) {
+          return new Response(JSON.stringify({ error: "AI credits exhausted. Please top up in Settings." }), {
+            status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const errText = await aiResponse.text();
+        console.error("AI gateway error:", status, errText);
+        throw new Error(`AI gateway error: ${status}`);
+      }
+
+      const aiData = await aiResponse.json();
+      const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
+      let report: Record<string, unknown>;
+
+      if (toolCall?.function?.arguments) {
+        report = typeof toolCall.function.arguments === "string"
+          ? JSON.parse(toolCall.function.arguments)
+          : toolCall.function.arguments;
+      } else {
+        report = {
+          score: 0,
+          score_label: "will_be_declined",
+          summary: aiData.choices?.[0]?.message?.content || "Unable to generate report.",
+          requirements_met: [],
+          red_flags: [],
+          recommendations: [],
+        };
+      }
+
+      return new Response(JSON.stringify({ success: true, report, website_url: websiteUrl }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify({ error: "Unknown action" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

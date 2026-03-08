@@ -37,6 +37,7 @@ import { StagePath } from "./opportunity-detail/StagePath";
 import { ApplicationProgress } from "./opportunity-detail/ApplicationProgress";
 import { OpportunityTasks } from "./opportunity-detail/OpportunityTasks";
 import { NotesSection } from "./opportunity-detail/NotesSection";
+import { AIValidatePanel } from "./opportunity-detail/AIValidatePanel";
 import { DocumentsTab } from "./DocumentsTab";
 import GameSplash from "./GameSplash";
 import CommentsTab from "./CommentsTab";
@@ -1145,15 +1146,18 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
             {/* Primary Panel - takes full remaining space */}
             <div className="flex-1 min-h-0 min-w-0 overflow-y-auto px-3 py-2">
               {activeSection === 'overview' && (
-                <ApplicationProgress 
-                  opportunity={opportunity} 
-                  wizardState={wizardState ? {
-                    progress: wizardState.progress,
-                    step_index: wizardState.step_index,
-                    form_state: wizardState.form_state as Record<string, unknown>,
-                    updated_at: wizardState.updated_at
-                  } : null}
-                />
+                <div className="space-y-6">
+                  <ApplicationProgress 
+                    opportunity={opportunity} 
+                    wizardState={wizardState ? {
+                      progress: wizardState.progress,
+                      step_index: wizardState.step_index,
+                      form_state: wizardState.form_state as Record<string, unknown>,
+                      updated_at: wizardState.updated_at
+                    } : null}
+                  />
+                  <AIValidatePanel opportunityId={opportunity.id} />
+                </div>
               )}
 
               {activeSection === 'tasks' && (
