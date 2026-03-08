@@ -337,7 +337,7 @@ export default function OutreachDetail() {
   const filteredContacts = contacts.filter(c => {
     const matchStatus = statusFilter === "all" || c.status === statusFilter;
     const term = search.toLowerCase();
-    const matchSearch = !term || [c.first_name, c.last_name, c.email, c.company, c.phone]
+    const matchSearch = !term || [c.first_name, c.last_name, c.email, c.company]
       .filter(Boolean).some(v => v!.toLowerCase().includes(term));
     return matchStatus && matchSearch;
   });
