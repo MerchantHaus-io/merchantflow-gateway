@@ -1327,7 +1327,7 @@ export default function OfficeChat({
         } else if (nearTV && !activeChat && !showTerminal) {
           setTvUnmuted(prev => !prev);
         } else if (nearDesk && !activeChat && !showTerminal) {
-          setShowTerminal(true);
+          setShowTerminal(true); setDeskView("computer");
           document.exitPointerLock();
         } else if (nearInteract && !activeChat && !showTerminal) {
           if (nearInteract.action === "sit") {
@@ -1864,7 +1864,7 @@ export default function OfficeChat({
                 e.stopPropagation();
                 if (nearby) setActiveChat(nearby);
                 else if (nearTV) setTvUnmuted(prev => !prev);
-                else if (nearDesk) setShowTerminal(true);
+                else if (nearDesk) { setShowTerminal(true); setDeskView("computer"); }
                 else if (nearInteract) {
                   if (nearInteract.action === "sit") setIsSitting(prev => !prev);
                   else if (nearInteract.action === "whiteboard") setShowWhiteboard(true);
