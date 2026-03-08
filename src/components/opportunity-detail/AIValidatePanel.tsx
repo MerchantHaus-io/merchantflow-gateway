@@ -5,9 +5,11 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { EMAIL_TO_USER } from "@/types/opportunity";
 import {
-  Wand2, Globe, Loader2, CheckCircle2, XCircle, AlertTriangle, ChevronDown, ChevronUp, Eye,
+  Wand2, Globe, Loader2, CheckCircle2, XCircle, AlertTriangle, ChevronDown, ChevronUp, Eye, Clock, User,
 } from "lucide-react";
+import { format } from "date-fns";
 
 interface AIValidatePanelProps {
   opportunityId: string;
@@ -32,6 +34,12 @@ interface DocReport {
   classification_issues: { file_name: string; issue: string }[];
 }
 
+interface ReportMeta {
+  triggered_by: string;
+  created_at: string;
+  no_change: boolean;
+}
+
 const scoreColor = (score: number) => {
   if (score >= 8) return "text-emerald-500";
   if (score >= 6) return "text-amber-500";
@@ -52,12 +60,30 @@ const readinessIcon = (score: string) => {
   return <XCircle className="h-4 w-4 text-destructive" />;
 };
 
+const readinessLabel = (score: string) => {
+  if (score === "ready" || score === "green") return "🟢 Ready";
+  if (score === "needs_attention" || score === "yellow") return "🟡 Needs Attention";
+  return "🔴 Not Ready";
+};
+
+const displayName = (email: string) => EMAIL_TO_USER[email?.toLowerCase()] || email || "Unknown";
+
+const MetaLine = ({ meta }: { meta: ReportMeta }) => (
+  <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+    <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{format(new Date(meta.created_at), "dd MMM yyyy, HH:mm")}</span>
+    <span className="flex items-center gap-1"><User className="h-3 w-3" />{displayName(meta.triggered_by)}</span>
+    {meta.no_change && <Badge variant="outline" className="text-[9px] py-0 px-1 border-muted-foreground/30">No change</Badge>}
+  </div>
+);
+
 export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
   const { validateDocuments, scrutinizeWebsite } = useAIAssistant();
   const [isValidating, setIsValidating] = useState(false);
   const [isScrutinizing, setIsScrutinizing] = useState(false);
   const [docReport, setDocReport] = useState<DocReport | null>(null);
+  const [docMeta, setDocMeta] = useState<ReportMeta | null>(null);
   const [websiteReport, setWebsiteReport] = useState<WebsiteReport | null>(null);
+  const [webMeta, setWebMeta] = useState<ReportMeta | null>(null);
   const [websiteUrl, setWebsiteUrl] = useState<string | null>(null);
   const [showDocDetails, setShowDocDetails] = useState(false);
   const [showWebDetails, setShowWebDetails] = useState(false);
@@ -68,7 +94,16 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
       const result = await validateDocuments(opportunityId);
       if (result?.report) {
         setDocReport(result.report);
-        toast.success("Document validation complete");
+        setDocMeta({
+          triggered_by: result.triggered_by || "unknown",
+          created_at: result.created_at || new Date().toISOString(),
+          no_change: !!result.no_change,
+        });
+        if (result.no_change) {
+          toast.info("No change from previous validation");
+        } else {
+          toast.success("Document validation complete");
+        }
       }
     } catch {
       toast.error("AI validation failed — please try again");
@@ -86,11 +121,19 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
       } else if (result?.report) {
         setWebsiteReport(result.report);
         setWebsiteUrl(result.website_url);
-        toast.success("Website scrutiny complete");
+        setWebMeta({
+          triggered_by: result.triggered_by || "unknown",
+          created_at: result.created_at || new Date().toISOString(),
+          no_change: !!result.no_change,
+        });
+        if (result.no_change) {
+          toast.info("No change from previous scrutiny");
+        } else {
+          toast.success("Website scrutiny complete");
+        }
       }
     } catch (err: any) {
-      const msg = err?.message || "Website scrutiny failed";
-      toast.error(msg);
+      toast.error(err?.message || "Website scrutiny failed");
     } finally {
       setIsScrutinizing(false);
     }
@@ -106,6 +149,11 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
       .single();
     if (data) {
       setDocReport(data as unknown as DocReport);
+      setDocMeta({
+        triggered_by: (data as any).triggered_by || "unknown",
+        created_at: (data as any).created_at || "",
+        no_change: !!(data as any).no_change,
+      });
     } else {
       toast("No previous report found");
     }
@@ -135,14 +183,17 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
 
       {/* Website Scrutiny Result */}
       {websiteReport && (
-        <div className={cn("border rounded-lg p-4 space-y-3", scoreBg(websiteReport.score))}>
+        <div className={cn("border rounded-lg p-4 space-y-2", webMeta?.no_change ? "bg-muted/30 border-muted-foreground/20" : scoreBg(websiteReport.score))}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className={cn("text-3xl font-bold tabular-nums", scoreColor(websiteReport.score))}>
                 {websiteReport.score}/10
               </div>
               <div>
-                <p className="text-sm font-semibold">Website Readiness</p>
+                <p className="text-sm font-semibold flex items-center gap-2">
+                  Website Readiness
+                  {webMeta?.no_change && <Badge variant="outline" className="text-[9px] py-0 px-1">No change</Badge>}
+                </p>
                 {websiteUrl && (
                   <a href={websiteUrl.startsWith("http") ? websiteUrl : `https://${websiteUrl}`} target="_blank" rel="noreferrer" className="text-xs text-muted-foreground hover:underline truncate block max-w-[200px]">
                     {websiteUrl}
@@ -154,11 +205,11 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
               {showWebDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground">{websiteReport.summary}</p>
+          {webMeta && <MetaLine meta={webMeta} />}
+          {!webMeta?.no_change && <p className="text-xs text-muted-foreground">{websiteReport.summary}</p>}
 
-          {showWebDetails && (
+          {showWebDetails && !webMeta?.no_change && (
             <div className="space-y-3 pt-2 border-t border-border/50">
-              {/* Requirements checklist */}
               {websiteReport.requirements_met?.length > 0 && (
                 <div>
                   <p className="text-xs font-medium mb-1.5">Requirements</p>
@@ -176,8 +227,6 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
                   </div>
                 </div>
               )}
-
-              {/* Red flags */}
               {websiteReport.red_flags?.length > 0 && (
                 <div>
                   <p className="text-xs font-medium mb-1.5">Red Flags</p>
@@ -186,8 +235,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
                       <div key={i} className="flex items-start gap-2 text-xs">
                         <AlertTriangle className={cn(
                           "h-3.5 w-3.5 shrink-0 mt-0.5",
-                          f.severity === "critical" ? "text-destructive" :
-                          f.severity === "high" ? "text-destructive" :
+                          f.severity === "critical" || f.severity === "high" ? "text-destructive" :
                           f.severity === "medium" ? "text-amber-500" : "text-muted-foreground"
                         )} />
                         <span>
@@ -199,16 +247,13 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
                   </div>
                 </div>
               )}
-
-              {/* Recommendations */}
               {websiteReport.recommendations?.length > 0 && (
                 <div>
                   <p className="text-xs font-medium mb-1.5">Recommendations</p>
                   <ul className="space-y-0.5 text-xs text-muted-foreground">
                     {websiteReport.recommendations.map((r, i) => (
                       <li key={i} className="flex items-start gap-1.5">
-                        <span className="text-primary mt-0.5">→</span>
-                        {r}
+                        <span className="text-primary mt-0.5">→</span>{r}
                       </li>
                     ))}
                   </ul>
@@ -221,23 +266,25 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
 
       {/* Document Validation Result */}
       {docReport && (
-        <div className="border border-border rounded-lg p-4 bg-card space-y-3">
+        <div className={cn("border rounded-lg p-4 space-y-2", docMeta?.no_change ? "bg-muted/30 border-muted-foreground/20" : "bg-card border-border")}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {readinessIcon(docReport.readiness_score)}
-              <h4 className="text-sm font-semibold">
-                Doc Readiness: {docReport.readiness_score === "ready" || docReport.readiness_score === "green" ? "🟢 Ready" : docReport.readiness_score === "needs_attention" || docReport.readiness_score === "yellow" ? "🟡 Needs Attention" : "🔴 Not Ready"}
+              <h4 className="text-sm font-semibold flex items-center gap-2">
+                Doc Readiness: {readinessLabel(docReport.readiness_score)}
+                {docMeta?.no_change && <Badge variant="outline" className="text-[9px] py-0 px-1">No change</Badge>}
               </h4>
             </div>
             <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setShowDocDetails(!showDocDetails)}>
               {showDocDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
             </Button>
           </div>
-          {docReport.summary && (
+          {docMeta && <MetaLine meta={docMeta} />}
+          {docReport.summary && !docMeta?.no_change && (
             <p className="text-xs text-muted-foreground">{docReport.summary}</p>
           )}
 
-          {showDocDetails && (
+          {showDocDetails && !docMeta?.no_change && (
             <div className="space-y-3 pt-2 border-t border-border/50">
               {Array.isArray(docReport.risk_flags) && docReport.risk_flags.length > 0 && (
                 <div>
