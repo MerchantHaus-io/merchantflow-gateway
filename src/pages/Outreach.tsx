@@ -126,6 +126,87 @@ export default function Outreach() {
     },
   });
 
+  const handleCsvFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCsvFile(file);
+    file.text().then((text) => {
+      const [headerLine, ...dataRows] = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+      if (!headerLine) return;
+      const headers = headerLine.split(",").map((h) => h.trim().toLowerCase());
+      const rows = dataRows.map((row) => {
+        const cells = row.split(",");
+        return headers.reduce<Record<string, string>>((acc, h, i) => {
+          acc[h] = cells[i]?.trim() || "";
+          return acc;
+        }, {});
+      });
+      setCsvPreview({ headers, rows });
+      if (!csvCampaignName) setCsvCampaignName(file.name.replace(/\.csv$/i, ""));
+    });
+  };
+
+  const handleCsvUpload = async () => {
+    if (!csvPreview.rows.length || !csvCampaignName || !csvSubject || !csvBodyHtml) return;
+    setIsUploading(true);
+    try {
+      // Create campaign
+      const { data: campaign, error: cErr } = await supabase.from("outreach_campaigns").insert({
+        name: csvCampaignName,
+        subject: csvSubject,
+        body_html: csvBodyHtml,
+        from_name: csvFromName,
+        from_email: csvFromEmail,
+        created_by: user?.id || "",
+        created_by_email: user?.email || "",
+        total_contacts: csvPreview.rows.length,
+      }).select().single();
+      if (cErr || !campaign) throw cErr || new Error("Failed to create campaign");
+
+      // Map CSV headers to outreach_contacts fields
+      const h = csvPreview.headers;
+      const emailCol = h.find((c) => c === "email") || h.find((c) => c.includes("email")) || "";
+      const firstNameCol = h.find((c) => c === "first_name") || h.find((c) => c.includes("first")) || "";
+      const lastNameCol = h.find((c) => c === "last_name") || h.find((c) => c.includes("last")) || "";
+      const companyCol = h.find((c) => c === "company") || h.find((c) => c.includes("company")) || h.find((c) => c.includes("business")) || "";
+
+      const contacts = csvPreview.rows
+        .filter((r) => r[emailCol]?.includes("@"))
+        .map((r) => ({
+          campaign_id: campaign.id,
+          email: r[emailCol],
+          first_name: r[firstNameCol] || null,
+          last_name: r[lastNameCol] || null,
+          company: r[companyCol] || null,
+          status: "pending" as const,
+        }));
+
+      if (contacts.length > 0) {
+        // Batch insert in chunks of 500
+        for (let i = 0; i < contacts.length; i += 500) {
+          const { error: insertErr } = await supabase.from("outreach_contacts").insert(contacts.slice(i, i + 500));
+          if (insertErr) throw insertErr;
+        }
+        // Update total_contacts with valid count
+        await supabase.from("outreach_campaigns").update({ total_contacts: contacts.length }).eq("id", campaign.id);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["outreach-campaigns"] });
+      setCsvUploadOpen(false);
+      setCsvFile(null);
+      setCsvPreview({ headers: [], rows: [] });
+      setCsvCampaignName("");
+      setCsvSubject("");
+      setCsvBodyHtml("");
+      toast.success(`Campaign created with ${contacts.length} contacts`);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "CSV upload failed");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const totalSent = campaigns.reduce((a, c) => a + (c.sent_count || 0), 0);
   const totalBounced = campaigns.reduce((a, c) => a + (c.bounced_count || 0), 0);
   const totalReplied = campaigns.reduce((a, c) => a + (c.replied_count || 0), 0);
