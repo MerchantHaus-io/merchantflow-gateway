@@ -1,12 +1,13 @@
 import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAIAssistant } from "@/hooks/useAIAssistant";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Upload, Download, Trash2, FileText, Loader2, Wand2, Eye } from "lucide-react";
+import { Upload, Download, Trash2, FileText, Loader2, Wand2, Eye, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 
 interface Document {
   id: string;
