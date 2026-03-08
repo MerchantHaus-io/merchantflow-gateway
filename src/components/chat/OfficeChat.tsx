@@ -1094,6 +1094,7 @@ export default function OfficeChat({
             const cp = chairPos(email);
             mesh.position.x = cp.x;
             mesh.position.z = cp.z;
+            mesh.rotation.y = Math.PI; // face toward monitor
             animateCharacter(mesh, t, false, true);
             ws.deskTimer -= dt;
             if (ws.deskTimer <= 0) {
