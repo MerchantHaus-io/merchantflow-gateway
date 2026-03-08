@@ -372,8 +372,8 @@ const UnifiedPipelineBoard = ({
                       <Calendar className="h-3 w-3" />
                       {format(new Date(deal.created_at), "MMM d, yyyy")}
                     </p>
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                      <span className="font-bold text-gray-900 text-lg">
+                    <div className="flex items-center justify-between pt-4 border-t border-border">
+                      <span className="font-bold text-foreground text-lg">
                         {dealValue > 0 ? formatCurrency(dealValue) : "—"}
                       </span>
                     </div>
