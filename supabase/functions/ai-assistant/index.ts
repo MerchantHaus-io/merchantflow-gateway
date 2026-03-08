@@ -908,19 +908,36 @@ Return your analysis by calling the "validation_report" function. Be concise and
         } catch { /* ignore */ }
       }
 
+      // Check for no-change against the last report
+      const { data: lastReport } = await supabase
+        .from("validation_reports")
+        .select("readiness_score, data_gaps, risk_flags, document_completeness, summary")
+        .eq("opportunity_id", opportunityId)
+        .eq("no_change", false)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const newScore = (report.readiness_score as string) || "unknown";
+      const isNoChange = lastReport
+        && lastReport.readiness_score === newScore
+        && JSON.stringify(lastReport.data_gaps) === JSON.stringify(report.data_gaps || [])
+        && JSON.stringify(lastReport.risk_flags) === JSON.stringify(report.risk_flags || []);
+
       // Persist to database
       const { data: savedReport, error: saveError } = await supabase
         .from("validation_reports")
         .insert({
           opportunity_id: opportunityId,
           triggered_by: triggeredBy,
-          readiness_score: (report.readiness_score as string) || "unknown",
+          readiness_score: newScore,
           document_completeness: report.document_completeness || [],
           classification_issues: report.classification_issues || [],
           data_gaps: report.data_gaps || [],
           risk_flags: report.risk_flags || [],
           recommended_actions: report.recommended_actions || [],
           summary: (report.summary as string) || null,
+          no_change: !!isNoChange,
         })
         .select()
         .single();
@@ -929,7 +946,14 @@ Return your analysis by calling the "validation_report" function. Be concise and
         console.error("Failed to save validation report:", saveError);
       }
 
-      return new Response(JSON.stringify({ success: true, report, id: savedReport?.id }), {
+      return new Response(JSON.stringify({
+        success: true,
+        report,
+        id: savedReport?.id,
+        triggered_by: triggeredBy,
+        created_at: savedReport?.created_at || new Date().toISOString(),
+        no_change: !!isNoChange,
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
