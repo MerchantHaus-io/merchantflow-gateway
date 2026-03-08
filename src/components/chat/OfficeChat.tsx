@@ -815,6 +815,9 @@ export default function OfficeChat({
   const [nearby, setNearby] = useState<CRMUser | null>(null);
   const [nearDesk, setNearDesk] = useState(false);
   const [showTerminal, setShowTerminal] = useState(false);
+  const [deskView, setDeskView] = useState<"computer" | "photo" | null>(null);
+  const [photoFrameUrl, setPhotoFrameUrl] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const [nearTV, setNearTV] = useState(false);
   const [tvUnmuted, setTvUnmuted] = useState(false);
   const tvOverlayRef = useRef<HTMLDivElement>(null);
