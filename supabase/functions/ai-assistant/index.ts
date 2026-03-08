@@ -161,8 +161,9 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
   // Group contacts by account_id
   const contactsByAccount: Record<string, any[]> = {};
   for (const c of allContacts) {
-    if (!contactsByAccount[c.account_id]) contactsByAccount[c.account_id] = [];
-    contactsByAccount[c.account_id].push(c);
+    const accId = String((c as any).account_id);
+    if (!contactsByAccount[accId]) contactsByAccount[accId] = [];
+    contactsByAccount[accId].push(c);
   }
 
   // Build account roster with contacts
