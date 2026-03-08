@@ -69,7 +69,7 @@ const DocumentsPage = () => {
           table: 'documents'
         },
         (payload) => {
-          console.log('Real-time document update:', payload);
+          
           // Refresh documents when any change occurs
           fetchDocuments();
         }

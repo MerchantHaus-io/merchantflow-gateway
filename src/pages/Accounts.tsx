@@ -128,7 +128,7 @@ const Accounts = () => {
           table: 'accounts'
         },
         (payload) => {
-          console.log('Real-time account update:', payload);
+          
           
           if (payload.eventType === 'INSERT') {
             fetchSingleAccount(payload.new.id);

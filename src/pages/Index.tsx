@@ -271,7 +271,7 @@ const Index = () => {
           table: 'opportunities'
         },
         (payload) => {
-          console.log('Real-time opportunity update:', payload);
+          
           
           if (payload.eventType === 'INSERT') {
             // Fetch the full opportunity with relations
