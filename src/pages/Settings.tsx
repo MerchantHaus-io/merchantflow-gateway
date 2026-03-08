@@ -36,7 +36,7 @@ const Settings = () => {
   const { user, teamMemberName } = useAuth();
   const { variant, setVariant } = useTheme();
   const { isSupported: pushSupported, isSubscribed: pushSubscribed, isLoading: pushLoading, toggleSubscription: togglePush } = usePushNotifications();
-  const isAdmin = user?.email === "admin@merchanthaus.io" || user?.email === "darryn@merchanthaus.io";
+  const { isAdmin } = useUserRole();
   const [isResetting, setIsResetting] = useState(false);
   const [isSigningOutAll, setIsSigningOutAll] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
