@@ -1668,6 +1668,29 @@ export default function OfficeChat({
             </div>
           </div>
 
+          {/* Sticky note detail popup */}
+          {selectedStickyIndex !== null && actionItems[selectedStickyIndex] && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setSelectedStickyIndex(null)}>
+              <div
+                className={`relative w-64 min-h-48 p-5 rounded shadow-2xl ${
+                  selectedStickyIndex === 0 ? "bg-yellow-300" : selectedStickyIndex === 1 ? "bg-orange-300" : "bg-green-400"
+                }`}
+                style={{ transform: "rotate(-1deg)", fontFamily: "'Caveat', 'Patrick Hand', cursive" }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button className="absolute top-2 right-2 text-black/40 hover:text-black/80 text-lg" onClick={() => setSelectedStickyIndex(null)}>✕</button>
+                <p className="text-xs text-black/40 font-sans mb-2 uppercase tracking-wide">📌 Notice Board</p>
+                <p className={`text-lg text-black/80 font-bold leading-snug ${actionItems[selectedStickyIndex].completed ? "line-through opacity-60" : ""}`}>
+                  {actionItems[selectedStickyIndex].title}
+                </p>
+                <div className="mt-4 pt-3 border-t border-black/10">
+                  <p className="text-xs text-black/40 font-sans">Posted by {actionItems[selectedStickyIndex].created_by_email.split("@")[0]}</p>
+                  {actionItems[selectedStickyIndex].completed && <p className="text-xs text-black/50 font-sans mt-1">✓ Completed</p>}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Active desk panel */}
           {deskView === "computer" && (
             <div className="absolute inset-8 flex items-center justify-center">

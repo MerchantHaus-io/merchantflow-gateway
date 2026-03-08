@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import OfficeChat, { ChatMessage, RemotePosition } from "./OfficeChat";
+import OfficeChat, { ChatMessage, RemotePosition, ActionItemNote } from "./OfficeChat";
 
 /**
  * Wrapper that connects the 3D OfficeChat component to real Supabase
