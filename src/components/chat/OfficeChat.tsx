@@ -911,8 +911,9 @@ export default function OfficeChat({
 
     others.forEach(u => {
       const mesh = buildCharacterMesh(u, false);
-      const deskPos = DESK_POS[u.email] || new THREE.Vector3(0, 0, 0);
-      mesh.position.copy(deskPos);
+      const cp = chairPos(u.email);
+      mesh.position.copy(cp);
+      mesh.rotation.y = Math.PI; // face toward monitor (negative Z)
       mesh.visible = false;
       scene.add(mesh);
       npcMeshes.set(u.email, mesh);
