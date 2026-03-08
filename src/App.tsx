@@ -64,6 +64,7 @@ const App = () => (
               <IncomingCallToast />
               <IncomingMessageToast />
               <Dialler />
+              <CommandPalette />
               <Routes>
                 {/* Public routes */}
                 <Route path="/auth" element={<Auth />} />
