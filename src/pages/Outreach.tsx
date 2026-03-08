@@ -319,8 +319,8 @@ export default function Outreach() {
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
               <DialogTrigger asChild>
                 <Button><Plus className="h-4 w-4 mr-2" />New Campaign</Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Create Campaign</DialogTitle>
               </DialogHeader>
@@ -406,6 +406,7 @@ export default function Outreach() {
               </div>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         {/* KPI Cards */}
