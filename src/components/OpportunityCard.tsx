@@ -233,7 +233,7 @@ const OpportunityCard = ({
         </TooltipProvider>
 
         {/* Drag handle */}
-        <GripVertical className="absolute left-1 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground/20 group-hover:text-muted-foreground/40 transition-colors" />
+        <GripVertical className="absolute left-1 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground/20 group-hover:text-muted-foreground/50 transition-all cursor-grab active:cursor-grabbing group-hover:left-0.5" />
 
         <div className="pl-4 pr-2 pt-2.5 pb-2 space-y-1.5">
           {/* Account name + service badge */}
