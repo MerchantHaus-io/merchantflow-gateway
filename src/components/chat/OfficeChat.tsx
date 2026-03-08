@@ -1327,7 +1327,7 @@ export default function OfficeChat({
         } else if (nearTV && !activeChat && !showTerminal) {
           setTvUnmuted(prev => !prev);
         } else if (nearDesk && !activeChat && !showTerminal) {
-          setShowTerminal(true);
+          setShowTerminal(true); setDeskView("computer");
           document.exitPointerLock();
         } else if (nearInteract && !activeChat && !showTerminal) {
           if (nearInteract.action === "sit") {
