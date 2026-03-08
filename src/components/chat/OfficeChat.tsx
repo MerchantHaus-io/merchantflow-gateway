@@ -1508,7 +1508,7 @@ export default function OfficeChat({
       {nearDesk && !activeChat && !showTerminal && !isMobile && (
         <div className="absolute bottom-24 left-1/2 -translate-x-1/2 pointer-events-none">
           <Badge className="bg-black/80 text-white border-0 text-sm px-4 py-2">
-            Press <kbd className="mx-1 px-1 bg-white/20 rounded">E</kbd> to use terminal
+            Press <kbd className="mx-1 px-1 bg-white/20 rounded">E</kbd> to sit at your desk
           </Badge>
         </div>
       )}
