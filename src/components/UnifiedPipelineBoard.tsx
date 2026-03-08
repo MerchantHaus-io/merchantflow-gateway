@@ -364,7 +364,7 @@ const UnifiedPipelineBoard = ({
                         )}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-500 mb-2 flex items-center gap-2">
+                    <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
                       <User className="h-4 w-4" />
                       {deal.contact?.last_name || deal.contact?.first_name || "No contact"}
                     </p>
