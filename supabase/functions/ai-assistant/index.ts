@@ -204,8 +204,9 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
   // Group docs by opportunity
   const docsByOpp: Record<string, any[]> = {};
   for (const d of allDocs) {
-    if (!docsByOpp[d.opportunity_id]) docsByOpp[d.opportunity_id] = [];
-    docsByOpp[d.opportunity_id].push(d);
+    const oppId = String((d as any).opportunity_id);
+    if (!docsByOpp[oppId]) docsByOpp[oppId] = [];
+    docsByOpp[oppId].push(d);
   }
 
   const documentRoster = Object.entries(docsByOpp)
