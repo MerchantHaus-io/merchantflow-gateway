@@ -12,9 +12,29 @@ export default function OfficeChatWrapper() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [presence, setPresence] = useState<Record<string, boolean>>({});
   const [remotePositions, setRemotePositions] = useState<Record<string, RemotePosition>>({});
+  const [actionItems, setActionItems] = useState<ActionItemNote[]>([]);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const currentUserEmail = user?.email || "";
+
+  // Fetch notice board items
+  useEffect(() => {
+    if (!user) return;
+    const fetch = async () => {
+      const { data } = await supabase
+        .from("action_items")
+        .select("id, title, completed, created_by_email")
+        .order("sort_order", { ascending: true })
+        .limit(3);
+      if (data) setActionItems(data);
+    };
+    fetch();
+    const channel = supabase
+      .channel("action-items-sim")
+      .on("postgres_changes", { event: "*", schema: "public", table: "action_items" }, () => fetch())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
 
   // Fetch DMs involving current user
   const fetchMessages = useCallback(async () => {
