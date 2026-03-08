@@ -200,7 +200,7 @@ const Settings = () => {
     try {
       const { error } = await supabase
         .from("profiles")
-        .update({ full_name: fullName, phone } as any)
+        .update({ full_name: fullName, phone })
         .eq("id", user.id);
 
       if (error) throw error;
