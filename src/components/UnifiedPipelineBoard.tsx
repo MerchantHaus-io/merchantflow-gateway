@@ -312,7 +312,7 @@ const UnifiedPipelineBoard = ({
           {/* Foreground Layer — Current User's Deals (Iron Man Animation) */}
           <div className="relative z-10 flex flex-wrap gap-10 justify-center items-center content-center w-full h-full p-8 overflow-y-auto no-scrollbar pointer-events-auto">
             {myDeals.length === 0 ? (
-              <div className="text-center text-gray-500">
+              <div className="text-center text-muted-foreground">
                 <p className="text-lg font-bold">No deals assigned to you</p>
                 <p className="text-sm mt-2">Cards assigned to you will appear here in focus mode.</p>
               </div>
