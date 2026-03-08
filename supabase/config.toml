@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.nmi-board-merchant]
 verify_jwt = false
+
+[functions.polish-email]
+verify_jwt = false

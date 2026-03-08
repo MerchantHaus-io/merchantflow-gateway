@@ -210,15 +210,14 @@ export default function Outreach() {
                     <Input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Payment solutions for {{company}}" className="mt-1" />
                   </div>
                   <div>
-                    <Label className="text-xs">Email Body (HTML)</Label>
-                    <Textarea value={bodyHtml} onChange={e => setBodyHtml(e.target.value)}
-                      placeholder={"<p>Hi {{first_name}},</p>\n<p>I came across {{company}} and thought our payment processing solutions might be a great fit...</p>"}
-                      rows={5} className="mt-1 font-mono text-xs" />
-                    <p className="text-[10px] text-muted-foreground mt-1">
-                      Tags: <code className="bg-muted px-1 rounded text-[10px]">{"{{first_name}}"}</code>{" "}
-                      <code className="bg-muted px-1 rounded text-[10px]">{"{{last_name}}"}</code>{" "}
-                      <code className="bg-muted px-1 rounded text-[10px]">{"{{company}}"}</code>
-                    </p>
+                    <Label className="text-xs">Email Body</Label>
+                    <GmailEditor
+                      value={bodyHtml}
+                      onChange={setBodyHtml}
+                      placeholder="Hi {{first_name}}, I came across {{company}} and thought our payment processing solutions might be a great fit…"
+                      minHeight="140px"
+                      className="mt-1"
+                    />
                   </div>
                 </div>
 
