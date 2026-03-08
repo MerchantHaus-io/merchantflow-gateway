@@ -1569,7 +1569,7 @@ export default function OfficeChat({
 
       {/* Desk View — first-person desk experience */}
       {showTerminal && (
-        <div className="absolute inset-0 z-20 bg-black/80 backdrop-blur-sm">
+        <div className="absolute inset-0 z-20 overflow-hidden">
           {/* Hidden file input for photo frame */}
           <input
             ref={photoInputRef}
@@ -1586,55 +1586,73 @@ export default function OfficeChat({
             }}
           />
 
-          {/* Desk surface background */}
-          <div className="absolute inset-0 flex items-end justify-center pb-8" style={{
-            background: "linear-gradient(180deg, rgba(30,25,20,0.95) 0%, rgba(60,50,40,0.9) 60%, rgba(90,75,55,0.85) 100%)"
+          {/* Office ceiling / wall behind desk */}
+          <div className="absolute inset-0" style={{
+            background: "linear-gradient(180deg, #1a1815 0%, #252018 25%, #302820 45%, #302820 45.1%, transparent 45.1%)"
+          }} />
+
+          {/* Back wall with subtle texture */}
+          <div className="absolute left-0 right-0 top-0" style={{ height: "45%", background: "linear-gradient(180deg, #2a2520 0%, #353025 80%, #3d352a 100%)" }}>
+            {/* Partition walls left & right */}
+            <div className="absolute left-0 top-0 bottom-0 w-[8%]" style={{ background: "linear-gradient(90deg, #28231e, #302a22)" }} />
+            <div className="absolute right-0 top-0 bottom-0 w-[8%]" style={{ background: "linear-gradient(-90deg, #28231e, #302a22)" }} />
+            {/* Overhead cubicle light */}
+            <div className="absolute left-1/2 -translate-x-1/2 top-2 w-32 h-1 rounded-full" style={{ background: "rgba(255,230,180,0.15)", boxShadow: "0 0 40px 15px rgba(255,220,160,0.06)" }} />
+          </div>
+
+          {/* Desk surface — wood grain with perspective */}
+          <div className="absolute left-0 right-0 bottom-0" style={{
+            height: "58%",
+            background: "linear-gradient(180deg, #5a4630 0%, #6b5438 15%, #7a6040 40%, #8a6d48 70%, #8a6d48 100%)",
+            borderTop: "3px solid #4a3a28",
           }}>
-            {/* Desk items bar at bottom */}
-            <div className="flex items-end gap-6 mb-4">
-              {/* Monitor / Computer */}
-              <button
-                onClick={() => setDeskView(deskView === "computer" ? null : "computer")}
-                className={`flex flex-col items-center gap-1 px-4 py-3 rounded-lg transition-all ${deskView === "computer" ? "bg-primary/20 ring-2 ring-primary/50" : "bg-white/5 hover:bg-white/10"}`}
-              >
-                <div className="w-12 h-9 rounded-sm border-2 border-white/30 bg-black/60 flex items-center justify-center">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                </div>
-                <div className="w-4 h-1 bg-white/20 rounded-full" />
-                <span className="text-[10px] text-white/60 font-medium tracking-wide uppercase">Computer</span>
-              </button>
+            {/* Wood grain lines */}
+            <div className="absolute inset-0 opacity-[0.08]" style={{
+              backgroundImage: "repeating-linear-gradient(95deg, transparent, transparent 30px, rgba(0,0,0,0.3) 30px, rgba(0,0,0,0.3) 31px)",
+            }} />
+            {/* Desk edge highlight */}
+            <div className="absolute top-0 left-[6%] right-[6%] h-[2px]" style={{ background: "linear-gradient(90deg, transparent, rgba(255,230,180,0.12) 30%, rgba(255,230,180,0.12) 70%, transparent)" }} />
 
-              {/* Photo Frame */}
-              <button
-                onClick={() => {
-                  if (deskView === "photo") { setDeskView(null); }
-                  else if (!photoFrameUrl) { photoInputRef.current?.click(); }
-                  else { setDeskView("photo"); }
-                }}
-                className={`flex flex-col items-center gap-1 px-4 py-3 rounded-lg transition-all ${deskView === "photo" ? "bg-primary/20 ring-2 ring-primary/50" : "bg-white/5 hover:bg-white/10"}`}
-              >
-                <div className="w-10 h-12 rounded-sm border-2 border-amber-700/60 bg-black/30 flex items-center justify-center overflow-hidden">
-                  {photoFrameUrl ? (
-                    <img src={photoFrameUrl} alt="Photo" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-white/30 text-lg">🖼️</span>
-                  )}
+            {/* Desk items placed on the surface */}
+            <div className="absolute left-[8%] sm:left-[12%] bottom-[8%] flex items-end gap-4 sm:gap-6">
+              {/* Coffee mug */}
+              <div className="flex flex-col items-center">
+                <div className="relative">
+                  <div className="w-7 h-8 rounded-b-md bg-white/90 border border-white/60" style={{ boxShadow: "2px 3px 6px rgba(0,0,0,0.3)" }}>
+                    <div className="absolute top-1 left-1 right-1 h-2 rounded-sm bg-amber-800/60" />
+                  </div>
+                  <div className="absolute top-1 -right-1.5 w-2 h-3 rounded-r-full border-r-2 border-t border-b border-white/60" />
                 </div>
-                <span className="text-[10px] text-white/60 font-medium tracking-wide uppercase">Photo</span>
-              </button>
+                {/* Steam */}
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-white/10 text-xs animate-pulse">~</div>
+              </div>
 
-              {/* Static desk items (decorative) */}
-              <div className="flex flex-col items-center gap-1 px-4 py-3 opacity-60">
-                <span className="text-2xl">☕</span>
-                <span className="text-[10px] text-white/40 font-medium tracking-wide uppercase">Coffee</span>
+              {/* Pen holder with pens */}
+              <div className="flex flex-col items-center">
+                <div className="relative w-5 h-7 rounded-b-sm bg-zinc-600 border border-zinc-500/50" style={{ boxShadow: "1px 2px 4px rgba(0,0,0,0.3)" }}>
+                  <div className="absolute -top-3 left-0.5 w-[2px] h-4 bg-blue-700 rounded-t-full" style={{ transform: "rotate(-4deg)" }} />
+                  <div className="absolute -top-2.5 left-1.5 w-[2px] h-3.5 bg-red-700 rounded-t-full" style={{ transform: "rotate(2deg)" }} />
+                  <div className="absolute -top-3 left-2.5 w-[2px] h-4 bg-zinc-800 rounded-t-full" style={{ transform: "rotate(-1deg)" }} />
+                </div>
               </div>
-              <div className="flex flex-col items-center gap-1 px-4 py-3 opacity-60">
-                <span className="text-2xl">🖊️</span>
-                <span className="text-[10px] text-white/40 font-medium tracking-wide uppercase">Pens</span>
+
+              {/* Sticky notes */}
+              <div className="flex -space-x-1">
+                <div className="w-6 h-6 bg-yellow-400/80 rounded-sm shadow-sm" style={{ transform: "rotate(-5deg)" }} />
+                <div className="w-6 h-6 bg-orange-400/70 rounded-sm shadow-sm" style={{ transform: "rotate(3deg)" }} />
+                <div className="w-6 h-6 bg-green-500/60 rounded-sm shadow-sm" style={{ transform: "rotate(-2deg)" }} />
               </div>
-              <div className="flex flex-col items-center gap-1 px-4 py-3 opacity-60">
-                <span className="text-2xl">📋</span>
-                <span className="text-[10px] text-white/40 font-medium tracking-wide uppercase">Notes</span>
+            </div>
+
+            {/* Keyboard at the bottom center */}
+            <div className="absolute bottom-[6%] left-1/2 -translate-x-1/2">
+              <div className="w-28 sm:w-36 h-8 sm:h-10 rounded-md bg-zinc-800/80 border border-zinc-600/40" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.4)" }}>
+                {/* Key rows */}
+                <div className="flex flex-wrap gap-[1px] p-1 opacity-30">
+                  {Array.from({ length: 24 }).map((_, i) => (
+                    <div key={i} className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-[1px] bg-zinc-500/60" />
+                  ))}
+                </div>
               </div>
             </div>
           </div>
