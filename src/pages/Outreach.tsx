@@ -140,6 +140,11 @@ export default function Outreach() {
     },
   });
 
+  const appendSignature = (html: string) => {
+    if (!signature) return html;
+    return html + `<br/><div style="border-top:1px solid #e5e5e5;padding-top:8px;margin-top:12px;font-size:13px;color:#666;">${signature}</div>`;
+  };
+
   const create = useMutation({
     mutationFn: async () => {
       let scheduled_at: string | null = null;
@@ -148,16 +153,33 @@ export default function Outreach() {
         const dt = new Date(schedDate); dt.setHours(h, m, 0, 0);
         scheduled_at = dt.toISOString();
       }
-      const { error } = await supabase.from("outreach_campaigns").insert({
-        name, subject, body_html: bodyHtml, from_name: fromName, from_email: fromEmail,
+      const step1 = steps[0];
+      const { data: campaign, error } = await supabase.from("outreach_campaigns").insert({
+        name, subject: step1.subject, body_html: appendSignature(step1.bodyHtml),
+        from_name: fromName, from_email: fromEmail,
         created_by: user?.id || "", created_by_email: user?.email || "", scheduled_at,
-      });
+      }).select().single();
       if (error) throw error;
+
+      // Insert follow-up steps 2..N
+      if (stepCount > 1 && campaign) {
+        const followUps = steps.slice(1, stepCount).map((s, i) => ({
+          campaign_id: campaign.id,
+          step_number: i + 2,
+          delay_days: s.delayDays,
+          subject: s.subject || step1.subject,
+          body_html: appendSignature(s.bodyHtml || step1.bodyHtml),
+        }));
+        const { error: stepsErr } = await supabase.from("cadence_steps").insert(followUps);
+        if (stepsErr) throw stepsErr;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["outreach-campaigns"] });
-      setOpen(false); setName(""); setSubject(""); setBodyHtml(""); setSchedDate(undefined);
-      toast.success("Cadence created — add your lead list and follow-up steps inside.");
+      setOpen(false); setName(""); setSchedDate(undefined);
+      setSteps(Array.from({ length: 10 }, (_, i) => ({ subject: "", bodyHtml: "", delayDays: DEFAULT_DELAYS[i] })));
+      setSignature(""); setActiveStep(0);
+      toast.success("Cadence created with all steps!");
     },
     onError: (e: Error) => toast.error(e.message),
   });
