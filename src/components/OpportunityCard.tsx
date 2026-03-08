@@ -233,7 +233,7 @@ const OpportunityCard = ({
         </TooltipProvider>
 
         {/* Drag handle */}
-        <GripVertical className="absolute left-1 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground/20 group-hover:text-muted-foreground/40 transition-colors" />
+        <GripVertical className="absolute left-1 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground/20 group-hover:text-muted-foreground/50 transition-all cursor-grab active:cursor-grabbing group-hover:left-0.5" />
 
         <div className="pl-4 pr-2 pt-2.5 pb-2 space-y-1.5">
           {/* Account name + service badge */}
@@ -276,15 +276,18 @@ const OpportunityCard = ({
           <div className="flex items-center justify-between pt-1 border-t border-border/40 gap-1">
             {/* Deal value */}
             <div className="flex items-center gap-1.5 min-w-0">
-              <span className={cn(
-                "font-semibold text-[10px] truncate",
-                isComplete ? "text-white/90" : "text-foreground/80"
+              <span key={dealValue} className={cn(
+                "font-mono font-semibold text-[10px] truncate animate-count",
+                isComplete ? "text-white/90" : "text-[hsl(var(--gold))]"
               )}>
                 {dealValue > 0 ? formatCurrency(dealValue) : "—"}
               </span>
-              {/* Days in stage */}
+              {/* Days in stage — color-coded */}
               {slaInfo.daysInStage > 0 && !isLive && (
-                <span className="flex items-center gap-0.5 text-[9px] text-muted-foreground">
+                <span className={cn(
+                  "flex items-center gap-0.5 text-[9px] font-medium",
+                  slaInfo.daysInStage < 7 ? "text-emerald-500" : slaInfo.daysInStage < 14 ? "text-amber-500" : "text-red-500"
+                )}>
                   <Clock className="h-2 w-2" />
                   {slaInfo.daysInStage}d
                 </span>
@@ -321,7 +324,7 @@ const OpportunityCard = ({
               <Popover>
                 <PopoverTrigger asChild>
                   <button onClick={(e) => e.stopPropagation()} className="shrink-0">
-                    <Avatar className="h-5 w-5 border border-border/50 hover:border-indigo-400 transition-colors">
+                    <Avatar className="h-5 w-5 ring-2 ring-background border border-border/50 hover:border-indigo-400 transition-colors">
                       {avatarUrl && <AvatarImage src={avatarUrl} alt={opportunity.assigned_to || "Unassigned"} />}
                       <AvatarFallback className={cn("text-[8px] font-black", teamColors.bg, teamColors.text)}>
                         {opportunity.assigned_to ? getInitials(opportunity.assigned_to) : "?"}

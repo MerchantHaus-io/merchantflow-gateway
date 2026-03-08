@@ -413,7 +413,7 @@ const UnifiedPipelineBoard = ({
   return (
     <div className="backdrop-blur-md bg-background/40 dark:backdrop-blur-none dark:bg-transparent flex flex-col flex-1 min-h-0 rounded-xl">
       {/* Inline toolbar — compact action row */}
-      <div className="flex-shrink-0 px-4 py-1.5 flex items-center justify-end gap-1.5">
+      <div className="flex-shrink-0 px-4 py-1.5 flex items-center justify-end gap-1.5 gradient-header rounded-t-xl">
         {totalPipelineValue > 0 && (
           <span className="hidden sm:inline-flex text-xs font-semibold text-foreground bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full mr-auto">
             Revenue: {formatCurrency(totalPipelineValue)}/mo

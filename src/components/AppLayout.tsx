@@ -50,12 +50,12 @@ export function AppLayout({
   return (
     <div className="h-screen h-dvh min-h-0 flex flex-col w-full overflow-hidden">
       {!focusMode && <MegaMenuHeader onNewApplication={onNewApplication} />}
-      <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
+      <main className={cn("flex-1 flex flex-col min-h-0 overflow-hidden", focusMode && "transition-all duration-500")}>
         {!focusMode && (pageTitle || headerActions) && (
-          <div className="border-b border-border bg-background/50 px-4 lg:px-6 py-3">
+          <div className="gradient-header px-4 lg:px-6 py-3">
             <div className="flex items-center justify-between gap-4 flex-wrap">
               {pageTitle && (
-                <h1 className="text-lg font-semibold text-foreground">{pageTitle}</h1>
+                <h1 className="text-lg font-semibold text-foreground border-l-4 border-primary pl-3">{pageTitle}</h1>
               )}
               {headerActions && <div className="flex items-center gap-2 ml-auto flex-wrap">{headerActions}</div>}
             </div>

@@ -220,16 +220,16 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full border-b border-border/60",
+        "sticky top-0 z-50 w-full border-b border-border/40",
         isDark
-          ? "bg-haus-charcoal/95 text-white backdrop-blur-md"
-          : "bg-background/95 text-foreground backdrop-blur-md shadow-sm"
+          ? "bg-background/70 text-white backdrop-blur-xl"
+          : "bg-background/80 text-foreground backdrop-blur-xl shadow-sm"
       )}
       style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
       <div className="flex h-12 items-center px-3 lg:px-5 gap-2">
         {/* Logo */}
-        <Link to="/" className="flex items-center shrink-0 mr-1">
+        <Link to="/" className="flex items-center shrink-0 mr-1 hover:drop-shadow-[0_0_8px_hsl(var(--primary)/0.4)] transition-all duration-300">
           <img src={sidebarIcon} alt="Ops Terminal" className="h-7 w-7 object-contain" />
         </Link>
 
@@ -255,7 +255,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                     <NavigationMenuContent>
                       <ul
                         className={cn(
-                          "gap-1 p-2",
+                          "gap-1 p-2 glass-card",
                           isTools ? "grid w-[500px] md:grid-cols-2" : "grid w-[340px] md:w-[420px] md:grid-cols-2"
                         )}
                       >
@@ -433,7 +433,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                     : "text-foreground/75 hover:text-foreground hover:bg-accent"
                 )}
               >
-                <Avatar className="h-6 w-6">
+                <Avatar className="h-6 w-6 ring-1 ring-border/50">
                   <AvatarImage src={avatarUrl || undefined} alt={displayName} />
                   <AvatarFallback className="text-[10px] font-bold bg-primary/15 text-primary">
                     {displayName.slice(0, 2).toUpperCase()}
@@ -446,7 +446,10 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
             <DropdownMenuContent align="end" className="w-52">
               {/* User info header */}
               <div className="px-3 py-2.5 border-b border-border/50 mb-1">
-                <p className="text-xs font-semibold">{displayName}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-semibold">{displayName}</p>
+                  <span className="live-dot shrink-0" />
+                </div>
                 <p className="text-[11px] text-muted-foreground truncate mt-0.5">{user?.email}</p>
               </div>
               <DropdownMenuItem asChild>
