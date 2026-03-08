@@ -433,7 +433,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                     : "text-foreground/75 hover:text-foreground hover:bg-accent"
                 )}
               >
-                <Avatar className="h-6 w-6">
+                <Avatar className="h-6 w-6 ring-1 ring-border/50">
                   <AvatarImage src={avatarUrl || undefined} alt={displayName} />
                   <AvatarFallback className="text-[10px] font-bold bg-primary/15 text-primary">
                     {displayName.slice(0, 2).toUpperCase()}
