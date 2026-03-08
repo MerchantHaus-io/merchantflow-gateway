@@ -120,9 +120,12 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
   const statusCounts: Record<string, number> = {};
   const assigneeCounts: Record<string, number> = {};
   for (const o of opps) {
-    stageCounts[o.stage] = (stageCounts[o.stage] || 0) + 1;
-    statusCounts[o.status || "unknown"] = (statusCounts[o.status || "unknown"] || 0) + 1;
-    if (o.assigned_to) assigneeCounts[o.assigned_to] = (assigneeCounts[o.assigned_to] || 0) + 1;
+    const stage = String((o as any).stage || "unknown");
+    const status = String((o as any).status || "unknown");
+    const assignedTo = String((o as any).assigned_to || "");
+    stageCounts[stage] = (stageCounts[stage] || 0) + 1;
+    statusCounts[status] = (statusCounts[status] || 0) + 1;
+    if (assignedTo) assigneeCounts[assignedTo] = (assigneeCounts[assignedTo] || 0) + 1;
   }
 
   const pipelineSummary = Object.entries(stageCounts)
