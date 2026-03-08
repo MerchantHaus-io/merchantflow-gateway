@@ -1842,7 +1842,7 @@ export default function OfficeChat({
 
       {/* Mobile close buttons */}
       {isMobile && showTerminal && (
-        <button onClick={() => setShowTerminal(false)} className="absolute top-4 right-4 z-30 px-3 py-2 rounded-lg bg-white/10 text-white text-xs font-medium backdrop-blur-sm">✕ Close</button>
+        <button onClick={() => { setShowTerminal(false); setDeskView(null); }} className="absolute top-4 right-4 z-30 px-3 py-2 rounded-lg bg-white/10 text-white text-xs font-medium backdrop-blur-sm">✕ Stand Up</button>
       )}
       {isMobile && showWhiteboard && (
         <button onClick={() => setShowWhiteboard(false)} className="absolute top-4 right-4 z-30 px-3 py-2 rounded-lg bg-white/10 text-white text-xs font-medium backdrop-blur-sm">✕ Close</button>
