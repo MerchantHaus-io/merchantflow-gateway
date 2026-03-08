@@ -532,13 +532,7 @@ export default function OutreachDetail() {
                                 </div>
                               </TableCell>
                               <TableCell className="text-xs text-muted-foreground">{c.email}</TableCell>
-                              <TableCell className="text-xs text-muted-foreground">
-                                {c.phone ? (
-                                  <a href={`tel:${c.phone}`} className="flex items-center gap-1 hover:text-foreground transition-colors">
-                                    <Phone className="h-3 w-3" />{c.phone}
-                                  </a>
-                                ) : "—"}
-                              </TableCell>
+                              <TableCell className="text-xs text-muted-foreground">—</TableCell>
                               <TableCell className="text-xs text-muted-foreground">{c.company || "—"}</TableCell>
                               <TableCell>
                                 <Badge variant="outline" className="text-[10px] font-mono">S{(c as any).current_step || 1}</Badge>
