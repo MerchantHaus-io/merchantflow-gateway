@@ -30,6 +30,7 @@ import {
   Minimize,
   Cloud,
   Send,
+  Search,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
