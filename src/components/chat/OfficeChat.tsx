@@ -911,8 +911,9 @@ export default function OfficeChat({
 
     others.forEach(u => {
       const mesh = buildCharacterMesh(u, false);
-      const deskPos = DESK_POS[u.email] || new THREE.Vector3(0, 0, 0);
-      mesh.position.copy(deskPos);
+      const cp = chairPos(u.email);
+      mesh.position.copy(cp);
+      mesh.rotation.y = Math.PI; // face toward monitor (negative Z)
       mesh.visible = false;
       scene.add(mesh);
       npcMeshes.set(u.email, mesh);
@@ -1093,6 +1094,7 @@ export default function OfficeChat({
             const cp = chairPos(email);
             mesh.position.x = cp.x;
             mesh.position.z = cp.z;
+            mesh.rotation.y = Math.PI; // face toward monitor
             animateCharacter(mesh, t, false, true);
             ws.deskTimer -= dt;
             if (ws.deskTimer <= 0) {
@@ -1146,6 +1148,7 @@ export default function OfficeChat({
           // ── REAL USER: offline — sitting in chair at desk ──
           const cp = chairPos(email);
           mesh.position.lerp(cp, 4 * dt);
+          mesh.rotation.y = Math.PI; // face toward monitor (negative Z)
           animateCharacter(mesh, t, false, true); // sitting in chair
         }
       });
