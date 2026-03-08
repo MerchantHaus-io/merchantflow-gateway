@@ -300,7 +300,7 @@ const UnifiedPipelineBoard = ({
                     {deal.assigned_to || "Unassigned"}
                   </p>
                   <div className="flex items-center justify-between pt-3 border-t border-border">
-                    <span className="font-bold text-gray-400 text-sm">
+                    <span className="font-bold text-muted-foreground text-sm">
                       {getDealValue(deal) > 0 ? formatCurrency(getDealValue(deal)) : "—"}
                     </span>
                   </div>
