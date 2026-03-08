@@ -196,6 +196,7 @@ export default function OfficeChatWrapper() {
       presence={presence}
       onPositionUpdate={handlePositionUpdate}
       remotePositions={remotePositions}
+      actionItems={actionItems}
     />
   );
 }
