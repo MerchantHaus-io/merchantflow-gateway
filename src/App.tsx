@@ -76,6 +76,7 @@ const App = () => (
               <IncomingMessageToast />
               <Dialler />
               <CommandPalette />
+              <KeyboardShortcutsModal />
               <Routes>
                 {/* Public routes */}
                 <Route path="/auth" element={<Auth />} />
