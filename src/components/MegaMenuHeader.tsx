@@ -255,7 +255,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                     <NavigationMenuContent>
                       <ul
                         className={cn(
-                          "gap-1 p-2",
+                          "gap-1 p-2 glass-card",
                           isTools ? "grid w-[500px] md:grid-cols-2" : "grid w-[340px] md:w-[420px] md:grid-cols-2"
                         )}
                       >
