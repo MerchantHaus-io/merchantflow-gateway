@@ -50,6 +50,7 @@ import { IncomingCallToast } from "./components/IncomingCallToast";
 import { IncomingMessageToast } from "./components/IncomingMessageToast";
 import { Dialler } from "./components/Dialler";
 import { CommandPalette } from "./components/CommandPalette";
+import { KeyboardShortcutsModal } from "./components/KeyboardShortcutsModal";
 
 const queryClient = new QueryClient({
   defaultOptions: {
