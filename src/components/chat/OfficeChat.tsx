@@ -1147,6 +1147,7 @@ export default function OfficeChat({
           // ── REAL USER: offline — sitting in chair at desk ──
           const cp = chairPos(email);
           mesh.position.lerp(cp, 4 * dt);
+          mesh.rotation.y = Math.PI; // face toward monitor (negative Z)
           animateCharacter(mesh, t, false, true); // sitting in chair
         }
       });
