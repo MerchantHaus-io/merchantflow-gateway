@@ -56,11 +56,24 @@ export const useAIAssistant = () => {
     return data;
   }, []);
 
+  const scrutinizeWebsite = useCallback(async (opportunityId: string) => {
+    const { data, error } = await supabase.functions.invoke("ai-assistant", {
+      body: {
+        action: "scrutinize-website",
+        opportunityId,
+      },
+    });
+
+    if (error) throw error;
+    return data;
+  }, []);
+
   return {
     isThinking,
     isAIChannel,
     isAIBotMessage,
     triggerAIResponse,
     validateDocuments,
+    scrutinizeWebsite,
   };
 };
