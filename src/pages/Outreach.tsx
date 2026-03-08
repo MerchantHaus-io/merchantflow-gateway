@@ -216,138 +216,206 @@ export default function Outreach() {
             <DialogTrigger asChild>
               <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" />New Cadence</Button>
             </DialogTrigger>
-             <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-               <DialogHeader>
-                 <DialogTitle className="flex items-center gap-2"><Layers className="h-4 w-4 text-primary" />New Sales Cadence</DialogTitle>
-               </DialogHeader>
-               <div className="space-y-5 pt-1">
-                 {/* Identity */}
-                 <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
-                   <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Cadence Identity</p>
-                   <div>
-                     <Label className="text-xs">Cadence Name</Label>
-                     <Input value={name} onChange={e => setName(e.target.value)} placeholder="Q2 Payment Processing Outreach" className="mt-1" />
-                   </div>
-                   <div className="grid grid-cols-2 gap-3">
-                     <div><Label className="text-xs">From Name</Label><Input value={fromName} onChange={e => setFromName(e.target.value)} className="mt-1" /></div>
-                     <div><Label className="text-xs">From Email</Label><Input value={fromEmail} onChange={e => setFromEmail(e.target.value)} className="mt-1" /></div>
-                   </div>
-                 </div>
-
-                 {/* Steps config */}
-                 <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
-                   <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Cadence Length</p>
-                   <div className="flex items-center justify-between mb-2">
-                     <Label className="text-xs">Total steps (1–10)</Label>
-                     <span className="text-sm font-bold text-primary">{stepCount} emails</span>
-                   </div>
-                   <input type="range" min={1} max={10} value={stepCount} onChange={e => { setStepCount(Number(e.target.value)); setActiveStep(Math.min(activeStep, Number(e.target.value) - 1)); }}
-                     className="w-full accent-primary" />
-                   <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
-                     <span>1</span><span>5</span><span>10</span>
-                   </div>
-                 </div>
-
-                 {/* Step tabs */}
-                 <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
-                   <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Email Content</p>
-                   <div className="flex gap-1 flex-wrap">
-                     {Array.from({ length: stepCount }, (_, i) => (
-                       <button key={i} type="button" onClick={() => setActiveStep(i)}
-                         className={cn(
-                           "px-3 py-1.5 rounded-md text-xs font-medium border transition-colors",
-                           activeStep === i
-                             ? "bg-primary text-primary-foreground border-primary"
-                             : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/30",
-                           steps[i].bodyHtml && "ring-1 ring-primary/20"
-                         )}>
-                         {i === 0 ? "Step 1 — Initial" : `Step ${i + 1}`}
-                         {steps[i].bodyHtml && <span className="ml-1 text-[10px] opacity-60">✓</span>}
-                       </button>
-                     ))}
+             <DialogContent className="sm:max-w-[960px] max-h-[90vh] overflow-y-auto p-0">
+               <div className="flex flex-col md:flex-row">
+                 {/* ── How-to Guide Panel ── */}
+                 <aside className="hidden md:flex md:w-[280px] shrink-0 flex-col bg-muted/40 border-r border-border/60 p-5 overflow-y-auto">
+                   <div className="flex items-center gap-2 mb-4">
+                     <div className="h-7 w-7 rounded-lg bg-primary/15 flex items-center justify-center">
+                       <Zap className="h-3.5 w-3.5 text-primary" />
+                     </div>
+                     <p className="text-xs font-bold text-foreground uppercase tracking-wide">Quick Guide</p>
                    </div>
 
-                   {/* Active step editor */}
-                   <div className="space-y-3 pt-2">
-                     <div className="flex items-center gap-2">
-                       <div className="h-5 w-5 rounded-full bg-primary/15 flex items-center justify-center text-[10px] font-bold text-primary">{activeStep + 1}</div>
-                       <p className="text-xs font-medium text-foreground">{activeStep === 0 ? "Initial Email" : `Follow-up #${activeStep}`}</p>
-                       {activeStep > 0 && (
-                         <div className="flex items-center gap-1 ml-auto">
-                           <Label className="text-[10px]">Send after</Label>
-                           <Input type="number" min={1} max={30} value={steps[activeStep].delayDays}
-                             onChange={e => updateStep(activeStep, { delayDays: Number(e.target.value) })}
-                             className="w-16 h-7 text-xs text-center" />
-                           <span className="text-[10px] text-muted-foreground">days</span>
+                   <ol className="space-y-4 text-xs text-muted-foreground">
+                     <li className="flex gap-2.5">
+                       <span className="h-5 w-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">1</span>
+                       <div>
+                         <p className="font-semibold text-foreground mb-0.5">Name your cadence</p>
+                         <p>Give it a clear name like "Q2 SMB Outreach" so you can find it later.</p>
+                       </div>
+                     </li>
+                     <li className="flex gap-2.5">
+                       <span className="h-5 w-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">2</span>
+                       <div>
+                         <p className="font-semibold text-foreground mb-0.5">Set your steps</p>
+                         <p>Use the slider to choose 1–10 emails. Each follow-up sends automatically after the delay you set.</p>
+                       </div>
+                     </li>
+                     <li className="flex gap-2.5">
+                       <span className="h-5 w-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">3</span>
+                       <div>
+                         <p className="font-semibold text-foreground mb-0.5">Write your emails</p>
+                         <p>Compose or paste content for each step. Use merge tags to personalise:</p>
+                         <div className="mt-1.5 space-y-1">
+                           {["{{first_name}}", "{{last_name}}", "{{company}}", "{{email}}"].map(tag => (
+                             <code key={tag} className="block bg-background/80 border border-border/50 rounded px-1.5 py-0.5 text-[10px] font-mono text-primary">{tag}</code>
+                           ))}
+                         </div>
+                       </div>
+                     </li>
+                     <li className="flex gap-2.5">
+                       <span className="h-5 w-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">4</span>
+                       <div>
+                         <p className="font-semibold text-foreground mb-0.5">Add a signature</p>
+                         <p>Your signature is appended to every email in the cadence automatically.</p>
+                       </div>
+                     </li>
+                     <li className="flex gap-2.5">
+                       <span className="h-5 w-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">5</span>
+                       <div>
+                         <p className="font-semibold text-foreground mb-0.5">Import leads & send</p>
+                         <p>After creating, open the cadence and click <strong>Import Lead List</strong> to upload a CSV, then hit Send.</p>
+                       </div>
+                     </li>
+                   </ol>
+
+                   <div className="mt-auto pt-5 border-t border-border/50">
+                     <div className="rounded-lg bg-primary/5 border border-primary/15 p-3 space-y-1.5">
+                       <p className="text-[10px] font-bold text-primary uppercase tracking-wide">CSV Format</p>
+                       <p className="text-[10px] text-muted-foreground">Your CSV should include headers:</p>
+                       <code className="block text-[10px] font-mono text-foreground bg-background/80 rounded p-1.5 border border-border/50 leading-relaxed">
+                         First Name, Last Name,<br/>Email, Phone, Company
+                       </code>
+                     </div>
+                   </div>
+                 </aside>
+
+                 {/* ── Form Panel ── */}
+                 <div className="flex-1 p-6 overflow-y-auto max-h-[90vh]">
+                   <DialogHeader>
+                     <DialogTitle className="flex items-center gap-2"><Layers className="h-4 w-4 text-primary" />New Sales Cadence</DialogTitle>
+                   </DialogHeader>
+                   <div className="space-y-5 pt-3">
+                     {/* Identity */}
+                     <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
+                       <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Cadence Identity</p>
+                       <div>
+                         <Label className="text-xs">Cadence Name</Label>
+                         <Input value={name} onChange={e => setName(e.target.value)} placeholder="Q2 Payment Processing Outreach" className="mt-1" />
+                       </div>
+                       <div className="grid grid-cols-2 gap-3">
+                         <div><Label className="text-xs">From Name</Label><Input value={fromName} onChange={e => setFromName(e.target.value)} className="mt-1" /></div>
+                         <div><Label className="text-xs">From Email</Label><Input value={fromEmail} onChange={e => setFromEmail(e.target.value)} className="mt-1" /></div>
+                       </div>
+                     </div>
+
+                     {/* Steps config */}
+                     <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
+                       <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Cadence Length</p>
+                       <div className="flex items-center justify-between mb-2">
+                         <Label className="text-xs">Total steps (1–10)</Label>
+                         <span className="text-sm font-bold text-primary">{stepCount} emails</span>
+                       </div>
+                       <input type="range" min={1} max={10} value={stepCount} onChange={e => { setStepCount(Number(e.target.value)); setActiveStep(Math.min(activeStep, Number(e.target.value) - 1)); }}
+                         className="w-full accent-primary" />
+                       <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                         <span>1</span><span>5</span><span>10</span>
+                       </div>
+                     </div>
+
+                     {/* Step tabs */}
+                     <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
+                       <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Email Content</p>
+                       <div className="flex gap-1 flex-wrap">
+                         {Array.from({ length: stepCount }, (_, i) => (
+                           <button key={i} type="button" onClick={() => setActiveStep(i)}
+                             className={cn(
+                               "px-3 py-1.5 rounded-md text-xs font-medium border transition-colors",
+                               activeStep === i
+                                 ? "bg-primary text-primary-foreground border-primary"
+                                 : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/30",
+                               steps[i].bodyHtml && "ring-1 ring-primary/20"
+                             )}>
+                             {i === 0 ? "Step 1 — Initial" : `Step ${i + 1}`}
+                             {steps[i].bodyHtml && <span className="ml-1 text-[10px] opacity-60">✓</span>}
+                           </button>
+                         ))}
+                       </div>
+
+                       {/* Active step editor */}
+                       <div className="space-y-3 pt-2">
+                         <div className="flex items-center gap-2">
+                           <div className="h-5 w-5 rounded-full bg-primary/15 flex items-center justify-center text-[10px] font-bold text-primary">{activeStep + 1}</div>
+                           <p className="text-xs font-medium text-foreground">{activeStep === 0 ? "Initial Email" : `Follow-up #${activeStep}`}</p>
+                           {activeStep > 0 && (
+                             <div className="flex items-center gap-1 ml-auto">
+                               <Label className="text-[10px]">Send after</Label>
+                               <Input type="number" min={1} max={30} value={steps[activeStep].delayDays}
+                                 onChange={e => updateStep(activeStep, { delayDays: Number(e.target.value) })}
+                                 className="w-16 h-7 text-xs text-center" />
+                               <span className="text-[10px] text-muted-foreground">days</span>
+                             </div>
+                           )}
+                         </div>
+                         <div>
+                           <Label className="text-xs">Subject Line</Label>
+                           <Input value={steps[activeStep].subject} onChange={e => updateStep(activeStep, { subject: e.target.value })}
+                             placeholder={activeStep === 0 ? "Payment solutions for {{company}}" : "Re: {{company}} — follow up"}
+                             className="mt-1" />
+                         </div>
+                         <div>
+                           <Label className="text-xs">Paste or compose your email</Label>
+                           <GmailEditor
+                             value={steps[activeStep].bodyHtml}
+                             onChange={(html) => updateStep(activeStep, { bodyHtml: html })}
+                             placeholder={activeStep === 0
+                               ? "Hi {{first_name}}, I came across {{company}} and thought our payment processing solutions might be a great fit…"
+                               : "Hi {{first_name}}, just following up on my previous email about {{company}}…"}
+                             minHeight="120px"
+                             className="mt-1"
+                           />
+                           <p className="text-[10px] text-muted-foreground mt-1">Paste an existing email or write from scratch — use AI Polish to refine.</p>
+                         </div>
+                       </div>
+                     </div>
+
+                     {/* Signature */}
+                     <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
+                       <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Email Signature</p>
+                       <GmailEditor
+                         value={signature}
+                         onChange={setSignature}
+                         placeholder="Your name, title, phone number, etc."
+                         minHeight="80px"
+                       />
+                       <p className="text-[10px] text-muted-foreground">Appended to all steps automatically.</p>
+                     </div>
+
+                     {/* Schedule */}
+                     <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
+                       <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Schedule (Optional)</p>
+                       <div className="flex gap-2">
+                         <Popover>
+                           <PopoverTrigger asChild>
+                             <Button variant="outline" className={cn("flex-1 justify-start text-sm font-normal", !schedDate && "text-muted-foreground")}>
+                               <CalendarIcon className="h-4 w-4 mr-2" />{schedDate ? format(schedDate, "PPP") : "Pick a date"}
+                             </Button>
+                           </PopoverTrigger>
+                           <PopoverContent className="w-auto p-0" align="start">
+                             <Calendar mode="single" selected={schedDate} onSelect={setSchedDate}
+                               disabled={d => d < new Date()} initialFocus className="p-3 pointer-events-auto" />
+                           </PopoverContent>
+                         </Popover>
+                         <Input type="time" value={schedTime} onChange={e => setSchedTime(e.target.value)} className="w-28" />
+                       </div>
+                       {schedDate && (
+                         <div className="flex items-center gap-2">
+                           <p className="text-xs text-muted-foreground flex items-center gap-1">
+                             <Clock className="h-3 w-3" />Step 1 sends {format(schedDate, "MMM d, yyyy")} at {schedTime}
+                           </p>
+                           <Button variant="ghost" size="sm" className="h-5 text-xs px-1" onClick={() => setSchedDate(undefined)}>Clear</Button>
                          </div>
                        )}
                      </div>
-                     <div>
-                       <Label className="text-xs">Subject Line</Label>
-                       <Input value={steps[activeStep].subject} onChange={e => updateStep(activeStep, { subject: e.target.value })}
-                         placeholder={activeStep === 0 ? "Payment solutions for {{company}}" : "Re: {{company}} — follow up"}
-                         className="mt-1" />
-                     </div>
-                     <div>
-                       <Label className="text-xs">Paste or compose your email</Label>
-                       <GmailEditor
-                         value={steps[activeStep].bodyHtml}
-                         onChange={(html) => updateStep(activeStep, { bodyHtml: html })}
-                         placeholder={activeStep === 0
-                           ? "Hi {{first_name}}, I came across {{company}} and thought our payment processing solutions might be a great fit…"
-                           : "Hi {{first_name}}, just following up on my previous email about {{company}}…"}
-                         minHeight="120px"
-                         className="mt-1"
-                       />
-                       <p className="text-[10px] text-muted-foreground mt-1">Paste an existing email or write from scratch — use AI Polish to refine.</p>
-                     </div>
+
+                     <Button className="w-full" onClick={() => create.mutate()} disabled={!name || !steps[0].subject || !steps[0].bodyHtml || create.isPending}>
+                       <Layers className="h-4 w-4 mr-2" />{schedDate ? "Schedule Cadence" : "Create Cadence"} ({stepCount} {stepCount === 1 ? "email" : "emails"})
+                     </Button>
                    </div>
                  </div>
-
-                 {/* Signature */}
-                 <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
-                   <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Email Signature</p>
-                   <GmailEditor
-                     value={signature}
-                     onChange={setSignature}
-                     placeholder="Your name, title, phone number, etc."
-                     minHeight="80px"
-                   />
-                   <p className="text-[10px] text-muted-foreground">Appended to all steps automatically.</p>
-                 </div>
-
-                 {/* Schedule */}
-                 <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
-                   <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Schedule (Optional)</p>
-                   <div className="flex gap-2">
-                     <Popover>
-                       <PopoverTrigger asChild>
-                         <Button variant="outline" className={cn("flex-1 justify-start text-sm font-normal", !schedDate && "text-muted-foreground")}>
-                           <CalendarIcon className="h-4 w-4 mr-2" />{schedDate ? format(schedDate, "PPP") : "Pick a date"}
-                         </Button>
-                       </PopoverTrigger>
-                       <PopoverContent className="w-auto p-0" align="start">
-                         <Calendar mode="single" selected={schedDate} onSelect={setSchedDate}
-                           disabled={d => d < new Date()} initialFocus className="p-3 pointer-events-auto" />
-                       </PopoverContent>
-                     </Popover>
-                     <Input type="time" value={schedTime} onChange={e => setSchedTime(e.target.value)} className="w-28" />
-                   </div>
-                   {schedDate && (
-                     <div className="flex items-center gap-2">
-                       <p className="text-xs text-muted-foreground flex items-center gap-1">
-                         <Clock className="h-3 w-3" />Step 1 sends {format(schedDate, "MMM d, yyyy")} at {schedTime}
-                       </p>
-                       <Button variant="ghost" size="sm" className="h-5 text-xs px-1" onClick={() => setSchedDate(undefined)}>Clear</Button>
-                     </div>
-                   )}
-                 </div>
-
-                 <Button className="w-full" onClick={() => create.mutate()} disabled={!name || !steps[0].subject || !steps[0].bodyHtml || create.isPending}>
-                   <Layers className="h-4 w-4 mr-2" />{schedDate ? "Schedule Cadence" : "Create Cadence"} ({stepCount} {stepCount === 1 ? "email" : "emails"})
-                 </Button>
                </div>
-             </DialogContent>
+              </DialogContent>
           </Dialog>
         </div>
 
