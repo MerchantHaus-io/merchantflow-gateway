@@ -251,7 +251,7 @@ const UnifiedPipelineBoard = ({
         >
           <Button
             onClick={() => setIsFocusMode(false)}
-            className="bg-gray-900/90 backdrop-blur-sm text-white px-6 py-3 rounded-full shadow-2xl font-bold text-sm flex items-center gap-2 hover:bg-gray-900 transition-all"
+            className="bg-card/90 backdrop-blur-sm text-foreground px-6 py-3 rounded-full shadow-2xl font-bold text-sm flex items-center gap-2 hover:bg-card transition-all"
           >
             <Minimize className="h-4 w-4" />
             Exit Focus Mode (Esc)
@@ -259,7 +259,7 @@ const UnifiedPipelineBoard = ({
         </div>
 
         {/* Focus mode container — fixed to fill entire viewport */}
-        <div className="fixed inset-0 z-40 overflow-hidden bg-gray-50">
+        <div className="fixed inset-0 z-40 overflow-hidden bg-background">
           {/* Background Layer — Other Users' Deals (Parallax Depth) */}
           <div className="absolute inset-0 z-0 pointer-events-none">
             {otherDeals.map((deal, idx) => {
@@ -270,7 +270,7 @@ const UnifiedPipelineBoard = ({
               return (
                 <div
                   key={deal.id}
-                  className="bg-floating-card bg-white p-4 rounded-xl w-64 border border-gray-200"
+                  className="bg-floating-card bg-card p-4 rounded-xl w-64 border border-border"
                   style={{
                     left: `${pos.x}%`,
                     top: `${pos.y}%`,
@@ -283,7 +283,7 @@ const UnifiedPipelineBoard = ({
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div>
-                      <h4 className="font-bold text-gray-900 text-sm">{deal.account?.name || "Unknown"}</h4>
+                      <h4 className="font-bold text-foreground text-sm">{deal.account?.name || "Unknown"}</h4>
                       <span
                         className="text-[10px] font-medium px-2 py-0.5 rounded-full mt-1 inline-block"
                         style={{
@@ -295,12 +295,12 @@ const UnifiedPipelineBoard = ({
                       </span>
                     </div>
                   </div>
-                  <p className="text-xs text-gray-500 mb-3 flex items-center gap-1.5">
+                  <p className="text-xs text-muted-foreground mb-3 flex items-center gap-1.5">
                     <User className="h-3 w-3" />
                     {deal.assigned_to || "Unassigned"}
                   </p>
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-200">
-                    <span className="font-bold text-gray-400 text-sm">
+                  <div className="flex items-center justify-between pt-3 border-t border-border">
+                    <span className="font-bold text-muted-foreground text-sm">
                       {getDealValue(deal) > 0 ? formatCurrency(getDealValue(deal)) : "—"}
                     </span>
                   </div>
@@ -312,7 +312,7 @@ const UnifiedPipelineBoard = ({
           {/* Foreground Layer — Current User's Deals (Iron Man Animation) */}
           <div className="relative z-10 flex flex-wrap gap-10 justify-center items-center content-center w-full h-full p-8 overflow-y-auto no-scrollbar pointer-events-auto">
             {myDeals.length === 0 ? (
-              <div className="text-center text-gray-500">
+              <div className="text-center text-muted-foreground">
                 <p className="text-lg font-bold">No deals assigned to you</p>
                 <p className="text-sm mt-2">Cards assigned to you will appear here in focus mode.</p>
               </div>
@@ -325,7 +325,7 @@ const UnifiedPipelineBoard = ({
                 return (
                   <div
                     key={deal.id}
-                    className="floating-card bg-white p-5 rounded-xl w-72 cursor-pointer group shrink-0"
+                    className="floating-card bg-card p-5 rounded-xl w-72 cursor-pointer group shrink-0"
                     style={{
                       animationDuration: `${anim.animDuration}s`,
                       animationDelay: `${anim.animDelay}s`,
@@ -334,7 +334,7 @@ const UnifiedPipelineBoard = ({
                   >
                     <div className="flex justify-between items-start mb-3">
                       <div>
-                        <h4 className="font-bold text-gray-900 text-lg group-hover:text-indigo-600 transition-colors">
+                        <h4 className="font-bold text-foreground text-lg group-hover:text-primary transition-colors">
                           {deal.account?.name || "Unknown"}
                         </h4>
                         {/* Stage pill badge (visible because column headers are gone) */}
@@ -364,16 +364,16 @@ const UnifiedPipelineBoard = ({
                         )}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-500 mb-2 flex items-center gap-2">
+                    <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
                       <User className="h-4 w-4" />
                       {deal.contact?.last_name || deal.contact?.first_name || "No contact"}
                     </p>
-                    <p className="text-xs text-gray-400 flex items-center gap-1.5 mb-4">
+                    <p className="text-xs text-muted-foreground/60 flex items-center gap-1.5 mb-4">
                       <Calendar className="h-3 w-3" />
                       {format(new Date(deal.created_at), "MMM d, yyyy")}
                     </p>
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                      <span className="font-bold text-gray-900 text-lg">
+                    <div className="flex items-center justify-between pt-4 border-t border-border">
+                      <span className="font-bold text-foreground text-lg">
                         {dealValue > 0 ? formatCurrency(dealValue) : "—"}
                       </span>
                     </div>

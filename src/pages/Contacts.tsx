@@ -171,7 +171,7 @@ const Contacts = () => {
           table: 'contacts'
         },
         (payload) => {
-          console.log('Real-time contact update:', payload);
+          
           // Refresh contacts when any change occurs
           fetchContacts();
         }

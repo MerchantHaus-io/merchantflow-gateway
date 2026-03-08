@@ -187,7 +187,7 @@ const Tasks = () => {
           table: 'tasks'
         },
         (payload) => {
-          console.log('Real-time task update:', payload);
+          
           // Refresh tasks when any change occurs
           refreshTasks();
         }

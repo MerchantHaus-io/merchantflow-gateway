@@ -128,7 +128,7 @@ const Accounts = () => {
           table: 'accounts'
         },
         (payload) => {
-          console.log('Real-time account update:', payload);
+          
           
           if (payload.eventType === 'INSERT') {
             fetchSingleAccount(payload.new.id);
@@ -332,9 +332,14 @@ const Accounts = () => {
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
+      <AppLayout pageTitle="Accounts">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm text-muted-foreground">Loading accounts…</p>
+          </div>
+        </div>
+      </AppLayout>
     );
   }
 
