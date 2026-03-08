@@ -78,7 +78,14 @@ const DESK_POS: Record<string, THREE.Vector3> = {
   "darryn@merchanthaus.io":  new THREE.Vector3(2,   0, -8),
   "atria@merchanthaus.io":   new THREE.Vector3(10,  0, -8),
 };
-const SPAWN: Record<string, THREE.Vector3> = { ...DESK_POS };
+// Chair offset: chairs sit at z+0.65 relative to cubicle center
+const CHAIR_OFFSET = new THREE.Vector3(0, 0, 0.65);
+function chairPos(email: string): THREE.Vector3 {
+  const d = DESK_POS[email];
+  return d ? d.clone().add(CHAIR_OFFSET) : new THREE.Vector3(0, 0, 0);
+}
+const SPAWN: Record<string, THREE.Vector3> = {};
+Object.keys(DESK_POS).forEach(email => { SPAWN[email] = chairPos(email); });
 
 // ── COLLISION SYSTEM (AABB) ───────────────────────────────────────────────────
 
