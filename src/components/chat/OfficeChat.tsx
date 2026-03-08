@@ -1344,7 +1344,7 @@ export default function OfficeChat({
         }
       }
       if (e.key === "Escape") {
-        if (showTerminal) setShowTerminal(false);
+        if (showTerminal) { setShowTerminal(false); setDeskView(null); }
         if (showWhiteboard) setShowWhiteboard(false);
       }
     };
