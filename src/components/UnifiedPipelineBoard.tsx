@@ -325,7 +325,7 @@ const UnifiedPipelineBoard = ({
                 return (
                   <div
                     key={deal.id}
-                    className="floating-card bg-white p-5 rounded-xl w-72 cursor-pointer group shrink-0"
+                    className="floating-card bg-card p-5 rounded-xl w-72 cursor-pointer group shrink-0"
                     style={{
                       animationDuration: `${anim.animDuration}s`,
                       animationDelay: `${anim.animDelay}s`,
