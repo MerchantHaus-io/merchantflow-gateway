@@ -251,7 +251,7 @@ const UnifiedPipelineBoard = ({
         >
           <Button
             onClick={() => setIsFocusMode(false)}
-            className="bg-gray-900/90 backdrop-blur-sm text-white px-6 py-3 rounded-full shadow-2xl font-bold text-sm flex items-center gap-2 hover:bg-gray-900 transition-all"
+            className="bg-card/90 backdrop-blur-sm text-foreground px-6 py-3 rounded-full shadow-2xl font-bold text-sm flex items-center gap-2 hover:bg-card transition-all"
           >
             <Minimize className="h-4 w-4" />
             Exit Focus Mode (Esc)
