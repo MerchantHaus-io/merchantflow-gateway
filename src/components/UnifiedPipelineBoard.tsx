@@ -295,7 +295,7 @@ const UnifiedPipelineBoard = ({
                       </span>
                     </div>
                   </div>
-                  <p className="text-xs text-gray-500 mb-3 flex items-center gap-1.5">
+                  <p className="text-xs text-muted-foreground mb-3 flex items-center gap-1.5">
                     <User className="h-3 w-3" />
                     {deal.assigned_to || "Unassigned"}
                   </p>
