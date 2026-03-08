@@ -1140,10 +1140,10 @@ export default function OfficeChat({
           animateCharacter(mesh, t, moving, false);
           mesh.rotation.y = remote.yaw + Math.PI;
         } else {
-          // ── REAL USER: offline — stand idle at desk ──
-          const deskPos = DESK_POS[email] || new THREE.Vector3(0, 0, 0);
-          mesh.position.lerp(deskPos, 4 * dt);
-          animateCharacter(mesh, t, false, true); // sitting at desk
+          // ── REAL USER: offline — sitting in chair at desk ──
+          const cp = chairPos(email);
+          mesh.position.lerp(cp, 4 * dt);
+          animateCharacter(mesh, t, false, true); // sitting in chair
         }
       });
 
