@@ -120,9 +120,12 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
   const statusCounts: Record<string, number> = {};
   const assigneeCounts: Record<string, number> = {};
   for (const o of opps) {
-    stageCounts[o.stage] = (stageCounts[o.stage] || 0) + 1;
-    statusCounts[o.status || "unknown"] = (statusCounts[o.status || "unknown"] || 0) + 1;
-    if (o.assigned_to) assigneeCounts[o.assigned_to] = (assigneeCounts[o.assigned_to] || 0) + 1;
+    const stage = String((o as any).stage || "unknown");
+    const status = String((o as any).status || "unknown");
+    const assignedTo = String((o as any).assigned_to || "");
+    stageCounts[stage] = (stageCounts[stage] || 0) + 1;
+    statusCounts[status] = (statusCounts[status] || 0) + 1;
+    if (assignedTo) assigneeCounts[assignedTo] = (assigneeCounts[assignedTo] || 0) + 1;
   }
 
   const pipelineSummary = Object.entries(stageCounts)
@@ -158,8 +161,9 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
   // Group contacts by account_id
   const contactsByAccount: Record<string, any[]> = {};
   for (const c of allContacts) {
-    if (!contactsByAccount[c.account_id]) contactsByAccount[c.account_id] = [];
-    contactsByAccount[c.account_id].push(c);
+    const accId = String((c as any).account_id);
+    if (!contactsByAccount[accId]) contactsByAccount[accId] = [];
+    contactsByAccount[accId].push(c);
   }
 
   // Build account roster with contacts
@@ -184,11 +188,11 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
 
   // Map opportunity_id to account name
   const accountIdToName: Record<string, string> = {};
-  for (const a of allAccounts) accountIdToName[a.id] = a.name;
+  for (const a of allAccounts) accountIdToName[String((a as any).id)] = (a as any).name;
 
   const oppToAccount: Record<string, string> = {};
   for (const o of (recentOppsRes.data || [])) {
-    oppToAccount[o.id] = (o as any).accounts?.name || "Unknown Account";
+    oppToAccount[String((o as any).id)] = (o as any).accounts?.name || "Unknown Account";
   }
   // Also map from full pipeline data for docs that belong to older opps
   for (const o of opps) {
@@ -200,8 +204,9 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
   // Group docs by opportunity
   const docsByOpp: Record<string, any[]> = {};
   for (const d of allDocs) {
-    if (!docsByOpp[d.opportunity_id]) docsByOpp[d.opportunity_id] = [];
-    docsByOpp[d.opportunity_id].push(d);
+    const oppId = String((d as any).opportunity_id);
+    if (!docsByOpp[oppId]) docsByOpp[oppId] = [];
+    docsByOpp[oppId].push(d);
   }
 
   const documentRoster = Object.entries(docsByOpp)
@@ -290,7 +295,7 @@ serve(async (req) => {
 
       // Fetch CRM context and channel history in parallel
       const [crmContext, historyRes] = await Promise.all([
-        buildCRMContext(supabase),
+        buildCRMContext(supabase as any),
         supabase
           .from("chat_messages")
           .select("user_name, user_email, content")

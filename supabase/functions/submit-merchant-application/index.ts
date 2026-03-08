@@ -408,7 +408,7 @@ Deno.serve(async (req) => {
 
     console.error("submit-merchant-application error:", err);
     return new Response(
-      JSON.stringify({ error: err.message || "Internal error" }),
+      JSON.stringify({ error: (err as any)?.message || "Internal error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

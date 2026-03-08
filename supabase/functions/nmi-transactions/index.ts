@@ -14,11 +14,8 @@ serve(async (req) => {
 
   try {
     const NMI_API_KEY = Deno.env.get('NMI_API_KEY');
-    if (!NMI_API_KEY) {
-      throw new Error('NMI_API_KEY is not configured');
-    }
+    if (!NMI_API_KEY) throw new Error('NMI_API_KEY is not configured');
 
-    // Verify auth
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -52,113 +49,137 @@ serve(async (req) => {
       });
     }
 
-    // Calculate date range (default last 30 days)
+    // Date range defaults to last 30 days
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const startDate = start_date || formatDate(thirtyDaysAgo);
-    const endDate = end_date || formatDate(now);
+    const endDate   = end_date   || formatDate(now);
 
-    // Fetch transactions for each gateway ID
-    // NMI sub-merchant accounts are queried by making a separate API call per
-    // gateway ID, using the gateway's own security key stored in the DB — or,
-    // if we only have the master key, by including merchant_id in the query.
-    const results = await Promise.all(
-      gateway_ids.map(async (gatewayId: string) => {
-        try {
-          console.log(`Fetching transactions for gateway ${gatewayId} from ${startDate} to ${endDate}`);
+    // ─── PARTNER API STRATEGY ────────────────────────────────────────────────
+    //
+    // This key is a Partner API key. NMI's query.php does NOT accept a
+    // merchant_id filter parameter — it returns ALL transactions across the
+    // partner's entire portfolio for the date range, and each <transaction>
+    // block contains a <merchant_id> field that identifies the sub-merchant.
+    //
+    // The stored `nmi_gateway_id` (from the boarding response) IS that same
+    // merchant_id value. So the correct approach is:
+    //   1. Make ONE query call for the full date range (no per-gateway calls)
+    //   2. Parse all <transaction> blocks from the XML
+    //   3. Group/filter by <merchant_id> matching our stored gateway IDs
+    //
+    // ─────────────────────────────────────────────────────────────────────────
 
-          // FIX: Include merchant_id (the sub-merchant gateway ID) in the query
-          // so NMI scopes results to that specific merchant account.
-          // NMI's query API accepts merchant_id to filter by sub-merchant.
-          const params = new URLSearchParams({
-            security_key: NMI_API_KEY,
-            start_date: startDate,
-            end_date: endDate,
-            merchant_id: gatewayId,  // <-- THIS WAS MISSING — the root cause of zero results
-          });
+    const params = new URLSearchParams({
+      security_key: NMI_API_KEY,
+      start_date:   startDate,
+      end_date:     endDate,
+    });
 
-          const response = await fetch(NMI_QUERY_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: params.toString(),
-          });
+    console.log(`Fetching partner transactions from ${startDate} to ${endDate} for ${gateway_ids.length} gateway(s):`, gateway_ids);
 
-          const responseText = await response.text();
+    const response = await fetch(NMI_QUERY_URL, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body:    params.toString(),
+    });
 
-          if (!response.ok) {
-            console.error(`NMI API error for gateway ${gatewayId} [${response.status}]:`, responseText.substring(0, 500));
-            return {
-              gateway_id: gatewayId,
-              error: `NMI API returned HTTP ${response.status}`,
-              transactions: [],
-              summary: null,
-            };
-          }
+    const responseText = await response.text();
 
-          console.log(`NMI response length for gateway ${gatewayId}: ${responseText.length} chars`);
-          console.log(`NMI response preview: ${responseText.substring(0, 500)}`);
+    if (!response.ok) {
+      console.error(`NMI API HTTP error [${response.status}]:`, responseText.substring(0, 500));
+      // Return per-gateway error objects so the frontend can show them
+      const results = gateway_ids.map((id: string) => ({
+        gateway_id:   id,
+        error:        `NMI API returned HTTP ${response.status}`,
+        transactions: [],
+        summary:      null,
+      }));
+      return new Response(JSON.stringify({ results }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-          // Check for NMI-level error in the XML (e.g. invalid merchant_id)
-          if (responseText.includes('<response_code>200</response_code>') === false && responseText.includes('<response>')) {
-            const errCode = extractSingleField(responseText, 'response_code');
-            const errText = extractSingleField(responseText, 'message') || extractSingleField(responseText, 'result_text');
-            if (errCode && errCode !== '100') {
-              console.error(`NMI query error for ${gatewayId}: [${errCode}] ${errText}`);
-              return {
-                gateway_id: gatewayId,
-                error: `NMI error ${errCode}: ${errText || 'Unknown'}`,
-                transactions: [],
-                summary: null,
-              };
-            }
-          }
+    console.log(`NMI response: ${responseText.length} chars`);
+    console.log(`NMI preview: ${responseText.substring(0, 600)}`);
 
-          // Parse XML response
-          const transactions = parseNmiXml(responseText, gatewayId);
-          console.log(`Parsed ${transactions.length} transactions for gateway ${gatewayId}`);
+    // Check for an NMI-level error in the XML body
+    const topLevelError = extractSingleField(responseText, 'error_response')
+      || (extractSingleField(responseText, 'result') === '3' ? extractSingleField(responseText, 'result_text') : null);
 
-          // Build summary
-          const summary = {
-            total_count: transactions.length,
-            approved_count: 0,
-            declined_count: 0,
-            total_amount: 0,
-            approved_amount: 0,
-          };
+    if (topLevelError) {
+      console.error('NMI query returned error:', topLevelError);
+      const results = gateway_ids.map((id: string) => ({
+        gateway_id:   id,
+        error:        `NMI error: ${topLevelError}`,
+        transactions: [],
+        summary:      null,
+      }));
+      return new Response(JSON.stringify({ results }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-          for (const tx of transactions) {
-            const amount = parseFloat(tx.amount || '0');
-            summary.total_amount += amount;
-            const condition = (tx.condition || '').toLowerCase();
-            if (['complete', 'pending', 'pendingsettlement', 'pending_settlement'].includes(condition)) {
-              summary.approved_count++;
-              summary.approved_amount += amount;
-            } else {
-              summary.declined_count++;
-            }
-          }
+    // Parse every transaction out of the XML, retaining the raw merchant_id
+    const allTransactions = parseNmiXml(responseText);
+    console.log(`Total transactions in partner response: ${allTransactions.length}`);
 
-          return {
-            gateway_id: gatewayId,
-            transactions: transactions.slice(0, 100),
-            summary,
-          };
-        } catch (err) {
-          console.error(`Error fetching transactions for gateway ${gatewayId}:`, err);
-          return {
-            gateway_id: gatewayId,
-            error: err instanceof Error ? err.message : 'Unknown error',
-            transactions: [],
-            summary: null,
-          };
+    // Log the distinct merchant_id values seen so we can verify the mapping
+    const seenMerchantIds = [...new Set(allTransactions.map(t => t._merchant_id).filter(Boolean))];
+    console.log(`Distinct merchant_ids in response: ${JSON.stringify(seenMerchantIds)}`);
+    console.log(`Looking for gateway_ids: ${JSON.stringify(gateway_ids)}`);
+
+    // Build per-gateway result objects
+    const results = gateway_ids.map((gatewayId: string) => {
+      // NMI stores the sub-merchant ID in <merchant_id>.
+      // The value stored in our DB (nmi_gateway_id) came from the boarding
+      // response field gatewayId/gateway_id/id — which is the same numeric
+      // merchant ID. Normalise both sides to strings for comparison.
+      const normalised = String(gatewayId).trim();
+      const matched = allTransactions.filter(tx =>
+        String(tx._merchant_id || '').trim() === normalised
+      );
+
+      console.log(`Gateway ${gatewayId}: ${matched.length} matched transactions`);
+
+      // Build summary
+      const summary = {
+        total_count:     matched.length,
+        approved_count:  0,
+        declined_count:  0,
+        total_amount:    0,
+        approved_amount: 0,
+      };
+
+      for (const tx of matched) {
+        const amount = parseFloat(tx.amount || '0');
+        summary.total_amount += amount;
+        const condition = (tx.condition || '').toLowerCase();
+        if (['complete', 'pending', 'pendingsettlement', 'pending_settlement'].includes(condition)) {
+          summary.approved_count++;
+          summary.approved_amount += amount;
+        } else {
+          summary.declined_count++;
         }
-      })
-    );
+      }
 
-    return new Response(JSON.stringify({ results }), {
+      // Strip internal _merchant_id before returning
+      const cleanTransactions = matched.slice(0, 100).map(({ _merchant_id, ...rest }) => rest);
+
+      return {
+        gateway_id:   gatewayId,
+        transactions: cleanTransactions,
+        summary,
+      };
+    });
+
+    return new Response(JSON.stringify({ results, _debug: { total_in_response: allTransactions.length, seen_merchant_ids: seenMerchantIds } }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
+
   } catch (err) {
     console.error('NMI transactions error:', err);
     return new Response(JSON.stringify({ error: err instanceof Error ? err.message : 'Unknown error' }), {
@@ -170,73 +191,53 @@ serve(async (req) => {
 
 function formatDate(d: Date): string {
   const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  // NMI date format: YYYYMMDDHHMMSS — use start-of-day / end-of-day
+  const mm   = String(d.getMonth() + 1).padStart(2, '0');
+  const dd   = String(d.getDate()).padStart(2, '0');
   return `${yyyy}${mm}${dd}`;
 }
 
-/** Extract a single top-level XML field value (for error checking) */
 function extractSingleField(xml: string, field: string): string | null {
   const m = xml.match(new RegExp(`<${field}>([^<]*)</${field}>`));
   return m ? m[1].trim() : null;
 }
 
-/** Parse NMI Query API XML response into transaction objects */
-function parseNmiXml(xml: string, filterGatewayId: string): any[] {
+/** Parse all <transaction> blocks from NMI query XML */
+function parseNmiXml(xml: string): any[] {
   const transactions: any[] = [];
-
-  // Extract all <transaction> blocks
   const txRegex = /<transaction>([\s\S]*?)<\/transaction>/g;
   let match;
 
   while ((match = txRegex.exec(xml)) !== null) {
     const block = match[1];
-    const tx = extractFields(block);
+    const tx    = extractFields(block);
 
-    // FIX: The old filter was inverted — it only skipped rows where merchant_id
-    // was present AND mismatched. Rows with no merchant_id (most sub-merchant
-    // responses) always slipped through unfiltered.
-    //
-    // Correct approach: since we queried with merchant_id in the request, NMI
-    // already scoped the response. We just do a soft secondary check: if the
-    // field IS present and doesn't match, skip it (prevents cross-contamination
-    // when the API key is a parent account with multiple sub-merchants).
-    const txMerchantId = (tx.merchant_id || tx.gateway_id || '').trim();
-    if (txMerchantId && txMerchantId !== filterGatewayId.trim()) {
-      console.log(`Skipping tx ${tx.transaction_id} — merchant_id ${txMerchantId} != ${filterGatewayId}`);
-      continue;
+    if (transactions.length < 5) {
+      // Debug: log all fields of first few transactions so we can verify field names
+      console.log(`Sample transaction fields:`, JSON.stringify(tx));
     }
 
-    // Debug log first few parsed transactions
-    if (transactions.length < 3) {
-      console.log(`Sample tx: id=${tx.transaction_id} condition=${tx.condition} amount=${tx.amount} requested_amount=${tx.requested_amount}`);
-    }
-
-    // FIX: NMI amount field precedence.
-    // <amount> is only populated after settlement.
-    // <requested_amount> has the authorised amount at auth time.
-    // Prefer requested_amount so pending/auth txns show their value correctly.
+    // Amount: prefer requested_amount (set at auth time) over amount (set at settlement)
+    // so pending/authorised transactions show their actual value, not 0.00
     const amount =
-      tx.requested_amount && tx.requested_amount !== '0.00'
-        ? tx.requested_amount
-        : tx.amount && tx.amount !== '0.00'
-          ? tx.amount
-          : tx.authorized_amount || '0.00';
+      (tx.requested_amount && tx.requested_amount !== '0.00') ? tx.requested_amount :
+      (tx.amount           && tx.amount           !== '0.00') ? tx.amount           :
+      tx.authorized_amount || '0.00';
 
     transactions.push({
-      id: tx.transaction_id || '',
-      date: tx.date || '',
+      // Internal field used for filtering — stripped before returning to client
+      _merchant_id: tx.merchant_id || tx.merchantId || '',
+
+      id:            tx.transaction_id || '',
+      date:          tx.date || tx.created || '',
       amount,
-      condition: tx.condition || '',
-      type: tx.transaction_type || tx.action_type || '',
-      card_type: tx.cc_type || tx.card_type || '',
-      last_four: tx.cc_number ? tx.cc_number.slice(-4) : (tx.last_four || ''),
+      condition:     tx.condition || '',
+      type:          tx.transaction_type || tx.type || tx.action_type || '',
+      card_type:     tx.cc_type  || tx.card_type || '',
+      last_four:     tx.cc_number ? tx.cc_number.slice(-4) : (tx.last_four || ''),
       customer_name:
-        [tx.first_name, tx.last_name].filter(Boolean).join(' ') ||
+        [tx.first_name,  tx.last_name ].filter(Boolean).join(' ') ||
         [tx.billing_first_name, tx.billing_last_name].filter(Boolean).join(' ') ||
-        tx.customer_name ||
-        '',
+        tx.customer_name || '',
     });
   }
 
@@ -245,7 +246,7 @@ function parseNmiXml(xml: string, filterGatewayId: string): any[] {
 
 function extractFields(block: string): Record<string, string> {
   const fields: Record<string, string> = {};
-  const fieldRegex = /<(\w+)>(.*?)<\/\1>/g;
+  const fieldRegex = /<(\w+)>(.*?)<\/\1>/gs;
   let m;
   while ((m = fieldRegex.exec(block)) !== null) {
     fields[m[1]] = m[2].trim();
