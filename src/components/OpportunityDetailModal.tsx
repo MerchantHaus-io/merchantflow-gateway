@@ -1158,6 +1158,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                   />
                   <AIValidatePanel opportunityId={opportunity.id} />
                 </div>
+              )}
 
               {activeSection === 'tasks' && (
                 <OpportunityTasks 
