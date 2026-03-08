@@ -295,7 +295,7 @@ serve(async (req) => {
 
       // Fetch CRM context and channel history in parallel
       const [crmContext, historyRes] = await Promise.all([
-        buildCRMContext(supabase),
+        buildCRMContext(supabase as any),
         supabase
           .from("chat_messages")
           .select("user_name, user_email, content")
