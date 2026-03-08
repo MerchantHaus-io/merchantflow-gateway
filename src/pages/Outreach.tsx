@@ -51,6 +51,15 @@ export default function Outreach() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
+  const [csvUploadOpen, setCsvUploadOpen] = useState(false);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [csvPreview, setCsvPreview] = useState<{ headers: string[]; rows: Record<string, string>[] }>({ headers: [], rows: [] });
+  const [csvCampaignName, setCsvCampaignName] = useState("");
+  const [csvSubject, setCsvSubject] = useState("");
+  const [csvBodyHtml, setCsvBodyHtml] = useState("");
+  const [csvFromName, setCsvFromName] = useState("Merchant Haus");
+  const [csvFromEmail, setCsvFromEmail] = useState("outreach@merchanthaus.io");
+  const [isUploading, setIsUploading] = useState(false);
   const [name, setName] = useState("");
   const [subject, setSubject] = useState("");
   const [bodyHtml, setBodyHtml] = useState("");
