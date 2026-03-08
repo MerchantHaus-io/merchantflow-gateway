@@ -827,9 +827,7 @@ export default function OfficeChat({
   const [isSitting, setIsSitting] = useState(false);
   const [showWhiteboard, setShowWhiteboard] = useState(false);
   const [coffeeEmote, setCoffeeEmote] = useState(false);
-  const [gamePaused, setGamePaused] = useState(false);
-  const gameStatsRef = useRef({ score: 0, health: 100, combo: 0, special: 0, wave: 1, enemies: 5, power: 1 });
-  const [gameStats, setGameStats] = useState({ score: 0, health: 100, combo: 0, special: 0, wave: 1, enemies: 5, power: 1 });
+  const [selectedStickyIndex, setSelectedStickyIndex] = useState<number | null>(null);
   const showTerminalRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const speechBubblesRef = useRef<Map<string, { sprite: THREE.Sprite; timeout: ReturnType<typeof setTimeout> }>>(new Map());
