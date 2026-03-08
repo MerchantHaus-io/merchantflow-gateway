@@ -334,7 +334,7 @@ const UnifiedPipelineBoard = ({
                   >
                     <div className="flex justify-between items-start mb-3">
                       <div>
-                        <h4 className="font-bold text-gray-900 text-lg group-hover:text-indigo-600 transition-colors">
+                        <h4 className="font-bold text-foreground text-lg group-hover:text-primary transition-colors">
                           {deal.account?.name || "Unknown"}
                         </h4>
                         {/* Stage pill badge (visible because column headers are gone) */}
