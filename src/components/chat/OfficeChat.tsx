@@ -778,6 +778,9 @@ export default function OfficeChat({
   const [isSitting, setIsSitting] = useState(false);
   const [showWhiteboard, setShowWhiteboard] = useState(false);
   const [coffeeEmote, setCoffeeEmote] = useState(false);
+  const [gamePaused, setGamePaused] = useState(false);
+  const gameStatsRef = useRef({ score: 0, health: 100, combo: 0, special: 0, wave: 1, enemies: 5, power: 1 });
+  const [gameStats, setGameStats] = useState({ score: 0, health: 100, combo: 0, special: 0, wave: 1, enemies: 5, power: 1 });
   const showTerminalRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const speechBubblesRef = useRef<Map<string, { sprite: THREE.Sprite; timeout: ReturnType<typeof setTimeout> }>>(new Map());
@@ -789,6 +792,20 @@ export default function OfficeChat({
   const remotePositionsRef = useRef(remotePositions);
   remotePositionsRef.current = remotePositions;
   const lastBroadcastRef = useRef(0);
+
+  // Simulate game stats ticking (exploration-based scoring)
+  useEffect(() => {
+    if (gamePaused) return;
+    const interval = setInterval(() => {
+      const s = gameStatsRef.current;
+      s.score += 10;
+      s.special = Math.min(100, s.special + 0.5);
+      // Slowly regen health when exploring
+      s.health = Math.min(100, s.health + 0.1);
+      setGameStats({ ...s });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [gamePaused]);
 
   const currentUser = USERS.find(u => u.email === currentUserEmail)!;
   const others = USERS.filter(u => u.email !== currentUserEmail);
