@@ -276,15 +276,18 @@ const OpportunityCard = ({
           <div className="flex items-center justify-between pt-1 border-t border-border/40 gap-1">
             {/* Deal value */}
             <div className="flex items-center gap-1.5 min-w-0">
-              <span className={cn(
-                "font-semibold text-[10px] truncate",
-                isComplete ? "text-white/90" : "text-foreground/80"
+              <span key={dealValue} className={cn(
+                "font-mono font-semibold text-[10px] truncate animate-count",
+                isComplete ? "text-white/90" : "text-[hsl(var(--gold))]"
               )}>
                 {dealValue > 0 ? formatCurrency(dealValue) : "—"}
               </span>
-              {/* Days in stage */}
+              {/* Days in stage — color-coded */}
               {slaInfo.daysInStage > 0 && !isLive && (
-                <span className="flex items-center gap-0.5 text-[9px] text-muted-foreground">
+                <span className={cn(
+                  "flex items-center gap-0.5 text-[9px] font-medium",
+                  slaInfo.daysInStage < 7 ? "text-emerald-500" : slaInfo.daysInStage < 14 ? "text-amber-500" : "text-red-500"
+                )}>
                   <Clock className="h-2 w-2" />
                   {slaInfo.daysInStage}d
                 </span>
