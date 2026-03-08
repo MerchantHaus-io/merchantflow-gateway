@@ -473,8 +473,70 @@ function buildRoom(): THREE.Group {
   const wbTray = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.05, 0.12), metalM);
   wbTray.position.set(0, 1.28, -(wOff - 0.08)); g.add(wbTray);
 
+  // ── DESK TOY DEFINITIONS (per-user personalisation) ──
+  type DeskToyBuilder = (cg: THREE.Group) => void;
+
+  const deskToys: Record<string, DeskToyBuilder> = {
+    // Taryn: small succulent plant
+    "taryn@merchanthaus.io": (cg) => {
+      const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.035, 0.06, 8), new THREE.MeshStandardMaterial({ color: 0xb5651d, roughness: 0.7 }));
+      pot.position.set(0.75, 0.81, 0.05); cg.add(pot);
+      const soil = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.038, 0.01, 8), new THREE.MeshStandardMaterial({ color: 0x3e2723 }));
+      soil.position.set(0.75, 0.84, 0.05); cg.add(soil);
+      [0, 1.2, 2.4, 3.6, 5.0].forEach(a => {
+        const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.018, 6, 4), new THREE.MeshStandardMaterial({ color: 0x4caf50 }));
+        leaf.scale.set(1, 0.5, 1.3);
+        leaf.position.set(0.75 + Math.cos(a) * 0.015, 0.86 + Math.random() * 0.015, 0.05 + Math.sin(a) * 0.015);
+        cg.add(leaf);
+      });
+    },
+    // Jamie: small rubber duck
+    "admin@merchanthaus.io": (cg) => {
+      const body = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), new THREE.MeshStandardMaterial({ color: 0xfdd835 }));
+      body.scale.set(1, 0.85, 1.1);
+      body.position.set(0.75, 0.81, 0.05); cg.add(body);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 6), new THREE.MeshStandardMaterial({ color: 0xfdd835 }));
+      head.position.set(0.75, 0.86, 0.03); cg.add(head);
+      const beak = new THREE.Mesh(new THREE.ConeGeometry(0.007, 0.015, 6), new THREE.MeshStandardMaterial({ color: 0xff8f00 }));
+      beak.rotation.x = -Math.PI / 2; beak.position.set(0.75, 0.855, 0.01); cg.add(beak);
+      const eye1 = new THREE.Mesh(new THREE.SphereGeometry(0.003, 4, 4), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+      eye1.position.set(0.74, 0.868, 0.015); cg.add(eye1);
+      const eye2 = eye1.clone(); eye2.position.set(0.76, 0.868, 0.015); cg.add(eye2);
+    },
+    // Dylan: mini trophy
+    "sales@merchanthaus.io": (cg) => {
+      const base = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.02, 0.05), new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.3 }));
+      base.position.set(0.75, 0.79, 0.05); cg.add(base);
+      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.012, 0.05, 6), new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.8, roughness: 0.2 }));
+      stem.position.set(0.75, 0.82, 0.05); cg.add(stem);
+      const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.015, 0.03, 8), new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.8, roughness: 0.2 }));
+      cup.position.set(0.75, 0.86, 0.05); cg.add(cup);
+    },
+    // Sheiky: stress ball
+    "support@merchanthaus.io": (cg) => {
+      const ball = new THREE.Mesh(new THREE.SphereGeometry(0.03, 10, 8), new THREE.MeshStandardMaterial({ color: 0xe53935, roughness: 0.9 }));
+      ball.position.set(0.75, 0.81, 0.05); cg.add(ball);
+    },
+    // Darryn: mini globe
+    "darryn@merchanthaus.io": (cg) => {
+      const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.022, 0.02, 8), new THREE.MeshStandardMaterial({ color: 0x5d4037 }));
+      stand.position.set(0.75, 0.79, 0.05); cg.add(stand);
+      const axle = new THREE.Mesh(new THREE.CylinderGeometry(0.003, 0.003, 0.07, 4), new THREE.MeshStandardMaterial({ color: 0x9e9e9e, metalness: 0.6 }));
+      axle.position.set(0.75, 0.83, 0.05); cg.add(axle);
+      const globe = new THREE.Mesh(new THREE.SphereGeometry(0.028, 12, 10), new THREE.MeshStandardMaterial({ color: 0x42a5f5, roughness: 0.4 }));
+      globe.position.set(0.75, 0.85, 0.05); cg.add(globe);
+    },
+    // Atria: crystal / holographic orb
+    "atria@merchanthaus.io": (cg) => {
+      const orb = new THREE.Mesh(new THREE.IcosahedronGeometry(0.028, 1), new THREE.MeshStandardMaterial({ color: 0x7c3aed, roughness: 0.1, metalness: 0.4, transparent: true, opacity: 0.8 }));
+      orb.position.set(0.75, 0.84, 0.05); cg.add(orb);
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.035, 0.003, 6, 16), new THREE.MeshStandardMaterial({ color: 0xc0c0ff, metalness: 0.6 }));
+      ring.position.set(0.75, 0.84, 0.05); ring.rotation.x = Math.PI / 3; cg.add(ring);
+    },
+  };
+
   // ── CUBICLE BUILDER ──
-  const makeCubicle = (cx: number, cz: number) => {
+  const makeCubicle = (cx: number, cz: number, email?: string) => {
     const cg = new THREE.Group();
     const pH = 1.4, pT = 0.06;
 
@@ -501,8 +563,8 @@ function buildRoom(): THREE.Group {
     // Monitor
     const scr = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.55, 0.04), darkM);
     scr.position.set(0, 1.2, -0.3); cg.add(scr);
-    const stand = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.18, 0.06), metalM);
-    stand.position.set(0, 0.9, -0.3); cg.add(stand);
+    const monStand = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.18, 0.06), metalM);
+    monStand.position.set(0, 0.9, -0.3); cg.add(monStand);
     const kb = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.02, 0.12), metalM);
     kb.position.set(0, 0.79, 0.1); cg.add(kb);
 
@@ -542,6 +604,50 @@ function buildRoom(): THREE.Group {
     const mugHandle = new THREE.Mesh(new THREE.TorusGeometry(0.02, 0.005, 6, 8, Math.PI), new THREE.MeshStandardMaterial({ color: 0xeeeeee }));
     mugHandle.position.set(0.435, 0.82, 0.2); mugHandle.rotation.z = Math.PI / 2; cg.add(mugHandle);
 
+    // ── Nameplate ──
+    if (email) {
+      const usr = USERS.find(u => u.email === email);
+      if (usr) {
+        // Nameplate base (dark wood wedge)
+        const npBase = new THREE.Mesh(
+          new THREE.BoxGeometry(0.4, 0.06, 0.1),
+          new THREE.MeshStandardMaterial({ color: 0x3e2723, roughness: 0.4 })
+        );
+        npBase.position.set(0, 0.81, 0.4); cg.add(npBase);
+
+        // Nameplate label (brass plate)
+        const npLabel = new THREE.Mesh(
+          new THREE.BoxGeometry(0.36, 0.04, 0.005),
+          new THREE.MeshStandardMaterial({ color: 0xd4a843, metalness: 0.7, roughness: 0.3 })
+        );
+        npLabel.position.set(0, 0.85, 0.35); npLabel.rotation.x = -0.3; cg.add(npLabel);
+
+        // Name text via canvas texture
+        const canvas = document.createElement("canvas");
+        canvas.width = 256; canvas.height = 48;
+        const ctx = canvas.getContext("2d")!;
+        ctx.fillStyle = "#3e2723";
+        ctx.fillRect(0, 0, 256, 48);
+        ctx.fillStyle = "#f5e6c8";
+        ctx.font = "bold 22px Georgia, serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(usr.name.toUpperCase(), 128, 24);
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.minFilter = THREE.LinearFilter;
+        const npText = new THREE.Mesh(
+          new THREE.PlaneGeometry(0.34, 0.038),
+          new THREE.MeshBasicMaterial({ map: tex, transparent: true })
+        );
+        npText.position.set(0, 0.852, 0.347); npText.rotation.x = -0.3; cg.add(npText);
+      }
+    }
+
+    // ── Desk toy (unique per user) ──
+    if (email && deskToys[email]) {
+      deskToys[email](cg);
+    }
+
     // ── Sticky notes ──
     const stickyColors = [0xffeb3b, 0xff9800, 0x4caf50];
     stickyColors.forEach((col, i) => {
@@ -561,8 +667,8 @@ function buildRoom(): THREE.Group {
   };
 
   // Place cubicles
-  Object.values(DESK_POS).forEach(pos => {
-    g.add(makeCubicle(pos.x, pos.z));
+  Object.entries(DESK_POS).forEach(([email, pos]) => {
+    g.add(makeCubicle(pos.x, pos.z, email));
   });
 
   // ── BREAK ROOM (south-west area) ──
