@@ -1567,29 +1567,141 @@ export default function OfficeChat({
         </div>
       )}
 
-      {/* Terminal */}
+      {/* Desk View — first-person desk experience */}
       {showTerminal && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/60">
-          <div className="relative flex flex-col items-center">
-            <div className="rounded-xl overflow-hidden shadow-2xl" style={{ background: "linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 50%, #0e0e0e 100%)", padding: "18px 18px 8px 18px", border: "2px solid #333" }}>
-              <div className="flex items-center justify-between mb-2 px-1">
-                <span className="text-[10px] font-bold tracking-widest text-white/30 uppercase">OPS Terminal</span>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-[9px] text-white/20">ONLINE</span>
+        <div className="absolute inset-0 z-20 bg-black/80 backdrop-blur-sm">
+          {/* Hidden file input for photo frame */}
+          <input
+            ref={photoInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                const url = URL.createObjectURL(file);
+                setPhotoFrameUrl(url);
+                setDeskView("photo");
+              }
+            }}
+          />
+
+          {/* Desk surface background */}
+          <div className="absolute inset-0 flex items-end justify-center pb-8" style={{
+            background: "linear-gradient(180deg, rgba(30,25,20,0.95) 0%, rgba(60,50,40,0.9) 60%, rgba(90,75,55,0.85) 100%)"
+          }}>
+            {/* Desk items bar at bottom */}
+            <div className="flex items-end gap-6 mb-4">
+              {/* Monitor / Computer */}
+              <button
+                onClick={() => setDeskView(deskView === "computer" ? null : "computer")}
+                className={`flex flex-col items-center gap-1 px-4 py-3 rounded-lg transition-all ${deskView === "computer" ? "bg-primary/20 ring-2 ring-primary/50" : "bg-white/5 hover:bg-white/10"}`}
+              >
+                <div className="w-12 h-9 rounded-sm border-2 border-white/30 bg-black/60 flex items-center justify-center">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 </div>
+                <div className="w-4 h-1 bg-white/20 rounded-full" />
+                <span className="text-[10px] text-white/60 font-medium tracking-wide uppercase">Computer</span>
+              </button>
+
+              {/* Photo Frame */}
+              <button
+                onClick={() => {
+                  if (deskView === "photo") { setDeskView(null); }
+                  else if (!photoFrameUrl) { photoInputRef.current?.click(); }
+                  else { setDeskView("photo"); }
+                }}
+                className={`flex flex-col items-center gap-1 px-4 py-3 rounded-lg transition-all ${deskView === "photo" ? "bg-primary/20 ring-2 ring-primary/50" : "bg-white/5 hover:bg-white/10"}`}
+              >
+                <div className="w-10 h-12 rounded-sm border-2 border-amber-700/60 bg-black/30 flex items-center justify-center overflow-hidden">
+                  {photoFrameUrl ? (
+                    <img src={photoFrameUrl} alt="Photo" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-white/30 text-lg">🖼️</span>
+                  )}
+                </div>
+                <span className="text-[10px] text-white/60 font-medium tracking-wide uppercase">Photo</span>
+              </button>
+
+              {/* Static desk items (decorative) */}
+              <div className="flex flex-col items-center gap-1 px-4 py-3 opacity-60">
+                <span className="text-2xl">☕</span>
+                <span className="text-[10px] text-white/40 font-medium tracking-wide uppercase">Coffee</span>
               </div>
-              <div className="relative rounded-sm overflow-hidden" style={{ width: "min(75vw, 900px)", height: "min(65vh, 560px)", boxShadow: "inset 0 0 60px rgba(0,0,0,0.5)" }}>
-                <div className="absolute inset-0 z-10 pointer-events-none" style={{ background: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px)" }} />
-                <iframe src={window.location.origin + "/dashboard"} className="w-full h-full border-0" title="OPS Terminal" />
+              <div className="flex flex-col items-center gap-1 px-4 py-3 opacity-60">
+                <span className="text-2xl">🖊️</span>
+                <span className="text-[10px] text-white/40 font-medium tracking-wide uppercase">Pens</span>
+              </div>
+              <div className="flex flex-col items-center gap-1 px-4 py-3 opacity-60">
+                <span className="text-2xl">📋</span>
+                <span className="text-[10px] text-white/40 font-medium tracking-wide uppercase">Notes</span>
               </div>
             </div>
-            <div className="w-16 h-8" style={{ background: "linear-gradient(180deg, #1a1a1a, #111)", clipPath: "polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)" }} />
-            <div className="w-28 h-2 rounded-full" style={{ background: "linear-gradient(180deg, #222, #0e0e0e)" }} />
           </div>
-          <button onClick={() => setShowTerminal(false)} className="absolute top-6 right-6 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-colors backdrop-blur-sm">
-            ESC to close
+
+          {/* Active desk panel */}
+          {deskView === "computer" && (
+            <div className="absolute inset-8 flex items-center justify-center">
+              <div className="relative flex flex-col items-center">
+                <div className="rounded-xl overflow-hidden shadow-2xl" style={{ background: "linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 50%, #0e0e0e 100%)", padding: "18px 18px 8px 18px", border: "2px solid #333" }}>
+                  <div className="flex items-center justify-between mb-2 px-1">
+                    <span className="text-[10px] font-bold tracking-widest text-white/30 uppercase">OPS Terminal</span>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-[9px] text-white/20">ONLINE</span>
+                    </div>
+                  </div>
+                  <div className="relative rounded-sm overflow-hidden" style={{ width: "min(70vw, 860px)", height: "min(55vh, 500px)", boxShadow: "inset 0 0 60px rgba(0,0,0,0.5)" }}>
+                    <div className="absolute inset-0 z-10 pointer-events-none" style={{ background: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px)" }} />
+                    <iframe src={window.location.origin + "/dashboard"} className="w-full h-full border-0" title="OPS Terminal" />
+                  </div>
+                </div>
+                <div className="w-16 h-8" style={{ background: "linear-gradient(180deg, #1a1a1a, #111)", clipPath: "polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%)" }} />
+                <div className="w-28 h-2 rounded-full" style={{ background: "linear-gradient(180deg, #222, #0e0e0e)" }} />
+              </div>
+            </div>
+          )}
+
+          {deskView === "photo" && (
+            <div className="absolute inset-8 flex items-center justify-center">
+              <div className="flex flex-col items-center gap-4">
+                <div className="relative rounded-lg overflow-hidden shadow-2xl" style={{
+                  background: "linear-gradient(145deg, #7a5a3a, #5a3a1a)",
+                  padding: "16px",
+                  border: "3px solid #4a3020"
+                }}>
+                  {photoFrameUrl ? (
+                    <img src={photoFrameUrl} alt="My photo" className="max-w-[60vw] max-h-[50vh] object-contain rounded" />
+                  ) : (
+                    <div className="w-64 h-48 bg-black/20 rounded flex items-center justify-center">
+                      <span className="text-white/40 text-sm">No photo yet</span>
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => photoInputRef.current?.click()}
+                  className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-colors backdrop-blur-sm"
+                >
+                  {photoFrameUrl ? "Change Photo" : "Upload Photo"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Close / stand up button */}
+          <button
+            onClick={() => { setShowTerminal(false); setDeskView(null); }}
+            className="absolute top-6 right-6 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-colors backdrop-blur-sm z-30"
+          >
+            🚶 Stand Up {!isMobile && <span className="text-white/40 ml-2">(ESC)</span>}
           </button>
+
+          {/* Sitting indicator */}
+          <div className="absolute top-6 left-6 z-30">
+            <Badge className="bg-primary/20 text-primary-foreground border-primary/30 text-xs px-3 py-1.5">
+              🪑 Sitting at your desk
+            </Badge>
+          </div>
         </div>
       )}
 
