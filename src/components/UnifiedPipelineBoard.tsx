@@ -259,7 +259,7 @@ const UnifiedPipelineBoard = ({
         </div>
 
         {/* Focus mode container — fixed to fill entire viewport */}
-        <div className="fixed inset-0 z-40 overflow-hidden bg-gray-50">
+        <div className="fixed inset-0 z-40 overflow-hidden bg-background">
           {/* Background Layer — Other Users' Deals (Parallax Depth) */}
           <div className="absolute inset-0 z-0 pointer-events-none">
             {otherDeals.map((deal, idx) => {
