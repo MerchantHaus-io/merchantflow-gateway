@@ -46,7 +46,7 @@ const groups: ShortcutGroup[] = [
   {
     title: "Pipeline & Sales",
     items: [
-      { title: "Pipeline Board", description: "Manage live opportunities", url: "/", icon: LayoutDashboard, color: "primary" },
+      { title: "Pipeline Board", description: "Manage live opportunities", url: "/pipeline", icon: LayoutDashboard, color: "primary" },
       { title: "All Opportunities", description: "Search & filter deals", url: "/opportunities", icon: Briefcase, color: "primary" },
       { title: "Email Outreach", description: "Campaign tracker & sender", url: "/outreach", icon: Send, color: "teal" },
       { title: "Web Submissions", description: "Incoming applications", url: "/admin/web-submissions", icon: Globe, color: "gold" },
