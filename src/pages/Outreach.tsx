@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GmailEditor } from "@/components/GmailEditor";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
@@ -19,7 +20,7 @@ import { EmptyState } from "@/components/EmptyState";
 import {
   Plus, Mail, Send, Users, TrendingUp, MessageSquare, Eye, Trash2,
   CalendarIcon, Clock, Layers, BarChart3, ChevronRight, Zap, ListFilter,
-  ArrowUpRight,
+  ArrowUpRight, Upload, FileSpreadsheet, UserPlus, CheckCircle2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
@@ -130,8 +131,40 @@ export default function Outreach() {
   const [view, setView]           = useState<"grid"|"list">("grid");
   const [filter, setFilter]       = useState("all");
 
+  // CSV target list state
+  const [csvLeads, setCsvLeads] = useState<Array<{ email: string; first_name: string | null; last_name: string | null; company: string | null }>>([]);
+  const [csvFileName, setCsvFileName] = useState("");
+
   const updateStep = (idx: number, patch: Partial<StepDraft>) => {
     setSteps(prev => prev.map((s, i) => i === idx ? { ...s, ...patch } : s));
+  };
+
+  const handleCsvUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCsvFileName(file.name);
+    const text = await file.text();
+    const lines = text.split("\n").filter(l => l.trim());
+    if (lines.length < 2) { toast.error("CSV needs a header and data rows"); return; }
+    const rawHeaders = lines[0].split(",").map(h => h.trim().replace(/['"]/g, "").toLowerCase());
+    const findIdx = (...keys: string[]) => rawHeaders.findIndex(h => keys.some(k => h.includes(k)));
+    const emailIdx = findIdx("email");
+    const firstIdx = findIdx("first");
+    const lastIdx = findIdx("last");
+    const companyIdx = findIdx("company", "business", "dba");
+    if (emailIdx === -1) { toast.error("CSV must have an 'email' column"); return; }
+    const rows = lines.slice(1).map(line => {
+      const cols = line.match(/(".*?"|[^,]+|(?<=,)(?=,))/g)?.map(c => c.replace(/^"|"$/g, "").trim()) || line.split(",").map(c => c.trim());
+      return {
+        email: cols[emailIdx] || "",
+        first_name: firstIdx >= 0 ? (cols[firstIdx] || null) : null,
+        last_name: lastIdx >= 0 ? (cols[lastIdx] || null) : null,
+        company: companyIdx >= 0 ? (cols[companyIdx] || null) : null,
+      };
+    }).filter(r => r.email && r.email.includes("@"));
+    if (rows.length === 0) { toast.error("No valid email addresses found"); return; }
+    setCsvLeads(rows);
+    toast.success(`${rows.length} leads parsed from CSV`);
   };
 
   const { data: campaigns = [], isLoading } = useQuery({
@@ -176,13 +209,29 @@ export default function Outreach() {
         const { error: stepsErr } = await supabase.from("cadence_steps").insert(followUps);
         if (stepsErr) throw stepsErr;
       }
+
+      // Insert CSV leads if provided
+      if (csvLeads.length > 0 && campaign) {
+        const leadsToInsert = csvLeads.map(l => ({ campaign_id: campaign.id, ...l }));
+        // Batch insert in chunks of 500
+        for (let i = 0; i < leadsToInsert.length; i += 500) {
+          const chunk = leadsToInsert.slice(i, i + 500);
+          const { error: leadsErr } = await supabase.from("outreach_contacts").insert(chunk);
+          if (leadsErr) throw leadsErr;
+        }
+        // Update total_contacts count
+        await supabase.from("outreach_campaigns")
+          .update({ total_contacts: csvLeads.length })
+          .eq("id", campaign.id);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["outreach-campaigns"] });
+      queryClient.invalidateQueries({ queryKey: ["all-leads"] });
       setOpen(false); setName(""); setSchedDate(undefined);
       setSteps(Array.from({ length: 10 }, (_, i) => ({ subject: "", bodyHtml: "", delayDays: DEFAULT_DELAYS[i] })));
-      setSignature(""); setActiveStep(0);
-      toast.success("Cadence created with all steps!");
+      setSignature(""); setActiveStep(0); setCsvLeads([]); setCsvFileName("");
+      toast.success(`Cadence created${csvLeads.length > 0 ? ` with ${csvLeads.length} leads` : ""}!`);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -262,13 +311,13 @@ export default function Outreach() {
                          <p>Your signature is appended to every email in the cadence automatically.</p>
                        </div>
                      </li>
-                     <li className="flex gap-2.5">
-                       <span className="h-5 w-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">5</span>
-                       <div>
-                         <p className="font-semibold text-foreground mb-0.5">Import leads & send</p>
-                         <p>After creating, open the cadence and click <strong>Import Lead List</strong> to upload a CSV, then hit Send.</p>
-                       </div>
-                     </li>
+                      <li className="flex gap-2.5">
+                        <span className="h-5 w-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">5</span>
+                        <div>
+                          <p className="font-semibold text-foreground mb-0.5">Upload your target list</p>
+                          <p>Upload a CSV with your leads below. They'll be saved as leads and available on the <strong>Leads</strong> page for conversion.</p>
+                        </div>
+                      </li>
                    </ol>
 
                    <div className="mt-auto pt-5 border-t border-border/50">
@@ -383,7 +432,58 @@ export default function Outreach() {
                        <p className="text-[10px] text-muted-foreground">Appended to all steps automatically.</p>
                      </div>
 
-                     {/* Schedule */}
+                     {/* Target List (CSV Upload) */}
+                     <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
+                       <div className="flex items-center justify-between">
+                         <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Target List (Optional)</p>
+                         {csvLeads.length > 0 && (
+                           <span className="text-xs font-medium text-primary flex items-center gap-1">
+                             <CheckCircle2 className="h-3 w-3" />{csvLeads.length} leads loaded
+                           </span>
+                         )}
+                       </div>
+                       <div className="flex items-center gap-3">
+                         <label className="flex-1 cursor-pointer">
+                           <div className="flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border/80 hover:border-primary/40 transition-colors py-4 px-3">
+                             <Upload className="h-4 w-4 text-muted-foreground" />
+                             <span className="text-sm text-muted-foreground">
+                               {csvFileName || "Upload CSV with leads"}
+                             </span>
+                           </div>
+                           <input type="file" accept=".csv" className="hidden" onChange={handleCsvUpload} />
+                         </label>
+                         {csvLeads.length > 0 && (
+                           <Button variant="ghost" size="sm" className="shrink-0 text-xs" onClick={() => { setCsvLeads([]); setCsvFileName(""); }}>Clear</Button>
+                         )}
+                       </div>
+                       {csvLeads.length > 0 && (
+                         <div className="max-h-32 overflow-y-auto rounded border border-border/40 bg-background/50">
+                           <Table>
+                             <TableHeader>
+                               <TableRow className="border-border/40">
+                                 <TableHead className="h-7 text-[10px]">Name</TableHead>
+                                 <TableHead className="h-7 text-[10px]">Email</TableHead>
+                                 <TableHead className="h-7 text-[10px]">Company</TableHead>
+                               </TableRow>
+                             </TableHeader>
+                             <TableBody>
+                               {csvLeads.slice(0, 10).map((l, i) => (
+                                 <TableRow key={i} className="border-border/30">
+                                   <TableCell className="py-1 text-xs">{[l.first_name, l.last_name].filter(Boolean).join(" ") || "—"}</TableCell>
+                                   <TableCell className="py-1 text-xs text-muted-foreground">{l.email}</TableCell>
+                                   <TableCell className="py-1 text-xs text-muted-foreground">{l.company || "—"}</TableCell>
+                                 </TableRow>
+                               ))}
+                               {csvLeads.length > 10 && (
+                                 <TableRow><TableCell colSpan={3} className="py-1 text-xs text-muted-foreground text-center">+ {csvLeads.length - 10} more</TableCell></TableRow>
+                               )}
+                             </TableBody>
+                           </Table>
+                         </div>
+                       )}
+                       <p className="text-[10px] text-muted-foreground">CSV headers: email, first_name, last_name, company. You can also add leads later.</p>
+                     </div>
+
                      <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
                        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Schedule (Optional)</p>
                        <div className="flex gap-2">

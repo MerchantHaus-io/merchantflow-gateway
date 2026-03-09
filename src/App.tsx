@@ -47,6 +47,7 @@ import Outreach from "./pages/Outreach";
 import OutreachDetail from "./pages/OutreachDetail";
 import NetlifyHub from "./pages/NetlifyHub";
 import NMIBoarding from "./pages/NMIBoarding";
+import Leads from "./pages/Leads";
 import { IncomingCallToast } from "./components/IncomingCallToast";
 import { IncomingMessageToast } from "./components/IncomingMessageToast";
 import { Dialler } from "./components/Dialler";
@@ -121,6 +122,7 @@ const App = () => (
                 <Route path="/supported-processors" element={<ProtectedRoute><SupportedProcessors /></ProtectedRoute>} />
                 <Route path="/outreach" element={<ProtectedRoute><Outreach /></ProtectedRoute>} />
                 <Route path="/outreach/:id" element={<ProtectedRoute><OutreachDetail /></ProtectedRoute>} />
+                <Route path="/leads" element={<ProtectedRoute><Leads /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </TasksProvider>
