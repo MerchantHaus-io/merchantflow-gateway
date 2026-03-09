@@ -172,7 +172,7 @@ const MyTasks = () => {
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <p className="font-medium leading-none">{task.title}</p>
-                          {task.source === "sla" && <Badge variant="outline">24h SLA</Badge>}
+                          {task.source === "sla" && <Badge variant="warning" withDot>24h SLA</Badge>}
                         </div>
                         {task.description && <p className="text-sm text-muted-foreground">{task.description}</p>}
                         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
