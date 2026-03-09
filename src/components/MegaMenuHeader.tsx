@@ -230,7 +230,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
       )}
       style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
-      <div className="flex h-12 items-center px-3 lg:px-5 gap-2 overflow-visible">
+      <div className="flex h-12 items-center px-3 lg:px-5 gap-2 overflow-visible overflow-visible">
         {/* Logo */}
         <Link to="/" className="flex items-center shrink-0 mr-1 hover:drop-shadow-[0_0_8px_hsl(var(--primary)/0.4)] transition-all duration-300">
           <img src={sidebarIcon} alt="Ops Terminal" className="h-7 w-7 object-contain" />
@@ -346,7 +346,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
         </NavigationMenu>
 
         {/* Right side actions */}
-        <div className="flex items-center gap-1 ml-auto">
+        <div className="flex items-cen shrink-0 overflow-visibleter gap-1 ml-auto">
           {/* ⌘K search trigger */}
           <Button
             variant="ghost"
