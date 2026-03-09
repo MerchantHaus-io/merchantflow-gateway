@@ -797,7 +797,7 @@ All colors MUST be HSL.
 
   /* Light mode: default background */
   .light body {
-    background-image: url('/src/assets/light-background-new.png');
+    background-image: url('/src/assets/bg-light-ocean.png');
     background-size: cover;
     background-position: center top;
     background-repeat: no-repeat;
