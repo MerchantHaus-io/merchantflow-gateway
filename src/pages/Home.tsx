@@ -290,7 +290,7 @@ export default function Home() {
         </motion.div>
 
         {/* Category tabs + layout toggle */}
-        <div className="flex items-center justify-center gap-2 mb-2 flex-wrap">
+        <div className="flex items-center justify-center gap-2 mb-2 flex-wrap overflow-visible">
           {groupKeys.map((title, idx) => (
             <button
               key={title}
