@@ -112,7 +112,7 @@ function GridView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeG
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
-      className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 mt-4"
+      className="flex flex-wrap justify-center gap-3 mt-4"
     >
       {items.map((item, i) => (
         <motion.button
@@ -125,6 +125,7 @@ function GridView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeG
             "group relative flex flex-col items-center gap-2 p-4 rounded-xl border border-border/40",
             "bg-card/90 dark:bg-card/70 backdrop-blur-sm hover:bg-card hover:border-border transition-all duration-200",
             "cursor-pointer text-center",
+            "w-[calc(50%-6px)] sm:w-[calc(33.333%-8px)] lg:w-[calc(25%-9px)] xl:w-[calc(20%-10px)]",
             glowColorMap[item.color],
           )}
         >
@@ -153,7 +154,7 @@ function IconView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeG
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
-      className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 gap-y-6 mt-6"
+      className="flex flex-wrap justify-center gap-x-6 gap-y-6 mt-6"
     >
       {items.map((item, i) => (
         <motion.button
@@ -162,7 +163,7 @@ function IconView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeG
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: i * 0.035, duration: 0.3 }}
           onClick={() => item.external ? window.open(item.url, "_blank") : navigate(item.url)}
-          className="group flex flex-col items-center gap-2.5 cursor-pointer focus:outline-none"
+          className="group flex flex-col items-center gap-2.5 cursor-pointer focus:outline-none w-20 sm:w-24"
         >
           {/* Large icon orb */}
           <div
@@ -250,6 +251,8 @@ export default function Home() {
   };
 
   const currentItems = groups[activeGroup].items;
+  const CurrentIcon = layoutIcons[layout];
+  const currentLabel = layoutLabels[layout];
   const NextIcon = layoutIcons[layoutCycle[(layoutCycle.indexOf(layout) + 1) % layoutCycle.length]];
   const nextLabel = layoutLabels[layoutCycle[(layoutCycle.indexOf(layout) + 1) % layoutCycle.length]];
 
@@ -292,12 +295,13 @@ export default function Home() {
           {/* View toggle — cycles grid → icons → carousel */}
           <Button
             variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-full border border-border/40 ml-1"
+            size="sm"
+            className="h-8 rounded-full border border-border/40 ml-1 gap-1.5 px-3"
             onClick={cycleLayout}
             title={`Switch to ${nextLabel}`}
           >
-            <NextIcon className="h-3.5 w-3.5 text-muted-foreground" />
+            <CurrentIcon className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-[10px] text-muted-foreground font-medium hidden sm:inline">{currentLabel}</span>
           </Button>
         </div>
 
