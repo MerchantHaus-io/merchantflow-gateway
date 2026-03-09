@@ -212,10 +212,11 @@ export default function Outreach() {
           title="Sales Cadences"
           description="Multi-step email sequences · Lead list management · Conversion tracking"
           actions={
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" />New Cadence</Button>
-              </DialogTrigger>
+            <Button size="sm" className="gap-1.5" onClick={() => setOpen(true)}><Plus className="h-4 w-4" />New Cadence</Button>
+          }
+        />
+
+        <Dialog open={open} onOpenChange={setOpen}>
              <DialogContent className="sm:max-w-[960px] max-h-[90vh] overflow-y-auto p-0">
                <div className="flex flex-col md:flex-row">
                  {/* ── How-to Guide Panel ── */}
@@ -416,8 +417,7 @@ export default function Outreach() {
                  </div>
                </div>
               </DialogContent>
-          </Dialog>
-        </div>
+        </Dialog>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-5">
           {/* ── KPIs ── */}
