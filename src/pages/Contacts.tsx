@@ -81,7 +81,7 @@ type ContactQueryResult = ContactWithAccount & {
   opportunities?: { id: string; assigned_to: string | null; stage: string | null }[];
 };
 
-type SortField = 'first_name' | 'last_name' | 'email' | 'phone' | 'account' | 'assigned_to' | 'stage' | 'last_activity';
+type SortField = 'first_name' | 'last_name' | 'email' | 'phone' | 'account' | 'assigned_to' | 'stage' | 'last_activity' | 'created_at';
 type SortDirection = 'asc' | 'desc';
 
 const STAGE_LABELS: Record<string, string> = {
