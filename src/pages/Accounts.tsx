@@ -359,34 +359,30 @@ const Accounts = () => {
   }
 
   return (
-    <AppLayout
-      pageTitle="Accounts"
-      headerActions={
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search accounts..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 w-48 lg:w-64"
-            />
-          </div>
-          <Button size="sm" onClick={() => toast.info('Use New Application on the Pipeline to create accounts')}>
-            <Plus className="h-4 w-4 mr-1" /> Add Account
-          </Button>
-        </div>
-      }
-    >
-      <div className="p-4 lg:p-6 space-y-4">
-            {/* Compact stat row */}
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-sm font-semibold text-foreground">{totalAccounts} Accounts</span>
-              <span className="text-muted-foreground/40">·</span>
-              <span className="text-sm text-muted-foreground">{accountsWithContacts} with contacts</span>
-              <span className="text-muted-foreground/40">·</span>
-              <span className="text-sm text-muted-foreground">{Object.keys(accountOpportunities).length} with active deals</span>
+    <AppLayout>
+      <PageHeader
+        icon={Building2Icon}
+        title="Accounts"
+        description={`${totalAccounts} accounts · ${accountsWithContacts} with contacts · ${Object.keys(accountOpportunities).length} active deals`}
+        color="teal"
+        actions={
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search accounts..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 w-48 lg:w-64"
+              />
             </div>
+            <Button size="sm" onClick={() => toast.info('Use New Application on the Pipeline to create accounts')}>
+              <Plus className="h-4 w-4 mr-1" /> Add Account
+            </Button>
+          </div>
+        }
+      />
+      <div className="p-4 lg:p-6 space-y-4">
 
             <Card>
               <CardHeader className="pb-0 pt-3 px-4">
