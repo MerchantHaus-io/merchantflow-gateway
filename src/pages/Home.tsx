@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Briefcase, Building2, Users, FileText, BarChart3,
   Activity, BadgeDollarSign, Globe, BookOpen, BookMarked, ClipboardList,
   Calculator, Sparkles, FileSpreadsheet, Download, Cloud, Send, ListChecks,
-  Settings, LayoutGrid, Box,
+  Settings, LayoutGrid, Box, CircleDot,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -67,6 +67,8 @@ const groups: ShortcutGroup[] = [
 
 const groupKeys = groups.map((g) => g.title);
 
+type LayoutMode = "grid" | "carousel" | "icons";
+
 const iconColorMap: Record<string, string> = {
   primary: "text-primary",
   teal: "text-teal",
@@ -91,7 +93,15 @@ const glowColorMap: Record<string, string> = {
   warning: "shadow-[0_0_20px_hsl(38_92%_50%/0.25)]",
 };
 
-// ── Grid View (original tile layout) ─────────────────────────
+const borderColorMap: Record<string, string> = {
+  primary: "border-primary/30",
+  teal: "border-teal/30",
+  gold: "border-gold/30",
+  success: "border-success/30",
+  warning: "border-warning/30",
+};
+
+// ── Grid View (card layout) ─────────────────────────────────
 function GridView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeGroup: number }) {
   const navigate = useNavigate();
   const items = g[activeGroup].items;
@@ -132,6 +142,74 @@ function GridView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeG
   );
 }
 
+// ── Icon View (large icons, minimal chrome) ──────────────────
+function IconView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeGroup: number }) {
+  const navigate = useNavigate();
+  const items = g[activeGroup].items;
+
+  return (
+    <motion.div
+      key={activeGroup}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+      className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 gap-y-6 mt-6"
+    >
+      {items.map((item, i) => (
+        <motion.button
+          key={item.url}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: i * 0.035, duration: 0.3 }}
+          onClick={() => item.external ? window.open(item.url, "_blank") : navigate(item.url)}
+          className="group flex flex-col items-center gap-2.5 cursor-pointer focus:outline-none"
+        >
+          {/* Large icon orb */}
+          <div
+            className={cn(
+              "w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-2xl flex items-center justify-center",
+              "border transition-all duration-300",
+              "group-hover:scale-110 group-hover:shadow-lg group-active:scale-95",
+              bgColorMap[item.color],
+              borderColorMap[item.color],
+              glowColorMap[item.color],
+              "group-hover:brightness-110",
+            )}
+          >
+            <item.icon
+              className={cn("h-7 w-7 sm:h-8 sm:w-8 transition-transform duration-300", iconColorMap[item.color])}
+              strokeWidth={1.6}
+            />
+          </div>
+
+          {/* Title */}
+          <span className="text-xs font-bold text-foreground leading-tight text-center font-display">
+            {item.title}
+          </span>
+
+          {/* Subtitle */}
+          <span className="text-[10px] text-muted-foreground leading-tight text-center -mt-1">
+            {item.description}
+          </span>
+        </motion.button>
+      ))}
+    </motion.div>
+  );
+}
+
+// ── Layout cycle order & icons ───────────────────────────────
+const layoutCycle: LayoutMode[] = ["grid", "icons", "carousel"];
+const layoutIcons: Record<LayoutMode, typeof LayoutGrid> = {
+  grid: LayoutGrid,
+  icons: CircleDot,
+  carousel: Box,
+};
+const layoutLabels: Record<LayoutMode, string> = {
+  grid: "Cards",
+  icons: "Icons",
+  carousel: "3D Carousel",
+};
+
 // ── Main Home ────────────────────────────────────────────────
 export default function Home() {
   const { user } = useAuth();
@@ -141,7 +219,7 @@ export default function Home() {
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   const [activeGroup, setActiveGroup] = useState(0);
-  const [layout, setLayout] = useState<"grid" | "carousel">("grid");
+  const [layout, setLayout] = useState<LayoutMode>("grid");
   const [loaded, setLoaded] = useState(false);
 
   // Load preference from profile
@@ -153,16 +231,18 @@ export default function Home() {
       .eq("id", user.id)
       .single()
       .then(({ data }) => {
-        if (data?.home_layout === "carousel" || data?.home_layout === "grid") {
-          setLayout(data.home_layout as "grid" | "carousel");
+        const v = data?.home_layout;
+        if (v === "carousel" || v === "grid" || v === "icons") {
+          setLayout(v as LayoutMode);
         }
         setLoaded(true);
       });
   }, [user?.id]);
 
-  // Persist preference
-  const toggleLayout = () => {
-    const next = layout === "grid" ? "carousel" : "grid";
+  // Cycle layout & persist
+  const cycleLayout = () => {
+    const idx = layoutCycle.indexOf(layout);
+    const next = layoutCycle[(idx + 1) % layoutCycle.length];
     setLayout(next);
     if (user?.id) {
       supabase.from("profiles").update({ home_layout: next } as any).eq("id", user.id).then();
@@ -170,6 +250,8 @@ export default function Home() {
   };
 
   const currentItems = groups[activeGroup].items;
+  const NextIcon = layoutIcons[layoutCycle[(layoutCycle.indexOf(layout) + 1) % layoutCycle.length]];
+  const nextLabel = layoutLabels[layoutCycle[(layoutCycle.indexOf(layout) + 1) % layoutCycle.length]];
 
   return (
     <AppLayout>
@@ -207,25 +289,23 @@ export default function Home() {
             </button>
           ))}
 
-          {/* View toggle */}
+          {/* View toggle — cycles grid → icons → carousel */}
           <Button
             variant="ghost"
             size="icon"
             className="h-8 w-8 rounded-full border border-border/40 ml-1"
-            onClick={toggleLayout}
-            title={layout === "grid" ? "Switch to 3D carousel" : "Switch to grid"}
+            onClick={cycleLayout}
+            title={`Switch to ${nextLabel}`}
           >
-            {layout === "grid" ? (
-              <Box className="h-3.5 w-3.5 text-muted-foreground" />
-            ) : (
-              <LayoutGrid className="h-3.5 w-3.5 text-muted-foreground" />
-            )}
+            <NextIcon className="h-3.5 w-3.5 text-muted-foreground" />
           </Button>
         </div>
 
         {/* Content */}
         {layout === "carousel" ? (
           <Carousel3D key={activeGroup} items={currentItems} />
+        ) : layout === "icons" ? (
+          <IconView groups={groups} activeGroup={activeGroup} />
         ) : (
           <GridView groups={groups} activeGroup={activeGroup} />
         )}
