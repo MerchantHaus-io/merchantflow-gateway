@@ -112,7 +112,7 @@ function GridView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeG
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
-      className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 mt-4"
+      className="flex flex-wrap justify-center gap-3 mt-4"
     >
       {items.map((item, i) => (
         <motion.button
@@ -125,6 +125,7 @@ function GridView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeG
             "group relative flex flex-col items-center gap-2 p-4 rounded-xl border border-border/40",
             "bg-card/90 dark:bg-card/70 backdrop-blur-sm hover:bg-card hover:border-border transition-all duration-200",
             "cursor-pointer text-center",
+            "w-[calc(50%-6px)] sm:w-[calc(33.333%-8px)] lg:w-[calc(25%-9px)] xl:w-[calc(20%-10px)]",
             glowColorMap[item.color],
           )}
         >
