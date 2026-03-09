@@ -104,15 +104,9 @@ const Auth = () => {
     setIsLoading(false);
 
     if (error) {
-      let description = error.message;
-      if (error.message.includes('already registered')) {
-        description = 'This email is already registered. Please sign in instead.';
-      } else if (error.message.toLowerCase().includes('fetch')) {
-        description = 'Network error. Please check your connection and try again.';
-      }
       toast({
-        title: error.message.includes('already registered') ? 'Account Exists' : 'Sign Up Failed',
-        description,
+        title: 'Sign Up Failed',
+        description: getFriendlyError(error),
         variant: 'destructive',
       });
     } else {
