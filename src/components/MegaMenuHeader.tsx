@@ -31,6 +31,7 @@ import {
   Cloud,
   Send,
   Search,
+  UserPlus,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
