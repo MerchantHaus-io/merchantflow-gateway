@@ -751,9 +751,10 @@ const FloatingChat: React.FC = () => {
         <button
           onClick={() => setIsOpen(true)}
           className={cn(
-            "fixed bottom-0 right-6 z-50 w-[340px] h-11 rounded-t-xl flex items-center gap-3 px-4",
-            "bg-[hsl(var(--wa-header))] text-[hsl(var(--wa-header-foreground))]",
-            "shadow-xl hover:shadow-2xl transition-all duration-200 ease-out"
+            "fixed bottom-0 right-6 z-50 w-[220px] h-11 rounded-t-xl flex items-center gap-3 px-4",
+            "bg-emerald-600 text-white",
+            "shadow-xl hover:shadow-2xl hover:bg-emerald-500 transition-all duration-200 ease-out",
+            "border border-b-0 border-emerald-700"
           )}
         >
           <MessageCircle className="h-5 w-5 shrink-0" />

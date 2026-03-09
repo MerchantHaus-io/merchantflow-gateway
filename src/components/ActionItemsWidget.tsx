@@ -223,7 +223,7 @@ export function ActionItemsWidget() {
         <button
           onClick={() => setIsOpen(true)}
           className={cn(
-            "fixed bottom-0 left-6 z-50 w-[220px] h-12 rounded-t-xl flex items-center gap-3 px-4",
+            "fixed bottom-0 left-6 z-50 w-[220px] h-11 rounded-t-xl flex items-center gap-3 px-4",
             "bg-gradient-to-r from-slate-800 to-slate-700 dark:from-slate-900 dark:to-slate-800",
             "text-white shadow-xl hover:shadow-2xl transition-all duration-200 ease-out",
             "border border-b-0 border-slate-600"
