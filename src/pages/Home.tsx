@@ -163,18 +163,20 @@ function IconView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeG
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: i * 0.035, duration: 0.3 }}
           onClick={() => item.external ? window.open(item.url, "_blank") : navigate(item.url)}
-          className="group flex flex-col items-center gap-2.5 cursor-pointer focus:outline-none w-20 sm:w-24"
+          className={cn(
+            "group flex flex-col items-center gap-2.5 cursor-pointer focus:outline-none w-24 sm:w-28 p-3 rounded-2xl transition-all duration-200",
+            "hover:bg-card/80 dark:hover:bg-card/40",
+          )}
         >
           {/* Large icon orb */}
           <div
             className={cn(
               "w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-2xl flex items-center justify-center",
               "border transition-all duration-300",
+              "bg-card/95 dark:bg-card/60 backdrop-blur-sm",
               "group-hover:scale-110 group-hover:shadow-lg group-active:scale-95",
-              bgColorMap[item.color],
               borderColorMap[item.color],
               glowColorMap[item.color],
-              "group-hover:brightness-110",
             )}
           >
             <item.icon
@@ -184,12 +186,12 @@ function IconView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeG
           </div>
 
           {/* Title */}
-          <span className="text-xs font-bold text-foreground leading-tight text-center font-display">
+          <span className="text-xs font-bold text-foreground leading-tight text-center font-display drop-shadow-sm">
             {item.title}
           </span>
 
           {/* Subtitle */}
-          <span className="text-[10px] text-muted-foreground leading-tight text-center -mt-1">
+          <span className="text-[10px] text-muted-foreground leading-tight text-center -mt-1 drop-shadow-sm">
             {item.description}
           </span>
         </motion.button>
