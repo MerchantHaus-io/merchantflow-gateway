@@ -163,7 +163,7 @@ function IconView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeG
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: i * 0.035, duration: 0.3 }}
           onClick={() => item.external ? window.open(item.url, "_blank") : navigate(item.url)}
-          className="group flex flex-col items-center gap-2.5 cursor-pointer focus:outline-none"
+          className="group flex flex-col items-center gap-2.5 cursor-pointer focus:outline-none w-20 sm:w-24"
         >
           {/* Large icon orb */}
           <div
