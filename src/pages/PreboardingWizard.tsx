@@ -1031,7 +1031,7 @@ function DocumentsStep({ form, onChange, onDocsChange, opportunityId, onDocCount
         .upload(filePath, file);
 
       if (storageError) {
-        sonnerToast.error(`Failed to upload ${file.name}: ${storageError.message}`);
+        sonnerToast.error(`Failed to upload ${file.name}. Please check the file size and try again.`);
         continue;
       }
 
