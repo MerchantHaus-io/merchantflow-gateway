@@ -13,6 +13,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import logoDark from '@/assets/logo-dark.png';
 import logoLight from '@/assets/logo-light.png';
 import type { ApplicationFormData } from '@/types/application';
+import { getFriendlyError } from '@/lib/friendly-errors';
 
 type FormStatus = 'idle' | 'submitting' | 'success' | 'error';
 
