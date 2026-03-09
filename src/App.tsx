@@ -122,6 +122,7 @@ const App = () => (
                 <Route path="/supported-processors" element={<ProtectedRoute><SupportedProcessors /></ProtectedRoute>} />
                 <Route path="/outreach" element={<ProtectedRoute><Outreach /></ProtectedRoute>} />
                 <Route path="/outreach/:id" element={<ProtectedRoute><OutreachDetail /></ProtectedRoute>} />
+                <Route path="/leads" element={<ProtectedRoute><Leads /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </TasksProvider>
