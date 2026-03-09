@@ -323,6 +323,9 @@ const Accounts = () => {
         case 'website':
           comparison = (a.website || '').localeCompare(b.website || '');
           break;
+        case 'created_at':
+          comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          break;
       }
       return sortDirection === 'asc' ? comparison : -comparison;
     });
