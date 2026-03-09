@@ -69,6 +69,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { SortableTableHead } from "@/components/SortableTableHead";
+import { PageHeader } from "@/components/PageHeader";
+import { EmptyState } from "@/components/EmptyState";
 
 type SortField = 'name' | 'stage' | 'pipeline' | 'owner' | 'tasks' | 'progress' | 'created' | 'updated';
 type SortDirection = 'asc' | 'desc';
