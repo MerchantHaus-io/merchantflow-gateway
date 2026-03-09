@@ -29,6 +29,9 @@ import { toast } from "sonner";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
 import { SortableTableHead } from "@/components/SortableTableHead";
+import { PageHeader } from "@/components/PageHeader";
+import { EmptyState } from "@/components/EmptyState";
+import { Building2 as Building2Icon } from "lucide-react";
 
 type SortField = 'name' | 'contacts' | 'city' | 'state' | 'country' | 'website';
 type SortDirection = 'asc' | 'desc';
