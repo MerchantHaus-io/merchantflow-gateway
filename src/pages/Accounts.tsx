@@ -34,7 +34,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { Building2 as Building2Icon } from "lucide-react";
 
-type SortField = 'name' | 'contacts' | 'city' | 'state' | 'country' | 'website';
+type SortField = 'name' | 'contacts' | 'city' | 'state' | 'country' | 'website' | 'created_at';
 type SortDirection = 'asc' | 'desc';
 
 interface AccountWithContacts extends Account {
