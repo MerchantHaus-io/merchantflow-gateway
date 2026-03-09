@@ -157,7 +157,7 @@ export function Carousel3D({ items }: Carousel3DProps) {
   );
 
   return (
-    <div className="relative w-full select-none" style={{ height: "clamp(340px, 50vh, 480px)" }}>
+    <div className="relative w-full select-none mt-6" style={{ height: "clamp(300px, 42vh, 420px)" }}>
       {/* 3D scene */}
       <div
         ref={sliderRef}
