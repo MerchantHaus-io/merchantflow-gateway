@@ -936,6 +936,7 @@ export default function OfficeChat({
   const [nearTV, setNearTV] = useState(false);
   const [tvUnmuted, setTvUnmuted] = useState(false);
   const tvOverlayRef = useRef<HTMLDivElement>(null);
+  const tvIframeRef = useRef<HTMLIFrameElement>(null);
   const tvOverlayVisibleRef = useRef(false);
   const tvOverlayRectRef = useRef({ x: -1, y: -1, w: -1, h: -1 });
   const [nearInteract, setNearInteract] = useState<InteractionPoint | null>(null);
