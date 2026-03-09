@@ -157,7 +157,12 @@ const MyTasks = () => {
                   {fetchError ? (
                     <QueryErrorCard message={fetchError} onRetry={fetchOptions} />
                   ) : myTasks.length === 0 ? (
-                    <div className="text-sm text-muted-foreground">No tasks yet. Create one to get started.</div>
+                    <EmptyState
+                      icon={ClipboardList}
+                      title="No tasks yet"
+                      description="Create one to get started."
+                      size="sm"
+                    />
                   ) : null}
                   {myTasks.map((task) => (
                     <div
