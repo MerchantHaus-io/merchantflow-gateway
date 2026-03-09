@@ -253,9 +253,16 @@ export default function Home() {
     const idx = layoutCycle.indexOf(layout);
     const next = layoutCycle[(idx + 1) % layoutCycle.length];
     setLayout(next);
+    setShowToggleHint(false);
+    localStorage.setItem("home_layout_hint_seen", "1");
     if (user?.id) {
       supabase.from("profiles").update({ home_layout: next } as any).eq("id", user.id).then();
     }
+  };
+
+  const dismissHint = () => {
+    setShowToggleHint(false);
+    localStorage.setItem("home_layout_hint_seen", "1");
   };
 
   const currentItems = groups[activeGroup].items;
