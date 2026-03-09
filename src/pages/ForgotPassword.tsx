@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { getFriendlyError } from '@/lib/friendly-errors';
 import { ArrowLeft, Mail, CheckCircle2 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import logoDark from '@/assets/logo-dark.png';
