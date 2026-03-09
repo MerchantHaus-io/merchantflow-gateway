@@ -1,50 +1,48 @@
 
 
-## Audit: Integrate PageHeader, StatCard, and EmptyState into Remaining Pages
+# Add Notification Sound to All Real-Time Notifications
 
-### Current State
+## Overview
+Currently, notification sounds only play inside the **FloatingChat** component (for chat messages). The **NotificationBell**, **IncomingCallToast**, and **IncomingMessageToast** components all receive real-time events but play no audio. This plan adds a unified notification sound system across all real-time notification types.
 
-All four pages use `AppLayout` with `pageTitle` prop and ad-hoc inline headers/stat rows. None use the new shared components (`PageHeader`, `StatCard`, `EmptyState`).
+## What Changes
 
-| Page | Header | Stats | Empty State |
-|------|--------|-------|-------------|
-| **Contacts.tsx** | `pageTitle="Contacts"` + inline stat pills | Inline text (`{stats.total} Contacts`, unassigned count) | Plain `<TableCell>` text: "No contacts found" |
-| **Accounts.tsx** | `pageTitle="Accounts"` + inline stat text | Inline text (`{totalAccounts} Accounts`, with contacts, active deals) | No explicit empty state (table just renders empty) |
-| **MyTasks.tsx** | `pageTitle="My Tasks"` | None | Plain div: "No tasks yet. Create one to get started." |
-| **Opportunities.tsx** | Inline `<h1>Opportunities</h1>` with tab toggle | Inline stat pills (Active, in progress, won, lost) | Plain `<TableCell>` text: "No opportunities found" |
+### 1. Create a shared `useNotificationSound` hook
+A lightweight, reusable hook (or utility function) that plays a short audio ping using the Web Audio API. This consolidates the duplicate sound logic currently in `useChatSounds.ts` and `useChatNotifications.ts` into one place. It will respect the user's existing `chatSoundEnabled` localStorage preference.
 
-### Plan
+Three distinct tones will be available:
+- **message** -- existing chat ping (800-1000 Hz sweep)
+- **notification** -- slightly different tone for bell/task/stage notifications (600 Hz)
+- **call** -- urgent ringtone pattern (two-note repeated beep for incoming calls)
 
-#### 1. Contacts.tsx
-- Add `PageHeader` with `Users` icon, title "Contacts", description with live count, and the "New Contact" button as `actions`
-- Remove `pageTitle` from `AppLayout` since PageHeader handles it
-- Replace "No contacts found" `<TableCell>` with `<EmptyState icon={Users} title="No contacts found" description="Try adjusting your filters or add a new contact." actionLabel="New Contact" onAction={openNewDialog} size="sm" />`
+### 2. NotificationBell -- play sound on new notification
+In `src/components/NotificationBell.tsx`, when the realtime subscription fires an `INSERT` event for a new notification, play the **notification** sound. Only play if the popover is closed (user isn't already looking at notifications).
 
-#### 2. Accounts.tsx
-- Add `PageHeader` with `Building2` icon, title "Accounts", description with live count, search + add button as `actions`
-- Remove `pageTitle` and `headerActions` from `AppLayout`
-- Add `<EmptyState>` when `filteredAccounts.length === 0` inside the table card
+### 3. IncomingCallToast -- play ringtone sound
+In `src/components/IncomingCallToast.tsx`, when a ringing incoming call is detected, play the **call** sound (a more urgent, repeating tone) that stops after 10 seconds or when the toast is dismissed.
 
-#### 3. MyTasks.tsx
-- Add `PageHeader` with `CheckCircle2` (or similar task icon) icon, title "My Tasks", description "Manage your assigned tasks and reminders"
-- Remove `pageTitle` from `AppLayout`
-- Replace the plain "No tasks yet" div with `<EmptyState icon={ClipboardList} title="No tasks yet" description="Create one to get started." size="sm" />`
+### 4. IncomingMessageToast -- play message sound
+In `src/components/IncomingMessageToast.tsx`, when a new chat or DM toast is shown, play the **message** sound. This covers users who don't have the FloatingChat open.
 
-#### 4. Opportunities.tsx
-- Replace the inline `<h1>Opportunities</h1>` + tab toggle with `PageHeader` using `TrendingUp` icon, title "Opportunities", and the All/Archive tab toggle as `actions`
-- Replace "No opportunities found" `<TableCell>` with `<EmptyState icon={TrendingUp} title="No opportunities found" description="Adjust your filters or create a new application." size="sm" />`
+### 5. Deduplicate with FloatingChat
+Add a guard so that if the FloatingChat already played a sound for a given message (user is viewing that conversation), the `IncomingMessageToast` skips its sound to avoid double-pinging. This will use a simple `Set` of recently-played message IDs shared via a custom event or ref.
 
-#### 5. Badge semantic variants sweep
-- MyTasks: Change `<Badge variant="outline">24h SLA</Badge>` to `variant="warning"` with `withDot`
-- MyTasks: Change `<Badge variant="secondary">` on Application/Contact tags to `variant="muted"`
-- Contacts/Accounts: Upgrade any stage badges to use semantic variants matching stage colors
-- Opportunities: Same stage badge upgrades
+## Technical Details
 
-#### Files Modified
-- `src/pages/Contacts.tsx`
-- `src/pages/Accounts.tsx`
-- `src/pages/MyTasks.tsx`
-- `src/pages/Opportunities.tsx`
+### New file: `src/hooks/useNotificationSound.ts`
+- Exports `playNotificationSound(type: 'message' | 'notification' | 'call')`
+- Uses Web Audio API oscillator (no external audio files needed)
+- Checks `localStorage.getItem('chatSoundEnabled') !== 'false'` before playing
+- For `call` type, returns a `stop()` function to cancel the repeating tone
 
-No new files needed. All imports come from existing `PageHeader`, `EmptyState`, and `Badge` components.
+### Modified files
+| File | Change |
+|------|--------|
+| `src/hooks/useNotificationSound.ts` | New shared sound utility |
+| `src/components/NotificationBell.tsx` | Import hook, play on INSERT event |
+| `src/components/IncomingCallToast.tsx` | Play call ringtone on ringing status |
+| `src/components/IncomingMessageToast.tsx` | Play message sound on new toast |
+
+### No database changes required
+All notification infrastructure (realtime subscriptions, notifications table) already exists.
 

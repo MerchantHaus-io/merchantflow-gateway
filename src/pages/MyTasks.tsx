@@ -15,7 +15,9 @@ import { useTasks } from "@/contexts/TasksContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Task } from "@/types/task";
 import { cn } from "@/lib/utils";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Loader2, Plus, Trash2, ClipboardList } from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
+import { EmptyState } from "@/components/EmptyState";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -137,7 +139,13 @@ const MyTasks = () => {
   };
 
   return (
-    <AppLayout pageTitle="My Tasks">
+    <AppLayout>
+      <PageHeader
+        icon={ClipboardList}
+        title="My Tasks"
+        description="Manage your assigned tasks and reminders"
+        color="warning"
+      />
       <div className="p-4 lg:p-6 space-y-4">
             <section className="grid grid-cols-1 xl:grid-cols-3 gap-4">
               <Card className="xl:col-span-2">
@@ -149,7 +157,12 @@ const MyTasks = () => {
                   {fetchError ? (
                     <QueryErrorCard message={fetchError} onRetry={fetchOptions} />
                   ) : myTasks.length === 0 ? (
-                    <div className="text-sm text-muted-foreground">No tasks yet. Create one to get started.</div>
+                    <EmptyState
+                      icon={ClipboardList}
+                      title="No tasks yet"
+                      description="Create one to get started."
+                      size="sm"
+                    />
                   ) : null}
                   {myTasks.map((task) => (
                     <div
@@ -159,13 +172,13 @@ const MyTasks = () => {
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <p className="font-medium leading-none">{task.title}</p>
-                          {task.source === "sla" && <Badge variant="outline">24h SLA</Badge>}
+                          {task.source === "sla" && <Badge variant="warning" withDot>24h SLA</Badge>}
                         </div>
                         {task.description && <p className="text-sm text-muted-foreground">{task.description}</p>}
                         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                           <span>Assignee: {task.assignee}</span>
-                          {task.relatedOpportunityId && <Badge variant="secondary">Application: {task.relatedOpportunityId}</Badge>}
-                          {task.relatedContactId && <Badge variant="secondary">Contact: {task.relatedContactId}</Badge>}
+                         {task.relatedOpportunityId && <Badge variant="muted">Application: {task.relatedOpportunityId}</Badge>}
+                          {task.relatedContactId && <Badge variant="muted">Contact: {task.relatedContactId}</Badge>}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -346,9 +359,9 @@ const MyTasks = () => {
                       {task.comments && <p className="text-sm text-muted-foreground">{task.comments}</p>}
                       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                         <Badge variant="outline">Assignee: {task.assignee}</Badge>
-                        {task.relatedOpportunityId && <Badge variant="secondary">Application {task.relatedOpportunityId}</Badge>}
-                        {task.relatedContactId && <Badge variant="secondary">Contact {task.relatedContactId}</Badge>}
-                        {task.source === "sla" && <Badge variant="destructive">24h SLA</Badge>}
+                        {task.relatedOpportunityId && <Badge variant="muted">Application {task.relatedOpportunityId}</Badge>}
+                        {task.relatedContactId && <Badge variant="muted">Contact {task.relatedContactId}</Badge>}
+                        {task.source === "sla" && <Badge variant="warning" withDot>24h SLA</Badge>}
                       </div>
                     </div>
                   ))}

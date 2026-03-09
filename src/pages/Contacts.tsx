@@ -40,6 +40,8 @@ import CommentsTab from "@/components/CommentsTab";
 import { ClickToCall } from "@/components/ClickToCall";
 import { cn } from "@/lib/utils";
 import { useAutoSave } from "@/hooks/useAutoSave";
+import { PageHeader } from "@/components/PageHeader";
+import { EmptyState } from "@/components/EmptyState";
 import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
 import { SortableTableHead } from "@/components/SortableTableHead";
 import {
@@ -606,15 +608,18 @@ const Contacts = () => {
   };
 
   return (
-    <AppLayout
-      pageTitle="Contacts"
-      headerActions={
-        <Button onClick={openNewDialog}>
-          <UserPlus className="h-4 w-4 mr-1" />
-          New Contact
-        </Button>
-      }
-    >
+    <AppLayout>
+      <PageHeader
+        icon={Users}
+        title="Contacts"
+        description={`${stats.total} contacts · ${stats.total - stats.assigned} unassigned`}
+        actions={
+          <Button onClick={openNewDialog}>
+            <UserPlus className="h-4 w-4 mr-1" />
+            New Contact
+          </Button>
+        }
+      />
       <div className="p-4 lg:p-6 space-y-4">
         {/* Compact toolbar: stats + filters inline */}
           <div className="flex items-center gap-3 flex-wrap">
@@ -873,8 +878,15 @@ const Contacts = () => {
                         })
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
-                            No contacts found
+                          <TableCell colSpan={11}>
+                            <EmptyState
+                              icon={Users}
+                              title="No contacts found"
+                              description="Try adjusting your filters or add a new contact."
+                              actionLabel="New Contact"
+                              onAction={openNewDialog}
+                              size="sm"
+                            />
                           </TableCell>
                         </TableRow>
                       )}

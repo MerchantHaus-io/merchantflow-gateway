@@ -69,6 +69,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { SortableTableHead } from "@/components/SortableTableHead";
+import { PageHeader } from "@/components/PageHeader";
+import { EmptyState } from "@/components/EmptyState";
 
 type SortField = 'name' | 'stage' | 'pipeline' | 'owner' | 'tasks' | 'progress' | 'created' | 'updated';
 type SortDirection = 'asc' | 'desc';
@@ -337,35 +339,44 @@ const Opportunities = () => {
     <AppLayout
       onNewApplication={() => setShowNewModal(true)}
     >
-      <div className="p-4 lg:p-6 space-y-6">
-        {/* Page title with tabs */}
-        <div className="flex items-center justify-between gap-4">
-          <h1 className="text-lg font-semibold text-foreground">Opportunities</h1>
-          <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-            <button
-              onClick={() => setViewTab('all')}
-              className={cn(
-                "px-3 py-1 text-xs font-medium rounded-md transition-colors",
-                viewTab === 'all' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setViewTab('archive')}
-              className={cn(
-                "px-3 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1",
-                viewTab === 'archive' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <Archive className="h-3 w-3" />
-              Archive
-              {stats.archived > 0 && (
-                <Badge variant="secondary" className="h-4 px-1 text-[10px] ml-0.5">{stats.archived}</Badge>
-              )}
-            </button>
+      <PageHeader
+        icon={TrendingUp}
+        title="Opportunities"
+        description={`${stats.total} active · ${stats.inProgress} in progress · ${stats.won} won`}
+        color="success"
+        actions={
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+              <button
+                onClick={() => setViewTab('all')}
+                className={cn(
+                  "px-3 py-1 text-xs font-medium rounded-md transition-colors",
+                  viewTab === 'all' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setViewTab('archive')}
+                className={cn(
+                  "px-3 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1",
+                  viewTab === 'archive' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Archive className="h-3 w-3" />
+                Archive
+                {stats.archived > 0 && (
+                  <Badge variant="muted" className="h-4 px-1 text-[10px] ml-0.5">{stats.archived}</Badge>
+                )}
+              </button>
+            </div>
+            <Button size="sm" onClick={() => setShowNewModal(true)}>
+              <Plus className="h-4 w-4 mr-1" /> New Application
+            </Button>
           </div>
-        </div>
+        }
+      />
+      <div className="p-4 lg:p-6 space-y-6">
         {/* Compact stats + search in one row */}
           <div className="flex items-center gap-3 flex-wrap">
             {/* Live stat pills */}
@@ -627,8 +638,15 @@ const Opportunities = () => {
                       })}
                       {filteredOpportunities.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                            No opportunities found
+                          <TableCell colSpan={9}>
+                            <EmptyState
+                              icon={TrendingUp}
+                              title="No opportunities found"
+                              description="Adjust your filters or create a new application."
+                              actionLabel="New Application"
+                              onAction={() => setShowNewModal(true)}
+                              size="sm"
+                            />
                           </TableCell>
                         </TableRow>
                       )}

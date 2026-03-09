@@ -29,6 +29,9 @@ import { toast } from "sonner";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
 import { SortableTableHead } from "@/components/SortableTableHead";
+import { PageHeader } from "@/components/PageHeader";
+import { EmptyState } from "@/components/EmptyState";
+import { Building2 as Building2Icon } from "lucide-react";
 
 type SortField = 'name' | 'contacts' | 'city' | 'state' | 'country' | 'website';
 type SortDirection = 'asc' | 'desc';
@@ -332,7 +335,8 @@ const Accounts = () => {
 
   if (loading) {
     return (
-      <AppLayout pageTitle="Accounts">
+      <AppLayout>
+        <PageHeader icon={Building2Icon} title="Accounts" color="teal" />
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
             <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -345,7 +349,8 @@ const Accounts = () => {
 
   if (fetchError) {
     return (
-      <AppLayout pageTitle="Accounts">
+      <AppLayout>
+        <PageHeader icon={Building2Icon} title="Accounts" color="teal" />
         <div className="p-6">
           <QueryErrorCard message={fetchError} onRetry={() => { setLoading(true); fetchAccounts(); }} />
         </div>
@@ -354,34 +359,30 @@ const Accounts = () => {
   }
 
   return (
-    <AppLayout
-      pageTitle="Accounts"
-      headerActions={
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search accounts..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 w-48 lg:w-64"
-            />
-          </div>
-          <Button size="sm" onClick={() => toast.info('Use New Application on the Pipeline to create accounts')}>
-            <Plus className="h-4 w-4 mr-1" /> Add Account
-          </Button>
-        </div>
-      }
-    >
-      <div className="p-4 lg:p-6 space-y-4">
-            {/* Compact stat row */}
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-sm font-semibold text-foreground">{totalAccounts} Accounts</span>
-              <span className="text-muted-foreground/40">·</span>
-              <span className="text-sm text-muted-foreground">{accountsWithContacts} with contacts</span>
-              <span className="text-muted-foreground/40">·</span>
-              <span className="text-sm text-muted-foreground">{Object.keys(accountOpportunities).length} with active deals</span>
+    <AppLayout>
+      <PageHeader
+        icon={Building2Icon}
+        title="Accounts"
+        description={`${totalAccounts} accounts · ${accountsWithContacts} with contacts · ${Object.keys(accountOpportunities).length} active deals`}
+        color="teal"
+        actions={
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search accounts..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 w-48 lg:w-64"
+              />
             </div>
+            <Button size="sm" onClick={() => toast.info('Use New Application on the Pipeline to create accounts')}>
+              <Plus className="h-4 w-4 mr-1" /> Add Account
+            </Button>
+          </div>
+        }
+      />
+      <div className="p-4 lg:p-6 space-y-4">
 
             <Card>
               <CardHeader className="pb-0 pt-3 px-4">
@@ -533,6 +534,18 @@ const Accounts = () => {
                       </TableRow>
                     );
                     })}
+                    {filteredAccounts.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6}>
+                          <EmptyState
+                            icon={Building2Icon}
+                            title="No accounts found"
+                            description="Try adjusting your search or create a new application."
+                            size="sm"
+                          />
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
