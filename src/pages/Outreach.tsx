@@ -131,6 +131,10 @@ export default function Outreach() {
   const [view, setView]           = useState<"grid"|"list">("grid");
   const [filter, setFilter]       = useState("all");
 
+  // CSV target list state
+  const [csvLeads, setCsvLeads] = useState<Array<{ email: string; first_name: string | null; last_name: string | null; company: string | null }>>([]);
+  const [csvFileName, setCsvFileName] = useState("");
+
   const updateStep = (idx: number, patch: Partial<StepDraft>) => {
     setSteps(prev => prev.map((s, i) => i === idx ? { ...s, ...patch } : s));
   };
