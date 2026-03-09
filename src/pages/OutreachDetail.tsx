@@ -233,7 +233,7 @@ export default function OutreachDetail() {
     if (rows.length === 0) { toast.error("No valid email addresses found"); return; }
 
     const { error } = await supabase.from("outreach_contacts").insert(rows);
-    if (error) { toast.error(error.message); return; }
+    if (error) { toast.error((await import('@/lib/friendly-errors')).getFriendlyError(error)); return; }
 
     await supabase.from("outreach_campaigns")
       .update({ total_contacts: (campaign?.total_contacts || 0) + rows.length })

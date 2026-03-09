@@ -36,7 +36,7 @@ const ForcePasswordChange = () => {
     setIsLoading(false);
 
     if (error) {
-      toast.error(error.message);
+      toast.error(getFriendlyError(error));
     } else {
       toast.success('Password updated successfully!');
     }

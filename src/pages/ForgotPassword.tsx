@@ -38,7 +38,7 @@ const ForgotPassword = () => {
     setIsLoading(false);
 
     if (error) {
-      toast.error(error.message || 'Unable to send reset email. Please try again.');
+      toast.error(getFriendlyError(error));
     } else {
       setIsEmailSent(true);
       toast.success('Password reset email sent!');

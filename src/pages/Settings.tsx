@@ -426,7 +426,7 @@ const Settings = () => {
       toast.success("Data exported successfully!");
     } catch (error) {
       console.error("Export error:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to export data");
+      toast.error((await import('@/lib/friendly-errors')).getFriendlyError(error));
     } finally {
       setIsExporting(false);
     }

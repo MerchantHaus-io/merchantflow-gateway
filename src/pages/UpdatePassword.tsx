@@ -75,7 +75,7 @@ const UpdatePassword = () => {
     setIsLoading(false);
 
     if (error) {
-      toast.error(error.message || 'Failed to update password');
+      toast.error(getFriendlyError(error));
     } else {
       setIsSuccess(true);
       toast.success('Password updated successfully!');
