@@ -293,12 +293,13 @@ export default function Home() {
           {/* View toggle — cycles grid → icons → carousel */}
           <Button
             variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-full border border-border/40 ml-1"
+            size="sm"
+            className="h-8 rounded-full border border-border/40 ml-1 gap-1.5 px-3"
             onClick={cycleLayout}
             title={`Switch to ${nextLabel}`}
           >
-            <NextIcon className="h-3.5 w-3.5 text-muted-foreground" />
+            <CurrentIcon className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-[10px] text-muted-foreground font-medium hidden sm:inline">{currentLabel}</span>
           </Button>
         </div>
 
