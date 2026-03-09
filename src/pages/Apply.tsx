@@ -133,6 +133,20 @@ const Apply = () => {
               </div>
             )}
 
+            {/* Honeypot — invisible to humans, catches bots */}
+            <div aria-hidden="true" className="absolute opacity-0 pointer-events-none -z-10" style={{ position: 'absolute', left: '-9999px' }}>
+              <label htmlFor="website_url">Website</label>
+              <input
+                id="website_url"
+                name="website_url"
+                type="text"
+                tabIndex={-1}
+                autoComplete="off"
+                value={honeypot}
+                onChange={(e) => setHoneypot(e.target.value)}
+              />
+            </div>
+
             {/* Full Name */}
             <div className="space-y-2">
               <Label htmlFor="full_name">Full Name *</Label>
