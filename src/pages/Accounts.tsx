@@ -518,6 +518,9 @@ const Accounts = () => {
                             </div>
                           )}
                         </TableCell>
+                        <TableCell className="py-2.5 text-xs text-muted-foreground">
+                          {account.created_at ? formatDistanceToNow(new Date(account.created_at), { addSuffix: true }).replace('about ', '') : '—'}
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
                             <Button
