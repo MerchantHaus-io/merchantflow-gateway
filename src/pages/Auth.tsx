@@ -170,7 +170,25 @@ const Auth = () => {
       <div className="w-full max-w-md space-y-8">
         <div className="bg-card border-[3px] border-foreground/80 rounded-2xl p-8 neo-shadow">
           <div className="flex items-center justify-center mb-6">
-            <img src={psTerminalLogo} alt="PS Terminal" className="h-[4.5rem] w-auto" />
+            <img
+              src={psTerminalLogo}
+              alt="PS Terminal"
+              className="h-[4.5rem] w-auto animate-[logo-float_3s_ease-in-out_infinite,logo-enter_0.8s_ease-out_both]"
+              style={{
+                animationDelay: '0s, 0s',
+              }}
+            />
+            <style>{`
+              @keyframes logo-enter {
+                0% { opacity: 0; transform: scale(0.7) translateY(20px); filter: blur(8px); }
+                60% { opacity: 1; transform: scale(1.05) translateY(-4px); filter: blur(0); }
+                100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
+              }
+              @keyframes logo-float {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-6px); }
+              }
+            `}</style>
           </div>
           <p className="text-center text-muted-foreground mb-8 font-medium">
             Sign in to access your pipeline
