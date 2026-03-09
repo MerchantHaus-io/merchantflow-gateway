@@ -608,15 +608,18 @@ const Contacts = () => {
   };
 
   return (
-    <AppLayout
-      pageTitle="Contacts"
-      headerActions={
-        <Button onClick={openNewDialog}>
-          <UserPlus className="h-4 w-4 mr-1" />
-          New Contact
-        </Button>
-      }
-    >
+    <AppLayout>
+      <PageHeader
+        icon={Users}
+        title="Contacts"
+        description={`${stats.total} contacts · ${stats.total - stats.assigned} unassigned`}
+        actions={
+          <Button onClick={openNewDialog}>
+            <UserPlus className="h-4 w-4 mr-1" />
+            New Contact
+          </Button>
+        }
+      />
       <div className="p-4 lg:p-6 space-y-4">
         {/* Compact toolbar: stats + filters inline */}
           <div className="flex items-center gap-3 flex-wrap">
