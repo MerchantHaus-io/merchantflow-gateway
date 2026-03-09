@@ -139,7 +139,13 @@ const MyTasks = () => {
   };
 
   return (
-    <AppLayout pageTitle="My Tasks">
+    <AppLayout>
+      <PageHeader
+        icon={ClipboardList}
+        title="My Tasks"
+        description="Manage your assigned tasks and reminders"
+        color="warning"
+      />
       <div className="p-4 lg:p-6 space-y-4">
             <section className="grid grid-cols-1 xl:grid-cols-3 gap-4">
               <Card className="xl:col-span-2">
