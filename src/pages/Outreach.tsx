@@ -311,13 +311,13 @@ export default function Outreach() {
                          <p>Your signature is appended to every email in the cadence automatically.</p>
                        </div>
                      </li>
-                     <li className="flex gap-2.5">
-                       <span className="h-5 w-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">5</span>
-                       <div>
-                         <p className="font-semibold text-foreground mb-0.5">Import leads & send</p>
-                         <p>After creating, open the cadence and click <strong>Import Lead List</strong> to upload a CSV, then hit Send.</p>
-                       </div>
-                     </li>
+                      <li className="flex gap-2.5">
+                        <span className="h-5 w-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">5</span>
+                        <div>
+                          <p className="font-semibold text-foreground mb-0.5">Upload your target list</p>
+                          <p>Upload a CSV with your leads below. They'll be saved as leads and available on the <strong>Leads</strong> page for conversion.</p>
+                        </div>
+                      </li>
                    </ol>
 
                    <div className="mt-auto pt-5 border-t border-border/50">
