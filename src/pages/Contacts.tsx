@@ -878,8 +878,15 @@ const Contacts = () => {
                         })
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
-                            No contacts found
+                          <TableCell colSpan={11}>
+                            <EmptyState
+                              icon={Users}
+                              title="No contacts found"
+                              description="Try adjusting your filters or add a new contact."
+                              actionLabel="New Contact"
+                              onAction={openNewDialog}
+                              size="sm"
+                            />
                           </TableCell>
                         </TableRow>
                       )}

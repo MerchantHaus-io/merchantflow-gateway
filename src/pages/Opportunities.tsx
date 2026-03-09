@@ -638,8 +638,15 @@ const Opportunities = () => {
                       })}
                       {filteredOpportunities.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                            No opportunities found
+                          <TableCell colSpan={9}>
+                            <EmptyState
+                              icon={TrendingUp}
+                              title="No opportunities found"
+                              description="Adjust your filters or create a new application."
+                              actionLabel="New Application"
+                              onAction={() => setShowNewModal(true)}
+                              size="sm"
+                            />
                           </TableCell>
                         </TableRow>
                       )}

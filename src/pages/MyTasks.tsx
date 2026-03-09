@@ -359,9 +359,9 @@ const MyTasks = () => {
                       {task.comments && <p className="text-sm text-muted-foreground">{task.comments}</p>}
                       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                         <Badge variant="outline">Assignee: {task.assignee}</Badge>
-                        {task.relatedOpportunityId && <Badge variant="secondary">Application {task.relatedOpportunityId}</Badge>}
-                        {task.relatedContactId && <Badge variant="secondary">Contact {task.relatedContactId}</Badge>}
-                        {task.source === "sla" && <Badge variant="destructive">24h SLA</Badge>}
+                        {task.relatedOpportunityId && <Badge variant="muted">Application {task.relatedOpportunityId}</Badge>}
+                        {task.relatedContactId && <Badge variant="muted">Contact {task.relatedContactId}</Badge>}
+                        {task.source === "sla" && <Badge variant="warning" withDot>24h SLA</Badge>}
                       </div>
                     </div>
                   ))}

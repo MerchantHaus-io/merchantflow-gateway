@@ -534,6 +534,18 @@ const Accounts = () => {
                       </TableRow>
                     );
                     })}
+                    {filteredAccounts.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6}>
+                          <EmptyState
+                            icon={Building2Icon}
+                            title="No accounts found"
+                            description="Try adjusting your search or create a new application."
+                            size="sm"
+                          />
+                        </TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
