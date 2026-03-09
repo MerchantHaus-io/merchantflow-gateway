@@ -79,10 +79,10 @@ interface NavGroup {
 const navMain: NavGroup[] = [
   {
     title: "Pipeline",
-    url: "/",
+    url: "/pipeline",
     icon: LayoutDashboard,
     items: [
-      { title: "Pipeline Board", url: "/", icon: LayoutDashboard, description: "View opportunity pipeline" },
+      { title: "Pipeline Board", url: "/pipeline", icon: LayoutDashboard, description: "View opportunity pipeline" },
       { title: "Email Outreach", url: "/outreach", icon: Send, description: "Campaign tracker & email sender" },
       { title: "Web Submissions", url: "/admin/web-submissions", icon: Globe, description: "Incoming merchant applications" },
       { title: "Tasks", url: "/tasks", icon: ListChecks, description: "Manage your tasks" },
