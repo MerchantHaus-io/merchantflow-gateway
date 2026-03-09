@@ -32,3 +32,18 @@ verify_jwt = false
 
 [functions.polish-email]
 verify_jwt = false
+
+[functions.submit-merchant-application]
+verify_jwt = false
+
+[functions.encrypt-secrets]
+verify_jwt = false
+
+[functions.send-outreach-emails]
+verify_jwt = false
+
+[functions.send-push-notification]
+verify_jwt = false
+
+[functions.resend-outreach-webhook]
+verify_jwt = false
