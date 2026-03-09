@@ -1,4 +1,5 @@
-import { useRef, useState, useEffect, useCallback, type LucideIcon } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
+import type { LucideIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
