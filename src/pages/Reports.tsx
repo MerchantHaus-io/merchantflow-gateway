@@ -9,6 +9,8 @@ import { useTasks } from "@/contexts/TasksContext";
 import { Task } from "@/types/task";
 import DateRangeFilter from "@/components/DateRangeFilter";
 import ReportDetailModal from "@/components/ReportDetailModal";
+import { PageHeader } from "@/components/PageHeader";
+import { StatCard } from "@/components/StatCard";
 import { DateRange } from "react-day-picker";
 import { isWithinInterval, startOfDay, endOfDay, subDays, differenceInDays, format, subMonths, eachWeekOfInterval, startOfWeek, endOfWeek } from "date-fns";
 import {
