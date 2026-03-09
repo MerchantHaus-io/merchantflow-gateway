@@ -44,6 +44,13 @@ const Apply = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    // Honeypot spam check — bots fill hidden fields
+    if (honeypot) {
+      setFormStatus('success');
+      return;
+    }
+
     setFormStatus('submitting');
     setErrorMessage('');
 
