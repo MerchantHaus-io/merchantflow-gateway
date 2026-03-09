@@ -113,7 +113,7 @@ function GridView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeG
           onClick={() => item.external ? window.open(item.url, "_blank") : navigate(item.url)}
           className={cn(
             "group relative flex flex-col items-center gap-2 p-4 rounded-xl border border-border/40",
-            "bg-card/70 backdrop-blur-sm hover:bg-card hover:border-border transition-all duration-200",
+            "bg-card/90 dark:bg-card/70 backdrop-blur-sm hover:bg-card hover:border-border transition-all duration-200",
             "cursor-pointer text-center",
             glowColorMap[item.color],
           )}
