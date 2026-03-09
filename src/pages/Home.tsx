@@ -251,6 +251,8 @@ export default function Home() {
   };
 
   const currentItems = groups[activeGroup].items;
+  const CurrentIcon = layoutIcons[layout];
+  const currentLabel = layoutLabels[layout];
   const NextIcon = layoutIcons[layoutCycle[(layoutCycle.indexOf(layout) + 1) % layoutCycle.length]];
   const nextLabel = layoutLabels[layoutCycle[(layoutCycle.indexOf(layout) + 1) % layoutCycle.length]];
 
