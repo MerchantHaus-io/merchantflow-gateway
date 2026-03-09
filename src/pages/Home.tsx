@@ -312,12 +312,12 @@ export default function Home() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 rounded-full border border-border/40 gap-1.5 px-3"
+              className="h-8 rounded-full border border-border/40 gap-1.5 px-3 overflow-visible shrink-0 min-w-fit"
               onClick={cycleLayout}
               title={`Switch to ${nextLabel}`}
             >
-              <CurrentIcon className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-[10px] text-muted-foreground font-medium hidden sm:inline">{currentLabel}</span>
+              <CurrentIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span className="text-[10px] text-muted-foreground font-medium hidden sm:inline whitespace-nowrap">{currentLabel}</span>
             </Button>
 
             {/* First-time hint popover */}
