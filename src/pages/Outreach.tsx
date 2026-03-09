@@ -460,16 +460,13 @@ export default function Outreach() {
               {[...Array(3)].map((_, i) => <div key={i} className="h-48 rounded-xl bg-muted/30 animate-pulse" />)}
             </div>
           ) : filtered.length === 0 ? (
-            <Card className="border-dashed border-border/60">
-              <CardContent className="flex flex-col items-center py-16 text-center">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
-                  <Layers className="h-6 w-6 text-primary" />
-                </div>
-                <p className="font-semibold text-foreground mb-1">No cadences yet</p>
-                <p className="text-sm text-muted-foreground mb-4 max-w-xs">Create a sales cadence to start reaching out to leads with automated multi-step email sequences.</p>
-                <Button onClick={() => setOpen(true)} size="sm"><Plus className="h-4 w-4 mr-1.5" />New Cadence</Button>
-              </CardContent>
-            </Card>
+            <EmptyState
+              icon={Layers}
+              title="No cadences yet"
+              description="Create a sales cadence to start reaching out to leads with automated multi-step email sequences."
+              actionLabel="New Cadence"
+              onAction={() => setOpen(true)}
+            />
           ) : view === "grid" ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {filtered.map(c => (

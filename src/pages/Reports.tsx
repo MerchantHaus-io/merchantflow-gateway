@@ -265,33 +265,31 @@ const Reports = () => {
     <AppLayout pageTitle="Reports">
       <div className="flex flex-col h-full overflow-hidden">
         {/* ── Header ── */}
-        <div className="shrink-0 border-b border-border/60 px-6 py-4 flex items-center justify-between gap-4 flex-wrap bg-background">
-          <div>
-            <div className="flex items-center gap-2 mb-0.5">
-              <BarChart3 className="h-4 w-4 text-primary" />
-              <h1 className="text-lg font-bold text-foreground">Analytics & Reports</h1>
+        <PageHeader
+          icon={BarChart3}
+          title="Analytics & Reports"
+          description="Pipeline performance · Team productivity · Outreach metrics"
+          actions={
+            <div className="flex items-center gap-2 flex-wrap">
+              <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} filterBy="created_at" onFilterByChange={() => {}} />
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={fetchData}>
+                <RefreshCw className="h-3.5 w-3.5" />Refresh
+              </Button>
             </div>
-            <p className="text-xs text-muted-foreground">Pipeline performance · Team productivity · Outreach metrics</p>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} filterBy="created_at" onFilterByChange={() => {}} />
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={fetchData}>
-              <RefreshCw className="h-3.5 w-3.5" />Refresh
-            </Button>
-          </div>
-        </div>
+          }
+        />
 
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
 
           {/* ══ TOP KPIS ══ */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <MetricCard label="Active Opportunities" value={kpis.active}   icon={Target}       color="text-primary"      bg="bg-primary/10"
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 stagger-children">
+            <StatCard label="Active Opportunities" value={kpis.active}   icon={Target}       color="primary"
               onClick={() => openModal("Active Opportunities", `${kpis.active} active`, "opportunities", filteredOpps.filter(o => o.status !== "dead"), [])} />
-            <MetricCard label="Live Accounts"         value={kpis.live}     icon={Zap}          color="text-emerald-500"  bg="bg-emerald-500/10"
+            <StatCard label="Live Accounts"         value={kpis.live}     icon={Zap}          color="success"
               onClick={() => openModal("Live Accounts", `${kpis.live} live`, "opportunities", filteredOpps.filter(o => o.stage === "live_activated"), [])} />
-            <MetricCard label="Open Tasks"            value={kpis.openTasks}icon={Clock}        color="text-blue-500"     bg="bg-blue-500/10"
+            <StatCard label="Open Tasks"            value={kpis.openTasks}icon={Clock}        color="teal"
               onClick={() => openModal("Open Tasks", `${kpis.openTasks} open`, "tasks", [], filteredTasks.filter(t => t.status !== "done"))} />
-            <MetricCard label="Overdue Tasks"         value={kpis.overdue}  icon={AlertTriangle} color="text-destructive" bg="bg-destructive/10"
+            <StatCard label="Overdue Tasks"         value={kpis.overdue}  icon={AlertTriangle} color="destructive"
               onClick={() => openModal("Overdue Tasks", `${kpis.overdue} overdue`, "tasks", [], filteredTasks.filter(t => t.dueAt && t.status !== "done" && new Date(t.dueAt) < new Date()))} />
           </div>
 
