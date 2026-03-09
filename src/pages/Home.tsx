@@ -307,17 +307,44 @@ export default function Home() {
             </button>
           ))}
 
-          {/* View toggle — cycles grid → icons → carousel */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 rounded-full border border-border/40 ml-1 gap-1.5 px-3"
-            onClick={cycleLayout}
-            title={`Switch to ${nextLabel}`}
-          >
-            <CurrentIcon className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-[10px] text-muted-foreground font-medium hidden sm:inline">{currentLabel}</span>
-          </Button>
+          {/* View toggle — cycles icons → grid → carousel */}
+          <div className="relative ml-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 rounded-full border border-border/40 gap-1.5 px-3"
+              onClick={cycleLayout}
+              title={`Switch to ${nextLabel}`}
+            >
+              <CurrentIcon className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-[10px] text-muted-foreground font-medium hidden sm:inline">{currentLabel}</span>
+            </Button>
+
+            {/* First-time hint popover */}
+            {showToggleHint && (
+              <motion.div
+                initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ delay: 1, duration: 0.3 }}
+                className="absolute top-full mt-2 right-0 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto z-50 w-56"
+              >
+                {/* Arrow */}
+                <div className="absolute -top-1.5 right-4 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto w-3 h-3 rotate-45 bg-card border-l border-t border-border/60" />
+                <div className="bg-card/95 dark:bg-card/90 backdrop-blur-xl border border-border/60 rounded-xl p-3 shadow-lg">
+                  <p className="text-xs text-foreground font-semibold mb-1">Switch view style</p>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed mb-2">
+                    Toggle between Icons, Cards, and 3D Carousel layouts.
+                  </p>
+                  <button
+                    onClick={dismissHint}
+                    className="text-[10px] font-semibold text-primary hover:text-primary/80 transition-colors"
+                  >
+                    Got it
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </div>
         </div>
 
         {/* Content */}
