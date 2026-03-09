@@ -1932,7 +1932,8 @@ export default function OfficeChat({
         style={{ visibility: 'hidden', opacity: 0, transition: 'opacity 120ms linear', willChange: 'transform, width, height', backgroundColor: '#0d1117' }}
       >
         <iframe
-          src={`https://www.youtube-nocookie.com/embed/T0C9d8anDT4?autoplay=1&mute=${tvUnmuted ? "0" : "1"}&loop=1&playlist=T0C9d8anDT4&controls=0&modestbranding=1&rel=0&playsinline=1&enablejsapi=1`}
+          ref={tvIframeRef}
+          src={`https://www.youtube-nocookie.com/embed/${tvVideoId}?autoplay=1&mute=1&loop=1&playlist=${TV_PLAYLIST.join(',')}&controls=0&modestbranding=1&rel=0&playsinline=1&enablejsapi=1`}
           className="w-full h-full border-0 pointer-events-none"
           title="Office TV"
           allow="autoplay; encrypted-media; picture-in-picture"
