@@ -565,6 +565,11 @@ export default function MerchantApply() {
         body: JSON.stringify(payload),
       });
 
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        throw new Error("Server returned an unexpected response. Please try again shortly.");
+      }
+
       const result = await res.json();
 
       if (!res.ok) {
