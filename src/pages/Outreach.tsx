@@ -20,7 +20,7 @@ import { EmptyState } from "@/components/EmptyState";
 import {
   Plus, Mail, Send, Users, TrendingUp, MessageSquare, Eye, Trash2,
   CalendarIcon, Clock, Layers, BarChart3, ChevronRight, Zap, ListFilter,
-  ArrowUpRight,
+  ArrowUpRight, Upload, FileSpreadsheet, UserPlus, CheckCircle2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
