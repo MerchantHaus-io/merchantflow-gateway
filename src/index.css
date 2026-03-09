@@ -1497,8 +1497,16 @@ tbody tr:hover {
 
 /* Dialog overlay — deeper blur */
 [data-slot="dialog-overlay"] {
-  backdrop-filter: blur(8px) saturate(120%);
+  backdrop-filter: blur(20px) saturate(180%);
   background: hsl(var(--background) / 0.6);
+}
+
+/* Dialog content — ambient mesh */
+[data-slot="dialog-content"] {
+  background-color: hsl(217 33% 13%);
+  background-image: radial-gradient(ellipse 80% 60% at 50% -10%, hsl(348 83% 47% / 0.08), transparent 50%);
+  border-color: hsl(217 33% 25%);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05), inset 0 1px 0 rgba(255,255,255,0.08);
 }
 
 /* Select/Popover/Dropdown — glass */
@@ -1511,13 +1519,22 @@ tbody tr:hover {
   box-shadow: 0 20px 60px -12px hsl(var(--background) / 0.8);
 }
 
-/* Tabs — active tab gets primary underline */
-[data-slot="tabs-trigger"][data-state="active"] {
-  background: transparent;
-  border-bottom: 2px solid hsl(var(--primary));
-  border-radius: 0;
-  color: hsl(var(--primary));
+/* Tabs — terminal style */
+[role="tablist"] {
+  background: hsl(217 33% 13%);
+  border: 1px solid hsl(217 33% 20%);
+  padding: 3px;
+  border-radius: calc(var(--radius) + 2px);
+}
+[role="tab"] {
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-size: 11.5px;
+  letter-spacing: 0.03em;
   font-weight: 600;
+}
+[role="tab"][data-state="active"] {
+  background: hsl(217 33% 22%);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 /* Tabs list — glass background */
