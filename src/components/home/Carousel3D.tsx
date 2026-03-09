@@ -157,18 +157,18 @@ export function Carousel3D({ items }: Carousel3DProps) {
   );
 
   return (
-    <div className="relative w-full select-none mt-6" style={{ height: "clamp(300px, 42vh, 420px)" }}>
+    <div className="relative w-full select-none mt-10" style={{ height: "clamp(320px, 44vh, 440px)" }}>
       {/* 3D scene */}
       <div
         ref={sliderRef}
         className="absolute cursor-grab active:cursor-grabbing touch-none"
         style={{
-          width: "140px",
-          height: "170px",
-          top: "12%",
-          left: "calc(50% - 70px)",
+          width: "150px",
+          height: "180px",
+          top: "28%",
+          left: "calc(50% - 75px)",
           transformStyle: "preserve-3d",
-          transform: `perspective(1500px) rotateX(-16deg) rotateY(${rotation}deg)`,
+          transform: `perspective(1500px) rotateX(-14deg) rotateY(${rotation}deg)`,
           transition: isDragging.current ? "none" : "transform 0.8s cubic-bezier(0.25, 1, 0.5, 1)",
         }}
         onPointerDown={onPointerDown}
@@ -192,20 +192,20 @@ export function Carousel3D({ items }: Carousel3DProps) {
               {/* Card */}
               <div
                 className={cn(
-                  "w-full h-full rounded-xl border border-border/40 backdrop-blur-md flex flex-col items-center justify-center gap-2 pointer-events-none",
-                  "bg-card/90 dark:bg-card/70",
+                  "w-full h-full rounded-xl border backdrop-blur-xl flex flex-col items-center justify-center gap-2.5 pointer-events-none",
+                  "bg-card/95 dark:bg-card/80 border-border/50 dark:border-border/40",
                   isActive && "ring-2 ring-primary/60 scale-105",
                   glowColorMap[item.color]
                 )}
                 style={{
-                  boxShadow: "0 10px 30px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06)",
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.08)",
                   transition: "transform 0.3s, box-shadow 0.3s",
                 }}
               >
                 {/* Icon orb */}
                 <div
                   className={cn(
-                    "w-14 h-14 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/10",
+                    "w-14 h-14 rounded-full flex items-center justify-center border border-white/10 dark:border-white/10",
                     bgColorMap[item.color]
                   )}
                 >
@@ -213,17 +213,17 @@ export function Carousel3D({ items }: Carousel3DProps) {
                 </div>
 
                 {/* Title */}
-                <span className="text-[11px] font-semibold text-foreground font-display text-center leading-tight px-1.5">
+                <span className="text-[11px] font-bold text-foreground font-display text-center leading-tight px-2 drop-shadow-sm">
                   {item.title}
                 </span>
               </div>
 
               {/* Floating label */}
               <div
-                className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none"
+                className="absolute -top-7 left-1/2 whitespace-nowrap pointer-events-none"
                 style={{ transform: "translateX(-50%) translateZ(30px)" }}
               >
-                <span className="text-[10px] font-medium text-muted-foreground bg-card/80 backdrop-blur-sm px-2.5 py-1 rounded-full border border-border/30">
+                <span className="text-[10px] font-semibold text-foreground/80 dark:text-muted-foreground bg-card/95 dark:bg-card/85 backdrop-blur-xl px-2.5 py-1 rounded-full border border-border/50 dark:border-border/30 shadow-sm">
                   {item.description}
                 </span>
               </div>
@@ -234,7 +234,7 @@ export function Carousel3D({ items }: Carousel3DProps) {
 
       {/* Reflection / ground shadow */}
       <div
-        className="absolute bottom-0 left-1/2 -translate-x-1/2 rounded-full opacity-30"
+        className="absolute bottom-0 left-1/2 -translate-x-1/2 rounded-full opacity-20 dark:opacity-30"
         style={{
           width: `${radius * 1.8}px`,
           height: "60px",
@@ -244,7 +244,7 @@ export function Carousel3D({ items }: Carousel3DProps) {
       />
 
       {/* Drag hint */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 text-muted-foreground/50 text-[10px]">
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 text-muted-foreground/60 text-[10px] font-medium">
         <span>← drag to explore →</span>
       </div>
     </div>
