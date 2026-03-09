@@ -209,13 +209,29 @@ export default function Outreach() {
         const { error: stepsErr } = await supabase.from("cadence_steps").insert(followUps);
         if (stepsErr) throw stepsErr;
       }
+
+      // Insert CSV leads if provided
+      if (csvLeads.length > 0 && campaign) {
+        const leadsToInsert = csvLeads.map(l => ({ campaign_id: campaign.id, ...l }));
+        // Batch insert in chunks of 500
+        for (let i = 0; i < leadsToInsert.length; i += 500) {
+          const chunk = leadsToInsert.slice(i, i + 500);
+          const { error: leadsErr } = await supabase.from("outreach_contacts").insert(chunk);
+          if (leadsErr) throw leadsErr;
+        }
+        // Update total_contacts count
+        await supabase.from("outreach_campaigns")
+          .update({ total_contacts: csvLeads.length })
+          .eq("id", campaign.id);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["outreach-campaigns"] });
+      queryClient.invalidateQueries({ queryKey: ["all-leads"] });
       setOpen(false); setName(""); setSchedDate(undefined);
       setSteps(Array.from({ length: 10 }, (_, i) => ({ subject: "", bodyHtml: "", delayDays: DEFAULT_DELAYS[i] })));
-      setSignature(""); setActiveStep(0);
-      toast.success("Cadence created with all steps!");
+      setSignature(""); setActiveStep(0); setCsvLeads([]); setCsvFileName("");
+      toast.success(`Cadence created${csvLeads.length > 0 ? ` with ${csvLeads.length} leads` : ""}!`);
     },
     onError: (e: Error) => toast.error(e.message),
   });
