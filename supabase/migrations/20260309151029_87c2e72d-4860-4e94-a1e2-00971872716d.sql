@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS home_layout text NOT NULL DEFAULT 'grid';
