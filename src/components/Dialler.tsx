@@ -239,10 +239,10 @@ export const Dialler = () => {
         <button
           onClick={() => setOpen(true)}
           className={cn(
-            "fixed bottom-0 right-[358px] z-50 w-[240px] h-12 rounded-t-xl flex items-center gap-3 px-4",
-            "bg-gradient-to-r from-slate-800 to-slate-700 dark:from-slate-900 dark:to-slate-800",
-            "text-white shadow-xl hover:shadow-2xl transition-all duration-200 ease-out",
-            "border border-b-0 border-slate-600"
+            "fixed bottom-0 left-[254px] z-50 w-[220px] h-11 rounded-t-xl flex items-center gap-3 px-4",
+            "bg-amber-400 text-black",
+            "shadow-xl hover:shadow-2xl hover:bg-amber-300 transition-all duration-200 ease-out",
+            "border border-b-0 border-amber-500"
           )}
           aria-label="Open dialler"
         >
