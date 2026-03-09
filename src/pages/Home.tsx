@@ -239,6 +239,11 @@ export default function Home() {
         if (v === "carousel" || v === "grid" || v === "icons") {
           setLayout(v as LayoutMode);
         }
+        // Show hint if user has never changed from default
+        const hasSeenHint = localStorage.getItem("home_layout_hint_seen");
+        if (!hasSeenHint && (!v || v === "icons")) {
+          setShowToggleHint(true);
+        }
         setLoaded(true);
       });
   }, [user?.id]);
