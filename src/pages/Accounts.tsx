@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { format, formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Account, Contact, STAGE_CONFIG } from "@/types/opportunity";
@@ -33,7 +34,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { Building2 as Building2Icon } from "lucide-react";
 
-type SortField = 'name' | 'contacts' | 'city' | 'state' | 'country' | 'website';
+type SortField = 'name' | 'contacts' | 'city' | 'state' | 'country' | 'website' | 'created_at';
 type SortDirection = 'asc' | 'desc';
 
 interface AccountWithContacts extends Account {
@@ -322,6 +323,9 @@ const Accounts = () => {
         case 'website':
           comparison = (a.website || '').localeCompare(b.website || '');
           break;
+        case 'created_at':
+          comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          break;
       }
       return sortDirection === 'asc' ? comparison : -comparison;
     });
@@ -399,6 +403,7 @@ const Accounts = () => {
                       <SortableTableHead field="contacts" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Contacts</SortableTableHead>
                       <TableHead>Location</TableHead>
                       <SortableTableHead field="website" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Website</SortableTableHead>
+                      <SortableTableHead field="created_at" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Created</SortableTableHead>
                       <TableHead className="w-16"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -513,6 +518,9 @@ const Accounts = () => {
                             </div>
                           )}
                         </TableCell>
+                        <TableCell className="py-2.5 text-xs text-muted-foreground">
+                          {account.created_at ? formatDistanceToNow(new Date(account.created_at), { addSuffix: true }).replace('about ', '') : '—'}
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
                             <Button
@@ -536,7 +544,7 @@ const Accounts = () => {
                     })}
                     {filteredAccounts.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={6}>
+                        <TableCell colSpan={7}>
                           <EmptyState
                             icon={Building2Icon}
                             title="No accounts found"

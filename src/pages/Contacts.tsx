@@ -81,7 +81,7 @@ type ContactQueryResult = ContactWithAccount & {
   opportunities?: { id: string; assigned_to: string | null; stage: string | null }[];
 };
 
-type SortField = 'first_name' | 'last_name' | 'email' | 'phone' | 'account' | 'assigned_to' | 'stage' | 'last_activity';
+type SortField = 'first_name' | 'last_name' | 'email' | 'phone' | 'account' | 'assigned_to' | 'stage' | 'last_activity' | 'created_at';
 type SortDirection = 'asc' | 'desc';
 
 const STAGE_LABELS: Record<string, string> = {
@@ -318,6 +318,9 @@ const Contacts = () => {
           break;
         case 'last_activity':
           comparison = (a.last_activity_at || '').localeCompare(b.last_activity_at || '');
+          break;
+        case 'created_at':
+          comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
           break;
       }
       return sortDirection === 'asc' ? comparison : -comparison;
@@ -760,6 +763,7 @@ const Contacts = () => {
                         <SortableTableHead field="stage" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Deal Stage</SortableTableHead>
                         <SortableTableHead field="assigned_to" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Owner</SortableTableHead>
                         <SortableTableHead field="last_activity" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Activity</SortableTableHead>
+                        <SortableTableHead field="created_at" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Created</SortableTableHead>
                         <TableHead className="w-[40px]"></TableHead>
                       </TableRow>
                     </TableHeader>
@@ -846,6 +850,11 @@ const Contacts = () => {
                                 {contact.last_activity_at
                                   ? formatDistanceToNow(new Date(contact.last_activity_at), { addSuffix: true }).replace('about ', '')
                                   : <span className="text-muted-foreground/40">—</span>}
+                              </TableCell>
+                              <TableCell className="py-2 text-xs text-muted-foreground">
+                                {contact.created_at
+                                  ? formatDistanceToNow(new Date(contact.created_at), { addSuffix: true }).replace('about ', '')
+                                  : '—'}
                               </TableCell>
                               <TableCell onClick={(e) => e.stopPropagation()} className="py-2">
                                 <DropdownMenu>

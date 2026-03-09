@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { formatDistanceToNow } from "date-fns";
 import { AppLayout } from "@/components/AppLayout";
 import { QueryErrorCard } from "@/components/QueryErrorCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -177,6 +178,7 @@ const MyTasks = () => {
                         {task.description && <p className="text-sm text-muted-foreground">{task.description}</p>}
                         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                           <span>Assignee: {task.assignee}</span>
+                          {task.createdAt && <span>· {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true }).replace('about ', '')}</span>}
                          {task.relatedOpportunityId && <Badge variant="muted">Application: {task.relatedOpportunityId}</Badge>}
                           {task.relatedContactId && <Badge variant="muted">Contact: {task.relatedContactId}</Badge>}
                         </div>
@@ -346,8 +348,11 @@ const MyTasks = () => {
                     <div key={task.id} className="rounded-lg border p-3 space-y-2">
                       <div className="flex items-center justify-between gap-2">
                         <div>
-                          <p className="font-medium leading-tight">{task.title}</p>
-                          <p className="text-xs text-muted-foreground">Created by {task.createdBy || "System"}</p>
+                         <p className="font-medium leading-tight">{task.title}</p>
+                         <p className="text-xs text-muted-foreground">
+                           Created by {task.createdBy || "System"}
+                           {task.createdAt && <> · {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true }).replace('about ', '')}</>}
+                         </p>
                         </div>
                         <Badge
                           variant={task.status === "done" ? "secondary" : "outline"}
