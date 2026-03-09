@@ -20,6 +20,7 @@ const Apply = () => {
   const { theme } = useTheme();
   const [formStatus, setFormStatus] = useState<FormStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [honeypot, setHoneypot] = useState('');
   const [formData, setFormData] = useState<ApplicationFormData>({
     full_name: '',
     email: '',
