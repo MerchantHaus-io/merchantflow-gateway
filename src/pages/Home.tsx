@@ -1,45 +1,20 @@
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import {
-  LayoutDashboard,
-  Briefcase,
-  Building2,
-  Users,
-  FileText,
-  BarChart3,
-  Activity,
-  BadgeDollarSign,
-  Globe,
-  BookOpen,
-  BookMarked,
-  ClipboardList,
-  Calculator,
-  Sparkles,
-  FileSpreadsheet,
-  Download,
-  Cloud,
-  Send,
-  ListChecks,
+  LayoutDashboard, Briefcase, Building2, Users, FileText, BarChart3,
+  Activity, BadgeDollarSign, Globe, BookOpen, BookMarked, ClipboardList,
+  Calculator, Sparkles, FileSpreadsheet, Download, Cloud, Send, ListChecks,
   Settings,
-  type LucideIcon,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { EMAIL_TO_USER } from "@/types/opportunity";
+import { Carousel3D, type CarouselItem } from "@/components/home/Carousel3D";
 import { cn } from "@/lib/utils";
-
-interface ShortcutItem {
-  title: string;
-  description: string;
-  url: string;
-  icon: LucideIcon;
-  color: "primary" | "teal" | "gold" | "success" | "warning";
-  external?: boolean;
-}
 
 interface ShortcutGroup {
   title: string;
-  items: ShortcutItem[];
+  items: CarouselItem[];
 }
 
 const groups: ShortcutGroup[] = [
@@ -87,87 +62,7 @@ const groups: ShortcutGroup[] = [
   },
 ];
 
-const orbColors = {
-  primary: "bg-primary/12 shadow-[0_0_20px_hsl(348_83%_47%/0.25)] group-hover:shadow-[0_0_30px_hsl(348_83%_47%/0.45)] group-hover:bg-primary/20",
-  teal: "bg-teal/12 shadow-[0_0_20px_hsl(174_72%_46%/0.25)] group-hover:shadow-[0_0_30px_hsl(174_72%_46%/0.45)] group-hover:bg-teal/20",
-  gold: "bg-gold/12 shadow-[0_0_20px_hsl(43_51%_58%/0.25)] group-hover:shadow-[0_0_30px_hsl(43_51%_58%/0.45)] group-hover:bg-gold/20",
-  success: "bg-success/12 shadow-[0_0_20px_hsl(142_76%_36%/0.25)] group-hover:shadow-[0_0_30px_hsl(142_76%_36%/0.45)] group-hover:bg-success/20",
-  warning: "bg-warning/12 shadow-[0_0_20px_hsl(38_92%_50%/0.25)] group-hover:shadow-[0_0_30px_hsl(38_92%_50%/0.45)] group-hover:bg-warning/20",
-} as const;
-
-const iconColors = {
-  primary: "text-primary",
-  teal: "text-teal",
-  gold: "text-gold",
-  success: "text-success",
-  warning: "text-warning",
-} as const;
-
-const containerVariants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.04 } },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 16, scale: 0.96 },
-  show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring" as const, stiffness: 260, damping: 24 } },
-};
-
-function ShortcutTile({ item, index }: { item: ShortcutItem; index: number }) {
-  const navigate = useNavigate();
-
-  return (
-    <motion.button
-      variants={itemVariants}
-      whileHover={{ y: -4, transition: { duration: 0.2 } }}
-      whileTap={{ scale: 0.97 }}
-      onClick={() => {
-        if (item.external) {
-          window.open(item.url, "_blank");
-        } else {
-          navigate(item.url);
-        }
-      }}
-      className={cn(
-        "group relative flex items-start gap-3.5 rounded-xl border border-border/50 p-4 text-left",
-        "bg-card/60 backdrop-blur-sm",
-        "transition-all duration-300 cursor-pointer",
-        "hover:border-primary/30 hover:bg-card/90",
-        "hover:shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_0_1px_rgba(255,255,255,0.06)]",
-        "shadow-[0_2px_8px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.04)]",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-      )}
-    >
-      {/* Accent line */}
-      <div className={cn(
-        "absolute inset-x-0 top-0 h-px rounded-t-xl transition-opacity duration-300 opacity-0 group-hover:opacity-100",
-        item.color === "primary" && "bg-gradient-to-r from-transparent via-primary/60 to-transparent",
-        item.color === "teal" && "bg-gradient-to-r from-transparent via-teal/60 to-transparent",
-        item.color === "gold" && "bg-gradient-to-r from-transparent via-gold/60 to-transparent",
-        item.color === "success" && "bg-gradient-to-r from-transparent via-success/60 to-transparent",
-        item.color === "warning" && "bg-gradient-to-r from-transparent via-warning/60 to-transparent",
-      )} />
-
-      {/* Icon orb */}
-      <div className={cn(
-        "h-10 w-10 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300",
-        orbColors[item.color]
-      )}>
-        <item.icon className={cn("h-5 w-5 transition-transform duration-300 group-hover:scale-110", iconColors[item.color])} />
-      </div>
-
-      {/* Text */}
-      <div className="min-w-0 flex-1">
-        <div className="text-sm font-semibold text-foreground font-display leading-tight mb-0.5">
-          {item.title}
-        </div>
-        <p className="text-xs text-muted-foreground leading-snug line-clamp-1">
-          {item.description}
-        </p>
-      </div>
-    </motion.button>
-  );
-}
+const groupKeys = groups.map((g) => g.title);
 
 export default function Home() {
   const { user } = useAuth();
@@ -175,6 +70,9 @@ export default function Home() {
   const displayName = EMAIL_TO_USER[userEmail] || user?.email?.split("@")[0] || "there";
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+
+  const [activeGroup, setActiveGroup] = useState(0);
+  const currentItems = groups[activeGroup].items;
 
   return (
     <AppLayout>
@@ -184,7 +82,7 @@ export default function Home() {
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
-          className="mb-8 lg:mb-12"
+          className="text-center mb-4"
         >
           <h1 className="text-2xl lg:text-3xl font-bold font-display text-foreground mb-1">
             {greeting}, <span className="text-primary">{displayName}</span>
@@ -194,31 +92,27 @@ export default function Home() {
           </p>
         </motion.div>
 
-        {/* Shortcut groups */}
-        <div className="space-y-8">
-          {groups.map((group, groupIdx) => (
-            <motion.section
-              key={group.title}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: groupIdx * 0.08 }}
+        {/* Category tabs */}
+        <div className="flex justify-center gap-2 mb-2 flex-wrap">
+          {groupKeys.map((title, idx) => (
+            <button
+              key={title}
+              onClick={() => setActiveGroup(idx)}
+              className={cn(
+                "px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-all duration-300",
+                "border",
+                idx === activeGroup
+                  ? "bg-primary/15 border-primary/40 text-primary shadow-[0_0_12px_hsl(348_83%_47%/0.2)]"
+                  : "bg-card/40 border-border/40 text-muted-foreground hover:text-foreground hover:border-border"
+              )}
             >
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3 pl-1">
-                {group.title}
-              </h2>
-              <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                animate="show"
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"
-              >
-                {group.items.map((item, i) => (
-                  <ShortcutTile key={item.url} item={item} index={i} />
-                ))}
-              </motion.div>
-            </motion.section>
+              {title}
+            </button>
           ))}
         </div>
+
+        {/* 3D Carousel */}
+        <Carousel3D key={activeGroup} items={currentItems} />
       </div>
     </AppLayout>
   );
