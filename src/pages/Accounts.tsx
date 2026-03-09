@@ -544,7 +544,7 @@ const Accounts = () => {
                     })}
                     {filteredAccounts.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={6}>
+                        <TableCell colSpan={7}>
                           <EmptyState
                             icon={Building2Icon}
                             title="No accounts found"

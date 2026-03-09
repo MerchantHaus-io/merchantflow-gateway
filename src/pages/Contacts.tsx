@@ -851,6 +851,11 @@ const Contacts = () => {
                                   ? formatDistanceToNow(new Date(contact.last_activity_at), { addSuffix: true }).replace('about ', '')
                                   : <span className="text-muted-foreground/40">—</span>}
                               </TableCell>
+                              <TableCell className="py-2 text-xs text-muted-foreground">
+                                {contact.created_at
+                                  ? formatDistanceToNow(new Date(contact.created_at), { addSuffix: true }).replace('about ', '')
+                                  : '—'}
+                              </TableCell>
                               <TableCell onClick={(e) => e.stopPropagation()} className="py-2">
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>

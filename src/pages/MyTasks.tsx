@@ -348,8 +348,11 @@ const MyTasks = () => {
                     <div key={task.id} className="rounded-lg border p-3 space-y-2">
                       <div className="flex items-center justify-between gap-2">
                         <div>
-                          <p className="font-medium leading-tight">{task.title}</p>
-                          <p className="text-xs text-muted-foreground">Created by {task.createdBy || "System"}</p>
+                         <p className="font-medium leading-tight">{task.title}</p>
+                         <p className="text-xs text-muted-foreground">
+                           Created by {task.createdBy || "System"}
+                           {task.createdAt && <> · {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true }).replace('about ', '')}</>}
+                         </p>
                         </div>
                         <Badge
                           variant={task.status === "done" ? "secondary" : "outline"}
