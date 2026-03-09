@@ -154,7 +154,7 @@ export default function Outreach() {
     const companyIdx = findIdx("company", "business", "dba");
     if (emailIdx === -1) { toast.error("CSV must have an 'email' column"); return; }
     const rows = lines.slice(1).map(line => {
-      const cols = line.match(/(".*?"|[^,]+|(?<=,)(?=,))/g)?.map(c => c.replace(/^"|"$/g, "").trim()) || line.split(",").map(c => c.trim());
+      const cols = line.split(",").map(c => c.replace(/^[\s"]+|[\s"]+$/g, ""));
       return {
         email: cols[emailIdx] || "",
         first_name: firstIdx >= 0 ? (cols[firstIdx] || null) : null,
