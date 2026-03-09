@@ -138,7 +138,7 @@ const Auth = () => {
     if (error) {
       toast({
         title: 'Password Reset Failed',
-        description: error.message || 'Unable to send reset email. Please try again.',
+        description: getFriendlyError(error),
         variant: 'destructive',
       });
     } else {
