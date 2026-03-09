@@ -349,7 +349,8 @@ const Accounts = () => {
 
   if (fetchError) {
     return (
-      <AppLayout pageTitle="Accounts">
+      <AppLayout>
+        <PageHeader icon={Building2Icon} title="Accounts" color="teal" />
         <div className="p-6">
           <QueryErrorCard message={fetchError} onRetry={() => { setLoading(true); fetchAccounts(); }} />
         </div>
