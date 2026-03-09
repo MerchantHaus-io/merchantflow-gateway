@@ -207,18 +207,15 @@ export default function Outreach() {
     <AppLayout>
       <div className="flex flex-col h-full overflow-hidden">
         {/* ── Top bar ── */}
-        <div className="shrink-0 border-b border-border/60 px-6 py-4 flex items-center justify-between gap-4 flex-wrap bg-background">
-          <div>
-            <div className="flex items-center gap-2 mb-0.5">
-              <Zap className="h-4 w-4 text-primary" />
-              <h1 className="text-lg font-bold text-foreground">Sales Cadences</h1>
-            </div>
-            <p className="text-xs text-muted-foreground">Multi-step email sequences · Lead list management · Conversion tracking</p>
-          </div>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" />New Cadence</Button>
-            </DialogTrigger>
+        <PageHeader
+          icon={Zap}
+          title="Sales Cadences"
+          description="Multi-step email sequences · Lead list management · Conversion tracking"
+          actions={
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" />New Cadence</Button>
+              </DialogTrigger>
              <DialogContent className="sm:max-w-[960px] max-h-[90vh] overflow-y-auto p-0">
                <div className="flex flex-col md:flex-row">
                  {/* ── How-to Guide Panel ── */}
