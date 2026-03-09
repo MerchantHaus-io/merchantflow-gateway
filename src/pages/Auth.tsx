@@ -87,15 +87,9 @@ const Auth = () => {
     setIsLoading(false);
 
     if (error) {
-      let description = error.message;
-      if (error.message === 'Invalid login credentials') {
-        description = 'Invalid email or password. Please try again.';
-      } else if (error.message.toLowerCase().includes('fetch')) {
-        description = 'Network error. Please check your connection and try again.';
-      }
       toast({
         title: 'Sign In Failed',
-        description,
+        description: getFriendlyError(error),
         variant: 'destructive',
       });
     }
