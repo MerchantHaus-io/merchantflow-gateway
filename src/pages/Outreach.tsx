@@ -421,27 +421,13 @@ export default function Outreach() {
 
         <div className="flex-1 overflow-y-auto p-6 space-y-5">
           {/* ── KPIs ── */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            {[
-              { label: "Cadences",   value: campaigns.length, icon: Layers,        color: "text-foreground",    bg: "bg-muted/60" },
-              { label: "Total Leads",value: totalLeads,        icon: Users,         color: "text-blue-500",      bg: "bg-blue-500/10" },
-              { label: "Emails Sent",value: totalSent,         icon: Send,          color: "text-primary",       bg: "bg-primary/10" },
-              { label: "Replied",    value: totalReply,        icon: MessageSquare, color: "text-emerald-500",   bg: "bg-emerald-500/10" },
-              { label: "Reply Rate", value: `${replyRate}%`,   icon: BarChart3,     color: "text-amber-500",     bg: "bg-amber-500/10" },
-              { label: "Converted",  value: totalConv,         icon: TrendingUp,    color: "text-violet-500",    bg: "bg-violet-500/10" },
-            ].map(k => (
-              <Card key={k.label} className="border-border/50">
-                <CardContent className="p-3 flex items-center gap-2.5">
-                  <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center shrink-0", k.bg)}>
-                    <k.icon className={cn("h-4 w-4", k.color)} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className={cn("text-lg font-bold leading-none", k.color)}>{k.value}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{k.label}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 stagger-children">
+            <StatCard label="Cadences"    value={campaigns.length} icon={Layers}        color="muted" />
+            <StatCard label="Total Leads" value={totalLeads}       icon={Users}         color="teal" />
+            <StatCard label="Emails Sent" value={totalSent}        icon={Send}          color="primary" />
+            <StatCard label="Replied"     value={totalReply}       icon={MessageSquare} color="success" />
+            <StatCard label="Reply Rate"  value={`${replyRate}%`}  icon={BarChart3}     color="warning" />
+            <StatCard label="Converted"   value={totalConv}        icon={TrendingUp}    color="violet" />
           </div>
 
           {/* ── Filter + view toggle ── */}
