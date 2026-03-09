@@ -154,7 +154,7 @@ function IconView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeG
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
-      className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 gap-y-6 mt-6"
+      className="flex flex-wrap justify-center gap-x-6 gap-y-6 mt-6"
     >
       {items.map((item, i) => (
         <motion.button
