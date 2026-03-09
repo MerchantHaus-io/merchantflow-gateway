@@ -75,10 +75,9 @@ const Apply = () => {
     if (error) {
       console.error('Application submission error:', error);
       setFormStatus('error');
-      setErrorMessage(
-        error.message || 'Failed to submit application. Please try again.'
-      );
-      toast.error('Application submission failed');
+      const friendly = getFriendlyError(error);
+      setErrorMessage(friendly);
+      toast.error(friendly);
       return;
     }
 

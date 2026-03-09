@@ -652,7 +652,8 @@ export default function MerchantApply() {
       setIsSubmitted(true);
       window.location.href = "https://merchanthaus.io";
     } catch (error: any) {
-      toast({ variant: "destructive", title: "Submission failed", description: error.message });
+      const friendly = (await import('@/lib/friendly-errors')).getFriendlyError(error);
+      toast({ variant: "destructive", title: "Submission failed", description: friendly });
     } finally {
       setIsSubmitting(false);
     }
