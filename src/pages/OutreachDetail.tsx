@@ -3,8 +3,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/AppLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardAccentBar } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/EmptyState";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
@@ -491,18 +492,14 @@ export default function OutreachDetail() {
                 {contactsLoading ? (
                   <div className="space-y-2">{[...Array(4)].map((_, i) => <div key={i} className="h-12 rounded-lg bg-muted/30 animate-pulse" />)}</div>
                 ) : filteredContacts.length === 0 ? (
-                  <Card className="border-dashed border-border/60">
-                    <CardContent className="flex flex-col items-center py-12 text-center">
-                      <Upload className="h-10 w-10 text-muted-foreground/30 mb-3" />
-                      <p className="font-medium text-foreground mb-1">No leads in list</p>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Import a CSV with columns: <code className="bg-muted px-1 rounded text-xs">Last Name, First Name, Email, Phone Number</code>
-                      </p>
-                      <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()}>
-                        <Upload className="h-3.5 w-3.5 mr-1.5" />Import Lead List
-                      </Button>
-                    </CardContent>
-                  </Card>
+                  <EmptyState
+                    icon={Upload}
+                    title="No leads in list"
+                    description="Import a CSV with columns: Last Name, First Name, Email, Phone Number"
+                    actionLabel="Import Lead List"
+                    onAction={() => fileRef.current?.click()}
+                    size="sm"
+                  />
                 ) : (
                   <Card className="border-border/60">
                     <div className="overflow-x-auto">

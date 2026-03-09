@@ -55,11 +55,18 @@ export default {
           'Noto Color Emoji'
         ],
         display: [
+          'Syne',
           'General Sans',
           'Geist',
           'ui-sans-serif',
           'system-ui',
           'sans-serif'
+        ],
+        'mono-dm': [
+          'DM Mono',
+          'ui-monospace',
+          'SFMono-Regular',
+          'monospace'
         ],
         serif: [
           'Playfair Display',

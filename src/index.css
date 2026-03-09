@@ -1369,15 +1369,48 @@ textarea:focus-visible {
 /* ─── Global Scrollbar Polish ─── */
 :root {
   scrollbar-width: thin;
-  scrollbar-color: hsl(var(--primary) / 0.3) hsl(var(--border) / 0.1);
+  scrollbar-color: hsl(217 33% 30%) transparent;
 }
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: hsl(var(--border) / 0.08); }
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--primary) / 0.25);
-  border-radius: 99px;
+  background: hsl(217 33% 30%);
+  border-radius: 100px;
 }
-::-webkit-scrollbar-thumb:hover { background: hsl(var(--primary) / 0.5); }
+::-webkit-scrollbar-thumb:hover { background: hsl(217 33% 40%); }
+
+/* ─── Text Selection ─── */
+::selection {
+  background: hsl(348 83% 47% / 0.35);
+  color: white;
+}
+
+/* ─── Focus Rings ─── */
+*:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(348 83% 47% / 0.6);
+}
+
+/* ─── Noise Texture Overlay ─── */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.022;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+/* ─── Ambient Mesh Gradients on main ─── */
+main {
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, hsl(348 83% 47% / 0.10) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 100% 80%, hsl(174 72% 46% / 0.07) 0%, transparent 50%);
+}
 
 /* ─── Animated Background Grid (Dark Mode) ─── */
 .dark body::before {
@@ -1400,12 +1433,80 @@ textarea:focus-visible {
   display: none;
 }
 
+/* ─── Table Upgrades ─── */
+thead tr {
+  background: hsl(217 33% 12%);
+}
+thead th {
+  font-family: var(--font-display, 'Syne', 'General Sans', sans-serif);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+tbody tr:nth-child(even) {
+  background: hsl(217 33% 15% / 0.3);
+}
+tbody tr {
+  border-color: hsl(217 33% 20%);
+  transition: background-color 0.15s ease;
+}
+tbody tr:hover {
+  background: hsl(217 33% 16% / 0.5);
+}
+
+/* ─── Recharts Upgrades ─── */
+.recharts-cartesian-grid line {
+  stroke: hsl(217 33% 22%);
+}
+.recharts-cartesian-axis-tick text {
+  fill: hsl(215 20% 50%);
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-size: 11px;
+}
+.recharts-default-tooltip {
+  background: hsl(217 33% 12%) !important;
+  border: 1px solid hsl(217 33% 25%) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5) !important;
+}
+.recharts-legend-item-text {
+  font-family: var(--font-display, 'Syne', sans-serif) !important;
+  font-size: 11px !important;
+  color: hsl(215 20% 65%) !important;
+}
+
+/* ─── Tabular Figures for Stats ─── */
+.tabular-nums, .font-mono-dm {
+  font-feature-settings: "tnum" 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Stagger Children Utility ─── */
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 50ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 50ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 100ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 150ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 200ms; }
+.stagger-children > * {
+  animation: fade-in 0.35s ease-out both;
+}
+
 /* ─── shadcn/ui Component Overrides ─── */
 
 /* Dialog overlay — deeper blur */
 [data-slot="dialog-overlay"] {
-  backdrop-filter: blur(8px) saturate(120%);
+  backdrop-filter: blur(20px) saturate(180%);
   background: hsl(var(--background) / 0.6);
+}
+
+/* Dialog content — ambient mesh */
+[data-slot="dialog-content"] {
+  background-color: hsl(217 33% 13%);
+  background-image: radial-gradient(ellipse 80% 60% at 50% -10%, hsl(348 83% 47% / 0.08), transparent 50%);
+  border-color: hsl(217 33% 25%);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05), inset 0 1px 0 rgba(255,255,255,0.08);
 }
 
 /* Select/Popover/Dropdown — glass */
@@ -1418,13 +1519,22 @@ textarea:focus-visible {
   box-shadow: 0 20px 60px -12px hsl(var(--background) / 0.8);
 }
 
-/* Tabs — active tab gets primary underline */
-[data-slot="tabs-trigger"][data-state="active"] {
-  background: transparent;
-  border-bottom: 2px solid hsl(var(--primary));
-  border-radius: 0;
-  color: hsl(var(--primary));
+/* Tabs — terminal style */
+[role="tablist"] {
+  background: hsl(217 33% 13%);
+  border: 1px solid hsl(217 33% 20%);
+  padding: 3px;
+  border-radius: calc(var(--radius) + 2px);
+}
+[role="tab"] {
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-size: 11.5px;
+  letter-spacing: 0.03em;
   font-weight: 600;
+}
+[role="tab"][data-state="active"] {
+  background: hsl(217 33% 22%);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 /* Tabs list — glass background */

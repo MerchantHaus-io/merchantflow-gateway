@@ -223,7 +223,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
       className={cn(
         "sticky top-0 z-50 w-full border-b border-border/40",
         isDark
-          ? "bg-background/70 text-white backdrop-blur-xl"
+          ? "bg-[hsl(217_33%_13%/0.92)] text-white backdrop-blur-[20px] backdrop-saturate-[180%] shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_24px_rgba(0,0,0,0.4)]"
           : "bg-background/80 text-foreground backdrop-blur-xl shadow-sm"
       )}
       style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}

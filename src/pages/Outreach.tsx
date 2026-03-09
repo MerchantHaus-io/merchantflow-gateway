@@ -13,6 +13,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { PageHeader } from "@/components/PageHeader";
+import { StatCard } from "@/components/StatCard";
+import { EmptyState } from "@/components/EmptyState";
 import {
   Plus, Mail, Send, Users, TrendingUp, MessageSquare, Eye, Trash2,
   CalendarIcon, Clock, Layers, BarChart3, ChevronRight, Zap, ListFilter,
@@ -204,18 +207,16 @@ export default function Outreach() {
     <AppLayout>
       <div className="flex flex-col h-full overflow-hidden">
         {/* ── Top bar ── */}
-        <div className="shrink-0 border-b border-border/60 px-6 py-4 flex items-center justify-between gap-4 flex-wrap bg-background">
-          <div>
-            <div className="flex items-center gap-2 mb-0.5">
-              <Zap className="h-4 w-4 text-primary" />
-              <h1 className="text-lg font-bold text-foreground">Sales Cadences</h1>
-            </div>
-            <p className="text-xs text-muted-foreground">Multi-step email sequences · Lead list management · Conversion tracking</p>
-          </div>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" />New Cadence</Button>
-            </DialogTrigger>
+        <PageHeader
+          icon={Zap}
+          title="Sales Cadences"
+          description="Multi-step email sequences · Lead list management · Conversion tracking"
+          actions={
+            <Button size="sm" className="gap-1.5" onClick={() => setOpen(true)}><Plus className="h-4 w-4" />New Cadence</Button>
+          }
+        />
+
+        <Dialog open={open} onOpenChange={setOpen}>
              <DialogContent className="sm:max-w-[960px] max-h-[90vh] overflow-y-auto p-0">
                <div className="flex flex-col md:flex-row">
                  {/* ── How-to Guide Panel ── */}
@@ -416,32 +417,17 @@ export default function Outreach() {
                  </div>
                </div>
               </DialogContent>
-          </Dialog>
-        </div>
+        </Dialog>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-5">
           {/* ── KPIs ── */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            {[
-              { label: "Cadences",   value: campaigns.length, icon: Layers,        color: "text-foreground",    bg: "bg-muted/60" },
-              { label: "Total Leads",value: totalLeads,        icon: Users,         color: "text-blue-500",      bg: "bg-blue-500/10" },
-              { label: "Emails Sent",value: totalSent,         icon: Send,          color: "text-primary",       bg: "bg-primary/10" },
-              { label: "Replied",    value: totalReply,        icon: MessageSquare, color: "text-emerald-500",   bg: "bg-emerald-500/10" },
-              { label: "Reply Rate", value: `${replyRate}%`,   icon: BarChart3,     color: "text-amber-500",     bg: "bg-amber-500/10" },
-              { label: "Converted",  value: totalConv,         icon: TrendingUp,    color: "text-violet-500",    bg: "bg-violet-500/10" },
-            ].map(k => (
-              <Card key={k.label} className="border-border/50">
-                <CardContent className="p-3 flex items-center gap-2.5">
-                  <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center shrink-0", k.bg)}>
-                    <k.icon className={cn("h-4 w-4", k.color)} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className={cn("text-lg font-bold leading-none", k.color)}>{k.value}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{k.label}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 stagger-children">
+            <StatCard label="Cadences"    value={campaigns.length} icon={Layers}        color="muted" />
+            <StatCard label="Total Leads" value={totalLeads}       icon={Users}         color="teal" />
+            <StatCard label="Emails Sent" value={totalSent}        icon={Send}          color="primary" />
+            <StatCard label="Replied"     value={totalReply}       icon={MessageSquare} color="success" />
+            <StatCard label="Reply Rate"  value={`${replyRate}%`}  icon={BarChart3}     color="warning" />
+            <StatCard label="Converted"   value={totalConv}        icon={TrendingUp}    color="violet" />
           </div>
 
           {/* ── Filter + view toggle ── */}
@@ -474,16 +460,13 @@ export default function Outreach() {
               {[...Array(3)].map((_, i) => <div key={i} className="h-48 rounded-xl bg-muted/30 animate-pulse" />)}
             </div>
           ) : filtered.length === 0 ? (
-            <Card className="border-dashed border-border/60">
-              <CardContent className="flex flex-col items-center py-16 text-center">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
-                  <Layers className="h-6 w-6 text-primary" />
-                </div>
-                <p className="font-semibold text-foreground mb-1">No cadences yet</p>
-                <p className="text-sm text-muted-foreground mb-4 max-w-xs">Create a sales cadence to start reaching out to leads with automated multi-step email sequences.</p>
-                <Button onClick={() => setOpen(true)} size="sm"><Plus className="h-4 w-4 mr-1.5" />New Cadence</Button>
-              </CardContent>
-            </Card>
+            <EmptyState
+              icon={Layers}
+              title="No cadences yet"
+              description="Create a sales cadence to start reaching out to leads with automated multi-step email sequences."
+              actionLabel="New Cadence"
+              onAction={() => setOpen(true)}
+            />
           ) : view === "grid" ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {filtered.map(c => (
