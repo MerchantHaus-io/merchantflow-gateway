@@ -177,8 +177,8 @@ const MyTasks = () => {
                         {task.description && <p className="text-sm text-muted-foreground">{task.description}</p>}
                         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                           <span>Assignee: {task.assignee}</span>
-                          {task.relatedOpportunityId && <Badge variant="secondary">Application: {task.relatedOpportunityId}</Badge>}
-                          {task.relatedContactId && <Badge variant="secondary">Contact: {task.relatedContactId}</Badge>}
+                         {task.relatedOpportunityId && <Badge variant="muted">Application: {task.relatedOpportunityId}</Badge>}
+                          {task.relatedContactId && <Badge variant="muted">Contact: {task.relatedContactId}</Badge>}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
