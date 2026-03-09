@@ -335,7 +335,8 @@ const Accounts = () => {
 
   if (loading) {
     return (
-      <AppLayout pageTitle="Accounts">
+      <AppLayout>
+        <PageHeader icon={Building2Icon} title="Accounts" color="teal" />
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
             <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
