@@ -139,6 +139,34 @@ export default function Outreach() {
     setSteps(prev => prev.map((s, i) => i === idx ? { ...s, ...patch } : s));
   };
 
+  const handleCsvUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCsvFileName(file.name);
+    const text = await file.text();
+    const lines = text.split("\n").filter(l => l.trim());
+    if (lines.length < 2) { toast.error("CSV needs a header and data rows"); return; }
+    const rawHeaders = lines[0].split(",").map(h => h.trim().replace(/['"]/g, "").toLowerCase());
+    const findIdx = (...keys: string[]) => rawHeaders.findIndex(h => keys.some(k => h.includes(k)));
+    const emailIdx = findIdx("email");
+    const firstIdx = findIdx("first");
+    const lastIdx = findIdx("last");
+    const companyIdx = findIdx("company", "business", "dba");
+    if (emailIdx === -1) { toast.error("CSV must have an 'email' column"); return; }
+    const rows = lines.slice(1).map(line => {
+      const cols = line.match(/(".*?"|[^,]+|(?<=,)(?=,))/g)?.map(c => c.replace(/^"|"$/g, "").trim()) || line.split(",").map(c => c.trim());
+      return {
+        email: cols[emailIdx] || "",
+        first_name: firstIdx >= 0 ? (cols[firstIdx] || null) : null,
+        last_name: lastIdx >= 0 ? (cols[lastIdx] || null) : null,
+        company: companyIdx >= 0 ? (cols[companyIdx] || null) : null,
+      };
+    }).filter(r => r.email && r.email.includes("@"));
+    if (rows.length === 0) { toast.error("No valid email addresses found"); return; }
+    setCsvLeads(rows);
+    toast.success(`${rows.length} leads parsed from CSV`);
+  };
+
   const { data: campaigns = [], isLoading } = useQuery({
     queryKey: ["outreach-campaigns"],
     queryFn: async () => {
