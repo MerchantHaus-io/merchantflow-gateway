@@ -20,6 +20,7 @@ const Apply = () => {
   const { theme } = useTheme();
   const [formStatus, setFormStatus] = useState<FormStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [honeypot, setHoneypot] = useState('');
   const [formData, setFormData] = useState<ApplicationFormData>({
     full_name: '',
     email: '',
@@ -43,6 +44,13 @@ const Apply = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    // Honeypot spam check — bots fill hidden fields
+    if (honeypot) {
+      setFormStatus('success');
+      return;
+    }
+
     setFormStatus('submitting');
     setErrorMessage('');
 
@@ -124,6 +132,20 @@ const Apply = () => {
                 {errorMessage}
               </div>
             )}
+
+            {/* Honeypot — invisible to humans, catches bots */}
+            <div aria-hidden="true" className="absolute opacity-0 pointer-events-none -z-10" style={{ position: 'absolute', left: '-9999px' }}>
+              <label htmlFor="website_url">Website</label>
+              <input
+                id="website_url"
+                name="website_url"
+                type="text"
+                tabIndex={-1}
+                autoComplete="off"
+                value={honeypot}
+                onChange={(e) => setHoneypot(e.target.value)}
+              />
+            </div>
 
             {/* Full Name */}
             <div className="space-y-2">
