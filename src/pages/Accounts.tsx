@@ -403,6 +403,7 @@ const Accounts = () => {
                       <SortableTableHead field="contacts" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Contacts</SortableTableHead>
                       <TableHead>Location</TableHead>
                       <SortableTableHead field="website" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Website</SortableTableHead>
+                      <SortableTableHead field="created_at" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Created</SortableTableHead>
                       <TableHead className="w-16"></TableHead>
                     </TableRow>
                   </TableHeader>
