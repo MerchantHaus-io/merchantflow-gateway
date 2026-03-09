@@ -319,6 +319,9 @@ const Contacts = () => {
         case 'last_activity':
           comparison = (a.last_activity_at || '').localeCompare(b.last_activity_at || '');
           break;
+        case 'created_at':
+          comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          break;
       }
       return sortDirection === 'asc' ? comparison : -comparison;
     });
