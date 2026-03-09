@@ -230,7 +230,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
       )}
       style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
-      <div className="flex h-12 items-center px-3 lg:px-5 gap-2">
+      <div className="flex h-12 items-center px-3 lg:px-5 gap-2 overflow-visible overflow-visible">
         {/* Logo */}
         <Link to="/" className="flex items-center shrink-0 mr-1 hover:drop-shadow-[0_0_8px_hsl(var(--primary)/0.4)] transition-all duration-300">
           <img src={sidebarIcon} alt="Ops Terminal" className="h-7 w-7 object-contain" />
@@ -346,7 +346,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
         </NavigationMenu>
 
         {/* Right side actions */}
-        <div className="flex items-center gap-1 ml-auto">
+        <div className="flex items-cen shrink-0 overflow-visibleter gap-1 ml-auto">
           {/* ⌘K search trigger */}
           <Button
             variant="ghost"
@@ -369,11 +369,11 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
             <DropdownMenuTrigger asChild>
               <Button
                 size="sm"
-                className="h-8 bg-gold text-gold-foreground hover:bg-gold/90 transition-all rounded-md px-3 text-xs font-semibold shadow-sm"
+                className="h-8 bg-gold text-gold-foreground hover:bg-gold/90 transition-all rounded-md px-3 text-xs font-semibold shadow-sm overflow-visible shrink-0"
               >
-                <Plus className="h-3.5 w-3.5 mr-1" />
+                <Plus className="h-3.5 w-3.5 mr-1 shrink-0" />
                 <span className="hidden sm:inline">New</span>
-                <ChevronDown className="h-3 w-3 ml-0.5 opacity-70" />
+                <ChevronDown className="h-3 w-3 ml-0.5 opacity-70 shrink-0" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
