@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
+import { getFriendlyError } from '@/lib/friendly-errors';
 import psTerminalLogo from '@/assets/ps-terminal-logo.png';
 import { isEmailAllowed } from '@/types/opportunity';
 import ForcePasswordChange from '@/components/ForcePasswordChange';
@@ -86,15 +87,9 @@ const Auth = () => {
     setIsLoading(false);
 
     if (error) {
-      let description = error.message;
-      if (error.message === 'Invalid login credentials') {
-        description = 'Invalid email or password. Please try again.';
-      } else if (error.message.toLowerCase().includes('fetch')) {
-        description = 'Network error. Please check your connection and try again.';
-      }
       toast({
         title: 'Sign In Failed',
-        description,
+        description: getFriendlyError(error),
         variant: 'destructive',
       });
     }
@@ -109,15 +104,9 @@ const Auth = () => {
     setIsLoading(false);
 
     if (error) {
-      let description = error.message;
-      if (error.message.includes('already registered')) {
-        description = 'This email is already registered. Please sign in instead.';
-      } else if (error.message.toLowerCase().includes('fetch')) {
-        description = 'Network error. Please check your connection and try again.';
-      }
       toast({
-        title: error.message.includes('already registered') ? 'Account Exists' : 'Sign Up Failed',
-        description,
+        title: 'Sign Up Failed',
+        description: getFriendlyError(error),
         variant: 'destructive',
       });
     } else {
@@ -149,7 +138,7 @@ const Auth = () => {
     if (error) {
       toast({
         title: 'Password Reset Failed',
-        description: error.message || 'Unable to send reset email. Please try again.',
+        description: getFriendlyError(error),
         variant: 'destructive',
       });
     } else {

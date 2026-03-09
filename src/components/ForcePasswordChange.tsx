@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Lock, Eye, EyeOff } from 'lucide-react';
+import { getFriendlyError } from '@/lib/friendly-errors';
 import { useTheme } from '@/contexts/ThemeContext';
 import logoDark from '@/assets/logo-dark.png';
 import logoLight from '@/assets/logo-light.png';
@@ -35,7 +36,7 @@ const ForcePasswordChange = () => {
     setIsLoading(false);
 
     if (error) {
-      toast.error(error.message);
+      toast.error(getFriendlyError(error));
     } else {
       toast.success('Password updated successfully!');
     }

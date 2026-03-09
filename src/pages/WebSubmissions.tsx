@@ -159,7 +159,7 @@ export default function WebSubmissions() {
       .eq("id", id);
 
     if (error) {
-      toast({ variant: "destructive", title: "Reject failed", description: error.message });
+      toast({ variant: "destructive", title: "Reject failed", description: (await import('@/lib/friendly-errors')).getFriendlyError(error) });
     } else {
       toast({ title: "Submission rejected" });
       fetchApplications();

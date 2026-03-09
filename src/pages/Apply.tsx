@@ -13,6 +13,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import logoDark from '@/assets/logo-dark.png';
 import logoLight from '@/assets/logo-light.png';
 import type { ApplicationFormData } from '@/types/application';
+import { getFriendlyError } from '@/lib/friendly-errors';
 
 type FormStatus = 'idle' | 'submitting' | 'success' | 'error';
 
@@ -74,10 +75,9 @@ const Apply = () => {
     if (error) {
       console.error('Application submission error:', error);
       setFormStatus('error');
-      setErrorMessage(
-        error.message || 'Failed to submit application. Please try again.'
-      );
-      toast.error('Application submission failed');
+      const friendly = getFriendlyError(error);
+      setErrorMessage(friendly);
+      toast.error(friendly);
       return;
     }
 

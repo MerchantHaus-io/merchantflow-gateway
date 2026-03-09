@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Lock, Eye, EyeOff, CheckCircle2, AlertTriangle, ArrowLeft } from 'lucide-react';
+import { getFriendlyError } from '@/lib/friendly-errors';
 import { useTheme } from '@/contexts/ThemeContext';
 import logoDark from '@/assets/logo-dark.png';
 import logoLight from '@/assets/logo-light.png';
@@ -74,7 +75,7 @@ const UpdatePassword = () => {
     setIsLoading(false);
 
     if (error) {
-      toast.error(error.message || 'Failed to update password');
+      toast.error(getFriendlyError(error));
     } else {
       setIsSuccess(true);
       toast.success('Password updated successfully!');
