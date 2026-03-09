@@ -936,7 +936,20 @@ export default function OfficeChat({
   const [nearTV, setNearTV] = useState(false);
   const [tvUnmuted, setTvUnmuted] = useState(false);
   const tvOverlayRef = useRef<HTMLDivElement>(null);
+  const tvIframeRef = useRef<HTMLIFrameElement>(null);
   const tvOverlayVisibleRef = useRef(false);
+
+  // Randomised YouTube playlist for the office TV
+  const TV_PLAYLIST = useRef(['T0C9d8anDT4', 'oM9WfDBRNcg']).current;
+  const [tvVideoId] = useState(() => TV_PLAYLIST[Math.floor(Math.random() * TV_PLAYLIST.length)]);
+
+  // Mute/unmute via postMessage so the video doesn't restart
+  useEffect(() => {
+    const iframe = tvIframeRef.current;
+    if (!iframe?.contentWindow) return;
+    const cmd = tvUnmuted ? 'unMute' : 'mute';
+    iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: cmd, args: [] }), '*');
+  }, [tvUnmuted]);
   const tvOverlayRectRef = useRef({ x: -1, y: -1, w: -1, h: -1 });
   const [nearInteract, setNearInteract] = useState<InteractionPoint | null>(null);
   const [isSitting, setIsSitting] = useState(false);
@@ -1919,7 +1932,8 @@ export default function OfficeChat({
         style={{ visibility: 'hidden', opacity: 0, transition: 'opacity 120ms linear', willChange: 'transform, width, height', backgroundColor: '#0d1117' }}
       >
         <iframe
-          src={`https://www.youtube-nocookie.com/embed/T0C9d8anDT4?autoplay=1&mute=${tvUnmuted ? "0" : "1"}&loop=1&playlist=T0C9d8anDT4&controls=0&modestbranding=1&rel=0&playsinline=1&enablejsapi=1`}
+          ref={tvIframeRef}
+          src={`https://www.youtube-nocookie.com/embed/${tvVideoId}?autoplay=1&mute=1&loop=1&playlist=${TV_PLAYLIST.join(',')}&controls=0&modestbranding=1&rel=0&playsinline=1&enablejsapi=1`}
           className="w-full h-full border-0 pointer-events-none"
           title="Office TV"
           allow="autoplay; encrypted-media; picture-in-picture"
