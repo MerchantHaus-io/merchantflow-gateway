@@ -13,6 +13,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { PageHeader } from "@/components/PageHeader";
+import { StatCard } from "@/components/StatCard";
+import { EmptyState } from "@/components/EmptyState";
 import {
   Plus, Mail, Send, Users, TrendingUp, MessageSquare, Eye, Trash2,
   CalendarIcon, Clock, Layers, BarChart3, ChevronRight, Zap, ListFilter,
