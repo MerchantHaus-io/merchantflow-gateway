@@ -137,9 +137,10 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const parsed = InputSchema.parse(body);
-    const clientIp = body.client_ip || "unknown";
-    const userAgent = body.user_agent || "unknown";
+    const { client_ip, user_agent, ...formData } = body;
+    const parsed = InputSchema.parse(formData);
+    const clientIp = client_ip || "unknown";
+    const userAgent = user_agent || "unknown";
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
