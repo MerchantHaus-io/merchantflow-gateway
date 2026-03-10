@@ -7,8 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { EMAIL_TO_USER } from "@/types/opportunity";
 import {
-  Wand2, Globe, Loader2, CheckCircle2, XCircle, AlertTriangle, ChevronDown, ChevronUp, Eye, Clock, User,
+  Wand2, Globe, Loader2, CheckCircle2, XCircle, AlertTriangle, ChevronDown, ChevronUp, Eye, Clock, User, StickyNote,
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 
 interface AIValidatePanelProps {
