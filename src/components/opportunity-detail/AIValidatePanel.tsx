@@ -7,8 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { EMAIL_TO_USER } from "@/types/opportunity";
 import {
-  Wand2, Globe, Loader2, CheckCircle2, XCircle, AlertTriangle, ChevronDown, ChevronUp, Eye, Clock, User,
+  Wand2, Globe, Loader2, CheckCircle2, XCircle, AlertTriangle, ChevronDown, ChevronUp, Eye, Clock, User, StickyNote,
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 
 interface AIValidatePanelProps {
@@ -78,8 +79,10 @@ const MetaLine = ({ meta }: { meta: ReportMeta }) => (
 
 export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
   const { validateDocuments, scrutinizeWebsite } = useAIAssistant();
+  const { user } = useAuth();
   const [isValidating, setIsValidating] = useState(false);
   const [isScrutinizing, setIsScrutinizing] = useState(false);
+  const [isSavingNote, setIsSavingNote] = useState<"doc" | "web" | null>(null);
   const [docReport, setDocReport] = useState<DocReport | null>(null);
   const [docMeta, setDocMeta] = useState<ReportMeta | null>(null);
   const [websiteReport, setWebsiteReport] = useState<WebsiteReport | null>(null);
@@ -159,6 +162,73 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
     }
   }, [opportunityId]);
 
+  const formatWebReportAsNote = (report: WebsiteReport, url: string | null): string => {
+    const lines: string[] = [`🌐 Website Scrutiny Report — Score: ${report.score}/10 (${report.score_label})`];
+    if (url) lines.push(`URL: ${url}`);
+    if (report.summary) lines.push(`\n${report.summary}`);
+    if (report.requirements_met?.length) {
+      lines.push("\n📋 Requirements:");
+      report.requirements_met.forEach(r => lines.push(`  ${r.met ? "✅" : "❌"} ${r.requirement}${r.detail ? ` — ${r.detail}` : ""}`));
+    }
+    if (report.red_flags?.length) {
+      lines.push("\n🚩 Red Flags:");
+      report.red_flags.forEach(f => lines.push(`  ⚠️ [${f.severity}] ${f.flag}${f.detail ? ` — ${f.detail}` : ""}`));
+    }
+    if (report.recommendations?.length) {
+      lines.push("\n💡 Recommendations:");
+      report.recommendations.forEach(r => lines.push(`  → ${r}`));
+    }
+    return lines.join("\n");
+  };
+
+  const formatDocReportAsNote = (report: DocReport): string => {
+    const lines: string[] = [`📄 Document Validation Report — Readiness: ${readinessLabel(report.readiness_score)}`];
+    if (report.summary) lines.push(`\n${report.summary}`);
+    if (report.data_gaps?.length) {
+      lines.push("\n❌ Data Gaps:");
+      report.data_gaps.forEach(g => lines.push(`  • ${g}`));
+    }
+    if (report.risk_flags?.length) {
+      lines.push("\n⚠️ Risk Flags:");
+      report.risk_flags.forEach(f => lines.push(`  • ${typeof f === "string" ? f : f.flag}`));
+    }
+    if (report.recommended_actions?.length) {
+      lines.push("\n💡 Recommended Actions:");
+      report.recommended_actions.forEach(a => lines.push(`  → ${a}`));
+    }
+    return lines.join("\n");
+  };
+
+  const saveReportAsNote = useCallback(async (type: "doc" | "web") => {
+    if (!user) return;
+    const content = type === "web"
+      ? formatWebReportAsNote(websiteReport!, websiteUrl)
+      : formatDocReportAsNote(docReport!);
+    setIsSavingNote(type);
+    try {
+      const { error } = await supabase.from("comments").insert({
+        opportunity_id: opportunityId,
+        user_id: user.id,
+        user_email: user.email,
+        content,
+      });
+      if (error) throw error;
+      // Also log activity
+      await supabase.from("activities").insert({
+        opportunity_id: opportunityId,
+        user_id: user.id,
+        user_email: user.email,
+        type: "ai_report_saved",
+        description: `Saved ${type === "web" ? "website scrutiny" : "document validation"} report as note`,
+      });
+      toast.success("Report saved as note");
+    } catch {
+      toast.error("Failed to save report as note");
+    } finally {
+      setIsSavingNote(null);
+    }
+  }, [user, opportunityId, websiteReport, websiteUrl, docReport]);
+
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
@@ -201,9 +271,15 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
                 )}
               </div>
             </div>
-            <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setShowWebDetails(!showWebDetails)}>
-              {showWebDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => saveReportAsNote("web")} disabled={isSavingNote === "web"}>
+                {isSavingNote === "web" ? <Loader2 className="h-3 w-3 animate-spin" /> : <StickyNote className="h-3 w-3" />}
+                <span className="hidden sm:inline ml-1">Save as Note</span>
+              </Button>
+              <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setShowWebDetails(!showWebDetails)}>
+                {showWebDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+              </Button>
+            </div>
           </div>
           {webMeta && <MetaLine meta={webMeta} />}
           {!webMeta?.no_change && <p className="text-xs text-muted-foreground">{websiteReport.summary}</p>}
@@ -275,9 +351,15 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
                 {docMeta?.no_change && <Badge variant="outline" className="text-[9px] py-0 px-1">No change</Badge>}
               </h4>
             </div>
-            <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setShowDocDetails(!showDocDetails)}>
-              {showDocDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => saveReportAsNote("doc")} disabled={isSavingNote === "doc"}>
+                {isSavingNote === "doc" ? <Loader2 className="h-3 w-3 animate-spin" /> : <StickyNote className="h-3 w-3" />}
+                <span className="hidden sm:inline ml-1">Save as Note</span>
+              </Button>
+              <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setShowDocDetails(!showDocDetails)}>
+                {showDocDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+              </Button>
+            </div>
           </div>
           {docMeta && <MetaLine meta={docMeta} />}
           {docReport.summary && !docMeta?.no_change && (
