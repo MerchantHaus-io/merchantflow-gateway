@@ -588,6 +588,7 @@ export default function MerchantApply() {
       }
 
       const result = await res.json();
+      console.log('[MerchantApply] Response status:', res.status, 'body:', JSON.stringify(result));
 
       if (!res.ok) {
         const msg = result.issues
