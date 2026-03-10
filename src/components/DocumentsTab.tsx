@@ -86,7 +86,7 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
       for (const file of pendingFiles) {
         const path = `${opportunityId}/${Date.now()}_${file.name}`;
         const { error: uploadError } = await supabase.storage
-          .from("documents")
+          .from("opportunity-documents")
           .upload(path, file);
         if (uploadError) throw uploadError;
         const { error: dbError } = await supabase.from("documents").insert({
