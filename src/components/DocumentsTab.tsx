@@ -113,7 +113,7 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
   };
 
   const handleDownload = async (doc: Document) => {
-    const { data } = await supabase.storage.from("documents").createSignedUrl(doc.file_path, 60);
+    const { data } = await supabase.storage.from("opportunity-documents").createSignedUrl(doc.file_path, 60);
     if (data?.signedUrl) window.open(data.signedUrl, "_blank");
   };
 
