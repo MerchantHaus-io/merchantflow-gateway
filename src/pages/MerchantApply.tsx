@@ -139,35 +139,52 @@ interface MerchantForm {
   pricing_plan: PricingPlan;
 }
 
+const testPrincipal: PrincipalForm = {
+  principal_first_name: "John",
+  principal_last_name: "Smith",
+  principal_title: "CEO",
+  ownership_percent: "100",
+  principal_phone: "5551234567",
+  principal_email: "john@testmerchant.com",
+  principal_address_line1: "100 Owner Lane",
+  principal_address_line2: "",
+  principal_city: "Dallas",
+  principal_state: "TX",
+  principal_zip: "75201",
+  principal_country: "US",
+  date_of_birth: "1985-06-15",
+  ssn_full: "123456789",
+};
+
 const initialState: MerchantForm = {
-  dba_name: "", product_description: "", nature_of_business: "",
-  dba_contact_first_name: "", dba_contact_last_name: "",
-  dba_contact_phone: "", dba_contact_email: "",
-  dba_address_line1: "", dba_address_line2: "",
-  dba_city: "", dba_state: "", dba_zip: "", dba_country: "US",
+  dba_name: "Test Coffee Shop", product_description: "Premium coffee and pastries", nature_of_business: "Restaurant / Café",
+  dba_contact_first_name: "Darryn", dba_contact_last_name: "Booza",
+  dba_contact_phone: "5559876543", dba_contact_email: "darryn@testmerchant.com",
+  dba_address_line1: "123 Main Street", dba_address_line2: "Suite 100",
+  dba_city: "Dallas", dba_state: "TX", dba_zip: "75201", dba_country: "US",
 
-  legal_entity_name: "", federal_tax_id: "", ownership_type: "",
-  business_formation_date: "", state_incorporated: "", tax_exempt: false,
-  legal_address_line1: "", legal_address_line2: "",
-  legal_city: "", legal_state: "", legal_zip: "", legal_country: "US",
+  legal_entity_name: "Test Coffee Shop LLC", federal_tax_id: "123456789", ownership_type: "LLC",
+  business_formation_date: "2020-01-15", state_incorporated: "TX", tax_exempt: false,
+  legal_address_line1: "123 Main Street", legal_address_line2: "Suite 100",
+  legal_city: "Dallas", legal_state: "TX", legal_zip: "75201", legal_country: "US",
 
-  monthly_volume: "", average_transaction: "", high_ticket: "",
-  percent_swiped: "", percent_keyed: "", percent_moto: "", percent_ecommerce: "",
-  percent_b2b: "", percent_b2c: "", website_url: "", sic_mcc_code: "",
+  monthly_volume: "25,000", average_transaction: "15.00", high_ticket: "150.00",
+  percent_swiped: "70", percent_keyed: "10", percent_moto: "5", percent_ecommerce: "15",
+  percent_b2b: "20", percent_b2c: "80", website_url: "https://testcoffee.com", sic_mcc_code: "5812",
 
-  principals: [{ ...emptyPrincipal }],
+  principals: [{ ...testPrincipal }],
 
-  bank_name: "", account_holder_name: "", routing_number: "", account_number: "",
+  bank_name: "Chase Bank", account_holder_name: "Test Coffee Shop LLC", routing_number: "021000021", account_number: "123456789012",
 
   statement_docs: [], void_check_docs: [], general_docs: [],
   gateway_var_docs: [], gateway_void_docs: [],
 
-  beneficial_owner_certification: false, bank_disclosure_ack: false,
-  merchant_agreement_accepted: false, account_authorization_accepted: false,
+  beneficial_owner_certification: true, bank_disclosure_ack: true,
+  merchant_agreement_accepted: true, account_authorization_accepted: true,
 
-  additional_notes: "",
-  username: "", current_processor: "",
-  pricing_plan: "",
+  additional_notes: "Test submission — please ignore.",
+  username: "testcoffee_gw", current_processor: "Square",
+  pricing_plan: "interchange_plus",
 };
 
 // ─── Steps config ───
