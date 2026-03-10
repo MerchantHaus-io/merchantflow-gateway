@@ -351,9 +351,15 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
                 {docMeta?.no_change && <Badge variant="outline" className="text-[9px] py-0 px-1">No change</Badge>}
               </h4>
             </div>
-            <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setShowDocDetails(!showDocDetails)}>
-              {showDocDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => saveReportAsNote("doc")} disabled={isSavingNote === "doc"}>
+                {isSavingNote === "doc" ? <Loader2 className="h-3 w-3 animate-spin" /> : <StickyNote className="h-3 w-3" />}
+                <span className="hidden sm:inline ml-1">Save as Note</span>
+              </Button>
+              <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setShowDocDetails(!showDocDetails)}>
+                {showDocDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+              </Button>
+            </div>
           </div>
           {docMeta && <MetaLine meta={docMeta} />}
           {docReport.summary && !docMeta?.no_change && (
