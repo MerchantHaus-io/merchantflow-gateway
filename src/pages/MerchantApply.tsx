@@ -571,8 +571,9 @@ export default function MerchantApply() {
       payload.user_agent = navigator.userAgent;
 
       // Call server-side validated edge function
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://cuqjaddtmkotgvfsgcol.supabase.co';
+      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1cWphZGR0bWtvdGd2ZnNnY29sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ4NTM3NjUsImV4cCI6MjA4MDQyOTc2NX0.u1m_nORZsJ3Law0y3-xIIoNUoiRcrTXukJyW14y-AoA';
+      console.log('[MerchantApply] Submitting to:', `${supabaseUrl}/functions/v1/submit-merchant-application`);
       const res = await fetch(`${supabaseUrl}/functions/v1/submit-merchant-application`, {
         method: "POST",
         headers: {
