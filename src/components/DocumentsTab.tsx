@@ -118,7 +118,7 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
   };
 
   const handleDelete = async (doc: Document) => {
-    await supabase.storage.from("documents").remove([doc.file_path]);
+    await supabase.storage.from("opportunity-documents").remove([doc.file_path]);
     await supabase.from("documents").delete().eq("id", doc.id);
     setDocuments(prev => prev.filter(d => d.id !== doc.id));
     toast.success("Document deleted");
