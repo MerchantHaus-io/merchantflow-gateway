@@ -139,23 +139,6 @@ interface MerchantForm {
   pricing_plan: PricingPlan;
 }
 
-const emptyPrincipal: PrincipalForm = {
-  principal_first_name: "",
-  principal_last_name: "",
-  principal_title: "",
-  ownership_percent: "",
-  principal_phone: "",
-  principal_email: "",
-  principal_address_line1: "",
-  principal_address_line2: "",
-  principal_city: "",
-  principal_state: "",
-  principal_zip: "",
-  principal_country: "US",
-  date_of_birth: "",
-  ssn_full: "",
-};
-
 const initialState: MerchantForm = {
   dba_name: "", product_description: "", nature_of_business: "",
   dba_contact_first_name: "", dba_contact_last_name: "",
