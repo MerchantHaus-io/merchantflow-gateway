@@ -86,7 +86,7 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
       for (const file of pendingFiles) {
         const path = `${opportunityId}/${Date.now()}_${file.name}`;
         const { error: uploadError } = await supabase.storage
-          .from("documents")
+          .from("opportunity-documents")
           .upload(path, file);
         if (uploadError) throw uploadError;
         const { error: dbError } = await supabase.from("documents").insert({
@@ -113,12 +113,12 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
   };
 
   const handleDownload = async (doc: Document) => {
-    const { data } = await supabase.storage.from("documents").createSignedUrl(doc.file_path, 60);
+    const { data } = await supabase.storage.from("opportunity-documents").createSignedUrl(doc.file_path, 60);
     if (data?.signedUrl) window.open(data.signedUrl, "_blank");
   };
 
   const handleDelete = async (doc: Document) => {
-    await supabase.storage.from("documents").remove([doc.file_path]);
+    await supabase.storage.from("opportunity-documents").remove([doc.file_path]);
     await supabase.from("documents").delete().eq("id", doc.id);
     setDocuments(prev => prev.filter(d => d.id !== doc.id));
     toast.success("Document deleted");
