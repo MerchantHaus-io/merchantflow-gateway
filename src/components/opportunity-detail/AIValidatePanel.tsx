@@ -79,8 +79,10 @@ const MetaLine = ({ meta }: { meta: ReportMeta }) => (
 
 export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
   const { validateDocuments, scrutinizeWebsite } = useAIAssistant();
+  const { user } = useAuth();
   const [isValidating, setIsValidating] = useState(false);
   const [isScrutinizing, setIsScrutinizing] = useState(false);
+  const [isSavingNote, setIsSavingNote] = useState<"doc" | "web" | null>(null);
   const [docReport, setDocReport] = useState<DocReport | null>(null);
   const [docMeta, setDocMeta] = useState<ReportMeta | null>(null);
   const [websiteReport, setWebsiteReport] = useState<WebsiteReport | null>(null);
