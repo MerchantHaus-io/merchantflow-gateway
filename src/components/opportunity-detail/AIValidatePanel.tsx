@@ -271,9 +271,15 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
                 )}
               </div>
             </div>
-            <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setShowWebDetails(!showWebDetails)}>
-              {showWebDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => saveReportAsNote("web")} disabled={isSavingNote === "web"}>
+                {isSavingNote === "web" ? <Loader2 className="h-3 w-3 animate-spin" /> : <StickyNote className="h-3 w-3" />}
+                <span className="hidden sm:inline ml-1">Save as Note</span>
+              </Button>
+              <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setShowWebDetails(!showWebDetails)}>
+                {showWebDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+              </Button>
+            </div>
           </div>
           {webMeta && <MetaLine meta={webMeta} />}
           {!webMeta?.no_change && <p className="text-xs text-muted-foreground">{websiteReport.summary}</p>}
