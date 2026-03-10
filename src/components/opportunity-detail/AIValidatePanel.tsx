@@ -162,6 +162,73 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
     }
   }, [opportunityId]);
 
+  const formatWebReportAsNote = (report: WebsiteReport, url: string | null): string => {
+    const lines: string[] = [`🌐 Website Scrutiny Report — Score: ${report.score}/10 (${report.score_label})`];
+    if (url) lines.push(`URL: ${url}`);
+    if (report.summary) lines.push(`\n${report.summary}`);
+    if (report.requirements_met?.length) {
+      lines.push("\n📋 Requirements:");
+      report.requirements_met.forEach(r => lines.push(`  ${r.met ? "✅" : "❌"} ${r.requirement}${r.detail ? ` — ${r.detail}` : ""}`));
+    }
+    if (report.red_flags?.length) {
+      lines.push("\n🚩 Red Flags:");
+      report.red_flags.forEach(f => lines.push(`  ⚠️ [${f.severity}] ${f.flag}${f.detail ? ` — ${f.detail}` : ""}`));
+    }
+    if (report.recommendations?.length) {
+      lines.push("\n💡 Recommendations:");
+      report.recommendations.forEach(r => lines.push(`  → ${r}`));
+    }
+    return lines.join("\n");
+  };
+
+  const formatDocReportAsNote = (report: DocReport): string => {
+    const lines: string[] = [`📄 Document Validation Report — Readiness: ${readinessLabel(report.readiness_score)}`];
+    if (report.summary) lines.push(`\n${report.summary}`);
+    if (report.data_gaps?.length) {
+      lines.push("\n❌ Data Gaps:");
+      report.data_gaps.forEach(g => lines.push(`  • ${g}`));
+    }
+    if (report.risk_flags?.length) {
+      lines.push("\n⚠️ Risk Flags:");
+      report.risk_flags.forEach(f => lines.push(`  • ${typeof f === "string" ? f : f.flag}`));
+    }
+    if (report.recommended_actions?.length) {
+      lines.push("\n💡 Recommended Actions:");
+      report.recommended_actions.forEach(a => lines.push(`  → ${a}`));
+    }
+    return lines.join("\n");
+  };
+
+  const saveReportAsNote = useCallback(async (type: "doc" | "web") => {
+    if (!user) return;
+    const content = type === "web"
+      ? formatWebReportAsNote(websiteReport!, websiteUrl)
+      : formatDocReportAsNote(docReport!);
+    setIsSavingNote(type);
+    try {
+      const { error } = await supabase.from("comments").insert({
+        opportunity_id: opportunityId,
+        user_id: user.id,
+        user_email: user.email,
+        content,
+      });
+      if (error) throw error;
+      // Also log activity
+      await supabase.from("activities").insert({
+        opportunity_id: opportunityId,
+        user_id: user.id,
+        user_email: user.email,
+        type: "ai_report_saved",
+        description: `Saved ${type === "web" ? "website scrutiny" : "document validation"} report as note`,
+      });
+      toast.success("Report saved as note");
+    } catch {
+      toast.error("Failed to save report as note");
+    } finally {
+      setIsSavingNote(null);
+    }
+  }, [user, opportunityId, websiteReport, websiteUrl, docReport]);
+
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
