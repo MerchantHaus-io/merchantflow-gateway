@@ -1,0 +1,626 @@
+[
+  {
+    "filename": "merchant-portal/settings/address-verification-avs-01.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/35351048183185",
+    "article_title": "Address Verification Settings (AVS)",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/35311037069969-Address-Verification-Settings-AVS",
+    "category": "settings",
+    "alt_text": "AVS rejection rules configuration - street address matches"
+  },
+  {
+    "filename": "merchant-portal/settings/address-verification-avs-02.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/35495134348945",
+    "article_title": "Address Verification Settings (AVS)",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/35311037069969-Address-Verification-Settings-AVS",
+    "category": "settings",
+    "alt_text": "AVS other conditions to block"
+  },
+  {
+    "filename": "merchant-portal/settings/address-verification-avs-03.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/35351034937873",
+    "article_title": "Address Verification Settings (AVS)",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/35311037069969-Address-Verification-Settings-AVS",
+    "category": "settings",
+    "alt_text": "AVS responses and current rules overview"
+  },
+  {
+    "filename": "merchant-portal/settings/address-verification-avs-04.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/35351048183441",
+    "article_title": "Address Verification Settings (AVS)",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/35311037069969-Address-Verification-Settings-AVS",
+    "category": "settings",
+    "alt_text": "AVS change history log"
+  },
+  {
+    "filename": "merchant-portal/settings/automatic-card-updater-01.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/13769099109649",
+    "article_title": "Automatic Card Updater Settings",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/13585909512721-Automatic-Card-Updater-Settings",
+    "category": "settings",
+    "alt_text": "Update records immediately option"
+  },
+  {
+    "filename": "merchant-portal/settings/automatic-card-updater-02.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/13769163847697",
+    "article_title": "Automatic Card Updater Settings",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/13585909512721-Automatic-Card-Updater-Settings",
+    "category": "settings",
+    "alt_text": "Immediate run confirmation message"
+  },
+  {
+    "filename": "merchant-portal/settings/automatic-card-updater-03.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/13609935154961",
+    "article_title": "Automatic Card Updater Settings",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/13585909512721-Automatic-Card-Updater-Settings",
+    "category": "settings",
+    "alt_text": "Default monthly update schedule"
+  },
+  {
+    "filename": "merchant-portal/settings/automatic-card-updater-04.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/13556053554705",
+    "article_title": "Automatic Card Updater Settings",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/13585909512721-Automatic-Card-Updater-Settings",
+    "category": "settings",
+    "alt_text": "Update frequency options"
+  },
+  {
+    "filename": "merchant-portal/settings/automatic-card-updater-05.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/13586647406993",
+    "article_title": "Automatic Card Updater Settings",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/13585909512721-Automatic-Card-Updater-Settings",
+    "category": "settings",
+    "alt_text": "Customer vault update options"
+  },
+  {
+    "filename": "merchant-portal/settings/automatic-card-updater-06.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/13586604812177",
+    "article_title": "Automatic Card Updater Settings",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/13585909512721-Automatic-Card-Updater-Settings",
+    "category": "settings",
+    "alt_text": "Customer vault update options with zero days"
+  },
+  {
+    "filename": "merchant-portal/settings/automatic-card-updater-07.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/13586865077009",
+    "article_title": "Automatic Card Updater Settings",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/13585909512721-Automatic-Card-Updater-Settings",
+    "category": "settings",
+    "alt_text": "Active recurring subscriptions option"
+  },
+  {
+    "filename": "merchant-portal/settings/automatic-card-updater-08.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/13586293618961",
+    "article_title": "Automatic Card Updater Settings",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/13585909512721-Automatic-Card-Updater-Settings",
+    "category": "settings",
+    "alt_text": "Next scheduled run date status"
+  },
+  {
+    "filename": "merchant-portal/settings/automatic-card-updater-09.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/13606352357009",
+    "article_title": "Automatic Card Updater Settings",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/13585909512721-Automatic-Card-Updater-Settings",
+    "category": "settings",
+    "alt_text": "Pending status indicator"
+  },
+  {
+    "filename": "merchant-portal/settings/automatic-card-updater-10.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/13586253087377",
+    "article_title": "Automatic Card Updater Settings",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/13585909512721-Automatic-Card-Updater-Settings",
+    "category": "settings",
+    "alt_text": "In progress status indicator"
+  },
+  {
+    "filename": "merchant-portal/settings/automatic-card-updater-11.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/13586291948433",
+    "article_title": "Automatic Card Updater Settings",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/13585909512721-Automatic-Card-Updater-Settings",
+    "category": "settings",
+    "alt_text": "Complete status indicator"
+  },
+  {
+    "filename": "merchant-portal/settings/automatic-level-iii-01.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/18179123779601",
+    "article_title": "Automatic Level III Merchant Template",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/18179214157969-Automatic-Level-III-Merchant-Template",
+    "category": "settings",
+    "alt_text": "Navigation to Automatic Level III settings"
+  },
+  {
+    "filename": "merchant-portal/settings/automatic-level-iii-02.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/18319558200593",
+    "article_title": "Automatic Level III Merchant Template",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/18179214157969-Automatic-Level-III-Merchant-Template",
+    "category": "settings",
+    "alt_text": "Level III form fields"
+  },
+  {
+    "filename": "merchant-portal/settings/automatic-level-iii-03.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/18320272438545",
+    "article_title": "Automatic Level III Merchant Template",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/18179214157969-Automatic-Level-III-Merchant-Template",
+    "category": "settings",
+    "alt_text": "Dynamic data variables in Level III fields"
+  },
+  {
+    "filename": "merchant-portal/invoicing/billing-statement-01.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/13209772872977",
+    "article_title": "Billing Statement",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/13209137769617-Billing-Statement",
+    "category": "invoicing",
+    "alt_text": "Billing statement overview"
+  },
+  {
+    "filename": "merchant-portal/invoicing/billing-statement-02.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/26268148946577",
+    "article_title": "Billing Statement",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/13209137769617-Billing-Statement",
+    "category": "invoicing",
+    "alt_text": "Detailed per-transaction fee breakdown"
+  },
+  {
+    "filename": "merchant-portal/settings/card-id-verification-cvv-01.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/35492705383313",
+    "article_title": "Card ID Verification Settings (CVV)",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/35316724140945-Card-ID-Verification-Settings-CVV",
+    "category": "settings",
+    "alt_text": "CVV rejection rules configuration"
+  },
+  {
+    "filename": "merchant-portal/settings/country-currency-configuration-01.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/14919889747729",
+    "article_title": "Country/Currency Configuration",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/14911153558929-Country-Currency-Configuration",
+    "category": "settings",
+    "alt_text": "Country and currency default settings"
+  },
+  {
+    "filename": "merchant-portal/settings/country-currency-configuration-02.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/14920004075409",
+    "article_title": "Country/Currency Configuration",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/14911153558929-Country-Currency-Configuration",
+    "category": "settings",
+    "alt_text": "Virtual terminal with default country and currency applied"
+  },
+  {
+    "filename": "merchant-portal/settings/customer-fee-configuration-05.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/27590258291985",
+    "article_title": "Customer Fee Configuration",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/24535240227985-Customer-Fee-Configuration",
+    "category": "settings",
+    "alt_text": "Virtual terminal credit sales with fees"
+  },
+  {
+    "filename": "merchant-portal/settings/customer-fee-configuration-06.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/29650812524433",
+    "article_title": "Customer Fee Configuration",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/24535240227985-Customer-Fee-Configuration",
+    "category": "settings",
+    "alt_text": "Virtual terminal ACH/Cash sales with fees"
+  },
+  {
+    "filename": "merchant-portal/settings/customer-fee-configuration-07.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/27590228397585",
+    "article_title": "Customer Fee Configuration",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/24535240227985-Customer-Fee-Configuration",
+    "category": "settings",
+    "alt_text": "Transaction detail showing fee amounts"
+  },
+  {
+    "filename": "merchant-portal/email/dkim-spf-validation-01.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/24487838401297",
+    "article_title": "DKIM & SPF Validation for Merchant Emails",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/24487866264593-DKIM-SPF-Validation-for-Merchant-Emails",
+    "category": "email",
+    "alt_text": "Domain validation status in account information"
+  },
+  {
+    "filename": "merchant-portal/email/dkim-spf-validation-02.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/24487838403345",
+    "article_title": "DKIM & SPF Validation for Merchant Emails",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/24487866264593-DKIM-SPF-Validation-for-Merchant-Emails",
+    "category": "email",
+    "alt_text": "Validation warnings in merchant portal"
+  },
+  {
+    "filename": "merchant-portal/email/dkim-spf-validation-03.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/24487866256401",
+    "article_title": "DKIM & SPF Validation for Merchant Emails",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/24487866264593-DKIM-SPF-Validation-for-Merchant-Emails",
+    "category": "email",
+    "alt_text": "Unable to validate warning with instructions link"
+  },
+  {
+    "filename": "merchant-portal/email/dkim-spf-validation-04.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/36543928423825",
+    "article_title": "DKIM & SPF Validation for Merchant Emails",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/24487866264593-DKIM-SPF-Validation-for-Merchant-Emails",
+    "category": "email",
+    "alt_text": "DNS Settings Guide popup"
+  },
+  {
+    "filename": "merchant-portal/settings/how-to-manage-msp-contact-01.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/34245252352401",
+    "article_title": "How to Manage Merchant Service Provider Contact Details",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/34244306912017-How-to-Manage-Merchant-Service-Provider-Contact-Details",
+    "category": "settings",
+    "alt_text": "Merchant portal support contact details"
+  },
+  {
+    "filename": "merchant-portal/settings/how-to-manage-msp-contact-02.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/34245237130513",
+    "article_title": "How to Manage Merchant Service Provider Contact Details",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/34244306912017-How-to-Manage-Merchant-Service-Provider-Contact-Details",
+    "category": "settings",
+    "alt_text": "Partner portal additional contacts section"
+  },
+  {
+    "filename": "merchant-portal/invoicing/invoice-look-and-feel-01.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/13176814540689",
+    "article_title": "Invoice Look and Feel",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/13177112580497-Invoice-Look-and-Feel",
+    "category": "invoicing",
+    "alt_text": "Merchant logo upload area"
+  },
+  {
+    "filename": "merchant-portal/invoicing/invoice-look-and-feel-02.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/13177216427025",
+    "article_title": "Invoice Look and Feel",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/13177112580497-Invoice-Look-and-Feel",
+    "category": "invoicing",
+    "alt_text": "Invoice PDF with merchant logo"
+  },
+  {
+    "filename": "merchant-portal/settings/merchant-defined-fields-01.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/13977867304977",
+    "article_title": "Merchant Defined Fields",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/360002718417-Merchant-Defined-Fields",
+    "category": "settings",
+    "alt_text": "Plain text field preview"
+  },
+  {
+    "filename": "merchant-portal/settings/merchant-defined-fields-02.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/13978040441489",
+    "article_title": "Merchant Defined Fields",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/360002718417-Merchant-Defined-Fields",
+    "category": "settings",
+    "alt_text": "Checkbox field preview"
+  },
+  {
+    "filename": "merchant-portal/settings/merchant-defined-fields-03.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/13978159475345",
+    "article_title": "Merchant Defined Fields",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/360002718417-Merchant-Defined-Fields",
+    "category": "settings",
+    "alt_text": "Radio button field preview"
+  },
+  {
+    "filename": "merchant-portal/settings/merchant-defined-fields-04.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/13978224174993",
+    "article_title": "Merchant Defined Fields",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/360002718417-Merchant-Defined-Fields",
+    "category": "settings",
+    "alt_text": "Select dropdown field preview"
+  },
+  {
+    "filename": "merchant-portal/settings/merchant-defined-fields-05.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/13980667367185",
+    "article_title": "Merchant Defined Fields",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/360002718417-Merchant-Defined-Fields",
+    "category": "settings",
+    "alt_text": "Configure button pencil icon"
+  },
+  {
+    "filename": "merchant-portal/settings/merchant-defined-fields-06.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/15336183598737",
+    "article_title": "Merchant Defined Fields",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/360002718417-Merchant-Defined-Fields",
+    "category": "settings",
+    "alt_text": "Plain text field configuration"
+  },
+  {
+    "filename": "merchant-portal/settings/merchant-defined-fields-07.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/15336186730513",
+    "article_title": "Merchant Defined Fields",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/360002718417-Merchant-Defined-Fields",
+    "category": "settings",
+    "alt_text": "Checkbox field configuration"
+  },
+  {
+    "filename": "merchant-portal/settings/merchant-defined-fields-08.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/15336281499921",
+    "article_title": "Merchant Defined Fields",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/360002718417-Merchant-Defined-Fields",
+    "category": "settings",
+    "alt_text": "Radio field configuration"
+  },
+  {
+    "filename": "merchant-portal/settings/merchant-defined-fields-09.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/15336285774225",
+    "article_title": "Merchant Defined Fields",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/360002718417-Merchant-Defined-Fields",
+    "category": "settings",
+    "alt_text": "Select field configuration"
+  },
+  {
+    "filename": "merchant-portal/settings/merchant-defined-fields-10.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/15339256322705",
+    "article_title": "Merchant Defined Fields",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/360002718417-Merchant-Defined-Fields",
+    "category": "settings",
+    "alt_text": "Collect Checkout advanced features section"
+  },
+  {
+    "filename": "merchant-portal/settings/merchant-defined-fields-11.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/15339449293201",
+    "article_title": "Merchant Defined Fields",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/360002718417-Merchant-Defined-Fields",
+    "category": "settings",
+    "alt_text": "MDF required/optional/not collected options"
+  },
+  {
+    "filename": "merchant-portal/settings/merchant-defined-fields-12.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/15340044324241",
+    "article_title": "Merchant Defined Fields",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/360002718417-Merchant-Defined-Fields",
+    "category": "settings",
+    "alt_text": "QuickClick customer information with MDFs"
+  },
+  {
+    "filename": "merchant-portal/settings/merchant-defined-fields-13.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/15400035849745",
+    "article_title": "Merchant Defined Fields",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/360002718417-Merchant-Defined-Fields",
+    "category": "settings",
+    "alt_text": "Swipe software MDF settings"
+  },
+  {
+    "filename": "merchant-portal/settings/merchant-defined-fields-14.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/15400332897681",
+    "article_title": "Merchant Defined Fields",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/360002718417-Merchant-Defined-Fields",
+    "category": "settings",
+    "alt_text": "Swipe software order information with MDFs"
+  },
+  {
+    "filename": "merchant-portal/user-management/merchant-user-accounts-01.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/13031613788561",
+    "article_title": "Merchant User Accounts",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/13002653837713-Merchant-User-Accounts",
+    "category": "user-management",
+    "alt_text": "Reset password button in partner portal"
+  },
+  {
+    "filename": "merchant-portal/security/90-day-password-01.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/36262437249297",
+    "article_title": "Merchant Portal | 90-Day Password",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/36048865203089-Merchant-Portal-90-Day-Password",
+    "category": "security",
+    "alt_text": "Password expiring soon warning prompt"
+  },
+  {
+    "filename": "merchant-portal/security/90-day-password-02.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/36302528924305",
+    "article_title": "Merchant Portal | 90-Day Password",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/36048865203089-Merchant-Portal-90-Day-Password",
+    "category": "security",
+    "alt_text": "Password expired login block"
+  },
+  {
+    "filename": "merchant-portal/security/90-day-password-03.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/36262697667345",
+    "article_title": "Merchant Portal | 90-Day Password",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/36048865203089-Merchant-Portal-90-Day-Password",
+    "category": "security",
+    "alt_text": "Portal UI enhancements - options menu"
+  },
+  {
+    "filename": "merchant-portal/reporting/report-configuration-01.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/13262377290385",
+    "article_title": "Report Configuration",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/13263155847697-Report-Configuration",
+    "category": "reporting",
+    "alt_text": "Add report format button"
+  },
+  {
+    "filename": "merchant-portal/reporting/report-configuration-02.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/13262902987281",
+    "article_title": "Report Configuration",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/13263155847697-Report-Configuration",
+    "category": "reporting",
+    "alt_text": "Drag and drop fields for report format"
+  },
+  {
+    "filename": "merchant-portal/reporting/report-configuration-03.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/13418356266513",
+    "article_title": "Report Configuration",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/13263155847697-Report-Configuration",
+    "category": "reporting",
+    "alt_text": "Set default icon"
+  },
+  {
+    "filename": "merchant-portal/reporting/report-configuration-04.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/13418332231441",
+    "article_title": "Report Configuration",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/13263155847697-Report-Configuration",
+    "category": "reporting",
+    "alt_text": "Report configuration list with actions"
+  },
+  {
+    "filename": "merchant-portal/reporting/report-configuration-05.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/13263105999761",
+    "article_title": "Report Configuration",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/13263155847697-Report-Configuration",
+    "category": "reporting",
+    "alt_text": "Download format selector in transaction reports"
+  },
+  {
+    "filename": "merchant-portal/settings/sec-code-configuration-01.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/16166647106193",
+    "article_title": "SEC Code Configuration",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/16168315774481-SEC-Code-Configuration",
+    "category": "settings",
+    "alt_text": "SEC code configuration navigation"
+  },
+  {
+    "filename": "merchant-portal/settings/sec-code-configuration-02.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/16167576416913",
+    "article_title": "SEC Code Configuration",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/16168315774481-SEC-Code-Configuration",
+    "category": "settings",
+    "alt_text": "Default SEC code dropdown selection"
+  },
+  {
+    "filename": "merchant-portal/settings/sec-code-configuration-03.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/16167596339089",
+    "article_title": "SEC Code Configuration",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/16168315774481-SEC-Code-Configuration",
+    "category": "settings",
+    "alt_text": "Virtual terminal with default SEC code applied"
+  },
+  {
+    "filename": "merchant-portal/settings/settlement-schedule-01.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/13521446189329",
+    "article_title": "Settlement Schedule",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/13521687760785-Settlement-Schedule",
+    "category": "settings",
+    "alt_text": "Settlement schedule settings"
+  },
+  {
+    "filename": "merchant-portal/settings/settlement-schedule-02.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/13521480861201",
+    "article_title": "Settlement Schedule",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/13521687760785-Settlement-Schedule",
+    "category": "settings",
+    "alt_text": "Settlement schedule history"
+  },
+  {
+    "filename": "merchant-portal/settings/test-mode-01.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/14675476472849",
+    "article_title": "Test Mode",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/14376995063825-Test-Mode",
+    "category": "settings",
+    "alt_text": "Test mode popup warning"
+  },
+  {
+    "filename": "merchant-portal/settings/test-mode-02.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/14713003405073",
+    "article_title": "Test Mode",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/14376995063825-Test-Mode",
+    "category": "settings",
+    "alt_text": "Merchant status history log"
+  },
+  {
+    "filename": "merchant-portal/settings/transaction-routing-01.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/13924285186961",
+    "article_title": "Transaction Routing",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/13617262567185-Transaction-Routing",
+    "category": "settings",
+    "alt_text": "Transaction routing fields overview"
+  },
+  {
+    "filename": "merchant-portal/reporting/subscription-reports-01.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/16102925625489",
+    "article_title": "Subscription Reports",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/16096543375505-Subscription-Reports",
+    "category": "reporting",
+    "alt_text": "Calendar dropdown icon"
+  },
+  {
+    "filename": "merchant-portal/reporting/subscription-reports-02.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/16136255312401",
+    "article_title": "Subscription Reports",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/16096543375505-Subscription-Reports",
+    "category": "reporting",
+    "alt_text": "Search subscriptions form"
+  },
+  {
+    "filename": "merchant-portal/reporting/subscription-reports-03.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/16132322348561",
+    "article_title": "Subscription Reports",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/16096543375505-Subscription-Reports",
+    "category": "reporting",
+    "alt_text": "Subscription search results"
+  },
+  {
+    "filename": "merchant-portal/reporting/subscription-reports-04.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/16912363649425",
+    "article_title": "Subscription Reports",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/16096543375505-Subscription-Reports",
+    "category": "reporting",
+    "alt_text": "Pause all subscriptions button"
+  },
+  {
+    "filename": "merchant-portal/reporting/subscription-reports-05.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/16943439440017",
+    "article_title": "Subscription Reports",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/16096543375505-Subscription-Reports",
+    "category": "reporting",
+    "alt_text": "Pause single subscription checkbox"
+  },
+  {
+    "filename": "merchant-portal/reporting/subscription-reports-06.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/16943316063377",
+    "article_title": "Subscription Reports",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/16096543375505-Subscription-Reports",
+    "category": "reporting",
+    "alt_text": "Paused subscription indicator in list"
+  },
+  {
+    "filename": "merchant-portal/reporting/transaction-reports-01.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/15793311788817",
+    "article_title": "Transaction Reports",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/15274363136785-Transaction-Reports",
+    "category": "reporting",
+    "alt_text": "Transaction snapshot overview"
+  },
+  {
+    "filename": "merchant-portal/reporting/transaction-reports-02.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/15823865462033",
+    "article_title": "Transaction Reports",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/15274363136785-Transaction-Reports",
+    "category": "reporting",
+    "alt_text": "Magnifying glass icon for drill-down"
+  },
+  {
+    "filename": "merchant-portal/reporting/transaction-reports-03.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/15795128127889",
+    "article_title": "Transaction Reports",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/15274363136785-Transaction-Reports",
+    "category": "reporting",
+    "alt_text": "Settlement batch report with multiple processors"
+  },
+  {
+    "filename": "merchant-portal/reporting/transaction-reports-04.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/15900734961553",
+    "article_title": "Transaction Reports",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/15274363136785-Transaction-Reports",
+    "category": "reporting",
+    "alt_text": "Clock icon for time selection"
+  },
+  {
+    "filename": "merchant-portal/reporting/transaction-reports-05.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/15828951194001",
+    "article_title": "Transaction Reports",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/15274363136785-Transaction-Reports",
+    "category": "reporting",
+    "alt_text": "Calendar dropdown for date range"
+  },
+  {
+    "filename": "merchant-portal/reporting/transaction-reports-06.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/15793752476177",
+    "article_title": "Transaction Reports",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/15274363136785-Transaction-Reports",
+    "category": "reporting",
+    "alt_text": "Settlement batch drill-down view"
+  },
+  {
+    "filename": "merchant-portal/transactions/what-is-ach-01.png",
+    "original_url": "https://support.nmi.com/hc/article_attachments/33065915974289",
+    "article_title": "What is ACH?",
+    "article_url": "https://support.nmi.com/hc/en-gb/articles/33001771533073-What-is-ACH",
+    "category": "transactions",
+    "alt_text": "ACH transaction detail showing return code"
+  }
+]
