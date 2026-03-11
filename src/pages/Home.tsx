@@ -382,11 +382,11 @@ export default function Home() {
 
         {/* Content */}
         {layout === "carousel" ? (
-          <Carousel3D key={activeGroup} items={currentItems} />
+          <Carousel3D key={showAll ? "all" : activeGroup} items={currentItems} />
         ) : layout === "icons" ? (
-          <IconView groups={groups} activeGroup={activeGroup} />
+          <IconView groups={showAll ? [allGroup] : groups} activeGroup={0} key={showAll ? "all" : activeGroup} />
         ) : (
-          <GridView groups={groups} activeGroup={activeGroup} />
+          <GridView groups={showAll ? [allGroup] : groups} activeGroup={0} key={showAll ? "all" : activeGroup} />
         )}
       </div>
     </AppLayout>
