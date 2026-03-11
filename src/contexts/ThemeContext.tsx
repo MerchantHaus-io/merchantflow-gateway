@@ -8,11 +8,13 @@ export type ThemeVariant =
   | 'dark-forest'
   | 'dark-charcoal'
   | 'dark-mono'
+  | 'dark-ps1'
   | 'light-default' 
   | 'light-ocean' 
   | 'light-warm'
   | 'light-silver'
-  | 'light-mono';
+  | 'light-mono'
+  | 'light-salesforce';
 
 export interface ThemeOption {
   id: ThemeVariant;
@@ -27,11 +29,13 @@ export const THEME_OPTIONS: ThemeOption[] = [
   { id: 'dark-forest', name: 'Forest', mode: 'dark', description: 'Dark green accents' },
   { id: 'dark-charcoal', name: 'Charcoal', mode: 'dark', description: 'Warm grey tones' },
   { id: 'dark-mono', name: 'Mono', mode: 'dark', description: 'Minimalist black & white' },
+  { id: 'dark-ps1', name: 'PS1 Classic', mode: 'dark', description: 'Retro PlayStation vibes' },
   { id: 'light-default', name: 'Default Light', mode: 'light', description: 'Standard light theme' },
   { id: 'light-ocean', name: 'Ocean', mode: 'light', description: 'Cool blue tones' },
   { id: 'light-warm', name: 'Warm', mode: 'light', description: 'Warm sepia tones' },
   { id: 'light-silver', name: 'Silver', mode: 'light', description: 'Cool silver tones' },
   { id: 'light-mono', name: 'Mono', mode: 'light', description: 'Minimalist black & white' },
+  { id: 'light-salesforce', name: 'Salesforce', mode: 'light', description: 'Enterprise cloud CRM' },
 ];
 
 interface ThemeContextType {
@@ -165,7 +169,7 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
     const root = document.documentElement;
     
     // Remove all theme classes
-    root.classList.remove('dark', 'light', 'dark-default', 'dark-midnight', 'dark-forest', 'dark-charcoal', 'dark-mono', 'light-default', 'light-ocean', 'light-warm', 'light-silver', 'light-mono');
+    root.classList.remove('dark', 'light', 'dark-default', 'dark-midnight', 'dark-forest', 'dark-charcoal', 'dark-mono', 'dark-ps1', 'light-default', 'light-ocean', 'light-warm', 'light-silver', 'light-mono', 'light-salesforce');
     
     // Add base mode and variant
     root.classList.add(theme);
