@@ -816,6 +816,102 @@ export default function OutreachDetail() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* ── Send Confirmation Dialog ── */}
+      <Dialog open={sendConfirmOpen} onOpenChange={setSendConfirmOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Send className="h-4 w-4 text-primary" />Confirm Send — Step {sendConfirmStep}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {(() => {
+              const stepData = sendConfirmStep === 1
+                ? { subject: campaign.subject, body_html: campaign.body_html }
+                : cadenceSteps.find(s => s.step_number === sendConfirmStep) || { subject: campaign.subject, body_html: campaign.body_html };
+              const sample = contacts[0] || { first_name: "Jane", last_name: "Smith", company: "Acme Corp", email: "jane@example.com" };
+              const rendered = mergeTags(stepData.body_html, sample);
+              const eligibleCount = sendConfirmStep === 1
+                ? contacts.filter(c => c.status === "pending").length
+                : contacts.filter(c => (c as any).current_step === sendConfirmStep - 1 && c.status === "sent").length;
+              return (
+                <>
+                  <div className="rounded-lg border border-border/60 bg-muted/20 p-3 space-y-1">
+                    <p className="text-xs text-muted-foreground">This will send to <span className="font-bold text-foreground">{eligibleCount}</span> eligible leads</p>
+                    <p className="text-xs text-muted-foreground">From: <span className="font-medium text-foreground">{campaign.from_name} &lt;{campaign.from_email}&gt;</span></p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Subject</p>
+                    <p className="font-medium text-sm">{stepData.subject}</p>
+                  </div>
+                  <div className="border border-border rounded-lg overflow-hidden">
+                    <div className="bg-muted/30 px-3 py-2 text-xs text-muted-foreground flex items-center gap-2">
+                      <Eye className="h-3 w-3" />Email preview (sample: {[sample.first_name, sample.last_name].filter(Boolean).join(" ") || sample.email})
+                    </div>
+                    <div className="p-4 bg-white text-black min-h-[150px] text-sm" dangerouslySetInnerHTML={{ __html: rendered }} />
+                  </div>
+                  <div className="flex gap-2 justify-end pt-2">
+                    <Button variant="outline" onClick={() => setSendConfirmOpen(false)}>Cancel</Button>
+                    <Button onClick={() => { setSendConfirmOpen(false); sendStep(sendConfirmStep); }} disabled={eligibleCount === 0} className="gap-1.5">
+                      <Send className="h-3.5 w-3.5" />Send to {eligibleCount} Leads
+                    </Button>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Add Lead Dialog ── */}
+      <Dialog open={addLeadOpen} onOpenChange={o => { if (!o) { setNewLeadEmail(""); setNewLeadFirstName(""); setNewLeadLastName(""); setNewLeadCompany(""); } setAddLeadOpen(o); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><UserPlus className="h-4 w-4 text-primary" />Add Lead</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">First Name</Label>
+                <Input value={newLeadFirstName} onChange={e => setNewLeadFirstName(e.target.value)} placeholder="Jane" className="mt-1" />
+              </div>
+              <div>
+                <Label className="text-xs">Last Name</Label>
+                <Input value={newLeadLastName} onChange={e => setNewLeadLastName(e.target.value)} placeholder="Smith" className="mt-1" />
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">Email *</Label>
+              <Input value={newLeadEmail} onChange={e => setNewLeadEmail(e.target.value)} placeholder="jane@example.com" type="email" className="mt-1" />
+            </div>
+            <div>
+              <Label className="text-xs">Company</Label>
+              <Input value={newLeadCompany} onChange={e => setNewLeadCompany(e.target.value)} placeholder="Acme Corp" className="mt-1" />
+            </div>
+            <Button className="w-full" disabled={!newLeadEmail || !newLeadEmail.includes("@")}
+              onClick={async () => {
+                const { error } = await supabase.from("outreach_contacts").insert({
+                  campaign_id: id!,
+                  email: newLeadEmail,
+                  first_name: newLeadFirstName || null,
+                  last_name: newLeadLastName || null,
+                  company: newLeadCompany || null,
+                });
+                if (error) { toast.error(error.message); return; }
+                await supabase.from("outreach_campaigns")
+                  .update({ total_contacts: (campaign?.total_contacts || 0) + 1 })
+                  .eq("id", id!);
+                queryClient.invalidateQueries({ queryKey: ["outreach-contacts", id] });
+                queryClient.invalidateQueries({ queryKey: ["outreach-campaign", id] });
+                queryClient.invalidateQueries({ queryKey: ["all-leads"] });
+                setNewLeadEmail(""); setNewLeadFirstName(""); setNewLeadLastName(""); setNewLeadCompany("");
+                setAddLeadOpen(false);
+                toast.success("Lead added to cadence");
+              }}>
+              <UserPlus className="h-4 w-4 mr-2" />Add Lead
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }
