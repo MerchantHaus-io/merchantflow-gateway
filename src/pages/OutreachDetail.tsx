@@ -118,6 +118,17 @@ export default function OutreachDetail() {
   const [search, setSearch]               = useState("");
   const [statusFilter, setStatusFilter]   = useState<LeadStatus>("all");
 
+  // Send confirmation
+  const [sendConfirmOpen, setSendConfirmOpen] = useState(false);
+  const [sendConfirmStep, setSendConfirmStep] = useState(1);
+
+  // Manual lead entry
+  const [addLeadOpen, setAddLeadOpen]         = useState(false);
+  const [newLeadEmail, setNewLeadEmail]       = useState("");
+  const [newLeadFirstName, setNewLeadFirstName] = useState("");
+  const [newLeadLastName, setNewLeadLastName] = useState("");
+  const [newLeadCompany, setNewLeadCompany]   = useState("");
+
   // New step form
   const [stepSubject, setStepSubject] = useState("");
   const [stepBody, setStepBody]       = useState("");
