@@ -709,7 +709,7 @@ const Index = () => {
         });
       }
     }
-    setOpportunities(opportunities.map(o => o.id === id ? {
+    setOpportunities(prev => prev.map(o => o.id === id ? {
       ...o,
       ...updates
     } : o));
