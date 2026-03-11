@@ -228,7 +228,7 @@ const Reports = () => {
   // ── Top KPIs ──
   const kpis = useMemo(() => {
     const active    = filteredOpps.filter(o => o.status !== "dead").length;
-    const live      = filteredOpps.filter(o => o.stage === "live_activated").length;
+    const live      = filteredOpps.filter(o => (o as any).outcome_status === 'closed_won').length;
     const openTasks = filteredTasks.filter(t => t.status !== "done").length;
     const overdue   = filteredTasks.filter(t => t.dueAt && t.status !== "done" && new Date(t.dueAt) < new Date()).length;
     return { active, live, openTasks, overdue };
