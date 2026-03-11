@@ -622,10 +622,10 @@ export default function OutreachDetail() {
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Cadence Flow</p>
 
                     {/* Step 1 */}
-                    <CadenceStepCard
-                      stepNumber={1} subject={campaign.subject} dayLabel="Day 0" isInitial
-                      onSend={() => sendStep(1)} sending={sending}
-                    />
+                     <CadenceStepCard
+                       stepNumber={1} subject={campaign.subject} dayLabel="Day 0" isInitial
+                       onSend={() => { setSendConfirmStep(1); setSendConfirmOpen(true); }} sending={sending}
+                     />
 
                     {/* Follow-up steps */}
                     {stepsWithDays.map(step => (
