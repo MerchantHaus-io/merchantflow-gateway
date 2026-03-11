@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
 import { getFriendlyError } from '@/lib/friendly-errors';
-import psTerminalLogo from '@/assets/ps-terminal-logo.png';
+import merchantHausLogo from '@/assets/merchanthaus-logo.png';
 import { isEmailAllowed } from '@/types/opportunity';
 import ForcePasswordChange from '@/components/ForcePasswordChange';
 import { supabase } from '@/integrations/supabase/client';
@@ -160,8 +160,8 @@ const Auth = () => {
         {/* Logo */}
         <div className="flex items-center justify-center">
           <img
-            src={psTerminalLogo}
-            alt="PS Terminal"
+            src={merchantHausLogo}
+            alt="Merchant Haus"
             width={293}
             height={72}
             fetchPriority="high"
