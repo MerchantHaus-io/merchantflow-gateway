@@ -162,6 +162,9 @@ const Auth = () => {
           <img
             src={psTerminalLogo}
             alt="PS Terminal"
+            width={293}
+            height={72}
+            fetchPriority="high"
             className="h-[4.5rem] w-auto animate-[logo-float_3s_ease-in-out_infinite,logo-enter_0.8s_ease-out_both]"
           />
           <style>{`
