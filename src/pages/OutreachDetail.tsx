@@ -404,13 +404,16 @@ export default function OutreachDetail() {
             </div>
             <div className="flex gap-2 shrink-0 flex-wrap">
               <input type="file" accept=".csv" ref={fileRef} className="hidden" onChange={handleCsv} />
+              <Button variant="outline" size="sm" onClick={() => setAddLeadOpen(true)} className="gap-1.5">
+                <UserPlus className="h-3.5 w-3.5" />Add Lead
+              </Button>
               <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()} className="gap-1.5">
                 <Upload className="h-3.5 w-3.5" />Import Lead List
               </Button>
               <Button variant="outline" size="sm" onClick={() => setPreviewOpen(true)} className="gap-1.5">
                 <Eye className="h-3.5 w-3.5" />Preview
               </Button>
-              <Button size="sm" onClick={() => sendStep(1)} disabled={sending || pending === 0} className="gap-1.5">
+              <Button size="sm" onClick={() => { setSendConfirmStep(1); setSendConfirmOpen(true); }} disabled={sending || pending === 0} className="gap-1.5">
                 <Send className="h-3.5 w-3.5" />
                 {sending ? "Sending…" : `Send to ${pending} Pending`}
               </Button>
