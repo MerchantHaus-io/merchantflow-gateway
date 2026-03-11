@@ -161,7 +161,7 @@ const Auth = () => {
         <div className="flex items-center justify-center">
           <img
             src={merchantHausLogo}
-            alt="PS Terminal"
+            alt="Merchant Haus"
             width={293}
             height={72}
             fetchPriority="high"
