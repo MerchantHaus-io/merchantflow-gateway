@@ -52,9 +52,9 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 const defaultThemeContext: ThemeContextType = {
   theme: 'light',
-  variant: 'light-default',
+  variant: 'light-salesforce',
   defaultDarkVariant: 'dark-default',
-  defaultLightVariant: 'light-default',
+  defaultLightVariant: 'light-salesforce',
   toggleTheme: () => {},
   setTheme: () => {},
   setVariant: () => {},
@@ -99,7 +99,7 @@ const getStoredVariant = (): ThemeVariant => {
   } catch (error) {
     console.warn('Theme variant unavailable, falling back to default.', error);
   }
-  return 'light-default';
+  return 'light-salesforce';
 };
 
 const getStoredDefaultDark = (): ThemeVariant => {
@@ -123,7 +123,7 @@ const getStoredDefaultLight = (): ThemeVariant => {
   } catch (error) {
     console.warn('Default light theme unavailable.', error);
   }
-  return 'light-default';
+  return 'light-salesforce';
 };
 
 const persistTheme = (theme: ThemeMode) => {
