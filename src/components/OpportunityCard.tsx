@@ -314,9 +314,9 @@ const OpportunityCard = ({
               )}
 
               {/* Live badge */}
-              {isLive && (
-                <span className="px-1 py-0.5 rounded-md text-[8px] font-black bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40">
-                  LIVE
+              {isClosedWon && (
+                <span className="px-1 py-0.5 rounded-md text-[8px] font-black bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40">
+                  WON
                 </span>
               )}
 
