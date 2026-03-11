@@ -125,6 +125,7 @@ export default function Outreach() {
   const [stepCount, setStepCount] = useState(3);
   const [steps, setSteps]         = useState<StepDraft[]>(() => Array.from({ length: 10 }, (_, i) => ({ subject: "", bodyHtml: "", delayDays: DEFAULT_DELAYS[i] })));
   const [signature, setSignature] = useState("");
+  const [signatureInitialized, setSignatureInitialized] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
   const [schedDate, setSchedDate] = useState<Date | undefined>();
   const [schedTime, setSchedTime] = useState("09:00");
