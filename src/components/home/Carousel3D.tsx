@@ -221,6 +221,37 @@ export function Carousel3D({ items }: Carousel3DProps) {
                 </span>
               </div>
 
+              {/* Mirror reflection */}
+              <div
+                className="absolute left-0 w-full pointer-events-none"
+                style={{
+                  top: "100%",
+                  height: "100%",
+                  transform: "scaleY(-1)",
+                  maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, transparent 45%)",
+                  WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, transparent 45%)",
+                  filter: "blur(1px)",
+                }}
+              >
+                <div
+                  className={cn(
+                    "w-full h-full rounded-xl border backdrop-blur-xl flex flex-col items-center justify-center gap-2.5",
+                    "bg-card/95 dark:bg-card/80 border-border/50 dark:border-border/40",
+                    glowColorMap[item.color]
+                  )}
+                  style={{
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.08)",
+                    opacity: 0.4,
+                  }}
+                >
+                  <div className={cn("w-14 h-14 rounded-full flex items-center justify-center", bgColorMap[item.color])}>
+                    <item.icon className={cn("h-7 w-7", iconColorMap[item.color])} strokeWidth={1.8} />
+                  </div>
+                  <span className="text-[11px] font-bold text-foreground font-display text-center leading-tight px-2">
+                    {item.title}
+                  </span>
+                </div>
+              </div>
               {/* Floating label */}
               <div
                 className="absolute -top-7 left-1/2 whitespace-nowrap pointer-events-none"
