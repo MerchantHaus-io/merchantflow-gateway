@@ -980,6 +980,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                       currentOutcome={opportunity.outcome_status as OutcomeStatus | null}
                       disabled={!!opportunity.outcome_status}
                       onSelect={async (outcome, reason, notes) => {
+                        const isNegativeOutcome = outcome !== 'closed_won';
                         const { error } = await supabase
                           .from('opportunities')
                           .update({
@@ -988,6 +989,8 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                             outcome_notes: notes,
                             outcome_closed_at: new Date().toISOString(),
                             outcome_closed_by: user?.email,
+                            // Negative outcomes mark the opportunity as dead so it's excluded from the active pipeline
+                            ...(isNegativeOutcome ? { status: 'dead' } : {}),
                           })
                           .eq('id', opportunity.id);
                         if (error) { toast.error("Failed to set outcome"); return; }
@@ -998,9 +1001,17 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                           user_id: user?.id,
                           user_email: user?.email,
                         });
-                        onUpdate({ ...opportunity, outcome_status: outcome, outcome_reason: reason, outcome_notes: notes, outcome_closed_at: new Date().toISOString(), outcome_closed_by: user?.email });
+                        onUpdate({
+                          ...opportunity,
+                          outcome_status: outcome,
+                          outcome_reason: reason,
+                          outcome_notes: notes,
+                          outcome_closed_at: new Date().toISOString(),
+                          outcome_closed_by: user?.email,
+                          ...(isNegativeOutcome ? { status: 'dead' } : {}),
+                        });
                         toast.success(`Outcome set: ${OUTCOME_CONFIG[outcome].label}`);
-                        if (outcome !== 'closed_won') {
+                        if (isNegativeOutcome) {
                           setTimeout(() => onClose(), 1500);
                         }
                       }}
