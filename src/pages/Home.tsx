@@ -223,6 +223,7 @@ export default function Home() {
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   const [activeGroup, setActiveGroup] = useState(0);
+  const [showAll, setShowAll] = useState(false);
   const [layout, setLayout] = useState<LayoutMode>("icons");
   const [loaded, setLoaded] = useState(false);
   const [showToggleHint, setShowToggleHint] = useState(false);
