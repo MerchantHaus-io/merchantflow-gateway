@@ -151,7 +151,7 @@ const Reports = () => {
   // ── Pipeline funnel ──
   const funnelData = useMemo(() => {
     const order: OpportunityStage[] = [
-      "discovery", "application_prep", "underwriting_review", "processor_approval", "integration_setup", "live_activated"
+      "discovery", "application_prep", "underwriting_review", "processor_approval", "integration_setup", "go_live_ready"
     ];
     return order.map(stage => ({
       stage,
