@@ -658,64 +658,64 @@ All colors MUST be HSL.
     --sidebar-ring: 0 0% 50%;
   }
 
-  /* ═══ Dark PS1 Classic — Retro PlayStation 1 vibes ═══ */
+  /* ═══ Dark PS1 Classic — PlayStation 4 dynamic menu aesthetic ═══ */
   .dark-ps1.dark {
-    --background: 240 8% 6%;
-    --foreground: 0 0% 90%;
+    --background: 220 40% 5%;
+    --foreground: 210 30% 95%;
 
-    --card: 240 8% 12%;
-    --card-foreground: 0 0% 90%;
-    --card-glass: 240 8% 12% / 0.88;
+    --card: 220 35% 11%;
+    --card-foreground: 210 30% 95%;
+    --card-glass: 220 35% 11% / 0.88;
 
-    --popover: 240 8% 12%;
-    --popover-foreground: 0 0% 90%;
+    --popover: 220 35% 11%;
+    --popover-foreground: 210 30% 95%;
 
-    /* PS blue — the iconic PlayStation startup blue */
-    --primary: 220 80% 55%;
+    /* PS4 signature electric blue */
+    --primary: 213 90% 55%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 240 8% 18%;
-    --secondary-foreground: 0 0% 90%;
+    --secondary: 220 30% 16%;
+    --secondary-foreground: 210 30% 95%;
 
-    --teal: 160 60% 45%;
+    --teal: 195 80% 45%;
     --teal-foreground: 0 0% 100%;
 
-    --muted: 240 8% 15%;
-    --muted-foreground: 240 5% 55%;
+    --muted: 220 30% 13%;
+    --muted-foreground: 215 20% 55%;
 
-    /* PS pink/magenta accent — the ○ button color */
-    --accent: 330 70% 55%;
+    /* Bright PS blue accent */
+    --accent: 213 90% 55%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 70% 45%;
+    --destructive: 0 65% 48%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 142 60% 42%;
+    --success: 152 65% 42%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 48 90% 50%;
-    --warning-foreground: 0 0% 10%;
+    --warning: 45 90% 50%;
+    --warning-foreground: 0 0% 8%;
 
-    --border: 240 8% 22%;
-    --input: 240 8% 22%;
-    --ring: 220 80% 55%;
+    --border: 220 25% 20%;
+    --input: 220 25% 20%;
+    --ring: 213 90% 55%;
 
     /* Team colors — PS button inspired */
     --team-wesley: 0 70% 55%;       /* △ Red */
-    --team-jamie: 48 90% 55%;       /* Yellow accent */
+    --team-jamie: 48 90% 55%;       /* Yellow */
     --team-darryn: 142 60% 45%;     /* ✕ Green */
-    --team-taryn: 220 80% 60%;      /* ✦ Blue */
-    --team-yaseen: 330 70% 55%;     /* ○ Pink */
+    --team-taryn: 213 90% 60%;      /* ✦ Blue */
+    --team-yaseen: 280 65% 60%;     /* ○ Purple */
     --team-sales: 25 80% 55%;       /* Orange */
 
-    --sidebar-background: 240 8% 10% / 0.92;
-    --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 220 80% 55%;
+    --sidebar-background: 220 38% 8% / 0.95;
+    --sidebar-foreground: 210 30% 95%;
+    --sidebar-primary: 213 90% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 8% 18%;
-    --sidebar-accent-foreground: 220 80% 65%;
-    --sidebar-border: 240 8% 24%;
-    --sidebar-ring: 220 80% 55%;
+    --sidebar-accent: 220 30% 16%;
+    --sidebar-accent-foreground: 213 85% 65%;
+    --sidebar-border: 220 25% 22%;
+    --sidebar-ring: 213 90% 55%;
 
     --radius: 0.375rem;
   }
