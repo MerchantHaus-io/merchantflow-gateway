@@ -142,11 +142,13 @@ export default function Outreach() {
     if (open && !signatureInitialized) {
       const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Team Member";
       const userEmail = user?.email || "outreach@merchanthaus.io";
+      const logoUrl = `${window.location.origin}/merchant-haus-splash.png`;
       const sig = [
         `<p style="margin:0;font-weight:600;font-size:14px;">${userName}</p>`,
         `<p style="margin:0;font-size:13px;color:#666;">Merchant Haus</p>`,
         `<p style="margin:4px 0 0;font-size:12px;color:#888;">📞 (505) 600-6042 &nbsp;|&nbsp; ✉ ${userEmail}</p>`,
         `<p style="margin:2px 0 0;font-size:12px;color:#888;">🌐 <a href="https://merchanthaus.io" style="color:#2563eb;text-decoration:none;">merchanthaus.io</a></p>`,
+        `<p style="margin:8px 0 0;"><img src="${logoUrl}" alt="Merchant Haus" style="height:40px;width:auto;" /></p>`,
       ].join("");
       setSignature(sig);
       setSignatureInitialized(true);
