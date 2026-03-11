@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
 import { getFriendlyError } from '@/lib/friendly-errors';
+import psTerminalLogo from '@/assets/ps-terminal-logo.png';
 import merchantHausLogo from '@/assets/merchanthaus-logo.png';
 import { isEmailAllowed } from '@/types/opportunity';
 import ForcePasswordChange from '@/components/ForcePasswordChange';
