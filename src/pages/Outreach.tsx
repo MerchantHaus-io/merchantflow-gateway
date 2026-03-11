@@ -364,8 +364,8 @@ export default function Outreach() {
                      <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
                        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Cadence Identity</p>
                        <div>
-                         <Label className="text-xs">Cadence Name</Label>
-                         <Input value={name} onChange={e => setName(e.target.value)} placeholder="Q2 Payment Processing Outreach" className="mt-1" />
+                          <Label className="text-xs">Cadence Name <span className="text-destructive">*</span></Label>
+                          <Input value={name} onChange={e => setName(e.target.value)} placeholder="Q2 Payment Processing Outreach" className={cn("mt-1", !name && "border-destructive/50 focus-visible:ring-destructive/30")} />
                        </div>
                        <div className="grid grid-cols-2 gap-3">
                          <div><Label className="text-xs">From Name</Label><Input value={fromName} onChange={e => setFromName(e.target.value)} className="mt-1" /></div>
@@ -422,13 +422,13 @@ export default function Outreach() {
                            )}
                          </div>
                          <div>
-                           <Label className="text-xs">Subject Line</Label>
-                           <Input value={steps[activeStep].subject} onChange={e => updateStep(activeStep, { subject: e.target.value })}
-                             placeholder={activeStep === 0 ? "Payment solutions for {{company}}" : "Re: {{company}} — follow up"}
-                             className="mt-1" />
+                            <Label className="text-xs">Subject Line {activeStep === 0 && <span className="text-destructive">*</span>}</Label>
+                            <Input value={steps[activeStep].subject} onChange={e => updateStep(activeStep, { subject: e.target.value })}
+                              placeholder={activeStep === 0 ? "Payment solutions for {{company}}" : "Re: {{company}} — follow up"}
+                              className={cn("mt-1", activeStep === 0 && !steps[0].subject && "border-destructive/50 focus-visible:ring-destructive/30")} />
                          </div>
                          <div>
-                           <Label className="text-xs">Paste or compose your email</Label>
+                           <Label className="text-xs">Paste or compose your email {activeStep === 0 && <span className="text-destructive">*</span>}</Label>
                            <GmailEditor
                              value={steps[activeStep].bodyHtml}
                              onChange={(html) => updateStep(activeStep, { bodyHtml: html })}
@@ -571,9 +571,15 @@ export default function Outreach() {
                         </div>
                       )}
 
-                      <Button className="w-full" onClick={() => create.mutate()} disabled={!name || !steps[0].subject || !steps[0].bodyHtml || create.isPending}>
+                       {(!name || !steps[0].subject || !steps[0].bodyHtml) && (
+                         <p className="text-xs text-destructive/80 text-center flex items-center justify-center gap-1">
+                           <span className="inline-block h-1.5 w-1.5 rounded-full bg-destructive/60" />
+                           Fill in all required fields ({[!name && "name", !steps[0].subject && "subject", !steps[0].bodyHtml && "email body"].filter(Boolean).join(", ")})
+                         </p>
+                       )}
+                       <Button className="w-full" onClick={() => create.mutate()} disabled={!name || !steps[0].subject || !steps[0].bodyHtml || create.isPending}>
                         <Layers className="h-4 w-4 mr-2" />{schedDate ? "Schedule Cadence" : "Create Cadence"} ({stepCount} {stepCount === 1 ? "email" : "emails"})
-                      </Button>
+                       </Button>
                    </div>
                  </div>
                </div>
