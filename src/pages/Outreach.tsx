@@ -259,6 +259,53 @@ export default function Outreach() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const saveDraft = useMutation({
+    mutationFn: async () => {
+      let scheduled_at: string | null = null;
+      if (schedDate) {
+        const [h, m] = schedTime.split(":").map(Number);
+        const dt = new Date(schedDate); dt.setHours(h, m, 0, 0);
+        scheduled_at = dt.toISOString();
+      }
+      const step1 = steps[0];
+      const { data: campaign, error } = await supabase.from("outreach_campaigns").insert({
+        name, subject: step1.subject || "(draft)", body_html: step1.bodyHtml ? appendSignature(step1.bodyHtml) : "",
+        from_name: fromName, from_email: fromEmail,
+        created_by: user?.id || "", created_by_email: user?.email || "", scheduled_at, status: "draft",
+      }).select().single();
+      if (error) throw error;
+
+      if (stepCount > 1 && campaign) {
+        const followUps = steps.slice(1, stepCount).filter(s => s.subject || s.bodyHtml).map((s, i) => ({
+          campaign_id: campaign.id, step_number: i + 2, delay_days: s.delayDays,
+          subject: s.subject || step1.subject || "(draft)", body_html: s.bodyHtml ? appendSignature(s.bodyHtml) : "",
+        }));
+        if (followUps.length > 0) {
+          const { error: stepsErr } = await supabase.from("cadence_steps").insert(followUps);
+          if (stepsErr) throw stepsErr;
+        }
+      }
+
+      if (csvLeads.length > 0 && campaign) {
+        const leadsToInsert = csvLeads.map(l => ({ campaign_id: campaign.id, ...l }));
+        for (let i = 0; i < leadsToInsert.length; i += 500) {
+          const chunk = leadsToInsert.slice(i, i + 500);
+          const { error: leadsErr } = await supabase.from("outreach_contacts").insert(chunk);
+          if (leadsErr) throw leadsErr;
+        }
+        await supabase.from("outreach_campaigns").update({ total_contacts: csvLeads.length }).eq("id", campaign.id);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["outreach-campaigns"] });
+      setOpen(false); setName(""); setSchedDate(undefined);
+      setSteps(Array.from({ length: 10 }, (_, i) => ({ subject: "", bodyHtml: "", delayDays: DEFAULT_DELAYS[i] })));
+      setSignature(""); setActiveStep(0); setCsvLeads([]); setCsvFileName("");
+      toast.success("Draft saved — you can complete it later");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const del = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("outreach_campaigns").delete().eq("id", id);
@@ -572,14 +619,19 @@ export default function Outreach() {
                       )}
 
                        {(!name || !steps[0].subject || !steps[0].bodyHtml) && (
-                         <p className="text-xs text-destructive/80 text-center flex items-center justify-center gap-1">
-                           <span className="inline-block h-1.5 w-1.5 rounded-full bg-destructive/60" />
-                           Fill in all required fields ({[!name && "name", !steps[0].subject && "subject", !steps[0].bodyHtml && "email body"].filter(Boolean).join(", ")})
-                         </p>
-                       )}
-                       <Button className="w-full" onClick={() => create.mutate()} disabled={!name || !steps[0].subject || !steps[0].bodyHtml || create.isPending}>
-                        <Layers className="h-4 w-4 mr-2" />{schedDate ? "Schedule Cadence" : "Create Cadence"} ({stepCount} {stepCount === 1 ? "email" : "emails"})
-                       </Button>
+                          <p className="text-xs text-destructive/80 text-center flex items-center justify-center gap-1">
+                            <span className="inline-block h-1.5 w-1.5 rounded-full bg-destructive/60" />
+                            Fill in all required fields ({[!name && "name", !steps[0].subject && "subject", !steps[0].bodyHtml && "email body"].filter(Boolean).join(", ")})
+                          </p>
+                        )}
+                        <div className="flex gap-2">
+                          <Button variant="outline" className="flex-1" onClick={() => saveDraft.mutate()} disabled={!name || saveDraft.isPending}>
+                            <Clock className="h-4 w-4 mr-2" />Save Draft
+                          </Button>
+                          <Button className="flex-1" onClick={() => create.mutate()} disabled={!name || !steps[0].subject || !steps[0].bodyHtml || create.isPending}>
+                            <Layers className="h-4 w-4 mr-2" />{schedDate ? "Schedule Cadence" : "Create Cadence"} ({stepCount} {stepCount === 1 ? "email" : "emails"})
+                          </Button>
+                        </div>
                    </div>
                  </div>
                </div>
