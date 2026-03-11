@@ -39,6 +39,7 @@ const GROUPS: { label: string; items: NavItem[] }[] = [
       { title: "Reports", url: "/reports", icon: BarChart3 },
       { title: "Live & Billing", url: "/live-billing", icon: BadgeDollarSign },
       { title: "Outreach", url: "/outreach", icon: Send },
+      { title: "Leads", url: "/leads", icon: UserPlus },
       { title: "Web Submissions", url: "/admin/web-submissions", icon: Globe },
     ],
   },
