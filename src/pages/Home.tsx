@@ -295,7 +295,36 @@ export default function Home() {
 
         {/* Category tabs + layout toggle */}
         <div className="flex items-center justify-center gap-2 mb-2 flex-wrap overflow-visible">
-          {groupKeys.map((title, idx) => (
+          {/* Categorised / All toggle */}
+          <div className="flex items-center rounded-full border border-border/40 bg-card/40 p-0.5 mr-1">
+            <button
+              onClick={() => setShowAll(false)}
+              className={cn(
+                "flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider transition-all duration-200",
+                !showAll
+                  ? "bg-primary/15 text-primary shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <FolderOpen className="h-3 w-3" />
+              <span className="hidden sm:inline">Categories</span>
+            </button>
+            <button
+              onClick={() => setShowAll(true)}
+              className={cn(
+                "flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider transition-all duration-200",
+                showAll
+                  ? "bg-primary/15 text-primary shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <List className="h-3 w-3" />
+              <span className="hidden sm:inline">All</span>
+            </button>
+          </div>
+
+          {/* Category tabs — only visible when not showing all */}
+          {!showAll && groupKeys.map((title, idx) => (
             <button
               key={title}
               onClick={() => setActiveGroup(idx)}
