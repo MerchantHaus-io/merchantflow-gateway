@@ -515,11 +515,11 @@ const LiveAccountDetail = () => {
                             </p>
                           </div>
                         </div>
-                        <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" asChild>
-                          <a href={doc.file_path} target="_blank" rel="noopener noreferrer">
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
-                        </Button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setPreviewDoc(doc)}>
+                            <Eye className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
