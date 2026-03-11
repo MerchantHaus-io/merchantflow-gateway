@@ -570,6 +570,27 @@ Sales Support`,
                   </CollapsibleContent>
                 </Collapsible>
 
+                {/* Data Integrity - Collapsible */}
+                <Collapsible defaultOpen>
+                  <CollapsibleTrigger className="group flex items-center justify-between w-full pt-4 pb-2 px-4 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em] hover:text-foreground transition-colors">
+                    Data Integrity <span className="label-slash">/</span>
+                    <ChevronDown className="h-3 w-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="space-y-1">
+                      <a href="#outcome-rules" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 rounded-none transition-colors">
+                        Outcome & Pipeline Rules
+                      </a>
+                      <a href="#record-lifecycle" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 rounded-none transition-colors">
+                        Record Lifecycle
+                      </a>
+                      <a href="#data-standards" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 rounded-none transition-colors">
+                        Data Standards
+                      </a>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+
                 {/* Reference - Collapsible */}
                 <Collapsible defaultOpen>
                   <CollapsibleTrigger className="group flex items-center justify-between w-full pt-4 pb-2 px-4 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em] hover:text-foreground transition-colors">
