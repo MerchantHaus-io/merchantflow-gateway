@@ -118,7 +118,7 @@ const PipelineColumn = ({
             </span>
             <span className="inline-flex items-center gap-1.5 shrink-0">
               <span key={count} className="font-black animate-count inline-block">{count}</span>
-              {stage === "application_started" && onAddNew && (
+              {stage === "discovery" && onAddNew && (
                 <Button
                   variant="ghost"
                   size="icon"
