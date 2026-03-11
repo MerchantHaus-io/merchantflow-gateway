@@ -325,6 +325,14 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
               <div className="flex items-center gap-1 shrink-0">
                 <Tooltip>
                   <TooltipTrigger asChild>
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setPreviewDoc(doc)}>
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Preview</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleDownload(doc)}>
                       <Download className="h-4 w-4" />
                     </Button>
