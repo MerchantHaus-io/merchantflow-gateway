@@ -283,7 +283,7 @@ const OpportunityCard = ({
                 {dealValue > 0 ? formatCurrency(dealValue) : "—"}
               </span>
               {/* Days in stage — color-coded */}
-              {slaInfo.daysInStage > 0 && !isLive && (
+              {slaInfo.daysInStage > 0 && !isClosedWon && (
                 <span className={cn(
                   "flex items-center gap-0.5 text-[9px] font-medium",
                   slaInfo.daysInStage < 7 ? "text-emerald-500" : slaInfo.daysInStage < 14 ? "text-amber-500" : "text-red-500"
