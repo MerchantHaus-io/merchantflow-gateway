@@ -259,6 +259,53 @@ export default function Outreach() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const saveDraft = useMutation({
+    mutationFn: async () => {
+      let scheduled_at: string | null = null;
+      if (schedDate) {
+        const [h, m] = schedTime.split(":").map(Number);
+        const dt = new Date(schedDate); dt.setHours(h, m, 0, 0);
+        scheduled_at = dt.toISOString();
+      }
+      const step1 = steps[0];
+      const { data: campaign, error } = await supabase.from("outreach_campaigns").insert({
+        name, subject: step1.subject || "(draft)", body_html: step1.bodyHtml ? appendSignature(step1.bodyHtml) : "",
+        from_name: fromName, from_email: fromEmail,
+        created_by: user?.id || "", created_by_email: user?.email || "", scheduled_at, status: "draft",
+      }).select().single();
+      if (error) throw error;
+
+      if (stepCount > 1 && campaign) {
+        const followUps = steps.slice(1, stepCount).filter(s => s.subject || s.bodyHtml).map((s, i) => ({
+          campaign_id: campaign.id, step_number: i + 2, delay_days: s.delayDays,
+          subject: s.subject || step1.subject || "(draft)", body_html: s.bodyHtml ? appendSignature(s.bodyHtml) : "",
+        }));
+        if (followUps.length > 0) {
+          const { error: stepsErr } = await supabase.from("cadence_steps").insert(followUps);
+          if (stepsErr) throw stepsErr;
+        }
+      }
+
+      if (csvLeads.length > 0 && campaign) {
+        const leadsToInsert = csvLeads.map(l => ({ campaign_id: campaign.id, ...l }));
+        for (let i = 0; i < leadsToInsert.length; i += 500) {
+          const chunk = leadsToInsert.slice(i, i + 500);
+          const { error: leadsErr } = await supabase.from("outreach_contacts").insert(chunk);
+          if (leadsErr) throw leadsErr;
+        }
+        await supabase.from("outreach_campaigns").update({ total_contacts: csvLeads.length }).eq("id", campaign.id);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["outreach-campaigns"] });
+      setOpen(false); setName(""); setSchedDate(undefined);
+      setSteps(Array.from({ length: 10 }, (_, i) => ({ subject: "", bodyHtml: "", delayDays: DEFAULT_DELAYS[i] })));
+      setSignature(""); setActiveStep(0); setCsvLeads([]); setCsvFileName("");
+      toast.success("Draft saved — you can complete it later");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const del = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("outreach_campaigns").delete().eq("id", id);
