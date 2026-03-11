@@ -169,7 +169,7 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
     const root = document.documentElement;
     
     // Remove all theme classes
-    root.classList.remove('dark', 'light', 'dark-default', 'dark-midnight', 'dark-forest', 'dark-charcoal', 'dark-mono', 'light-default', 'light-ocean', 'light-warm', 'light-silver', 'light-mono');
+    root.classList.remove('dark', 'light', 'dark-default', 'dark-midnight', 'dark-forest', 'dark-charcoal', 'dark-mono', 'dark-ps1', 'light-default', 'light-ocean', 'light-warm', 'light-silver', 'light-mono', 'light-salesforce');
     
     // Add base mode and variant
     root.classList.add(theme);
