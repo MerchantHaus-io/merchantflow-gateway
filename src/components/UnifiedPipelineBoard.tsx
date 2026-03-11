@@ -86,7 +86,7 @@ const UnifiedPipelineBoard = ({
 
   const handleDrop = (e: React.DragEvent, stage: OpportunityStage) => {
     e.preventDefault();
-    if (draggedOpportunity && draggedOpportunity.stage !== stage) {
+    if (draggedOpportunity && draggedOpportunity.stage !== stage && !draggedOpportunity.outcome_status) {
       onUpdateOpportunity(draggedOpportunity.id, { stage });
     }
     setDraggedOpportunity(null);

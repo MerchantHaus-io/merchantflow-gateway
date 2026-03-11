@@ -733,7 +733,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     try {
       const { error } = await supabase
         .from('opportunities')
-        .update({ status: 'dead', stage: 'closed_lost' })
+        .update({ status: 'dead', outcome_status: 'no_decision', outcome_reason: 'No response', outcome_closed_at: new Date().toISOString(), outcome_closed_by: user?.email })
         .eq('id', opportunity.id);
 
       if (!error) {
