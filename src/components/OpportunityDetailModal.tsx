@@ -1110,10 +1110,10 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
 
           {/* Compact status strip */}
           <div className="mt-2 space-y-2 flex-shrink-0">
-            {opportunity.stage === 'live_activated' ? (
-              <div className="rounded-lg bg-gradient-to-b from-amber-50/60 via-amber-100/30 to-transparent dark:from-amber-500/10 dark:via-amber-500/5 dark:to-transparent border border-amber-200/40 dark:border-amber-500/20 py-4 px-4">
-                <h3 className="text-amber-600 dark:text-amber-400 font-bold tracking-widest uppercase text-sm text-center">
-                  Live Account
+            {opportunity.outcome_status === 'closed_won' ? (
+              <div className="rounded-lg bg-gradient-to-b from-emerald-50/60 via-emerald-100/30 to-transparent dark:from-emerald-500/10 dark:via-emerald-500/5 dark:to-transparent border border-emerald-200/40 dark:border-emerald-500/20 py-4 px-4">
+                <h3 className="text-emerald-600 dark:text-emerald-400 font-bold tracking-widest uppercase text-sm text-center">
+                  Closed Won — Live &amp; Billing
                 </h3>
               </div>
             ) : (
