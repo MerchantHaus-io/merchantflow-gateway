@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Briefcase, Building2, Users, FileText, BarChart3,
   Activity, BadgeDollarSign, Globe, BookOpen, BookMarked, ClipboardList,
   Calculator, Sparkles, FileSpreadsheet, Download, Cloud, Send, ListChecks,
-  Settings, LayoutGrid, Box, CircleDot,
+  Settings, LayoutGrid, Box, CircleDot, List, FolderOpen, UserPlus,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -223,6 +223,7 @@ export default function Home() {
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   const [activeGroup, setActiveGroup] = useState(0);
+  const [showAll, setShowAll] = useState(false);
   const [layout, setLayout] = useState<LayoutMode>("icons");
   const [loaded, setLoaded] = useState(false);
   const [showToggleHint, setShowToggleHint] = useState(false);
@@ -266,7 +267,9 @@ export default function Home() {
     localStorage.setItem("home_layout_hint_seen", "1");
   };
 
-  const currentItems = groups[activeGroup].items;
+  const allItems = groups.flatMap((g) => g.items);
+  const currentItems = showAll ? allItems : groups[activeGroup].items;
+  const allGroup: ShortcutGroup = { title: "All", items: allItems };
   const CurrentIcon = layoutIcons[layout];
   const currentLabel = layoutLabels[layout];
   const NextIcon = layoutIcons[layoutCycle[(layoutCycle.indexOf(layout) + 1) % layoutCycle.length]];
@@ -292,7 +295,36 @@ export default function Home() {
 
         {/* Category tabs + layout toggle */}
         <div className="flex items-center justify-center gap-2 mb-2 flex-wrap overflow-visible">
-          {groupKeys.map((title, idx) => (
+          {/* Categorised / All toggle */}
+          <div className="flex items-center rounded-full border border-border/40 bg-card/40 p-0.5 mr-1">
+            <button
+              onClick={() => setShowAll(false)}
+              className={cn(
+                "flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider transition-all duration-200",
+                !showAll
+                  ? "bg-primary/15 text-primary shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <FolderOpen className="h-3 w-3" />
+              <span className="hidden sm:inline">Categories</span>
+            </button>
+            <button
+              onClick={() => setShowAll(true)}
+              className={cn(
+                "flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider transition-all duration-200",
+                showAll
+                  ? "bg-primary/15 text-primary shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <List className="h-3 w-3" />
+              <span className="hidden sm:inline">All</span>
+            </button>
+          </div>
+
+          {/* Category tabs — only visible when not showing all */}
+          {!showAll && groupKeys.map((title, idx) => (
             <button
               key={title}
               onClick={() => setActiveGroup(idx)}
@@ -350,11 +382,11 @@ export default function Home() {
 
         {/* Content */}
         {layout === "carousel" ? (
-          <Carousel3D key={activeGroup} items={currentItems} />
+          <Carousel3D key={showAll ? "all" : activeGroup} items={currentItems} />
         ) : layout === "icons" ? (
-          <IconView groups={groups} activeGroup={activeGroup} />
+          <IconView groups={showAll ? [allGroup] : groups} activeGroup={showAll ? 0 : activeGroup} key={showAll ? "all" : activeGroup} />
         ) : (
-          <GridView groups={groups} activeGroup={activeGroup} />
+          <GridView groups={showAll ? [allGroup] : groups} activeGroup={showAll ? 0 : activeGroup} key={showAll ? "all" : activeGroup} />
         )}
       </div>
     </AppLayout>
