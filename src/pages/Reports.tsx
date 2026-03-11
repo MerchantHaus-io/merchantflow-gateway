@@ -285,8 +285,8 @@ const Reports = () => {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 stagger-children">
             <StatCard label="Active Opportunities" value={kpis.active}   icon={Target}       color="primary"
               onClick={() => openModal("Active Opportunities", `${kpis.active} active`, "opportunities", filteredOpps.filter(o => o.status !== "dead"), [])} />
-            <StatCard label="Live Accounts"         value={kpis.live}     icon={Zap}          color="success"
-              onClick={() => openModal("Live Accounts", `${kpis.live} live`, "opportunities", filteredOpps.filter(o => o.stage === "live_activated"), [])} />
+            <StatCard label="Closed Won"            value={kpis.live}     icon={Zap}          color="success"
+              onClick={() => openModal("Closed Won", `${kpis.live} won`, "opportunities", filteredOpps.filter(o => (o as any).outcome_status === "closed_won"), [])} />
             <StatCard label="Open Tasks"            value={kpis.openTasks}icon={Clock}        color="teal"
               onClick={() => openModal("Open Tasks", `${kpis.openTasks} open`, "tasks", [], filteredTasks.filter(t => t.status !== "done"))} />
             <StatCard label="Overdue Tasks"         value={kpis.overdue}  icon={AlertTriangle} color="destructive"
