@@ -1,4 +1,4 @@
-import { useRef, useCallback, useState } from "react";
+import { useRef, useCallback, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -36,22 +36,35 @@ export function GmailEditor({
   const [linkPopover, setLinkPopover] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
 
+  const isInternalChange = useRef(false);
+
   // Sync contentEditable → parent on every input
   const handleInput = useCallback(() => {
     if (editorRef.current) {
+      isInternalChange.current = true;
       onChange(editorRef.current.innerHTML);
     }
   }, [onChange]);
 
-  // Set initial content when value changes externally (e.g. AI polish)
-  const lastExternalValue = useRef(value);
-  if (value !== lastExternalValue.current && editorRef.current) {
-    // Only update DOM if content actually differs (avoid cursor jump)
+  // Set initial content on mount, and sync external changes (e.g. AI polish)
+  const hasInitialized = useRef(false);
+  useEffect(() => {
+    if (!editorRef.current) return;
+    if (!hasInitialized.current) {
+      editorRef.current.innerHTML = value;
+      hasInitialized.current = true;
+      return;
+    }
+    // Skip DOM update if the change came from user typing
+    if (isInternalChange.current) {
+      isInternalChange.current = false;
+      return;
+    }
+    // External change (AI polish, step switch) — update DOM
     if (editorRef.current.innerHTML !== value) {
       editorRef.current.innerHTML = value;
     }
-    lastExternalValue.current = value;
-  }
+  }, [value]);
 
   // Formatting commands
   const exec = (cmd: string, val?: string) => {
@@ -90,9 +103,8 @@ export function GmailEditor({
         return;
       }
       if (data?.html) {
+        isInternalChange.current = false;
         onChange(data.html);
-        lastExternalValue.current = data.html;
-        if (editorRef.current) editorRef.current.innerHTML = data.html;
         toast.success("Email polished by AI ✨");
       }
     } catch (err: any) {
@@ -249,7 +261,7 @@ export function GmailEditor({
             const text = e.clipboardData.getData("text/plain");
             document.execCommand("insertText", false, text);
           }}
-          dangerouslySetInnerHTML={{ __html: value }}
+          
         />
       </div>
 

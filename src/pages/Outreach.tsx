@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -125,6 +125,7 @@ export default function Outreach() {
   const [stepCount, setStepCount] = useState(3);
   const [steps, setSteps]         = useState<StepDraft[]>(() => Array.from({ length: 10 }, (_, i) => ({ subject: "", bodyHtml: "", delayDays: DEFAULT_DELAYS[i] })));
   const [signature, setSignature] = useState("");
+  const [signatureInitialized, setSignatureInitialized] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
   const [schedDate, setSchedDate] = useState<Date | undefined>();
   const [schedTime, setSchedTime] = useState("09:00");
@@ -135,6 +136,25 @@ export default function Outreach() {
   // CSV target list state
   const [csvLeads, setCsvLeads] = useState<Array<{ email: string; first_name: string | null; last_name: string | null; company: string | null }>>([]);
   const [csvFileName, setCsvFileName] = useState("");
+
+  // Auto-populate branded signature when dialog opens
+  useEffect(() => {
+    if (open && !signatureInitialized) {
+      const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Team Member";
+      const userEmail = user?.email || "outreach@merchanthaus.io";
+      const sig = [
+        `<p style="margin:0;font-weight:600;font-size:14px;">${userName}</p>`,
+        `<p style="margin:0;font-size:13px;color:#666;">Merchant Haus</p>`,
+        `<p style="margin:4px 0 0;font-size:12px;color:#888;">📞 (505) 600-6042 &nbsp;|&nbsp; ✉ ${userEmail}</p>`,
+        `<p style="margin:2px 0 0;font-size:12px;color:#888;">🌐 <a href="https://merchanthaus.io" style="color:#2563eb;text-decoration:none;">merchanthaus.io</a></p>`,
+      ].join("");
+      setSignature(sig);
+      setSignatureInitialized(true);
+    }
+    if (!open) {
+      setSignatureInitialized(false);
+    }
+  }, [open, signatureInitialized, user]);
 
   const updateStep = (idx: number, patch: Partial<StepDraft>) => {
     setSteps(prev => prev.map((s, i) => i === idx ? { ...s, ...patch } : s));
