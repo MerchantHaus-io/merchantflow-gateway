@@ -1097,7 +1097,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
           </DialogHeader>
 
           {/* Live badge overlay - medallion in header area, ribbons drape over next section */}
-          {opportunity.stage === 'live_activated' && (
+          {opportunity.outcome_status === 'closed_won' && (
             <div className="relative flex justify-center -mt-14 pointer-events-none z-10" style={{ marginBottom: '-3.5rem' }}>
               <img 
                 src={liveBadge} 
