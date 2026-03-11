@@ -187,10 +187,28 @@ const DocumentsSection = ({ opportunityId }: { opportunityId: string }) => {
               <p className="text-xs text-muted-foreground">{doc.document_type || 'Unassigned'}</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" asChild>
-            <a href={doc.file_path} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="h-4 w-4" />
-            </a>
+          <Button variant="ghost" size="sm" onClick={async () => {
+            try {
+              const { data, error } = await supabase.storage
+                .from('opportunity-documents')
+                .download(doc.file_path);
+              if (error || !data) {
+                toast.error(`Failed to download ${doc.file_name}`);
+                return;
+              }
+              const url = URL.createObjectURL(data);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = doc.file_name;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              URL.revokeObjectURL(url);
+            } catch {
+              toast.error(`Failed to download ${doc.file_name}`);
+            }
+          }}>
+            <Download className="h-4 w-4" />
           </Button>
         </div>
       ))}
