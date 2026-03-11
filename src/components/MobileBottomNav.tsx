@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Briefcase, ListChecks, Building2, Users, FileText,
   BarChart3, Settings, BookOpen, ClipboardList, Calculator, FileSpreadsheet,
   Download, CreditCard, Activity, Trash2, LogOut, BadgeDollarSign, Cloud,
-  Send, Globe, Search, X, ChevronRight, type LucideIcon,
+  Send, Globe, Search, X, ChevronRight, UserPlus, type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -39,6 +39,7 @@ const GROUPS: { label: string; items: NavItem[] }[] = [
       { title: "Reports", url: "/reports", icon: BarChart3 },
       { title: "Live & Billing", url: "/live-billing", icon: BadgeDollarSign },
       { title: "Outreach", url: "/outreach", icon: Send },
+      { title: "Leads", url: "/leads", icon: UserPlus },
       { title: "Web Submissions", url: "/admin/web-submissions", icon: Globe },
     ],
   },
