@@ -119,6 +119,7 @@ export default function Outreach() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [open, setOpen]           = useState(false);
+  const [wizardPhase, setWizardPhase] = useState<"compose"|"review">("compose");
   const [name, setName]           = useState("");
   const [fromName, setFromName]   = useState("Merchant Haus");
   const [fromEmail, setFromEmail] = useState("outreach@merchanthaus.io");
