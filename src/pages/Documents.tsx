@@ -120,27 +120,8 @@ const DocumentsPage = () => {
   };
 
   /**
-   * Opens a document in a new tab for preview/review.
+   * Opens a document in the inline preview dialog.
    */
-  const handlePreview = async (doc: Document) => {
-    try {
-      const { data, error } = await supabase.storage
-        .from("opportunity-documents")
-        .download(doc.file_path);
-
-      if (error || !data) {
-        toast.error("Failed to open file");
-        return;
-      }
-
-      const contentType = doc.content_type || "application/octet-stream";
-      const blob = new Blob([data], { type: contentType });
-      const url = URL.createObjectURL(blob);
-      window.open(url, "_blank");
-    } catch {
-      toast.error("Failed to open file");
-    }
-  };
 
   /**
    * Downloads a document as a file attachment.
