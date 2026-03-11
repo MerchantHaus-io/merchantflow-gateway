@@ -75,8 +75,8 @@ const PipelineColumn = ({
       className={cn(
         "flex-shrink-0 flex flex-col min-h-0 self-stretch overflow-hidden snap-start transition-colors duration-200",
         isCompact
-          ? "w-[100px] sm:w-[120px] md:w-[150px] lg:w-[180px] xl:w-[210px]"
-          : "w-[120px] sm:w-[150px] md:w-[190px] lg:w-[230px] xl:w-[270px]",
+          ? "w-[90px] sm:w-[110px] md:w-[135px] lg:w-[160px] xl:w-[190px]"
+          : "w-[110px] sm:w-[135px] md:w-[170px] lg:w-[210px] xl:w-[245px]",
         isDragOver && "drag-over"
       )}
       data-stage={stage}
