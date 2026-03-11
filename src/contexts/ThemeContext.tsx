@@ -99,7 +99,7 @@ const getStoredVariant = (): ThemeVariant => {
   } catch (error) {
     console.warn('Theme variant unavailable, falling back to default.', error);
   }
-  return 'light-default';
+  return 'light-salesforce';
 };
 
 const getStoredDefaultDark = (): ThemeVariant => {
