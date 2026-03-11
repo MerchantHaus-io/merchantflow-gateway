@@ -594,8 +594,21 @@ Sales Support`,
             </aside>
 
             {/* Main Content */}
-            <div className="flex-1 overflow-y-auto scroll-smooth">
+            <div className="flex-1 overflow-y-auto scroll-smooth" id="sop-content">
               <div className="max-w-4xl mx-auto p-6 md:p-12 space-y-10">
+                {/* Download PDF Button */}
+                <div className="flex justify-end print:hidden">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 rounded-none"
+                    onClick={handleDownloadPdf}
+                    disabled={isPrinting}
+                  >
+                    <Download className="h-4 w-4" />
+                    Download as PDF
+                  </Button>
+                </div>
                 {/* Document Index */}
                 <section id="index" className="bg-card rounded-none border border-border p-8">
                   <SectionHeader gold>Document Index</SectionHeader>
