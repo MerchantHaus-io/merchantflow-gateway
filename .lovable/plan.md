@@ -1,48 +1,46 @@
 
 
-# Add Notification Sound to All Real-Time Notifications
+## Plan: Fix Email Composer Typing Bug + Auto-Populated Branded Signature
 
-## Overview
-Currently, notification sounds only play inside the **FloatingChat** component (for chat messages). The **NotificationBell**, **IncomingCallToast**, and **IncomingMessageToast** components all receive real-time events but play no audio. This plan adds a unified notification sound system across all real-time notification types.
+### Problem 1: Typing Direction Bug in GmailEditor
 
-## What Changes
+**Root cause:** The `GmailEditor` component (`src/components/GmailEditor.tsx`) uses `contentEditable` with `dangerouslySetInnerHTML={{ __html: value }}` on the same div. Every keystroke triggers `onInput → onChange(innerHTML) → parent re-renders → value prop changes → dangerouslySetInnerHTML re-renders the div`, which resets the cursor to the beginning. This makes characters appear in reverse order.
 
-### 1. Create a shared `useNotificationSound` hook
-A lightweight, reusable hook (or utility function) that plays a short audio ping using the Web Audio API. This consolidates the duplicate sound logic currently in `useChatSounds.ts` and `useChatNotifications.ts` into one place. It will respect the user's existing `chatSoundEnabled` localStorage preference.
+**Fix:** Remove `dangerouslySetInnerHTML` from the editor div. Instead, only set the initial content via a `useEffect` on mount, and only update the DOM when the value changes externally (e.g., AI Polish). The `onInput` handler continues to push innerHTML up to the parent, but the parent's re-render should NOT cause the div to re-render its content.
 
-Three distinct tones will be available:
-- **message** -- existing chat ping (800-1000 Hz sweep)
-- **notification** -- slightly different tone for bell/task/stage notifications (600 Hz)
-- **call** -- urgent ringtone pattern (two-note repeated beep for incoming calls)
+Specifically in `GmailEditor.tsx`:
+- Remove `dangerouslySetInnerHTML={{ __html: value }}` from the contentEditable div
+- Use a `useEffect` to set `editorRef.current.innerHTML = value` only on mount
+- Improve the external-value-sync logic to only update DOM when the change comes from outside (AI Polish), not from the user's own typing
 
-### 2. NotificationBell -- play sound on new notification
-In `src/components/NotificationBell.tsx`, when the realtime subscription fires an `INSERT` event for a new notification, play the **notification** sound. Only play if the popover is closed (user isn't already looking at notifications).
+### Problem 2: Auto-Populated Branded Signature
 
-### 3. IncomingCallToast -- play ringtone sound
-In `src/components/IncomingCallToast.tsx`, when a ringing incoming call is detected, play the **call** sound (a more urgent, repeating tone) that stops after 10 seconds or when the toast is dismissed.
+**What changes:**
+- In `src/pages/Outreach.tsx`, when the "New Cadence" dialog opens, auto-generate a branded HTML signature using:
+  - The logged-in user's `full_name` and `email` from their profile (fetched from the `profiles` table)
+  - The uploaded Merchant Haus logo (copied to `src/assets/merchanthaus-logo.png` — already exists)
+  - The company phone number (to be provided by user)
+  - Company website: merchanthaus.io
 
-### 4. IncomingMessageToast -- play message sound
-In `src/components/IncomingMessageToast.tsx`, when a new chat or DM toast is shown, play the **message** sound. This covers users who don't have the FloatingChat open.
+- The signature HTML will look like:
+  ```
+  ─────────────────────
+  [User Full Name]
+  Merchant Haus
+  📞 [Company Phone] | ✉ [user email]
+  🌐 merchanthaus.io
+  [Merchant Haus Logo]
+  ```
 
-### 5. Deduplicate with FloatingChat
-Add a guard so that if the FloatingChat already played a sound for a given message (user is viewing that conversation), the `IncomingMessageToast` skips its sound to avoid double-pinging. This will use a simple `Set` of recently-played message IDs shared via a custom event or ref.
+- Pre-populate the `signature` state with this HTML when the dialog opens, so users see it immediately but can still edit it
+- Fetch the user's profile on component mount to get `full_name` and `phone`
 
-## Technical Details
+### Files to Edit
 
-### New file: `src/hooks/useNotificationSound.ts`
-- Exports `playNotificationSound(type: 'message' | 'notification' | 'call')`
-- Uses Web Audio API oscillator (no external audio files needed)
-- Checks `localStorage.getItem('chatSoundEnabled') !== 'false'` before playing
-- For `call` type, returns a `stop()` function to cancel the repeating tone
+1. **`src/components/GmailEditor.tsx`** — Fix the contentEditable cursor bug
+2. **`src/pages/Outreach.tsx`** — Auto-populate signature with user profile + branding + company phone
 
-### Modified files
-| File | Change |
-|------|--------|
-| `src/hooks/useNotificationSound.ts` | New shared sound utility |
-| `src/components/NotificationBell.tsx` | Import hook, play on INSERT event |
-| `src/components/IncomingCallToast.tsx` | Play call ringtone on ringing status |
-| `src/components/IncomingMessageToast.tsx` | Play message sound on new toast |
+### Waiting On
 
-### No database changes required
-All notification infrastructure (realtime subscriptions, notifications table) already exists.
+The company phone number from the user before implementing the signature.
 
