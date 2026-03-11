@@ -497,7 +497,7 @@ const UnifiedPipelineBoard = ({
               onCardClick={setSelectedOpportunity}
               onAssignmentChange={onAssignmentChange}
               onSlaStatusChange={onSlaStatusChange}
-              onAddNew={stage === "application_started" ? onAddNew : undefined}
+              onAddNew={stage === "discovery" ? onAddNew : undefined}
               isCompact={isCompact}
               currentUser={currentUser}
             />
