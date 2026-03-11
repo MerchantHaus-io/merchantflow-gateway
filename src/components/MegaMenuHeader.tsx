@@ -346,7 +346,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
         </NavigationMenu>
 
         {/* Right side actions */}
-        <div className="flex items-cen shrink-0 overflow-visibleter gap-1 ml-auto">
+        <div className="flex items-center shrink-0 overflow-visible gap-1 ml-auto">
           {/* ⌘K search trigger */}
           <Button
             variant="ghost"
