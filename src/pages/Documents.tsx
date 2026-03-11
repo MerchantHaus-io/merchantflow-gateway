@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { DocumentPreviewDialog } from "@/components/DocumentPreviewDialog";
 
 /**
  * DocumentsPage lists all documents uploaded across opportunities. Users can
