@@ -715,7 +715,7 @@ const Index = () => {
     } : o));
   };
   const handleAssignmentChange = (opportunityId: string, assignedTo: string | null) => {
-    setOpportunities(opportunities.map(o => o.id === opportunityId ? {
+    setOpportunities(prev => prev.map(o => o.id === opportunityId ? {
       ...o,
       assigned_to: assignedTo || undefined
     } : o));
