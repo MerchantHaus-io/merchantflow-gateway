@@ -1427,6 +1427,11 @@ export type Database = {
           created_at: string
           id: string
           language: string | null
+          outcome_closed_at: string | null
+          outcome_closed_by: string | null
+          outcome_notes: string | null
+          outcome_reason: string | null
+          outcome_status: string | null
           processing_services: string[] | null
           referral_source: string | null
           service_type: string | null
@@ -1447,6 +1452,11 @@ export type Database = {
           created_at?: string
           id?: string
           language?: string | null
+          outcome_closed_at?: string | null
+          outcome_closed_by?: string | null
+          outcome_notes?: string | null
+          outcome_reason?: string | null
+          outcome_status?: string | null
           processing_services?: string[] | null
           referral_source?: string | null
           service_type?: string | null
@@ -1467,6 +1477,11 @@ export type Database = {
           created_at?: string
           id?: string
           language?: string | null
+          outcome_closed_at?: string | null
+          outcome_closed_by?: string | null
+          outcome_notes?: string | null
+          outcome_reason?: string | null
+          outcome_status?: string | null
           processing_services?: string[] | null
           referral_source?: string | null
           service_type?: string | null
