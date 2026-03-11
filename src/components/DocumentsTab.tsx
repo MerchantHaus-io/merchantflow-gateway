@@ -352,6 +352,12 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
           ))}
         </div>
       )}
+
+      <DocumentPreviewDialog
+        document={previewDoc}
+        open={!!previewDoc}
+        onOpenChange={(open) => { if (!open) setPreviewDoc(null); }}
+      />
     </div>
   );
 };

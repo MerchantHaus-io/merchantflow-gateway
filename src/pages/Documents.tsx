@@ -582,6 +582,12 @@ const DocumentsPage = () => {
           </div>
         )}
       </div>
+
+      <DocumentPreviewDialog
+        document={previewDoc}
+        open={!!previewDoc}
+        onOpenChange={(open) => { if (!open) setPreviewDoc(null); }}
+      />
     </AppLayout>
   );
 };
