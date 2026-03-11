@@ -156,6 +156,7 @@ export default function Outreach() {
     }
     if (!open) {
       setSignatureInitialized(false);
+      setWizardPhase("compose");
     }
   }, [open, signatureInitialized, user]);
 
