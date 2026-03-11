@@ -571,9 +571,15 @@ export default function Outreach() {
                         </div>
                       )}
 
-                      <Button className="w-full" onClick={() => create.mutate()} disabled={!name || !steps[0].subject || !steps[0].bodyHtml || create.isPending}>
+                       {(!name || !steps[0].subject || !steps[0].bodyHtml) && (
+                         <p className="text-xs text-destructive/80 text-center flex items-center justify-center gap-1">
+                           <span className="inline-block h-1.5 w-1.5 rounded-full bg-destructive/60" />
+                           Fill in all required fields ({[!name && "name", !steps[0].subject && "subject", !steps[0].bodyHtml && "email body"].filter(Boolean).join(", ")})
+                         </p>
+                       )}
+                       <Button className="w-full" onClick={() => create.mutate()} disabled={!name || !steps[0].subject || !steps[0].bodyHtml || create.isPending}>
                         <Layers className="h-4 w-4 mr-2" />{schedDate ? "Schedule Cadence" : "Create Cadence"} ({stepCount} {stepCount === 1 ? "email" : "emails"})
-                      </Button>
+                       </Button>
                    </div>
                  </div>
                </div>
