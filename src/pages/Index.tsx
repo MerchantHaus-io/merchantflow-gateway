@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
 import { useSearchParams } from "react-router-dom";
 import UnifiedPipelineBoard from "@/components/UnifiedPipelineBoard";
 import NewApplicationModal, { ApplicationFormData } from "@/components/NewApplicationModal";
@@ -15,6 +15,9 @@ import { DateRange } from "react-day-picker";
 import { isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import GameSplash from "@/components/GameSplash";
 import { sendStageChangeEmail } from "@/hooks/useEmailNotifications";
+import { useTheme } from "@/contexts/ThemeContext";
+
+const Starfield = lazy(() => import("@/components/Starfield"));
 
 // Canonical snake_case wizard form matching normalized schema
 type WizardPrefillForm = {
