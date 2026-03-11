@@ -267,7 +267,9 @@ export default function Home() {
     localStorage.setItem("home_layout_hint_seen", "1");
   };
 
-  const currentItems = groups[activeGroup].items;
+  const allItems = groups.flatMap((g) => g.items);
+  const currentItems = showAll ? allItems : groups[activeGroup].items;
+  const allGroup: ShortcutGroup = { title: "All", items: allItems };
   const CurrentIcon = layoutIcons[layout];
   const currentLabel = layoutLabels[layout];
   const NextIcon = layoutIcons[layoutCycle[(layoutCycle.indexOf(layout) + 1) % layoutCycle.length]];
