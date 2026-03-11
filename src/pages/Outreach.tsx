@@ -422,10 +422,10 @@ export default function Outreach() {
                            )}
                          </div>
                          <div>
-                           <Label className="text-xs">Subject Line</Label>
-                           <Input value={steps[activeStep].subject} onChange={e => updateStep(activeStep, { subject: e.target.value })}
-                             placeholder={activeStep === 0 ? "Payment solutions for {{company}}" : "Re: {{company}} — follow up"}
-                             className="mt-1" />
+                            <Label className="text-xs">Subject Line {activeStep === 0 && <span className="text-destructive">*</span>}</Label>
+                            <Input value={steps[activeStep].subject} onChange={e => updateStep(activeStep, { subject: e.target.value })}
+                              placeholder={activeStep === 0 ? "Payment solutions for {{company}}" : "Re: {{company}} — follow up"}
+                              className={cn("mt-1", activeStep === 0 && !steps[0].subject && "border-destructive/50 focus-visible:ring-destructive/30")} />
                          </div>
                          <div>
                            <Label className="text-xs">Paste or compose your email</Label>
