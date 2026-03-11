@@ -261,7 +261,7 @@ export function GmailEditor({
             const text = e.clipboardData.getData("text/plain");
             document.execCommand("insertText", false, text);
           }}
-          dangerouslySetInnerHTML={{ __html: value }}
+          
         />
       </div>
 
