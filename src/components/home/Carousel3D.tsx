@@ -114,7 +114,7 @@ export function Carousel3D({ items }: Carousel3DProps) {
     if (!isDragging.current) return;
     const walk = (e.clientX - startX.current) * 0.35;
     dragDistance.current = Math.abs(walk);
-    updateRotation(startRotation.current - walk);
+    updateRotation(startRotation.current + walk);
   }, [updateRotation]);
 
   const onPointerUp = useCallback(() => {
