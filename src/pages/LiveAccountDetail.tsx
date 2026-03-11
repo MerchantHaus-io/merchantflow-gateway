@@ -74,6 +74,7 @@ const LiveAccountDetail = () => {
   const isMobile = useIsMobile();
   const { theme } = useTheme();
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState<any>(null);
 
   // Fetch ALL live opportunities for this account
   const { data: opportunities, isLoading } = useQuery({
