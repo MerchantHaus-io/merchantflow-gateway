@@ -529,7 +529,7 @@ const DocumentsPage = () => {
                                               variant="ghost"
                                               size="icon"
                                               className="h-8 w-8"
-                                              onClick={() => handlePreview(doc)}
+                                              onClick={() => setPreviewDoc(doc)}
                                               title="Preview"
                                             >
                                               <Eye className="h-4 w-4" />
