@@ -130,6 +130,7 @@ export default function Outreach() {
   const [schedTime, setSchedTime] = useState("09:00");
   const [view, setView]           = useState<"grid"|"list">("grid");
   const [filter, setFilter]       = useState("all");
+  const [previewStepIdx, setPreviewStepIdx] = useState(0);
 
   // CSV target list state
   const [csvLeads, setCsvLeads] = useState<Array<{ email: string; first_name: string | null; last_name: string | null; company: string | null }>>([]);
