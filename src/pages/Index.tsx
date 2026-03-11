@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import UnifiedPipelineBoard from "@/components/UnifiedPipelineBoard";
 import NewApplicationModal, { ApplicationFormData } from "@/components/NewApplicationModal";
 import { AppLayout } from "@/components/AppLayout";
-import { getServiceType, ServiceType, OnboardingWizardState, Opportunity, OpportunityStage, migrateStage, EMAIL_TO_USER, TEAM_MEMBERS } from "@/types/opportunity";
+import { getServiceType, ServiceType, OnboardingWizardState, Opportunity, OpportunityStage, OutcomeStatus, migrateStage, EMAIL_TO_USER, TEAM_MEMBERS } from "@/types/opportunity";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -220,6 +220,11 @@ const Index = () => {
         assigned_to,
         stage_entered_at,
         sla_status,
+        outcome_status,
+        outcome_reason,
+        outcome_notes,
+        outcome_closed_at,
+        outcome_closed_by,
         created_at,
         updated_at,
         account:accounts(id, name, status, address1, address2, city, state, zip, country, website, created_at, updated_at),
@@ -239,6 +244,7 @@ const Index = () => {
       service_type: data.service_type as ServiceType | undefined,
       status: data.status as 'active' | 'dead' | undefined,
       sla_status: data.sla_status as 'green' | 'amber' | 'red' | null | undefined,
+      outcome_status: (data.outcome_status as OutcomeStatus | null) || undefined,
       account: data.account ? {
         ...data.account,
         status: data.account.status as 'active' | 'dead' | undefined
@@ -411,6 +417,11 @@ const Index = () => {
         assigned_to,
         stage_entered_at,
         sla_status,
+        outcome_status,
+        outcome_reason,
+        outcome_notes,
+        outcome_closed_at,
+        outcome_closed_by,
         created_at,
         updated_at,
         account:accounts(id, name, status, address1, address2, city, state, zip, country, website, created_at, updated_at),
@@ -435,6 +446,7 @@ const Index = () => {
       service_type: item.service_type as ServiceType | undefined,
       status: item.status as 'active' | 'dead' | undefined,
       sla_status: item.sla_status as 'green' | 'amber' | 'red' | null | undefined,
+      outcome_status: (item.outcome_status as OutcomeStatus | null) || undefined,
       account: item.account ? {
         ...item.account,
         status: item.account.status as 'active' | 'dead' | undefined
@@ -699,19 +711,19 @@ const Index = () => {
         });
       }
     }
-    setOpportunities(opportunities.map(o => o.id === id ? {
+    setOpportunities(prev => prev.map(o => o.id === id ? {
       ...o,
       ...updates
     } : o));
   };
   const handleAssignmentChange = (opportunityId: string, assignedTo: string | null) => {
-    setOpportunities(opportunities.map(o => o.id === opportunityId ? {
+    setOpportunities(prev => prev.map(o => o.id === opportunityId ? {
       ...o,
       assigned_to: assignedTo || undefined
     } : o));
   };
   const handleSlaStatusChange = (opportunityId: string, slaStatus: string | null) => {
-    setOpportunities(opportunities.map(o => o.id === opportunityId ? {
+    setOpportunities(prev => prev.map(o => o.id === opportunityId ? {
       ...o,
       sla_status: slaStatus as 'green' | 'amber' | 'red' | null
     } : o));

@@ -570,6 +570,27 @@ Sales Support`,
                   </CollapsibleContent>
                 </Collapsible>
 
+                {/* Data Integrity - Collapsible */}
+                <Collapsible defaultOpen>
+                  <CollapsibleTrigger className="group flex items-center justify-between w-full pt-4 pb-2 px-4 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em] hover:text-foreground transition-colors">
+                    Data Integrity <span className="label-slash">/</span>
+                    <ChevronDown className="h-3 w-3 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="space-y-1">
+                      <a href="#outcome-rules" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 rounded-none transition-colors">
+                        Outcome & Pipeline Rules
+                      </a>
+                      <a href="#record-lifecycle" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 rounded-none transition-colors">
+                        Record Lifecycle
+                      </a>
+                      <a href="#data-standards" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 rounded-none transition-colors">
+                        Data Standards
+                      </a>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+
                 {/* Reference - Collapsible */}
                 <Collapsible defaultOpen>
                   <CollapsibleTrigger className="group flex items-center justify-between w-full pt-4 pb-2 px-4 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em] hover:text-foreground transition-colors">
@@ -1882,6 +1903,122 @@ Sales Support`,
                         <li>• <strong className="text-foreground">AI Validation:</strong> On-demand document readiness checks via Gemini</li>
                       </ul>
                     </div>
+
+                    {/* Data Integrity Rules */}
+                    <section id="outcome-rules" className="print:break-before-page">
+                      <h2 className="text-2xl font-bold text-primary border-b-4 border-cyan-500 inline-block mb-6 pb-1">
+                        Data Integrity Rules
+                      </h2>
+                      <p className="text-muted-foreground mb-6 italic border-l-4 border-destructive pl-4 bg-destructive/5 py-2 pr-2 rounded-r">
+                        These rules are enforced by the system. Breaking them will cause data corruption, reporting errors, and pipeline inconsistencies.
+                      </p>
+
+                      {/* Outcome Rules */}
+                      <div id="outcome-rules" className="bg-card rounded-xl border border-border shadow-sm p-6 mb-6">
+                        <div className="flex items-center gap-2 mb-4">
+                          <Shield className="w-5 h-5 text-destructive" />
+                          <h3 className="font-bold text-lg text-foreground">Outcome & Pipeline Rules</h3>
+                        </div>
+                        <div className="space-y-4">
+                          <div className="bg-accent/30 rounded-lg border border-border p-4">
+                            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                              <XCircle className="w-4 h-4 text-destructive" /> Negative Outcomes Remove from Pipeline
+                            </h4>
+                            <p className="text-sm text-muted-foreground mb-3">
+                              When any of the following outcomes are set, the opportunity is <strong className="text-foreground">immediately removed from the active pipeline board</strong> and its status is set to <code className="text-xs bg-background px-1 rounded">dead</code>:
+                            </p>
+                            <ul className="space-y-1.5 text-sm">
+                              <li className="flex items-center gap-2"><span className="text-destructive font-bold">✗</span> <strong className="text-foreground">Closed Lost</strong> — Competitor selected, pricing, product gap, etc.</li>
+                              <li className="flex items-center gap-2"><span className="text-purple-500 font-bold">🚫</span> <strong className="text-foreground">Disqualified</strong> — Unsupported MCC, geography, volume too small</li>
+                              <li className="flex items-center gap-2"><span className="text-muted-foreground font-bold">💀</span> <strong className="text-foreground">No Decision / Dead</strong> — No response, project paused, budget removed</li>
+                              <li className="flex items-center gap-2"><span className="text-orange-500 font-bold">⛔</span> <strong className="text-foreground">Underwriting Declined</strong> — Risk profile, restricted business type</li>
+                            </ul>
+                          </div>
+
+                          <div className="bg-accent/30 rounded-lg border border-border p-4">
+                            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                              <Trophy className="w-4 h-4 text-emerald-500" /> Closed Won Stays Active
+                            </h4>
+                            <p className="text-sm text-muted-foreground">
+                              <strong className="text-foreground">Closed Won</strong> is the only positive outcome. The opportunity remains <code className="text-xs bg-background px-1 rounded">active</code> and appears in the <strong className="text-foreground">Live & Billing</strong> report. It is removed from the pipeline board but retains its active status.
+                            </p>
+                          </div>
+
+                          <div className="bg-accent/30 rounded-lg border border-border p-4">
+                            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4 text-primary" /> Outcome Requirements
+                            </h4>
+                            <ul className="space-y-1.5 text-sm text-muted-foreground">
+                              <li>• Every outcome requires a <strong className="text-foreground">reason</strong> (selected from predefined list)</li>
+                              <li>• Optional <strong className="text-foreground">notes</strong> for additional context</li>
+                              <li>• System records <strong className="text-foreground">who</strong> set the outcome and <strong className="text-foreground">when</strong></li>
+                              <li>• An activity log entry is automatically created</li>
+                              <li>• Outcomes are <strong className="text-foreground">permanent</strong> — once set, the dropdown is disabled</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Record Lifecycle */}
+                      <div id="record-lifecycle" className="bg-card rounded-xl border border-border shadow-sm p-6 mb-6">
+                        <div className="flex items-center gap-2 mb-4">
+                          <Activity className="w-5 h-5 text-primary" />
+                          <h3 className="font-bold text-lg text-foreground">Record Lifecycle</h3>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="bg-accent/30 rounded-lg border border-border p-4">
+                            <h4 className="font-semibold text-foreground mb-2">Records Are Never Deleted</h4>
+                            <ul className="space-y-1.5 text-sm text-muted-foreground">
+                              <li>• Dead/declined opportunities remain in the <strong className="text-foreground">Opportunities list</strong></li>
+                              <li>• All associated data is preserved: accounts, contacts, documents, activities, comments, wizard state</li>
+                              <li>• Dead records show at <strong className="text-foreground">60% opacity</strong> with a red badge</li>
+                              <li>• Permanent deletion requires <strong className="text-foreground">admin approval</strong> via the Deletion Requests page</li>
+                            </ul>
+                          </div>
+                          <div className="bg-accent/30 rounded-lg border border-border p-4">
+                            <h4 className="font-semibold text-foreground mb-2">Reactivation</h4>
+                            <ul className="space-y-1.5 text-sm text-muted-foreground">
+                              <li>• Archived opportunities can be reactivated by <strong className="text-foreground">assigning a team member</strong></li>
+                              <li>• Reactivation requires confirmation dialog</li>
+                              <li>• Status reverts to <code className="text-xs bg-background px-1 rounded">active</code></li>
+                              <li>• Opportunity returns to pipeline at its previous stage</li>
+                              <li>• Activity log records the reactivation event</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Data Standards */}
+                      <div id="data-standards" className="bg-card rounded-xl border border-border shadow-sm p-6">
+                        <div className="flex items-center gap-2 mb-4">
+                          <ClipboardCheck className="w-5 h-5 text-amber-500" />
+                          <h3 className="font-bold text-lg text-foreground">Data Standards</h3>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="bg-accent/30 rounded-lg border border-border p-4">
+                            <h4 className="font-semibold text-foreground mb-2">Pipeline Integrity</h4>
+                            <ul className="space-y-1.5 text-sm text-muted-foreground">
+                              <li>• Only <code className="text-xs bg-background px-1 rounded">status = active</code> opportunities appear on the pipeline board</li>
+                              <li>• Opportunities with any <code className="text-xs bg-background px-1 rounded">outcome_status</code> are excluded from the board</li>
+                              <li>• Stage movement is disabled once an outcome is set</li>
+                              <li>• SLA timers reset on every stage change</li>
+                              <li>• Drag-and-drop is blocked for opportunities with outcomes</li>
+                            </ul>
+                          </div>
+                          <div className="bg-accent/30 rounded-lg border border-border p-4">
+                            <h4 className="font-semibold text-foreground mb-2">Required Data Flow</h4>
+                            <ul className="space-y-1.5 text-sm text-muted-foreground">
+                              <li>• Every opportunity must have an <strong className="text-foreground">Account</strong> and <strong className="text-foreground">Contact</strong></li>
+                              <li>• Wizard state auto-syncs between account/contact fields and preboarding form</li>
+                              <li>• Service type determines which pipeline stages are available</li>
+                              <li>• Processing approved → auto-creates Gateway card if none exists</li>
+                              <li>• All field changes are <strong className="text-foreground">auto-saved</strong> with debounced persistence</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </section>
+
                   </div>
                 </section>
 
