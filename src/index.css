@@ -952,6 +952,24 @@ All colors MUST be HSL.
     background-color: hsl(0 0% 100%);
     background-image: none;
   }
+
+  /* Dark PS1: retro polygonal background */
+  .dark-ps1.dark body {
+    background-image: linear-gradient(hsla(240 8% 6% / 0.5), hsla(240 8% 6% / 0.5)), url('/src/assets/bg-dark-ps1.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+
+  /* Light Salesforce: cloud-inspired background */
+  .light-salesforce.light body {
+    background-image: url('/src/assets/bg-light-salesforce.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
 }
 
 @layer utilities {
