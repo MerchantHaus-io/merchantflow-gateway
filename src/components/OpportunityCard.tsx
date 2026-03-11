@@ -121,7 +121,7 @@ const OpportunityCard = ({
     if (hoursInStage >= 48) return { status: "red" as const, label: "Overdue", priority: "HIGH" as const, hidden: false, daysInStage };
     if (hoursInStage >= 24) return { status: "amber" as const, label: "At Risk", priority: "MED" as const, hidden: false, daysInStage };
     return { status: "green" as const, label: "On Track", priority: "LOW" as const, hidden: true, daysInStage };
-  }, [opportunity.stage_entered_at, opportunity.created_at, opportunity.sla_status, isLive]);
+  }, [opportunity.stage_entered_at, opportunity.created_at, opportunity.sla_status, isClosedWon]);
 
   useEffect(() => {
     const fetchAvatar = async () => {
