@@ -346,7 +346,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
         </NavigationMenu>
 
         {/* Right side actions */}
-        <div className="flex items-cen shrink-0 overflow-visibleter gap-1 ml-auto">
+        <div className="flex items-center shrink-0 overflow-visible gap-1 ml-auto">
           {/* ⌘K search trigger */}
           <Button
             variant="ghost"
@@ -369,7 +369,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
             <DropdownMenuTrigger asChild>
               <Button
                 size="sm"
-                className="h-8 bg-gold text-gold-foreground hover:bg-gold/90 transition-all rounded-md px-3 text-xs font-semibold shadow-sm overflow-visible shrink-0"
+                className="h-8 bg-primary text-primary-foreground hover:bg-primary/90 transition-all rounded-md px-3 text-xs font-semibold shadow-sm overflow-visible shrink-0"
               >
                 <Plus className="h-3.5 w-3.5 mr-1 shrink-0" />
                 <span className="hidden sm:inline">New</span>
@@ -447,14 +447,14 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                 variant="ghost"
                 size="sm"
                 className={cn(
-                  "h-8 gap-1.5 pl-1 pr-2 rounded-md",
+                  "h-9 gap-2 pl-1.5 pr-2.5 rounded-md",
                   isDark
                     ? "text-white/75 hover:text-white hover:bg-white/10"
                     : "text-foreground/75 hover:text-foreground hover:bg-accent"
                 )}
               >
-                <Avatar className="h-6 w-6 ring-1 ring-border/50">
-                  <AvatarImage src={avatarUrl || undefined} alt={displayName} />
+                <Avatar className="h-7 w-7 ring-1 ring-border/50 shrink-0">
+                  <AvatarImage src={avatarUrl || undefined} alt={displayName} className="object-cover" />
                   <AvatarFallback className="text-[10px] font-bold bg-primary/15 text-primary">
                     {displayName.slice(0, 2).toUpperCase()}
                   </AvatarFallback>
