@@ -462,7 +462,7 @@ function ActionItemRow({
         className="mt-0.5"
       />
       <div className="flex-1 min-w-0">
-        <p className={cn("text-sm leading-tight", item.completed && "line-through text-muted-foreground")}>
+        <p className={cn("text-sm leading-relaxed whitespace-pre-wrap break-words", item.completed && "line-through text-muted-foreground")}>
           {item.title}
         </p>
 
