@@ -369,7 +369,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
             <DropdownMenuTrigger asChild>
               <Button
                 size="sm"
-                className="h-8 bg-gold text-gold-foreground hover:bg-gold/90 transition-all rounded-md px-3 text-xs font-semibold shadow-sm overflow-visible shrink-0"
+                className="h-8 bg-primary text-primary-foreground hover:bg-primary/90 transition-all rounded-md px-3 text-xs font-semibold shadow-sm overflow-visible shrink-0"
               >
                 <Plus className="h-3.5 w-3.5 mr-1 shrink-0" />
                 <span className="hidden sm:inline">New</span>
