@@ -721,7 +721,7 @@ const Index = () => {
     } : o));
   };
   const handleSlaStatusChange = (opportunityId: string, slaStatus: string | null) => {
-    setOpportunities(opportunities.map(o => o.id === opportunityId ? {
+    setOpportunities(prev => prev.map(o => o.id === opportunityId ? {
       ...o,
       sla_status: slaStatus as 'green' | 'amber' | 'red' | null
     } : o));
