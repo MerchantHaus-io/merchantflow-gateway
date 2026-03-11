@@ -445,6 +445,7 @@ const Index = () => {
       service_type: item.service_type as ServiceType | undefined,
       status: item.status as 'active' | 'dead' | undefined,
       sla_status: item.sla_status as 'green' | 'amber' | 'red' | null | undefined,
+      outcome_status: (item.outcome_status as OutcomeStatus | null) || undefined,
       account: item.account ? {
         ...item.account,
         status: item.account.status as 'active' | 'dead' | undefined
