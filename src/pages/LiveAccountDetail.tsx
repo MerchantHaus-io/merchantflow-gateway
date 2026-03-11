@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { DocumentPreviewDialog } from "@/components/DocumentPreviewDialog";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +27,7 @@ import {
   Briefcase,
   Archive,
   Download,
+  Eye,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
@@ -73,6 +75,7 @@ const LiveAccountDetail = () => {
   const isMobile = useIsMobile();
   const { theme } = useTheme();
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState<any>(null);
 
   // Fetch ALL live opportunities for this account
   const { data: opportunities, isLoading } = useQuery({
@@ -253,6 +256,7 @@ const LiveAccountDetail = () => {
   }
 
   return (
+    <>
     <AppLayout>
       <div className="flex flex-col h-full">
         {/* Header */}
@@ -513,11 +517,11 @@ const LiveAccountDetail = () => {
                             </p>
                           </div>
                         </div>
-                        <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" asChild>
-                          <a href={doc.file_path} target="_blank" rel="noopener noreferrer">
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
-                        </Button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setPreviewDoc(doc)}>
+                            <Eye className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -592,6 +596,13 @@ const LiveAccountDetail = () => {
         </div>
       </div>
     </AppLayout>
+
+    <DocumentPreviewDialog
+      document={previewDoc}
+      open={!!previewDoc}
+      onOpenChange={(open) => { if (!open) setPreviewDoc(null); }}
+    />
+    </>
   );
 };
 

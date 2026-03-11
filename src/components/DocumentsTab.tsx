@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Upload, Download, Trash2, FileText, Loader2, Wand2, Eye, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
+import { DocumentPreviewDialog } from "@/components/DocumentPreviewDialog";
 
 interface Document {
   id: string;
@@ -55,6 +56,7 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [selectedDocType, setSelectedDocType] = useState("Unassigned");
   const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState<Document | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchDocuments = async () => {
@@ -323,6 +325,14 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
               <div className="flex items-center gap-1 shrink-0">
                 <Tooltip>
                   <TooltipTrigger asChild>
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setPreviewDoc(doc)}>
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Preview</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleDownload(doc)}>
                       <Download className="h-4 w-4" />
                     </Button>
@@ -342,6 +352,12 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
           ))}
         </div>
       )}
+
+      <DocumentPreviewDialog
+        document={previewDoc}
+        open={!!previewDoc}
+        onOpenChange={(open) => { if (!open) setPreviewDoc(null); }}
+      />
     </div>
   );
 };

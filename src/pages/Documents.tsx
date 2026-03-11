@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { DocumentPreviewDialog } from "@/components/DocumentPreviewDialog";
 
 /**
  * DocumentsPage lists all documents uploaded across opportunities. Users can
@@ -53,6 +54,7 @@ const DocumentsPage = () => {
   const [collapsedAccounts, setCollapsedAccounts] = useState<Set<string> | null>(null);
   const [initialCollapseApplied, setInitialCollapseApplied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previewDoc, setPreviewDoc] = useState<DocumentWithOpportunity | null>(null);
 
   useEffect(() => {
     // Fetch documents on mount
@@ -118,27 +120,8 @@ const DocumentsPage = () => {
   };
 
   /**
-   * Opens a document in a new tab for preview/review.
+   * Opens a document in the inline preview dialog.
    */
-  const handlePreview = async (doc: Document) => {
-    try {
-      const { data, error } = await supabase.storage
-        .from("opportunity-documents")
-        .download(doc.file_path);
-
-      if (error || !data) {
-        toast.error("Failed to open file");
-        return;
-      }
-
-      const contentType = doc.content_type || "application/octet-stream";
-      const blob = new Blob([data], { type: contentType });
-      const url = URL.createObjectURL(blob);
-      window.open(url, "_blank");
-    } catch {
-      toast.error("Failed to open file");
-    }
-  };
 
   /**
    * Downloads a document as a file attachment.
@@ -527,7 +510,7 @@ const DocumentsPage = () => {
                                               variant="ghost"
                                               size="icon"
                                               className="h-8 w-8"
-                                              onClick={() => handlePreview(doc)}
+                                              onClick={() => setPreviewDoc(doc)}
                                               title="Preview"
                                             >
                                               <Eye className="h-4 w-4" />
@@ -580,6 +563,12 @@ const DocumentsPage = () => {
           </div>
         )}
       </div>
+
+      <DocumentPreviewDialog
+        document={previewDoc}
+        open={!!previewDoc}
+        onOpenChange={(open) => { if (!open) setPreviewDoc(null); }}
+      />
     </AppLayout>
   );
 };
