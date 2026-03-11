@@ -257,6 +257,15 @@ const Auth = () => {
             {isLoading ? 'Signing in...' : 'Sign In'}
           </Button>
         </form>
+
+        {/* Bottom logo */}
+        <div className="flex items-center justify-center pt-4 animate-fade-in" style={{ animationDelay: '0.6s', animationFillMode: 'both' }}>
+          <img
+            src={merchantHausLogo}
+            alt="Merchant Haus"
+            className="h-8 w-auto opacity-40"
+          />
+        </div>
       </div>
     </div>
   );
