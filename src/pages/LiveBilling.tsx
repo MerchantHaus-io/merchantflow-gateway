@@ -52,9 +52,8 @@ const LiveBilling = () => {
           account:accounts(*),
           contact:contacts(*)
         `)
-        .eq("stage", "live_activated")
-        .eq("status", "active")
-        .order("stage_entered_at", { ascending: false, nullsFirst: false });
+        .eq("outcome_status", "closed_won")
+        .order("outcome_closed_at", { ascending: false, nullsFirst: false });
 
       if (error) throw error;
       return data || [];

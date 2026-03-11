@@ -975,86 +975,79 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                       <TooltipContent>Edit</TooltipContent>
                     </Tooltip>
                     
-                    {/* Pipeline toggle button - Lightning bolt for conversion */}
-                    {isGatewayCard ? (
-                      onMoveToProcessing && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8 text-amber-500 border-amber-500 hover:bg-amber-500/10"
-                              onClick={() => setShowMoveDialog(true)}
-                              disabled={isConverting}
-                            >
-                              <CreditCard className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Move to Processing</TooltipContent>
-                        </Tooltip>
-                      )
-                    ) : (
-                      onConvertToGateway && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8 text-amber-500 border-amber-500 hover:bg-amber-500/10"
-                              onClick={handleConvertToGateway}
-                              disabled={isConverting || hasGatewayOpportunity}
-                            >
-                              <Zap className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            {hasGatewayOpportunity ? 'Gateway Added' : 'Add to Gateway'}
-                          </TooltipContent>
-                        </Tooltip>
+                    {/* Outcome Selector */}
+                    <OutcomeSelector
+                      currentOutcome={opportunity.outcome_status as OutcomeStatus | null}
+                      disabled={!!opportunity.outcome_status}
+                      onSelect={async (outcome, reason, notes) => {
+                        const { error } = await supabase
+                          .from('opportunities')
+                          .update({
+                            outcome_status: outcome,
+                            outcome_reason: reason,
+                            outcome_notes: notes,
+                            outcome_closed_at: new Date().toISOString(),
+                            outcome_closed_by: user?.email,
+                          })
+                          .eq('id', opportunity.id);
+                        if (error) { toast.error("Failed to set outcome"); return; }
+                        await supabase.from('activities').insert({
+                          opportunity_id: opportunity.id,
+                          type: 'outcome_set',
+                          description: `Outcome: ${OUTCOME_CONFIG[outcome].label} — ${reason}`,
+                          user_id: user?.id,
+                          user_email: user?.email,
+                        });
+                        onUpdate({ ...opportunity, outcome_status: outcome, outcome_reason: reason, outcome_notes: notes, outcome_closed_at: new Date().toISOString(), outcome_closed_by: user?.email });
+                        toast.success(`Outcome set: ${OUTCOME_CONFIG[outcome].label}`);
+                        if (outcome !== 'closed_won') {
+                          setTimeout(() => onClose(), 1500);
+                        }
+                      }}
+                    />
+
+                    {/* Pipeline toggle button */}
+                    {!opportunity.outcome_status && (
+                      isGatewayCard ? (
+                        onMoveToProcessing && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="outline" size="icon" className="h-8 w-8 text-amber-500 border-amber-500 hover:bg-amber-500/10" onClick={() => setShowMoveDialog(true)} disabled={isConverting}>
+                                <CreditCard className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Move to Processing</TooltipContent>
+                          </Tooltip>
+                        )
+                      ) : (
+                        onConvertToGateway && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="outline" size="icon" className="h-8 w-8 text-amber-500 border-amber-500 hover:bg-amber-500/10" onClick={handleConvertToGateway} disabled={isConverting || hasGatewayOpportunity}>
+                                <Zap className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>{hasGatewayOpportunity ? 'Gateway Added' : 'Add to Gateway'}</TooltipContent>
+                          </Tooltip>
+                        )
                       )
                     )}
-                    
-                    {/* Mark as Dead - Skull icon */}
-                    {opportunity.status !== 'dead' && (
+
+                    {/* Delete - admin only */}
+                    {isAdmin && (
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button
-                            variant="outline" 
-                            size="icon"
-                            className="h-8 w-8 text-[hsl(var(--toxic))] border-[hsl(var(--toxic))] hover:bg-[hsl(var(--toxic))]/10"
-                            onClick={() => setShowDeadDialog(true)}
-                          >
-                            <Skull className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Mark as Dead</TooltipContent>
-                      </Tooltip>
-                    )}
-                    
-                    {/* Delete - admin only, Request Deletion for others */}
-                    {isAdmin ? (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button 
-                            variant="destructive" 
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => setShowDeleteDialog(true)}
-                          >
+                          <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => setShowDeleteDialog(true)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>Delete Permanently</TooltipContent>
                       </Tooltip>
-                    ) : (
+                    )}
+                    {!isAdmin && (
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button 
-                            variant="outline" 
-                            size="icon"
-                            className="h-8 w-8 text-destructive border-destructive hover:bg-destructive/10"
-                            onClick={() => setShowRequestDeleteDialog(true)}
-                          >
+                          <Button variant="outline" size="icon" className="h-8 w-8 text-destructive border-destructive hover:bg-destructive/10" onClick={() => setShowRequestDeleteDialog(true)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
