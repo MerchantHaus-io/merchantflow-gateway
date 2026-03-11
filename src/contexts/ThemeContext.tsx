@@ -123,7 +123,7 @@ const getStoredDefaultLight = (): ThemeVariant => {
   } catch (error) {
     console.warn('Default light theme unavailable.', error);
   }
-  return 'light-default';
+  return 'light-salesforce';
 };
 
 const persistTheme = (theme: ThemeMode) => {
