@@ -260,7 +260,7 @@ const Auth = () => {
         </form>
 
         {/* Bottom logo */}
-        <div className="flex items-center justify-center pt-4 animate-fade-in" style={{ animationDelay: '0.6s', animationFillMode: 'both' }}>
+        <div className="flex items-center justify-center pt-4" style={{ animation: 'logo-enter 0.8s ease-out 0.6s both' }}>
           <img
             src={merchantHausLogo}
             alt="Merchant Haus"
