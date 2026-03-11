@@ -52,9 +52,9 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 const defaultThemeContext: ThemeContextType = {
   theme: 'light',
-  variant: 'light-default',
+  variant: 'light-salesforce',
   defaultDarkVariant: 'dark-default',
-  defaultLightVariant: 'light-default',
+  defaultLightVariant: 'light-salesforce',
   toggleTheme: () => {},
   setTheme: () => {},
   setVariant: () => {},
