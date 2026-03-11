@@ -100,7 +100,7 @@ const OpportunityCard = ({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const slaInfo = useMemo(() => {
-    if (isLive) return { status: "green" as const, label: "Live", priority: null, hidden: true, daysInStage: 0 };
+    if (isClosedWon) return { status: "green" as const, label: "Won", priority: null, hidden: true, daysInStage: 0 };
     const stageEnteredAt = opportunity.stage_entered_at
       ? new Date(opportunity.stage_entered_at)
       : new Date(opportunity.created_at);
