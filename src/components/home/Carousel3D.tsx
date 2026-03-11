@@ -222,15 +222,17 @@ export function Carousel3D({ items }: Carousel3DProps) {
               </div>
 
               {/* Mirror reflection */}
+              {/* Horizontal mirror reflection */}
               <div
-                className="absolute left-0 w-full pointer-events-none"
+                className="absolute top-0 pointer-events-none"
                 style={{
-                  top: "100%",
+                  left: "100%",
+                  width: "100%",
                   height: "100%",
-                  transform: "scaleY(-1)",
-                  maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, transparent 45%)",
-                  WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, transparent 45%)",
-                  filter: "blur(1px)",
+                  transform: "scaleX(-1)",
+                  maskImage: "linear-gradient(to right, rgba(0,0,0,0.2) 0%, transparent 50%)",
+                  WebkitMaskImage: "linear-gradient(to right, rgba(0,0,0,0.2) 0%, transparent 50%)",
+                  filter: "blur(1.5px)",
                 }}
               >
                 <div
@@ -241,7 +243,7 @@ export function Carousel3D({ items }: Carousel3DProps) {
                   )}
                   style={{
                     boxShadow: "0 8px 32px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.08)",
-                    opacity: 0.4,
+                    opacity: 0.35,
                   }}
                 >
                   <div className={cn("w-14 h-14 rounded-full flex items-center justify-center", bgColorMap[item.color])}>
