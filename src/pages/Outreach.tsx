@@ -143,7 +143,7 @@ export default function Outreach() {
     if (open && !signatureInitialized) {
       const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Team Member";
       const userEmail = user?.email || "outreach@merchanthaus.io";
-      const logoUrl = `${window.location.origin}/merchant-haus-splash.png`;
+      const logoUrl = `${window.location.origin}/images/merchanthaus-logo.png`;
       const sig = [
         `<p style="margin:0;font-weight:600;font-size:14px;">${userName}</p>`,
         `<p style="margin:0;font-size:13px;color:#666;">Merchant Haus</p>`,
