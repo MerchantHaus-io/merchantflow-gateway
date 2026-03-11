@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import psTerminalLogo from '@/assets/ps-terminal-logo.png';
+import merchantHausLogo from '@/assets/merchanthaus-logo.png';
 import { isEmailAllowed } from '@/types/opportunity';
 
 const emailSchema = z.string().email('Please enter a valid email address');
