@@ -595,6 +595,13 @@ const LiveAccountDetail = () => {
         </div>
       </div>
     </AppLayout>
+
+    <DocumentPreviewDialog
+      document={previewDoc}
+      open={!!previewDoc}
+      onOpenChange={(open) => { if (!open) setPreviewDoc(null); }}
+    />
+    </>
   );
 };
 
