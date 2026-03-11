@@ -95,7 +95,7 @@ const UnifiedPipelineBoard = ({
   const getOpportunitiesByStage = useCallback(
     (stage: OpportunityStage) =>
       opportunities
-        .filter((o) => migrateStage(o.stage) === stage)
+        .filter((o) => migrateStage(o.stage) === stage && !o.outcome_status)
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
     [opportunities]
   );
