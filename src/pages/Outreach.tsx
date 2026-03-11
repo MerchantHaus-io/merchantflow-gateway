@@ -428,7 +428,7 @@ export default function Outreach() {
                               className={cn("mt-1", activeStep === 0 && !steps[0].subject && "border-destructive/50 focus-visible:ring-destructive/30")} />
                          </div>
                          <div>
-                           <Label className="text-xs">Paste or compose your email</Label>
+                           <Label className="text-xs">Paste or compose your email {activeStep === 0 && <span className="text-destructive">*</span>}</Label>
                            <GmailEditor
                              value={steps[activeStep].bodyHtml}
                              onChange={(html) => updateStep(activeStep, { bodyHtml: html })}
