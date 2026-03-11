@@ -172,6 +172,8 @@ const Index = () => {
   const {
     user
   } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
