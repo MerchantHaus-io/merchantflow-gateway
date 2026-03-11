@@ -103,9 +103,8 @@ export function GmailEditor({
         return;
       }
       if (data?.html) {
+        isInternalChange.current = false;
         onChange(data.html);
-        lastExternalValue.current = data.html;
-        if (editorRef.current) editorRef.current.innerHTML = data.html;
         toast.success("Email polished by AI ✨");
       }
     } catch (err: any) {
