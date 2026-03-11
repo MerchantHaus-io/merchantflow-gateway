@@ -119,6 +119,7 @@ export default function Outreach() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [open, setOpen]           = useState(false);
+  const [wizardPhase, setWizardPhase] = useState<"compose"|"review">("compose");
   const [name, setName]           = useState("");
   const [fromName, setFromName]   = useState("Merchant Haus");
   const [fromEmail, setFromEmail] = useState("outreach@merchanthaus.io");
@@ -155,6 +156,7 @@ export default function Outreach() {
     }
     if (!open) {
       setSignatureInitialized(false);
+      setWizardPhase("compose");
     }
   }, [open, signatureInitialized, user]);
 
@@ -554,87 +556,129 @@ export default function Outreach() {
                        <p className="text-[10px] text-muted-foreground">CSV headers: email, first_name, last_name, company. You can also add leads later.</p>
                      </div>
 
-                     <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
-                       <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Schedule (Optional)</p>
-                       <div className="flex gap-2">
-                         <Popover>
-                           <PopoverTrigger asChild>
-                             <Button variant="outline" className={cn("flex-1 justify-start text-sm font-normal", !schedDate && "text-muted-foreground")}>
-                               <CalendarIcon className="h-4 w-4 mr-2" />{schedDate ? format(schedDate, "PPP") : "Pick a date"}
-                             </Button>
-                           </PopoverTrigger>
-                           <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar mode="single" selected={schedDate} onSelect={setSchedDate}
-                                disabled={d => {
-                                  const today = new Date();
-                                  today.setHours(0, 0, 0, 0);
-                                  return d < today;
-                                }} initialFocus className="p-3 pointer-events-auto" />
-                           </PopoverContent>
-                         </Popover>
-                         <Input type="time" value={schedTime} onChange={e => setSchedTime(e.target.value)} className="w-28" />
-                       </div>
-                       {schedDate && (
-                         <div className="flex items-center gap-2">
-                           <p className="text-xs text-muted-foreground flex items-center gap-1">
-                             <Clock className="h-3 w-3" />Step 1 sends {format(schedDate, "MMM d, yyyy")} at {schedTime}
-                           </p>
-                           <Button variant="ghost" size="sm" className="h-5 text-xs px-1" onClick={() => setSchedDate(undefined)}>Clear</Button>
-                         </div>
-                       )}
-                     </div>
-
-                      {/* Email Preview */}
-                      {steps[0].bodyHtml && (
-                        <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
-                          <div className="flex items-center justify-between">
-                            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Email Preview</p>
-                            <div className="flex gap-1 flex-wrap">
-                              {Array.from({ length: stepCount }, (_, i) => (
-                                <button key={i} type="button" onClick={() => setPreviewStepIdx(i)}
-                                  className={cn(
-                                    "px-2 py-0.5 rounded-full text-[10px] font-medium border transition-colors",
-                                    previewStepIdx === i ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground"
-                                  )}>S{i + 1}</button>
-                              ))}
-                            </div>
+                      {/* ── Phase: Compose → "Next: Review" button ── */}
+                      {wizardPhase === "compose" && (
+                        <>
+                          {(!name || !steps[0].subject || !steps[0].bodyHtml) && (
+                            <p className="text-xs text-destructive/80 text-center flex items-center justify-center gap-1">
+                              <span className="inline-block h-1.5 w-1.5 rounded-full bg-destructive/60" />
+                              Fill in all required fields ({[!name && "name", !steps[0].subject && "subject", !steps[0].bodyHtml && "email body"].filter(Boolean).join(", ")})
+                            </p>
+                          )}
+                          <div className="flex gap-2">
+                            <Button variant="outline" className="flex-1" onClick={() => saveDraft.mutate()} disabled={!name || saveDraft.isPending}>
+                              <Clock className="h-4 w-4 mr-2" />Save Draft
+                            </Button>
+                            <Button className="flex-1" onClick={() => { setPreviewStepIdx(0); setWizardPhase("review"); }} disabled={!name || !steps[0].subject || !steps[0].bodyHtml}>
+                              <Eye className="h-4 w-4 mr-2" />Review &amp; Preview
+                            </Button>
                           </div>
-                          <div className="border border-border rounded-lg overflow-hidden">
-                            <div className="bg-muted/30 px-3 py-2 text-xs text-muted-foreground flex items-center gap-2">
-                              <Mail className="h-3 w-3" />
-                              <span className="font-medium">{steps[previewStepIdx].subject || "(no subject)"}</span>
-                            </div>
-                            <div className="p-4 bg-white text-black min-h-[100px] text-sm prose prose-sm max-w-none"
-                              dangerouslySetInnerHTML={{
-                                __html: (steps[previewStepIdx].bodyHtml || "")
-                                  .replace(/\{\{first_name\}\}/g, "Jane")
-                                  .replace(/\{\{last_name\}\}/g, "Smith")
-                                  .replace(/\{\{company\}\}/g, "Acme Corp")
-                                  .replace(/\{\{email\}\}/g, "jane@example.com")
-                                  + (signature ? `<br/><div style="border-top:1px solid #e5e5e5;padding-top:8px;margin-top:12px;font-size:13px;color:#666;">${signature}</div>` : "")
-                              }} />
-                          </div>
-                          <p className="text-[10px] text-muted-foreground">Preview uses sample data: Jane Smith, Acme Corp</p>
-                        </div>
+                        </>
                       )}
 
-                       {(!name || !steps[0].subject || !steps[0].bodyHtml) && (
-                          <p className="text-xs text-destructive/80 text-center flex items-center justify-center gap-1">
-                            <span className="inline-block h-1.5 w-1.5 rounded-full bg-destructive/60" />
-                            Fill in all required fields ({[!name && "name", !steps[0].subject && "subject", !steps[0].bodyHtml && "email body"].filter(Boolean).join(", ")})
-                          </p>
-                        )}
-                        <div className="flex gap-2">
-                          <Button variant="outline" className="flex-1" onClick={() => saveDraft.mutate()} disabled={!name || saveDraft.isPending}>
-                            <Clock className="h-4 w-4 mr-2" />Save Draft
-                          </Button>
-                          <Button className="flex-1" onClick={() => create.mutate()} disabled={!name || !steps[0].subject || !steps[0].bodyHtml || create.isPending}>
-                            <Layers className="h-4 w-4 mr-2" />{schedDate ? "Schedule Cadence" : "Create Cadence"} ({stepCount} {stepCount === 1 ? "email" : "emails"})
-                          </Button>
+                      {/* ── Phase: Review ── */}
+                      {wizardPhase === "review" && (
+                        <div className="space-y-5">
+                          {/* Summary card */}
+                          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+                            <p className="text-[10px] font-semibold uppercase tracking-widest text-primary">Cadence Summary</p>
+                            <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                              <div><span className="text-muted-foreground text-xs">Name</span><p className="font-medium text-foreground">{name}</p></div>
+                              <div><span className="text-muted-foreground text-xs">Steps</span><p className="font-medium text-foreground">{stepCount} email{stepCount > 1 ? "s" : ""}</p></div>
+                              <div><span className="text-muted-foreground text-xs">From</span><p className="font-medium text-foreground">{fromName} &lt;{fromEmail}&gt;</p></div>
+                              <div><span className="text-muted-foreground text-xs">Leads</span><p className="font-medium text-foreground">{csvLeads.length > 0 ? `${csvLeads.length} loaded` : "None yet"}</p></div>
+                            </div>
+                            {stepCount > 1 && (
+                              <div className="pt-2 border-t border-primary/10">
+                                <p className="text-[10px] text-muted-foreground mb-1">Follow-up delays</p>
+                                <div className="flex gap-1 flex-wrap">
+                                  {steps.slice(1, stepCount).map((s, i) => (
+                                    <span key={i} className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px] font-medium border border-border/40">
+                                      Step {i + 2}: +{s.delayDays}d
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Full email preview */}
+                          <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Email Preview</p>
+                              <div className="flex gap-1 flex-wrap">
+                                {Array.from({ length: stepCount }, (_, i) => (
+                                  <button key={i} type="button" onClick={() => setPreviewStepIdx(i)}
+                                    className={cn(
+                                      "px-2 py-0.5 rounded-full text-[10px] font-medium border transition-colors",
+                                      previewStepIdx === i ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground"
+                                    )}>Step {i + 1}</button>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="border border-border rounded-lg overflow-hidden">
+                              <div className="bg-muted/30 px-3 py-2 text-xs flex items-center justify-between">
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                  <Mail className="h-3 w-3" />
+                                  <span className="font-medium">{steps[previewStepIdx].subject || "(no subject)"}</span>
+                                </div>
+                                <span className="text-[10px] text-muted-foreground">From: {fromName} &lt;{fromEmail}&gt;</span>
+                              </div>
+                              <div className="p-4 bg-white text-black min-h-[120px] text-sm prose prose-sm max-w-none"
+                                dangerouslySetInnerHTML={{
+                                  __html: (steps[previewStepIdx].bodyHtml || "")
+                                    .replace(/\{\{first_name\}\}/g, "Jane")
+                                    .replace(/\{\{last_name\}\}/g, "Smith")
+                                    .replace(/\{\{company\}\}/g, "Acme Corp")
+                                    .replace(/\{\{email\}\}/g, "jane@example.com")
+                                    + (signature ? `<br/><div style="border-top:1px solid #e5e5e5;padding-top:8px;margin-top:12px;font-size:13px;color:#666;">${signature}</div>` : "")
+                                }} />
+                            </div>
+                            <p className="text-[10px] text-muted-foreground">Preview uses sample data: Jane Smith, Acme Corp</p>
+                          </div>
+
+                          {/* Schedule */}
+                          <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
+                            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Schedule (Optional)</p>
+                            <div className="flex gap-2">
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button variant="outline" className={cn("flex-1 justify-start text-sm font-normal", !schedDate && "text-muted-foreground")}>
+                                    <CalendarIcon className="h-4 w-4 mr-2" />{schedDate ? format(schedDate, "PPP") : "Pick a date"}
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                  <Calendar mode="single" selected={schedDate} onSelect={setSchedDate}
+                                    disabled={d => { const today = new Date(); today.setHours(0, 0, 0, 0); return d < today; }}
+                                    initialFocus className="p-3 pointer-events-auto" />
+                                </PopoverContent>
+                              </Popover>
+                              <Input type="time" value={schedTime} onChange={e => setSchedTime(e.target.value)} className="w-28" />
+                            </div>
+                            {schedDate && (
+                              <div className="flex items-center gap-2">
+                                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />Step 1 sends {format(schedDate, "MMM d, yyyy")} at {schedTime}
+                                </p>
+                                <Button variant="ghost" size="sm" className="h-5 text-xs px-1" onClick={() => setSchedDate(undefined)}>Clear</Button>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Action buttons */}
+                          <div className="flex gap-2">
+                            <Button variant="outline" className="flex-1" onClick={() => setWizardPhase("compose")}>
+                              <ArrowUpRight className="h-4 w-4 mr-2 rotate-[225deg]" />Back to Edit
+                            </Button>
+                            <Button className="flex-1" onClick={() => create.mutate()} disabled={create.isPending}>
+                              <Send className="h-4 w-4 mr-2" />{schedDate ? "Schedule Cadence" : "Create & Launch"} ({stepCount} {stepCount === 1 ? "email" : "emails"})
+                            </Button>
+                          </div>
                         </div>
-                   </div>
-                 </div>
-               </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </DialogContent>
         </Dialog>
 
