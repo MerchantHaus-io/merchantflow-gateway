@@ -8,11 +8,13 @@ export type ThemeVariant =
   | 'dark-forest'
   | 'dark-charcoal'
   | 'dark-mono'
+  | 'dark-ps1'
   | 'light-default' 
   | 'light-ocean' 
   | 'light-warm'
   | 'light-silver'
-  | 'light-mono';
+  | 'light-mono'
+  | 'light-salesforce';
 
 export interface ThemeOption {
   id: ThemeVariant;
