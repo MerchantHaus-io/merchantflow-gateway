@@ -494,8 +494,12 @@ export default function Outreach() {
                              </Button>
                            </PopoverTrigger>
                            <PopoverContent className="w-auto p-0" align="start">
-                             <Calendar mode="single" selected={schedDate} onSelect={setSchedDate}
-                               disabled={d => d < new Date()} initialFocus className="p-3 pointer-events-auto" />
+                              <Calendar mode="single" selected={schedDate} onSelect={setSchedDate}
+                                disabled={d => {
+                                  const today = new Date();
+                                  today.setHours(0, 0, 0, 0);
+                                  return d < today;
+                                }} initialFocus className="p-3 pointer-events-auto" />
                            </PopoverContent>
                          </Popover>
                          <Input type="time" value={schedTime} onChange={e => setSchedTime(e.target.value)} className="w-28" />
