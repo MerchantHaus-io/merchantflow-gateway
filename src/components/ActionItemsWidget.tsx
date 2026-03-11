@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { ClipboardCheck, X, Plus, Trash2, ChevronDown, Paperclip, FileText, Image as ImageIcon, Download, ExternalLink } from "lucide-react";
+import { ClipboardCheck, X, Plus, Trash2, ChevronDown, Paperclip, FileText, Image as ImageIcon, Download, ExternalLink, Bold, Italic, List, ListOrdered } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -278,25 +278,70 @@ export function ActionItemsWidget() {
 
             {/* Add new item */}
             <div className="px-4 py-3 border-b border-border space-y-2">
-              <div className="flex gap-2">
-                <Input
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="Add action item…"
-                  className="flex-1 text-sm border-b border-haus-canvas"
-                  onKeyDown={(e) => e.key === "Enter" && !isUploading && addItem()}
-                />
+              {/* Formatting toolbar */}
+              <div className="flex items-center gap-0.5 border border-border/50 rounded-md p-0.5 bg-muted/20">
+                {[
+                  { icon: Bold, label: "Bold", prefix: "**", suffix: "**" },
+                  { icon: Italic, label: "Italic", prefix: "_", suffix: "_" },
+                  { icon: List, label: "Bullet list", prefix: "• ", suffix: "" },
+                  { icon: ListOrdered, label: "Numbered list", prefix: "1. ", suffix: "" },
+                ].map(({ icon: Icon, label, prefix, suffix }) => (
+                  <Button
+                    key={label}
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                    title={label}
+                    onClick={() => {
+                      const ta = document.getElementById("notice-board-textarea") as HTMLTextAreaElement | null;
+                      if (!ta) return;
+                      const start = ta.selectionStart;
+                      const end = ta.selectionEnd;
+                      const selected = newTitle.substring(start, end);
+                      const before = newTitle.substring(0, start);
+                      const after = newTitle.substring(end);
+                      const inserted = `${prefix}${selected || "text"}${suffix}`;
+                      setNewTitle(before + inserted + after);
+                      setTimeout(() => {
+                        ta.focus();
+                        const cursorPos = before.length + inserted.length;
+                        ta.setSelectionRange(cursorPos, cursorPos);
+                      }, 0);
+                    }}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                  </Button>
+                ))}
+                <div className="flex-1" />
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={() => fileInputRef.current?.click()}
-                  className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                  className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
                   title="Attach file"
                 >
                   <Paperclip className="h-3.5 w-3.5" />
                 </Button>
-                <Button size="sm" onClick={addItem} disabled={!newTitle.trim() || isUploading} className="bg-gold text-haus-charcoal hover:bg-gold/90 h-8 px-3">
+              </div>
+
+              <Textarea
+                id="notice-board-textarea"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder="Write a notice — use multiple lines, formatting, and detail…"
+                className="flex-1 text-sm min-h-[80px] max-h-[160px] resize-y"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && !isUploading) {
+                    e.preventDefault();
+                    addItem();
+                  }
+                }}
+              />
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-muted-foreground">⌘+Enter to post</span>
+                <Button size="sm" onClick={addItem} disabled={!newTitle.trim() || isUploading} className="bg-gold text-haus-charcoal hover:bg-gold/90 h-8 px-3 gap-1">
                   <Plus className="h-3.5 w-3.5" />
+                  Post
                 </Button>
               </div>
 
@@ -417,7 +462,7 @@ function ActionItemRow({
         className="mt-0.5"
       />
       <div className="flex-1 min-w-0">
-        <p className={cn("text-sm leading-tight", item.completed && "line-through text-muted-foreground")}>
+        <p className={cn("text-sm leading-relaxed whitespace-pre-wrap break-words", item.completed && "line-through text-muted-foreground")}>
           {item.title}
         </p>
 
