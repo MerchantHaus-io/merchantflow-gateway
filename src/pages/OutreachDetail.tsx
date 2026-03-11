@@ -629,12 +629,12 @@ export default function OutreachDetail() {
 
                     {/* Follow-up steps */}
                     {stepsWithDays.map(step => (
-                      <CadenceStepCard
+                     <CadenceStepCard
                         key={step.id}
                         stepNumber={step.step_number}
                         subject={step.subject}
                         dayLabel={`Day +${step.cumulDays}`}
-                        onSend={() => sendStep(step.step_number)}
+                        onSend={() => { setSendConfirmStep(step.step_number); setSendConfirmOpen(true); }}
                         onDelete={() => deleteStep.mutate(step.id)}
                         sending={sending}
                       />
