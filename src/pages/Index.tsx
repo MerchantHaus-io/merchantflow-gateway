@@ -494,7 +494,7 @@ const Index = () => {
   useEffect(() => {
     const now = Date.now();
     opportunities.forEach(opportunity => {
-      if (opportunity.stage === 'application_started') {
+      if (opportunity.stage === 'discovery') {
         const createdAt = new Date(opportunity.created_at).getTime();
         const ageInHours = (now - createdAt) / (1000 * 60 * 60);
         if (ageInHours >= 24) {

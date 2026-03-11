@@ -341,7 +341,7 @@ const OpportunityDetail = () => {
 
   const account = opportunity?.account;
   const contact = opportunity?.contact;
-  const stageConfig = opportunity ? (STAGE_CONFIG[opportunity.stage as OpportunityStage] ?? STAGE_CONFIG.application_prep) : STAGE_CONFIG.application_started;
+  const stageConfig = opportunity ? (STAGE_CONFIG[opportunity.stage as OpportunityStage] ?? STAGE_CONFIG.application_prep) : STAGE_CONFIG.discovery;
   const wizardState = opportunity?.wizard_state;
   const relatedTasks = useMemo(
     () => (opportunity ? getTasksForOpportunity(opportunity.id) : []),

@@ -1,15 +1,20 @@
 export type OpportunityStage =
-  | 'application_started'
   | 'discovery'
   | 'qualified'
   | 'application_prep'
   | 'underwriting_review'
   | 'processor_approval'
-  | 'integration_setup'
   | 'gateway_submitted'
-  | 'live_activated'
+  | 'integration_setup'
+  | 'testing'
+  | 'go_live_ready';
+
+export type OutcomeStatus =
   | 'closed_won'
-  | 'closed_lost';
+  | 'closed_lost'
+  | 'disqualified'
+  | 'no_decision'
+  | 'underwriting_declined';
 
 // Service type determines which pipeline an opportunity belongs to
 export type ServiceType = 'processing' | 'gateway_only';
@@ -58,15 +63,19 @@ export interface Opportunity {
   assigned_to?: string;
   stage_entered_at?: string;
   sla_status?: 'green' | 'amber' | 'red' | null;
+  // Outcome fields
+  outcome_status?: OutcomeStatus | null;
+  outcome_reason?: string | null;
+  outcome_notes?: string | null;
+  outcome_closed_at?: string | null;
+  outcome_closed_by?: string | null;
   created_at: string;
   updated_at: string;
   // Joined data
   account?: Account;
   contact?: Contact;
-
   /** Optional wizard state saved from the onboarding/preboarding flow */
   wizard_state?: OnboardingWizardState;
-
   /** Related documents belonging to this opportunity */
   documents?: Document[];
   /** Related activities logged for this opportunity */
@@ -156,14 +165,6 @@ export const STAGE_CONFIG: Record<
   OpportunityStage,
   { label: string; colorClass: string; headerClass: string; badgeClass: string; color: string; icon: string }
 > = {
-  application_started: {
-    label: 'New',
-    colorClass: 'bg-zinc-500',
-    headerClass: 'bg-zinc-500 text-white',
-    badgeClass: 'bg-white/20 text-white border-white/30',
-    color: '#71717a',
-    icon: '📋',
-  },
   discovery: {
     label: 'Discovery',
     colorClass: 'bg-zinc-600',
@@ -204,131 +205,178 @@ export const STAGE_CONFIG: Record<
     color: '#1e293b',
     icon: '✅',
   },
-  integration_setup: {
-    label: 'Integration',
+  gateway_submitted: {
+    label: 'Gateway Setup',
     colorClass: 'bg-gray-700',
     headerClass: 'bg-gray-700 text-white',
     badgeClass: 'bg-white/20 text-white border-white/30',
     color: '#374151',
-    icon: '⚙️',
+    icon: '🚀',
   },
-  gateway_submitted: {
-    label: 'Gateway',
+  integration_setup: {
+    label: 'Integration',
     colorClass: 'bg-gray-800',
     headerClass: 'bg-gray-800 text-white',
     badgeClass: 'bg-white/20 text-white border-white/30',
     color: '#1f2937',
-    icon: '🚀',
+    icon: '⚙️',
   },
-  live_activated: {
-    label: 'Live',
-    colorClass: 'bg-green-600',
-    headerClass: 'bg-green-600 text-white',
+  testing: {
+    label: 'Testing',
+    colorClass: 'bg-indigo-700',
+    headerClass: 'bg-indigo-700 text-white',
     badgeClass: 'bg-white/20 text-white border-white/30',
-    color: '#16a34a',
-    icon: '🎉',
+    color: '#4338ca',
+    icon: '🧪',
   },
+  go_live_ready: {
+    label: 'Go Live Ready',
+    colorClass: 'bg-emerald-600',
+    headerClass: 'bg-emerald-600 text-white',
+    badgeClass: 'bg-white/20 text-white border-white/30',
+    color: '#059669',
+    icon: '🎯',
+  },
+};
+
+// Outcome config for display
+export const OUTCOME_CONFIG: Record<
+  OutcomeStatus,
+  { label: string; color: string; bgClass: string; textClass: string; icon: string }
+> = {
   closed_won: {
     label: 'Closed Won',
-    colorClass: 'bg-green-700',
-    headerClass: 'bg-green-700 text-white',
-    badgeClass: 'bg-white/20 text-white border-white/30',
-    color: '#15803d',
+    color: '#16a34a',
+    bgClass: 'bg-emerald-500/10',
+    textClass: 'text-emerald-600 dark:text-emerald-400',
     icon: '🏆',
   },
   closed_lost: {
     label: 'Closed Lost',
-    colorClass: 'bg-red-600',
-    headerClass: 'bg-red-600 text-white',
-    badgeClass: 'bg-white/20 text-white border-white/30',
     color: '#dc2626',
+    bgClass: 'bg-red-500/10',
+    textClass: 'text-red-600 dark:text-red-400',
     icon: '✗',
+  },
+  disqualified: {
+    label: 'Disqualified',
+    color: '#9333ea',
+    bgClass: 'bg-purple-500/10',
+    textClass: 'text-purple-600 dark:text-purple-400',
+    icon: '🚫',
+  },
+  no_decision: {
+    label: 'No Decision / Dead',
+    color: '#71717a',
+    bgClass: 'bg-zinc-500/10',
+    textClass: 'text-zinc-600 dark:text-zinc-400',
+    icon: '💀',
+  },
+  underwriting_declined: {
+    label: 'Underwriting Declined',
+    color: '#ea580c',
+    bgClass: 'bg-orange-500/10',
+    textClass: 'text-orange-600 dark:text-orange-400',
+    icon: '⛔',
   },
 };
 
-// Processing Pipeline stages (full flow)
+export const OUTCOME_REASONS: Record<OutcomeStatus, string[]> = {
+  closed_won: [
+    'Live and billing ready',
+    'First transaction processed',
+    'Activated by onboarding',
+  ],
+  closed_lost: [
+    'Competitor selected',
+    'Pricing',
+    'Product gap',
+    'Timeline',
+    'Integration complexity',
+  ],
+  disqualified: [
+    'Unsupported MCC',
+    'Geography not supported',
+    'Volume too small',
+    'Not a fit',
+    'Duplicate / invalid opportunity',
+  ],
+  no_decision: [
+    'No response',
+    'Project paused',
+    'Budget removed',
+    'Internal priorities changed',
+  ],
+  underwriting_declined: [
+    'Risk profile',
+    'Restricted business type',
+    'Chargeback concern',
+    'Incomplete documentation',
+    'Processor decline',
+  ],
+};
+
+// Active pipeline stages (no terminal/outcome stages)
+export const ACTIVE_PIPELINE_STAGES: OpportunityStage[] = [
+  'discovery',
+  'qualified',
+  'application_prep',
+  'underwriting_review',
+  'processor_approval',
+  'gateway_submitted',
+  'integration_setup',
+  'testing',
+  'go_live_ready',
+];
+
+// Processing Pipeline stages
 export const PROCESSING_PIPELINE_STAGES: OpportunityStage[] = [
   'discovery',
   'qualified',
   'application_prep',
   'underwriting_review',
   'processor_approval',
-  'live_activated',
+  'integration_setup',
+  'testing',
+  'go_live_ready',
 ];
 
-// Gateway Only Pipeline stages (simplified flow)
+// Gateway Only Pipeline stages
 export const GATEWAY_ONLY_PIPELINE_STAGES: OpportunityStage[] = [
   'discovery',
   'qualified',
   'gateway_submitted',
-  'closed_won',
   'integration_setup',
-  'closed_lost',
-  'live_activated',
+  'testing',
+  'go_live_ready',
 ];
 
 // Legacy: All stages for backwards compatibility
-export const PIPELINE_STAGES: OpportunityStage[] = [
-  'discovery',
-  'qualified',
-  'application_prep',
-  'underwriting_review',
-  'processor_approval',
-  'integration_setup',
-  'gateway_submitted',
-  'live_activated',
-  'closed_won',
-  'closed_lost',
-];
+export const PIPELINE_STAGES: OpportunityStage[] = ACTIVE_PIPELINE_STAGES;
 
-// Unified single-row pipeline (merged, deduplicated, logical order)
-export const UNIFIED_PIPELINE_STAGES: OpportunityStage[] = [
-  'discovery',
-  'qualified',
-  'application_prep',
-  'underwriting_review',
-  'processor_approval',
-  'gateway_submitted',
-  'integration_setup',
-  'closed_won',
-  'live_activated',
-  'closed_lost',
-];
+// Unified single-row pipeline (used by the board)
+export const UNIFIED_PIPELINE_STAGES: OpportunityStage[] = ACTIVE_PIPELINE_STAGES;
 
 /**
- * Migration helper: Maps old 'opportunities' stage to new 'application_prep' stage
- * This ensures no data is lost during the stage rename
+ * Migration helper: Maps old stage names to current stages
  */
 export const migrateStage = (stage: string): OpportunityStage => {
-  if (stage === 'opportunities') {
-    return 'application_prep';
-  }
-  return stage as OpportunityStage;
+  const STAGE_MIGRATION: Record<string, OpportunityStage> = {
+    'opportunities': 'application_prep',
+    'application_started': 'discovery',
+    'live_activated': 'go_live_ready',
+    'closed_won': 'go_live_ready',
+    'closed_lost': 'discovery',
+  };
+  return STAGE_MIGRATION[stage] || (stage as OpportunityStage);
 };
 
 /**
  * Determines the service type (pipeline) for an opportunity based on its attributes
- * - If service_type is explicitly set, use that
- * - If processing_services has items, it's a Processing opportunity
- * - If value_services includes gateway-only items, it's Gateway Only
- * - Default to Processing pipeline
  */
 export const getServiceType = (opportunity: Opportunity): ServiceType => {
-  // Explicit service_type takes precedence
-  if (opportunity.service_type) {
-    return opportunity.service_type;
-  }
-
-  // If processing_services is populated with any items, it's Processing
-  if (opportunity.processing_services && opportunity.processing_services.length > 0) {
-    return 'processing';
-  }
-
-  // If only value_services (gateway-only services) are present, it's Gateway Only
-  if (opportunity.value_services && opportunity.value_services.length > 0) {
-    return 'gateway_only';
-  }
-
-  // Default to processing
+  if (opportunity.service_type) return opportunity.service_type;
+  if (opportunity.processing_services && opportunity.processing_services.length > 0) return 'processing';
+  if (opportunity.value_services && opportunity.value_services.length > 0) return 'gateway_only';
   return 'processing';
 };

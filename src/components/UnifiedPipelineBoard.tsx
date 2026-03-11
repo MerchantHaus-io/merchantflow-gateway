@@ -86,7 +86,7 @@ const UnifiedPipelineBoard = ({
 
   const handleDrop = (e: React.DragEvent, stage: OpportunityStage) => {
     e.preventDefault();
-    if (draggedOpportunity && draggedOpportunity.stage !== stage) {
+    if (draggedOpportunity && draggedOpportunity.stage !== stage && !draggedOpportunity.outcome_status) {
       onUpdateOpportunity(draggedOpportunity.id, { stage });
     }
     setDraggedOpportunity(null);
@@ -95,7 +95,7 @@ const UnifiedPipelineBoard = ({
   const getOpportunitiesByStage = useCallback(
     (stage: OpportunityStage) =>
       opportunities
-        .filter((o) => migrateStage(o.stage) === stage)
+        .filter((o) => migrateStage(o.stage) === stage && !o.outcome_status)
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
     [opportunities]
   );
@@ -497,7 +497,7 @@ const UnifiedPipelineBoard = ({
               onCardClick={setSelectedOpportunity}
               onAssignmentChange={onAssignmentChange}
               onSlaStatusChange={onSlaStatusChange}
-              onAddNew={stage === "application_started" ? onAddNew : undefined}
+              onAddNew={stage === "discovery" ? onAddNew : undefined}
               isCompact={isCompact}
               currentUser={currentUser}
             />

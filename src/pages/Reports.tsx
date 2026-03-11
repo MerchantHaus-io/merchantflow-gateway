@@ -151,7 +151,7 @@ const Reports = () => {
   // ── Pipeline funnel ──
   const funnelData = useMemo(() => {
     const order: OpportunityStage[] = [
-      "discovery", "application_prep", "underwriting_review", "processor_approval", "integration_setup", "live_activated"
+      "discovery", "application_prep", "underwriting_review", "processor_approval", "integration_setup", "go_live_ready"
     ];
     return order.map(stage => ({
       stage,
@@ -184,7 +184,7 @@ const Reports = () => {
       if (!o.assigned_to) return;
       if (!data[o.assigned_to]) data[o.assigned_to] = { name: o.assigned_to, won: 0, total: 0 };
       data[o.assigned_to].total++;
-      if (o.stage === "live_activated" || o.stage === "closed_won" as any) data[o.assigned_to].won++;
+      if (o.stage === "go_live_ready" || (o as any).outcome_status === "closed_won") data[o.assigned_to].won++;
     });
     return Object.values(data).sort((a, b) => b.won - a.won).filter(d => d.total > 0);
   }, [filteredOpps]);
@@ -228,7 +228,7 @@ const Reports = () => {
   // ── Top KPIs ──
   const kpis = useMemo(() => {
     const active    = filteredOpps.filter(o => o.status !== "dead").length;
-    const live      = filteredOpps.filter(o => o.stage === "live_activated").length;
+    const live      = filteredOpps.filter(o => (o as any).outcome_status === 'closed_won').length;
     const openTasks = filteredTasks.filter(t => t.status !== "done").length;
     const overdue   = filteredTasks.filter(t => t.dueAt && t.status !== "done" && new Date(t.dueAt) < new Date()).length;
     return { active, live, openTasks, overdue };
@@ -285,8 +285,8 @@ const Reports = () => {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 stagger-children">
             <StatCard label="Active Opportunities" value={kpis.active}   icon={Target}       color="primary"
               onClick={() => openModal("Active Opportunities", `${kpis.active} active`, "opportunities", filteredOpps.filter(o => o.status !== "dead"), [])} />
-            <StatCard label="Live Accounts"         value={kpis.live}     icon={Zap}          color="success"
-              onClick={() => openModal("Live Accounts", `${kpis.live} live`, "opportunities", filteredOpps.filter(o => o.stage === "live_activated"), [])} />
+            <StatCard label="Closed Won"            value={kpis.live}     icon={Zap}          color="success"
+              onClick={() => openModal("Closed Won", `${kpis.live} won`, "opportunities", filteredOpps.filter(o => (o as any).outcome_status === "closed_won"), [])} />
             <StatCard label="Open Tasks"            value={kpis.openTasks}icon={Clock}        color="teal"
               onClick={() => openModal("Open Tasks", `${kpis.openTasks} open`, "tasks", [], filteredTasks.filter(t => t.status !== "done"))} />
             <StatCard label="Overdue Tasks"         value={kpis.overdue}  icon={AlertTriangle} color="destructive"

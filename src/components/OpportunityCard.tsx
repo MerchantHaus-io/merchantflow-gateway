@@ -76,7 +76,7 @@ const OpportunityCard = ({
     ? TEAM_COLORS[opportunity.assigned_to] || { border: "border-l-primary/50", bg: "bg-muted", text: "text-muted-foreground" }
     : { border: "border-l-muted-foreground/30", bg: "bg-muted", text: "text-muted-foreground" };
 
-  const isLive = opportunity.stage === "live_activated";
+  const isClosedWon = opportunity.outcome_status === 'closed_won';
   const serviceType = getServiceType(opportunity);
   const wizardProgress = (opportunity.wizard_state?.progress as number) ?? 0;
   const isComplete = wizardProgress >= 100;
@@ -100,7 +100,7 @@ const OpportunityCard = ({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const slaInfo = useMemo(() => {
-    if (isLive) return { status: "green" as const, label: "Live", priority: null, hidden: true, daysInStage: 0 };
+    if (isClosedWon) return { status: "green" as const, label: "Won", priority: null, hidden: true, daysInStage: 0 };
     const stageEnteredAt = opportunity.stage_entered_at
       ? new Date(opportunity.stage_entered_at)
       : new Date(opportunity.created_at);
@@ -121,7 +121,7 @@ const OpportunityCard = ({
     if (hoursInStage >= 48) return { status: "red" as const, label: "Overdue", priority: "HIGH" as const, hidden: false, daysInStage };
     if (hoursInStage >= 24) return { status: "amber" as const, label: "At Risk", priority: "MED" as const, hidden: false, daysInStage };
     return { status: "green" as const, label: "On Track", priority: "LOW" as const, hidden: true, daysInStage };
-  }, [opportunity.stage_entered_at, opportunity.created_at, opportunity.sla_status, isLive]);
+  }, [opportunity.stage_entered_at, opportunity.created_at, opportunity.sla_status, isClosedWon]);
 
   useEffect(() => {
     const fetchAvatar = async () => {
@@ -207,7 +207,7 @@ const OpportunityCard = ({
         className={cn(
           "cursor-grab active:cursor-grabbing group touch-manipulation relative",
           "rounded-xl",
-          isLive
+          isClosedWon
             ? "pipeline-card-live bg-gradient-to-br from-amber-50 via-yellow-50/80 to-amber-100/60 dark:from-amber-950/40 dark:via-yellow-950/30 dark:to-amber-900/20"
             : isComplete
               ? "pipeline-card border-l-[3px] border-l-emerald-500 bg-emerald-600 dark:bg-emerald-700"
@@ -283,7 +283,7 @@ const OpportunityCard = ({
                 {dealValue > 0 ? formatCurrency(dealValue) : "—"}
               </span>
               {/* Days in stage — color-coded */}
-              {slaInfo.daysInStage > 0 && !isLive && (
+              {slaInfo.daysInStage > 0 && !isClosedWon && (
                 <span className={cn(
                   "flex items-center gap-0.5 text-[9px] font-medium",
                   slaInfo.daysInStage < 7 ? "text-emerald-500" : slaInfo.daysInStage < 14 ? "text-amber-500" : "text-red-500"
@@ -314,9 +314,9 @@ const OpportunityCard = ({
               )}
 
               {/* Live badge */}
-              {isLive && (
-                <span className="px-1 py-0.5 rounded-md text-[8px] font-black bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40">
-                  LIVE
+              {isClosedWon && (
+                <span className="px-1 py-0.5 rounded-md text-[8px] font-black bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40">
+                  WON
                 </span>
               )}
 

@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { Opportunity, STAGE_CONFIG, Account, Contact, getServiceType, EMAIL_TO_USER, TEAM_MEMBERS, OpportunityStage, PROCESSING_PIPELINE_STAGES, GATEWAY_ONLY_PIPELINE_STAGES } from "@/types/opportunity";
+import { Opportunity, STAGE_CONFIG, Account, Contact, getServiceType, EMAIL_TO_USER, TEAM_MEMBERS, OpportunityStage, PROCESSING_PIPELINE_STAGES, GATEWAY_ONLY_PIPELINE_STAGES, OutcomeStatus, OUTCOME_CONFIG } from "@/types/opportunity";
+import { OutcomeSelector } from "./OutcomeSelector";
 import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, ListChecks, Zap, CreditCard, Maximize2, Minimize2, Loader2, Wand2, RotateCcw, Eye, Check } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
@@ -269,7 +270,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
 
   const account = opportunity?.account;
   const contact = opportunity?.contact;
-  const stageConfig = opportunity ? (STAGE_CONFIG[opportunity.stage] ?? STAGE_CONFIG.application_prep) : STAGE_CONFIG.application_started;
+  const stageConfig = opportunity ? (STAGE_CONFIG[opportunity.stage] ?? STAGE_CONFIG.application_prep) : STAGE_CONFIG.discovery;
   const wizardState = opportunity?.wizard_state;
   const wizardFormState = useMemo(
     () => (wizardState?.form_state as Record<string, unknown> | undefined) ?? {},
@@ -733,7 +734,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     try {
       const { error } = await supabase
         .from('opportunities')
-        .update({ status: 'dead', stage: 'closed_lost' })
+        .update({ status: 'dead', outcome_status: 'no_decision', outcome_reason: 'No response', outcome_closed_at: new Date().toISOString(), outcome_closed_by: user?.email })
         .eq('id', opportunity.id);
 
       if (!error) {
@@ -829,8 +830,8 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
               <div className="flex items-center gap-3">
                 <div className={cn(
                   "p-2 rounded",
-                  opportunity.stage === 'live_activated'
-                    ? "bg-amber-500/10 text-amber-600"
+                  opportunity.outcome_status === 'closed_won'
+                    ? "bg-emerald-500/10 text-emerald-600"
                     : "bg-primary/10 text-primary"
                 )}>
                   <Building2 className="h-5 w-5" />
@@ -974,86 +975,79 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                       <TooltipContent>Edit</TooltipContent>
                     </Tooltip>
                     
-                    {/* Pipeline toggle button - Lightning bolt for conversion */}
-                    {isGatewayCard ? (
-                      onMoveToProcessing && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8 text-amber-500 border-amber-500 hover:bg-amber-500/10"
-                              onClick={() => setShowMoveDialog(true)}
-                              disabled={isConverting}
-                            >
-                              <CreditCard className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Move to Processing</TooltipContent>
-                        </Tooltip>
-                      )
-                    ) : (
-                      onConvertToGateway && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8 text-amber-500 border-amber-500 hover:bg-amber-500/10"
-                              onClick={handleConvertToGateway}
-                              disabled={isConverting || hasGatewayOpportunity}
-                            >
-                              <Zap className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            {hasGatewayOpportunity ? 'Gateway Added' : 'Add to Gateway'}
-                          </TooltipContent>
-                        </Tooltip>
+                    {/* Outcome Selector */}
+                    <OutcomeSelector
+                      currentOutcome={opportunity.outcome_status as OutcomeStatus | null}
+                      disabled={!!opportunity.outcome_status}
+                      onSelect={async (outcome, reason, notes) => {
+                        const { error } = await supabase
+                          .from('opportunities')
+                          .update({
+                            outcome_status: outcome,
+                            outcome_reason: reason,
+                            outcome_notes: notes,
+                            outcome_closed_at: new Date().toISOString(),
+                            outcome_closed_by: user?.email,
+                          })
+                          .eq('id', opportunity.id);
+                        if (error) { toast.error("Failed to set outcome"); return; }
+                        await supabase.from('activities').insert({
+                          opportunity_id: opportunity.id,
+                          type: 'outcome_set',
+                          description: `Outcome: ${OUTCOME_CONFIG[outcome].label} — ${reason}`,
+                          user_id: user?.id,
+                          user_email: user?.email,
+                        });
+                        onUpdate({ ...opportunity, outcome_status: outcome, outcome_reason: reason, outcome_notes: notes, outcome_closed_at: new Date().toISOString(), outcome_closed_by: user?.email });
+                        toast.success(`Outcome set: ${OUTCOME_CONFIG[outcome].label}`);
+                        if (outcome !== 'closed_won') {
+                          setTimeout(() => onClose(), 1500);
+                        }
+                      }}
+                    />
+
+                    {/* Pipeline toggle button */}
+                    {!opportunity.outcome_status && (
+                      isGatewayCard ? (
+                        onMoveToProcessing && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="outline" size="icon" className="h-8 w-8 text-amber-500 border-amber-500 hover:bg-amber-500/10" onClick={() => setShowMoveDialog(true)} disabled={isConverting}>
+                                <CreditCard className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Move to Processing</TooltipContent>
+                          </Tooltip>
+                        )
+                      ) : (
+                        onConvertToGateway && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="outline" size="icon" className="h-8 w-8 text-amber-500 border-amber-500 hover:bg-amber-500/10" onClick={handleConvertToGateway} disabled={isConverting || hasGatewayOpportunity}>
+                                <Zap className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>{hasGatewayOpportunity ? 'Gateway Added' : 'Add to Gateway'}</TooltipContent>
+                          </Tooltip>
+                        )
                       )
                     )}
-                    
-                    {/* Mark as Dead - Skull icon */}
-                    {opportunity.status !== 'dead' && (
+
+                    {/* Delete - admin only */}
+                    {isAdmin && (
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button
-                            variant="outline" 
-                            size="icon"
-                            className="h-8 w-8 text-[hsl(var(--toxic))] border-[hsl(var(--toxic))] hover:bg-[hsl(var(--toxic))]/10"
-                            onClick={() => setShowDeadDialog(true)}
-                          >
-                            <Skull className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Mark as Dead</TooltipContent>
-                      </Tooltip>
-                    )}
-                    
-                    {/* Delete - admin only, Request Deletion for others */}
-                    {isAdmin ? (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button 
-                            variant="destructive" 
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => setShowDeleteDialog(true)}
-                          >
+                          <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => setShowDeleteDialog(true)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>Delete Permanently</TooltipContent>
                       </Tooltip>
-                    ) : (
+                    )}
+                    {!isAdmin && (
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button 
-                            variant="outline" 
-                            size="icon"
-                            className="h-8 w-8 text-destructive border-destructive hover:bg-destructive/10"
-                            onClick={() => setShowRequestDeleteDialog(true)}
-                          >
+                          <Button variant="outline" size="icon" className="h-8 w-8 text-destructive border-destructive hover:bg-destructive/10" onClick={() => setShowRequestDeleteDialog(true)}>
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
@@ -1097,7 +1091,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
           </DialogHeader>
 
           {/* Live badge overlay - medallion in header area, ribbons drape over next section */}
-          {opportunity.stage === 'live_activated' && (
+          {opportunity.outcome_status === 'closed_won' && (
             <div className="relative flex justify-center -mt-14 pointer-events-none z-10" style={{ marginBottom: '-3.5rem' }}>
               <img 
                 src={liveBadge} 
@@ -1110,10 +1104,10 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
 
           {/* Compact status strip */}
           <div className="mt-2 space-y-2 flex-shrink-0">
-            {opportunity.stage === 'live_activated' ? (
-              <div className="rounded-lg bg-gradient-to-b from-amber-50/60 via-amber-100/30 to-transparent dark:from-amber-500/10 dark:via-amber-500/5 dark:to-transparent border border-amber-200/40 dark:border-amber-500/20 py-4 px-4">
-                <h3 className="text-amber-600 dark:text-amber-400 font-bold tracking-widest uppercase text-sm text-center">
-                  Live Account
+            {opportunity.outcome_status === 'closed_won' ? (
+              <div className="rounded-lg bg-gradient-to-b from-emerald-50/60 via-emerald-100/30 to-transparent dark:from-emerald-500/10 dark:via-emerald-500/5 dark:to-transparent border border-emerald-200/40 dark:border-emerald-500/20 py-4 px-4">
+                <h3 className="text-emerald-600 dark:text-emerald-400 font-bold tracking-widest uppercase text-sm text-center">
+                  Closed Won — Live &amp; Billing
                 </h3>
               </div>
             ) : (
