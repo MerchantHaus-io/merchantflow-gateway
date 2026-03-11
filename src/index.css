@@ -658,66 +658,66 @@ All colors MUST be HSL.
     --sidebar-ring: 0 0% 50%;
   }
 
-  /* ═══ Dark PS1 Classic — PlayStation 4 dynamic menu aesthetic ═══ */
+  /* ═══ Dark PS1 Classic — Retro PlayStation 1 grey console aesthetic ═══ */
   .dark-ps1.dark {
-    --background: 220 40% 5%;
-    --foreground: 210 30% 95%;
+    --background: 0 0% 12%;
+    --foreground: 0 0% 88%;
 
-    --card: 220 35% 11%;
-    --card-foreground: 210 30% 95%;
-    --card-glass: 220 35% 11% / 0.88;
+    --card: 0 0% 16%;
+    --card-foreground: 0 0% 88%;
+    --card-glass: 0 0% 16% / 0.90;
 
-    --popover: 220 35% 11%;
-    --popover-foreground: 210 30% 95%;
+    --popover: 0 0% 16%;
+    --popover-foreground: 0 0% 88%;
 
-    /* PS4 signature electric blue */
-    --primary: 213 90% 55%;
-    --primary-foreground: 0 0% 100%;
+    /* PS1 grey — warm concrete tone */
+    --primary: 0 0% 72%;
+    --primary-foreground: 0 0% 8%;
 
-    --secondary: 220 30% 16%;
-    --secondary-foreground: 210 30% 95%;
+    --secondary: 0 0% 22%;
+    --secondary-foreground: 0 0% 82%;
 
-    --teal: 195 80% 45%;
-    --teal-foreground: 0 0% 100%;
+    --teal: 0 0% 62%;
+    --teal-foreground: 0 0% 8%;
 
-    --muted: 220 30% 13%;
-    --muted-foreground: 215 20% 55%;
+    --muted: 0 0% 18%;
+    --muted-foreground: 0 0% 52%;
 
-    /* Bright PS blue accent */
-    --accent: 213 90% 55%;
-    --accent-foreground: 0 0% 100%;
+    /* Accent — subtle warm grey highlight */
+    --accent: 0 0% 28%;
+    --accent-foreground: 0 0% 88%;
 
-    --destructive: 0 65% 48%;
+    --destructive: 0 55% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 152 65% 42%;
+    --success: 120 30% 40%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 45 90% 50%;
+    --warning: 40 50% 50%;
     --warning-foreground: 0 0% 8%;
 
-    --border: 220 25% 20%;
-    --input: 220 25% 20%;
-    --ring: 213 90% 55%;
+    --border: 0 0% 24%;
+    --input: 0 0% 24%;
+    --ring: 0 0% 60%;
 
-    /* Team colors — PS button inspired */
-    --team-wesley: 0 70% 55%;       /* △ Red */
-    --team-jamie: 48 90% 55%;       /* Yellow */
-    --team-darryn: 142 60% 45%;     /* ✕ Green */
-    --team-taryn: 213 90% 60%;      /* ✦ Blue */
-    --team-yaseen: 280 65% 60%;     /* ○ Purple */
-    --team-sales: 25 80% 55%;       /* Orange */
+    /* Team colors — muted retro tones */
+    --team-wesley: 0 40% 50%;
+    --team-jamie: 45 45% 50%;
+    --team-darryn: 120 30% 42%;
+    --team-taryn: 210 30% 50%;
+    --team-yaseen: 270 25% 50%;
+    --team-sales: 25 40% 50%;
 
-    --sidebar-background: 220 38% 8% / 0.95;
-    --sidebar-foreground: 210 30% 95%;
-    --sidebar-primary: 213 90% 55%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 30% 16%;
-    --sidebar-accent-foreground: 213 85% 65%;
-    --sidebar-border: 220 25% 22%;
-    --sidebar-ring: 213 90% 55%;
+    --sidebar-background: 0 0% 10% / 0.96;
+    --sidebar-foreground: 0 0% 85%;
+    --sidebar-primary: 0 0% 70%;
+    --sidebar-primary-foreground: 0 0% 8%;
+    --sidebar-accent: 0 0% 22%;
+    --sidebar-accent-foreground: 0 0% 75%;
+    --sidebar-border: 0 0% 26%;
+    --sidebar-ring: 0 0% 55%;
 
-    --radius: 0.375rem;
+    --radius: 0.25rem;
   }
 
   /* ═══ Light Salesforce — Enterprise Cloud CRM ═══ */
