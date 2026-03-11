@@ -160,7 +160,7 @@ const Auth = () => {
         {/* Logo */}
         <div className="flex items-center justify-center">
           <img
-            src={psTerminalLogo}
+            src={merchantHausLogo}
             alt="PS Terminal"
             width={293}
             height={72}

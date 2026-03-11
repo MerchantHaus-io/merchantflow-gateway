@@ -76,7 +76,7 @@ const Login = () => {
     <div className="light min-h-screen flex items-center justify-center bg-white text-black p-4" data-theme="light">
       <div className="w-full max-w-md space-y-8">
         <div className="flex items-center justify-center">
-          <img src={psTerminalLogo} alt="PS Terminal" width={293} height={72} fetchPriority="high" className="h-[4.5rem] w-auto" />
+          <img src={merchantHausLogo} alt="Merchant Haus" width={293} height={72} fetchPriority="high" className="h-[4.5rem] w-auto" />
         </div>
 
         <div className="bg-card border-[3px] border-foreground/80 rounded-2xl p-8 neo-shadow">
