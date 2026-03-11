@@ -829,8 +829,8 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
               <div className="flex items-center gap-3">
                 <div className={cn(
                   "p-2 rounded",
-                  opportunity.stage === 'live_activated'
-                    ? "bg-amber-500/10 text-amber-600"
+                  opportunity.outcome_status === 'closed_won'
+                    ? "bg-emerald-500/10 text-emerald-600"
                     : "bg-primary/10 text-primary"
                 )}>
                   <Building2 className="h-5 w-5" />
