@@ -36,6 +36,17 @@ import { AppLayout } from "@/components/AppLayout";
 
 const SOP = () => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [isPrinting, setIsPrinting] = useState(false);
+
+  const handleDownloadPdf = useCallback(() => {
+    setIsPrinting(true);
+    toast.info("Preparing PDF — your browser print dialog will open shortly…");
+    // Small delay so collapsibles can expand and toast shows
+    setTimeout(() => {
+      window.print();
+      setIsPrinting(false);
+    }, 400);
+  }, []);
   const [variantSelection, setVariantSelection] = useState<Record<string, string>>({
     step1: "standard",
     step1_2: "standard",
