@@ -54,6 +54,7 @@ const DocumentsPage = () => {
   const [collapsedAccounts, setCollapsedAccounts] = useState<Set<string> | null>(null);
   const [initialCollapseApplied, setInitialCollapseApplied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previewDoc, setPreviewDoc] = useState<DocumentWithOpportunity | null>(null);
 
   useEffect(() => {
     // Fetch documents on mount
