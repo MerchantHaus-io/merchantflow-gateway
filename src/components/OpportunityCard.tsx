@@ -76,7 +76,7 @@ const OpportunityCard = ({
     ? TEAM_COLORS[opportunity.assigned_to] || { border: "border-l-primary/50", bg: "bg-muted", text: "text-muted-foreground" }
     : { border: "border-l-muted-foreground/30", bg: "bg-muted", text: "text-muted-foreground" };
 
-  const isLive = opportunity.stage === "live_activated";
+  const isClosedWon = opportunity.outcome_status === 'closed_won';
   const serviceType = getServiceType(opportunity);
   const wizardProgress = (opportunity.wizard_state?.progress as number) ?? 0;
   const isComplete = wizardProgress >= 100;
