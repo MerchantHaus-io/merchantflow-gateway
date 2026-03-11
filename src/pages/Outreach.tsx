@@ -364,8 +364,8 @@ export default function Outreach() {
                      <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
                        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Cadence Identity</p>
                        <div>
-                         <Label className="text-xs">Cadence Name</Label>
-                         <Input value={name} onChange={e => setName(e.target.value)} placeholder="Q2 Payment Processing Outreach" className="mt-1" />
+                          <Label className="text-xs">Cadence Name <span className="text-destructive">*</span></Label>
+                          <Input value={name} onChange={e => setName(e.target.value)} placeholder="Q2 Payment Processing Outreach" className={cn("mt-1", !name && "border-destructive/50 focus-visible:ring-destructive/30")} />
                        </div>
                        <div className="grid grid-cols-2 gap-3">
                          <div><Label className="text-xs">From Name</Label><Input value={fromName} onChange={e => setFromName(e.target.value)} className="mt-1" /></div>
