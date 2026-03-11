@@ -56,8 +56,11 @@ export function Carousel3D({ items }: Carousel3DProps) {
 
   const quantity = items.length;
   const increment = 360 / quantity;
-  // Adjust radius based on item count for spacing
-  const radius = Math.max(320, quantity * 28);
+  // Dynamic radius: card width (~150px) needs enough arc spacing
+  // Use circumference formula: C = 2πr, each card needs ~180px of arc
+  // So r = (quantity * cardSpacing) / (2π)
+  const cardSpacing = 185;
+  const radius = Math.max(220, Math.round((quantity * cardSpacing) / (2 * Math.PI)));
 
   const updateRotation = useCallback((deg: number) => {
     rotationRef.current = deg;
