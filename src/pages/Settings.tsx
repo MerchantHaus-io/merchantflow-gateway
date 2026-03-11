@@ -25,11 +25,13 @@ const VARIANT_ICONS: Record<ThemeVariant, React.ReactNode> = {
   'dark-forest': <Trees className="h-4 w-4" />,
   'dark-charcoal': <Cloudy className="h-4 w-4" />,
   'dark-mono': <Circle className="h-4 w-4" />,
+  'dark-ps1': <Gamepad2 className="h-4 w-4" />,
   'light-default': <Sun className="h-4 w-4" />,
   'light-ocean': <Waves className="h-4 w-4" />,
   'light-warm': <Flame className="h-4 w-4" />,
   'light-silver': <Cloudy className="h-4 w-4" />,
   'light-mono': <Circle className="h-4 w-4" />,
+  'light-salesforce': <Cloud className="h-4 w-4" />,
 };
 
 const Settings = () => {

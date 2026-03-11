@@ -658,7 +658,123 @@ All colors MUST be HSL.
     --sidebar-ring: 0 0% 50%;
   }
 
-  /* Merchant Application Form - Light emerald-branded theme (MerchantHaus) */
+  /* ═══ Dark PS1 Classic — Retro PlayStation 1 vibes ═══ */
+  .dark-ps1.dark {
+    --background: 240 8% 6%;
+    --foreground: 0 0% 90%;
+
+    --card: 240 8% 12%;
+    --card-foreground: 0 0% 90%;
+    --card-glass: 240 8% 12% / 0.88;
+
+    --popover: 240 8% 12%;
+    --popover-foreground: 0 0% 90%;
+
+    /* PS blue — the iconic PlayStation startup blue */
+    --primary: 220 80% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 8% 18%;
+    --secondary-foreground: 0 0% 90%;
+
+    --teal: 160 60% 45%;
+    --teal-foreground: 0 0% 100%;
+
+    --muted: 240 8% 15%;
+    --muted-foreground: 240 5% 55%;
+
+    /* PS pink/magenta accent — the ○ button color */
+    --accent: 330 70% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 70% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 60% 42%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 48 90% 50%;
+    --warning-foreground: 0 0% 10%;
+
+    --border: 240 8% 22%;
+    --input: 240 8% 22%;
+    --ring: 220 80% 55%;
+
+    /* Team colors — PS button inspired */
+    --team-wesley: 0 70% 55%;       /* △ Red */
+    --team-jamie: 48 90% 55%;       /* Yellow accent */
+    --team-darryn: 142 60% 45%;     /* ✕ Green */
+    --team-taryn: 220 80% 60%;      /* ✦ Blue */
+    --team-yaseen: 330 70% 55%;     /* ○ Pink */
+    --team-sales: 25 80% 55%;       /* Orange */
+
+    --sidebar-background: 240 8% 10% / 0.92;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 220 80% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 8% 18%;
+    --sidebar-accent-foreground: 220 80% 65%;
+    --sidebar-border: 240 8% 24%;
+    --sidebar-ring: 220 80% 55%;
+
+    --radius: 0.375rem;
+  }
+
+  /* ═══ Light Salesforce — Enterprise Cloud CRM ═══ */
+  .light-salesforce.light {
+    --background: 210 30% 97%;
+    --foreground: 210 30% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 30% 12%;
+    --card-glass: 0 0% 100% / 0.96;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 30% 12%;
+
+    /* Salesforce Blue #0176D3 → hsl(204, 98%, 41%) */
+    --primary: 204 98% 41%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 25% 92%;
+    --secondary-foreground: 210 30% 12%;
+
+    --teal: 174 72% 46%;
+    --teal-foreground: 0 0% 100%;
+
+    --muted: 210 25% 95%;
+    --muted-foreground: 210 15% 42%;
+
+    /* Salesforce accent — slightly warmer action blue */
+    --accent: 204 98% 41%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 152 69% 36%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 210 30% 12%;
+
+    --border: 210 22% 85%;
+    --input: 210 22% 85%;
+    --ring: 204 98% 41%;
+
+    --sidebar-background: 210 35% 16% / 0.97;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 204 98% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 35% 22%;
+    --sidebar-accent-foreground: 204 90% 70%;
+    --sidebar-border: 210 30% 28%;
+    --sidebar-ring: 204 98% 50%;
+
+    --radius: 0.25rem;
+  }
+
+
   .merchant-form {
     --background: 220 14% 96%;
     --foreground: 221 39% 11%;
