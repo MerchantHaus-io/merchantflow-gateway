@@ -514,9 +514,43 @@ export default function Outreach() {
                        )}
                      </div>
 
-                     <Button className="w-full" onClick={() => create.mutate()} disabled={!name || !steps[0].subject || !steps[0].bodyHtml || create.isPending}>
-                       <Layers className="h-4 w-4 mr-2" />{schedDate ? "Schedule Cadence" : "Create Cadence"} ({stepCount} {stepCount === 1 ? "email" : "emails"})
-                     </Button>
+                      {/* Email Preview */}
+                      {steps[0].bodyHtml && (
+                        <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Email Preview</p>
+                            <div className="flex gap-1 flex-wrap">
+                              {Array.from({ length: stepCount }, (_, i) => (
+                                <button key={i} type="button" onClick={() => setPreviewStepIdx(i)}
+                                  className={cn(
+                                    "px-2 py-0.5 rounded-full text-[10px] font-medium border transition-colors",
+                                    previewStepIdx === i ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground"
+                                  )}>S{i + 1}</button>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="border border-border rounded-lg overflow-hidden">
+                            <div className="bg-muted/30 px-3 py-2 text-xs text-muted-foreground flex items-center gap-2">
+                              <Mail className="h-3 w-3" />
+                              <span className="font-medium">{steps[previewStepIdx].subject || "(no subject)"}</span>
+                            </div>
+                            <div className="p-4 bg-white text-black min-h-[100px] text-sm prose prose-sm max-w-none"
+                              dangerouslySetInnerHTML={{
+                                __html: (steps[previewStepIdx].bodyHtml || "")
+                                  .replace(/\{\{first_name\}\}/g, "Jane")
+                                  .replace(/\{\{last_name\}\}/g, "Smith")
+                                  .replace(/\{\{company\}\}/g, "Acme Corp")
+                                  .replace(/\{\{email\}\}/g, "jane@example.com")
+                                  + (signature ? `<br/><div style="border-top:1px solid #e5e5e5;padding-top:8px;margin-top:12px;font-size:13px;color:#666;">${signature}</div>` : "")
+                              }} />
+                          </div>
+                          <p className="text-[10px] text-muted-foreground">Preview uses sample data: Jane Smith, Acme Corp</p>
+                        </div>
+                      )}
+
+                      <Button className="w-full" onClick={() => create.mutate()} disabled={!name || !steps[0].subject || !steps[0].bodyHtml || create.isPending}>
+                        <Layers className="h-4 w-4 mr-2" />{schedDate ? "Schedule Cadence" : "Create Cadence"} ({stepCount} {stepCount === 1 ? "email" : "emails"})
+                      </Button>
                    </div>
                  </div>
                </div>
