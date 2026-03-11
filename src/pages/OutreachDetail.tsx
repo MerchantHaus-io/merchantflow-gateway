@@ -21,7 +21,7 @@ import {
   Clock, CheckCircle2, XCircle, ArrowRightCircle, Eye, Loader2, Plus, Layers,
   Reply, Phone, Filter, Download, Search, Users, Zap, MoreHorizontal,
   GripVertical, Trash2, Edit3, ChevronDown, ChevronRight, AlertCircle,
-  PlayCircle, SkipForward, UserCheck, Ban,
+  PlayCircle, SkipForward, UserCheck, Ban, UserPlus,
 } from "lucide-react";
 import { format, formatDistanceToNow, addDays } from "date-fns";
 import { toast } from "sonner";
