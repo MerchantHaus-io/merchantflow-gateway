@@ -184,7 +184,7 @@ const Reports = () => {
       if (!o.assigned_to) return;
       if (!data[o.assigned_to]) data[o.assigned_to] = { name: o.assigned_to, won: 0, total: 0 };
       data[o.assigned_to].total++;
-      if (o.stage === "live_activated" || o.stage === "closed_won" as any) data[o.assigned_to].won++;
+      if (o.stage === "go_live_ready" || (o as any).outcome_status === "closed_won") data[o.assigned_to].won++;
     });
     return Object.values(data).sort((a, b) => b.won - a.won).filter(d => d.total > 0);
   }, [filteredOpps]);
