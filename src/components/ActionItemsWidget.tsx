@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { ClipboardCheck, X, Plus, Trash2, ChevronDown, Paperclip, FileText, Image as ImageIcon, Download, ExternalLink } from "lucide-react";
+import { ClipboardCheck, X, Plus, Trash2, ChevronDown, Paperclip, FileText, Image as ImageIcon, Download, ExternalLink, Bold, Italic, List, ListOrdered } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
