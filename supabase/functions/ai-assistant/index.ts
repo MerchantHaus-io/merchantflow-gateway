@@ -1142,6 +1142,7 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
           recommended_actions: report.recommended_actions || [],
           summary: (report.summary as string) || null,
           no_change: !!isNoChange,
+          risk_tier: (report.risk_tier as string) || null,
         })
         .select()
         .single();
