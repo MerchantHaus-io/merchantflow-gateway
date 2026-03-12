@@ -46,13 +46,9 @@ interface DocumentsTabProps {
 
 export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
   const { user } = useAuth();
-  const { validateDocuments } = useAIAssistant();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
-  const [isValidating, setIsValidating] = useState(false);
-  const [validationReport, setValidationReport] = useState<any>(null);
-  const [showReport, setShowReport] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [selectedDocType, setSelectedDocType] = useState("Unassigned");
   const [showUploadDialog, setShowUploadDialog] = useState(false);
