@@ -879,6 +879,14 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                           }
                         }
                         
+                        // Duplicate check when moving past discovery
+                        if (newStage !== 'discovery' && opportunity.stage === 'discovery') {
+                          const dupWarning = await checkDuplicateMerchant(opportunity.id);
+                          if (dupWarning) {
+                            toast.error(dupWarning, { duration: 8000 });
+                          }
+                        }
+                        
                         const { error } = await supabase
                           .from('opportunities')
                           .update({ stage: newStage })
