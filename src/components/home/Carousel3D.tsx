@@ -189,10 +189,11 @@ export function Carousel3D({ items }: Carousel3DProps) {
               style={{
                 transform: `rotateY(${angle}deg) translateZ(${radius}px)`,
                 transition: "transform 0.6s cubic-bezier(0.25, 1, 0.5, 1)",
+                transformStyle: "preserve-3d",
               }}
               onClick={() => handleItemClick(item, i)}
             >
-              {/* Card */}
+              {/* Card front face */}
               <div
                 className={cn(
                   "w-full h-full rounded-xl border backdrop-blur-xl flex flex-col items-center justify-center gap-2.5 pointer-events-none",
@@ -203,6 +204,7 @@ export function Carousel3D({ items }: Carousel3DProps) {
                 style={{
                   boxShadow: "0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.08)",
                   transition: "transform 0.3s, box-shadow 0.3s",
+                  transformStyle: "preserve-3d",
                 }}
               >
                 {/* Icon orb */}
@@ -220,6 +222,34 @@ export function Carousel3D({ items }: Carousel3DProps) {
                   {item.title}
                 </span>
               </div>
+
+              {/* 3D depth — right edge */}
+              <div
+                className="absolute top-0 pointer-events-none rounded-r-lg"
+                style={{
+                  right: 0,
+                  width: "10px",
+                  height: "100%",
+                  transform: "rotateY(90deg) translateZ(5px)",
+                  transformOrigin: "right center",
+                  background: "linear-gradient(to right, hsl(var(--card) / 0.7), hsl(var(--card) / 0.4))",
+                  borderRight: "1px solid hsl(var(--border) / 0.3)",
+                }}
+              />
+
+              {/* 3D depth — left edge */}
+              <div
+                className="absolute top-0 pointer-events-none rounded-l-lg"
+                style={{
+                  left: 0,
+                  width: "10px",
+                  height: "100%",
+                  transform: "rotateY(-90deg) translateZ(5px)",
+                  transformOrigin: "left center",
+                  background: "linear-gradient(to left, hsl(var(--card) / 0.7), hsl(var(--card) / 0.4))",
+                  borderLeft: "1px solid hsl(var(--border) / 0.3)",
+                }}
+              />
 
               {/* Mirror reflection */}
               {/* Horizontal mirror reflection */}
