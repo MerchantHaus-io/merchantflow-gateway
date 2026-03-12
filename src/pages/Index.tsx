@@ -656,6 +656,27 @@ const Index = () => {
   };
   const handleUpdateOpportunity = async (id: string, updates: Partial<Opportunity>) => {
     const opportunity = opportunities.find(o => o.id === id);
+
+    // Underwriting gate check when moving to underwriting_review
+    if (updates.stage === 'underwriting_review' && opportunity) {
+      const { checkUnderwritingGate } = await import("@/lib/underwriting-gate");
+      const gate = await checkUnderwritingGate(id);
+      if (!gate.allowed) {
+        toast({ title: "Cannot proceed to Underwriting", description: gate.reason, variant: "destructive", duration: 6000 });
+        return;
+      }
+    }
+
+    // Duplicate check when moving past discovery
+    if (updates.stage && updates.stage !== 'discovery' && opportunity?.stage === 'discovery') {
+      const { checkDuplicateMerchant } = await import("@/lib/duplicate-check");
+      const dupWarning = await checkDuplicateMerchant(id);
+      if (dupWarning) {
+        toast({ title: "Duplicate Warning", description: dupWarning, variant: "destructive", duration: 8000 });
+        // Warning only — don't block, just inform
+      }
+    }
+
     const dbUpdates: Record<string, unknown> = {};
     if (updates.stage) dbUpdates.stage = updates.stage;
     if (updates.service_type) dbUpdates.service_type = updates.service_type;

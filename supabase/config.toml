@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.process-scheduled-campaigns]
 verify_jwt = false
+
+[functions.sla-escalation]
+verify_jwt = false

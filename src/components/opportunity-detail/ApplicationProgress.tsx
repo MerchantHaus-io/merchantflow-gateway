@@ -65,6 +65,7 @@ const REQUIRED_DOCS = [
   { type: "EIN", label: "Tax Document (EIN)" },
   { type: "Voided Check / Bank Confirmation Letter", label: "Voided Check / Bank Confirmation" },
   { type: "Bank Statement", label: "Bank Statements (3 months)", alt: "Transaction History" },
+  { type: "Passport/Drivers License", label: "Owner ID (Passport / License)" },
 ];
 
 const PROCESSING_SECTIONS: Section[] = [

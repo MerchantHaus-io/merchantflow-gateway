@@ -851,6 +851,7 @@ REQUIRED DOCUMENTS CHECK:
 - EIN / Tax Document: ${documents.some(d => d.document_type === "EIN" || d.document_type === "SSN") ? "✅ Present" : "❌ MISSING (HARD REQUIREMENT)"}
 - Voided Check / Bank Confirmation: ${documents.some(d => d.document_type === "Voided Check / Bank Confirmation Letter") ? "✅ Present" : "❌ MISSING (HARD REQUIREMENT)"}
 - Bank Statements / Processing History: ${documents.some(d => d.document_type === "Bank Statement" || d.document_type === "Transaction History") ? "✅ Present" : "❌ MISSING (HARD REQUIREMENT — 3 months minimum)"}
+- Owner ID (Passport/Drivers License): ${documents.some(d => d.document_type === "Passport/Drivers License") ? "✅ Present" : "❌ MISSING (HARD REQUIREMENT — KYC/CDD)"}
 
 ${websiteUrl ? (fetchError ? `WEBSITE FETCH ERROR: ${fetchError}` : `WEBSITE CONTENT (extracted text):\n${websiteContent}`) : "NO WEBSITE URL PROVIDED — flag as risk if service type requires web presence"}
 `;
@@ -866,6 +867,7 @@ HARD DOCUMENT REQUIREMENTS (all must be present and correctly labelled):
 2. EIN / Tax Document — Cross-check EIN, legal name against formation docs. Flag if missing.
 3. Voided Check or Bank Confirmation Letter — Verify account matches legal entity or DBA. Flag if missing.
 4. Bank Statements OR Processing History — Minimum 3 months. Check arithmetic invariants, recency, account holder name match, tamper indicators.
+5. Owner ID (Passport or Drivers License) — MANDATORY KYC/CDD requirement. Verify identity matches principal owner. Flag if missing.
 
 Additional document checks:
 - Passport/Drivers License if present — verify identity matches principal
@@ -898,11 +900,25 @@ CRITICAL — Verify the following are consistent and plausible:
 4. VOLUME PROJECTIONS — Are monthly volume, avg ticket, and high ticket plausible for the business type?
 5. CUSTOMER MIX — B2B vs B2C split should align with the business model
 
+═══ DIMENSION 4: OFAC / SANCTIONS SCREENING ═══
+
+Screen the following against known OFAC SDN (Specially Designated Nationals) patterns and restricted entity indicators:
+- Business legal entity name
+- DBA name
+- Principal owner name(s)
+- Country of incorporation / operation
+Flag ANY match or near-match as a CRITICAL red flag. Check for sanctioned countries, restricted industries, and known shell-entity patterns.
+
+═══ DIMENSION 5: HIGH-RISK MCC ASSESSMENT ═══
+
+After determining the recommended MCC code, evaluate if it falls into a high-risk category that typically requires reserves, delayed funding, or enhanced monitoring. High-risk MCCs include but are not limited to: 5962-5969 (Direct Marketing), 6051 (Money Services), 7801-7802/7995 (Gambling), 7273 (Dating), 4816 (Computer Network Services for VPN/proxy), 5122 (Drugs/Pharmaceuticals).
+Set risk_tier to "high_risk" if the MCC is in a high-risk category, otherwise "standard".
+
 ═══ RISK SCORING ═══
 
 RED FLAG SEVERITY LEVELS:
-- Critical: Auto-reject (sanctions, dissolved entity, material tampering, restricted content)
-- High: Escalate (missing hard-requirement docs, name mismatches, missing Visa-required disclosures)
+- Critical: Auto-reject (sanctions match, dissolved entity, material tampering, restricted content, OFAC hit)
+- High: Escalate (missing hard-requirement docs, name mismatches, missing Visa-required disclosures, missing owner ID)
 - Medium: Hold/clarify (data gaps, minor inconsistencies, young domain)
 - Low: Note for file
 
@@ -912,7 +928,7 @@ Scheme Monitoring Thresholds:
 
 ${applicationContext}
 
-Call the "underwriting_review_report" function with your complete analysis. Be thorough, actionable, and reference specific requirements. Include the recommended MCC code and description.`;
+Call the "underwriting_review_report" function with your complete analysis. Be thorough, actionable, and reference specific requirements. Include the recommended MCC code and description, risk_tier assessment, and OFAC screening results.`;
 
       const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -1025,8 +1041,17 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
                       type: "array",
                       items: { type: "string" },
                     },
+                    risk_tier: {
+                      type: "string",
+                      enum: ["standard", "high_risk"],
+                      description: "Risk tier based on MCC code. 'high_risk' for known high-risk MCCs (gambling, direct marketing, etc.), 'standard' otherwise.",
+                    },
+                    ofac_screening: {
+                      type: "string",
+                      description: "Summary of OFAC/sanctions screening results. State 'Clear' if no matches, or describe any flags.",
+                    },
                   },
-                  required: ["readiness_score", "summary", "recommended_mcc", "transaction_mix_assessment", "document_completeness", "red_flags", "recommended_actions"],
+                  required: ["readiness_score", "summary", "recommended_mcc", "transaction_mix_assessment", "document_completeness", "red_flags", "recommended_actions", "risk_tier", "ofac_screening"],
                   additionalProperties: false,
                 },
               },
@@ -1117,6 +1142,7 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
           recommended_actions: report.recommended_actions || [],
           summary: (report.summary as string) || null,
           no_change: !!isNoChange,
+          risk_tier: (report.risk_tier as string) || null,
         })
         .select()
         .single();
@@ -1153,6 +1179,14 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
 
         if (mcc) {
           noteLines.push("", `🏷️ Recommended MCC: ${mcc.code || "N/A"} — ${mcc.description || "N/A"}`, `   Rationale: ${mcc.rationale || "N/A"}`);
+        }
+
+        if (report.risk_tier === "high_risk") {
+          noteLines.push("", "🔴 HIGH-RISK MCC — This merchant falls into a high-risk category. Reserves, delayed funding, or enhanced monitoring may be required.");
+        }
+
+        if (report.ofac_screening) {
+          noteLines.push("", `🛡️ OFAC Screening: ${report.ofac_screening}`);
         }
 
         if (report.transaction_mix_assessment) {

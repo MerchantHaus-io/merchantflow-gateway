@@ -9,6 +9,7 @@ const REQUIRED_DOCUMENT_TYPES: { type: string; label: string }[] = [
   { type: "EIN", label: "Tax Document (EIN)" },
   { type: "Voided Check / Bank Confirmation Letter", label: "Voided Check or Bank Confirmation Letter" },
   { type: "Bank Statement", label: "Bank Statements (3 months)" },
+  { type: "Passport/Drivers License", label: "Owner ID (Passport or Drivers License)" },
 ];
 
 /**
@@ -73,6 +74,19 @@ export async function checkUnderwritingGate(opportunityId: string): Promise<{
     return {
       allowed: false,
       reason: `Missing required documents: ${missing.join(", ")}. Upload and label these documents before proceeding to Underwriting.`,
+    };
+  }
+
+  // 3. Check for at least one beneficial owner record (FinCEN CDD Rule)
+  const { count: ownerCount } = await supabase
+    .from("beneficial_owners")
+    .select("id", { count: "exact", head: true })
+    .eq("opportunity_id", opportunityId);
+
+  if (!ownerCount || ownerCount < 1) {
+    return {
+      allowed: false,
+      reason: "At least one beneficial owner (25%+ equity) must be recorded before proceeding to Underwriting. Add beneficial owners from the opportunity detail.",
     };
   }
 
