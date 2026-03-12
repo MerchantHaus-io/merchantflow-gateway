@@ -19,6 +19,7 @@ import {
 } from "@/types/opportunity";
 import { sendStageChangeEmail } from "@/hooks/useEmailNotifications";
 import { checkUnderwritingGate } from "@/lib/underwriting-gate";
+import { checkDuplicateMerchant } from "@/lib/duplicate-check";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
