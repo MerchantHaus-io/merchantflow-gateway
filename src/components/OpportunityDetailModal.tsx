@@ -38,6 +38,7 @@ import { StagePath } from "./opportunity-detail/StagePath";
 import { ApplicationProgress } from "./opportunity-detail/ApplicationProgress";
 import { OpportunityTasks } from "./opportunity-detail/OpportunityTasks";
 import { NotesSection } from "./opportunity-detail/NotesSection";
+import { checkUnderwritingGate } from "@/lib/underwriting-gate";
 import { AIValidatePanel } from "./opportunity-detail/AIValidatePanel";
 import { DocumentsTab } from "./DocumentsTab";
 import GameSplash from "./GameSplash";
@@ -865,6 +866,15 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                       onValueChange={async (value) => {
                         const newStage = value as OpportunityStage;
                         const oldStage = opportunity.stage;
+                        
+                        // Underwriting gate check
+                        if (newStage === 'underwriting_review') {
+                          const gate = await checkUnderwritingGate(opportunity.id);
+                          if (!gate.allowed) {
+                            toast.error(gate.reason, { duration: 6000 });
+                            return;
+                          }
+                        }
                         
                         const { error } = await supabase
                           .from('opportunities')

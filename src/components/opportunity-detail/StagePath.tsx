@@ -13,7 +13,7 @@ const STAGE_EXIT_REQUIREMENTS: Record<string, string> = {
   application_started: "Contact qualified, basic info collected",
   discovery: "Needs identified, solution proposed",
   qualified: "Decision maker engaged, budget confirmed",
-  application_prep: "Application complete, documents submitted",
+  application_prep: "Application complete, documents submitted, AI validation passed",
   underwriting_review: "Risk assessment passed",
   processor_approval: "Processor approved",
   integration_setup: "Integration configured",
