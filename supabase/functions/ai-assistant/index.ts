@@ -761,6 +761,9 @@ ${docList || "No documents uploaded"}
 
       const validationPrompt = `You are an underwriting document reviewer for a merchant services ISO. Analyze this merchant application and its uploaded documents using the following reference framework.
 
+TODAY'S DATE: ${new Date().toISOString().split("T")[0]}
+Use this date as the current date when evaluating document recency, expiry, and any time-based checks. Do NOT treat this year as being in the future.
+
 UNDERWRITING REFERENCE FRAMEWORK (from Deep Research Specification for AI Underwriter Bot):
 
 KEY UNDERWRITING DIMENSIONS:
