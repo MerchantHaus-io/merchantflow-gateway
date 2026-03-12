@@ -172,7 +172,7 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
                 ))}
               </SelectContent>
             </Select>
-            <Button size="sm" onClick={handleUpload} disabled={isUploading}>
+            <Button size="sm" onClick={handleUpload} disabled={isUploading || !selectedDocType}>
               {isUploading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Upload className="h-3 w-3 mr-1" />}
               Upload
             </Button>
