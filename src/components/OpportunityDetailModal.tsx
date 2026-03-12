@@ -40,6 +40,7 @@ import { OpportunityTasks } from "./opportunity-detail/OpportunityTasks";
 import { NotesSection } from "./opportunity-detail/NotesSection";
 import { checkUnderwritingGate } from "@/lib/underwriting-gate";
 import { AIValidatePanel } from "./opportunity-detail/AIValidatePanel";
+import { BeneficialOwners } from "./opportunity-detail/BeneficialOwners";
 import { DocumentsTab } from "./DocumentsTab";
 import GameSplash from "./GameSplash";
 import CommentsTab from "./CommentsTab";
