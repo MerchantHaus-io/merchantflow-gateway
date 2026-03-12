@@ -29,7 +29,6 @@ export const DOCUMENT_TYPE_OPTIONS = [
   "Voided Check / Bank Confirmation Letter",
   "EIN",
   "SSN",
-  "Unassigned",
 ];
 
 function formatFileSize(bytes: number | null): string {
