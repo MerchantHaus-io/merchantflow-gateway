@@ -867,6 +867,7 @@ HARD DOCUMENT REQUIREMENTS (all must be present and correctly labelled):
 2. EIN / Tax Document — Cross-check EIN, legal name against formation docs. Flag if missing.
 3. Voided Check or Bank Confirmation Letter — Verify account matches legal entity or DBA. Flag if missing.
 4. Bank Statements OR Processing History — Minimum 3 months. Check arithmetic invariants, recency, account holder name match, tamper indicators.
+5. Owner ID (Passport or Drivers License) — MANDATORY KYC/CDD requirement. Verify identity matches principal owner. Flag if missing.
 
 Additional document checks:
 - Passport/Drivers License if present — verify identity matches principal
