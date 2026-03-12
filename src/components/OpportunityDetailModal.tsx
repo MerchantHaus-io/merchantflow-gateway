@@ -39,6 +39,7 @@ import { ApplicationProgress } from "./opportunity-detail/ApplicationProgress";
 import { OpportunityTasks } from "./opportunity-detail/OpportunityTasks";
 import { NotesSection } from "./opportunity-detail/NotesSection";
 import { checkUnderwritingGate } from "@/lib/underwriting-gate";
+import { checkDuplicateMerchant } from "@/lib/duplicate-check";
 import { AIValidatePanel } from "./opportunity-detail/AIValidatePanel";
 import { BeneficialOwners } from "./opportunity-detail/BeneficialOwners";
 import { DocumentsTab } from "./DocumentsTab";
