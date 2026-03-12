@@ -49,7 +49,7 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
-  const [selectedDocType, setSelectedDocType] = useState("Unassigned");
+  const [selectedDocType, setSelectedDocType] = useState("");
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<Document | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
