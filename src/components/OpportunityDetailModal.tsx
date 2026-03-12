@@ -870,7 +870,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                         
                         // Underwriting gate check
                         if (newStage === 'underwriting_review') {
-                          const gate = await checkUnderwritingGate(opportunity.id);
+                          const gate = await checkUnderwritingGate(opportunity.id, opportunity.service_type);
                           if (!gate.allowed) {
                             toast.error(gate.reason, { duration: 6000 });
                             return;
