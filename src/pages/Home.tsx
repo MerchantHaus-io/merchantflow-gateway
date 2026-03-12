@@ -74,11 +74,11 @@ const groupKeys = groups.map((g) => g.title);
 type LayoutMode = "grid" | "carousel" | "icons";
 
 const iconColorMap: Record<string, string> = {
-  primary: "text-white",
-  teal: "text-white",
-  gold: "text-white",
-  success: "text-white",
-  warning: "text-white",
+  primary: "text-primary-foreground",
+  teal: "text-teal-foreground",
+  gold: "text-gold-foreground",
+  success: "text-success-foreground",
+  warning: "text-warning-foreground",
 };
 
 const bgColorMap: Record<string, string> = {
