@@ -1,19 +1,32 @@
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Checks whether an opportunity has passed document validation
- * and meets the minimum requirements to proceed to underwriting.
+ * Hard document requirements for underwriting gate.
+ * Maps document_type values to human-readable labels.
+ */
+const REQUIRED_DOCUMENT_TYPES: { type: string; label: string }[] = [
+  { type: "Articles of Organisation", label: "Articles of Organization" },
+  { type: "EIN", label: "Tax Document (EIN)" },
+  { type: "Voided Check / Bank Confirmation Letter", label: "Voided Check or Bank Confirmation Letter" },
+  { type: "Bank Statement", label: "Bank Statements (3 months)" },
+];
+
+/**
+ * Checks whether an opportunity meets all hard requirements
+ * to proceed to underwriting:
  *
- * Requirements:
- * - A validation report with readiness_score of "green" or "yellow"
- * - At least one document classified as "Bank Statement" or "Transaction History"
- *   (representing 3 months of processing/banking history)
+ * 1. An Underwriting Review report exists with a passing score
+ * 2. All required document types are uploaded and labelled:
+ *    - Articles of Organization
+ *    - EIN (Tax Document)
+ *    - Voided Check / Bank Confirmation Letter
+ *    - Bank Statements OR Transaction History (3 months processing history)
  */
 export async function checkUnderwritingGate(opportunityId: string): Promise<{
   allowed: boolean;
   reason: string;
 }> {
-  // 1. Check for a passing validation report
+  // 1. Check for a passing underwriting review report
   const { data: report } = await supabase
     .from("validation_reports")
     .select("readiness_score, summary")
@@ -25,28 +38,41 @@ export async function checkUnderwritingGate(opportunityId: string): Promise<{
   if (!report) {
     return {
       allowed: false,
-      reason: "Document validation has not been run. Run AI Validate in the Documents tab before moving to Underwriting.",
+      reason: "Underwriting Review has not been run. Run the AI Underwriting Review from the opportunity detail before moving to Underwriting.",
     };
   }
 
-  if (report.readiness_score === "red") {
+  if (report.readiness_score === "not_ready" || report.readiness_score === "red") {
     return {
       allowed: false,
-      reason: `Document validation failed (score: Red). Resolve issues before proceeding to Underwriting.${report.summary ? ` — ${report.summary}` : ""}`,
+      reason: `Underwriting Review failed (score: Not Ready). Resolve issues before proceeding.${report.summary ? ` — ${report.summary}` : ""}`,
     };
   }
 
-  // 2. Check for required financial documents (processing history or bank statements)
+  // 2. Check for all required document types
   const { data: docs } = await supabase
     .from("documents")
     .select("document_type")
-    .eq("opportunity_id", opportunityId)
-    .in("document_type", ["Bank Statement", "Transaction History"]);
+    .eq("opportunity_id", opportunityId);
 
-  if (!docs || docs.length === 0) {
+  const uploadedTypes = new Set((docs || []).map((d) => d.document_type));
+
+  // Transaction History can substitute for Bank Statement
+  const hasFinancialHistory = uploadedTypes.has("Bank Statement") || uploadedTypes.has("Transaction History");
+
+  const missing: string[] = [];
+  for (const req of REQUIRED_DOCUMENT_TYPES) {
+    if (req.type === "Bank Statement") {
+      if (!hasFinancialHistory) missing.push(req.label + " or Transaction History");
+    } else if (!uploadedTypes.has(req.type)) {
+      missing.push(req.label);
+    }
+  }
+
+  if (missing.length > 0) {
     return {
       allowed: false,
-      reason: "Missing required documents: Upload at least 3 months of processing history (e.g. Stripe, First Data statements) or bank statements showing business banking activity.",
+      reason: `Missing required documents: ${missing.join(", ")}. Upload and label these documents before proceeding to Underwriting.`,
     };
   }
 

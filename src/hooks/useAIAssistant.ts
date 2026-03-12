@@ -68,6 +68,18 @@ export const useAIAssistant = () => {
     return data;
   }, []);
 
+  const underwritingReview = useCallback(async (opportunityId: string) => {
+    const { data, error } = await supabase.functions.invoke("ai-assistant", {
+      body: {
+        action: "underwriting-review",
+        opportunityId,
+      },
+    });
+
+    if (error) throw error;
+    return data;
+  }, []);
+
   return {
     isThinking,
     isAIChannel,
@@ -75,5 +87,6 @@ export const useAIAssistant = () => {
     triggerAIResponse,
     validateDocuments,
     scrutinizeWebsite,
+    underwritingReview,
   };
 };
