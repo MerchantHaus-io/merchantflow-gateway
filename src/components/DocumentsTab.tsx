@@ -127,46 +127,6 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
     setDocuments(prev => prev.map(d => d.id === docId ? { ...d, document_type: type } : d));
   };
 
-  const handleValidate = async () => {
-    if (documents.length === 0) {
-      toast.error("Upload documents before validating");
-      return;
-    }
-    setIsValidating(true);
-    try {
-      const result = await validateDocuments(opportunityId);
-      setValidationReport(result);
-      setShowReport(true);
-      toast.success("Validation complete");
-    } catch {
-      toast.error("AI validation failed — please try again");
-    } finally {
-      setIsValidating(false);
-    }
-  };
-
-  const fetchLatestReport = async () => {
-    const { data } = await supabase
-      .from("validation_reports")
-      .select("*")
-      .eq("opportunity_id", opportunityId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
-    if (data) {
-      setValidationReport(data);
-      setShowReport(true);
-    } else {
-      toast("No previous report found");
-    }
-  };
-
-  const readinessIcon = (score: string) => {
-    if (score === "green") return <CheckCircle2 className="h-4 w-4 text-green-500" />;
-    if (score === "yellow") return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
-    return <XCircle className="h-4 w-4 text-destructive" />;
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
