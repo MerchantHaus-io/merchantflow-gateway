@@ -457,6 +457,62 @@ export type Database = {
           },
         ]
       }
+      beneficial_owners: {
+        Row: {
+          address_city: string | null
+          address_country: string | null
+          address_line1: string | null
+          address_state: string | null
+          address_zip: string | null
+          created_at: string
+          date_of_birth: string | null
+          full_name: string
+          id: string
+          opportunity_id: string
+          ownership_percentage: number
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          address_city?: string | null
+          address_country?: string | null
+          address_line1?: string | null
+          address_state?: string | null
+          address_zip?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          full_name: string
+          id?: string
+          opportunity_id: string
+          ownership_percentage: number
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address_city?: string | null
+          address_country?: string | null
+          address_line1?: string | null
+          address_state?: string | null
+          address_zip?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          full_name?: string
+          id?: string
+          opportunity_id?: string
+          ownership_percentage?: number
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beneficial_owners_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       broadcast_acknowledgments: {
         Row: {
           acknowledged_at: string
@@ -1945,6 +2001,7 @@ export type Database = {
           readiness_score: string
           recommended_actions: Json
           risk_flags: Json
+          risk_tier: string | null
           summary: string | null
           triggered_by: string
         }
@@ -1959,6 +2016,7 @@ export type Database = {
           readiness_score?: string
           recommended_actions?: Json
           risk_flags?: Json
+          risk_tier?: string | null
           summary?: string | null
           triggered_by: string
         }
@@ -1973,6 +2031,7 @@ export type Database = {
           readiness_score?: string
           recommended_actions?: Json
           risk_flags?: Json
+          risk_tier?: string | null
           summary?: string | null
           triggered_by?: string
         }
