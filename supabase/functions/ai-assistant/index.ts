@@ -695,8 +695,51 @@ serve(async (req) => {
       });
     }
 
-    // ── ACTION: VALIDATE DOCUMENTS ──
+    // ── ACTION: VALIDATE DOCUMENTS (legacy, redirects to unified review) ──
     if (action === "validate-documents") {
+      // Redirect to unified underwriting review
+      const body = JSON.stringify({ action: "underwriting-review", opportunityId });
+      const selfUrl = `${SUPABASE_URL}/functions/v1/ai-assistant`;
+      const redirectRes = await fetch(selfUrl, {
+        method: "POST",
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+          "Authorization": req.headers.get("authorization") || "",
+          "apikey": req.headers.get("apikey") || "",
+        },
+        body,
+      });
+      const redirectData = await redirectRes.json();
+      return new Response(JSON.stringify(redirectData), {
+        status: redirectRes.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── ACTION: SCRUTINIZE WEBSITE (legacy, redirects to unified review) ──
+    if (action === "scrutinize-website") {
+      const body = JSON.stringify({ action: "underwriting-review", opportunityId });
+      const selfUrl = `${SUPABASE_URL}/functions/v1/ai-assistant`;
+      const redirectRes = await fetch(selfUrl, {
+        method: "POST",
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+          "Authorization": req.headers.get("authorization") || "",
+          "apikey": req.headers.get("apikey") || "",
+        },
+        body,
+      });
+      const redirectData = await redirectRes.json();
+      return new Response(JSON.stringify(redirectData), {
+        status: redirectRes.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── ACTION: UNIFIED UNDERWRITING REVIEW ──
+    if (action === "underwriting-review") {
       if (!opportunityId) {
         return new Response(JSON.stringify({ error: "Missing opportunityId" }), {
           status: 400,
@@ -731,12 +774,53 @@ serve(async (req) => {
       const documents = docsRes.data || [];
       const wizardForm = (wizardRes.data?.form_state as Record<string, unknown>) || {};
 
-      // Build context for AI
+      // Build document inventory
       const docList = documents.map((d) => `- ${d.file_name} (type: ${d.document_type || "Unassigned"})`).join("\n");
+
+      // Fetch website content
+      const websiteUrl = (wizardForm.website_url as string) || account?.website;
+      let websiteContent = "";
+      let fetchError = "";
+      if (websiteUrl) {
+        try {
+          const formattedUrl = websiteUrl.startsWith("http") ? websiteUrl : `https://${websiteUrl}`;
+          const siteRes = await fetch(formattedUrl, {
+            headers: { "User-Agent": "Mozilla/5.0 (compatible; MerchantHaus-Underwriting/1.0)" },
+            redirect: "follow",
+          });
+          if (!siteRes.ok) {
+            fetchError = `Website returned HTTP ${siteRes.status}`;
+          } else {
+            const html = await siteRes.text();
+            websiteContent = html
+              .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+              .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+              .replace(/<[^>]+>/g, " ")
+              .replace(/\s+/g, " ")
+              .trim()
+              .substring(0, 15000);
+          }
+        } catch (e) {
+          fetchError = `Could not fetch website: ${e instanceof Error ? e.message : "Unknown error"}`;
+        }
+      }
+
+      // Build transaction mix context
+      const txMix = [
+        wizardForm.percent_swiped ? `Swiped: ${wizardForm.percent_swiped}%` : null,
+        wizardForm.percent_keyed ? `Keyed: ${wizardForm.percent_keyed}%` : null,
+        wizardForm.percent_ecommerce ? `E-commerce: ${wizardForm.percent_ecommerce}%` : null,
+        wizardForm.percent_moto ? `MOTO: ${wizardForm.percent_moto}%` : null,
+      ].filter(Boolean).join(", ") || "Not provided";
+
+      const customerMix = [
+        wizardForm.percent_b2b ? `B2B: ${wizardForm.percent_b2b}%` : null,
+        wizardForm.percent_b2c ? `B2C: ${wizardForm.percent_b2c}%` : null,
+      ].filter(Boolean).join(", ") || "Not provided";
 
       const applicationContext = `
 ACCOUNT: ${account?.name || "Unknown"}
-WEBSITE: ${account?.website || "Not provided"}
+WEBSITE URL: ${websiteUrl || "Not provided"}
 ADDRESS: ${[account?.address1, account?.city, account?.state, account?.zip].filter(Boolean).join(", ") || "Not provided"}
 
 CONTACT: ${[contact?.first_name, contact?.last_name].filter(Boolean).join(" ") || "Unknown"}
@@ -745,90 +829,90 @@ PHONE: ${contact?.phone || "Not provided"}
 
 SERVICE TYPE: ${opp.service_type || "processing"}
 
-WIZARD/APPLICATION DATA:
+APPLICATION / WIZARD DATA:
 - DBA Name: ${wizardForm.dbaName || wizardForm.dba_name || "Not provided"}
 - Legal Entity: ${wizardForm.legalEntityName || wizardForm.legal_entity_name || "Not provided"}
 - Federal Tax ID: ${wizardForm.tin || wizardForm.federal_tax_id ? "Provided" : "Not provided"}
 - Ownership Type: ${wizardForm.ownershipType || wizardForm.ownership_type || "Not provided"}
+- Nature of Business: ${wizardForm.nature_of_business || wizardForm.product_description || "Not provided"}
+- Products/Services: ${wizardForm.products || wizardForm.product_description || "Not provided"}
+- MCC/SIC Code: ${wizardForm.sic_mcc_code || "Not provided"}
 - Monthly Volume: ${wizardForm.monthlyVolume || wizardForm.monthly_volume || "Not provided"}
 - Avg Ticket: ${wizardForm.avgTicket || wizardForm.average_transaction || "Not provided"}
 - High Ticket: ${wizardForm.highTicket || wizardForm.high_ticket || "Not provided"}
-- Products/Services: ${wizardForm.products || wizardForm.product_description || "Not provided"}
+- Transaction Mix: ${txMix}
+- Customer Mix: ${customerMix}
 
 UPLOADED DOCUMENTS (${documents.length} total):
 ${docList || "No documents uploaded"}
+
+REQUIRED DOCUMENTS CHECK:
+- Articles of Organisation: ${documents.some(d => d.document_type === "Articles of Organisation") ? "✅ Present" : "❌ MISSING (HARD REQUIREMENT)"}
+- EIN / Tax Document: ${documents.some(d => d.document_type === "EIN" || d.document_type === "SSN") ? "✅ Present" : "❌ MISSING (HARD REQUIREMENT)"}
+- Voided Check / Bank Confirmation: ${documents.some(d => d.document_type === "Voided Check / Bank Confirmation Letter") ? "✅ Present" : "❌ MISSING (HARD REQUIREMENT)"}
+- Bank Statements / Processing History: ${documents.some(d => d.document_type === "Bank Statement" || d.document_type === "Transaction History") ? "✅ Present" : "❌ MISSING (HARD REQUIREMENT — 3 months minimum)"}
+
+${websiteUrl ? (fetchError ? `WEBSITE FETCH ERROR: ${fetchError}` : `WEBSITE CONTENT (extracted text):\n${websiteContent}`) : "NO WEBSITE URL PROVIDED — flag as risk if service type requires web presence"}
 `;
 
-      const validationPrompt = `You are an underwriting document reviewer for a merchant services ISO. Analyze this merchant application and its uploaded documents using the following reference framework.
+      const unifiedPrompt = `You are an expert underwriting reviewer for a payment processing ISO. Perform a COMPREHENSIVE underwriting review covering ALL of the following dimensions in a single analysis:
 
 TODAY'S DATE: ${new Date().toISOString().split("T")[0]}
-Use this date as the current date when evaluating document recency, expiry, and any time-based checks. Do NOT treat this year as being in the future.
 
-UNDERWRITING REFERENCE FRAMEWORK (from Deep Research Specification for AI Underwriter Bot):
+═══ DIMENSION 1: DOCUMENT VALIDATION ═══
 
-KEY UNDERWRITING DIMENSIONS:
-1. Identity & Legal Existence — Does the applicant exist as a legal entity? Cross-document name/address/entity-number matches; registry verification; ownership graph consistency per FATF beneficial owner expectations.
-2. Authority to Contract — Do signers have authority to bind the entity? Role/title plausibility; signature vs listed officers.
-3. Banking & Settlement Integrity — Is the settlement account controlled by the merchant? Account-name match to legal name or evidenced DBA; bank identifier format validation; statement recency; transaction pattern plausibility.
-4. Business Model & Product Legitimacy — Is the product allowed and coherent with the website? Website completeness per scheme rules; restricted/refund policy disclosure.
-5. Fraud/Dispute Exposure — Compare stated projections to historical; compare to Visa VAMP and Mastercard ECP thresholds.
-6. AML/Sanctions Risk — Mandatory screening at onboarding and ongoing (Mastercard rules), risk-based CDD (FATF).
-7. Security & Data-Handling Posture — PCI DSS log retention, TPSP monitoring, payment-page tamper monitoring for e-commerce.
+HARD DOCUMENT REQUIREMENTS (all must be present and correctly labelled):
+1. Articles of Organization — Validate entity status, formation date, entity number. Flag if missing.
+2. EIN / Tax Document — Cross-check EIN, legal name against formation docs. Flag if missing.
+3. Voided Check or Bank Confirmation Letter — Verify account matches legal entity or DBA. Flag if missing.
+4. Bank Statements OR Processing History — Minimum 3 months. Check arithmetic invariants, recency, account holder name match, tamper indicators.
 
-DOCUMENT VERIFICATION CHECKS BY TYPE:
+Additional document checks:
+- Passport/Drivers License if present — verify identity matches principal
+- Cross-document consistency: names, addresses, entity numbers across all docs
+- Classification issues: flag any misclassified or unlabelled documents
 
-Bank Statements:
-- Arithmetic invariants: opening + credits - debits ≈ closing (allowing rounding/fees)
-- Period continuity: statement end date within 60-90 days of now
-- Field presence: bank name/logo, statement period, account identifiers, page numbering
-- Account holder name must match legal name or evidenced DBA (formation docs + website)
-- Address on statement should link to the business
-- Tamper-awareness: flag suspicious rendering artefacts, layout shifts, missing watermarks, inconsistent fonts
-- RED FLAG (Critical): Account-name mismatch without credible explanation
-- RED FLAG (Critical): Signs of document manipulation combined with other inconsistencies
+═══ DIMENSION 2: WEBSITE SCRUTINY ═══
 
-Articles of Organisation/Incorporation:
-- Validate entity status (active/good standing), formation date, entity number against registry
-- Shell characteristics: newly formed entity + no web presence + unrelated settlement name + high-risk MCC = strong escalation
-- Verify registered agent and principal office; large discrepancies with bank/website are high-risk
-- RED FLAG (Critical): Entity not found / inactive / dissolved in registry
+Visa Core Requirements:
+- Customer service contact (email OR telephone)
+- Merchant country displayed during checkout
+- Address for cardholder correspondence
+- Refund/return/cancellation policy (must be disclosed before checkout)
+- Shipping/fulfilment/multi-shipment policy
+- Privacy policy, Terms of service
 
-IRS Documents (US):
-- W-9: standard TIN certification. Extract legal name (line 1), DBA (line 2), federal tax classification, EIN/SSN, address, signature/date
-- EIN proof: CP 575 (confirmation notice) or Letter 147C (previously assigned verification)
-- Cross-check EIN, legal name, address against W-9 and formation docs
-- RED FLAG (High): EIN/name mismatch across docs
-- RED FLAG (High/Critical): "EIN proof" that looks non-IRS or unauthorized
+Website legitimacy:
+- Company name/DBA matches application
+- Physical address matches documentary evidence
+- Products/services match application description and MCC code
+- No restricted content, aggressive claims, or thin content
+- Domain age and SSL posture
 
-Processing Statements:
-- Compare monthly volume, avg ticket, refund rate, chargeback count/rate, MCC, descriptor
-- Compare to scheme monitoring thresholds (Visa VAMP, Mastercard ECP)
-- RED FLAG (High): Chargeback patterns near/exceeding thresholds
-- RED FLAG (Medium/High): Near-zero refunds in high-refund sectors
+═══ DIMENSION 3: APPLICATION DETAIL REVIEW ═══
 
-PCI Artefacts:
-- Confirm PCI validation type, SAQ type, AOC dates, service providers listed
-- Ensure TPSP relationships identified; monitoring cadence for TPSP PCI status (PCI DSS 12.8.4)
-- RED FLAG (High): Refusal to address PCI scope; unknown third-party scripts on payment pages
+CRITICAL — Verify the following are consistent and plausible:
+1. TRANSACTION MIX — Do the stated percentages (swiped/keyed/ecommerce/MOTO) align with the business model and website? E.g., a retail store claiming 80% e-commerce is suspicious. The mix must total 100%.
+2. BUSINESS DESCRIPTION — Does the nature of business match what the website shows? Are products/services consistent?
+3. MCC CODE — Based on the business description and website, recommend the MOST APPROPRIATE MCC code and its description. Flag if the currently assigned MCC doesn't match.
+4. VOLUME PROJECTIONS — Are monthly volume, avg ticket, and high ticket plausible for the business type?
+5. CUSTOMER MIX — B2B vs B2C split should align with the business model
 
-CROSS-DOCUMENT CONSISTENCY (highest value):
-- Name matching: legal name across articles/W-9/bank statement/website
-- Address matching: formation docs vs bank statement vs website correspondence address
-- Ownership consistency: UBO list vs signer vs titles
+═══ RISK SCORING ═══
 
 RED FLAG SEVERITY LEVELS:
-- Critical: Auto-reject or mandatory escalation (sanctions match, entity dissolved, material tampering)
-- High: Escalate unless strong compensating controls (missing scheme-required disclosures, name mismatches)
-- Medium: Hold/clarify (data gaps, minor inconsistencies)
+- Critical: Auto-reject (sanctions, dissolved entity, material tampering, restricted content)
+- High: Escalate (missing hard-requirement docs, name mismatches, missing Visa-required disclosures)
+- Medium: Hold/clarify (data gaps, minor inconsistencies, young domain)
 - Low: Note for file
 
-SCHEME MONITORING THRESHOLDS (use as underwriting guardrails):
-- Visa VAMP: AP/Canada/EU/US excessive threshold ≥220 bps AND ≥1,500 fraud+dispute count (reduces to ≥150 bps April 2026)
-- Mastercard ECP: ECM 100-299 chargebacks AND 1.50-2.99% ratio; HECM 300+ chargebacks AND 3.00%+ ratio
+Scheme Monitoring Thresholds:
+- Visa VAMP: ≥220 bps AND ≥1,500 count (reduces to ≥150 bps April 2026)
+- Mastercard ECP: ECM 100-299 chargebacks AND 1.50-2.99%; HECM 300+ AND 3.00%+
 
 ${applicationContext}
 
-Return your analysis by calling the "validation_report" function. Be thorough, reference specific checks from the framework, and flag severity levels. Be concise and actionable.`;
+Call the "underwriting_review_report" function with your complete analysis. Be thorough, actionable, and reference specific requirements. Include the recommended MCC code and description.`;
 
       const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -837,17 +921,17 @@ Return your analysis by calling the "validation_report" function. Be thorough, r
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
+          model: "google/gemini-2.5-flash",
           messages: [
-            { role: "system", content: "You are an expert underwriting document reviewer for payment processing merchant applications. You apply the Deep Research Specification for AI Underwriter Bot framework, checking cross-document consistency, scheme compliance, red flag severity levels, and FATF/PCI/Visa/Mastercard requirements." },
-            { role: "user", content: validationPrompt },
+            { role: "system", content: "You are an expert underwriting reviewer for payment processing merchant applications. You perform a unified analysis covering document validation, website scrutiny, and application detail verification using the Deep Research Specification for AI Underwriter Bot framework. You enforce Visa Core Rules, Mastercard requirements, FATF CDD expectations, and PCI DSS standards." },
+            { role: "user", content: unifiedPrompt },
           ],
           tools: [
             {
               type: "function",
               function: {
-                name: "validation_report",
-                description: "Return a structured validation report for a merchant application.",
+                name: "underwriting_review_report",
+                description: "Return a comprehensive unified underwriting review report covering documents, website, and application details.",
                 parameters: {
                   type: "object",
                   properties: {
@@ -856,9 +940,31 @@ Return your analysis by calling the "validation_report" function. Be thorough, r
                       enum: ["ready", "needs_attention", "not_ready"],
                       description: "Overall readiness: ready (green), needs_attention (yellow), not_ready (red)",
                     },
+                    website_score: {
+                      type: "number",
+                      description: "Website readiness score from 0 to 10",
+                    },
+                    website_score_label: {
+                      type: "string",
+                      enum: ["will_be_declined", "high_risk", "borderline", "acceptable", "strong", "perfect"],
+                    },
                     summary: {
                       type: "string",
-                      description: "One-sentence summary of the application readiness.",
+                      description: "Two to three sentence executive summary of the entire underwriting review.",
+                    },
+                    recommended_mcc: {
+                      type: "object",
+                      properties: {
+                        code: { type: "string", description: "Recommended MCC code (e.g., 5999)" },
+                        description: { type: "string", description: "MCC description (e.g., Miscellaneous and Specialty Retail Stores)" },
+                        rationale: { type: "string", description: "Why this MCC is appropriate" },
+                      },
+                      required: ["code", "description", "rationale"],
+                      additionalProperties: false,
+                    },
+                    transaction_mix_assessment: {
+                      type: "string",
+                      description: "Assessment of whether the stated transaction mix (swiped/keyed/ecommerce/MOTO) is consistent with the business model and website. Flag any inconsistencies.",
                     },
                     document_completeness: {
                       type: "array",
@@ -872,7 +978,19 @@ Return your analysis by calling the "validation_report" function. Be thorough, r
                         required: ["document", "status"],
                         additionalProperties: false,
                       },
-                      description: "Required documents with their presence status.",
+                    },
+                    website_requirements: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          requirement: { type: "string" },
+                          met: { type: "boolean" },
+                          detail: { type: "string" },
+                        },
+                        required: ["requirement", "met"],
+                        additionalProperties: false,
+                      },
                     },
                     classification_issues: {
                       type: "array",
@@ -885,358 +1003,10 @@ Return your analysis by calling the "validation_report" function. Be thorough, r
                         required: ["file_name", "issue"],
                         additionalProperties: false,
                       },
-                      description: "Documents that appear misclassified.",
                     },
                     data_gaps: {
                       type: "array",
                       items: { type: "string" },
-                      description: "Critical application fields that are missing.",
-                    },
-                    risk_flags: {
-                      type: "array",
-                      items: {
-                        type: "object",
-                        properties: {
-                          flag: { type: "string" },
-                          severity: { type: "string", enum: ["low", "medium", "high"] },
-                        },
-                        required: ["flag", "severity"],
-                        additionalProperties: false,
-                      },
-                      description: "Risk concerns with severity levels.",
-                    },
-                    recommended_actions: {
-                      type: "array",
-                      items: { type: "string" },
-                      description: "Specific steps to take before submission.",
-                    },
-                  },
-                  required: ["readiness_score", "summary", "document_completeness", "recommended_actions"],
-                  additionalProperties: false,
-                },
-              },
-            },
-          ],
-          tool_choice: { type: "function", function: { name: "validation_report" } },
-        }),
-      });
-
-      if (!aiResponse.ok) {
-        const status = aiResponse.status;
-        if (status === 429) {
-          return new Response(JSON.stringify({ error: "Rate limited. Please try again in a moment." }), {
-            status: 429,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        if (status === 402) {
-          return new Response(JSON.stringify({ error: "AI credits exhausted. Please top up in Settings." }), {
-            status: 402,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        const errText = await aiResponse.text();
-        console.error("AI gateway error:", status, errText);
-        throw new Error(`AI gateway error: ${status}`);
-      }
-
-      const aiData = await aiResponse.json();
-      
-      // Extract structured data from tool call
-      const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
-      let report: Record<string, unknown>;
-      
-      if (toolCall?.function?.arguments) {
-        report = typeof toolCall.function.arguments === "string"
-          ? JSON.parse(toolCall.function.arguments)
-          : toolCall.function.arguments;
-      } else {
-        // Fallback if model didn't use tool calling
-        report = {
-          readiness_score: "unknown",
-          summary: aiData.choices?.[0]?.message?.content || "Unable to generate report.",
-          document_completeness: [],
-          classification_issues: [],
-          data_gaps: [],
-          risk_flags: [],
-          recommended_actions: [],
-        };
-      }
-
-      // Get triggering user's email from auth header
-      const authHeader = req.headers.get("authorization");
-      let triggeredBy = "unknown";
-      if (authHeader) {
-        try {
-          const { data: { user } } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
-          triggeredBy = user?.email || "unknown";
-        } catch { /* ignore */ }
-      }
-
-      // Check for no-change against the last report
-      const { data: lastReport } = await supabase
-        .from("validation_reports")
-        .select("readiness_score, data_gaps, risk_flags, document_completeness, summary")
-        .eq("opportunity_id", opportunityId)
-        .eq("no_change", false)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      const newScore = (report.readiness_score as string) || "unknown";
-      const isNoChange = lastReport
-        && lastReport.readiness_score === newScore
-        && JSON.stringify(lastReport.data_gaps) === JSON.stringify(report.data_gaps || [])
-        && JSON.stringify(lastReport.risk_flags) === JSON.stringify(report.risk_flags || []);
-
-      // Persist to database
-      const { data: savedReport, error: saveError } = await supabase
-        .from("validation_reports")
-        .insert({
-          opportunity_id: opportunityId,
-          triggered_by: triggeredBy,
-          readiness_score: newScore,
-          document_completeness: report.document_completeness || [],
-          classification_issues: report.classification_issues || [],
-          data_gaps: report.data_gaps || [],
-          risk_flags: report.risk_flags || [],
-          recommended_actions: report.recommended_actions || [],
-          summary: (report.summary as string) || null,
-          no_change: !!isNoChange,
-        })
-        .select()
-        .single();
-
-      if (saveError) {
-        console.error("Failed to save validation report:", saveError);
-      }
-
-      return new Response(JSON.stringify({
-        success: true,
-        report,
-        id: savedReport?.id,
-        triggered_by: triggeredBy,
-        created_at: savedReport?.created_at || new Date().toISOString(),
-        no_change: !!isNoChange,
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // ── ACTION: SCRUTINIZE WEBSITE ──
-    if (action === "scrutinize-website") {
-      if (!opportunityId) {
-        return new Response(JSON.stringify({ error: "Missing opportunityId" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      // Fetch opportunity + account for website URL
-      const { data: opp } = await supabase
-        .from("opportunities")
-        .select("id, account_id, contact_id, service_type")
-        .eq("id", opportunityId)
-        .single();
-
-      if (!opp) {
-        return new Response(JSON.stringify({ error: "Opportunity not found" }), {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const [accountRes, wizardRes] = await Promise.all([
-        supabase.from("accounts").select("*").eq("id", opp.account_id).single(),
-        supabase.from("onboarding_wizard_states").select("form_state").eq("opportunity_id", opportunityId).maybeSingle(),
-      ]);
-
-      const account = accountRes.data;
-      const wizardForm = (wizardRes.data?.form_state as Record<string, unknown>) || {};
-      const websiteUrl = (wizardForm.website_url as string) || account?.website;
-
-      if (!websiteUrl) {
-        return new Response(JSON.stringify({ error: "No website URL found for this merchant. Add a website in the wizard or account details first." }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      // Fetch the website content
-      let websiteContent = "";
-      let fetchError = "";
-      try {
-        const formattedUrl = websiteUrl.startsWith("http") ? websiteUrl : `https://${websiteUrl}`;
-        const siteRes = await fetch(formattedUrl, {
-          headers: { "User-Agent": "Mozilla/5.0 (compatible; MerchantHaus-Underwriting/1.0)" },
-          redirect: "follow",
-        });
-        if (!siteRes.ok) {
-          fetchError = `Website returned HTTP ${siteRes.status}`;
-        } else {
-          const html = await siteRes.text();
-          // Extract text content, strip tags for analysis (keep first 15k chars)
-          websiteContent = html
-            .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-            .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-            .replace(/<[^>]+>/g, " ")
-            .replace(/\s+/g, " ")
-            .trim()
-            .substring(0, 15000);
-        }
-      } catch (e) {
-        fetchError = `Could not fetch website: ${e instanceof Error ? e.message : "Unknown error"}`;
-      }
-
-      const applicationContext = `
-MERCHANT: ${account?.name || "Unknown"}
-WEBSITE URL: ${websiteUrl}
-SERVICE TYPE: ${opp.service_type || "processing"}
-NATURE OF BUSINESS: ${wizardForm.nature_of_business || wizardForm.product_description || "Not provided"}
-MCC/SIC CODE: ${wizardForm.sic_mcc_code || "Not provided"}
-MONTHLY VOLUME: ${wizardForm.monthly_volume || wizardForm.average_transaction ? `$${wizardForm.monthly_volume}/mo, avg ticket $${wizardForm.average_transaction}` : "Not provided"}
-
-${fetchError ? `WEBSITE FETCH ERROR: ${fetchError}` : `WEBSITE CONTENT (extracted text):\n${websiteContent}`}
-`;
-
-      const scrutinyPrompt = `You are an expert underwriting analyst for a payment processing ISO. Your job is to scrutinize a merchant's website for underwriting readiness using the following comprehensive reference framework.
-
-TODAY'S DATE: ${new Date().toISOString().split("T")[0]}
-Use this date as the current date when evaluating domain age, certificate expiry, and any time-based checks. Do NOT treat this year as being in the future.
-
-UNDERWRITING REFERENCE FRAMEWORK (from Deep Research Specification for AI Underwriter Bot):
-
-SCHEME-DRIVEN WEBSITE COMPLIANCE CHECKS (hard requirements for e-commerce MIDs):
-
-Visa Core Requirements:
-- Customer service contact including email OR telephone number (mandatory)
-- Clear and prominent display of merchant outlet COUNTRY during checkout (a link to a separate page does NOT meet this requirement)
-- Address for cardholder correspondence (mandatory)
-- Policy for delivery of multiple shipments (mandatory)
-- Europe Region add-on: consumer data privacy policy must be included
-
-Visa Refund/Return/Cancellation Disclosure:
-- If the merchant restricts returns/cancellations, policies must be clearly disclosed
-- For e-commerce: disclosure must appear BEFORE final checkout AND include a "click to accept"/checkbox acknowledgement
-
-Visa Special Categories (elevated scheme risk):
-- Online gambling, marketplaces, crypto/NFT transactions require additional disclosures (warnings, retailer transparency, wallet-address confirmation, volatility statements)
-
-WEBSITE LEGITIMACY SCORING CRITERIA:
-
-Identity & Contactability:
-- Company legal name and/or DBA visible and consistent with application
-- Physical address present and matches documentary evidence
-- Working customer support channels (email/telephone) — required by Visa
-- Country of merchant outlet displayed during checkout flow (not just in footer/legal pages)
-
-Policy Hygiene (high correlation with disputes):
-- Refund/return/cancellation policy: present, clear, consistent with checkout disclosures; restricted policies require explicit disclosure with click-to-accept
-- Shipping/fulfilment policy: including multi-shipment delivery policy (Visa requirement)
-- Privacy policy: present; explicitly required in Europe Region by Visa
-- Terms of service: clear contract terms
-
-Product/Service Legitimacy:
-- Offer matches stated MCC and business description
-- Pricing coherent; no contradictory claims (e.g., "free trial" but immediate billing)
-- No hidden continuity (subscription merchants are historically dispute-heavy)
-
-DOMAIN, OWNERSHIP & TRANSPORT SECURITY:
-
-Domain Registration:
-- Check domain creation date via RDAP; very young domains + high-risk products + aggressive projections = elevated risk
-- Extract registrar, registrant org (if not redacted), name servers
-
-TLS/SSL Posture:
-- Require HTTPS for any page collecting personal data or enabling checkout
-- Check certificate validity, issuer trust, hostname match, mixed content warnings
-
-SUSPICIOUS INDICATORS:
-- "Brand new" website with high-volume projections and no credible business history
-- No verifiable address; only webform contact; disposable emails
-- Policy pages that appear copied/templated with no customization
-- Products on site don't match application description
-- Aggressive/misleading claims
-- Long delivery times (may trigger reserves)
-- Thin content / minimal pages
-- Restricted industries or high-risk indicators
-
-RISK SCORING MODEL (0-100):
-- Identity & ownership confidence: 0-30 points
-- Website legitimacy & scheme compliance: 0-20 points
-- Payments/dispute exposure (MCC + model + projections + history): 0-25 points
-- AML/sanctions/geography: 0-15 points
-- Security & data-handling posture (PCI/integration): 0-10 points
-
-RED FLAGS & SEVERITY:
-- Critical: Sanctions match; entity dissolved; website selling prohibited content
-- High: Missing customer service contact or hides merchant country in checkout; refund policy absent or not disclosed correctly; bank statement name inconsistent with legal entity
-- High: Entity not found/dissolved in registry; multiple cross-document inconsistencies
-- Medium: Young domain with aggressive projections; thin content; minor policy gaps
-
-SCHEME MONITORING THRESHOLDS (flag if projected rates approach):
-- Visa VAMP: AP/Canada/EU/US ≥220 bps AND ≥1,500 count (reduces to ≥150 bps April 2026)
-- Mastercard ECP: ECM 100-299 chargebacks AND 1.50-2.99%; HECM 300+ AND 3.00%+
-
-Map your 0-10 score to this guidance:
-- 0: Will definitely be declined. Major red flags, restricted content, or non-functional site.
-- 1-3: High risk of decline. Missing critical Visa-required elements or significant compliance gaps.
-- 4-5: Borderline. Some scheme compliance issues that need fixing before submission.
-- 6-7: Acceptable with minor fixes needed.
-- 8-9: Strong application. Minor cosmetic suggestions only.
-- 10: Perfect. All scheme requirements met, low-risk MCC, clean professional site.
-
-${applicationContext}
-
-Call the "website_scrutiny_report" function with your analysis. Reference specific Visa/Mastercard requirements where applicable.`;
-
-      const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
-          messages: [
-            { role: "system", content: "You are an expert underwriting website reviewer for payment processing merchant applications. You apply the Deep Research Specification for AI Underwriter Bot framework, enforcing Visa Core Rules, Mastercard requirements, FATF CDD expectations, and PCI DSS standards. Be thorough and specific." },
-            { role: "user", content: scrutinyPrompt },
-          ],
-          tools: [
-            {
-              type: "function",
-              function: {
-                name: "website_scrutiny_report",
-                description: "Return a structured website scrutiny report for underwriting readiness.",
-                parameters: {
-                  type: "object",
-                  properties: {
-                    score: {
-                      type: "number",
-                      description: "Underwriting readiness score from 0 to 10",
-                    },
-                    score_label: {
-                      type: "string",
-                      enum: ["will_be_declined", "high_risk", "borderline", "acceptable", "strong", "perfect"],
-                      description: "Human-readable label for the score range",
-                    },
-                    summary: {
-                      type: "string",
-                      description: "One or two sentence summary of the website readiness assessment",
-                    },
-                    requirements_met: {
-                      type: "array",
-                      items: {
-                        type: "object",
-                        properties: {
-                          requirement: { type: "string" },
-                          met: { type: "boolean" },
-                          detail: { type: "string" },
-                        },
-                        required: ["requirement", "met"],
-                        additionalProperties: false,
-                      },
-                      description: "Each underwriting requirement and whether it was found on the website",
                     },
                     red_flags: {
                       type: "array",
@@ -1250,21 +1020,19 @@ Call the "website_scrutiny_report" function with your analysis. Reference specif
                         required: ["flag", "severity"],
                         additionalProperties: false,
                       },
-                      description: "Red flags found during website analysis",
                     },
-                    recommendations: {
+                    recommended_actions: {
                       type: "array",
                       items: { type: "string" },
-                      description: "Specific actions to improve the score before submitting to underwriting",
                     },
                   },
-                  required: ["score", "score_label", "summary", "requirements_met", "recommendations"],
+                  required: ["readiness_score", "summary", "recommended_mcc", "transaction_mix_assessment", "document_completeness", "red_flags", "recommended_actions"],
                   additionalProperties: false,
                 },
               },
             },
           ],
-          tool_choice: { type: "function", function: { name: "website_scrutiny_report" } },
+          tool_choice: { type: "function", function: { name: "underwriting_review_report" } },
         }),
       });
 
@@ -1295,69 +1063,151 @@ Call the "website_scrutiny_report" function with your analysis. Reference specif
           : toolCall.function.arguments;
       } else {
         report = {
-          score: 0,
-          score_label: "will_be_declined",
+          readiness_score: "not_ready",
           summary: aiData.choices?.[0]?.message?.content || "Unable to generate report.",
-          requirements_met: [],
+          recommended_mcc: { code: "N/A", description: "Unable to determine", rationale: "Review failed" },
+          transaction_mix_assessment: "Unable to assess",
+          document_completeness: [],
+          classification_issues: [],
+          data_gaps: [],
           red_flags: [],
-          recommendations: [],
+          recommended_actions: [],
+          website_requirements: [],
         };
       }
 
-      // Get triggering user's email from auth header
-      const wsAuthHeader = req.headers.get("authorization");
-      let wsTriggeredBy = "unknown";
-      if (wsAuthHeader) {
+      // Get triggering user
+      const authHeader = req.headers.get("authorization");
+      let triggeredBy = "unknown";
+      if (authHeader) {
         try {
-          const { data: { user } } = await supabase.auth.getUser(wsAuthHeader.replace("Bearer ", ""));
-          wsTriggeredBy = user?.email || "unknown";
+          const { data: { user } } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
+          triggeredBy = user?.email || "unknown";
         } catch { /* ignore */ }
       }
 
-      const newScore = (report.score as number) ?? 0;
+      const newScore = (report.readiness_score as string) || "not_ready";
 
-      // Check for no-change against last website report
-      const { data: lastWsReport } = await supabase
-        .from("website_scrutiny_reports")
-        .select("score, red_flags, requirements_met")
+      // Check for no-change
+      const { data: lastReport } = await supabase
+        .from("validation_reports")
+        .select("readiness_score, data_gaps, risk_flags, document_completeness, summary")
         .eq("opportunity_id", opportunityId)
         .eq("no_change", false)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      const wsIsNoChange = lastWsReport
-        && Number(lastWsReport.score) === newScore
-        && JSON.stringify(lastWsReport.red_flags) === JSON.stringify(report.red_flags || [])
-        && JSON.stringify(lastWsReport.requirements_met) === JSON.stringify(report.requirements_met || []);
+      const isNoChange = lastReport
+        && lastReport.readiness_score === newScore
+        && JSON.stringify(lastReport.data_gaps) === JSON.stringify(report.data_gaps || [])
+        && JSON.stringify(lastReport.risk_flags) === JSON.stringify(report.red_flags || []);
 
-      // Persist website scrutiny report
-      const { data: savedWsReport, error: wsErr } = await supabase
-        .from("website_scrutiny_reports")
+      // Persist to validation_reports table
+      const { data: savedReport, error: saveError } = await supabase
+        .from("validation_reports")
         .insert({
           opportunity_id: opportunityId,
-          triggered_by: wsTriggeredBy,
-          score: newScore,
-          score_label: (report.score_label as string) || "unknown",
+          triggered_by: triggeredBy,
+          readiness_score: newScore,
+          document_completeness: report.document_completeness || [],
+          classification_issues: report.classification_issues || [],
+          data_gaps: report.data_gaps || [],
+          risk_flags: report.red_flags || [],
+          recommended_actions: report.recommended_actions || [],
           summary: (report.summary as string) || null,
-          requirements_met: report.requirements_met || [],
-          red_flags: report.red_flags || [],
-          recommendations: report.recommendations || [],
-          website_url: websiteUrl,
-          no_change: !!wsIsNoChange,
+          no_change: !!isNoChange,
         })
         .select()
         .single();
 
-      if (wsErr) console.error("Failed to save website scrutiny report:", wsErr);
+      if (saveError) console.error("Failed to save validation report:", saveError);
+
+      // Also persist website scrutiny if we had a URL
+      if (websiteUrl) {
+        const wsScore = (report.website_score as number) ?? 0;
+        await supabase
+          .from("website_scrutiny_reports")
+          .insert({
+            opportunity_id: opportunityId,
+            triggered_by: triggeredBy,
+            score: wsScore,
+            score_label: (report.website_score_label as string) || "unknown",
+            summary: (report.summary as string) || null,
+            requirements_met: report.website_requirements || [],
+            red_flags: report.red_flags || [],
+            recommendations: report.recommended_actions || [],
+            website_url: websiteUrl,
+            no_change: !!isNoChange,
+          });
+      }
+
+      // ── AUTO-SAVE AS NOTE ──
+      if (!isNoChange) {
+        const mcc = report.recommended_mcc as { code?: string; description?: string; rationale?: string } | undefined;
+        const noteLines: string[] = [
+          `📋 UNDERWRITING REVIEW — ${newScore === "ready" ? "🟢 Ready" : newScore === "needs_attention" ? "🟡 Needs Attention" : "🔴 Not Ready"}`,
+          "",
+          (report.summary as string) || "",
+        ];
+
+        if (mcc) {
+          noteLines.push("", `🏷️ Recommended MCC: ${mcc.code || "N/A"} — ${mcc.description || "N/A"}`, `   Rationale: ${mcc.rationale || "N/A"}`);
+        }
+
+        if (report.transaction_mix_assessment) {
+          noteLines.push("", `📊 Transaction Mix: ${report.transaction_mix_assessment}`);
+        }
+
+        if (websiteUrl && report.website_score !== undefined) {
+          noteLines.push("", `🌐 Website Score: ${report.website_score}/10 (${report.website_score_label || "N/A"})`, `   URL: ${websiteUrl}`);
+        }
+
+        const redFlags = report.red_flags as Array<{ flag: string; severity: string; detail?: string }> | undefined;
+        if (redFlags?.length) {
+          noteLines.push("", "🚩 Red Flags:");
+          redFlags.forEach(f => noteLines.push(`  ⚠️ [${f.severity.toUpperCase()}] ${f.flag}${f.detail ? ` — ${f.detail}` : ""}`));
+        }
+
+        const gaps = report.data_gaps as string[] | undefined;
+        if (gaps?.length) {
+          noteLines.push("", "❌ Data Gaps:");
+          gaps.forEach(g => noteLines.push(`  • ${g}`));
+        }
+
+        const actions = report.recommended_actions as string[] | undefined;
+        if (actions?.length) {
+          noteLines.push("", "💡 Recommended Actions:");
+          actions.forEach(a => noteLines.push(`  → ${a}`));
+        }
+
+        const noteContent = noteLines.join("\n");
+
+        // Save as comment
+        await supabase.from("comments").insert({
+          opportunity_id: opportunityId,
+          user_id: AI_BOT_USER_ID,
+          user_email: AI_BOT_EMAIL,
+          content: noteContent,
+        });
+
+        // Log activity
+        await supabase.from("activities").insert({
+          opportunity_id: opportunityId,
+          user_id: AI_BOT_USER_ID,
+          user_email: AI_BOT_EMAIL,
+          type: "ai_report_saved",
+          description: `Underwriting Review completed — ${newScore === "ready" ? "Ready" : newScore === "needs_attention" ? "Needs Attention" : "Not Ready"}`,
+        });
+      }
 
       return new Response(JSON.stringify({
         success: true,
         report,
         website_url: websiteUrl,
-        triggered_by: wsTriggeredBy,
-        created_at: savedWsReport?.created_at || new Date().toISOString(),
-        no_change: !!wsIsNoChange,
+        triggered_by: triggeredBy,
+        created_at: savedReport?.created_at || new Date().toISOString(),
+        no_change: !!isNoChange,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
