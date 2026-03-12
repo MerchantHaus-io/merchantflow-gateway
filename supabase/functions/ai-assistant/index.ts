@@ -1193,7 +1193,7 @@ Call the "website_scrutiny_report" function with your analysis. Reference specif
         body: JSON.stringify({
           model: "google/gemini-3-flash-preview",
           messages: [
-            { role: "system", content: "You are an expert underwriting website reviewer for payment processing merchant applications. Be thorough and specific." },
+            { role: "system", content: "You are an expert underwriting website reviewer for payment processing merchant applications. You apply the Deep Research Specification for AI Underwriter Bot framework, enforcing Visa Core Rules, Mastercard requirements, FATF CDD expectations, and PCI DSS standards. Be thorough and specific." },
             { role: "user", content: scrutinyPrompt },
           ],
           tools: [
