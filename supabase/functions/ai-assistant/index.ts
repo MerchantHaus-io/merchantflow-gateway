@@ -1101,6 +1101,9 @@ ${fetchError ? `WEBSITE FETCH ERROR: ${fetchError}` : `WEBSITE CONTENT (extracte
 
       const scrutinyPrompt = `You are an expert underwriting analyst for a payment processing ISO. Your job is to scrutinize a merchant's website for underwriting readiness using the following comprehensive reference framework.
 
+TODAY'S DATE: ${new Date().toISOString().split("T")[0]}
+Use this date as the current date when evaluating domain age, certificate expiry, and any time-based checks. Do NOT treat this year as being in the future.
+
 UNDERWRITING REFERENCE FRAMEWORK (from Deep Research Specification for AI Underwriter Bot):
 
 SCHEME-DRIVEN WEBSITE COMPLIANCE CHECKS (hard requirements for e-commerce MIDs):
