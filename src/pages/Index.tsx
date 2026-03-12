@@ -787,13 +787,14 @@ const Index = () => {
     );
   }
   return (
-    <AppLayout onNewApplication={() => setIsModalOpen(true)} focusMode={isFocusMode}>
+    <>
       {isDark && (
         <Suspense fallback={null}>
           <Starfield />
         </Suspense>
       )}
-      <div className={isFocusMode ? "flex-1 flex flex-col min-h-0 overflow-hidden" : "flex-1 flex flex-col gap-2 sm:gap-3 p-2 sm:p-3 lg:p-4 min-h-0 overflow-hidden mobile-landscape:gap-2"}>
+      <AppLayout onNewApplication={() => setIsModalOpen(true)} focusMode={isFocusMode}>
+        <div className={isFocusMode ? "flex-1 flex flex-col min-h-0 overflow-hidden" : "flex-1 flex flex-col gap-2 sm:gap-3 p-2 sm:p-3 lg:p-4 min-h-0 overflow-hidden mobile-landscape:gap-2"}>
         {!isFocusMode && (
            <header className="h-12 flex items-center px-4 rounded-lg border shadow-sm backdrop-blur-md gap-2 flex-shrink-0 sticky top-0 z-20 border-border/60 bg-card/90 dark:bg-card/80">
             
@@ -856,6 +857,7 @@ const Index = () => {
         onComplete={() => setSplashType(null)}
       />
     </AppLayout>
+    </>
   );
 };
 export default Index;

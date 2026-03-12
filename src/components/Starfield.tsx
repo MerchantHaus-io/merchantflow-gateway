@@ -89,7 +89,7 @@ const Starfield = memo(function Starfield() {
   return (
     <canvas
       ref={canvasRef}
-      className="pointer-events-none fixed inset-0 z-[1]"
+      className="pointer-events-none fixed inset-0 z-[2]"
       style={{ width: "100%", height: "100%" }}
       aria-hidden="true"
     />
