@@ -17,11 +17,11 @@ interface Carousel3DProps {
 }
 
 const iconColorMap: Record<string, string> = {
-  primary: "text-primary",
-  teal: "text-teal",
-  gold: "text-gold",
-  success: "text-success",
-  warning: "text-warning",
+  primary: "text-white",
+  teal: "text-white",
+  gold: "text-white",
+  success: "text-white",
+  warning: "text-white",
 };
 
 const glowColorMap: Record<string, string> = {
@@ -33,11 +33,11 @@ const glowColorMap: Record<string, string> = {
 };
 
 const bgColorMap: Record<string, string> = {
-  primary: "bg-primary/15",
-  teal: "bg-teal/15",
-  gold: "bg-gold/15",
-  success: "bg-success/15",
-  warning: "bg-warning/15",
+  primary: "bg-primary",
+  teal: "bg-teal",
+  gold: "bg-gold",
+  success: "bg-success",
+  warning: "bg-warning",
 };
 
 export function Carousel3D({ items }: Carousel3DProps) {
@@ -208,7 +208,7 @@ export function Carousel3D({ items }: Carousel3DProps) {
                 {/* Icon orb */}
                 <div
                   className={cn(
-                    "w-14 h-14 rounded-full flex items-center justify-center border border-white/10 dark:border-white/10",
+                    "w-14 h-14 rounded-full flex items-center justify-center",
                     bgColorMap[item.color]
                   )}
                 >
