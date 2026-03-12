@@ -278,7 +278,7 @@ export default function Home() {
   const NextIcon = layoutIcons[layoutCycle[(layoutCycle.indexOf(layout) + 1) % layoutCycle.length]];
   const nextLabel = layoutLabels[layoutCycle[(layoutCycle.indexOf(layout) + 1) % layoutCycle.length]];
 
-  const { isDark } = useTheme();
+  const isDark = theme === 'dark';
 
   return (
     <>
