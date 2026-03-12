@@ -134,7 +134,7 @@ function GridView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeG
           )}
         >
           <div className={cn(
-            "w-11 h-11 rounded-full flex items-center justify-center border border-white/10",
+            "w-11 h-11 rounded-full flex items-center justify-center",
             bgColorMap[item.color],
           )}>
             <item.icon className={cn("h-5 w-5", iconColorMap[item.color])} strokeWidth={1.8} />
