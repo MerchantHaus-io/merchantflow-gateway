@@ -524,6 +524,7 @@ const Opportunities = () => {
                                      if (dupWarning) {
                                        toast({ title: "Duplicate Warning", description: dupWarning, variant: "destructive", duration: 8000 });
                                      }
+                                   }
                                    
                                    const { error } = await supabase
                                      .from('opportunities')
