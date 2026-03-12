@@ -38,6 +38,7 @@ import { StagePath } from "./opportunity-detail/StagePath";
 import { ApplicationProgress } from "./opportunity-detail/ApplicationProgress";
 import { OpportunityTasks } from "./opportunity-detail/OpportunityTasks";
 import { NotesSection } from "./opportunity-detail/NotesSection";
+import { checkUnderwritingGate } from "@/lib/underwriting-gate";
 import { AIValidatePanel } from "./opportunity-detail/AIValidatePanel";
 import { DocumentsTab } from "./DocumentsTab";
 import GameSplash from "./GameSplash";
