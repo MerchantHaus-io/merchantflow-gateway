@@ -100,7 +100,7 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
       toast.success(`${pendingFiles.length} file(s) uploaded`);
       setPendingFiles([]);
       setShowUploadDialog(false);
-      setSelectedDocType("Unassigned");
+      setSelectedDocType("");
       fetchDocuments();
     } catch {
       toast.error("Upload failed");
