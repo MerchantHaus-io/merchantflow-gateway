@@ -788,11 +788,7 @@ const Index = () => {
   }
   return (
     <>
-      {isDark && (
-        <Suspense fallback={null}>
-          <Starfield />
-        </Suspense>
-      )}
+
       <AppLayout onNewApplication={() => setIsModalOpen(true)} focusMode={isFocusMode}>
         <div className={isFocusMode ? "flex-1 flex flex-col min-h-0 overflow-hidden" : "flex-1 flex flex-col gap-2 sm:gap-3 p-2 sm:p-3 lg:p-4 min-h-0 overflow-hidden mobile-landscape:gap-2"}>
         {!isFocusMode && (

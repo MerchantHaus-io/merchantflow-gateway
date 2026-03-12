@@ -1,4 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
+import { useTheme } from "@/contexts/ThemeContext";
+
+const Starfield = lazy(() => import("@/components/Starfield"));
 
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -217,6 +220,7 @@ const layoutLabels: Record<LayoutMode, string> = {
 // ── Main Home ────────────────────────────────────────────────
 export default function Home() {
   const { user } = useAuth();
+  const { theme } = useTheme();
   const userEmail = user?.email?.toLowerCase() || "";
   const displayName = EMAIL_TO_USER[userEmail] || user?.email?.split("@")[0] || "there";
   const hour = new Date().getHours();
@@ -275,7 +279,15 @@ export default function Home() {
   const NextIcon = layoutIcons[layoutCycle[(layoutCycle.indexOf(layout) + 1) % layoutCycle.length]];
   const nextLabel = layoutLabels[layoutCycle[(layoutCycle.indexOf(layout) + 1) % layoutCycle.length]];
 
+  const isDark = theme === 'dark';
+
   return (
+    <>
+    {isDark && (
+      <Suspense fallback={null}>
+        <Starfield />
+      </Suspense>
+    )}
     <AppLayout>
       <div className="max-w-6xl mx-auto px-4 lg:px-8 py-6 lg:py-10">
         {/* Hero greeting */}
@@ -390,5 +402,11 @@ export default function Home() {
         )}
       </div>
     </AppLayout>
+    {isDark && (
+      <Suspense fallback={null}>
+        <Starfield />
+      </Suspense>
+    )}
+    </>
   );
 }
