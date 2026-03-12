@@ -518,6 +518,13 @@ const Opportunities = () => {
                                      }
                                    }
                                    
+                                   // Duplicate check when moving past discovery
+                                   if (newStage !== 'discovery' && opp.stage === 'discovery') {
+                                     const dupWarning = await checkDuplicateMerchant(opp.id);
+                                     if (dupWarning) {
+                                       toast({ title: "Duplicate Warning", description: dupWarning, variant: "destructive", duration: 8000 });
+                                     }
+                                   
                                    const { error } = await supabase
                                      .from('opportunities')
                                      .update({ stage: newStage })
