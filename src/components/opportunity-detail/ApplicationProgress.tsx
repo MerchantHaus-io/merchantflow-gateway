@@ -1,9 +1,10 @@
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { Opportunity } from "@/types/opportunity";
 import { Button } from "@/components/ui/button";
 import { Check, AlertTriangle, X, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ApplicationProgressProps {
   opportunity: Opportunity;
@@ -24,7 +25,6 @@ interface Section {
   owner: "Merchant" | "Internal";
 }
 
-// Map of snake_case field → legacy camelCase aliases
 const FIELD_ALIASES: Record<string, string[]> = {
   dba_name: ["dbaName"],
   product_description: ["products"],
@@ -59,7 +59,14 @@ const FIELD_ALIASES: Record<string, string[]> = {
   current_processor: ["current_processor"],
 };
 
-// Processing sections – full application
+/** Required document types for underwriting */
+const REQUIRED_DOCS = [
+  { type: "Articles of Organisation", label: "Articles of Organization" },
+  { type: "EIN", label: "Tax Document (EIN)" },
+  { type: "Voided Check / Bank Confirmation Letter", label: "Voided Check / Bank Confirmation" },
+  { type: "Bank Statement", label: "Bank Statements (3 months)", alt: "Transaction History" },
+];
+
 const PROCESSING_SECTIONS: Section[] = [
   {
     key: "business",
@@ -92,15 +99,8 @@ const PROCESSING_SECTIONS: Section[] = [
     ],
     owner: "Merchant",
   },
-  {
-    key: "documents",
-    label: "Documents",
-    fields: ["documents"],
-    owner: "Merchant",
-  },
 ];
 
-// Gateway Only sections – simplified requirements
 const GATEWAY_SECTIONS: Section[] = [
   {
     key: "gateway_business",
@@ -116,14 +116,9 @@ const GATEWAY_SECTIONS: Section[] = [
 ];
 
 const isFieldComplete = (formState: Record<string, unknown>, field: string): boolean => {
-  // Check the canonical snake_case key first, then fall back to legacy camelCase aliases
   const keysToCheck = [field, ...(FIELD_ALIASES[field] ?? [])];
   for (const key of keysToCheck) {
     const value = formState[key];
-    if (field === "documents" || key === "documents") {
-      if (Array.isArray(value) && value.length > 0) return true;
-      continue;
-    }
     if (value === undefined || value === null) continue;
     if (typeof value === "string" && value.trim().length > 0) return true;
     if (typeof value !== "string" && Boolean(value)) return true;
@@ -134,7 +129,6 @@ const isFieldComplete = (formState: Record<string, unknown>, field: string): boo
 const getSectionStatus = (formState: Record<string, unknown>, fields: string[]): { status: SectionStatus; completed: number; total: number } => {
   const completed = fields.filter((field) => isFieldComplete(formState, field)).length;
   const total = fields.length;
-  
   if (completed === 0) return { status: "empty", completed, total };
   if (completed === total) return { status: "complete", completed, total };
   return { status: "partial", completed, total };
@@ -148,6 +142,18 @@ const STATUS_ICON: Record<SectionStatus, React.ReactNode> = {
 
 export const ApplicationProgress = ({ opportunity, wizardState }: ApplicationProgressProps) => {
   const isGatewayOnly = opportunity.service_type === "gateway_only";
+  const [uploadedTypes, setUploadedTypes] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const fetchDocs = async () => {
+      const { data } = await supabase
+        .from("documents")
+        .select("document_type")
+        .eq("opportunity_id", opportunity.id);
+      setUploadedTypes(new Set((data || []).map((d) => d.document_type).filter(Boolean)));
+    };
+    fetchDocs();
+  }, [opportunity.id]);
 
   const formState = useMemo(
     () => (wizardState?.form_state as Record<string, unknown>) ?? {},
@@ -163,14 +169,26 @@ export const ApplicationProgress = ({ opportunity, wizardState }: ApplicationPro
     }));
   }, [formState, sections]);
 
-  // Recalculate overall progress based on the relevant sections
+  const docChecklist = useMemo(() => {
+    return REQUIRED_DOCS.map((req) => {
+      const present = uploadedTypes.has(req.type) || (req.alt ? uploadedTypes.has(req.alt) : false);
+      return { ...req, present };
+    });
+  }, [uploadedTypes]);
+
+  const docsCompleted = docChecklist.filter((d) => d.present).length;
+  const docsTotal = docChecklist.length;
+  const docsStatus: SectionStatus = docsCompleted === 0 ? "empty" : docsCompleted === docsTotal ? "complete" : "partial";
+
   const overallProgress = useMemo(() => {
     const allFields = sections.flatMap(s => s.fields);
-    const total = allFields.length;
+    const fieldTotal = allFields.length;
+    const fieldCompleted = allFields.filter(f => isFieldComplete(formState, f)).length;
+    const total = fieldTotal + docsTotal;
+    const completed = fieldCompleted + docsCompleted;
     if (total === 0) return 0;
-    const completed = allFields.filter(f => isFieldComplete(formState, f)).length;
     return Math.round((completed / total) * 100);
-  }, [formState, sections]);
+  }, [formState, sections, docsCompleted, docsTotal]);
 
   const lastUpdated = wizardState?.updated_at 
     ? formatDistanceToNow(new Date(wizardState.updated_at), { addSuffix: true })
@@ -182,12 +200,7 @@ export const ApplicationProgress = ({ opportunity, wizardState }: ApplicationPro
         <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
           Application Progress {isGatewayOnly && <span className="text-xs ml-1">(Gateway Only)</span>}
         </h3>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-7 text-xs"
-          asChild
-        >
+        <Button variant="outline" size="sm" className="h-7 text-xs" asChild>
           <a
             href={`/tools/preboarding-wizard?opportunityId=${opportunity.id}`}
             target="_blank"
@@ -199,7 +212,6 @@ export const ApplicationProgress = ({ opportunity, wizardState }: ApplicationPro
         </Button>
       </div>
 
-      {/* Overall progress bar */}
       <div className="space-y-1">
         <div className="flex items-center justify-between text-xs">
           <span className="font-medium">{overallProgress}% Complete</span>
@@ -219,7 +231,6 @@ export const ApplicationProgress = ({ opportunity, wizardState }: ApplicationPro
         </div>
       </div>
 
-      {/* Section breakdown */}
       <div className="grid gap-2">
         {sectionProgress.map((section) => (
           <div
@@ -242,6 +253,42 @@ export const ApplicationProgress = ({ opportunity, wizardState }: ApplicationPro
             </div>
           </div>
         ))}
+
+        {/* Documents – driven by actual uploads against required types */}
+        {!isGatewayOnly && (
+          <div
+            className={cn(
+              "p-3 rounded-lg border space-y-2",
+              docsStatus === "complete" && "bg-emerald-500/5 border-emerald-500/20",
+              docsStatus === "partial" && "bg-amber-500/5 border-amber-500/20",
+              docsStatus === "empty" && "bg-destructive/5 border-destructive/20"
+            )}
+          >
+            <div className="flex items-center gap-3">
+              {STATUS_ICON[docsStatus]}
+              <div>
+                <p className="text-sm font-medium">Required Documents</p>
+                <p className="text-xs text-muted-foreground">
+                  {docsCompleted}/{docsTotal} uploaded • Owner: Merchant
+                </p>
+              </div>
+            </div>
+            <div className="grid gap-1 pl-7">
+              {docChecklist.map((doc) => (
+                <div key={doc.type} className="flex items-center gap-2 text-xs">
+                  {doc.present ? (
+                    <Check className="h-3 w-3 text-emerald-500 shrink-0" />
+                  ) : (
+                    <X className="h-3 w-3 text-destructive shrink-0" />
+                  )}
+                  <span className={cn(doc.present ? "text-muted-foreground" : "text-foreground font-medium")}>
+                    {doc.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
