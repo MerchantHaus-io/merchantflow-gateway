@@ -900,11 +900,25 @@ CRITICAL — Verify the following are consistent and plausible:
 4. VOLUME PROJECTIONS — Are monthly volume, avg ticket, and high ticket plausible for the business type?
 5. CUSTOMER MIX — B2B vs B2C split should align with the business model
 
+═══ DIMENSION 4: OFAC / SANCTIONS SCREENING ═══
+
+Screen the following against known OFAC SDN (Specially Designated Nationals) patterns and restricted entity indicators:
+- Business legal entity name
+- DBA name
+- Principal owner name(s)
+- Country of incorporation / operation
+Flag ANY match or near-match as a CRITICAL red flag. Check for sanctioned countries, restricted industries, and known shell-entity patterns.
+
+═══ DIMENSION 5: HIGH-RISK MCC ASSESSMENT ═══
+
+After determining the recommended MCC code, evaluate if it falls into a high-risk category that typically requires reserves, delayed funding, or enhanced monitoring. High-risk MCCs include but are not limited to: 5962-5969 (Direct Marketing), 6051 (Money Services), 7801-7802/7995 (Gambling), 7273 (Dating), 4816 (Computer Network Services for VPN/proxy), 5122 (Drugs/Pharmaceuticals).
+Set risk_tier to "high_risk" if the MCC is in a high-risk category, otherwise "standard".
+
 ═══ RISK SCORING ═══
 
 RED FLAG SEVERITY LEVELS:
-- Critical: Auto-reject (sanctions, dissolved entity, material tampering, restricted content)
-- High: Escalate (missing hard-requirement docs, name mismatches, missing Visa-required disclosures)
+- Critical: Auto-reject (sanctions match, dissolved entity, material tampering, restricted content, OFAC hit)
+- High: Escalate (missing hard-requirement docs, name mismatches, missing Visa-required disclosures, missing owner ID)
 - Medium: Hold/clarify (data gaps, minor inconsistencies, young domain)
 - Low: Note for file
 
@@ -914,7 +928,7 @@ Scheme Monitoring Thresholds:
 
 ${applicationContext}
 
-Call the "underwriting_review_report" function with your complete analysis. Be thorough, actionable, and reference specific requirements. Include the recommended MCC code and description.`;
+Call the "underwriting_review_report" function with your complete analysis. Be thorough, actionable, and reference specific requirements. Include the recommended MCC code and description, risk_tier assessment, and OFAC screening results.`;
 
       const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
