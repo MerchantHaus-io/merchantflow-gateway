@@ -165,8 +165,8 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
           </div>
           <div className="flex items-center gap-3">
             <Select value={selectedDocType} onValueChange={setSelectedDocType}>
-              <SelectTrigger className="w-[200px] h-8 text-xs">
-                <SelectValue placeholder="Document type" />
+              <SelectTrigger className={`w-[220px] h-8 text-xs ${!selectedDocType ? 'border-destructive ring-1 ring-destructive/30' : ''}`}>
+                <SelectValue placeholder="Select document type…" />
               </SelectTrigger>
               <SelectContent>
                 {DOCUMENT_TYPE_OPTIONS.map(opt => (
