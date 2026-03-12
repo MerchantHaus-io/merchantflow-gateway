@@ -180,7 +180,8 @@ export const ApplicationProgress = ({ opportunity, wizardState }: ApplicationPro
 
   const docChecklist = useMemo(() => {
     return requiredDocs.map((req) => {
-      const present = uploadedTypes.has(req.type) || (req.alt ? uploadedTypes.has(req.alt) : false);
+      const altType = (req as { alt?: string }).alt;
+      const present = uploadedTypes.has(req.type) || (altType ? uploadedTypes.has(altType) : false);
       return { ...req, present };
     });
   }, [uploadedTypes, isGatewayOnly]);
