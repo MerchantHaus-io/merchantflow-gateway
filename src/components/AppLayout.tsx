@@ -5,6 +5,7 @@ import FloatingChat from "@/components/FloatingChat";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { ActionItemsWidget } from "@/components/ActionItemsWidget";
 import { BroadcastPopup } from "@/components/BroadcastPopup";
+import { ComplianceBroadcast } from "@/components/ComplianceBroadcast";
 import { MobileAppDock } from "@/components/MobileAppDock";
 import { PageTransition } from "@/components/PageTransition";
 import { OfficeSimulatorOverlay } from "@/components/chat/OfficeSimulatorOverlay";
@@ -91,6 +92,7 @@ export function AppLayout({
       {!focusMode && <FloatingChat />}
       {!focusMode && <ActionItemsWidget />}
       {!focusMode && <BroadcastPopup />}
+      <ComplianceBroadcast />
       {!focusMode && isMobile && !isChatRoute && <MobileAppDock />}
       {!focusMode && <OfficeSimulatorOverlay />}
     </div>
