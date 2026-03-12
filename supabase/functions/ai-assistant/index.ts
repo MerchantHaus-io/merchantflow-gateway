@@ -1181,6 +1181,14 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
           noteLines.push("", `🏷️ Recommended MCC: ${mcc.code || "N/A"} — ${mcc.description || "N/A"}`, `   Rationale: ${mcc.rationale || "N/A"}`);
         }
 
+        if (report.risk_tier === "high_risk") {
+          noteLines.push("", "🔴 HIGH-RISK MCC — This merchant falls into a high-risk category. Reserves, delayed funding, or enhanced monitoring may be required.");
+        }
+
+        if (report.ofac_screening) {
+          noteLines.push("", `🛡️ OFAC Screening: ${report.ofac_screening}`);
+        }
+
         if (report.transaction_mix_assessment) {
           noteLines.push("", `📊 Transaction Mix: ${report.transaction_mix_assessment}`);
         }
