@@ -176,10 +176,9 @@ function IconView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeG
           <div
             className={cn(
               "w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-2xl flex items-center justify-center",
-              "border transition-all duration-300",
-              "bg-card/95 dark:bg-card/60 backdrop-blur-sm",
+              "transition-all duration-300",
               "group-hover:scale-110 group-hover:shadow-lg group-active:scale-95",
-              borderColorMap[item.color],
+              bgColorMap[item.color],
               glowColorMap[item.color],
             )}
           >

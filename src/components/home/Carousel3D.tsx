@@ -208,7 +208,7 @@ export function Carousel3D({ items }: Carousel3DProps) {
                 {/* Icon orb */}
                 <div
                   className={cn(
-                    "w-14 h-14 rounded-full flex items-center justify-center border border-white/10 dark:border-white/10",
+                    "w-14 h-14 rounded-full flex items-center justify-center",
                     bgColorMap[item.color]
                   )}
                 >
