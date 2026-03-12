@@ -660,7 +660,7 @@ const Index = () => {
     // Underwriting gate check when moving to underwriting_review
     if (updates.stage === 'underwriting_review' && opportunity) {
       const { checkUnderwritingGate } = await import("@/lib/underwriting-gate");
-      const gate = await checkUnderwritingGate(id);
+      const gate = await checkUnderwritingGate(id, opportunity.service_type);
       if (!gate.allowed) {
         toast({ title: "Cannot proceed to Underwriting", description: gate.reason, variant: "destructive", duration: 6000 });
         return;

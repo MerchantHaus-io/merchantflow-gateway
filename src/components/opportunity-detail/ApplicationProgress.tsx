@@ -59,13 +59,19 @@ const FIELD_ALIASES: Record<string, string[]> = {
   current_processor: ["current_processor"],
 };
 
-/** Required document types for underwriting */
-const REQUIRED_DOCS = [
+/** Required document types for processing underwriting */
+const PROCESSING_REQUIRED_DOCS = [
   { type: "Articles of Organisation", label: "Articles of Organization" },
   { type: "EIN", label: "Tax Document (EIN)" },
   { type: "Voided Check / Bank Confirmation Letter", label: "Voided Check / Bank Confirmation" },
   { type: "Bank Statement", label: "Bank Statements (3 months)", alt: "Transaction History" },
   { type: "Passport/Drivers License", label: "Owner ID (Passport / License)" },
+];
+
+/** Gateway-only clients have lighter requirements */
+const GATEWAY_REQUIRED_DOCS = [
+  { type: "Voided Check / Bank Confirmation Letter", label: "Voided Check / Bank Confirmation" },
+  { type: "VAR/Tear Sheet", label: "VAR / Tear Sheet" },
 ];
 
 const PROCESSING_SECTIONS: Section[] = [
@@ -170,12 +176,15 @@ export const ApplicationProgress = ({ opportunity, wizardState }: ApplicationPro
     }));
   }, [formState, sections]);
 
+  const requiredDocs = isGatewayOnly ? GATEWAY_REQUIRED_DOCS : PROCESSING_REQUIRED_DOCS;
+
   const docChecklist = useMemo(() => {
-    return REQUIRED_DOCS.map((req) => {
-      const present = uploadedTypes.has(req.type) || (req.alt ? uploadedTypes.has(req.alt) : false);
+    return requiredDocs.map((req) => {
+      const altType = (req as { alt?: string }).alt;
+      const present = uploadedTypes.has(req.type) || (altType ? uploadedTypes.has(altType) : false);
       return { ...req, present };
     });
-  }, [uploadedTypes]);
+  }, [uploadedTypes, isGatewayOnly]);
 
   const docsCompleted = docChecklist.filter((d) => d.present).length;
   const docsTotal = docChecklist.length;
@@ -256,7 +265,7 @@ export const ApplicationProgress = ({ opportunity, wizardState }: ApplicationPro
         ))}
 
         {/* Documents – driven by actual uploads against required types */}
-        {!isGatewayOnly && (
+        {(
           <div
             className={cn(
               "p-3 rounded-lg border space-y-2",

@@ -510,7 +510,7 @@ const Opportunities = () => {
                                    
                                    // Underwriting gate check
                                    if (newStage === 'underwriting_review') {
-                                     const gate = await checkUnderwritingGate(opp.id);
+                                     const gate = await checkUnderwritingGate(opp.id, opp.service_type);
                                      if (!gate.allowed) {
                                        toast({ title: "Cannot proceed to Underwriting", description: gate.reason, variant: "destructive", duration: 6000 });
                                        return;
