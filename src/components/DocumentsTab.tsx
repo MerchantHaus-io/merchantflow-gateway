@@ -158,6 +158,9 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
       {showUploadDialog && pendingFiles.length > 0 && (
         <div className="border border-border rounded-lg p-4 bg-muted/30 space-y-3">
           <p className="text-sm font-medium">{pendingFiles.length} file(s) ready to upload</p>
+          {!selectedDocType && (
+            <p className="text-xs text-destructive font-medium">⚠ You must assign a document type before uploading</p>
+          )}
           <div className="text-xs text-muted-foreground">
             {pendingFiles.map(f => f.name).join(", ")}
           </div>
