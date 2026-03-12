@@ -220,6 +220,7 @@ const layoutLabels: Record<LayoutMode, string> = {
 // ── Main Home ────────────────────────────────────────────────
 export default function Home() {
   const { user } = useAuth();
+  const { theme } = useTheme();
   const userEmail = user?.email?.toLowerCase() || "";
   const displayName = EMAIL_TO_USER[userEmail] || user?.email?.split("@")[0] || "there";
   const hour = new Date().getHours();
