@@ -867,6 +867,15 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                         const newStage = value as OpportunityStage;
                         const oldStage = opportunity.stage;
                         
+                        // Underwriting gate check
+                        if (newStage === 'underwriting_review') {
+                          const gate = await checkUnderwritingGate(opportunity.id);
+                          if (!gate.allowed) {
+                            toast.error(gate.reason, { duration: 6000 });
+                            return;
+                          }
+                        }
+                        
                         const { error } = await supabase
                           .from('opportunities')
                           .update({ stage: newStage })
