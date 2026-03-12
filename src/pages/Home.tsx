@@ -278,7 +278,15 @@ export default function Home() {
   const NextIcon = layoutIcons[layoutCycle[(layoutCycle.indexOf(layout) + 1) % layoutCycle.length]];
   const nextLabel = layoutLabels[layoutCycle[(layoutCycle.indexOf(layout) + 1) % layoutCycle.length]];
 
+  const { isDark } = useTheme();
+
   return (
+    <>
+    {isDark && (
+      <Suspense fallback={null}>
+        <Starfield />
+      </Suspense>
+    )}
     <AppLayout>
       <div className="max-w-6xl mx-auto px-4 lg:px-8 py-6 lg:py-10">
         {/* Hero greeting */}
