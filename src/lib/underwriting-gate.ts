@@ -77,5 +77,18 @@ export async function checkUnderwritingGate(opportunityId: string): Promise<{
     };
   }
 
+  // 3. Check for at least one beneficial owner record (FinCEN CDD Rule)
+  const { count: ownerCount } = await supabase
+    .from("beneficial_owners")
+    .select("id", { count: "exact", head: true })
+    .eq("opportunity_id", opportunityId);
+
+  if (!ownerCount || ownerCount < 1) {
+    return {
+      allowed: false,
+      reason: "At least one beneficial owner (25%+ equity) must be recorded before proceeding to Underwriting. Add beneficial owners from the opportunity detail.",
+    };
+  }
+
   return { allowed: true, reason: "" };
 }
