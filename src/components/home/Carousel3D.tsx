@@ -17,11 +17,11 @@ interface Carousel3DProps {
 }
 
 const iconColorMap: Record<string, string> = {
-  primary: "text-white",
-  teal: "text-white",
-  gold: "text-white",
-  success: "text-white",
-  warning: "text-white",
+  primary: "text-primary-foreground",
+  teal: "text-teal-foreground",
+  gold: "text-gold-foreground",
+  success: "text-success-foreground",
+  warning: "text-warning-foreground",
 };
 
 const glowColorMap: Record<string, string> = {
@@ -196,7 +196,7 @@ export function Carousel3D({ items }: Carousel3DProps) {
               <div
                 className={cn(
                   "w-full h-full rounded-xl border backdrop-blur-xl flex flex-col items-center justify-center gap-2.5 pointer-events-none",
-                  "bg-card/95 dark:bg-card/80 border-border/50 dark:border-border/40",
+                  "bg-card dark:bg-card/90 border-border/60 dark:border-border/40",
                   isActive && "ring-2 ring-primary/60 scale-105",
                   glowColorMap[item.color]
                 )}
@@ -238,7 +238,7 @@ export function Carousel3D({ items }: Carousel3DProps) {
                 <div
                   className={cn(
                     "w-full h-full rounded-xl border backdrop-blur-xl flex flex-col items-center justify-center gap-2.5",
-                    "bg-card/95 dark:bg-card/80 border-border/50 dark:border-border/40",
+                    "bg-card dark:bg-card/90 border-border/60 dark:border-border/40",
                     glowColorMap[item.color]
                   )}
                   style={{
