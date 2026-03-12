@@ -37,7 +37,7 @@ const DOCUMENT_TYPES = [
   "Voided Check / Bank Confirmation Letter",
   "EIN",
   "SSN",
-  "VAR Sheet",
+  "VAR/Tear Sheet",
   "Unassigned",
 ] as const;
 
