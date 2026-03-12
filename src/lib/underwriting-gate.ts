@@ -9,6 +9,7 @@ const REQUIRED_DOCUMENT_TYPES: { type: string; label: string }[] = [
   { type: "EIN", label: "Tax Document (EIN)" },
   { type: "Voided Check / Bank Confirmation Letter", label: "Voided Check or Bank Confirmation Letter" },
   { type: "Bank Statement", label: "Bank Statements (3 months)" },
+  { type: "Passport/Drivers License", label: "Owner ID (Passport or Drivers License)" },
 ];
 
 /**
