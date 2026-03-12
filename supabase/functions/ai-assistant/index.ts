@@ -836,7 +836,7 @@ Return your analysis by calling the "validation_report" function. Be thorough, r
         body: JSON.stringify({
           model: "google/gemini-3-flash-preview",
           messages: [
-            { role: "system", content: "You are an expert underwriting document reviewer for payment processing merchant applications." },
+            { role: "system", content: "You are an expert underwriting document reviewer for payment processing merchant applications. You apply the Deep Research Specification for AI Underwriter Bot framework, checking cross-document consistency, scheme compliance, red flag severity levels, and FATF/PCI/Visa/Mastercard requirements." },
             { role: "user", content: validationPrompt },
           ],
           tools: [
