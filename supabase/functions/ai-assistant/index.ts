@@ -759,11 +759,73 @@ UPLOADED DOCUMENTS (${documents.length} total):
 ${docList || "No documents uploaded"}
 `;
 
-      const validationPrompt = `You are an underwriting document reviewer for a merchant services ISO. Analyze this merchant application and its uploaded documents.
+      const validationPrompt = `You are an underwriting document reviewer for a merchant services ISO. Analyze this merchant application and its uploaded documents using the following reference framework.
+
+UNDERWRITING REFERENCE FRAMEWORK (from Deep Research Specification for AI Underwriter Bot):
+
+KEY UNDERWRITING DIMENSIONS:
+1. Identity & Legal Existence — Does the applicant exist as a legal entity? Cross-document name/address/entity-number matches; registry verification; ownership graph consistency per FATF beneficial owner expectations.
+2. Authority to Contract — Do signers have authority to bind the entity? Role/title plausibility; signature vs listed officers.
+3. Banking & Settlement Integrity — Is the settlement account controlled by the merchant? Account-name match to legal name or evidenced DBA; bank identifier format validation; statement recency; transaction pattern plausibility.
+4. Business Model & Product Legitimacy — Is the product allowed and coherent with the website? Website completeness per scheme rules; restricted/refund policy disclosure.
+5. Fraud/Dispute Exposure — Compare stated projections to historical; compare to Visa VAMP and Mastercard ECP thresholds.
+6. AML/Sanctions Risk — Mandatory screening at onboarding and ongoing (Mastercard rules), risk-based CDD (FATF).
+7. Security & Data-Handling Posture — PCI DSS log retention, TPSP monitoring, payment-page tamper monitoring for e-commerce.
+
+DOCUMENT VERIFICATION CHECKS BY TYPE:
+
+Bank Statements:
+- Arithmetic invariants: opening + credits - debits ≈ closing (allowing rounding/fees)
+- Period continuity: statement end date within 60-90 days of now
+- Field presence: bank name/logo, statement period, account identifiers, page numbering
+- Account holder name must match legal name or evidenced DBA (formation docs + website)
+- Address on statement should link to the business
+- Tamper-awareness: flag suspicious rendering artefacts, layout shifts, missing watermarks, inconsistent fonts
+- RED FLAG (Critical): Account-name mismatch without credible explanation
+- RED FLAG (Critical): Signs of document manipulation combined with other inconsistencies
+
+Articles of Organisation/Incorporation:
+- Validate entity status (active/good standing), formation date, entity number against registry
+- Shell characteristics: newly formed entity + no web presence + unrelated settlement name + high-risk MCC = strong escalation
+- Verify registered agent and principal office; large discrepancies with bank/website are high-risk
+- RED FLAG (Critical): Entity not found / inactive / dissolved in registry
+
+IRS Documents (US):
+- W-9: standard TIN certification. Extract legal name (line 1), DBA (line 2), federal tax classification, EIN/SSN, address, signature/date
+- EIN proof: CP 575 (confirmation notice) or Letter 147C (previously assigned verification)
+- Cross-check EIN, legal name, address against W-9 and formation docs
+- RED FLAG (High): EIN/name mismatch across docs
+- RED FLAG (High/Critical): "EIN proof" that looks non-IRS or unauthorized
+
+Processing Statements:
+- Compare monthly volume, avg ticket, refund rate, chargeback count/rate, MCC, descriptor
+- Compare to scheme monitoring thresholds (Visa VAMP, Mastercard ECP)
+- RED FLAG (High): Chargeback patterns near/exceeding thresholds
+- RED FLAG (Medium/High): Near-zero refunds in high-refund sectors
+
+PCI Artefacts:
+- Confirm PCI validation type, SAQ type, AOC dates, service providers listed
+- Ensure TPSP relationships identified; monitoring cadence for TPSP PCI status (PCI DSS 12.8.4)
+- RED FLAG (High): Refusal to address PCI scope; unknown third-party scripts on payment pages
+
+CROSS-DOCUMENT CONSISTENCY (highest value):
+- Name matching: legal name across articles/W-9/bank statement/website
+- Address matching: formation docs vs bank statement vs website correspondence address
+- Ownership consistency: UBO list vs signer vs titles
+
+RED FLAG SEVERITY LEVELS:
+- Critical: Auto-reject or mandatory escalation (sanctions match, entity dissolved, material tampering)
+- High: Escalate unless strong compensating controls (missing scheme-required disclosures, name mismatches)
+- Medium: Hold/clarify (data gaps, minor inconsistencies)
+- Low: Note for file
+
+SCHEME MONITORING THRESHOLDS (use as underwriting guardrails):
+- Visa VAMP: AP/Canada/EU/US excessive threshold ≥220 bps AND ≥1,500 fraud+dispute count (reduces to ≥150 bps April 2026)
+- Mastercard ECP: ECM 100-299 chargebacks AND 1.50-2.99% ratio; HECM 300+ chargebacks AND 3.00%+ ratio
 
 ${applicationContext}
 
-Return your analysis by calling the "validation_report" function. Be concise and actionable.`;
+Return your analysis by calling the "validation_report" function. Be thorough, reference specific checks from the framework, and flag severity levels. Be concise and actionable.`;
 
       const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -774,7 +836,7 @@ Return your analysis by calling the "validation_report" function. Be concise and
         body: JSON.stringify({
           model: "google/gemini-3-flash-preview",
           messages: [
-            { role: "system", content: "You are an expert underwriting document reviewer for payment processing merchant applications." },
+            { role: "system", content: "You are an expert underwriting document reviewer for payment processing merchant applications. You apply the Deep Research Specification for AI Underwriter Bot framework, checking cross-document consistency, scheme compliance, red flag severity levels, and FATF/PCI/Visa/Mastercard requirements." },
             { role: "user", content: validationPrompt },
           ],
           tools: [
@@ -1034,39 +1096,93 @@ MONTHLY VOLUME: ${wizardForm.monthly_volume || wizardForm.average_transaction ? 
 ${fetchError ? `WEBSITE FETCH ERROR: ${fetchError}` : `WEBSITE CONTENT (extracted text):\n${websiteContent}`}
 `;
 
-      const scrutinyPrompt = `You are an expert underwriting analyst for a payment processing ISO. Your job is to scrutinize a merchant's website for underwriting readiness.
+      const scrutinyPrompt = `You are an expert underwriting analyst for a payment processing ISO. Your job is to scrutinize a merchant's website for underwriting readiness using the following comprehensive reference framework.
 
-Analyze the website content and application data below, then provide a score from 0-10:
-- 0: Will definitely be declined. Major red flags, restricted content, or non-functional site.
-- 1-3: High risk of decline. Missing critical elements or significant compliance gaps.
-- 4-5: Borderline. Some issues that need fixing before submission.
-- 6-7: Acceptable with minor fixes needed.
-- 8-9: Strong application. Minor cosmetic suggestions only.
-- 10: Perfect. All underwriting requirements met, low-risk MCC, clean professional site.
+UNDERWRITING REFERENCE FRAMEWORK (from Deep Research Specification for AI Underwriter Bot):
 
-UNDERWRITING WEBSITE REQUIREMENTS TO CHECK:
-1. Refund/return policy clearly visible
-2. Contact page with email and phone number
-3. Clear product/service description matching the application
-4. Delivery/fulfillment timeline stated
-5. Terms & conditions page
-6. Privacy policy page
-7. Pricing visible and consistent with application details
-8. Professional appearance (no "coming soon", placeholder, or under construction)
-9. No restricted/prohibited content
-10. If subscription-based: clear recurring billing disclosure, cancellation instructions, trial terms
+SCHEME-DRIVEN WEBSITE COMPLIANCE CHECKS (hard requirements for e-commerce MIDs):
 
-Also check for RED FLAGS:
+Visa Core Requirements:
+- Customer service contact including email OR telephone number (mandatory)
+- Clear and prominent display of merchant outlet COUNTRY during checkout (a link to a separate page does NOT meet this requirement)
+- Address for cardholder correspondence (mandatory)
+- Policy for delivery of multiple shipments (mandatory)
+- Europe Region add-on: consumer data privacy policy must be included
+
+Visa Refund/Return/Cancellation Disclosure:
+- If the merchant restricts returns/cancellations, policies must be clearly disclosed
+- For e-commerce: disclosure must appear BEFORE final checkout AND include a "click to accept"/checkbox acknowledgement
+
+Visa Special Categories (elevated scheme risk):
+- Online gambling, marketplaces, crypto/NFT transactions require additional disclosures (warnings, retailer transparency, wallet-address confirmation, volatility statements)
+
+WEBSITE LEGITIMACY SCORING CRITERIA:
+
+Identity & Contactability:
+- Company legal name and/or DBA visible and consistent with application
+- Physical address present and matches documentary evidence
+- Working customer support channels (email/telephone) — required by Visa
+- Country of merchant outlet displayed during checkout flow (not just in footer/legal pages)
+
+Policy Hygiene (high correlation with disputes):
+- Refund/return/cancellation policy: present, clear, consistent with checkout disclosures; restricted policies require explicit disclosure with click-to-accept
+- Shipping/fulfilment policy: including multi-shipment delivery policy (Visa requirement)
+- Privacy policy: present; explicitly required in Europe Region by Visa
+- Terms of service: clear contract terms
+
+Product/Service Legitimacy:
+- Offer matches stated MCC and business description
+- Pricing coherent; no contradictory claims (e.g., "free trial" but immediate billing)
+- No hidden continuity (subscription merchants are historically dispute-heavy)
+
+DOMAIN, OWNERSHIP & TRANSPORT SECURITY:
+
+Domain Registration:
+- Check domain creation date via RDAP; very young domains + high-risk products + aggressive projections = elevated risk
+- Extract registrar, registrant org (if not redacted), name servers
+
+TLS/SSL Posture:
+- Require HTTPS for any page collecting personal data or enabling checkout
+- Check certificate validity, issuer trust, hostname match, mixed content warnings
+
+SUSPICIOUS INDICATORS:
+- "Brand new" website with high-volume projections and no credible business history
+- No verifiable address; only webform contact; disposable emails
+- Policy pages that appear copied/templated with no customization
 - Products on site don't match application description
 - Aggressive/misleading claims
 - Long delivery times (may trigger reserves)
-- No SSL certificate
 - Thin content / minimal pages
 - Restricted industries or high-risk indicators
 
+RISK SCORING MODEL (0-100):
+- Identity & ownership confidence: 0-30 points
+- Website legitimacy & scheme compliance: 0-20 points
+- Payments/dispute exposure (MCC + model + projections + history): 0-25 points
+- AML/sanctions/geography: 0-15 points
+- Security & data-handling posture (PCI/integration): 0-10 points
+
+RED FLAGS & SEVERITY:
+- Critical: Sanctions match; entity dissolved; website selling prohibited content
+- High: Missing customer service contact or hides merchant country in checkout; refund policy absent or not disclosed correctly; bank statement name inconsistent with legal entity
+- High: Entity not found/dissolved in registry; multiple cross-document inconsistencies
+- Medium: Young domain with aggressive projections; thin content; minor policy gaps
+
+SCHEME MONITORING THRESHOLDS (flag if projected rates approach):
+- Visa VAMP: AP/Canada/EU/US ≥220 bps AND ≥1,500 count (reduces to ≥150 bps April 2026)
+- Mastercard ECP: ECM 100-299 chargebacks AND 1.50-2.99%; HECM 300+ AND 3.00%+
+
+Map your 0-10 score to this guidance:
+- 0: Will definitely be declined. Major red flags, restricted content, or non-functional site.
+- 1-3: High risk of decline. Missing critical Visa-required elements or significant compliance gaps.
+- 4-5: Borderline. Some scheme compliance issues that need fixing before submission.
+- 6-7: Acceptable with minor fixes needed.
+- 8-9: Strong application. Minor cosmetic suggestions only.
+- 10: Perfect. All scheme requirements met, low-risk MCC, clean professional site.
+
 ${applicationContext}
 
-Call the "website_scrutiny_report" function with your analysis.`;
+Call the "website_scrutiny_report" function with your analysis. Reference specific Visa/Mastercard requirements where applicable.`;
 
       const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -1077,7 +1193,7 @@ Call the "website_scrutiny_report" function with your analysis.`;
         body: JSON.stringify({
           model: "google/gemini-3-flash-preview",
           messages: [
-            { role: "system", content: "You are an expert underwriting website reviewer for payment processing merchant applications. Be thorough and specific." },
+            { role: "system", content: "You are an expert underwriting website reviewer for payment processing merchant applications. You apply the Deep Research Specification for AI Underwriter Bot framework, enforcing Visa Core Rules, Mastercard requirements, FATF CDD expectations, and PCI DSS standards. Be thorough and specific." },
             { role: "user", content: scrutinyPrompt },
           ],
           tools: [
