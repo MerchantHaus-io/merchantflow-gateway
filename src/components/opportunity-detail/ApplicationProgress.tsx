@@ -265,7 +265,7 @@ export const ApplicationProgress = ({ opportunity, wizardState }: ApplicationPro
         ))}
 
         {/* Documents – driven by actual uploads against required types */}
-        {!isGatewayOnly && (
+        {(
           <div
             className={cn(
               "p-3 rounded-lg border space-y-2",
