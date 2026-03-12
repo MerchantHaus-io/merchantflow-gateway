@@ -18,6 +18,7 @@ import {
   GATEWAY_ONLY_PIPELINE_STAGES
 } from "@/types/opportunity";
 import { sendStageChangeEmail } from "@/hooks/useEmailNotifications";
+import { checkUnderwritingGate } from "@/lib/underwriting-gate";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
