@@ -39,6 +39,7 @@ import { ApplicationProgress } from "./opportunity-detail/ApplicationProgress";
 import { OpportunityTasks } from "./opportunity-detail/OpportunityTasks";
 import { NotesSection } from "./opportunity-detail/NotesSection";
 import { checkUnderwritingGate } from "@/lib/underwriting-gate";
+import { checkDuplicateMerchant } from "@/lib/duplicate-check";
 import { AIValidatePanel } from "./opportunity-detail/AIValidatePanel";
 import { BeneficialOwners } from "./opportunity-detail/BeneficialOwners";
 import { DocumentsTab } from "./DocumentsTab";
@@ -65,6 +66,7 @@ const DOCUMENT_TYPE_OPTIONS = [
   "Transaction History",
   "Articles of Organisation",
   "Voided Check / Bank Confirmation Letter",
+  "VAR/Tear Sheet",
   "EIN",
   "SSN",
   "Unassigned",
@@ -874,6 +876,14 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                           if (!gate.allowed) {
                             toast.error(gate.reason, { duration: 6000 });
                             return;
+                          }
+                        }
+                        
+                        // Duplicate check when moving past discovery
+                        if (newStage !== 'discovery' && opportunity.stage === 'discovery') {
+                          const dupWarning = await checkDuplicateMerchant(opportunity.id);
+                          if (dupWarning) {
+                            toast.error(dupWarning, { duration: 8000 });
                           }
                         }
                         

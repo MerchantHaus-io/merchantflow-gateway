@@ -19,6 +19,7 @@ import {
 } from "@/types/opportunity";
 import { sendStageChangeEmail } from "@/hooks/useEmailNotifications";
 import { checkUnderwritingGate } from "@/lib/underwriting-gate";
+import { checkDuplicateMerchant } from "@/lib/duplicate-check";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -514,6 +515,14 @@ const Opportunities = () => {
                                      if (!gate.allowed) {
                                        toast({ title: "Cannot proceed to Underwriting", description: gate.reason, variant: "destructive", duration: 6000 });
                                        return;
+                                     }
+                                   }
+                                   
+                                   // Duplicate check when moving past discovery
+                                   if (newStage !== 'discovery' && opp.stage === 'discovery') {
+                                     const dupWarning = await checkDuplicateMerchant(opp.id);
+                                     if (dupWarning) {
+                                       toast({ title: "Duplicate Warning", description: dupWarning, variant: "destructive", duration: 8000 });
                                      }
                                    }
                                    
