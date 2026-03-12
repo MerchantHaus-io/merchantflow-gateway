@@ -166,8 +166,8 @@ export function Carousel3D({ items }: Carousel3DProps) {
         ref={sliderRef}
         className="absolute cursor-grab active:cursor-grabbing touch-none"
         style={{
-          width: "150px",
-          height: "180px",
+          width: "160px",
+          height: "210px",
           top: "28%",
           left: "calc(50% - 75px)",
           transformStyle: "preserve-3d",
