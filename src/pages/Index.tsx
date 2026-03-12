@@ -857,6 +857,7 @@ const Index = () => {
         onComplete={() => setSplashType(null)}
       />
     </AppLayout>
+    </>
   );
 };
 export default Index;
