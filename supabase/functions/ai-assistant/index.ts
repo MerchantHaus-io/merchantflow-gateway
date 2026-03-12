@@ -1041,8 +1041,17 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
                       type: "array",
                       items: { type: "string" },
                     },
+                    risk_tier: {
+                      type: "string",
+                      enum: ["standard", "high_risk"],
+                      description: "Risk tier based on MCC code. 'high_risk' for known high-risk MCCs (gambling, direct marketing, etc.), 'standard' otherwise.",
+                    },
+                    ofac_screening: {
+                      type: "string",
+                      description: "Summary of OFAC/sanctions screening results. State 'Clear' if no matches, or describe any flags.",
+                    },
                   },
-                  required: ["readiness_score", "summary", "recommended_mcc", "transaction_mix_assessment", "document_completeness", "red_flags", "recommended_actions"],
+                  required: ["readiness_score", "summary", "recommended_mcc", "transaction_mix_assessment", "document_completeness", "red_flags", "recommended_actions", "risk_tier", "ofac_screening"],
                   additionalProperties: false,
                 },
               },
