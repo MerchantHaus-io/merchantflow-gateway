@@ -1,48 +1,69 @@
 
 
-# Add Notification Sound to All Real-Time Notifications
+# Industry-Standard Gaps Analysis
 
-## Overview
-Currently, notification sounds only play inside the **FloatingChat** component (for chat messages). The **NotificationBell**, **IncomingCallToast**, and **IncomingMessageToast** components all receive real-time events but play no audio. This plan adds a unified notification sound system across all real-time notification types.
+After reviewing the current implementation — underwriting gate, document requirements, unified AI review, website scrutiny, MCC recommendation — here are the notable industry-standard practices that are **not yet in place**:
 
-## What Changes
+---
 
-### 1. Create a shared `useNotificationSound` hook
-A lightweight, reusable hook (or utility function) that plays a short audio ping using the Web Audio API. This consolidates the duplicate sound logic currently in `useChatSounds.ts` and `useChatNotifications.ts` into one place. It will respect the user's existing `chatSoundEnabled` localStorage preference.
+## 1. Owner Identity Verification (KYC / CDD)
 
-Three distinct tones will be available:
-- **message** -- existing chat ping (800-1000 Hz sweep)
-- **notification** -- slightly different tone for bell/task/stage notifications (600 Hz)
-- **call** -- urgent ringtone pattern (two-note repeated beep for incoming calls)
+**What's missing:** "Passport/Drivers License" exists as a document type option but is **not a hard requirement** in the underwriting gate. Under BSA/AML and FATF Customer Due Diligence rules, principal owner identification is mandatory before onboarding.
 
-### 2. NotificationBell -- play sound on new notification
-In `src/components/NotificationBell.tsx`, when the realtime subscription fires an `INSERT` event for a new notification, play the **notification** sound. Only play if the popover is closed (user isn't already looking at notifications).
+**What to build:** Add "Passport/Drivers License" as a 5th hard-requirement document in the underwriting gate. The AI review prompt already references it but the gate doesn't enforce it.
 
-### 3. IncomingCallToast -- play ringtone sound
-In `src/components/IncomingCallToast.tsx`, when a ringing incoming call is detected, play the **call** sound (a more urgent, repeating tone) that stops after 10 seconds or when the toast is dismissed.
+---
 
-### 4. IncomingMessageToast -- play message sound
-In `src/components/IncomingMessageToast.tsx`, when a new chat or DM toast is shown, play the **message** sound. This covers users who don't have the FloatingChat open.
+## 2. OFAC / Sanctions Screening
 
-### 5. Deduplicate with FloatingChat
-Add a guard so that if the FloatingChat already played a sound for a given message (user is viewing that conversation), the `IncomingMessageToast` skips its sound to avoid double-pinging. This will use a simple `Set` of recently-played message IDs shared via a custom event or ref.
+**What's missing:** No automated check against the OFAC SDN (Specially Designated Nationals) list. Industry standard requires screening the business entity name, DBA, and all beneficial owners against sanctions lists before proceeding.
 
-## Technical Details
+**What to build:** Add an OFAC screening step to the underwriting review. The AI prompt can be extended to flag entity/owner names against known restricted lists, or a lightweight API call to the OFAC SDN search can be integrated into the edge function.
 
-### New file: `src/hooks/useNotificationSound.ts`
-- Exports `playNotificationSound(type: 'message' | 'notification' | 'call')`
-- Uses Web Audio API oscillator (no external audio files needed)
-- Checks `localStorage.getItem('chatSoundEnabled') !== 'false'` before playing
-- For `call` type, returns a `stop()` function to cancel the repeating tone
+---
 
-### Modified files
-| File | Change |
-|------|--------|
-| `src/hooks/useNotificationSound.ts` | New shared sound utility |
-| `src/components/NotificationBell.tsx` | Import hook, play on INSERT event |
-| `src/components/IncomingCallToast.tsx` | Play call ringtone on ringing status |
-| `src/components/IncomingMessageToast.tsx` | Play message sound on new toast |
+## 3. Beneficial Ownership Declaration (FinCEN CDD Rule)
 
-### No database changes required
-All notification infrastructure (realtime subscriptions, notifications table) already exists.
+**What's missing:** The merchant application captures `beneficial_owner_certification` as a boolean but there's no structured collection of all beneficial owners with 25%+ equity (name, DOB, SSN, address) — which is required under FinCEN's CDD Rule for all legal entity customers.
+
+**What to build:** A beneficial owners table and form section requiring name, title, ownership percentage, DOB, and address for each 25%+ owner. The underwriting gate should verify at least one beneficial owner is recorded.
+
+---
+
+## 4. Stage SLA Timers with Escalation
+
+**What's missing:** `sla_status` and `stage_entered_at` columns exist, and staleness badges show after 7 days, but there are **no automated SLA calculations or escalation alerts**. Industry standard is to have defined SLA windows per stage with automatic amber/red escalation and notification.
+
+**What to build:** A scheduled function or client-side calculation that sets `sla_status` based on time-in-stage thresholds per stage (e.g., Underwriting > 3 days = amber, > 5 days = red). Trigger push notifications or task creation on breach.
+
+---
+
+## 5. Duplicate / Existing Merchant Check
+
+**What's missing:** No deduplication logic. A merchant can be submitted multiple times with the same EIN, legal name, or DBA without any warning. Processors flag duplicate applications — submitting duplicates wastes time and can raise red flags.
+
+**What to build:** Before allowing transition past Discovery, check `accounts.name`, `merchants.federal_tax_id`, and `merchants.dba_name` for near-matches against existing records. Surface a warning if a potential duplicate is found.
+
+---
+
+## 6. Chargeback / Risk Reserve Flag
+
+**What's missing:** The AI prompt references Visa VAMP and Mastercard ECP thresholds, but there's no structured field to flag whether the merchant is in a **high-risk MCC** that typically requires reserves, delayed funding, or enhanced monitoring.
+
+**What to build:** When the AI recommends an MCC code, automatically flag if it falls into a high-risk category (e.g., 5966 Direct Marketing, 5967 Inbound Telemarketing, 7995 Gambling). Add a `risk_tier` field to the validation report and surface it in the UI as a warning badge.
+
+---
+
+## Recommended Priority
+
+| # | Feature | Effort | Regulatory Weight |
+|---|---------|--------|-------------------|
+| 1 | Owner ID as hard requirement | Small | High (KYC) |
+| 2 | Beneficial ownership collection | Medium | High (FinCEN CDD) |
+| 3 | Duplicate merchant check | Medium | Medium (operational) |
+| 4 | OFAC screening in AI review | Small | High (BSA/AML) |
+| 5 | Stage SLA timers + escalation | Medium | Medium (operational) |
+| 6 | High-risk MCC flagging | Small | Medium (risk mgmt) |
+
+All six are standard in ISO/acquirer onboarding workflows. Items 1 and 4 are the quickest wins with the highest regulatory significance.
 
