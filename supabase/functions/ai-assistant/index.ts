@@ -759,11 +759,73 @@ UPLOADED DOCUMENTS (${documents.length} total):
 ${docList || "No documents uploaded"}
 `;
 
-      const validationPrompt = `You are an underwriting document reviewer for a merchant services ISO. Analyze this merchant application and its uploaded documents.
+      const validationPrompt = `You are an underwriting document reviewer for a merchant services ISO. Analyze this merchant application and its uploaded documents using the following reference framework.
+
+UNDERWRITING REFERENCE FRAMEWORK (from Deep Research Specification for AI Underwriter Bot):
+
+KEY UNDERWRITING DIMENSIONS:
+1. Identity & Legal Existence — Does the applicant exist as a legal entity? Cross-document name/address/entity-number matches; registry verification; ownership graph consistency per FATF beneficial owner expectations.
+2. Authority to Contract — Do signers have authority to bind the entity? Role/title plausibility; signature vs listed officers.
+3. Banking & Settlement Integrity — Is the settlement account controlled by the merchant? Account-name match to legal name or evidenced DBA; bank identifier format validation; statement recency; transaction pattern plausibility.
+4. Business Model & Product Legitimacy — Is the product allowed and coherent with the website? Website completeness per scheme rules; restricted/refund policy disclosure.
+5. Fraud/Dispute Exposure — Compare stated projections to historical; compare to Visa VAMP and Mastercard ECP thresholds.
+6. AML/Sanctions Risk — Mandatory screening at onboarding and ongoing (Mastercard rules), risk-based CDD (FATF).
+7. Security & Data-Handling Posture — PCI DSS log retention, TPSP monitoring, payment-page tamper monitoring for e-commerce.
+
+DOCUMENT VERIFICATION CHECKS BY TYPE:
+
+Bank Statements:
+- Arithmetic invariants: opening + credits - debits ≈ closing (allowing rounding/fees)
+- Period continuity: statement end date within 60-90 days of now
+- Field presence: bank name/logo, statement period, account identifiers, page numbering
+- Account holder name must match legal name or evidenced DBA (formation docs + website)
+- Address on statement should link to the business
+- Tamper-awareness: flag suspicious rendering artefacts, layout shifts, missing watermarks, inconsistent fonts
+- RED FLAG (Critical): Account-name mismatch without credible explanation
+- RED FLAG (Critical): Signs of document manipulation combined with other inconsistencies
+
+Articles of Organisation/Incorporation:
+- Validate entity status (active/good standing), formation date, entity number against registry
+- Shell characteristics: newly formed entity + no web presence + unrelated settlement name + high-risk MCC = strong escalation
+- Verify registered agent and principal office; large discrepancies with bank/website are high-risk
+- RED FLAG (Critical): Entity not found / inactive / dissolved in registry
+
+IRS Documents (US):
+- W-9: standard TIN certification. Extract legal name (line 1), DBA (line 2), federal tax classification, EIN/SSN, address, signature/date
+- EIN proof: CP 575 (confirmation notice) or Letter 147C (previously assigned verification)
+- Cross-check EIN, legal name, address against W-9 and formation docs
+- RED FLAG (High): EIN/name mismatch across docs
+- RED FLAG (High/Critical): "EIN proof" that looks non-IRS or unauthorized
+
+Processing Statements:
+- Compare monthly volume, avg ticket, refund rate, chargeback count/rate, MCC, descriptor
+- Compare to scheme monitoring thresholds (Visa VAMP, Mastercard ECP)
+- RED FLAG (High): Chargeback patterns near/exceeding thresholds
+- RED FLAG (Medium/High): Near-zero refunds in high-refund sectors
+
+PCI Artefacts:
+- Confirm PCI validation type, SAQ type, AOC dates, service providers listed
+- Ensure TPSP relationships identified; monitoring cadence for TPSP PCI status (PCI DSS 12.8.4)
+- RED FLAG (High): Refusal to address PCI scope; unknown third-party scripts on payment pages
+
+CROSS-DOCUMENT CONSISTENCY (highest value):
+- Name matching: legal name across articles/W-9/bank statement/website
+- Address matching: formation docs vs bank statement vs website correspondence address
+- Ownership consistency: UBO list vs signer vs titles
+
+RED FLAG SEVERITY LEVELS:
+- Critical: Auto-reject or mandatory escalation (sanctions match, entity dissolved, material tampering)
+- High: Escalate unless strong compensating controls (missing scheme-required disclosures, name mismatches)
+- Medium: Hold/clarify (data gaps, minor inconsistencies)
+- Low: Note for file
+
+SCHEME MONITORING THRESHOLDS (use as underwriting guardrails):
+- Visa VAMP: AP/Canada/EU/US excessive threshold ≥220 bps AND ≥1,500 fraud+dispute count (reduces to ≥150 bps April 2026)
+- Mastercard ECP: ECM 100-299 chargebacks AND 1.50-2.99% ratio; HECM 300+ chargebacks AND 3.00%+ ratio
 
 ${applicationContext}
 
-Return your analysis by calling the "validation_report" function. Be concise and actionable.`;
+Return your analysis by calling the "validation_report" function. Be thorough, reference specific checks from the framework, and flag severity levels. Be concise and actionable.`;
 
       const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
