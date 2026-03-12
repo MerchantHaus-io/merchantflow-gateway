@@ -7,53 +7,37 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { EMAIL_TO_USER } from "@/types/opportunity";
 import {
-  Wand2, Globe, Loader2, CheckCircle2, XCircle, AlertTriangle, ChevronDown, ChevronUp, Eye, Clock, User, StickyNote,
+  Wand2, Loader2, CheckCircle2, XCircle, AlertTriangle, ChevronDown, ChevronUp, Eye, Clock, User, Globe, FileText, Tag, BarChart3,
 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 
 interface AIValidatePanelProps {
   opportunityId: string;
 }
 
-interface WebsiteReport {
-  score: number;
-  score_label: string;
-  summary: string;
-  requirements_met: { requirement: string; met: boolean; detail?: string }[];
-  red_flags: { flag: string; severity: string; detail?: string }[];
-  recommendations: string[];
-}
-
-interface DocReport {
+interface UnifiedReport {
   readiness_score: string;
+  website_score?: number;
+  website_score_label?: string;
   summary: string;
-  document_completeness: { document: string; status: string; note?: string }[];
-  data_gaps: string[];
-  risk_flags: { flag: string; severity: string }[] | string[];
-  recommended_actions: string[];
-  classification_issues: { file_name: string; issue: string }[];
+  recommended_mcc?: { code: string; description: string; rationale: string };
+  transaction_mix_assessment?: string;
+  document_completeness?: { document: string; status: string; note?: string }[];
+  website_requirements?: { requirement: string; met: boolean; detail?: string }[];
+  classification_issues?: { file_name: string; issue: string }[];
+  data_gaps?: string[];
+  red_flags?: { flag: string; severity: string; detail?: string }[];
+  recommended_actions?: string[];
 }
 
 interface ReportMeta {
   triggered_by: string;
   created_at: string;
   no_change: boolean;
+  website_url?: string;
 }
 
-const scoreColor = (score: number) => {
-  if (score >= 8) return "text-emerald-500";
-  if (score >= 6) return "text-amber-500";
-  if (score >= 4) return "text-orange-500";
-  return "text-destructive";
-};
-
-const scoreBg = (score: number) => {
-  if (score >= 8) return "bg-emerald-500/10 border-emerald-500/30";
-  if (score >= 6) return "bg-amber-500/10 border-amber-500/30";
-  if (score >= 4) return "bg-orange-500/10 border-orange-500/30";
-  return "bg-destructive/10 border-destructive/30";
-};
+const displayName = (email: string) => EMAIL_TO_USER[email?.toLowerCase()] || email || "Unknown";
 
 const readinessIcon = (score: string) => {
   if (score === "ready" || score === "green") return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
@@ -67,7 +51,12 @@ const readinessLabel = (score: string) => {
   return "🔴 Not Ready";
 };
 
-const displayName = (email: string) => EMAIL_TO_USER[email?.toLowerCase()] || email || "Unknown";
+const scoreColor = (score: number) => {
+  if (score >= 8) return "text-emerald-500";
+  if (score >= 6) return "text-amber-500";
+  if (score >= 4) return "text-orange-500";
+  return "text-destructive";
+};
 
 const MetaLine = ({ meta }: { meta: ReportMeta }) => (
   <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
@@ -78,71 +67,40 @@ const MetaLine = ({ meta }: { meta: ReportMeta }) => (
 );
 
 export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
-  const { validateDocuments, scrutinizeWebsite } = useAIAssistant();
-  const { user } = useAuth();
-  const [isValidating, setIsValidating] = useState(false);
-  const [isScrutinizing, setIsScrutinizing] = useState(false);
-  const [isSavingNote, setIsSavingNote] = useState<"doc" | "web" | null>(null);
-  const [docReport, setDocReport] = useState<DocReport | null>(null);
-  const [docMeta, setDocMeta] = useState<ReportMeta | null>(null);
-  const [websiteReport, setWebsiteReport] = useState<WebsiteReport | null>(null);
-  const [webMeta, setWebMeta] = useState<ReportMeta | null>(null);
-  const [websiteUrl, setWebsiteUrl] = useState<string | null>(null);
-  const [showDocDetails, setShowDocDetails] = useState(false);
-  const [showWebDetails, setShowWebDetails] = useState(false);
+  const { underwritingReview } = useAIAssistant();
+  const [isRunning, setIsRunning] = useState(false);
+  const [report, setReport] = useState<UnifiedReport | null>(null);
+  const [meta, setMeta] = useState<ReportMeta | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
 
-  const handleValidate = useCallback(async () => {
-    setIsValidating(true);
+  const handleReview = useCallback(async () => {
+    setIsRunning(true);
     try {
-      const result = await validateDocuments(opportunityId);
-      if (result?.report) {
-        setDocReport(result.report);
-        setDocMeta({
-          triggered_by: result.triggered_by || "unknown",
-          created_at: result.created_at || new Date().toISOString(),
-          no_change: !!result.no_change,
-        });
-        if (result.no_change) {
-          toast.info("No change from previous validation");
-        } else {
-          toast.success("Document validation complete");
-        }
-      }
-    } catch {
-      toast.error("AI validation failed — please try again");
-    } finally {
-      setIsValidating(false);
-    }
-  }, [opportunityId, validateDocuments]);
-
-  const handleScrutinize = useCallback(async () => {
-    setIsScrutinizing(true);
-    try {
-      const result = await scrutinizeWebsite(opportunityId);
+      const result = await underwritingReview(opportunityId);
       if (result?.error) {
         toast.error(result.error);
       } else if (result?.report) {
-        setWebsiteReport(result.report);
-        setWebsiteUrl(result.website_url);
-        setWebMeta({
+        setReport(result.report);
+        setMeta({
           triggered_by: result.triggered_by || "unknown",
           created_at: result.created_at || new Date().toISOString(),
           no_change: !!result.no_change,
+          website_url: result.website_url,
         });
         if (result.no_change) {
-          toast.info("No change from previous scrutiny");
+          toast.info("No change from previous review");
         } else {
-          toast.success("Website scrutiny complete");
+          toast.success("Underwriting Review complete — saved as note");
         }
       }
     } catch (err: any) {
-      toast.error(err?.message || "Website scrutiny failed");
+      toast.error(err?.message || "Underwriting Review failed — please try again");
     } finally {
-      setIsScrutinizing(false);
+      setIsRunning(false);
     }
-  }, [opportunityId, scrutinizeWebsite]);
+  }, [opportunityId, underwritingReview]);
 
-  const fetchLatestDocReport = useCallback(async () => {
+  const fetchLatestReport = useCallback(async () => {
     const { data } = await supabase
       .from("validation_reports")
       .select("*")
@@ -151,8 +109,8 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
       .limit(1)
       .single();
     if (data) {
-      setDocReport(data as unknown as DocReport);
-      setDocMeta({
+      setReport(data as unknown as UnifiedReport);
+      setMeta({
         triggered_by: (data as any).triggered_by || "unknown",
         created_at: (data as any).created_at || "",
         no_change: !!(data as any).no_change,
@@ -162,135 +120,102 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
     }
   }, [opportunityId]);
 
-  const formatWebReportAsNote = (report: WebsiteReport, url: string | null): string => {
-    const lines: string[] = [`🌐 Website Scrutiny Report — Score: ${report.score}/10 (${report.score_label})`];
-    if (url) lines.push(`URL: ${url}`);
-    if (report.summary) lines.push(`\n${report.summary}`);
-    if (report.requirements_met?.length) {
-      lines.push("\n📋 Requirements:");
-      report.requirements_met.forEach(r => lines.push(`  ${r.met ? "✅" : "❌"} ${r.requirement}${r.detail ? ` — ${r.detail}` : ""}`));
-    }
-    if (report.red_flags?.length) {
-      lines.push("\n🚩 Red Flags:");
-      report.red_flags.forEach(f => lines.push(`  ⚠️ [${f.severity}] ${f.flag}${f.detail ? ` — ${f.detail}` : ""}`));
-    }
-    if (report.recommendations?.length) {
-      lines.push("\n💡 Recommendations:");
-      report.recommendations.forEach(r => lines.push(`  → ${r}`));
-    }
-    return lines.join("\n");
-  };
-
-  const formatDocReportAsNote = (report: DocReport): string => {
-    const lines: string[] = [`📄 Document Validation Report — Readiness: ${readinessLabel(report.readiness_score)}`];
-    if (report.summary) lines.push(`\n${report.summary}`);
-    if (report.data_gaps?.length) {
-      lines.push("\n❌ Data Gaps:");
-      report.data_gaps.forEach(g => lines.push(`  • ${g}`));
-    }
-    if (report.risk_flags?.length) {
-      lines.push("\n⚠️ Risk Flags:");
-      report.risk_flags.forEach(f => lines.push(`  • ${typeof f === "string" ? f : f.flag}`));
-    }
-    if (report.recommended_actions?.length) {
-      lines.push("\n💡 Recommended Actions:");
-      report.recommended_actions.forEach(a => lines.push(`  → ${a}`));
-    }
-    return lines.join("\n");
-  };
-
-  const saveReportAsNote = useCallback(async (type: "doc" | "web") => {
-    if (!user) return;
-    const content = type === "web"
-      ? formatWebReportAsNote(websiteReport!, websiteUrl)
-      : formatDocReportAsNote(docReport!);
-    setIsSavingNote(type);
-    try {
-      const { error } = await supabase.from("comments").insert({
-        opportunity_id: opportunityId,
-        user_id: user.id,
-        user_email: user.email,
-        content,
-      });
-      if (error) throw error;
-      // Also log activity
-      await supabase.from("activities").insert({
-        opportunity_id: opportunityId,
-        user_id: user.id,
-        user_email: user.email,
-        type: "ai_report_saved",
-        description: `Saved ${type === "web" ? "website scrutiny" : "document validation"} report as note`,
-      });
-      toast.success("Report saved as note");
-    } catch {
-      toast.error("Failed to save report as note");
-    } finally {
-      setIsSavingNote(null);
-    }
-  }, [user, opportunityId, websiteReport, websiteUrl, docReport]);
-
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
         <Wand2 className="h-4 w-4" />
-        AI Underwriting Analysis
+        Underwriting Review
       </h3>
 
       {/* Action buttons */}
       <div className="flex items-center gap-2 flex-wrap">
-        <Button size="sm" variant="outline" onClick={handleValidate} disabled={isValidating}>
-          {isValidating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Wand2 className="h-3 w-3 mr-1" />}
-          Validate Docs
+        <Button size="sm" variant="outline" onClick={handleReview} disabled={isRunning}>
+          {isRunning ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Wand2 className="h-3 w-3 mr-1" />}
+          {isRunning ? "Reviewing…" : "Run Underwriting Review"}
         </Button>
-        <Button size="sm" variant="outline" onClick={handleScrutinize} disabled={isScrutinizing}>
-          {isScrutinizing ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Globe className="h-3 w-3 mr-1" />}
-          Scrutinize Website
-        </Button>
-        <Button size="sm" variant="ghost" onClick={fetchLatestDocReport}>
+        <Button size="sm" variant="ghost" onClick={fetchLatestReport}>
           <Eye className="h-3 w-3 mr-1" /> Last Report
         </Button>
       </div>
 
-      {/* Website Scrutiny Result */}
-      {websiteReport && (
-        <div className={cn("border rounded-lg p-4 space-y-2", webMeta?.no_change ? "bg-muted/30 border-muted-foreground/20" : scoreBg(websiteReport.score))}>
+      {/* Report */}
+      {report && (
+        <div className={cn("border rounded-lg p-4 space-y-3", meta?.no_change ? "bg-muted/30 border-muted-foreground/20" : "bg-card border-border")}>
+          {/* Header */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={cn("text-3xl font-bold tabular-nums", scoreColor(websiteReport.score))}>
-                {websiteReport.score}/10
-              </div>
-              <div>
-                <p className="text-sm font-semibold flex items-center gap-2">
-                  Website Readiness
-                  {webMeta?.no_change && <Badge variant="outline" className="text-[9px] py-0 px-1">No change</Badge>}
-                </p>
-                {websiteUrl && (
-                  <a href={websiteUrl.startsWith("http") ? websiteUrl : `https://${websiteUrl}`} target="_blank" rel="noreferrer" className="text-xs text-muted-foreground hover:underline truncate block max-w-[200px]">
-                    {websiteUrl}
-                  </a>
-                )}
-              </div>
+            <div className="flex items-center gap-2">
+              {readinessIcon(report.readiness_score)}
+              <h4 className="text-sm font-semibold flex items-center gap-2">
+                {readinessLabel(report.readiness_score)}
+                {meta?.no_change && <Badge variant="outline" className="text-[9px] py-0 px-1">No change</Badge>}
+              </h4>
+              {report.website_score !== undefined && (
+                <Badge variant="outline" className="text-[10px] gap-1">
+                  <Globe className="h-3 w-3" />
+                  <span className={scoreColor(report.website_score)}>{report.website_score}/10</span>
+                </Badge>
+              )}
             </div>
-            <div className="flex items-center gap-1">
-              <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => saveReportAsNote("web")} disabled={isSavingNote === "web"}>
-                {isSavingNote === "web" ? <Loader2 className="h-3 w-3 animate-spin" /> : <StickyNote className="h-3 w-3" />}
-                <span className="hidden sm:inline ml-1">Save as Note</span>
-              </Button>
-              <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setShowWebDetails(!showWebDetails)}>
-                {showWebDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-              </Button>
-            </div>
+            <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setShowDetails(!showDetails)}>
+              {showDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            </Button>
           </div>
-          {webMeta && <MetaLine meta={webMeta} />}
-          {!webMeta?.no_change && <p className="text-xs text-muted-foreground">{websiteReport.summary}</p>}
 
-          {showWebDetails && !webMeta?.no_change && (
+          {meta && <MetaLine meta={meta} />}
+          {report.summary && !meta?.no_change && (
+            <p className="text-xs text-muted-foreground">{report.summary}</p>
+          )}
+
+          {/* MCC Recommendation (always visible) */}
+          {report.recommended_mcc && !meta?.no_change && (
+            <div className="flex items-start gap-2 bg-primary/5 rounded-md p-2 border border-primary/20">
+              <Tag className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+              <div className="text-xs">
+                <span className="font-semibold text-primary">{report.recommended_mcc.code}</span>
+                <span className="text-foreground"> — {report.recommended_mcc.description}</span>
+                <p className="text-muted-foreground mt-0.5">{report.recommended_mcc.rationale}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Transaction Mix (always visible) */}
+          {report.transaction_mix_assessment && !meta?.no_change && (
+            <div className="flex items-start gap-2 text-xs">
+              <BarChart3 className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+              <span className="text-muted-foreground">{report.transaction_mix_assessment}</span>
+            </div>
+          )}
+
+          {/* Expandable details */}
+          {showDetails && !meta?.no_change && (
             <div className="space-y-3 pt-2 border-t border-border/50">
-              {websiteReport.requirements_met?.length > 0 && (
+              {/* Document Completeness */}
+              {report.document_completeness && report.document_completeness.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium mb-1.5">Requirements</p>
+                  <p className="text-xs font-medium mb-1.5 flex items-center gap-1"><FileText className="h-3 w-3" /> Documents</p>
                   <div className="space-y-1">
-                    {websiteReport.requirements_met.map((r, i) => (
+                    {report.document_completeness.map((d, i) => (
+                      <div key={i} className="flex items-start gap-2 text-xs">
+                        {d.status === "present"
+                          ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />
+                          : d.status === "missing"
+                            ? <XCircle className="h-3.5 w-3.5 text-destructive shrink-0 mt-0.5" />
+                            : <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />}
+                        <span className={cn(d.status === "missing" && "text-destructive")}>
+                          {d.document}{d.note ? ` — ${d.note}` : ""}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Website Requirements */}
+              {report.website_requirements && report.website_requirements.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium mb-1.5 flex items-center gap-1"><Globe className="h-3 w-3" /> Website</p>
+                  <div className="space-y-1">
+                    {report.website_requirements.map((r, i) => (
                       <div key={i} className="flex items-start gap-2 text-xs">
                         {r.met
                           ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />
@@ -303,11 +228,13 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
                   </div>
                 </div>
               )}
-              {websiteReport.red_flags?.length > 0 && (
+
+              {/* Red Flags */}
+              {report.red_flags && report.red_flags.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium mb-1.5">Red Flags</p>
+                  <p className="text-xs font-medium mb-1.5">🚩 Red Flags</p>
                   <div className="space-y-1">
-                    {websiteReport.red_flags.map((f, i) => (
+                    {report.red_flags.map((f, i) => (
                       <div key={i} className="flex items-start gap-2 text-xs">
                         <AlertTriangle className={cn(
                           "h-3.5 w-3.5 shrink-0 mt-0.5",
@@ -323,69 +250,13 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
                   </div>
                 </div>
               )}
-              {websiteReport.recommendations?.length > 0 && (
-                <div>
-                  <p className="text-xs font-medium mb-1.5">Recommendations</p>
-                  <ul className="space-y-0.5 text-xs text-muted-foreground">
-                    {websiteReport.recommendations.map((r, i) => (
-                      <li key={i} className="flex items-start gap-1.5">
-                        <span className="text-primary mt-0.5">→</span>{r}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
 
-      {/* Document Validation Result */}
-      {docReport && (
-        <div className={cn("border rounded-lg p-4 space-y-2", docMeta?.no_change ? "bg-muted/30 border-muted-foreground/20" : "bg-card border-border")}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {readinessIcon(docReport.readiness_score)}
-              <h4 className="text-sm font-semibold flex items-center gap-2">
-                Doc Readiness: {readinessLabel(docReport.readiness_score)}
-                {docMeta?.no_change && <Badge variant="outline" className="text-[9px] py-0 px-1">No change</Badge>}
-              </h4>
-            </div>
-            <div className="flex items-center gap-1">
-              <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => saveReportAsNote("doc")} disabled={isSavingNote === "doc"}>
-                {isSavingNote === "doc" ? <Loader2 className="h-3 w-3 animate-spin" /> : <StickyNote className="h-3 w-3" />}
-                <span className="hidden sm:inline ml-1">Save as Note</span>
-              </Button>
-              <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setShowDocDetails(!showDocDetails)}>
-                {showDocDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-              </Button>
-            </div>
-          </div>
-          {docMeta && <MetaLine meta={docMeta} />}
-          {docReport.summary && !docMeta?.no_change && (
-            <p className="text-xs text-muted-foreground">{docReport.summary}</p>
-          )}
-
-          {showDocDetails && !docMeta?.no_change && (
-            <div className="space-y-3 pt-2 border-t border-border/50">
-              {Array.isArray(docReport.risk_flags) && docReport.risk_flags.length > 0 && (
+              {/* Data Gaps */}
+              {report.data_gaps && report.data_gaps.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium mb-1">Risk Flags</p>
+                  <p className="text-xs font-medium mb-1">❌ Data Gaps</p>
                   <ul className="text-xs text-muted-foreground space-y-0.5">
-                    {docReport.risk_flags.map((f, i) => (
-                      <li key={i} className="flex items-start gap-1">
-                        <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0 mt-0.5" />
-                        {typeof f === "string" ? f : f.flag}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {Array.isArray(docReport.data_gaps) && docReport.data_gaps.length > 0 && (
-                <div>
-                  <p className="text-xs font-medium mb-1">Data Gaps</p>
-                  <ul className="text-xs text-muted-foreground space-y-0.5">
-                    {docReport.data_gaps.map((g, i) => (
+                    {report.data_gaps.map((g, i) => (
                       <li key={i} className="flex items-start gap-1">
                         <XCircle className="h-3 w-3 text-destructive shrink-0 mt-0.5" />{g}
                       </li>
@@ -393,14 +264,28 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
                   </ul>
                 </div>
               )}
-              {Array.isArray(docReport.recommended_actions) && docReport.recommended_actions.length > 0 && (
+
+              {/* Recommended Actions */}
+              {report.recommended_actions && report.recommended_actions.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium mb-1">Actions</p>
+                  <p className="text-xs font-medium mb-1">💡 Actions</p>
                   <ul className="text-xs text-muted-foreground space-y-0.5">
-                    {docReport.recommended_actions.map((a, i) => (
-                      <li key={i} className="flex items-start gap-1">
+                    {report.recommended_actions.map((a, i) => (
+                      <li key={i} className="flex items-start gap-1.5">
                         <span className="text-primary mt-0.5">→</span>{a}
                       </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Classification Issues */}
+              {report.classification_issues && report.classification_issues.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium mb-1">📎 Classification Issues</p>
+                  <ul className="text-xs text-muted-foreground space-y-0.5">
+                    {report.classification_issues.map((c, i) => (
+                      <li key={i}>{c.file_name}: {c.issue}</li>
                     ))}
                   </ul>
                 </div>
