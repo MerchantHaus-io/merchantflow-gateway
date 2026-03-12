@@ -74,19 +74,19 @@ const groupKeys = groups.map((g) => g.title);
 type LayoutMode = "grid" | "carousel" | "icons";
 
 const iconColorMap: Record<string, string> = {
-  primary: "text-primary",
-  teal: "text-teal",
-  gold: "text-gold",
-  success: "text-success",
-  warning: "text-warning",
+  primary: "text-white",
+  teal: "text-white",
+  gold: "text-white",
+  success: "text-white",
+  warning: "text-white",
 };
 
 const bgColorMap: Record<string, string> = {
-  primary: "bg-primary/15",
-  teal: "bg-teal/15",
-  gold: "bg-gold/15",
-  success: "bg-success/15",
-  warning: "bg-warning/15",
+  primary: "bg-primary",
+  teal: "bg-teal",
+  gold: "bg-gold",
+  success: "bg-success",
+  warning: "bg-warning",
 };
 
 const glowColorMap: Record<string, string> = {
@@ -98,11 +98,11 @@ const glowColorMap: Record<string, string> = {
 };
 
 const borderColorMap: Record<string, string> = {
-  primary: "border-primary/30",
-  teal: "border-teal/30",
-  gold: "border-gold/30",
-  success: "border-success/30",
-  warning: "border-warning/30",
+  primary: "border-primary",
+  teal: "border-teal",
+  gold: "border-gold",
+  success: "border-success",
+  warning: "border-warning",
 };
 
 // ── Grid View (card layout) ─────────────────────────────────
