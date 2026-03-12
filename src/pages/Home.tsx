@@ -393,5 +393,11 @@ export default function Home() {
         )}
       </div>
     </AppLayout>
+    {isDark && (
+      <Suspense fallback={null}>
+        <Starfield />
+      </Suspense>
+    )}
+    </>
   );
 }
