@@ -87,5 +87,6 @@ export const useAIAssistant = () => {
     triggerAIResponse,
     validateDocuments,
     scrutinizeWebsite,
+    underwritingReview,
   };
 };
