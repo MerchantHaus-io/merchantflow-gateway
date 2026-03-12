@@ -92,6 +92,7 @@ export function AppLayout({
       {!focusMode && <FloatingChat />}
       {!focusMode && <ActionItemsWidget />}
       {!focusMode && <BroadcastPopup />}
+      <ComplianceBroadcast />
       {!focusMode && isMobile && !isChatRoute && <MobileAppDock />}
       {!focusMode && <OfficeSimulatorOverlay />}
     </div>
