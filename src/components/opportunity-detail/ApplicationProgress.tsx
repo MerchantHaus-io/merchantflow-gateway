@@ -59,13 +59,19 @@ const FIELD_ALIASES: Record<string, string[]> = {
   current_processor: ["current_processor"],
 };
 
-/** Required document types for underwriting */
-const REQUIRED_DOCS = [
+/** Required document types for processing underwriting */
+const PROCESSING_REQUIRED_DOCS = [
   { type: "Articles of Organisation", label: "Articles of Organization" },
   { type: "EIN", label: "Tax Document (EIN)" },
   { type: "Voided Check / Bank Confirmation Letter", label: "Voided Check / Bank Confirmation" },
   { type: "Bank Statement", label: "Bank Statements (3 months)", alt: "Transaction History" },
   { type: "Passport/Drivers License", label: "Owner ID (Passport / License)" },
+];
+
+/** Gateway-only clients have lighter requirements */
+const GATEWAY_REQUIRED_DOCS = [
+  { type: "Voided Check / Bank Confirmation Letter", label: "Voided Check / Bank Confirmation" },
+  { type: "VAR/Tear Sheet", label: "VAR / Tear Sheet" },
 ];
 
 const PROCESSING_SECTIONS: Section[] = [
