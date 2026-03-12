@@ -176,12 +176,14 @@ export const ApplicationProgress = ({ opportunity, wizardState }: ApplicationPro
     }));
   }, [formState, sections]);
 
+  const requiredDocs = isGatewayOnly ? GATEWAY_REQUIRED_DOCS : PROCESSING_REQUIRED_DOCS;
+
   const docChecklist = useMemo(() => {
-    return REQUIRED_DOCS.map((req) => {
+    return requiredDocs.map((req) => {
       const present = uploadedTypes.has(req.type) || (req.alt ? uploadedTypes.has(req.alt) : false);
       return { ...req, present };
     });
-  }, [uploadedTypes]);
+  }, [uploadedTypes, isGatewayOnly]);
 
   const docsCompleted = docChecklist.filter((d) => d.present).length;
   const docsTotal = docChecklist.length;
