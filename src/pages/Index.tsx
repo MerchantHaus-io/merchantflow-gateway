@@ -877,11 +877,7 @@ const Index = () => {
             <div className="flex flex-col min-h-0 overflow-hidden" style={{ flex: '1 1 0%', minHeight: '180px' }}>
               <PipelineListView
                 opportunities={filteredOpportunities}
-                onCardClick={(opp) => {
-                  // Trigger the detail modal by simulating a board click — set selectedOpportunity via the board
-                  const event = new CustomEvent('pipeline-list-click', { detail: opp });
-                  window.dispatchEvent(event);
-                }}
+                onCardClick={setListSelectedOpp}
               />
             </div>
           )}
@@ -889,6 +885,30 @@ const Index = () => {
       </div>
 
       <NewApplicationModal open={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleNewApplication} />
+
+      {/* Detail modal for list view clicks */}
+      <OpportunityDetailModal
+        opportunity={listSelectedOpp}
+        onClose={() => setListSelectedOpp(null)}
+        onUpdate={(updates) => {
+          if (listSelectedOpp) {
+            handleUpdateOpportunity(listSelectedOpp.id, updates);
+          }
+        }}
+        onMarkAsDead={handleMarkAsDead}
+        onDelete={handleDelete}
+        onConvertToGateway={handleConvertToGatewayTrack}
+        onMoveToProcessing={handleMoveToProcessing}
+        hasGatewayOpportunity={
+          listSelectedOpp
+            ? opportunities.some(
+                (opp) =>
+                  opp.account_id === listSelectedOpp.account_id &&
+                  getServiceType(opp) === "gateway_only"
+              )
+            : false
+        }
+      />
 
       <GameSplash
         type={splashType || "1up"}
