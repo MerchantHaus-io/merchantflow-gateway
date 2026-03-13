@@ -45,7 +45,7 @@ const PipelineListView = ({ opportunities, onCardClick }: PipelineListViewProps)
   if (activeOpps.length === 0) return null;
 
   return (
-    <div className="flex flex-col min-h-0 rounded-xl border border-border/60 bg-card/80 backdrop-blur-md overflow-hidden">
+    <div className="flex flex-col min-h-0 rounded-xl border border-border/60 bg-card/80 backdrop-blur-md overflow-hidden max-w-3xl">
       {/* Header */}
       <div className="flex-shrink-0 px-4 py-2.5 border-b border-border/50 flex items-center justify-between">
         <div>
