@@ -502,6 +502,7 @@ const UnifiedPipelineBoard = ({
               onAddNew={stage === "discovery" ? onAddNew : undefined}
               isCompact={isCompact}
               currentUser={currentUser}
+              isAdmin={isAdmin}
             />
           ))}
         </div>

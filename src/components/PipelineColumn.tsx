@@ -173,6 +173,7 @@ const PipelineColumn = ({
               onTouchDragMove={onTouchDragMove}
               onTouchDragEnd={onTouchDragEnd}
               currentUser={currentUser}
+              isAdmin={isAdmin}
             />
           ))
         )}

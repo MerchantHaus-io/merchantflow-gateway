@@ -863,6 +863,7 @@ const Index = () => {
             currentUser={currentUserDisplayName || undefined}
             focusMode={isFocusMode}
             onFocusModeChange={setIsFocusMode}
+            isAdmin={isAdmin}
           />
         </main>
       </div>
