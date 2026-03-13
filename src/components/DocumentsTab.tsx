@@ -195,42 +195,17 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
         />
       </div>
 
-      {/* Pending upload confirmation */}
-      {showUploadDialog && pendingFiles.length > 0 && (
-        <div className="border border-border rounded-lg p-4 bg-muted/30 space-y-3">
-          <p className="text-sm font-medium">{pendingFiles.length} file(s) ready to upload</p>
-          {!selectedDocType && (
-            <p className="text-xs text-destructive font-medium">⚠ You must assign a document type before uploading</p>
-          )}
-          <div className="text-xs text-muted-foreground">
-            {pendingFiles.map(f => f.name).join(", ")}
-          </div>
-          <div className="flex items-center gap-3">
-            <Select value={selectedDocType} onValueChange={setSelectedDocType}>
-              <SelectTrigger className={`w-[220px] h-8 text-xs ${!selectedDocType ? 'border-destructive ring-1 ring-destructive/30' : ''}`}>
-                <SelectValue placeholder="Select document type…" />
-              </SelectTrigger>
-              <SelectContent>
-                {DOCUMENT_TYPE_OPTIONS.map(opt => {
-                  const atLimit = isLabelAtLimit(opt, labelCounts);
-                  const max = DOCUMENT_LABEL_LIMITS[opt] ?? DEFAULT_LABEL_LIMIT;
-                  return (
-                    <SelectItem key={opt} value={opt} className="text-xs" disabled={atLimit}>
-                      {opt}{atLimit ? ` (${max}/${max})` : ''}
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-            <Button size="sm" onClick={handleUpload} disabled={isUploading || !selectedDocType}>
-              {isUploading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Upload className="h-3 w-3 mr-1" />}
-              Upload
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => { setPendingFiles([]); setShowUploadDialog(false); }}>
-              Cancel
-            </Button>
-          </div>
-        </div>
+      {/* Bulk upload review with AI suggestions */}
+      {bulkSuggestions && bulkSuggestions.length > 0 && (
+        <BulkUploadReview
+          suggestions={bulkSuggestions}
+          labelCounts={labelCounts}
+          labelLimits={DOCUMENT_LABEL_LIMITS}
+          defaultLimit={DEFAULT_LABEL_LIMIT}
+          isUploading={isUploading}
+          onUpload={handleBulkUpload}
+          onCancel={() => setBulkSuggestions(null)}
+        />
       )}
 
       {/* Document list */}
