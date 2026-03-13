@@ -478,11 +478,11 @@ const UnifiedPipelineBoard = ({
         )}
       </div>
 
-      {/* Kanban board — horizontal scroll with vertical scroll per column */}
+      {/* Kanban board — horizontal scroll only, column cards scroll vertically inside columns */}
       <div
         ref={scrollRef}
         onWheel={handleHorizontalWheel}
-        className="flex-1 overflow-x-auto overflow-y-auto min-h-0 pipeline-scrollbar"
+        className="flex-1 overflow-x-auto overflow-y-hidden min-h-0 pipeline-scrollbar"
         style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-x pan-y" }}
         data-scroll-container
       >
