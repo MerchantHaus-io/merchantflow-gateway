@@ -285,9 +285,9 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
     .map(([oppId, bos]) => {
       const acctName = oppToAccount[oppId] || "Unknown Account";
       const boLines = bos
-        .map((b: any) => `      ${b.full_name} — ${b.title || "No title"} | ${b.ownership_percentage}% | ${[b.address_city, b.address_state].filter(Boolean).join(", ") || "No address"}`)
+        .map((b: any) => `      [bo:${b.id || "?"}] ${b.full_name} — ${b.title || "No title"} | ${b.ownership_percentage}% | ${[b.address_city, b.address_state].filter(Boolean).join(", ") || "No address"}`)
         .join("\n");
-      return `  ${acctName}:\n${boLines}`;
+      return `  ${acctName} [opp:${oppId}]:\n${boLines}`;
     })
     .join("\n");
 
