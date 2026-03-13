@@ -27,7 +27,7 @@ KNOWLEDGE:
 - Underwriting (website requirements, doc checklists, red flags)
 - Merchant onboarding, payment processing (MCC codes, interchange, chargebacks, reserves)
 - Application review guidance and general ops questions
-- Live CRM data — pipeline, accounts, contacts, tasks, team activity, documents (provided below)
+- Live CRM data — pipeline, accounts, contacts, tasks, team activity, documents, beneficial owners, NMI boarding submissions, client interactions (provided below)
 - Full SOP procedures, email templates, checklists (provided below)
 
 ACTIONS:
@@ -89,6 +89,10 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
     contactCountRes,
     documentsRes,
     validationReportsRes,
+    beneficialOwnersRes,
+    activitiesRes,
+    nmiBoardingRes,
+    clientInteractionsRes,
   ] = await Promise.all([
     // Pipeline stage counts
     supabase.from("opportunities").select("id, stage, status, assigned_to, account_id"),
@@ -110,6 +114,14 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
     supabase.from("documents").select("id, opportunity_id, file_name, document_type, content_type, file_size, created_at, uploaded_by").order("created_at", { ascending: false }),
     // Latest validation reports
     supabase.from("validation_reports").select("opportunity_id, readiness_score, summary, created_at").order("created_at", { ascending: false }).limit(50),
+    // Beneficial owners
+    supabase.from("beneficial_owners").select("opportunity_id, full_name, title, ownership_percentage, date_of_birth, address_line1, address_city, address_state, address_zip").order("created_at", { ascending: false }),
+    // Recent activities / audit trail
+    supabase.from("activities").select("opportunity_id, type, description, user_email, created_at").order("created_at", { ascending: false }).limit(50),
+    // NMI boarding submissions
+    supabase.from("nmi_boarding_submissions").select("id, opportunity_id, account_id, company_name, dba_name, nmi_status, nmi_gateway_id, error_message, submitted_by_email, created_at").order("created_at", { ascending: false }).limit(25),
+    // Client interactions
+    supabase.from("client_interactions").select("account_id, interaction_type, subject, status, priority, outcome, notes, created_by_email, created_at, follow_up_at").order("created_at", { ascending: false }).limit(30),
   ]);
 
   // Pipeline summary
@@ -228,6 +240,53 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
     })
     .join("\n");
 
+  // Build beneficial owners grouped by opportunity
+  const allBOs = beneficialOwnersRes.data || [];
+  const bosByOpp: Record<string, any[]> = {};
+  for (const bo of allBOs) {
+    const oppId = String((bo as any).opportunity_id);
+    if (!bosByOpp[oppId]) bosByOpp[oppId] = [];
+    bosByOpp[oppId].push(bo);
+  }
+  const beneficialOwnerRoster = Object.entries(bosByOpp)
+    .map(([oppId, bos]) => {
+      const acctName = oppToAccount[oppId] || "Unknown Account";
+      const boLines = bos
+        .map((b: any) => `      ${b.full_name} — ${b.title || "No title"} | ${b.ownership_percentage}% | ${[b.address_city, b.address_state].filter(Boolean).join(", ") || "No address"}`)
+        .join("\n");
+      return `  ${acctName}:\n${boLines}`;
+    })
+    .join("\n");
+
+  // Recent activities
+  const recentActivities = (activitiesRes.data || [])
+    .map((a: any) => {
+      const acctName = oppToAccount[a.opportunity_id] || "Unknown Account";
+      const date = a.created_at ? new Date(a.created_at).toLocaleDateString() : "unknown";
+      return `  ${date} | ${acctName} | ${a.type} | ${a.description || "No description"} | by ${a.user_email || "system"}`;
+    })
+    .join("\n");
+
+  // NMI boarding submissions
+  const allBoardings = nmiBoardingRes.data || [];
+  const boardingRoster = allBoardings
+    .map((b: any) => {
+      const acctName = b.account_id ? accountIdToName[b.account_id] || b.company_name : b.company_name;
+      const date = b.created_at ? new Date(b.created_at).toLocaleDateString() : "unknown";
+      return `  ${acctName}${b.dba_name ? " (DBA: " + b.dba_name + ")" : ""} — ${b.nmi_status}${b.nmi_gateway_id ? " | GW: " + b.nmi_gateway_id : ""}${b.error_message ? " | Error: " + b.error_message : ""} | ${date} by ${b.submitted_by_email}`;
+    })
+    .join("\n");
+
+  // Client interactions
+  const allInteractions = clientInteractionsRes.data || [];
+  const interactionRoster = allInteractions
+    .map((i: any) => {
+      const acctName = accountIdToName[i.account_id] || "Unknown Account";
+      const date = i.created_at ? new Date(i.created_at).toLocaleDateString() : "unknown";
+      return `  ${date} | ${acctName} | ${i.interaction_type} — ${i.subject} | ${i.status} (${i.priority}) | ${i.outcome || "No outcome"}${i.follow_up_at ? " | Follow-up: " + new Date(i.follow_up_at).toLocaleDateString() : ""} | by ${i.created_by_email || "unknown"}`;
+    })
+    .join("\n");
+
   return `
 
 ━━━ LIVE CRM DATA SNAPSHOT ━━━
@@ -254,6 +313,18 @@ ${documentRoster || "  No documents on file"}
 LATEST VALIDATION REPORTS:
 ${validationSummary || "  No validation reports yet"}
 
+BENEFICIAL OWNERS (${allBOs.length} across all deals):
+${beneficialOwnerRoster || "  None on file"}
+
+RECENT ACTIVITY LOG (last 50 events):
+${recentActivities || "  No recent activity"}
+
+NMI BOARDING SUBMISSIONS (${allBoardings.length} recent):
+${boardingRoster || "  No boarding submissions"}
+
+CLIENT INTERACTIONS (${allInteractions.length} recent):
+${interactionRoster || "  No interactions logged"}
+
 OPEN TASKS (${tasksRes.data?.length || 0}):
 ${openTasks || "  None"}
 
@@ -265,6 +336,8 @@ TOTALS:
   Contacts: ${contactCountRes.count ?? "Unknown"}
   All Opportunities: ${opps.length} (${activeOpps.length} active, ${deadOpps.length} dead/closed-lost)
   Documents: ${allDocs.length} total
+  Beneficial Owners: ${allBOs.length}
+  Boarding Submissions: ${allBoardings.length}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 }
 
