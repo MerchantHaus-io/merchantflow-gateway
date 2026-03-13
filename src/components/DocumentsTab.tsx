@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Upload, Download, Trash2, FileText, Loader2, Eye, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 import { DocumentPreviewDialog } from "@/components/DocumentPreviewDialog";
+import { suggestLabels, SuggestedLabel } from "@/lib/document-label-ai";
+import { BulkUploadReview } from "@/components/BulkUploadReview";
 
 interface Document {
   id: string;
