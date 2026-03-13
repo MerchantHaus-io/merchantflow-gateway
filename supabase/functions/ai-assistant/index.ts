@@ -35,7 +35,8 @@ ACTIONS:
 - When asked to do something, use the available tools to take action immediately. Confirm what you did afterward.
 - For ambiguous requests, ask for clarification before acting.
 - When creating a deal, you create the account, contact, and opportunity in one step. Ask for the business name and contact name at minimum.
-- When relabelling documents, reference the document by its ID from the document inventory. Valid labels: Bank Statement, Processing Statement, Voided Check, Bank Confirmation Letter, Articles of Organization, EIN / Tax Document, Passport/Drivers License, Business License, Lease Agreement, Transaction History, VAR/Tear Sheet, Signed Agreement, Other.
+- IMPORTANT: The CRM snapshot includes UUIDs in brackets like [acct:uuid], [contact:uuid], [opp:uuid], [doc:uuid], [bo:uuid]. Use these IDs when calling tools — they are the database primary keys. Never tell the user you can't see IDs.
+- When relabelling documents, use the document UUID from [doc:uuid] in the document inventory. Valid labels: Bank Statement, Processing Statement, Voided Check, Bank Confirmation Letter, Articles of Organization, EIN / Tax Document, Passport/Drivers License, Business License, Lease Agreement, Transaction History, VAR/Tear Sheet, Signed Agreement, Other.
 - When logging client interactions, you can record calls, emails, meetings, notes, or SMS against any account with outcome tracking, priority, and follow-up dates.
 - When running underwriting validation, you check document completeness against the required checklist and beneficial owner requirements, then save a validation report.
 - When updating records, you can change fields like name, website, city, state, status on accounts; first_name, last_name, email, phone on contacts; and service_type, referral_source, language, timezone on opportunities.
@@ -148,7 +149,7 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
     // Latest validation reports
     supabase.from("validation_reports").select("opportunity_id, readiness_score, summary, created_at").order("created_at", { ascending: false }).limit(50),
     // Beneficial owners
-    supabase.from("beneficial_owners").select("opportunity_id, full_name, title, ownership_percentage, date_of_birth, address_line1, address_city, address_state, address_zip").order("created_at", { ascending: false }),
+    supabase.from("beneficial_owners").select("id, opportunity_id, full_name, title, ownership_percentage, date_of_birth, address_line1, address_city, address_state, address_zip").order("created_at", { ascending: false }),
     // Recent activities / audit trail
     supabase.from("activities").select("opportunity_id, type, description, user_email, created_at").order("created_at", { ascending: false }).limit(50),
     // NMI boarding submissions
@@ -183,7 +184,7 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
 
   // Recent deals
   const recentDeals = (recentOppsRes.data || [])
-    .map((o: any) => `  - ${o.accounts?.name || "Unknown"} (${o.stage} | ${o.status || "active"}) → ${o.assigned_to || "Unassigned"} | Contact: ${[o.contacts?.first_name, o.contacts?.last_name].filter(Boolean).join(" ") || "N/A"}`)
+    .map((o: any) => `  - [opp:${o.id}] ${o.accounts?.name || "Unknown"} (${o.stage} | ${o.status || "active"}) → ${o.assigned_to || "Unassigned"} | Contact: ${[o.contacts?.first_name, o.contacts?.last_name].filter(Boolean).join(" ") || "N/A"}`)
     .join("\n");
 
   // Open tasks
@@ -217,9 +218,9 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
       const created = a.created_at ? new Date(a.created_at).toLocaleDateString() : "Unknown";
       const contacts = contactsByAccount[a.id] || [];
       const contactLines = contacts
-        .map((c: any) => `      ${[c.first_name, c.last_name].filter(Boolean).join(" ") || "Unnamed"} | ${c.email || "no email"} | ${c.phone || "no phone"}`)
+        .map((c: any) => `      [contact:${c.id}] ${[c.first_name, c.last_name].filter(Boolean).join(" ") || "Unnamed"} | ${c.email || "no email"} | ${c.phone || "no phone"}`)
         .join("\n");
-      return `  ${a.name} (${a.status || "active"}) — since ${created}${a.city && a.state ? ` | ${a.city}, ${a.state}` : ""}${a.website ? ` | ${a.website}` : ""}\n${contactLines || "      No contacts on file"}`;
+      return `  [acct:${a.id}] ${a.name} (${a.status || "active"}) — since ${created}${a.city && a.state ? ` | ${a.city}, ${a.state}` : ""}${a.website ? ` | ${a.website}` : ""}\n${contactLines || "      No contacts on file"}`;
     })
     .join("\n");
 
@@ -258,9 +259,9 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
     .map(([oppId, docs]) => {
       const acctName = oppToAccount[oppId] || "Unknown Account";
       const docLines = docs
-        .map((d: any) => `      ${d.file_name} (${d.document_type || "Unassigned"}) — uploaded ${d.created_at ? new Date(d.created_at).toLocaleDateString() : "unknown"}${d.uploaded_by ? " by " + d.uploaded_by : ""}`)
+        .map((d: any) => `      [doc:${d.id}] ${d.file_name} (${d.document_type || "Unassigned"}) — uploaded ${d.created_at ? new Date(d.created_at).toLocaleDateString() : "unknown"}${d.uploaded_by ? " by " + d.uploaded_by : ""}`)
         .join("\n");
-      return `  ${acctName} (${docs.length} docs):\n${docLines}`;
+      return `  ${acctName} [opp:${oppId}] (${docs.length} docs):\n${docLines}`;
     })
     .join("\n");
 
@@ -285,9 +286,9 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
     .map(([oppId, bos]) => {
       const acctName = oppToAccount[oppId] || "Unknown Account";
       const boLines = bos
-        .map((b: any) => `      ${b.full_name} — ${b.title || "No title"} | ${b.ownership_percentage}% | ${[b.address_city, b.address_state].filter(Boolean).join(", ") || "No address"}`)
+        .map((b: any) => `      [bo:${b.id || "?"}] ${b.full_name} — ${b.title || "No title"} | ${b.ownership_percentage}% | ${[b.address_city, b.address_state].filter(Boolean).join(", ") || "No address"}`)
         .join("\n");
-      return `  ${acctName}:\n${boLines}`;
+      return `  ${acctName} [opp:${oppId}]:\n${boLines}`;
     })
     .join("\n");
 
