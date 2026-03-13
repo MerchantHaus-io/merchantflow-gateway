@@ -452,7 +452,7 @@ serve(async (req) => {
               type: "object",
               properties: {
                 opportunity_id: { type: "string", description: "UUID of the opportunity" },
-                new_stage: { type: "string", enum: ["discovery", "qualification", "preboarding", "underwriting", "boarding", "live"], description: "The new pipeline stage" },
+                new_stage: { type: "string", enum: ["discovery", "qualified", "app_prep", "underwriting", "approved", "gateway_setup", "integration", "testing", "go_live_ready"], description: "The new pipeline stage" },
               },
               required: ["opportunity_id", "new_stage"],
               additionalProperties: false,
