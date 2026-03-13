@@ -856,79 +856,120 @@ REQUIRED DOCUMENTS CHECK:
 ${websiteUrl ? (fetchError ? `WEBSITE FETCH ERROR: ${fetchError}` : `WEBSITE CONTENT (extracted text):\n${websiteContent}`) : "NO WEBSITE URL PROVIDED — flag as risk if service type requires web presence"}
 `;
 
-      const unifiedPrompt = `You are an expert underwriting reviewer for a payment processing ISO. Perform a COMPREHENSIVE underwriting review covering ALL of the following dimensions in a single analysis:
+      const unifiedPrompt = `You are an expert underwriting reviewer for a payment processing ISO. You behave like an auditor: decisive but falsifiable. You NEVER imply you verified something you did not verify.
 
 TODAY'S DATE: ${new Date().toISOString().split("T")[0]}
 
-═══ DIMENSION 1: DOCUMENT VALIDATION ═══
+═══ GUARDRAILS ═══
+
+EVIDENCE LABELING: For every key claim in your report, label it as one of:
+- **Observed** — directly seen in uploaded documents or website content
+- **Verified via public lookup** — confirmed against a public source (state registry, OFAC, Fed routing directory, ICANN, etc.)
+- **Inferred** — reasoned from available evidence but not directly confirmed
+- **Unverified** — could not be confirmed (e.g., registry blocked by CAPTCHA, no TIN-matching capability)
+
+PII MASKING: Never repeat full EIN, SSN, DOB, or bank account numbers. Mask to last 4 digits only (e.g., "EIN: ***-**-1234"). Only short snippets from documents when absolutely required to support a conclusion.
+
+TRUTHFULNESS: Unless you have formal TIN-matching capability, say "EIN coherence check: passed/failed" — never claim you "verified the EIN with the IRS." If a state registry check cannot be performed (CAPTCHA, paywall), label entity status as "Unverified" rather than guessing.
+
+═══ DIMENSION 1: DOCUMENT SCRUTINY ═══
 
 HARD DOCUMENT REQUIREMENTS (all must be present and correctly labelled):
-1. Articles of Organization — Validate entity status, formation date, entity number. Flag if missing.
-2. EIN / Tax Document — Cross-check EIN, legal name against formation docs. Flag if missing.
-3. Voided Check or Bank Confirmation Letter — Verify account matches legal entity or DBA. Flag if missing.
-4. Bank Statements OR Processing History — Minimum 3 months. Check arithmetic invariants, recency, account holder name match, tamper indicators.
-5. Owner ID (Passport or Drivers License) — MANDATORY KYC/CDD requirement. Verify identity matches principal owner. Flag if missing.
+1. Formation Document (Articles of Organization/Incorporation) — Parse: legal entity name, formation state, filing/formation date, entity/file number, registered agent, principal address. Cross-check against state business registry if possible. Red flags: entity name mismatch beyond punctuation, missing filing identifiers, templated/unfinished doc, state registry shows dissolved/revoked/not found.
+2. EIN / Tax Document (CP 575, 147C, SS-4, W-9) — Extract EIN (masked), legal name, address, notice date. Cross-check legal name and address against formation docs and bank evidence. Flag: EIN doc missing, name mismatch, edited/inconsistent formatting, W-9 supplied without IRS-issued confirmation.
+3. Voided Check or Bank Confirmation Letter — Ties account holder name to account/routing numbers. Verify routing number against Federal Reserve E-Payments Routing Directory if possible. Verify account holder name matches legal entity or DBA.
+4. Bank Statements (minimum 3 months) — Evaluate: coherence (date range, bank name, account holder, balances, totals), recency/coverage, integrity/tamper indicators (inconsistent fonts, missing header/footer, cropped pages, arithmetic inconsistencies). When tamper indicators are strong, escalate rather than conclude fraud.
+5. Owner ID (Passport or Drivers License) — MANDATORY KYC/CDD requirement per beneficial ownership rules. Verify identity matches principal owner.
 
-Additional document checks:
-- Passport/Drivers License if present — verify identity matches principal
-- Cross-document consistency: names, addresses, entity numbers across all docs
+Additional checks:
+- Cross-document consistency: names, addresses, entity numbers across ALL docs
 - Classification issues: flag any misclassified or unlabelled documents
 
-═══ DIMENSION 2: WEBSITE SCRUTINY ═══
+═══ DIMENSION 2: WEBSITE SCRUTINY (Card-Not-Present) ═══
 
-Visa Core Requirements:
-- Customer service contact (email OR telephone)
-- Merchant country displayed during checkout
-- Address for cardholder correspondence
-- Refund/return/cancellation policy (must be disclosed before checkout)
-- Shipping/fulfilment/multi-shipment policy
-- Privacy policy, Terms of service
+Identity and contactability:
+- Business name displayed (legal or DBA)
+- Physical address where appropriate
+- Working email/phone and a contact page
 
-Website legitimacy:
-- Company name/DBA matches application
-- Physical address matches documentary evidence
-- Products/services match application description and MCC code
-- No restricted content, aggressive claims, or thin content
-- Domain age and SSL posture
+Policy disclosures (Visa Dispute Management Guidelines require clear disclosure before checkout):
+- Refund/return policy: present, specific, easy to find
+- Cancellation policy: present (especially for subscriptions/pre-orders)
+- Shipping/fulfilment timelines: clear
+- Terms and privacy policy exist
+- Policies accessible before checkout completion (linked in footer and near checkout)
+
+Security posture:
+- HTTPS enabled site-wide, not just at checkout
+- TLS configuration assessment
+
+Business model consistency:
+- Products on site match application narrative and expected MCC/product mix
+- No obvious chargeback drivers (very long shipping windows, "free trial" continuity billing, vague fulfilment)
+
+Domain maturity:
+- Domain registration data (ICANN Lookup / RDAP)
+- Internet Archive Wayback Machine for sudden changes
+
+Reputation:
+- Google Safe Browsing status if assessable
 
 ═══ DIMENSION 3: APPLICATION DETAIL REVIEW ═══
 
-CRITICAL — Verify the following are consistent and plausible:
-1. TRANSACTION MIX — Do the stated percentages (swiped/keyed/ecommerce/MOTO) align with the business model and website? E.g., a retail store claiming 80% e-commerce is suspicious. The mix must total 100%.
-2. BUSINESS DESCRIPTION — Does the nature of business match what the website shows? Are products/services consistent?
-3. MCC CODE — Based on the business description and website, recommend the MOST APPROPRIATE MCC code and its description. Flag if the currently assigned MCC doesn't match.
-4. VOLUME PROJECTIONS — Are monthly volume, avg ticket, and high ticket plausible for the business type?
-5. CUSTOMER MIX — B2B vs B2C split should align with the business model
+1. TRANSACTION MIX — Do stated percentages (swiped/keyed/ecommerce/MOTO) align with business model and website? Must total 100%.
+2. BUSINESS DESCRIPTION — Does nature of business match website? Are products/services consistent?
+3. MCC CODE — Recommend MOST APPROPRIATE MCC code with description and rationale. Flag if currently assigned MCC doesn't match.
+4. VOLUME PROJECTIONS — Are monthly volume, avg ticket, and high ticket plausible for business type?
+5. CUSTOMER MIX — B2B vs B2C split should align with business model.
 
-═══ DIMENSION 4: OFAC / SANCTIONS SCREENING ═══
+═══ DIMENSION 4: SCREENING & COMPLIANCE ═══
 
-Screen the following against known OFAC SDN (Specially Designated Nationals) patterns and restricted entity indicators:
-- Business legal entity name
-- DBA name
-- Principal owner name(s)
-- Country of incorporation / operation
-Flag ANY match or near-match as a CRITICAL red flag. Check for sanctioned countries, restricted industries, and known shell-entity patterns.
+OFAC/Sanctions: Screen business legal entity name, DBA name, principal owner name(s), country of operation against OFAC SDN patterns. ANY match or near-match = CRITICAL hard stop → escalate for human resolution (false positives are common in name screening).
+
+Terminated-merchant screening (VMSS/MATCH): If not available, mark as "Not run — programme access required."
 
 ═══ DIMENSION 5: HIGH-RISK MCC ASSESSMENT ═══
 
-After determining the recommended MCC code, evaluate if it falls into a high-risk category that typically requires reserves, delayed funding, or enhanced monitoring. High-risk MCCs include but are not limited to: 5962-5969 (Direct Marketing), 6051 (Money Services), 7801-7802/7995 (Gambling), 7273 (Dating), 4816 (Computer Network Services for VPN/proxy), 5122 (Drugs/Pharmaceuticals).
-Set risk_tier to "high_risk" if the MCC is in a high-risk category, otherwise "standard".
+Evaluate if recommended MCC falls into high-risk category requiring reserves, delayed funding, or enhanced monitoring. High-risk MCCs include: 5962-5969 (Direct Marketing), 6051 (Money Services), 7801-7802/7995 (Gambling), 7273 (Dating), 4816 (Computer Network Services), 5122 (Drugs/Pharmaceuticals).
 
-═══ RISK SCORING ═══
+═══ SCORING RUBRIC (0–10) ═══
 
-RED FLAG SEVERITY LEVELS:
-- Critical: Auto-reject (sanctions match, dissolved entity, material tampering, restricted content, OFAC hit)
-- High: Escalate (missing hard-requirement docs, name mismatches, missing Visa-required disclosures, missing owner ID)
-- Medium: Hold/clarify (data gaps, minor inconsistencies, young domain)
-- Low: Note for file
+Score each dimension:
+- Entity & ownership verification (0–2): formation doc present + state registry match
+- Tax identity coherence (0–1): CP 575/147C/SS-4/W-9 coherence across docs (NOT "IRS-verified" unless you truly have that capability)
+- Bank settlement proof (0–2): bank letter/voided cheque + routing sanity check (Fed directory) + name match
+- Financial evidence & capacity (0–1.5): statement coverage, recency, plausible volumes
+- Website transparency & dispute-risk controls (0–2): policies + contact + fulfilment clarity aligned to Visa disclosure emphasis
+- Screening & compliance (0–1): VMSS/MATCH if available; OFAC checks
+- Document integrity & internal consistency (0–0.5): misclassification, tamper indicators, cross-document mismatches
+
+HARD-STOP OVERRIDES (these override score optimism):
+- Sanctions probable match → escalate (OFAC)
+- VMSS/MATCH adverse result → escalate/decline
+- Entity not found/dissolved with no resolution → decline/escalate
+- Material tampering evidence → escalate
 
 Scheme Monitoring Thresholds:
 - Visa VAMP: ≥220 bps AND ≥1,500 count (reduces to ≥150 bps April 2026)
 - Mastercard ECP: ECM 100-299 chargebacks AND 1.50-2.99%; HECM 300+ AND 3.00%+
 
+═══ VALIDITY CONCLUSION ═══
+
+After scoring, provide a categorical conclusion: "Likely valid", "Inconclusive", or "Likely invalid" with confidence (High/Medium/Low) and brief justification.
+
+═══ PUBLIC CHECKS PERFORMED ═══
+
+List each public check you considered and its outcome:
+- State registry lookup: Result or "Not performed" with reason
+- OFAC screening: Result
+- Domain registration (ICANN): Result or "Not performed"
+- Routing number directory (Fed): Result or "Not performed"
+- Website history (Wayback): Result or "Not performed"
+- Malware/phishing flags (Safe Browsing): Result or "Not performed"
+
 ${applicationContext}
 
-Call the "underwriting_review_report" function with your complete analysis. Be thorough, actionable, and reference specific requirements. Include the recommended MCC code and description, risk_tier assessment, and OFAC screening results.`;
+Call the "underwriting_review_report" function with your complete analysis. Be thorough, actionable, and reference specific requirements. Label evidence. Include score breakdown, hard stops, public checks, and validity conclusion.`;
 
       const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -939,7 +980,7 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
         body: JSON.stringify({
           model: "google/gemini-2.5-flash",
           messages: [
-            { role: "system", content: "You are an expert underwriting reviewer for payment processing merchant applications. You perform a unified analysis covering document validation, website scrutiny, and application detail verification using the Deep Research Specification for AI Underwriter Bot framework. You enforce Visa Core Rules, Mastercard requirements, FATF CDD expectations, and PCI DSS standards." },
+            { role: "system", content: "You are an expert underwriting reviewer for payment processing merchant applications. You operate under the Deep Research Specification for AI Underwriter Bot framework. You enforce Visa Core Rules & Dispute Management Guidelines, Mastercard requirements, FATF CDD expectations, PCI DSS standards, and U.S. CIP/beneficial-ownership rules. You behave like an auditor: decisive but falsifiable. You label every key claim as Observed, Verified via public lookup, Inferred, or Unverified. You mask all PII (EIN/SSN/DOB/account numbers to last 4 only). You never imply you verified something you did not verify." },
             { role: "user", content: unifiedPrompt },
           ],
           tools: [
@@ -1050,8 +1091,65 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
                       type: "string",
                       description: "Summary of OFAC/sanctions screening results. State 'Clear' if no matches, or describe any flags.",
                     },
+                    score: {
+                      type: "number",
+                      description: "Overall numerical score out of 10, sum of all score_breakdown categories.",
+                    },
+                    confidence: {
+                      type: "string",
+                      enum: ["high", "medium", "low"],
+                      description: "Confidence level in the overall assessment.",
+                    },
+                    recommendation: {
+                      type: "string",
+                      enum: ["proceed", "proceed_with_conditions", "request_information", "escalate_to_risk", "decline"],
+                      description: "Operational recommendation.",
+                    },
+                    score_breakdown: {
+                      type: "array",
+                      description: "Per-category scoring breakdown (7 categories summing to max 10).",
+                      items: {
+                        type: "object",
+                        properties: {
+                          category: { type: "string", description: "Category name (e.g., 'Entity & ownership verification')" },
+                          max_score: { type: "number", description: "Maximum possible score for this category" },
+                          score: { type: "number", description: "Awarded score" },
+                          note: { type: "string", description: "Brief justification with evidence label" },
+                        },
+                        required: ["category", "max_score", "score", "note"],
+                        additionalProperties: false,
+                      },
+                    },
+                    hard_stops: {
+                      type: "array",
+                      description: "Critical hard-stop findings that override scoring. Empty array if none.",
+                      items: { type: "string" },
+                    },
+                    public_checks_performed: {
+                      type: "array",
+                      description: "List of public verification checks performed and their outcomes.",
+                      items: {
+                        type: "object",
+                        properties: {
+                          check: { type: "string", description: "Name of check (e.g., 'State registry lookup')" },
+                          tool: { type: "string", description: "Tool/source used (e.g., 'NASS directory', 'OFAC SDN list')" },
+                          result: { type: "string", description: "Outcome or 'Not performed' with reason" },
+                        },
+                        required: ["check", "result"],
+                        additionalProperties: false,
+                      },
+                    },
+                    validity_conclusion: {
+                      type: "string",
+                      enum: ["likely_valid", "inconclusive", "likely_invalid"],
+                      description: "Categorical validity opinion on the merchant application.",
+                    },
+                    validity_justification: {
+                      type: "string",
+                      description: "Brief justification for the validity conclusion.",
+                    },
                   },
-                  required: ["readiness_score", "summary", "recommended_mcc", "transaction_mix_assessment", "document_completeness", "red_flags", "recommended_actions", "risk_tier", "ofac_screening"],
+                  required: ["readiness_score", "summary", "recommended_mcc", "transaction_mix_assessment", "document_completeness", "red_flags", "recommended_actions", "risk_tier", "ofac_screening", "score", "confidence", "recommendation", "score_breakdown", "hard_stops", "public_checks_performed", "validity_conclusion", "validity_justification"],
                   additionalProperties: false,
                 },
               },
@@ -1171,18 +1269,39 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
       // ── AUTO-SAVE AS NOTE ──
       if (!isNoChange) {
         const mcc = report.recommended_mcc as { code?: string; description?: string; rationale?: string } | undefined;
+        const recLabel = {
+          proceed: "Proceed", proceed_with_conditions: "Proceed with Conditions",
+          request_information: "Request Information", escalate_to_risk: "Escalate to Risk", decline: "Decline",
+        }[(report.recommendation as string) || ""] || (report.recommendation as string) || "";
+        const validityLabel = {
+          likely_valid: "Likely Valid", inconclusive: "Inconclusive", likely_invalid: "Likely Invalid",
+        }[(report.validity_conclusion as string) || ""] || "";
+
         const noteLines: string[] = [
-          `📋 UNDERWRITING REVIEW — ${newScore === "ready" ? "🟢 Ready" : newScore === "needs_attention" ? "🟡 Needs Attention" : "🔴 Not Ready"}`,
+          `📋 UNDERWRITING REVIEW — ${newScore === "ready" ? "🟢 Proceed" : newScore === "needs_attention" ? "🟡 Needs Attention" : "🔴 Decline/Escalate"}`,
+          `Score: ${report.score ?? "N/A"}/10 | Confidence: ${(report.confidence as string)?.charAt(0).toUpperCase()}${(report.confidence as string)?.slice(1) || "N/A"} | Recommendation: ${recLabel}`,
           "",
           (report.summary as string) || "",
         ];
+
+        // Score breakdown
+        const breakdown = report.score_breakdown as Array<{ category: string; max_score: number; score: number; note: string }> | undefined;
+        if (breakdown?.length) {
+          noteLines.push("", "📊 Score Breakdown:");
+          breakdown.forEach(b => noteLines.push(`  ${b.category} (0–${b.max_score}): ${b.score} — ${b.note}`));
+        }
+
+        // Hard stops
+        const hardStops = report.hard_stops as string[] | undefined;
+        noteLines.push("", `🚨 Hard Stops: ${hardStops?.length ? "" : "None"}`);
+        hardStops?.forEach(h => noteLines.push(`  ⛔ ${h}`));
 
         if (mcc) {
           noteLines.push("", `🏷️ Recommended MCC: ${mcc.code || "N/A"} — ${mcc.description || "N/A"}`, `   Rationale: ${mcc.rationale || "N/A"}`);
         }
 
         if (report.risk_tier === "high_risk") {
-          noteLines.push("", "🔴 HIGH-RISK MCC — This merchant falls into a high-risk category. Reserves, delayed funding, or enhanced monitoring may be required.");
+          noteLines.push("", "🔴 HIGH-RISK MCC — Reserves, delayed funding, or enhanced monitoring may be required.");
         }
 
         if (report.ofac_screening) {
@@ -1195,6 +1314,13 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
 
         if (websiteUrl && report.website_score !== undefined) {
           noteLines.push("", `🌐 Website Score: ${report.website_score}/10 (${report.website_score_label || "N/A"})`, `   URL: ${websiteUrl}`);
+        }
+
+        // Public checks
+        const publicChecks = report.public_checks_performed as Array<{ check: string; tool?: string; result: string }> | undefined;
+        if (publicChecks?.length) {
+          noteLines.push("", "🔍 Public Checks Performed:");
+          publicChecks.forEach(c => noteLines.push(`  ${c.check}${c.tool ? ` (${c.tool})` : ""}: ${c.result}`));
         }
 
         const redFlags = report.red_flags as Array<{ flag: string; severity: string; detail?: string }> | undefined;
@@ -1215,6 +1341,9 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
           actions.forEach(a => noteLines.push(`  → ${a}`));
         }
 
+        // Validity conclusion
+        noteLines.push("", `✅ Validity: ${validityLabel} — ${report.validity_justification || ""} — Confidence: ${(report.confidence as string) || "N/A"}`);
+
         const noteContent = noteLines.join("\n");
 
         // Save as comment
@@ -1231,7 +1360,7 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
           user_id: AI_BOT_USER_ID,
           user_email: AI_BOT_EMAIL,
           type: "ai_report_saved",
-          description: `Underwriting Review completed — ${newScore === "ready" ? "Ready" : newScore === "needs_attention" ? "Needs Attention" : "Not Ready"}`,
+          description: `Underwriting Review completed — ${report.score ?? "N/A"}/10 — ${validityLabel} — ${recLabel}`,
         });
       }
 

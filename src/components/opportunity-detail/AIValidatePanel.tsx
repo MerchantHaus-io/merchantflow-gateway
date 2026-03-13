@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { EMAIL_TO_USER } from "@/types/opportunity";
 import {
-  Wand2, Loader2, CheckCircle2, XCircle, AlertTriangle, ChevronDown, ChevronUp, Eye, Clock, User, Globe, FileText, Tag, BarChart3,
+  Wand2, Loader2, CheckCircle2, XCircle, AlertTriangle, ChevronDown, ChevronUp, Eye, Clock, User, Globe, FileText, Tag, BarChart3, Shield, Search, Scale,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -15,8 +15,24 @@ interface AIValidatePanelProps {
   opportunityId: string;
 }
 
+interface ScoreBreakdownItem {
+  category: string;
+  max_score: number;
+  score: number;
+  note: string;
+}
+
+interface PublicCheck {
+  check: string;
+  tool?: string;
+  result: string;
+}
+
 interface UnifiedReport {
   readiness_score: string;
+  score?: number;
+  confidence?: string;
+  recommendation?: string;
   website_score?: number;
   website_score_label?: string;
   summary: string;
@@ -28,6 +44,13 @@ interface UnifiedReport {
   data_gaps?: string[];
   red_flags?: { flag: string; severity: string; detail?: string }[];
   recommended_actions?: string[];
+  risk_tier?: string;
+  ofac_screening?: string;
+  score_breakdown?: ScoreBreakdownItem[];
+  hard_stops?: string[];
+  public_checks_performed?: PublicCheck[];
+  validity_conclusion?: string;
+  validity_justification?: string;
 }
 
 interface ReportMeta {
@@ -39,16 +62,50 @@ interface ReportMeta {
 
 const displayName = (email: string) => EMAIL_TO_USER[email?.toLowerCase()] || email || "Unknown";
 
-const readinessIcon = (score: string) => {
+const statusIcon = (score: string) => {
   if (score === "ready" || score === "green") return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
   if (score === "needs_attention" || score === "yellow") return <AlertTriangle className="h-4 w-4 text-amber-500" />;
   return <XCircle className="h-4 w-4 text-destructive" />;
 };
 
-const readinessLabel = (score: string) => {
-  if (score === "ready" || score === "green") return "🟢 Ready";
+const statusLabel = (score: string) => {
+  if (score === "ready" || score === "green") return "🟢 Proceed";
   if (score === "needs_attention" || score === "yellow") return "🟡 Needs Attention";
-  return "🔴 Not Ready";
+  return "🔴 Decline/Escalate";
+};
+
+const recommendationLabel = (rec?: string) => {
+  const map: Record<string, string> = {
+    proceed: "Proceed",
+    proceed_with_conditions: "Proceed with Conditions",
+    request_information: "Request Information",
+    escalate_to_risk: "Escalate to Risk",
+    decline: "Decline",
+  };
+  return map[rec || ""] || rec || "";
+};
+
+const recommendationColor = (rec?: string) => {
+  if (rec === "proceed") return "text-emerald-500";
+  if (rec === "proceed_with_conditions") return "text-amber-500";
+  if (rec === "request_information") return "text-blue-500";
+  if (rec === "escalate_to_risk" || rec === "decline") return "text-destructive";
+  return "text-muted-foreground";
+};
+
+const validityLabel = (v?: string) => {
+  const map: Record<string, string> = {
+    likely_valid: "Likely Valid",
+    inconclusive: "Inconclusive",
+    likely_invalid: "Likely Invalid",
+  };
+  return map[v || ""] || v || "";
+};
+
+const validityColor = (v?: string) => {
+  if (v === "likely_valid") return "text-emerald-600 dark:text-emerald-400";
+  if (v === "inconclusive") return "text-amber-600 dark:text-amber-400";
+  return "text-destructive";
 };
 
 const scoreColor = (score: number) => {
@@ -80,9 +137,23 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       const lines: string[] = [];
-      lines.push(`## AI Underwriting Review — ${readinessLabel(report.readiness_score)}`);
+      lines.push(`## AI Underwriting Review — ${statusLabel(report.readiness_score)}`);
+      if (report.score !== undefined) lines.push(`Score: ${report.score}/10 | Confidence: ${report.confidence || "N/A"} | Recommendation: ${recommendationLabel(report.recommendation)}`);
       if (report.website_score !== undefined) lines.push(`Website Score: ${report.website_score}/10 (${report.website_score_label || ""})`);
       if (report.summary) lines.push(`\n${report.summary}`);
+
+      if (report.score_breakdown?.length) {
+        lines.push(`\n### Score Breakdown`);
+        report.score_breakdown.forEach(b => lines.push(`- ${b.category} (0–${b.max_score}): ${b.score} — ${b.note}`));
+      }
+
+      lines.push(`\n### Hard Stops`);
+      if (report.hard_stops?.length) {
+        report.hard_stops.forEach(h => lines.push(`- ⛔ ${h}`));
+      } else {
+        lines.push(`- None`);
+      }
+
       if (report.recommended_mcc) lines.push(`\nRecommended MCC: ${report.recommended_mcc.code} — ${report.recommended_mcc.description}\n${report.recommended_mcc.rationale}`);
       if (report.transaction_mix_assessment) lines.push(`\nTransaction Mix: ${report.transaction_mix_assessment}`);
       if (report.document_completeness?.length) {
@@ -92,6 +163,10 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
       if (report.website_requirements?.length) {
         lines.push(`\n### Website`);
         report.website_requirements.forEach(r => lines.push(`- [${r.met ? "✅" : "❌"}] ${r.requirement}${r.detail ? ` — ${r.detail}` : ""}`));
+      }
+      if (report.public_checks_performed?.length) {
+        lines.push(`\n### Public Checks`);
+        report.public_checks_performed.forEach(c => lines.push(`- ${c.check}${c.tool ? ` (${c.tool})` : ""}: ${c.result}`));
       }
       if (report.red_flags?.length) {
         lines.push(`\n### Red Flags`);
@@ -104,6 +179,10 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
       if (report.recommended_actions?.length) {
         lines.push(`\n### Recommended Actions`);
         report.recommended_actions.forEach(a => lines.push(`- → ${a}`));
+      }
+      if (report.validity_conclusion) {
+        lines.push(`\n### Validity Conclusion`);
+        lines.push(`${validityLabel(report.validity_conclusion)} — ${report.validity_justification || ""} — Confidence: ${report.confidence || "N/A"}`);
       }
 
       const content = lines.join("\n");
@@ -118,7 +197,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
       await supabase.from("activities").insert({
         opportunity_id: opportunityId,
         type: "ai_report_saved",
-        description: `AI Underwriting Review saved as note — ${readinessLabel(report.readiness_score)}`,
+        description: `AI Underwriting Review saved as note — ${report.score ?? "N/A"}/10 — ${validityLabel(report.validity_conclusion)}`,
         user_id: user?.id || null,
         user_email: user?.email || null,
       });
@@ -199,14 +278,24 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
       {/* Report */}
       {report && (
         <div className={cn("border rounded-lg p-4 space-y-3", meta?.no_change ? "bg-muted/30 border-muted-foreground/20" : "bg-card border-border")}>
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {readinessIcon(report.readiness_score)}
+          {/* Header row: status + score + recommendation */}
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {statusIcon(report.readiness_score)}
               <h4 className="text-sm font-semibold flex items-center gap-2">
-                {readinessLabel(report.readiness_score)}
+                {statusLabel(report.readiness_score)}
                 {meta?.no_change && <Badge variant="outline" className="text-[9px] py-0 px-1">No change</Badge>}
               </h4>
+              {report.score !== undefined && (
+                <Badge variant="outline" className="text-[10px] gap-1 font-mono">
+                  <span className={scoreColor(report.score)}>{report.score}/10</span>
+                </Badge>
+              )}
+              {report.confidence && (
+                <Badge variant="outline" className="text-[10px] py-0 px-1">
+                  {report.confidence.charAt(0).toUpperCase() + report.confidence.slice(1)} confidence
+                </Badge>
+              )}
               {report.website_score !== undefined && (
                 <Badge variant="outline" className="text-[10px] gap-1">
                   <Globe className="h-3 w-3" />
@@ -225,9 +314,69 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
             </div>
           </div>
 
+          {/* Recommendation + Validity badges */}
+          {!meta?.no_change && (report.recommendation || report.validity_conclusion) && (
+            <div className="flex items-center gap-2 flex-wrap">
+              {report.recommendation && (
+                <Badge variant="outline" className={cn("text-[10px] gap-1", recommendationColor(report.recommendation))}>
+                  <Scale className="h-3 w-3" />
+                  {recommendationLabel(report.recommendation)}
+                </Badge>
+              )}
+              {report.validity_conclusion && (
+                <Badge variant="outline" className={cn("text-[10px] gap-1", validityColor(report.validity_conclusion))}>
+                  <Shield className="h-3 w-3" />
+                  {validityLabel(report.validity_conclusion)}
+                </Badge>
+              )}
+              {report.risk_tier === "high_risk" && (
+                <Badge variant="destructive" className="text-[10px] gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  High-Risk MCC
+                </Badge>
+              )}
+            </div>
+          )}
+
           {meta && <MetaLine meta={meta} />}
           {report.summary && !meta?.no_change && (
             <p className="text-xs text-muted-foreground">{report.summary}</p>
+          )}
+
+          {/* Hard Stops (always visible when present) */}
+          {!meta?.no_change && report.hard_stops && report.hard_stops.length > 0 && (
+            <div className="bg-destructive/10 border border-destructive/30 rounded-md p-2.5 space-y-1">
+              <p className="text-xs font-semibold text-destructive flex items-center gap-1">
+                <XCircle className="h-3.5 w-3.5" /> Hard Stops — Must Resolve
+              </p>
+              {report.hard_stops.map((h, i) => (
+                <p key={i} className="text-xs text-destructive/90 pl-5">⛔ {h}</p>
+              ))}
+            </div>
+          )}
+
+          {/* Score Breakdown (always visible) */}
+          {!meta?.no_change && report.score_breakdown && report.score_breakdown.length > 0 && (
+            <div className="space-y-1">
+              <p className="text-xs font-medium flex items-center gap-1"><BarChart3 className="h-3 w-3" /> Score Breakdown</p>
+              <div className="grid gap-1">
+                {report.score_breakdown.map((b, i) => (
+                  <div key={i} className="flex items-center gap-2 text-xs">
+                    <div className="w-[180px] shrink-0 text-muted-foreground truncate">{b.category} (0–{b.max_score})</div>
+                    <div className="w-12 shrink-0">
+                      <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className={cn("h-full rounded-full", b.score >= b.max_score * 0.8 ? "bg-emerald-500" : b.score >= b.max_score * 0.5 ? "bg-amber-500" : "bg-destructive")}
+                          style={{ width: `${Math.min(100, (b.score / b.max_score) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                    <span className={cn("font-mono text-[10px] w-8 shrink-0", scoreColor((b.score / b.max_score) * 10))}>{b.score}/{b.max_score}</span>
+                    <span className="text-muted-foreground truncate">{b.note}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
 
           {/* MCC Recommendation (always visible) */}
@@ -239,6 +388,14 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
                 <span className="text-foreground"> — {report.recommended_mcc.description}</span>
                 <p className="text-muted-foreground mt-0.5">{report.recommended_mcc.rationale}</p>
               </div>
+            </div>
+          )}
+
+          {/* OFAC Screening (always visible) */}
+          {report.ofac_screening && !meta?.no_change && (
+            <div className="flex items-start gap-2 text-xs">
+              <Shield className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+              <span className="text-muted-foreground"><span className="font-medium text-foreground">OFAC:</span> {report.ofac_screening}</span>
             </div>
           )}
 
@@ -286,6 +443,24 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
                           : <XCircle className="h-3.5 w-3.5 text-destructive shrink-0 mt-0.5" />}
                         <span className={cn(!r.met && "text-destructive")}>
                           {r.requirement}{r.detail ? ` — ${r.detail}` : ""}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Public Checks Performed */}
+              {report.public_checks_performed && report.public_checks_performed.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium mb-1.5 flex items-center gap-1"><Search className="h-3 w-3" /> Public Checks Performed</p>
+                  <div className="space-y-1">
+                    {report.public_checks_performed.map((c, i) => (
+                      <div key={i} className="flex items-start gap-2 text-xs">
+                        <Search className="h-3 w-3 text-muted-foreground shrink-0 mt-0.5" />
+                        <span className="text-muted-foreground">
+                          <span className="font-medium text-foreground">{c.check}</span>
+                          {c.tool ? ` (${c.tool})` : ""}: {c.result}
                         </span>
                       </div>
                     ))}
@@ -352,6 +527,29 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
                       <li key={i}>{c.file_name}: {c.issue}</li>
                     ))}
                   </ul>
+                </div>
+              )}
+
+              {/* Validity Conclusion */}
+              {report.validity_conclusion && (
+                <div className={cn(
+                  "rounded-md p-2.5 border",
+                  report.validity_conclusion === "likely_valid" ? "bg-emerald-500/5 border-emerald-500/20" :
+                  report.validity_conclusion === "inconclusive" ? "bg-amber-500/5 border-amber-500/20" :
+                  "bg-destructive/5 border-destructive/20"
+                )}>
+                  <p className="text-xs font-semibold flex items-center gap-1.5">
+                    <Scale className="h-3.5 w-3.5" />
+                    <span className={validityColor(report.validity_conclusion)}>
+                      Validity: {validityLabel(report.validity_conclusion)}
+                    </span>
+                    {report.confidence && (
+                      <Badge variant="outline" className="text-[9px] py-0 px-1 ml-1">{report.confidence} confidence</Badge>
+                    )}
+                  </p>
+                  {report.validity_justification && (
+                    <p className="text-xs text-muted-foreground mt-1 pl-5">{report.validity_justification}</p>
+                  )}
                 </div>
               )}
             </div>
