@@ -18,6 +18,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+import { NewLeadDialog } from "@/components/NewLeadDialog";
 
 const STATUSES = ["all", "pending", "sent", "bounced", "replied", "converted", "opted_out"] as const;
 type LeadStatus = typeof STATUSES[number];
