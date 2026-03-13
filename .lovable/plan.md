@@ -1,43 +1,48 @@
 
 
-# Industry-Standard Compliance Features — Implemented
+## Grey Out Unassigned Cards on Pipeline
 
-## ✅ 1. Owner Identity Verification (KYC / CDD)
-- Added "Passport/Drivers License" as 5th hard-requirement document in underwriting gate (`src/lib/underwriting-gate.ts`)
-- Updated ApplicationProgress checklist to show 5 required docs
-- Updated AI underwriting review prompt to flag missing Owner ID
+### What Changes
 
-## ✅ 2. OFAC / Sanctions Screening
-- Extended AI underwriting review prompt with OFAC/SDN screening dimension
-- AI now screens business name, DBA, and principal owner names against sanctions patterns
-- Results included in auto-saved note with 🛡️ OFAC Screening section
-- Added `ofac_screening` field to the AI tool schema
+Cards on the pipeline board that are **not assigned to the current user** will render in a muted/greyed-out state, showing only:
+- Company name (greyed)
+- Contact/applicant name (greyed)
+- Assignee name pill (in their team colour)
 
-## ✅ 3. Beneficial Ownership Declaration (FinCEN CDD Rule)
-- Created `beneficial_owners` table with RLS policies (migration applied)
-- Built `BeneficialOwners` component in opportunity detail modal overview
-- Underwriting gate now verifies at least one beneficial owner is recorded
-- Form captures: name, title, ownership %, DOB, address
+Admins and the card's assignee see the full card as normal.
 
-## ✅ 4. Stage SLA Timers with Escalation
-- Created `sla-escalation` edge function with per-stage thresholds
-- Automatically calculates amber/red SLA status for all active opportunities
-- Creates high-priority tasks on red breach with notification
-- SLA config also available client-side via `src/lib/sla-config.ts`
-- Registered in `supabase/config.toml`
+### Technical Approach
 
-## ✅ 5. Duplicate / Existing Merchant Check
-- Created `src/lib/duplicate-check.ts` utility
-- Checks EIN, legal entity name, and DBA against existing records
-- Fires warning toast when moving past Discovery on the pipeline board
-- Non-blocking (warning only) to avoid false positive blocks
+**1. Pass `isAdmin` to OpportunityCard**
 
-## ✅ 6. High-Risk MCC Flagging
-- Created `src/lib/high-risk-mcc.ts` with known high-risk MCC codes
-- Added `risk_tier` column to `validation_reports` table (migration applied)
-- AI underwriting review now assesses and returns `risk_tier`
-- Auto-saved note includes 🔴 HIGH-RISK MCC warning when flagged
+- In `src/pages/Index.tsx`: import `useUserRole`, get `isAdmin`, pass it through `UnifiedPipelineBoard` -> `PipelineColumn` -> `OpportunityCard`.
+- Add `isAdmin?: boolean` prop to `UnifiedPipelineBoardProps`, `PipelineColumnProps`, and `OpportunityCardProps`.
 
-## Pipeline Board Hardening
-- Added underwriting gate check to Index.tsx `handleUpdateOpportunity` (was only on Opportunities page)
-- Duplicate check fires on Discovery → next stage transition
+**2. Determine greyed-out state in OpportunityCard**
+
+```
+const isOwnCard = opportunity.assigned_to === currentUser;
+const isGreyed = !isOwnCard && !isAdmin && !!opportunity.assigned_to;
+```
+
+Unassigned cards (no assignee) remain normal for everyone.
+
+**3. Render greyed-out variant**
+
+When `isGreyed` is true:
+- Card wrapper: `opacity-50 bg-muted border-l-muted-foreground/20` (no team colour border)
+- Show only: account name, contact name, and assignee pill
+- Hide: service badge (GW/CC), referral source, deal value, SLA badge, days-in-stage, avatar popover, delete button
+- Assignee pill always visible and rendered in the assignee's team colour (not greyed)
+
+When `isGreyed` is false (own card or admin): render exactly as today, no changes.
+
+**4. Files Modified**
+
+| File | Change |
+|------|--------|
+| `src/pages/Index.tsx` | Import `useUserRole`, pass `isAdmin` to board |
+| `src/components/UnifiedPipelineBoard.tsx` | Accept + forward `isAdmin` prop |
+| `src/components/PipelineColumn.tsx` | Accept + forward `isAdmin` prop |
+| `src/components/OpportunityCard.tsx` | Accept `isAdmin`, compute `isGreyed`, conditionally render simplified card |
+
