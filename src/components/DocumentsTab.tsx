@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -31,6 +31,36 @@ export const DOCUMENT_TYPE_OPTIONS = [
   "EIN",
   "SSN",
 ];
+
+/** Maximum number of documents allowed per label. Default is 1. */
+const DOCUMENT_LABEL_LIMITS: Record<string, number> = {
+  "Passport/Drivers License": 2,
+  "Bank Statement": 3,
+  "Transaction History": 3,
+};
+const DEFAULT_LABEL_LIMIT = 1;
+
+/** Count how many docs already use each label */
+function getLabelCounts(docs: Document[]): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const doc of docs) {
+    const t = doc.document_type;
+    if (t) counts[t] = (counts[t] || 0) + 1;
+  }
+  return counts;
+}
+
+/** Check if a label is at its limit, optionally excluding a specific doc id (for re-assignment) */
+function isLabelAtLimit(label: string, counts: Record<string, number>, excludeDocId?: string, docs?: Document[]): boolean {
+  const max = DOCUMENT_LABEL_LIMITS[label] ?? DEFAULT_LABEL_LIMIT;
+  let count = counts[label] || 0;
+  // If we're changing a doc's label, don't count the doc being changed
+  if (excludeDocId && docs) {
+    const existing = docs.find(d => d.id === excludeDocId);
+    if (existing?.document_type === label) count -= 1;
+  }
+  return count >= max;
+}
 
 function formatFileSize(bytes: number | null): string {
   if (!bytes) return "—";
@@ -78,6 +108,14 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
 
   const handleUpload = async () => {
     if (!pendingFiles.length) return;
+    // Validate label limit before uploading
+    const currentCount = getLabelCounts(documents)[selectedDocType] || 0;
+    const max = DOCUMENT_LABEL_LIMITS[selectedDocType] ?? DEFAULT_LABEL_LIMIT;
+    const remaining = max - currentCount;
+    if (pendingFiles.length > remaining) {
+      toast.error(`Only ${remaining} more "${selectedDocType}" document(s) allowed (max ${max})`);
+      return;
+    }
     setIsUploading(true);
     try {
       for (const file of pendingFiles) {
@@ -126,6 +164,8 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
     setDocuments(prev => prev.map(d => d.id === docId ? { ...d, document_type: type } : d));
   };
 
+  const labelCounts = useMemo(() => getLabelCounts(documents), [documents]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -170,9 +210,15 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
                 <SelectValue placeholder="Select document type…" />
               </SelectTrigger>
               <SelectContent>
-                {DOCUMENT_TYPE_OPTIONS.map(opt => (
-                  <SelectItem key={opt} value={opt} className="text-xs">{opt}</SelectItem>
-                ))}
+                {DOCUMENT_TYPE_OPTIONS.map(opt => {
+                  const atLimit = isLabelAtLimit(opt, labelCounts);
+                  const max = DOCUMENT_LABEL_LIMITS[opt] ?? DEFAULT_LABEL_LIMIT;
+                  return (
+                    <SelectItem key={opt} value={opt} className="text-xs" disabled={atLimit}>
+                      {opt}{atLimit ? ` (${max}/${max})` : ''}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
             <Button size="sm" onClick={handleUpload} disabled={isUploading || !selectedDocType}>
@@ -212,9 +258,15 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {DOCUMENT_TYPE_OPTIONS.map(opt => (
-                        <SelectItem key={opt} value={opt} className="text-xs">{opt}</SelectItem>
-                      ))}
+                      {DOCUMENT_TYPE_OPTIONS.map(opt => {
+                        const atLimit = isLabelAtLimit(opt, labelCounts, doc.id, documents);
+                        const max = DOCUMENT_LABEL_LIMITS[opt] ?? DEFAULT_LABEL_LIMIT;
+                        return (
+                          <SelectItem key={opt} value={opt} className="text-xs" disabled={atLimit}>
+                            {opt}{atLimit ? ` (${max}/${max})` : ''}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
