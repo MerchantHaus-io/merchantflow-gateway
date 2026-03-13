@@ -980,20 +980,42 @@ serve(async (req) => {
             }
 
             if (isPdf) {
-              // Fetch PDF and convert to base64 for Gemini multimodal PDF reading
+              // Extract text from PDF using pdfjs-serverless
               try {
                 const pdfResponse = await fetch(signedData.signedUrl);
                 if (!pdfResponse.ok) return `Error downloading PDF "${doc.file_name}": HTTP ${pdfResponse.status}`;
                 const pdfBuffer = await pdfResponse.arrayBuffer();
-                // Limit to ~10MB to avoid payload issues
-                if (pdfBuffer.byteLength > 10 * 1024 * 1024) {
-                  return `PDF "${doc.file_name}" is too large (${(pdfBuffer.byteLength / 1024 / 1024).toFixed(1)}MB) for inline analysis. Download link: ${signedData.signedUrl}`;
+                // Limit to ~5MB to avoid timeout
+                if (pdfBuffer.byteLength > 5 * 1024 * 1024) {
+                  return `PDF "${doc.file_name}" is too large (${(pdfBuffer.byteLength / 1024 / 1024).toFixed(1)}MB) for text extraction. Download link: ${signedData.signedUrl}`;
                 }
-                const base64 = btoa(String.fromCharCode(...new Uint8Array(pdfBuffer)));
-                // Use the same __IMAGE__ marker pattern — Gemini supports inline PDF via application/pdf mime
-                return `__IMAGE__application/pdf__${base64}__ENDIMAGE__Document "${doc.file_name}" (${doc.document_type || "Unassigned"}) — I can now read this PDF. Analyze its contents and respond to the user.`;
+
+                // Use pdfjs-serverless to extract text
+                const { getDocument } = await import("https://esm.sh/pdfjs-serverless@0.7.0");
+                const pdfDoc = await getDocument({ data: new Uint8Array(pdfBuffer), useSystemFonts: true }).promise;
+                let extractedText = "";
+                for (let i = 1; i <= pdfDoc.numPages; i++) {
+                  const page = await pdfDoc.getPage(i);
+                  const textContent = await page.getTextContent();
+                  const pageText = textContent.items.map((item: { str?: string }) => item.str || "").join(" ");
+                  extractedText += `\n--- Page ${i} ---\n${pageText}`;
+                }
+
+                const trimmedText = extractedText.trim();
+                if (!trimmedText) {
+                  return `PDF "${doc.file_name}" (${doc.document_type || "Unassigned"}) — This PDF appears to be image-based/scanned with no extractable text. Download link: ${signedData.signedUrl}`;
+                }
+
+                // Return extracted text (truncate to ~8000 chars to stay within token limits)
+                const maxChars = 8000;
+                const finalText = trimmedText.length > maxChars
+                  ? trimmedText.substring(0, maxChars) + "\n\n[... truncated, document continues ...]"
+                  : trimmedText;
+
+                return `Document: "${doc.file_name}" (${doc.document_type || "Unassigned"}) | Pages: ${pdfDoc.numPages}\n\n--- EXTRACTED TEXT ---\n${finalText}\n--- END ---\n\nI have read this PDF. The above is the full extracted text content.`;
               } catch (e) {
-                return `Error fetching PDF: ${e instanceof Error ? e.message : "Unknown error"}. Download link: ${signedData.signedUrl}`;
+                console.error("PDF extraction error:", e);
+                return `Error reading PDF "${doc.file_name}": ${e instanceof Error ? e.message : "Unknown error"}. Download link: ${signedData.signedUrl}`;
               }
             }
 
