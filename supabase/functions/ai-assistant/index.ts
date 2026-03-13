@@ -980,31 +980,28 @@ serve(async (req) => {
             }
 
             if (isPdf) {
-              // Extract text from PDF using pdf-parse
+              // Extract text from PDF using unpdf (built for serverless/Deno)
               try {
                 const pdfResponse = await fetch(signedData.signedUrl);
                 if (!pdfResponse.ok) return `Error downloading PDF "${doc.file_name}": HTTP ${pdfResponse.status}`;
                 const pdfBuffer = await pdfResponse.arrayBuffer();
-                // Limit to ~5MB
                 if (pdfBuffer.byteLength > 5 * 1024 * 1024) {
-                  return `PDF "${doc.file_name}" is too large (${(pdfBuffer.byteLength / 1024 / 1024).toFixed(1)}MB) for text extraction. Download link: ${signedData.signedUrl}`;
+                  return `PDF "${doc.file_name}" is too large for text extraction. Download link: ${signedData.signedUrl}`;
                 }
 
-                const pdfParse = (await import("npm:pdf-parse/lib/pdf-parse.js")).default;
-                const result = await pdfParse(Buffer.from(pdfBuffer));
-                const extractedText = (result.text || "").trim();
+                const { extractText } = await import("https://esm.sh/unpdf@0.12.1");
+                const { text: extractedText, totalPages } = await extractText(new Uint8Array(pdfBuffer));
 
-                if (!extractedText) {
-                  return `PDF "${doc.file_name}" (${doc.document_type || "Unassigned"}) — This PDF appears to be image-based/scanned with no extractable text. Download link: ${signedData.signedUrl}`;
+                if (!extractedText || !extractedText.trim()) {
+                  return `PDF "${doc.file_name}" (${doc.document_type || "Unassigned"}) — scanned/image PDF with no extractable text. Download link: ${signedData.signedUrl}`;
                 }
 
-                // Truncate to ~8000 chars
                 const maxChars = 8000;
                 const finalText = extractedText.length > maxChars
                   ? extractedText.substring(0, maxChars) + "\n\n[... truncated ...]"
                   : extractedText;
 
-                return `Document: "${doc.file_name}" (${doc.document_type || "Unassigned"}) | Pages: ${result.numpages}\n\n--- EXTRACTED TEXT ---\n${finalText}\n--- END ---\n\nI have successfully read this PDF.`;
+                return `Document: "${doc.file_name}" (${doc.document_type || "Unassigned"}) | Pages: ${totalPages}\n\n--- EXTRACTED TEXT ---\n${finalText}\n--- END ---\n\nI have successfully read this PDF.`;
               } catch (e) {
                 console.error("PDF extraction error:", e);
                 return `Error reading PDF "${doc.file_name}": ${e instanceof Error ? e.message : "Unknown error"}. Download link: ${signedData.signedUrl}`;
