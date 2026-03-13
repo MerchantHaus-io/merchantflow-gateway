@@ -221,21 +221,36 @@ Triggered by database triggers, the bell icon shows notifications for:
 ## 5. AI Assistant — Atria
 
 ### Overview
-Atria is an AI teammate accessible via the #atria-ai channel in the team messenger. Powered by Google Gemini (via Lovable AI gateway), she has full read access to live CRM data and can take actions.
+Atria is an AI teammate accessible via the #atria-ai channel in the team messenger and the floating Atria button (bottom-right). Powered by Google Gemini 2.5 Flash (via Lovable AI gateway), she has full read access to live CRM data, can view images/documents, and can take actions.
 
 ### Read Access (Live Snapshot)
-- Full account roster with inception dates, contacts, and metadata
+- Full account roster with UUIDs, inception dates, contacts, and metadata
 - Complete pipeline with stage/status/assignment breakdown
-- All documents across all opportunities (file names, types, upload dates)
+- All documents across all opportunities (file names, types, UUIDs, upload dates)
+- Beneficial owners with ownership percentages and addresses
 - Latest AI validation reports with readiness scores
-- Open tasks, team members, and activity
+- NMI boarding submissions with gateway IDs and statuses
+- Client interaction history (calls, emails, meetings)
+- Open tasks, team members, and recent activity log
+
+### Document & Image Viewing
+Atria can view and analyze uploaded documents:
+- **Images** (JPG, PNG, WEBP) — Atria sees the actual image via multimodal AI and can describe contents (IDs, voided checks, bank statements, etc.)
+- **PDFs & other files** — Atria generates a signed download URL and reports metadata
+- Use commands like "look at the ID for [account]" or "check the voided check on [deal]"
 
 ### Write Actions (Tool-Calling)
 Atria can execute the following actions when asked:
 - **Create tasks** — with title, description, assignee, priority, due date, and linked opportunity
-- **Update opportunity stage** — move deals between discovery, qualification, preboarding, underwriting, boarding, live
+- **Create deals** — full Account + Contact + Opportunity creation in one step
+- **Update opportunity stage** — move deals between all 9 pipeline stages
 - **Assign opportunities** — assign deals to any team member
 - **Update opportunity status** — set to active, dead, or closed-lost
+- **Update records** — modify account, contact, and opportunity fields
+- **Add notes** — save comments and log activities on opportunities
+- **Relabel documents** — change document type labels (Bank Statement, EIN, etc.)
+- **Log client interactions** — record calls, emails, meetings, notes, or SMS against accounts
+- **Run underwriting validation** — check document completeness and beneficial owner requirements
 
 ### AI Document Validation
 A separate "AI Validate" action in the Documents tab triggers Gemini to cross-reference uploaded files against application data, generating structured readiness reports (🟢/🟡/🔴) stored in \`validation_reports\`.
