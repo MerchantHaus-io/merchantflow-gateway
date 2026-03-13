@@ -25,6 +25,7 @@ interface UnifiedPipelineBoardProps {
   focusMode?: boolean;
   /** Called when focus mode should change */
   onFocusModeChange?: (active: boolean) => void;
+  isAdmin?: boolean;
 }
 
 const UnifiedPipelineBoard = ({
@@ -41,6 +42,7 @@ const UnifiedPipelineBoard = ({
   currentUser,
   focusMode: externalFocusMode,
   onFocusModeChange,
+  isAdmin,
 }: UnifiedPipelineBoardProps) => {
   const [draggedOpportunity, setDraggedOpportunity] = useState<Opportunity | null>(null);
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
@@ -500,6 +502,7 @@ const UnifiedPipelineBoard = ({
               onAddNew={stage === "discovery" ? onAddNew : undefined}
               isCompact={isCompact}
               currentUser={currentUser}
+              isAdmin={isAdmin}
             />
           ))}
         </div>

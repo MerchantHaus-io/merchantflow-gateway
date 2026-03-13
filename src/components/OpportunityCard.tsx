@@ -32,6 +32,7 @@ interface OpportunityCardProps {
   onTouchDragMove?: (e: React.TouchEvent) => void;
   onTouchDragEnd?: (e: React.TouchEvent) => void;
   currentUser?: string;
+  isAdmin?: boolean;
 }
 
 const TEAM_COLORS: Record<string, { border: string; bg: string; text: string }> = {
@@ -67,6 +68,7 @@ const OpportunityCard = ({
   onTouchDragMove,
   onTouchDragEnd,
   currentUser,
+  isAdmin,
 }: OpportunityCardProps) => {
   const account = opportunity.account;
   const contact = opportunity.contact;
@@ -175,6 +177,8 @@ const OpportunityCard = ({
 
   const cardRef = useRef<HTMLDivElement>(null);
   const showAssigneePill = opportunity.assigned_to && opportunity.assigned_to !== currentUser;
+  const isOwnCard = opportunity.assigned_to === currentUser;
+  const isGreyed = !isOwnCard && !isAdmin && !!opportunity.assigned_to;
 
   return (
     <>
@@ -207,66 +211,72 @@ const OpportunityCard = ({
         className={cn(
           "cursor-grab active:cursor-grabbing group touch-manipulation relative",
           "rounded-xl",
-          isClosedWon
-            ? "pipeline-card-live bg-gradient-to-br from-amber-50 via-yellow-50/80 to-amber-100/60 dark:from-amber-950/40 dark:via-yellow-950/30 dark:to-amber-900/20"
-            : isComplete
-              ? "pipeline-card border-l-[3px] border-l-emerald-500 bg-emerald-600 dark:bg-emerald-700"
-              : cn("pipeline-card border-l-[3px]", teamColors.border, "bg-card")
+          isGreyed
+            ? "pipeline-card border-l-[3px] border-l-muted-foreground/20 bg-muted/60 opacity-50"
+            : isClosedWon
+              ? "pipeline-card-live bg-gradient-to-br from-amber-50 via-yellow-50/80 to-amber-100/60 dark:from-amber-950/40 dark:via-yellow-950/30 dark:to-amber-900/20"
+              : isComplete
+                ? "pipeline-card border-l-[3px] border-l-emerald-500 bg-emerald-600 dark:bg-emerald-700"
+                : cn("pipeline-card border-l-[3px]", teamColors.border, "bg-card")
         )}
       >
-        {/* Delete button — fades in on hover */}
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-50 hover:!opacity-100 transition-opacity text-muted-foreground hover:text-red-500 z-10"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowDeleteDialog(true);
-                }}
-              >
-                <Trash2 className="h-3 w-3" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="left" className="text-xs">Mark as dead</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        {/* Delete button — fades in on hover (hidden when greyed) */}
+        {!isGreyed && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-50 hover:!opacity-100 transition-opacity text-muted-foreground hover:text-red-500 z-10"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowDeleteDialog(true);
+                  }}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="left" className="text-xs">Mark as dead</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
 
         {/* Drag handle */}
         <GripVertical className="absolute left-1 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground/20 group-hover:text-muted-foreground/50 transition-all cursor-grab active:cursor-grabbing group-hover:left-0.5" />
 
         <div className="pl-4 pr-2 pt-2.5 pb-2 space-y-1.5">
-          {/* Account name + service badge */}
+          {/* Account name */}
           <div className="flex items-start justify-between gap-1">
             <h3 className={cn(
               "font-semibold text-xs leading-tight flex-1 min-w-0 transition-colors",
-              isComplete ? "text-white" : "text-foreground group-hover:text-indigo-500 dark:group-hover:text-indigo-400"
+              isGreyed ? "text-muted-foreground" : isComplete ? "text-white" : "text-foreground group-hover:text-indigo-500 dark:group-hover:text-indigo-400"
             )}>
               {account?.name || "Unknown"}
             </h3>
-            <span className={cn(
-              "flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 mt-0.5",
-              serviceType === "gateway_only"
-                ? "text-teal-600 dark:text-teal-400 border-teal-500/40 bg-teal-500/10"
-                : "text-indigo-600 dark:text-indigo-400 border-indigo-500/40 bg-indigo-500/10"
-            )}>
-              {serviceType === "gateway_only"
-                ? <><Zap className="h-2.5 w-2.5" />GW</>
-                : <><CreditCard className="h-2.5 w-2.5" />CC</>
-              }
-            </span>
+            {!isGreyed && (
+              <span className={cn(
+                "flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 mt-0.5",
+                serviceType === "gateway_only"
+                  ? "text-teal-600 dark:text-teal-400 border-teal-500/40 bg-teal-500/10"
+                  : "text-indigo-600 dark:text-indigo-400 border-indigo-500/40 bg-indigo-500/10"
+              )}>
+                {serviceType === "gateway_only"
+                  ? <><Zap className="h-2.5 w-2.5" />GW</>
+                  : <><CreditCard className="h-2.5 w-2.5" />CC</>
+                }
+              </span>
+            )}
           </div>
 
           {/* Contact name */}
           {contactName && (
-            <p className="text-[10px] text-muted-foreground truncate flex items-center gap-1">
+            <p className={cn("text-[10px] truncate flex items-center gap-1", isGreyed ? "text-muted-foreground/60" : "text-muted-foreground")}>
               <User className="h-2.5 w-2.5 shrink-0" />
               {contactName}
             </p>
           )}
 
-          {/* Referral source */}
-          {opportunity.referral_source && (
+          {/* Referral source — hidden when greyed */}
+          {!isGreyed && opportunity.referral_source && (
             <span className="text-[9px] text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded-md truncate inline-block max-w-full border border-border/30">
               {opportunity.referral_source}
             </span>
@@ -274,84 +284,95 @@ const OpportunityCard = ({
 
           {/* Footer row */}
           <div className="flex items-center justify-between pt-1 border-t border-border/40 gap-1">
-            {/* Deal value */}
-            <div className="flex items-center gap-1.5 min-w-0">
-              <span key={dealValue} className={cn(
-                "font-mono font-semibold text-[10px] truncate animate-count",
-                isComplete ? "text-white/90" : "text-[hsl(var(--gold))]"
-              )}>
-                {dealValue > 0 ? formatCurrency(dealValue) : "—"}
-              </span>
-              {/* Days in stage — color-coded */}
-              {slaInfo.daysInStage > 0 && !isClosedWon && (
-                <span className={cn(
-                  "flex items-center gap-0.5 text-[9px] font-medium",
-                  slaInfo.daysInStage < 7 ? "text-emerald-500" : slaInfo.daysInStage < 14 ? "text-amber-500" : "text-red-500"
+            {/* Deal value — hidden when greyed */}
+            {!isGreyed && (
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span key={dealValue} className={cn(
+                  "font-mono font-semibold text-[10px] truncate animate-count",
+                  isComplete ? "text-white/90" : "text-[hsl(var(--gold))]"
                 )}>
-                  <Clock className="h-2 w-2" />
-                  {slaInfo.daysInStage}d
+                  {dealValue > 0 ? formatCurrency(dealValue) : "—"}
                 </span>
-              )}
-            </div>
+                {slaInfo.daysInStage > 0 && !isClosedWon && (
+                  <span className={cn(
+                    "flex items-center gap-0.5 text-[9px] font-medium",
+                    slaInfo.daysInStage < 7 ? "text-emerald-500" : slaInfo.daysInStage < 14 ? "text-amber-500" : "text-red-500"
+                  )}>
+                    <Clock className="h-2 w-2" />
+                    {slaInfo.daysInStage}d
+                  </span>
+                )}
+              </div>
+            )}
 
-            <div className="flex items-center gap-1 shrink-0">
-              {/* Assignee pill (only when not current user) */}
-              {showAssigneePill && (
-                <span className="text-[9px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full truncate max-w-[52px]">
-                  {opportunity.assigned_to}
-                </span>
-              )}
+            {/* Greyed: show only assignee pill in colour */}
+            {isGreyed ? (
+              <div className="flex items-center w-full">
+                {opportunity.assigned_to && (
+                  <span className={cn(
+                    "text-[9px] font-bold px-1.5 py-0.5 rounded-full truncate",
+                    teamColors.bg, teamColors.text
+                  )}>
+                    {opportunity.assigned_to}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 shrink-0">
+                {showAssigneePill && (
+                  <span className="text-[9px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full truncate max-w-[52px]">
+                    {opportunity.assigned_to}
+                  </span>
+                )}
 
-              {/* SLA / priority badge */}
-              {slaInfo.priority && !slaInfo.hidden && (
-                <span className={cn(
-                  "text-[8px] font-bold uppercase tracking-wide px-1 py-0.5 rounded-md",
-                  slaInfo.status === "red"   && "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400",
-                  slaInfo.status === "amber" && "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400",
-                )}>
-                  {slaInfo.priority}
-                </span>
-              )}
+                {slaInfo.priority && !slaInfo.hidden && (
+                  <span className={cn(
+                    "text-[8px] font-bold uppercase tracking-wide px-1 py-0.5 rounded-md",
+                    slaInfo.status === "red"   && "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400",
+                    slaInfo.status === "amber" && "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400",
+                  )}>
+                    {slaInfo.priority}
+                  </span>
+                )}
 
-              {/* Live badge */}
-              {isClosedWon && (
-                <span className="px-1 py-0.5 rounded-md text-[8px] font-black bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40">
-                  WON
-                </span>
-              )}
+                {isClosedWon && (
+                  <span className="px-1 py-0.5 rounded-md text-[8px] font-black bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40">
+                    WON
+                  </span>
+                )}
 
-              {/* Assignment avatar */}
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button onClick={(e) => e.stopPropagation()} className="shrink-0">
-                    <Avatar className="h-5 w-5 ring-2 ring-background border border-border/50 hover:border-indigo-400 transition-colors">
-                      {avatarUrl && <AvatarImage src={avatarUrl} alt={opportunity.assigned_to || "Unassigned"} />}
-                      <AvatarFallback className={cn("text-[8px] font-black", teamColors.bg, teamColors.text)}>
-                        {opportunity.assigned_to ? getInitials(opportunity.assigned_to) : "?"}
-                      </AvatarFallback>
-                    </Avatar>
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-36 p-2 bg-popover z-50 rounded-lg border border-border shadow-lg"
-                  onClick={(e) => e.stopPropagation()}
-                  align="end"
-                >
-                  <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5 text-muted-foreground">Assign to</p>
-                  <Select value={opportunity.assigned_to || "unassigned"} onValueChange={handleAssignmentChange}>
-                    <SelectTrigger className="h-7 text-xs rounded border border-border">
-                      <SelectValue placeholder="Assign..." />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover z-50">
-                      <SelectItem value="unassigned" className="text-xs">Unassigned</SelectItem>
-                      {TEAM_MEMBERS.map((member) => (
-                        <SelectItem key={member} value={member} className="text-xs">{member}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </PopoverContent>
-              </Popover>
-            </div>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button onClick={(e) => e.stopPropagation()} className="shrink-0">
+                      <Avatar className="h-5 w-5 ring-2 ring-background border border-border/50 hover:border-indigo-400 transition-colors">
+                        {avatarUrl && <AvatarImage src={avatarUrl} alt={opportunity.assigned_to || "Unassigned"} />}
+                        <AvatarFallback className={cn("text-[8px] font-black", teamColors.bg, teamColors.text)}>
+                          {opportunity.assigned_to ? getInitials(opportunity.assigned_to) : "?"}
+                        </AvatarFallback>
+                      </Avatar>
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-36 p-2 bg-popover z-50 rounded-lg border border-border shadow-lg"
+                    onClick={(e) => e.stopPropagation()}
+                    align="end"
+                  >
+                    <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5 text-muted-foreground">Assign to</p>
+                    <Select value={opportunity.assigned_to || "unassigned"} onValueChange={handleAssignmentChange}>
+                      <SelectTrigger className="h-7 text-xs rounded border border-border">
+                        <SelectValue placeholder="Assign..." />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover z-50">
+                        <SelectItem value="unassigned" className="text-xs">Unassigned</SelectItem>
+                        {TEAM_MEMBERS.map((member) => (
+                          <SelectItem key={member} value={member} className="text-xs">{member}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
           </div>
         </div>
       </div>

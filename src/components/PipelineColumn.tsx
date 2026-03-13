@@ -23,6 +23,7 @@ interface PipelineColumnProps {
   onTouchDragStart?: (e: React.TouchEvent, opportunity: Opportunity, element: HTMLElement) => void;
   onTouchDragMove?: (e: React.TouchEvent) => void;
   onTouchDragEnd?: (e: React.TouchEvent) => void;
+  isAdmin?: boolean;
 }
 
 const formatCurrency = (value: number) =>
@@ -46,6 +47,7 @@ const PipelineColumn = ({
   onTouchDragStart,
   onTouchDragMove,
   onTouchDragEnd,
+  isAdmin,
 }: PipelineColumnProps) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const dragEnterCounter = useRef(0);
@@ -171,6 +173,7 @@ const PipelineColumn = ({
               onTouchDragMove={onTouchDragMove}
               onTouchDragEnd={onTouchDragEnd}
               currentUser={currentUser}
+              isAdmin={isAdmin}
             />
           ))
         )}

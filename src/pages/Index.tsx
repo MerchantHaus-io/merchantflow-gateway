@@ -16,6 +16,7 @@ import { isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import GameSplash from "@/components/GameSplash";
 import { sendStageChangeEmail } from "@/hooks/useEmailNotifications";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useUserRole } from "@/hooks/useUserRole";
 
 const Starfield = lazy(() => import("@/components/Starfield"));
 
@@ -172,6 +173,7 @@ const Index = () => {
   const {
     user
   } = useAuth();
+  const { isAdmin } = useUserRole();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
@@ -862,6 +864,7 @@ const Index = () => {
             currentUser={currentUserDisplayName || undefined}
             focusMode={isFocusMode}
             onFocusModeChange={setIsFocusMode}
+            isAdmin={isAdmin}
           />
         </main>
       </div>
