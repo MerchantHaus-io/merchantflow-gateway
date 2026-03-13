@@ -225,6 +225,9 @@ const Opportunities = () => {
         case 'stage':
           comparison = a.stage.localeCompare(b.stage);
           break;
+        case 'outcome':
+          comparison = (a.outcome_status || '').localeCompare(b.outcome_status || '');
+          break;
         case 'pipeline':
           comparison = getServiceType(a).localeCompare(getServiceType(b));
           break;
