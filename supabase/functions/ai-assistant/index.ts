@@ -980,30 +980,41 @@ serve(async (req) => {
             }
 
             if (isPdf) {
-              // Extract text from PDF using unpdf (built for serverless/Deno)
+              // For PDFs: use the AI gateway to read the document via a separate call
               try {
-                const pdfResponse = await fetch(signedData.signedUrl);
-                if (!pdfResponse.ok) return `Error downloading PDF "${doc.file_name}": HTTP ${pdfResponse.status}`;
-                const pdfBuffer = await pdfResponse.arrayBuffer();
-                if (pdfBuffer.byteLength > 5 * 1024 * 1024) {
-                  return `PDF "${doc.file_name}" is too large for text extraction. Download link: ${signedData.signedUrl}`;
+                const pdfReadResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Bearer ${LOVABLE_API_KEY}`,
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    model: "google/gemini-2.5-flash",
+                    messages: [
+                      { role: "system", content: "You are a document reader. Extract ALL text content from the provided PDF document. Return the raw text exactly as it appears. Include every number, name, date, and detail." },
+                      { role: "user", content: [
+                        { type: "text", text: `Read this PDF document "${doc.file_name}" and extract all text content from it.` },
+                        { type: "image_url", image_url: { url: signedData.signedUrl } },
+                      ]},
+                    ],
+                  }),
+                });
+
+                if (pdfReadResponse.ok) {
+                  const pdfReadData = await pdfReadResponse.json();
+                  const extractedText = pdfReadData.choices?.[0]?.message?.content || "";
+                  if (extractedText) {
+                    const maxChars = 8000;
+                    const finalText = extractedText.length > maxChars
+                      ? extractedText.substring(0, maxChars) + "\n\n[... truncated ...]"
+                      : extractedText;
+                    return `Document: "${doc.file_name}" (${doc.document_type || "Unassigned"})\n\n--- EXTRACTED CONTENT ---\n${finalText}\n--- END ---\n\nI have successfully read this PDF.`;
+                  }
                 }
-
-                const { extractText } = await import("https://esm.sh/unpdf@0.12.1");
-                const { text: extractedText, totalPages } = await extractText(new Uint8Array(pdfBuffer));
-
-                if (!extractedText || !extractedText.trim()) {
-                  return `PDF "${doc.file_name}" (${doc.document_type || "Unassigned"}) — scanned/image PDF with no extractable text. Download link: ${signedData.signedUrl}`;
-                }
-
-                const maxChars = 8000;
-                const finalText = extractedText.length > maxChars
-                  ? extractedText.substring(0, maxChars) + "\n\n[... truncated ...]"
-                  : extractedText;
-
-                return `Document: "${doc.file_name}" (${doc.document_type || "Unassigned"}) | Pages: ${totalPages}\n\n--- EXTRACTED TEXT ---\n${finalText}\n--- END ---\n\nI have successfully read this PDF.`;
+                // Fallback if AI read fails
+                return `Document: "${doc.file_name}" (${doc.document_type || "Unassigned"}) | Download link: ${signedData.signedUrl}`;
               } catch (e) {
-                console.error("PDF extraction error:", e);
+                console.error("PDF AI read error:", e);
                 return `Error reading PDF "${doc.file_name}": ${e instanceof Error ? e.message : "Unknown error"}. Download link: ${signedData.signedUrl}`;
               }
             }
