@@ -89,6 +89,10 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
     contactCountRes,
     documentsRes,
     validationReportsRes,
+    beneficialOwnersRes,
+    activitiesRes,
+    nmiBoardingRes,
+    clientInteractionsRes,
   ] = await Promise.all([
     // Pipeline stage counts
     supabase.from("opportunities").select("id, stage, status, assigned_to, account_id"),
@@ -110,6 +114,14 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
     supabase.from("documents").select("id, opportunity_id, file_name, document_type, content_type, file_size, created_at, uploaded_by").order("created_at", { ascending: false }),
     // Latest validation reports
     supabase.from("validation_reports").select("opportunity_id, readiness_score, summary, created_at").order("created_at", { ascending: false }).limit(50),
+    // Beneficial owners
+    supabase.from("beneficial_owners").select("opportunity_id, full_name, title, ownership_percentage, date_of_birth, address_line1, address_city, address_state, address_zip").order("created_at", { ascending: false }),
+    // Recent activities / audit trail
+    supabase.from("activities").select("opportunity_id, type, description, user_email, created_at").order("created_at", { ascending: false }).limit(50),
+    // NMI boarding submissions
+    supabase.from("nmi_boarding_submissions").select("id, opportunity_id, account_id, company_name, dba_name, nmi_status, nmi_gateway_id, error_message, submitted_by_email, created_at").order("created_at", { ascending: false }).limit(25),
+    // Client interactions
+    supabase.from("client_interactions").select("account_id, interaction_type, subject, status, priority, outcome, notes, created_by_email, created_at, follow_up_at").order("created_at", { ascending: false }).limit(30),
   ]);
 
   // Pipeline summary
