@@ -32,6 +32,7 @@ const VARIANT_ICONS: Record<ThemeVariant, React.ReactNode> = {
   'light-silver': <Cloudy className="h-4 w-4" />,
   'light-mono': <Circle className="h-4 w-4" />,
   'light-salesforce': <Cloud className="h-4 w-4" />,
+  'light-star': <Flame className="h-4 w-4" />,
 };
 
 const Settings = () => {

@@ -14,7 +14,8 @@ export type ThemeVariant =
   | 'light-warm'
   | 'light-silver'
   | 'light-mono'
-  | 'light-salesforce';
+  | 'light-salesforce'
+  | 'light-star';
 
 export interface ThemeOption {
   id: ThemeVariant;
@@ -36,6 +37,7 @@ export const THEME_OPTIONS: ThemeOption[] = [
   { id: 'light-silver', name: 'Silver', mode: 'light', description: 'Cool silver tones' },
   { id: 'light-mono', name: 'Mono', mode: 'light', description: 'Minimalist black & white' },
   { id: 'light-salesforce', name: 'Salesforce', mode: 'light', description: 'Enterprise cloud CRM' },
+  { id: 'light-star', name: 'Star Admin', mode: 'light', description: 'Warm orange & dark navy' },
 ];
 
 interface ThemeContextType {
@@ -169,7 +171,7 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
     const root = document.documentElement;
     
     // Remove all theme classes
-    root.classList.remove('dark', 'light', 'dark-default', 'dark-midnight', 'dark-forest', 'dark-charcoal', 'dark-mono', 'dark-ps1', 'light-default', 'light-ocean', 'light-warm', 'light-silver', 'light-mono', 'light-salesforce');
+    root.classList.remove('dark', 'light', 'dark-default', 'dark-midnight', 'dark-forest', 'dark-charcoal', 'dark-mono', 'dark-ps1', 'light-default', 'light-ocean', 'light-warm', 'light-silver', 'light-mono', 'light-salesforce', 'light-star');
     
     // Add base mode and variant
     root.classList.add(theme);
