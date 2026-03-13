@@ -104,19 +104,19 @@ export function ComplianceBroadcast() {
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.92, y: 30 }}
             transition={{ type: "spring", damping: 22, stiffness: 300 }}
-            className="glass-card gradient-border rounded-xl shadow-2xl max-w-lg w-full overflow-hidden max-h-[90vh] flex flex-col"
+            className="rounded-xl shadow-2xl max-w-lg w-full overflow-hidden max-h-[90vh] flex flex-col bg-[hsl(220,20%,14%)] border border-white/10"
           >
             {/* Header — no close button, mandatory */}
-            <div className="bg-primary/10 border-b border-primary/20 px-6 py-5 shrink-0">
+            <div className="bg-white/5 border-b border-white/10 px-6 py-5 shrink-0">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
                   <ShieldCheck className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-foreground">
+                  <h2 className="text-lg font-bold text-white">
                     New Compliance Controls
                   </h2>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-white/50">
                     Mandatory acknowledgment required before proceeding
                   </p>
                 </div>
@@ -125,7 +125,7 @@ export function ComplianceBroadcast() {
 
             {/* Body — scrollable */}
             <div className="px-6 py-4 space-y-3 overflow-y-auto flex-1">
-              <p className="text-sm text-muted-foreground leading-relaxed">
+              <p className="text-sm text-white/70 leading-relaxed">
                 The following compliance and risk controls have been implemented
                 across the platform. Please review each item and confirm your
                 understanding by checking every box below.
@@ -140,20 +140,20 @@ export function ComplianceBroadcast() {
                     transition={{ delay: 0.05 * i }}
                     className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
                       checked[control.id]
-                        ? "bg-primary/5 border-primary/30"
-                        : "bg-muted/30 border-border hover:border-muted-foreground/30"
+                        ? "bg-primary/10 border-primary/30"
+                        : "bg-white/5 border-white/10 hover:border-white/20"
                     }`}
                   >
                     <Checkbox
                       checked={!!checked[control.id]}
                       onCheckedChange={() => toggleCheck(control.id)}
-                      className="mt-0.5 shrink-0"
+                      className="mt-0.5 shrink-0 border-white/40 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                     />
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-foreground leading-tight">
+                      <p className="text-sm font-semibold text-white leading-tight">
                         {control.label}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                      <p className="text-xs text-white/60 mt-0.5 leading-relaxed">
                         {control.desc}
                       </p>
                     </div>
@@ -163,7 +163,7 @@ export function ComplianceBroadcast() {
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-border bg-muted/20 shrink-0">
+            <div className="px-6 py-4 border-t border-white/10 bg-white/5 shrink-0">
               <Button
                 onClick={handleAcknowledge}
                 disabled={!allChecked || acknowledging}
@@ -176,7 +176,7 @@ export function ComplianceBroadcast() {
                   ? "I understand — Confirm"
                   : `Acknowledge all ${CONTROLS.length} controls to continue`}
               </Button>
-              <p className="text-[10px] text-muted-foreground text-center mt-2">
+              <p className="text-[10px] text-white/40 text-center mt-2">
                 This notice cannot be dismissed — you must acknowledge all items to proceed
               </p>
             </div>
