@@ -730,6 +730,167 @@ serve(async (req) => {
             return `Note added to opportunity successfully.`;
           }
 
+          case "create_deal": {
+            // 1. Create account
+            const accountData: Record<string, unknown> = { name: args.account_name };
+            if (args.website) accountData.website = args.website;
+            if (args.city) accountData.city = args.city;
+            if (args.state) accountData.state = args.state;
+
+            const { data: acct, error: acctErr } = await supabase
+              .from("accounts").insert(accountData).select("id, name").single();
+            if (acctErr) return `Error creating account: ${acctErr.message}`;
+
+            // 2. Create contact
+            const contactData: Record<string, unknown> = {
+              account_id: acct.id,
+              first_name: args.first_name,
+              last_name: args.last_name,
+            };
+            if (args.email) contactData.email = args.email;
+            if (args.phone) contactData.phone = args.phone;
+
+            const { data: contact, error: contactErr } = await supabase
+              .from("contacts").insert(contactData).select("id").single();
+            if (contactErr) return `Account created but contact failed: ${contactErr.message}`;
+
+            // 3. Create opportunity
+            const oppData: Record<string, unknown> = {
+              account_id: acct.id,
+              contact_id: contact.id,
+              stage: args.stage || "discovery",
+              service_type: args.service_type || "processing",
+              status: "active",
+            };
+            if (args.assigned_to) oppData.assigned_to = args.assigned_to;
+            if (args.referral_source) oppData.referral_source = args.referral_source;
+
+            const { data: opp, error: oppErr } = await supabase
+              .from("opportunities").insert(oppData).select("id").single();
+            if (oppErr) return `Account + contact created but opportunity failed: ${oppErr.message}`;
+
+            // Log activity
+            await supabase.from("activities").insert({
+              opportunity_id: opp.id,
+              type: "deal_created",
+              description: `Atria created deal for ${acct.name} (${args.first_name} ${args.last_name})`,
+              user_id: AI_BOT_USER_ID,
+              user_email: AI_BOT_EMAIL,
+            });
+
+            return `Deal created successfully! Account: "${acct.name}" | Contact: ${args.first_name} ${args.last_name} | Opportunity ID: ${opp.id} | Stage: ${args.stage || "discovery"}${args.assigned_to ? " | Assigned to: " + args.assigned_to : ""}`;
+          }
+
+          case "relabel_document": {
+            const { document_id, new_label } = args;
+            const { error } = await supabase
+              .from("documents")
+              .update({ document_type: new_label })
+              .eq("id", document_id);
+            if (error) return `Error relabelling document: ${error.message}`;
+            return `Document relabelled to "${new_label}" successfully.`;
+          }
+
+          case "log_client_interaction": {
+            const interactionData: Record<string, unknown> = {
+              account_id: args.account_id,
+              interaction_type: args.interaction_type,
+              subject: args.subject,
+              created_by_email: AI_BOT_EMAIL,
+              status: args.status || "open",
+              priority: args.priority || "medium",
+            };
+            if (args.notes) interactionData.notes = args.notes;
+            if (args.outcome) interactionData.outcome = args.outcome;
+            if (args.contact_name) interactionData.contact_name = args.contact_name;
+            if (args.contact_email) interactionData.contact_email = args.contact_email;
+            if (args.contact_phone) interactionData.contact_phone = args.contact_phone;
+            if (args.duration_minutes) interactionData.duration_minutes = args.duration_minutes;
+
+            const { data: interaction, error: intErr } = await supabase
+              .from("client_interactions").insert(interactionData).select("id").single();
+            if (intErr) return `Error logging interaction: ${intErr.message}`;
+            return `${args.interaction_type} logged successfully (ID: ${interaction.id}). Subject: "${args.subject}"${args.outcome ? " | Outcome: " + args.outcome : ""}`;
+          }
+
+          case "run_underwriting_validation": {
+            // Gather opportunity data for validation
+            const { data: oppData, error: oppErr } = await supabase
+              .from("opportunities")
+              .select("id, stage, service_type, accounts!inner(name, website), contacts!inner(first_name, last_name, email)")
+              .eq("id", args.opportunity_id)
+              .single();
+            if (oppErr || !oppData) return `Error fetching opportunity: ${oppErr?.message || "Not found"}`;
+
+            const { data: docs } = await supabase
+              .from("documents")
+              .select("file_name, document_type")
+              .eq("opportunity_id", args.opportunity_id);
+
+            const { data: bos } = await supabase
+              .from("beneficial_owners")
+              .select("full_name, ownership_percentage, title")
+              .eq("opportunity_id", args.opportunity_id);
+
+            const docList = (docs || []).map((d: any) => `${d.file_name} (${d.document_type})`).join(", ");
+            const boList = (bos || []).map((b: any) => `${b.full_name} ${b.ownership_percentage}%`).join(", ");
+            const acctName = (oppData as any).accounts?.name || "Unknown";
+            const website = (oppData as any).accounts?.website || "None";
+
+            // Check required docs
+            const docTypes = (docs || []).map((d: any) => d.document_type || "");
+            const hasBank = docTypes.filter((t: string) => t === "Bank Statement").length >= 3;
+            const hasArticles = docTypes.includes("Articles of Organization");
+            const hasEIN = docTypes.includes("EIN / Tax Document");
+            const hasCheck = docTypes.includes("Voided Check") || docTypes.includes("Bank Confirmation Letter");
+            const hasID = docTypes.includes("Passport/Drivers License");
+            const hasBOs = (bos || []).length > 0;
+
+            const missing: string[] = [];
+            if (!hasBank) missing.push("3x Bank Statements");
+            if (!hasArticles) missing.push("Articles of Organization");
+            if (!hasEIN) missing.push("EIN / Tax Document");
+            if (!hasCheck) missing.push("Voided Check or Bank Confirmation");
+            if (!hasID) missing.push("Passport/Drivers License");
+            if (!hasBOs) missing.push("Beneficial Owner(s)");
+
+            const isGateway = oppData.service_type === "gateway";
+            const readiness = missing.length === 0 ? "ready" : missing.length <= 2 ? "needs_attention" : "not_ready";
+            const score = isGateway ? "gateway_path" : readiness;
+
+            // Save validation report
+            const { error: reportErr } = await supabase.from("validation_reports").insert({
+              opportunity_id: args.opportunity_id,
+              readiness_score: score,
+              summary: missing.length === 0
+                ? `${acctName} has all required documents and beneficial owners on file. Ready for underwriting.`
+                : `${acctName} is missing: ${missing.join(", ")}. ${missing.length} item(s) needed before underwriting.`,
+              triggered_by: AI_BOT_EMAIL,
+              data_gaps: missing,
+              document_completeness: { total: (docs || []).length, types: docTypes },
+              risk_flags: [],
+              recommended_actions: missing.map((m: string) => `Collect ${m}`),
+              classification_issues: [],
+              no_change: false,
+            });
+
+            if (reportErr) return `Error saving validation report: ${reportErr.message}`;
+
+            // Log activity
+            await supabase.from("activities").insert({
+              opportunity_id: args.opportunity_id,
+              type: "validation_run",
+              description: `Atria ran underwriting validation for ${acctName}: ${score}`,
+              user_id: AI_BOT_USER_ID,
+              user_email: AI_BOT_EMAIL,
+            });
+
+            if (missing.length === 0) {
+              return `Validation complete for ${acctName}: all requirements met. ${(docs || []).length} documents on file, ${(bos || []).length} beneficial owner(s) recorded. Website: ${website}. Ready for underwriting submission.`;
+            }
+            return `Validation complete for ${acctName}: ${score}. Missing ${missing.length} item(s): ${missing.join(", ")}. ${(docs || []).length} docs on file, ${(bos || []).length} beneficial owner(s). Website: ${website}.`;
+          }
+
           default:
             return `Unknown tool: ${toolName}`;
         }
