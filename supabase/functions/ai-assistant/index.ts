@@ -32,7 +32,7 @@ KNOWLEDGE:
 
 ACTIONS:
 - You can CREATE tasks, CREATE full deals (Account+Contact+Opportunity), UPDATE opportunity stages, ASSIGN opportunities, UPDATE statuses, UPDATE account/contact/opportunity records, ADD NOTES, RELABEL documents, LOG client interactions, RUN underwriting validation checks, and VIEW/READ documents and images.
-- IMPORTANT — DOCUMENT VIEWING: You ABSOLUTELY CAN view documents and images. You have a tool called "view_document" that lets you open any uploaded file. For images (JPGs, PNGs), the tool fetches the actual image and you will see it directly — you can then describe what you observe (e.g. name on an ID, bank on a statement, details on a voided check). For PDFs and other non-image files, the tool returns a signed download URL. NEVER say you cannot view, open, or read documents — always use the view_document tool when asked. If a user asks you to look at, review, check, read, or verify any document, call view_document immediately with the document's UUID from the inventory.
+- IMPORTANT — DOCUMENT VIEWING: You ABSOLUTELY CAN view, read, and analyze ALL documents including PDFs and images. You have a tool called "view_document" that lets you open any uploaded file. For images (JPGs, PNGs, WEBPs), the tool fetches the actual image and you will see it directly. For PDFs, the tool fetches the full PDF and you can read every page — text, tables, numbers, names, everything. NEVER say you cannot view, open, or read documents or PDFs — always use the view_document tool when asked. If a user asks you to look at, review, check, read, or verify any document, call view_document immediately with the document's UUID from the inventory.
 - When asked to do something, use the available tools to take action immediately. Confirm what you did afterward.
 - For ambiguous requests, ask for clarification before acting.
 - When creating a deal, you create the account, contact, and opportunity in one step. Ask for the business name and contact name at minimum.
@@ -954,6 +954,7 @@ serve(async (req) => {
 
             const contentType = (doc.content_type || "").toLowerCase();
             const isImage = contentType.startsWith("image/") || /\.(jpg|jpeg|png|webp|gif)$/i.test(doc.file_name);
+            const isPdf = contentType === "application/pdf" || /\.pdf$/i.test(doc.file_name);
 
             // Generate signed URL (valid 10 minutes)
             const { data: signedData, error: signErr } = await supabase.storage
@@ -972,15 +973,32 @@ serve(async (req) => {
                 const imgBuffer = await imgResponse.arrayBuffer();
                 const base64 = btoa(String.fromCharCode(...new Uint8Array(imgBuffer)));
                 const mimeType = contentType || "image/jpeg";
-                // Return a special marker that the tool loop will parse
                 return `__IMAGE__${mimeType}__${base64}__ENDIMAGE__Document "${doc.file_name}" (${doc.document_type || "Unassigned"}) — I can now see this image. Please describe what you observe.`;
               } catch (e) {
                 return `Error fetching image: ${e instanceof Error ? e.message : "Unknown error"}. Signed URL: ${signedData.signedUrl}`;
               }
             }
 
-            // For non-image files (PDFs etc), return metadata + signed URL
-            return `Document: "${doc.file_name}" (${doc.document_type || "Unassigned"}) | Type: ${contentType || "unknown"} | This is not an image so I cannot visually inspect it, but here is the download link: ${signedData.signedUrl}`;
+            if (isPdf) {
+              // Fetch PDF and convert to base64 for Gemini multimodal PDF reading
+              try {
+                const pdfResponse = await fetch(signedData.signedUrl);
+                if (!pdfResponse.ok) return `Error downloading PDF "${doc.file_name}": HTTP ${pdfResponse.status}`;
+                const pdfBuffer = await pdfResponse.arrayBuffer();
+                // Limit to ~10MB to avoid payload issues
+                if (pdfBuffer.byteLength > 10 * 1024 * 1024) {
+                  return `PDF "${doc.file_name}" is too large (${(pdfBuffer.byteLength / 1024 / 1024).toFixed(1)}MB) for inline analysis. Download link: ${signedData.signedUrl}`;
+                }
+                const base64 = btoa(String.fromCharCode(...new Uint8Array(pdfBuffer)));
+                // Use the same __IMAGE__ marker pattern — Gemini supports inline PDF via application/pdf mime
+                return `__IMAGE__application/pdf__${base64}__ENDIMAGE__Document "${doc.file_name}" (${doc.document_type || "Unassigned"}) — I can now read this PDF. Analyze its contents and respond to the user.`;
+              } catch (e) {
+                return `Error fetching PDF: ${e instanceof Error ? e.message : "Unknown error"}. Download link: ${signedData.signedUrl}`;
+              }
+            }
+
+            // For other file types, return metadata + signed URL
+            return `Document: "${doc.file_name}" (${doc.document_type || "Unassigned"}) | Type: ${contentType || "unknown"} | Download link: ${signedData.signedUrl}`;
           }
 
           default:
@@ -1068,11 +1086,15 @@ serve(async (req) => {
               tool_call_id: toolCall.id,
               content: textContent || "Image loaded successfully. Describe what you see.",
             });
-            // Add the image as a user message with multimodal content
+            // Add the document as a user message with multimodal content
+            const isPdfContent = mimeType === "application/pdf";
             messages.push({
               role: "user",
               content: [
-                { type: "text", text: "[System: The following image is the document that was just loaded via view_document. Analyze it and respond to the user's request.]" },
+                { type: "text", text: isPdfContent
+                  ? "[System: The following is a PDF document loaded via view_document. Read its full contents — text, tables, numbers, names — and respond to the user's request.]"
+                  : "[System: The following image is the document that was just loaded via view_document. Analyze it and respond to the user's request.]"
+                },
                 { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Data}` } },
               ],
             });
