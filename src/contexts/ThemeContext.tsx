@@ -14,7 +14,8 @@ export type ThemeVariant =
   | 'light-warm'
   | 'light-silver'
   | 'light-mono'
-  | 'light-salesforce';
+  | 'light-salesforce'
+  | 'light-star';
 
 export interface ThemeOption {
   id: ThemeVariant;
