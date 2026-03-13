@@ -258,9 +258,9 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
     .map(([oppId, docs]) => {
       const acctName = oppToAccount[oppId] || "Unknown Account";
       const docLines = docs
-        .map((d: any) => `      ${d.file_name} (${d.document_type || "Unassigned"}) — uploaded ${d.created_at ? new Date(d.created_at).toLocaleDateString() : "unknown"}${d.uploaded_by ? " by " + d.uploaded_by : ""}`)
+        .map((d: any) => `      [doc:${d.id}] ${d.file_name} (${d.document_type || "Unassigned"}) — uploaded ${d.created_at ? new Date(d.created_at).toLocaleDateString() : "unknown"}${d.uploaded_by ? " by " + d.uploaded_by : ""}`)
         .join("\n");
-      return `  ${acctName} (${docs.length} docs):\n${docLines}`;
+      return `  ${acctName} [opp:${oppId}] (${docs.length} docs):\n${docLines}`;
     })
     .join("\n");
 
