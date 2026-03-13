@@ -22,6 +22,10 @@ const config: CapacitorConfig = {
   android: {
     backgroundColor: '#ffffff',
   },
+  server: {
+    url: 'https://d4e766df-1ab4-4f95-a16a-4c8c4222778a.lovableproject.com?forceHideBadge=true',
+    cleartext: true,
+  },
 };
 
 export default config;

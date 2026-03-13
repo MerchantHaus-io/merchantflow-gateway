@@ -72,6 +72,64 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
   const [report, setReport] = useState<UnifiedReport | null>(null);
   const [meta, setMeta] = useState<ReportMeta | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSaveAsNote = useCallback(async () => {
+    if (!report) return;
+    setIsSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const lines: string[] = [];
+      lines.push(`## AI Underwriting Review — ${readinessLabel(report.readiness_score)}`);
+      if (report.website_score !== undefined) lines.push(`Website Score: ${report.website_score}/10 (${report.website_score_label || ""})`);
+      if (report.summary) lines.push(`\n${report.summary}`);
+      if (report.recommended_mcc) lines.push(`\nRecommended MCC: ${report.recommended_mcc.code} — ${report.recommended_mcc.description}\n${report.recommended_mcc.rationale}`);
+      if (report.transaction_mix_assessment) lines.push(`\nTransaction Mix: ${report.transaction_mix_assessment}`);
+      if (report.document_completeness?.length) {
+        lines.push(`\n### Documents`);
+        report.document_completeness.forEach(d => lines.push(`- [${d.status === "present" ? "✅" : d.status === "missing" ? "❌" : "⚠️"}] ${d.document}${d.note ? ` — ${d.note}` : ""}`));
+      }
+      if (report.website_requirements?.length) {
+        lines.push(`\n### Website`);
+        report.website_requirements.forEach(r => lines.push(`- [${r.met ? "✅" : "❌"}] ${r.requirement}${r.detail ? ` — ${r.detail}` : ""}`));
+      }
+      if (report.red_flags?.length) {
+        lines.push(`\n### Red Flags`);
+        report.red_flags.forEach(f => lines.push(`- 🚩 [${f.severity}] ${f.flag}${f.detail ? ` — ${f.detail}` : ""}`));
+      }
+      if (report.data_gaps?.length) {
+        lines.push(`\n### Data Gaps`);
+        report.data_gaps.forEach(g => lines.push(`- ❌ ${g}`));
+      }
+      if (report.recommended_actions?.length) {
+        lines.push(`\n### Recommended Actions`);
+        report.recommended_actions.forEach(a => lines.push(`- → ${a}`));
+      }
+
+      const content = lines.join("\n");
+      const { error } = await supabase.from("comments").insert({
+        opportunity_id: opportunityId,
+        content,
+        user_id: user?.id || null,
+        user_email: user?.email || null,
+      });
+      if (error) throw error;
+
+      await supabase.from("activities").insert({
+        opportunity_id: opportunityId,
+        type: "ai_report_saved",
+        description: `AI Underwriting Review saved as note — ${readinessLabel(report.readiness_score)}`,
+        user_id: user?.id || null,
+        user_email: user?.email || null,
+      });
+
+      toast.success("Report saved as note");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to save report");
+    } finally {
+      setIsSaving(false);
+    }
+  }, [report, opportunityId]);
 
   const handleReview = useCallback(async () => {
     setIsRunning(true);
@@ -156,9 +214,15 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
                 </Badge>
               )}
             </div>
-            <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setShowDetails(!showDetails)}>
-              {showDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={handleSaveAsNote} disabled={isSaving}>
+                {isSaving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <FileText className="h-3 w-3 mr-1" />}
+                Save Note
+              </Button>
+              <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setShowDetails(!showDetails)}>
+                {showDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+              </Button>
+            </div>
           </div>
 
           {meta && <MetaLine meta={meta} />}
