@@ -9,7 +9,9 @@ import { useTasks } from "@/contexts/TasksContext";
 import { 
   Opportunity, 
   OpportunityStage, 
+  OutcomeStatus,
   STAGE_CONFIG, 
+  OUTCOME_CONFIG,
   TEAM_MEMBERS, 
   migrateStage, 
   getServiceType,
@@ -74,7 +76,7 @@ import { SortableTableHead } from "@/components/SortableTableHead";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 
-type SortField = 'name' | 'stage' | 'pipeline' | 'owner' | 'tasks' | 'progress' | 'created' | 'updated';
+type SortField = 'name' | 'stage' | 'outcome' | 'pipeline' | 'owner' | 'tasks' | 'progress' | 'created' | 'updated';
 type SortDirection = 'asc' | 'desc';
 
 const Opportunities = () => {
@@ -222,6 +224,9 @@ const Opportunities = () => {
           break;
         case 'stage':
           comparison = a.stage.localeCompare(b.stage);
+          break;
+        case 'outcome':
+          comparison = (a.outcome_status || '').localeCompare(b.outcome_status || '');
           break;
         case 'pipeline':
           comparison = getServiceType(a).localeCompare(getServiceType(b));
@@ -460,6 +465,7 @@ const Opportunities = () => {
                       <TableRow>
                         <SortableTableHead field="name" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Account</SortableTableHead>
                         <SortableTableHead field="stage" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Stage</SortableTableHead>
+                        <SortableTableHead field="outcome" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Outcome</SortableTableHead>
                         <SortableTableHead field="pipeline" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Pipeline</SortableTableHead>
                         <SortableTableHead field="owner" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Owner</SortableTableHead>
                         <SortableTableHead field="tasks" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Tasks</SortableTableHead>
@@ -581,6 +587,16 @@ const Opportunities = () => {
                                 </SelectContent>
                               </Select>
                             </TableCell>
+                            <TableCell className="py-2.5">
+                              {opp.outcome_status ? (() => {
+                                const oc = OUTCOME_CONFIG[opp.outcome_status as OutcomeStatus];
+                                return oc ? (
+                                  <Badge variant="outline" className={`text-[10px] h-5 px-1.5 ${oc.bgClass} ${oc.textClass} border-current/20`}>
+                                    <span className="mr-1">{oc.icon}</span>{oc.label}
+                                  </Badge>
+                                ) : <span className="text-xs text-muted-foreground/40">—</span>;
+                              })() : <span className="text-xs text-muted-foreground/40">—</span>}
+                            </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-1">
                                 {serviceType === 'gateway_only' ? (
@@ -657,7 +673,7 @@ const Opportunities = () => {
                       })}
                       {filteredOpportunities.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={9}>
+                          <TableCell colSpan={10}>
                             <EmptyState
                               icon={TrendingUp}
                               title="No opportunities found"
