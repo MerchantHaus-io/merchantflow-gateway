@@ -156,9 +156,15 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
                 </Badge>
               )}
             </div>
-            <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setShowDetails(!showDetails)}>
-              {showDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={handleSaveAsNote} disabled={isSaving}>
+                {isSaving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <FileText className="h-3 w-3 mr-1" />}
+                Save Note
+              </Button>
+              <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setShowDetails(!showDetails)}>
+                {showDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+              </Button>
+            </div>
           </div>
 
           {meta && <MetaLine meta={meta} />}
