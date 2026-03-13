@@ -1055,11 +1055,32 @@ serve(async (req) => {
           console.log(`Executing tool: ${fnName}`, fnArgs);
 
           const result = await executeTool(fnName, fnArgs);
-          messages.push({
-            role: "tool",
-            tool_call_id: toolCall.id,
-            content: result,
-          });
+
+          // Check if result contains an embedded image for multimodal
+          const imageMatch = result.match(/^__IMAGE__(.+?)__(.+?)__ENDIMAGE__(.*)$/s);
+          if (imageMatch) {
+            const [, mimeType, base64Data, textContent] = imageMatch;
+            // Add the tool result as text
+            messages.push({
+              role: "tool",
+              tool_call_id: toolCall.id,
+              content: textContent || "Image loaded successfully. Describe what you see.",
+            });
+            // Add the image as a user message with multimodal content
+            messages.push({
+              role: "user",
+              content: [
+                { type: "text", text: "[System: The following image is the document that was just loaded via view_document. Analyze it and respond to the user's request.]" },
+                { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Data}` } },
+              ],
+            });
+          } else {
+            messages.push({
+              role: "tool",
+              tool_call_id: toolCall.id,
+              content: result,
+            });
+          }
         }
 
         // Call AI again with tool results
