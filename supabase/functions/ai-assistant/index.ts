@@ -31,9 +31,13 @@ KNOWLEDGE:
 - Full SOP procedures, email templates, checklists (provided below)
 
 ACTIONS:
-- You can CREATE tasks, UPDATE opportunity stages, ASSIGN opportunities to team members, UPDATE opportunity status, UPDATE account/contact/opportunity records, and ADD NOTES to opportunities.
+- You can CREATE tasks, CREATE full deals (Account+Contact+Opportunity), UPDATE opportunity stages, ASSIGN opportunities, UPDATE statuses, UPDATE account/contact/opportunity records, ADD NOTES, RELABEL documents, LOG client interactions, and RUN underwriting validation checks.
 - When asked to do something, use the available tools to take action immediately. Confirm what you did afterward.
 - For ambiguous requests, ask for clarification before acting.
+- When creating a deal, you create the account, contact, and opportunity in one step. Ask for the business name and contact name at minimum.
+- When relabelling documents, reference the document by its ID from the document inventory. Valid labels: Bank Statement, Processing Statement, Voided Check, Bank Confirmation Letter, Articles of Organization, EIN / Tax Document, Passport/Drivers License, Business License, Lease Agreement, Transaction History, VAR/Tear Sheet, Signed Agreement, Other.
+- When logging client interactions, you can record calls, emails, meetings, notes, or SMS against any account with outcome tracking, priority, and follow-up dates.
+- When running underwriting validation, you check document completeness against the required checklist and beneficial owner requirements, then save a validation report.
 - When updating records, you can change fields like name, website, city, state, status on accounts; first_name, last_name, email, phone on contacts; and service_type, referral_source, language, timezone on opportunities.
 - When adding notes, they are saved as comments on the opportunity and logged as activity.
 - Team members you can assign to: admin@merchanthaus.io (Jamie), darryn@merchanthaus.io (Darryn), support@merchanthaus.io (Yaseen), sales@merchanthaus.io (Wesley), taryn@merchanthaus.io (Taryn).
@@ -537,6 +541,93 @@ serve(async (req) => {
             },
           },
         },
+        {
+          type: "function",
+          function: {
+            name: "create_deal",
+            description: "Create a full deal in one shot: Account + Contact + Opportunity. Use when someone asks to add a new merchant, create a new deal, or onboard a new prospect.",
+            parameters: {
+              type: "object",
+              properties: {
+                account_name: { type: "string", description: "Business / company name" },
+                website: { type: "string", description: "Business website URL" },
+                city: { type: "string", description: "Business city" },
+                state: { type: "string", description: "Business state" },
+                first_name: { type: "string", description: "Primary contact first name" },
+                last_name: { type: "string", description: "Primary contact last name" },
+                email: { type: "string", description: "Contact email" },
+                phone: { type: "string", description: "Contact phone" },
+                service_type: { type: "string", enum: ["processing", "gateway"], description: "Service type for the opportunity" },
+                assigned_to: { type: "string", description: "Email of team member to assign" },
+                referral_source: { type: "string", description: "How the lead came in" },
+                stage: { type: "string", enum: ["discovery", "qualification", "preboarding", "underwriting", "boarding", "live"], description: "Initial pipeline stage (defaults to discovery)" },
+              },
+              required: ["account_name", "first_name", "last_name"],
+              additionalProperties: false,
+            },
+          },
+        },
+        {
+          type: "function",
+          function: {
+            name: "relabel_document",
+            description: "Change the label/category of an existing document on an opportunity. Use when someone asks to re-categorise, relabel, or change the type of a document.",
+            parameters: {
+              type: "object",
+              properties: {
+                document_id: { type: "string", description: "UUID of the document to relabel" },
+                new_label: { type: "string", enum: [
+                  "Bank Statement", "Processing Statement", "Voided Check", "Bank Confirmation Letter",
+                  "Articles of Organization", "EIN / Tax Document", "Passport/Drivers License",
+                  "Business License", "Lease Agreement", "Transaction History", "VAR/Tear Sheet",
+                  "Signed Agreement", "Other"
+                ], description: "The new document category label" },
+              },
+              required: ["document_id", "new_label"],
+              additionalProperties: false,
+            },
+          },
+        },
+        {
+          type: "function",
+          function: {
+            name: "log_client_interaction",
+            description: "Log a client interaction (call, email, meeting, note, sms) against an account. Use when someone asks to log a call, record a meeting note, or track a client touchpoint.",
+            parameters: {
+              type: "object",
+              properties: {
+                account_id: { type: "string", description: "UUID of the account" },
+                interaction_type: { type: "string", enum: ["call", "email", "meeting", "note", "sms"], description: "Type of interaction" },
+                subject: { type: "string", description: "Brief subject line" },
+                notes: { type: "string", description: "Detailed notes about the interaction" },
+                outcome: { type: "string", description: "Outcome or result (e.g. 'Left voicemail', 'Agreed to send docs')" },
+                priority: { type: "string", enum: ["low", "medium", "high", "urgent"], description: "Priority level" },
+                status: { type: "string", enum: ["open", "pending", "resolved", "closed"], description: "Interaction status" },
+                contact_name: { type: "string", description: "Name of the person contacted" },
+                contact_email: { type: "string", description: "Email of the person contacted" },
+                contact_phone: { type: "string", description: "Phone of the person contacted" },
+                duration_minutes: { type: "number", description: "Duration of call/meeting in minutes" },
+              },
+              required: ["account_id", "interaction_type", "subject"],
+              additionalProperties: false,
+            },
+          },
+        },
+        {
+          type: "function",
+          function: {
+            name: "run_underwriting_validation",
+            description: "Trigger the AI underwriting validation report for an opportunity. Use when someone asks to validate, run a check, or audit an opportunity for underwriting readiness.",
+            parameters: {
+              type: "object",
+              properties: {
+                opportunity_id: { type: "string", description: "UUID of the opportunity to validate" },
+              },
+              required: ["opportunity_id"],
+              additionalProperties: false,
+            },
+          },
+        },
       ];
 
       // ── Tool Execution Handler ──
@@ -641,6 +732,167 @@ serve(async (req) => {
               user_email: AI_BOT_EMAIL,
             });
             return `Note added to opportunity successfully.`;
+          }
+
+          case "create_deal": {
+            // 1. Create account
+            const accountData: Record<string, unknown> = { name: args.account_name };
+            if (args.website) accountData.website = args.website;
+            if (args.city) accountData.city = args.city;
+            if (args.state) accountData.state = args.state;
+
+            const { data: acct, error: acctErr } = await supabase
+              .from("accounts").insert(accountData).select("id, name").single();
+            if (acctErr) return `Error creating account: ${acctErr.message}`;
+
+            // 2. Create contact
+            const contactData: Record<string, unknown> = {
+              account_id: acct.id,
+              first_name: args.first_name,
+              last_name: args.last_name,
+            };
+            if (args.email) contactData.email = args.email;
+            if (args.phone) contactData.phone = args.phone;
+
+            const { data: contact, error: contactErr } = await supabase
+              .from("contacts").insert(contactData).select("id").single();
+            if (contactErr) return `Account created but contact failed: ${contactErr.message}`;
+
+            // 3. Create opportunity
+            const oppData: Record<string, unknown> = {
+              account_id: acct.id,
+              contact_id: contact.id,
+              stage: args.stage || "discovery",
+              service_type: args.service_type || "processing",
+              status: "active",
+            };
+            if (args.assigned_to) oppData.assigned_to = args.assigned_to;
+            if (args.referral_source) oppData.referral_source = args.referral_source;
+
+            const { data: opp, error: oppErr } = await supabase
+              .from("opportunities").insert(oppData).select("id").single();
+            if (oppErr) return `Account + contact created but opportunity failed: ${oppErr.message}`;
+
+            // Log activity
+            await supabase.from("activities").insert({
+              opportunity_id: opp.id,
+              type: "deal_created",
+              description: `Atria created deal for ${acct.name} (${args.first_name} ${args.last_name})`,
+              user_id: AI_BOT_USER_ID,
+              user_email: AI_BOT_EMAIL,
+            });
+
+            return `Deal created successfully! Account: "${acct.name}" | Contact: ${args.first_name} ${args.last_name} | Opportunity ID: ${opp.id} | Stage: ${args.stage || "discovery"}${args.assigned_to ? " | Assigned to: " + args.assigned_to : ""}`;
+          }
+
+          case "relabel_document": {
+            const { document_id, new_label } = args;
+            const { error } = await supabase
+              .from("documents")
+              .update({ document_type: new_label })
+              .eq("id", document_id);
+            if (error) return `Error relabelling document: ${error.message}`;
+            return `Document relabelled to "${new_label}" successfully.`;
+          }
+
+          case "log_client_interaction": {
+            const interactionData: Record<string, unknown> = {
+              account_id: args.account_id,
+              interaction_type: args.interaction_type,
+              subject: args.subject,
+              created_by_email: AI_BOT_EMAIL,
+              status: args.status || "open",
+              priority: args.priority || "medium",
+            };
+            if (args.notes) interactionData.notes = args.notes;
+            if (args.outcome) interactionData.outcome = args.outcome;
+            if (args.contact_name) interactionData.contact_name = args.contact_name;
+            if (args.contact_email) interactionData.contact_email = args.contact_email;
+            if (args.contact_phone) interactionData.contact_phone = args.contact_phone;
+            if (args.duration_minutes) interactionData.duration_minutes = args.duration_minutes;
+
+            const { data: interaction, error: intErr } = await supabase
+              .from("client_interactions").insert(interactionData).select("id").single();
+            if (intErr) return `Error logging interaction: ${intErr.message}`;
+            return `${args.interaction_type} logged successfully (ID: ${interaction.id}). Subject: "${args.subject}"${args.outcome ? " | Outcome: " + args.outcome : ""}`;
+          }
+
+          case "run_underwriting_validation": {
+            // Gather opportunity data for validation
+            const { data: oppData, error: oppErr } = await supabase
+              .from("opportunities")
+              .select("id, stage, service_type, accounts!inner(name, website), contacts!inner(first_name, last_name, email)")
+              .eq("id", args.opportunity_id)
+              .single();
+            if (oppErr || !oppData) return `Error fetching opportunity: ${oppErr?.message || "Not found"}`;
+
+            const { data: docs } = await supabase
+              .from("documents")
+              .select("file_name, document_type")
+              .eq("opportunity_id", args.opportunity_id);
+
+            const { data: bos } = await supabase
+              .from("beneficial_owners")
+              .select("full_name, ownership_percentage, title")
+              .eq("opportunity_id", args.opportunity_id);
+
+            const docList = (docs || []).map((d: any) => `${d.file_name} (${d.document_type})`).join(", ");
+            const boList = (bos || []).map((b: any) => `${b.full_name} ${b.ownership_percentage}%`).join(", ");
+            const acctName = (oppData as any).accounts?.name || "Unknown";
+            const website = (oppData as any).accounts?.website || "None";
+
+            // Check required docs
+            const docTypes = (docs || []).map((d: any) => d.document_type || "");
+            const hasBank = docTypes.filter((t: string) => t === "Bank Statement").length >= 3;
+            const hasArticles = docTypes.includes("Articles of Organization");
+            const hasEIN = docTypes.includes("EIN / Tax Document");
+            const hasCheck = docTypes.includes("Voided Check") || docTypes.includes("Bank Confirmation Letter");
+            const hasID = docTypes.includes("Passport/Drivers License");
+            const hasBOs = (bos || []).length > 0;
+
+            const missing: string[] = [];
+            if (!hasBank) missing.push("3x Bank Statements");
+            if (!hasArticles) missing.push("Articles of Organization");
+            if (!hasEIN) missing.push("EIN / Tax Document");
+            if (!hasCheck) missing.push("Voided Check or Bank Confirmation");
+            if (!hasID) missing.push("Passport/Drivers License");
+            if (!hasBOs) missing.push("Beneficial Owner(s)");
+
+            const isGateway = oppData.service_type === "gateway";
+            const readiness = missing.length === 0 ? "ready" : missing.length <= 2 ? "needs_attention" : "not_ready";
+            const score = isGateway ? "gateway_path" : readiness;
+
+            // Save validation report
+            const { error: reportErr } = await supabase.from("validation_reports").insert({
+              opportunity_id: args.opportunity_id,
+              readiness_score: score,
+              summary: missing.length === 0
+                ? `${acctName} has all required documents and beneficial owners on file. Ready for underwriting.`
+                : `${acctName} is missing: ${missing.join(", ")}. ${missing.length} item(s) needed before underwriting.`,
+              triggered_by: AI_BOT_EMAIL,
+              data_gaps: missing,
+              document_completeness: { total: (docs || []).length, types: docTypes },
+              risk_flags: [],
+              recommended_actions: missing.map((m: string) => `Collect ${m}`),
+              classification_issues: [],
+              no_change: false,
+            });
+
+            if (reportErr) return `Error saving validation report: ${reportErr.message}`;
+
+            // Log activity
+            await supabase.from("activities").insert({
+              opportunity_id: args.opportunity_id,
+              type: "validation_run",
+              description: `Atria ran underwriting validation for ${acctName}: ${score}`,
+              user_id: AI_BOT_USER_ID,
+              user_email: AI_BOT_EMAIL,
+            });
+
+            if (missing.length === 0) {
+              return `Validation complete for ${acctName}: all requirements met. ${(docs || []).length} documents on file, ${(bos || []).length} beneficial owner(s) recorded. Website: ${website}. Ready for underwriting submission.`;
+            }
+            return `Validation complete for ${acctName}: ${score}. Missing ${missing.length} item(s): ${missing.join(", ")}. ${(docs || []).length} docs on file, ${(bos || []).length} beneficial owner(s). Website: ${website}.`;
           }
 
           default:
