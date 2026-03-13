@@ -293,6 +293,7 @@ export const OUTCOME_REASONS: Record<OutcomeStatus, string[]> = {
     'Product gap',
     'Timeline',
     'Integration complexity',
+    'Withdrawn',
   ],
   disqualified: [
     'Unsupported MCC',
@@ -300,12 +301,14 @@ export const OUTCOME_REASONS: Record<OutcomeStatus, string[]> = {
     'Volume too small',
     'Not a fit',
     'Duplicate / invalid opportunity',
+    'Fraudulent',
   ],
   no_decision: [
     'No response',
     'Project paused',
     'Budget removed',
     'Internal priorities changed',
+    'Withdrawn',
   ],
   underwriting_declined: [
     'Risk profile',
