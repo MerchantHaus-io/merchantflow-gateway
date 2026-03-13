@@ -1133,7 +1133,8 @@ serve(async (req) => {
         });
 
         if (!followUp.ok) {
-          console.error("Follow-up AI call failed:", followUp.status);
+          const errBody = await followUp.text();
+          console.error("Follow-up AI call failed:", followUp.status, errBody);
           break;
         }
 
