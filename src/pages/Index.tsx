@@ -16,6 +16,7 @@ import { isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import GameSplash from "@/components/GameSplash";
 import { sendStageChangeEmail } from "@/hooks/useEmailNotifications";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useUserRole } from "@/hooks/useUserRole";
 
 const Starfield = lazy(() => import("@/components/Starfield"));
 
