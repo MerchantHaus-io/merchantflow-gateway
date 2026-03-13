@@ -32,6 +32,36 @@ export const DOCUMENT_TYPE_OPTIONS = [
   "SSN",
 ];
 
+/** Maximum number of documents allowed per label. Default is 1. */
+const DOCUMENT_LABEL_LIMITS: Record<string, number> = {
+  "Passport/Drivers License": 2,
+  "Bank Statement": 3,
+  "Transaction History": 3,
+};
+const DEFAULT_LABEL_LIMIT = 1;
+
+/** Count how many docs already use each label */
+function getLabelCounts(docs: Document[]): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const doc of docs) {
+    const t = doc.document_type;
+    if (t) counts[t] = (counts[t] || 0) + 1;
+  }
+  return counts;
+}
+
+/** Check if a label is at its limit, optionally excluding a specific doc id (for re-assignment) */
+function isLabelAtLimit(label: string, counts: Record<string, number>, excludeDocId?: string, docs?: Document[]): boolean {
+  const max = DOCUMENT_LABEL_LIMITS[label] ?? DEFAULT_LABEL_LIMIT;
+  let count = counts[label] || 0;
+  // If we're changing a doc's label, don't count the doc being changed
+  if (excludeDocId && docs) {
+    const existing = docs.find(d => d.id === excludeDocId);
+    if (existing?.document_type === label) count -= 1;
+  }
+  return count >= max;
+}
+
 function formatFileSize(bytes: number | null): string {
   if (!bytes) return "—";
   if (bytes < 1024) return `${bytes} B`;
