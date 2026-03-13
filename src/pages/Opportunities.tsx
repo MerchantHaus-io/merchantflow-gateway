@@ -584,6 +584,16 @@ const Opportunities = () => {
                                 </SelectContent>
                               </Select>
                             </TableCell>
+                            <TableCell className="py-2.5">
+                              {opp.outcome_status ? (() => {
+                                const oc = OUTCOME_CONFIG[opp.outcome_status as OutcomeStatus];
+                                return oc ? (
+                                  <Badge variant="outline" className={`text-[10px] h-5 px-1.5 ${oc.bgClass} ${oc.textClass} border-current/20`}>
+                                    <span className="mr-1">{oc.icon}</span>{oc.label}
+                                  </Badge>
+                                ) : <span className="text-xs text-muted-foreground/40">—</span>;
+                              })() : <span className="text-xs text-muted-foreground/40">—</span>}
+                            </TableCell>
                             <TableCell>
                               <div className="flex items-center gap-1">
                                 {serviceType === 'gateway_only' ? (
