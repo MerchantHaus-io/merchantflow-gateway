@@ -47,6 +47,7 @@ const PipelineColumn = ({
   onTouchDragStart,
   onTouchDragMove,
   onTouchDragEnd,
+  isAdmin,
 }: PipelineColumnProps) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const dragEnterCounter = useRef(0);
