@@ -9,7 +9,9 @@ import { useTasks } from "@/contexts/TasksContext";
 import { 
   Opportunity, 
   OpportunityStage, 
+  OutcomeStatus,
   STAGE_CONFIG, 
+  OUTCOME_CONFIG,
   TEAM_MEMBERS, 
   migrateStage, 
   getServiceType,
