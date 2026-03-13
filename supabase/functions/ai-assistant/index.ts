@@ -537,6 +537,93 @@ serve(async (req) => {
             },
           },
         },
+        {
+          type: "function",
+          function: {
+            name: "create_deal",
+            description: "Create a full deal in one shot: Account + Contact + Opportunity. Use when someone asks to add a new merchant, create a new deal, or onboard a new prospect.",
+            parameters: {
+              type: "object",
+              properties: {
+                account_name: { type: "string", description: "Business / company name" },
+                website: { type: "string", description: "Business website URL" },
+                city: { type: "string", description: "Business city" },
+                state: { type: "string", description: "Business state" },
+                first_name: { type: "string", description: "Primary contact first name" },
+                last_name: { type: "string", description: "Primary contact last name" },
+                email: { type: "string", description: "Contact email" },
+                phone: { type: "string", description: "Contact phone" },
+                service_type: { type: "string", enum: ["processing", "gateway"], description: "Service type for the opportunity" },
+                assigned_to: { type: "string", description: "Email of team member to assign" },
+                referral_source: { type: "string", description: "How the lead came in" },
+                stage: { type: "string", enum: ["discovery", "qualification", "preboarding", "underwriting", "boarding", "live"], description: "Initial pipeline stage (defaults to discovery)" },
+              },
+              required: ["account_name", "first_name", "last_name"],
+              additionalProperties: false,
+            },
+          },
+        },
+        {
+          type: "function",
+          function: {
+            name: "relabel_document",
+            description: "Change the label/category of an existing document on an opportunity. Use when someone asks to re-categorise, relabel, or change the type of a document.",
+            parameters: {
+              type: "object",
+              properties: {
+                document_id: { type: "string", description: "UUID of the document to relabel" },
+                new_label: { type: "string", enum: [
+                  "Bank Statement", "Processing Statement", "Voided Check", "Bank Confirmation Letter",
+                  "Articles of Organization", "EIN / Tax Document", "Passport/Drivers License",
+                  "Business License", "Lease Agreement", "Transaction History", "VAR/Tear Sheet",
+                  "Signed Agreement", "Other"
+                ], description: "The new document category label" },
+              },
+              required: ["document_id", "new_label"],
+              additionalProperties: false,
+            },
+          },
+        },
+        {
+          type: "function",
+          function: {
+            name: "log_client_interaction",
+            description: "Log a client interaction (call, email, meeting, note, sms) against an account. Use when someone asks to log a call, record a meeting note, or track a client touchpoint.",
+            parameters: {
+              type: "object",
+              properties: {
+                account_id: { type: "string", description: "UUID of the account" },
+                interaction_type: { type: "string", enum: ["call", "email", "meeting", "note", "sms"], description: "Type of interaction" },
+                subject: { type: "string", description: "Brief subject line" },
+                notes: { type: "string", description: "Detailed notes about the interaction" },
+                outcome: { type: "string", description: "Outcome or result (e.g. 'Left voicemail', 'Agreed to send docs')" },
+                priority: { type: "string", enum: ["low", "medium", "high", "urgent"], description: "Priority level" },
+                status: { type: "string", enum: ["open", "pending", "resolved", "closed"], description: "Interaction status" },
+                contact_name: { type: "string", description: "Name of the person contacted" },
+                contact_email: { type: "string", description: "Email of the person contacted" },
+                contact_phone: { type: "string", description: "Phone of the person contacted" },
+                duration_minutes: { type: "number", description: "Duration of call/meeting in minutes" },
+              },
+              required: ["account_id", "interaction_type", "subject"],
+              additionalProperties: false,
+            },
+          },
+        },
+        {
+          type: "function",
+          function: {
+            name: "run_underwriting_validation",
+            description: "Trigger the AI underwriting validation report for an opportunity. Use when someone asks to validate, run a check, or audit an opportunity for underwriting readiness.",
+            parameters: {
+              type: "object",
+              properties: {
+                opportunity_id: { type: "string", description: "UUID of the opportunity to validate" },
+              },
+              required: ["opportunity_id"],
+              additionalProperties: false,
+            },
+          },
+        },
       ];
 
       // ── Tool Execution Handler ──
