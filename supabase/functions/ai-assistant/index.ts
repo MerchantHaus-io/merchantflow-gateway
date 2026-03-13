@@ -183,7 +183,7 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
 
   // Recent deals
   const recentDeals = (recentOppsRes.data || [])
-    .map((o: any) => `  - ${o.accounts?.name || "Unknown"} (${o.stage} | ${o.status || "active"}) → ${o.assigned_to || "Unassigned"} | Contact: ${[o.contacts?.first_name, o.contacts?.last_name].filter(Boolean).join(" ") || "N/A"}`)
+    .map((o: any) => `  - [opp:${o.id}] ${o.accounts?.name || "Unknown"} (${o.stage} | ${o.status || "active"}) → ${o.assigned_to || "Unassigned"} | Contact: ${[o.contacts?.first_name, o.contacts?.last_name].filter(Boolean).join(" ") || "N/A"}`)
     .join("\n");
 
   // Open tasks
