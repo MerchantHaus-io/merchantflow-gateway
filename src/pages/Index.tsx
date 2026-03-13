@@ -850,23 +850,39 @@ const Index = () => {
             </div>
           </header>
         )}
-        <main className={isFocusMode ? "flex-1 flex flex-col min-h-0 overflow-hidden" : "flex-1 flex flex-col min-h-0 overflow-y-hidden overflow-x-visible"}>
-          <UnifiedPipelineBoard
-            opportunities={filteredOpportunities}
-            onUpdateOpportunity={handleUpdateOpportunity}
-            onAssignmentChange={handleAssignmentChange}
-            onSlaStatusChange={handleSlaStatusChange}
-            onAddNew={() => setIsModalOpen(true)}
-            onMarkAsDead={handleMarkAsDead}
-            onDelete={handleDelete}
-            onConvertToGateway={handleConvertToGatewayTrack}
-            onMoveToProcessing={handleMoveToProcessing}
-            onRefresh={fetchOpportunities}
-            currentUser={currentUserDisplayName || undefined}
-            focusMode={isFocusMode}
-            onFocusModeChange={setIsFocusMode}
-            isAdmin={isAdmin}
-          />
+        <main className={isFocusMode ? "flex-1 flex flex-col min-h-0 overflow-hidden" : "flex-1 flex flex-col min-h-0 overflow-hidden"}>
+          {/* Pipeline board — takes ~75% of available space */}
+          <div className={isFocusMode ? "flex-1 flex flex-col min-h-0" : "flex flex-col min-h-0"} style={isFocusMode ? undefined : { flex: '3 1 0%' }}>
+            <UnifiedPipelineBoard
+              opportunities={filteredOpportunities}
+              onUpdateOpportunity={handleUpdateOpportunity}
+              onAssignmentChange={handleAssignmentChange}
+              onSlaStatusChange={handleSlaStatusChange}
+              onAddNew={() => setIsModalOpen(true)}
+              onMarkAsDead={handleMarkAsDead}
+              onDelete={handleDelete}
+              onConvertToGateway={handleConvertToGatewayTrack}
+              onMoveToProcessing={handleMoveToProcessing}
+              onRefresh={fetchOpportunities}
+              currentUser={currentUserDisplayName || undefined}
+              focusMode={isFocusMode}
+              onFocusModeChange={setIsFocusMode}
+              isAdmin={isAdmin}
+            />
+          </div>
+          {/* Pipeline list view — takes ~25% of available space */}
+          {!isFocusMode && (
+            <div className="flex flex-col min-h-0 overflow-hidden" style={{ flex: '1 1 0%', minHeight: '180px' }}>
+              <PipelineListView
+                opportunities={filteredOpportunities}
+                onCardClick={(opp) => {
+                  // Trigger the detail modal by simulating a board click — set selectedOpportunity via the board
+                  const event = new CustomEvent('pipeline-list-click', { detail: opp });
+                  window.dispatchEvent(event);
+                }}
+              />
+            </div>
+          )}
         </main>
       </div>
 
