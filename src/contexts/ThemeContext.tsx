@@ -37,6 +37,7 @@ export const THEME_OPTIONS: ThemeOption[] = [
   { id: 'light-silver', name: 'Silver', mode: 'light', description: 'Cool silver tones' },
   { id: 'light-mono', name: 'Mono', mode: 'light', description: 'Minimalist black & white' },
   { id: 'light-salesforce', name: 'Salesforce', mode: 'light', description: 'Enterprise cloud CRM' },
+  { id: 'light-star', name: 'Star Admin', mode: 'light', description: 'Warm orange & dark navy' },
 ];
 
 interface ThemeContextType {
