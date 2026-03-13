@@ -980,20 +980,42 @@ serve(async (req) => {
             }
 
             if (isPdf) {
-              // Fetch PDF and convert to base64 for Gemini multimodal PDF reading
+              // For PDFs: use the AI gateway to read the document via a separate call
               try {
-                const pdfResponse = await fetch(signedData.signedUrl);
-                if (!pdfResponse.ok) return `Error downloading PDF "${doc.file_name}": HTTP ${pdfResponse.status}`;
-                const pdfBuffer = await pdfResponse.arrayBuffer();
-                // Limit to ~10MB to avoid payload issues
-                if (pdfBuffer.byteLength > 10 * 1024 * 1024) {
-                  return `PDF "${doc.file_name}" is too large (${(pdfBuffer.byteLength / 1024 / 1024).toFixed(1)}MB) for inline analysis. Download link: ${signedData.signedUrl}`;
+                const pdfReadResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Bearer ${LOVABLE_API_KEY}`,
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    model: "google/gemini-2.5-flash",
+                    messages: [
+                      { role: "system", content: "You are a document reader. Extract ALL text content from the provided PDF document. Return the raw text exactly as it appears. Include every number, name, date, and detail." },
+                      { role: "user", content: [
+                        { type: "text", text: `Read this PDF document "${doc.file_name}" and extract all text content from it.` },
+                        { type: "image_url", image_url: { url: signedData.signedUrl } },
+                      ]},
+                    ],
+                  }),
+                });
+
+                if (pdfReadResponse.ok) {
+                  const pdfReadData = await pdfReadResponse.json();
+                  const extractedText = pdfReadData.choices?.[0]?.message?.content || "";
+                  if (extractedText) {
+                    const maxChars = 8000;
+                    const finalText = extractedText.length > maxChars
+                      ? extractedText.substring(0, maxChars) + "\n\n[... truncated ...]"
+                      : extractedText;
+                    return `Document: "${doc.file_name}" (${doc.document_type || "Unassigned"})\n\n--- EXTRACTED CONTENT ---\n${finalText}\n--- END ---\n\nI have successfully read this PDF.`;
+                  }
                 }
-                const base64 = btoa(String.fromCharCode(...new Uint8Array(pdfBuffer)));
-                // Use the same __IMAGE__ marker pattern — Gemini supports inline PDF via application/pdf mime
-                return `__IMAGE__application/pdf__${base64}__ENDIMAGE__Document "${doc.file_name}" (${doc.document_type || "Unassigned"}) — I can now read this PDF. Analyze its contents and respond to the user.`;
+                // Fallback if AI read fails
+                return `Document: "${doc.file_name}" (${doc.document_type || "Unassigned"}) | Download link: ${signedData.signedUrl}`;
               } catch (e) {
-                return `Error fetching PDF: ${e instanceof Error ? e.message : "Unknown error"}. Download link: ${signedData.signedUrl}`;
+                console.error("PDF AI read error:", e);
+                return `Error reading PDF "${doc.file_name}": ${e instanceof Error ? e.message : "Unknown error"}. Download link: ${signedData.signedUrl}`;
               }
             }
 
@@ -1060,6 +1082,7 @@ serve(async (req) => {
 
       let aiData = await aiResponse.json();
       let assistantMessage = aiData.choices?.[0]?.message;
+      console.log("Initial AI response:", JSON.stringify(aiData).substring(0, 500));
 
       // ── Tool-calling loop (max 5 iterations) ──
       let iterations = 0;
@@ -1122,7 +1145,8 @@ serve(async (req) => {
         });
 
         if (!followUp.ok) {
-          console.error("Follow-up AI call failed:", followUp.status);
+          const errBody = await followUp.text();
+          console.error("Follow-up AI call failed:", followUp.status, errBody);
           break;
         }
 
