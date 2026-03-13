@@ -184,6 +184,7 @@ const Index = () => {
   const [filterBy, setFilterBy] = useState<'created_at' | 'updated_at'>('created_at');
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
   const [splashType, setSplashType] = useState<"1up" | "level-up" | null>(null);
+  const [listSelectedOpp, setListSelectedOpp] = useState<Opportunity | null>(null);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const {
