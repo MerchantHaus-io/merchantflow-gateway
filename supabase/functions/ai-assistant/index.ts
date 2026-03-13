@@ -980,39 +980,31 @@ serve(async (req) => {
             }
 
             if (isPdf) {
-              // Extract text from PDF using pdfjs-serverless
+              // Extract text from PDF using pdf-parse
               try {
                 const pdfResponse = await fetch(signedData.signedUrl);
                 if (!pdfResponse.ok) return `Error downloading PDF "${doc.file_name}": HTTP ${pdfResponse.status}`;
                 const pdfBuffer = await pdfResponse.arrayBuffer();
-                // Limit to ~5MB to avoid timeout
+                // Limit to ~5MB
                 if (pdfBuffer.byteLength > 5 * 1024 * 1024) {
                   return `PDF "${doc.file_name}" is too large (${(pdfBuffer.byteLength / 1024 / 1024).toFixed(1)}MB) for text extraction. Download link: ${signedData.signedUrl}`;
                 }
 
-                // Use pdfjs-serverless to extract text
-                const { getDocument } = await import("https://esm.sh/pdfjs-serverless@0.7.0");
-                const pdfDoc = await getDocument({ data: new Uint8Array(pdfBuffer), useSystemFonts: true }).promise;
-                let extractedText = "";
-                for (let i = 1; i <= pdfDoc.numPages; i++) {
-                  const page = await pdfDoc.getPage(i);
-                  const textContent = await page.getTextContent();
-                  const pageText = textContent.items.map((item: { str?: string }) => item.str || "").join(" ");
-                  extractedText += `\n--- Page ${i} ---\n${pageText}`;
-                }
+                const pdfParse = (await import("npm:pdf-parse/lib/pdf-parse.js")).default;
+                const result = await pdfParse(Buffer.from(pdfBuffer));
+                const extractedText = (result.text || "").trim();
 
-                const trimmedText = extractedText.trim();
-                if (!trimmedText) {
+                if (!extractedText) {
                   return `PDF "${doc.file_name}" (${doc.document_type || "Unassigned"}) — This PDF appears to be image-based/scanned with no extractable text. Download link: ${signedData.signedUrl}`;
                 }
 
-                // Return extracted text (truncate to ~8000 chars to stay within token limits)
+                // Truncate to ~8000 chars
                 const maxChars = 8000;
-                const finalText = trimmedText.length > maxChars
-                  ? trimmedText.substring(0, maxChars) + "\n\n[... truncated, document continues ...]"
-                  : trimmedText;
+                const finalText = extractedText.length > maxChars
+                  ? extractedText.substring(0, maxChars) + "\n\n[... truncated ...]"
+                  : extractedText;
 
-                return `Document: "${doc.file_name}" (${doc.document_type || "Unassigned"}) | Pages: ${pdfDoc.numPages}\n\n--- EXTRACTED TEXT ---\n${finalText}\n--- END ---\n\nI have read this PDF. The above is the full extracted text content.`;
+                return `Document: "${doc.file_name}" (${doc.document_type || "Unassigned"}) | Pages: ${result.numpages}\n\n--- EXTRACTED TEXT ---\n${finalText}\n--- END ---\n\nI have successfully read this PDF.`;
               } catch (e) {
                 console.error("PDF extraction error:", e);
                 return `Error reading PDF "${doc.file_name}": ${e instanceof Error ? e.message : "Unknown error"}. Download link: ${signedData.signedUrl}`;
