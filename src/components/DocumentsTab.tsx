@@ -156,6 +156,8 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
     setDocuments(prev => prev.map(d => d.id === docId ? { ...d, document_type: type } : d));
   };
 
+  const labelCounts = useMemo(() => getLabelCounts(documents), [documents]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
