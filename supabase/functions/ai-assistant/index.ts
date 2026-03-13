@@ -1091,8 +1091,65 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
                       type: "string",
                       description: "Summary of OFAC/sanctions screening results. State 'Clear' if no matches, or describe any flags.",
                     },
+                    score: {
+                      type: "number",
+                      description: "Overall numerical score out of 10, sum of all score_breakdown categories.",
+                    },
+                    confidence: {
+                      type: "string",
+                      enum: ["high", "medium", "low"],
+                      description: "Confidence level in the overall assessment.",
+                    },
+                    recommendation: {
+                      type: "string",
+                      enum: ["proceed", "proceed_with_conditions", "request_information", "escalate_to_risk", "decline"],
+                      description: "Operational recommendation.",
+                    },
+                    score_breakdown: {
+                      type: "array",
+                      description: "Per-category scoring breakdown (7 categories summing to max 10).",
+                      items: {
+                        type: "object",
+                        properties: {
+                          category: { type: "string", description: "Category name (e.g., 'Entity & ownership verification')" },
+                          max_score: { type: "number", description: "Maximum possible score for this category" },
+                          score: { type: "number", description: "Awarded score" },
+                          note: { type: "string", description: "Brief justification with evidence label" },
+                        },
+                        required: ["category", "max_score", "score", "note"],
+                        additionalProperties: false,
+                      },
+                    },
+                    hard_stops: {
+                      type: "array",
+                      description: "Critical hard-stop findings that override scoring. Empty array if none.",
+                      items: { type: "string" },
+                    },
+                    public_checks_performed: {
+                      type: "array",
+                      description: "List of public verification checks performed and their outcomes.",
+                      items: {
+                        type: "object",
+                        properties: {
+                          check: { type: "string", description: "Name of check (e.g., 'State registry lookup')" },
+                          tool: { type: "string", description: "Tool/source used (e.g., 'NASS directory', 'OFAC SDN list')" },
+                          result: { type: "string", description: "Outcome or 'Not performed' with reason" },
+                        },
+                        required: ["check", "result"],
+                        additionalProperties: false,
+                      },
+                    },
+                    validity_conclusion: {
+                      type: "string",
+                      enum: ["likely_valid", "inconclusive", "likely_invalid"],
+                      description: "Categorical validity opinion on the merchant application.",
+                    },
+                    validity_justification: {
+                      type: "string",
+                      description: "Brief justification for the validity conclusion.",
+                    },
                   },
-                  required: ["readiness_score", "summary", "recommended_mcc", "transaction_mix_assessment", "document_completeness", "red_flags", "recommended_actions", "risk_tier", "ofac_screening"],
+                  required: ["readiness_score", "summary", "recommended_mcc", "transaction_mix_assessment", "document_completeness", "red_flags", "recommended_actions", "risk_tier", "ofac_screening", "score", "confidence", "recommendation", "score_breakdown", "hard_stops", "public_checks_performed", "validity_conclusion", "validity_justification"],
                   additionalProperties: false,
                 },
               },
