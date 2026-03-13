@@ -217,9 +217,9 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
       const created = a.created_at ? new Date(a.created_at).toLocaleDateString() : "Unknown";
       const contacts = contactsByAccount[a.id] || [];
       const contactLines = contacts
-        .map((c: any) => `      ${[c.first_name, c.last_name].filter(Boolean).join(" ") || "Unnamed"} | ${c.email || "no email"} | ${c.phone || "no phone"}`)
+        .map((c: any) => `      [contact:${c.id}] ${[c.first_name, c.last_name].filter(Boolean).join(" ") || "Unnamed"} | ${c.email || "no email"} | ${c.phone || "no phone"}`)
         .join("\n");
-      return `  ${a.name} (${a.status || "active"}) — since ${created}${a.city && a.state ? ` | ${a.city}, ${a.state}` : ""}${a.website ? ` | ${a.website}` : ""}\n${contactLines || "      No contacts on file"}`;
+      return `  [acct:${a.id}] ${a.name} (${a.status || "active"}) — since ${created}${a.city && a.state ? ` | ${a.city}, ${a.state}` : ""}${a.website ? ` | ${a.website}` : ""}\n${contactLines || "      No contacts on file"}`;
     })
     .join("\n");
 
