@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
 import { useSearchParams } from "react-router-dom";
 import UnifiedPipelineBoard from "@/components/UnifiedPipelineBoard";
+import PipelineListView from "@/components/PipelineListView";
+import OpportunityDetailModal from "@/components/OpportunityDetailModal";
 import NewApplicationModal, { ApplicationFormData } from "@/components/NewApplicationModal";
 import { AppLayout } from "@/components/AppLayout";
 import { getServiceType, ServiceType, OnboardingWizardState, Opportunity, OpportunityStage, OutcomeStatus, migrateStage, EMAIL_TO_USER, TEAM_MEMBERS } from "@/types/opportunity";
@@ -183,6 +185,7 @@ const Index = () => {
   const [filterBy, setFilterBy] = useState<'created_at' | 'updated_at'>('created_at');
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
   const [splashType, setSplashType] = useState<"1up" | "level-up" | null>(null);
+  const [listSelectedOpp, setListSelectedOpp] = useState<Opportunity | null>(null);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const {
@@ -849,27 +852,63 @@ const Index = () => {
             </div>
           </header>
         )}
-        <main className={isFocusMode ? "flex-1 flex flex-col min-h-0 overflow-hidden" : "flex-1 flex flex-col min-h-0 overflow-y-hidden overflow-x-visible"}>
-          <UnifiedPipelineBoard
-            opportunities={filteredOpportunities}
-            onUpdateOpportunity={handleUpdateOpportunity}
-            onAssignmentChange={handleAssignmentChange}
-            onSlaStatusChange={handleSlaStatusChange}
-            onAddNew={() => setIsModalOpen(true)}
-            onMarkAsDead={handleMarkAsDead}
-            onDelete={handleDelete}
-            onConvertToGateway={handleConvertToGatewayTrack}
-            onMoveToProcessing={handleMoveToProcessing}
-            onRefresh={fetchOpportunities}
-            currentUser={currentUserDisplayName || undefined}
-            focusMode={isFocusMode}
-            onFocusModeChange={setIsFocusMode}
-            isAdmin={isAdmin}
-          />
+        <main className={isFocusMode ? "flex-1 flex flex-col min-h-0 overflow-hidden" : "flex-1 flex flex-col min-h-0 overflow-hidden"}>
+          {/* Pipeline board — takes ~75% of available space */}
+          <div className={isFocusMode ? "flex-1 flex flex-col min-h-0" : "flex flex-col min-h-0"} style={isFocusMode ? undefined : { flex: '3 1 0%' }}>
+            <UnifiedPipelineBoard
+              opportunities={filteredOpportunities}
+              onUpdateOpportunity={handleUpdateOpportunity}
+              onAssignmentChange={handleAssignmentChange}
+              onSlaStatusChange={handleSlaStatusChange}
+              onAddNew={() => setIsModalOpen(true)}
+              onMarkAsDead={handleMarkAsDead}
+              onDelete={handleDelete}
+              onConvertToGateway={handleConvertToGatewayTrack}
+              onMoveToProcessing={handleMoveToProcessing}
+              onRefresh={fetchOpportunities}
+              currentUser={currentUserDisplayName || undefined}
+              focusMode={isFocusMode}
+              onFocusModeChange={setIsFocusMode}
+              isAdmin={isAdmin}
+            />
+          </div>
+          {/* Pipeline list view — takes ~25% of available space */}
+          {!isFocusMode && (
+            <div className="flex flex-col min-h-0 overflow-hidden" style={{ flex: '1 1 0%', minHeight: '180px' }}>
+              <PipelineListView
+                opportunities={filteredOpportunities}
+                onCardClick={setListSelectedOpp}
+              />
+            </div>
+          )}
         </main>
       </div>
 
       <NewApplicationModal open={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleNewApplication} />
+
+      {/* Detail modal for list view clicks */}
+      <OpportunityDetailModal
+        opportunity={listSelectedOpp}
+        onClose={() => setListSelectedOpp(null)}
+        onUpdate={(updates) => {
+          if (listSelectedOpp) {
+            handleUpdateOpportunity(listSelectedOpp.id, updates);
+          }
+        }}
+        onMarkAsDead={handleMarkAsDead}
+        onDelete={handleDelete}
+        onConvertToGateway={handleConvertToGatewayTrack}
+        onMoveToProcessing={handleMoveToProcessing}
+        hasGatewayOpportunity={
+          listSelectedOpp
+            ? opportunities.some(
+                (opp) =>
+                  opp.account_id === listSelectedOpp.account_id &&
+                  getServiceType(opp) === "gateway_only"
+              )
+            : false
+        }
+      />
 
       <GameSplash
         type={splashType || "1up"}
