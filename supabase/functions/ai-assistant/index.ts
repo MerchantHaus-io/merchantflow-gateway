@@ -1086,11 +1086,15 @@ serve(async (req) => {
               tool_call_id: toolCall.id,
               content: textContent || "Image loaded successfully. Describe what you see.",
             });
-            // Add the image as a user message with multimodal content
+            // Add the document as a user message with multimodal content
+            const isPdfContent = mimeType === "application/pdf";
             messages.push({
               role: "user",
               content: [
-                { type: "text", text: "[System: The following image is the document that was just loaded via view_document. Analyze it and respond to the user's request.]" },
+                { type: "text", text: isPdfContent
+                  ? "[System: The following is a PDF document loaded via view_document. Read its full contents — text, tables, numbers, names — and respond to the user's request.]"
+                  : "[System: The following image is the document that was just loaded via view_document. Analyze it and respond to the user's request.]"
+                },
                 { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Data}` } },
               ],
             });
