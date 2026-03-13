@@ -139,9 +139,12 @@ export default function Leads() {
           title="Leads"
           description="All outreach leads across cadences · Convert qualified leads to your pipeline"
           actions={
-            <Button size="sm" className="gap-1.5" onClick={() => navigate("/outreach")}>
-              <Mail className="h-4 w-4" />Manage Cadences
-            </Button>
+            <div className="flex items-center gap-2">
+              <NewLeadDialog />
+              <Button size="sm" className="gap-1.5" onClick={() => navigate("/outreach")}>
+                <Mail className="h-4 w-4" />Manage Cadences
+              </Button>
+            </div>
           }
         />
 
