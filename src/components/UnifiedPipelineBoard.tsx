@@ -25,6 +25,7 @@ interface UnifiedPipelineBoardProps {
   focusMode?: boolean;
   /** Called when focus mode should change */
   onFocusModeChange?: (active: boolean) => void;
+  isAdmin?: boolean;
 }
 
 const UnifiedPipelineBoard = ({
