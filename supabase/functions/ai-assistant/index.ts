@@ -148,7 +148,7 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
     // Latest validation reports
     supabase.from("validation_reports").select("opportunity_id, readiness_score, summary, created_at").order("created_at", { ascending: false }).limit(50),
     // Beneficial owners
-    supabase.from("beneficial_owners").select("opportunity_id, full_name, title, ownership_percentage, date_of_birth, address_line1, address_city, address_state, address_zip").order("created_at", { ascending: false }),
+    supabase.from("beneficial_owners").select("id, opportunity_id, full_name, title, ownership_percentage, date_of_birth, address_line1, address_city, address_state, address_zip").order("created_at", { ascending: false }),
     // Recent activities / audit trail
     supabase.from("activities").select("opportunity_id, type, description, user_email, created_at").order("created_at", { ascending: false }).limit(50),
     // NMI boarding submissions
