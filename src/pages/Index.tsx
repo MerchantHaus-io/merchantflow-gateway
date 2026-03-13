@@ -173,6 +173,7 @@ const Index = () => {
   const {
     user
   } = useAuth();
+  const { isAdmin } = useUserRole();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);

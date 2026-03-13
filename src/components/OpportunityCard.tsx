@@ -32,6 +32,7 @@ interface OpportunityCardProps {
   onTouchDragMove?: (e: React.TouchEvent) => void;
   onTouchDragEnd?: (e: React.TouchEvent) => void;
   currentUser?: string;
+  isAdmin?: boolean;
 }
 
 const TEAM_COLORS: Record<string, { border: string; bg: string; text: string }> = {
