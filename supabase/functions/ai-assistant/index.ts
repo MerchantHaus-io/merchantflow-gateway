@@ -940,6 +940,47 @@ serve(async (req) => {
             return `Validation complete for ${acctName}: ${score}. Missing ${missing.length} item(s): ${missing.join(", ")}. ${(docs || []).length} docs on file, ${(bos || []).length} beneficial owner(s). Website: ${website}.`;
           }
 
+          case "view_document": {
+            const { document_id } = args;
+            // Fetch document metadata
+            const { data: doc, error: docErr } = await supabase
+              .from("documents")
+              .select("file_name, file_path, content_type, document_type, opportunity_id")
+              .eq("id", document_id)
+              .single();
+            if (docErr || !doc) return `Error: Document not found (${document_id}). ${docErr?.message || ""}`;
+
+            const contentType = (doc.content_type || "").toLowerCase();
+            const isImage = contentType.startsWith("image/") || /\.(jpg|jpeg|png|webp|gif)$/i.test(doc.file_name);
+
+            // Generate signed URL (valid 10 minutes)
+            const { data: signedData, error: signErr } = await supabase.storage
+              .from("opportunity-documents")
+              .createSignedUrl(doc.file_path, 600);
+
+            if (signErr || !signedData?.signedUrl) {
+              return `Error generating access URL for "${doc.file_name}": ${signErr?.message || "Unknown error"}`;
+            }
+
+            if (isImage) {
+              // Fetch the image and convert to base64 for multimodal input
+              try {
+                const imgResponse = await fetch(signedData.signedUrl);
+                if (!imgResponse.ok) return `Error downloading image "${doc.file_name}": HTTP ${imgResponse.status}`;
+                const imgBuffer = await imgResponse.arrayBuffer();
+                const base64 = btoa(String.fromCharCode(...new Uint8Array(imgBuffer)));
+                const mimeType = contentType || "image/jpeg";
+                // Return a special marker that the tool loop will parse
+                return `__IMAGE__${mimeType}__${base64}__ENDIMAGE__Document "${doc.file_name}" (${doc.document_type || "Unassigned"}) — I can now see this image. Please describe what you observe.`;
+              } catch (e) {
+                return `Error fetching image: ${e instanceof Error ? e.message : "Unknown error"}. Signed URL: ${signedData.signedUrl}`;
+              }
+            }
+
+            // For non-image files (PDFs etc), return metadata + signed URL
+            return `Document: "${doc.file_name}" (${doc.document_type || "Unassigned"}) | Type: ${contentType || "unknown"} | This is not an image so I cannot visually inspect it, but here is the download link: ${signedData.signedUrl}`;
+          }
+
           default:
             return `Unknown tool: ${toolName}`;
         }
