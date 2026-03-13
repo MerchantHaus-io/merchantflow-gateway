@@ -980,7 +980,7 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
         body: JSON.stringify({
           model: "google/gemini-2.5-flash",
           messages: [
-            { role: "system", content: "You are an expert underwriting reviewer for payment processing merchant applications. You perform a unified analysis covering document validation, website scrutiny, and application detail verification using the Deep Research Specification for AI Underwriter Bot framework. You enforce Visa Core Rules, Mastercard requirements, FATF CDD expectations, and PCI DSS standards." },
+            { role: "system", content: "You are an expert underwriting reviewer for payment processing merchant applications. You operate under the Deep Research Specification for AI Underwriter Bot framework. You enforce Visa Core Rules & Dispute Management Guidelines, Mastercard requirements, FATF CDD expectations, PCI DSS standards, and U.S. CIP/beneficial-ownership rules. You behave like an auditor: decisive but falsifiable. You label every key claim as Observed, Verified via public lookup, Inferred, or Unverified. You mask all PII (EIN/SSN/DOB/account numbers to last 4 only). You never imply you verified something you did not verify." },
             { role: "user", content: unifiedPrompt },
           ],
           tools: [
