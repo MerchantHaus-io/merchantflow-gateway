@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react
 import { useSearchParams } from "react-router-dom";
 import UnifiedPipelineBoard from "@/components/UnifiedPipelineBoard";
 import PipelineListView from "@/components/PipelineListView";
+import OpportunityDetailModal from "@/components/OpportunityDetailModal";
 import NewApplicationModal, { ApplicationFormData } from "@/components/NewApplicationModal";
 import { AppLayout } from "@/components/AppLayout";
 import { getServiceType, ServiceType, OnboardingWizardState, Opportunity, OpportunityStage, OutcomeStatus, migrateStage, EMAIL_TO_USER, TEAM_MEMBERS } from "@/types/opportunity";
