@@ -211,11 +211,13 @@ const OpportunityCard = ({
         className={cn(
           "cursor-grab active:cursor-grabbing group touch-manipulation relative",
           "rounded-xl",
-          isClosedWon
-            ? "pipeline-card-live bg-gradient-to-br from-amber-50 via-yellow-50/80 to-amber-100/60 dark:from-amber-950/40 dark:via-yellow-950/30 dark:to-amber-900/20"
-            : isComplete
-              ? "pipeline-card border-l-[3px] border-l-emerald-500 bg-emerald-600 dark:bg-emerald-700"
-              : cn("pipeline-card border-l-[3px]", teamColors.border, "bg-card")
+          isGreyed
+            ? "pipeline-card border-l-[3px] border-l-muted-foreground/20 bg-muted/60 opacity-50"
+            : isClosedWon
+              ? "pipeline-card-live bg-gradient-to-br from-amber-50 via-yellow-50/80 to-amber-100/60 dark:from-amber-950/40 dark:via-yellow-950/30 dark:to-amber-900/20"
+              : isComplete
+                ? "pipeline-card border-l-[3px] border-l-emerald-500 bg-emerald-600 dark:bg-emerald-700"
+                : cn("pipeline-card border-l-[3px]", teamColors.border, "bg-card")
         )}
       >
         {/* Delete button — fades in on hover */}
