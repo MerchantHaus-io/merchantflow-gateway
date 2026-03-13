@@ -23,6 +23,7 @@ interface PipelineColumnProps {
   onTouchDragStart?: (e: React.TouchEvent, opportunity: Opportunity, element: HTMLElement) => void;
   onTouchDragMove?: (e: React.TouchEvent) => void;
   onTouchDragEnd?: (e: React.TouchEvent) => void;
+  isAdmin?: boolean;
 }
 
 const formatCurrency = (value: number) =>
