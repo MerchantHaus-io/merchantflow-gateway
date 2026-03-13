@@ -68,6 +68,7 @@ const OpportunityCard = ({
   onTouchDragMove,
   onTouchDragEnd,
   currentUser,
+  isAdmin,
 }: OpportunityCardProps) => {
   const account = opportunity.account;
   const contact = opportunity.contact;
