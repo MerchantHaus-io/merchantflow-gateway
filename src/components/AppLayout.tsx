@@ -95,6 +95,8 @@ export function AppLayout({
       {!focusMode && <ActionItemsWidget />}
       {!focusMode && <BroadcastPopup />}
       <ComplianceBroadcast />
+      <AtriaBroadcast />
+      {!focusMode && <AtriaFAB />}
       {!focusMode && isMobile && !isChatRoute && <MobileAppDock />}
       {!focusMode && <OfficeSimulatorOverlay />}
     </div>
