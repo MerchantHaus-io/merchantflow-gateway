@@ -42,6 +42,7 @@ const UnifiedPipelineBoard = ({
   currentUser,
   focusMode: externalFocusMode,
   onFocusModeChange,
+  isAdmin,
 }: UnifiedPipelineBoardProps) => {
   const [draggedOpportunity, setDraggedOpportunity] = useState<Opportunity | null>(null);
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
