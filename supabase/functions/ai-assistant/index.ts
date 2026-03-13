@@ -31,7 +31,8 @@ KNOWLEDGE:
 - Full SOP procedures, email templates, checklists (provided below)
 
 ACTIONS:
-- You can CREATE tasks, CREATE full deals (Account+Contact+Opportunity), UPDATE opportunity stages, ASSIGN opportunities, UPDATE statuses, UPDATE account/contact/opportunity records, ADD NOTES, RELABEL documents, LOG client interactions, and RUN underwriting validation checks.
+- You can CREATE tasks, CREATE full deals (Account+Contact+Opportunity), UPDATE opportunity stages, ASSIGN opportunities, UPDATE statuses, UPDATE account/contact/opportunity records, ADD NOTES, RELABEL documents, LOG client interactions, RUN underwriting validation checks, and VIEW/READ documents and images.
+- You can VIEW documents and images uploaded to any deal. For images (IDs, voided checks, bank statements), you will see the actual image and can describe what you observe. For PDFs and other files, you get a download link. Use this when asked to review, check, or verify a document.
 - When asked to do something, use the available tools to take action immediately. Confirm what you did afterward.
 - For ambiguous requests, ask for clarification before acting.
 - When creating a deal, you create the account, contact, and opportunity in one step. Ask for the business name and contact name at minimum.
@@ -658,6 +659,21 @@ serve(async (req) => {
             },
           },
         },
+        {
+          type: "function",
+          function: {
+            name: "view_document",
+            description: "View/read a document or image from the CRM. For images (jpg, png, webp, gif), you will see the image content directly. For PDFs and other files, you will get a downloadable signed URL. Use when someone asks you to look at, review, read, or check a specific document or image.",
+            parameters: {
+              type: "object",
+              properties: {
+                document_id: { type: "string", description: "UUID of the document from [doc:uuid] in the document inventory" },
+              },
+              required: ["document_id"],
+              additionalProperties: false,
+            },
+          },
+        },
       ];
 
       // ── Tool Execution Handler ──
@@ -925,6 +941,47 @@ serve(async (req) => {
             return `Validation complete for ${acctName}: ${score}. Missing ${missing.length} item(s): ${missing.join(", ")}. ${(docs || []).length} docs on file, ${(bos || []).length} beneficial owner(s). Website: ${website}.`;
           }
 
+          case "view_document": {
+            const { document_id } = args;
+            // Fetch document metadata
+            const { data: doc, error: docErr } = await supabase
+              .from("documents")
+              .select("file_name, file_path, content_type, document_type, opportunity_id")
+              .eq("id", document_id)
+              .single();
+            if (docErr || !doc) return `Error: Document not found (${document_id}). ${docErr?.message || ""}`;
+
+            const contentType = (doc.content_type || "").toLowerCase();
+            const isImage = contentType.startsWith("image/") || /\.(jpg|jpeg|png|webp|gif)$/i.test(doc.file_name);
+
+            // Generate signed URL (valid 10 minutes)
+            const { data: signedData, error: signErr } = await supabase.storage
+              .from("opportunity-documents")
+              .createSignedUrl(doc.file_path, 600);
+
+            if (signErr || !signedData?.signedUrl) {
+              return `Error generating access URL for "${doc.file_name}": ${signErr?.message || "Unknown error"}`;
+            }
+
+            if (isImage) {
+              // Fetch the image and convert to base64 for multimodal input
+              try {
+                const imgResponse = await fetch(signedData.signedUrl);
+                if (!imgResponse.ok) return `Error downloading image "${doc.file_name}": HTTP ${imgResponse.status}`;
+                const imgBuffer = await imgResponse.arrayBuffer();
+                const base64 = btoa(String.fromCharCode(...new Uint8Array(imgBuffer)));
+                const mimeType = contentType || "image/jpeg";
+                // Return a special marker that the tool loop will parse
+                return `__IMAGE__${mimeType}__${base64}__ENDIMAGE__Document "${doc.file_name}" (${doc.document_type || "Unassigned"}) — I can now see this image. Please describe what you observe.`;
+              } catch (e) {
+                return `Error fetching image: ${e instanceof Error ? e.message : "Unknown error"}. Signed URL: ${signedData.signedUrl}`;
+              }
+            }
+
+            // For non-image files (PDFs etc), return metadata + signed URL
+            return `Document: "${doc.file_name}" (${doc.document_type || "Unassigned"}) | Type: ${contentType || "unknown"} | This is not an image so I cannot visually inspect it, but here is the download link: ${signedData.signedUrl}`;
+          }
+
           default:
             return `Unknown tool: ${toolName}`;
         }
@@ -943,7 +1000,7 @@ serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
+          model: "google/gemini-2.5-flash",
           messages,
           tools: crmTools,
         }),
@@ -999,11 +1056,32 @@ serve(async (req) => {
           console.log(`Executing tool: ${fnName}`, fnArgs);
 
           const result = await executeTool(fnName, fnArgs);
-          messages.push({
-            role: "tool",
-            tool_call_id: toolCall.id,
-            content: result,
-          });
+
+          // Check if result contains an embedded image for multimodal
+          const imageMatch = result.match(/^__IMAGE__(.+?)__(.+?)__ENDIMAGE__(.*)$/s);
+          if (imageMatch) {
+            const [, mimeType, base64Data, textContent] = imageMatch;
+            // Add the tool result as text
+            messages.push({
+              role: "tool",
+              tool_call_id: toolCall.id,
+              content: textContent || "Image loaded successfully. Describe what you see.",
+            });
+            // Add the image as a user message with multimodal content
+            messages.push({
+              role: "user",
+              content: [
+                { type: "text", text: "[System: The following image is the document that was just loaded via view_document. Analyze it and respond to the user's request.]" },
+                { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Data}` } },
+              ],
+            });
+          } else {
+            messages.push({
+              role: "tool",
+              tool_call_id: toolCall.id,
+              content: result,
+            });
+          }
         }
 
         // Call AI again with tool results
@@ -1014,7 +1092,7 @@ serve(async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "google/gemini-3-flash-preview",
+            model: "google/gemini-2.5-flash",
             messages,
             tools: crmTools,
           }),
