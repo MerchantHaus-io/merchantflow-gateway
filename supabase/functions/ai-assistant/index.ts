@@ -1269,18 +1269,39 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
       // ── AUTO-SAVE AS NOTE ──
       if (!isNoChange) {
         const mcc = report.recommended_mcc as { code?: string; description?: string; rationale?: string } | undefined;
+        const recLabel = {
+          proceed: "Proceed", proceed_with_conditions: "Proceed with Conditions",
+          request_information: "Request Information", escalate_to_risk: "Escalate to Risk", decline: "Decline",
+        }[(report.recommendation as string) || ""] || (report.recommendation as string) || "";
+        const validityLabel = {
+          likely_valid: "Likely Valid", inconclusive: "Inconclusive", likely_invalid: "Likely Invalid",
+        }[(report.validity_conclusion as string) || ""] || "";
+
         const noteLines: string[] = [
-          `📋 UNDERWRITING REVIEW — ${newScore === "ready" ? "🟢 Ready" : newScore === "needs_attention" ? "🟡 Needs Attention" : "🔴 Not Ready"}`,
+          `📋 UNDERWRITING REVIEW — ${newScore === "ready" ? "🟢 Proceed" : newScore === "needs_attention" ? "🟡 Needs Attention" : "🔴 Decline/Escalate"}`,
+          `Score: ${report.score ?? "N/A"}/10 | Confidence: ${(report.confidence as string)?.charAt(0).toUpperCase()}${(report.confidence as string)?.slice(1) || "N/A"} | Recommendation: ${recLabel}`,
           "",
           (report.summary as string) || "",
         ];
+
+        // Score breakdown
+        const breakdown = report.score_breakdown as Array<{ category: string; max_score: number; score: number; note: string }> | undefined;
+        if (breakdown?.length) {
+          noteLines.push("", "📊 Score Breakdown:");
+          breakdown.forEach(b => noteLines.push(`  ${b.category} (0–${b.max_score}): ${b.score} — ${b.note}`));
+        }
+
+        // Hard stops
+        const hardStops = report.hard_stops as string[] | undefined;
+        noteLines.push("", `🚨 Hard Stops: ${hardStops?.length ? "" : "None"}`);
+        hardStops?.forEach(h => noteLines.push(`  ⛔ ${h}`));
 
         if (mcc) {
           noteLines.push("", `🏷️ Recommended MCC: ${mcc.code || "N/A"} — ${mcc.description || "N/A"}`, `   Rationale: ${mcc.rationale || "N/A"}`);
         }
 
         if (report.risk_tier === "high_risk") {
-          noteLines.push("", "🔴 HIGH-RISK MCC — This merchant falls into a high-risk category. Reserves, delayed funding, or enhanced monitoring may be required.");
+          noteLines.push("", "🔴 HIGH-RISK MCC — Reserves, delayed funding, or enhanced monitoring may be required.");
         }
 
         if (report.ofac_screening) {
@@ -1293,6 +1314,13 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
 
         if (websiteUrl && report.website_score !== undefined) {
           noteLines.push("", `🌐 Website Score: ${report.website_score}/10 (${report.website_score_label || "N/A"})`, `   URL: ${websiteUrl}`);
+        }
+
+        // Public checks
+        const publicChecks = report.public_checks_performed as Array<{ check: string; tool?: string; result: string }> | undefined;
+        if (publicChecks?.length) {
+          noteLines.push("", "🔍 Public Checks Performed:");
+          publicChecks.forEach(c => noteLines.push(`  ${c.check}${c.tool ? ` (${c.tool})` : ""}: ${c.result}`));
         }
 
         const redFlags = report.red_flags as Array<{ flag: string; severity: string; detail?: string }> | undefined;
@@ -1313,6 +1341,9 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
           actions.forEach(a => noteLines.push(`  → ${a}`));
         }
 
+        // Validity conclusion
+        noteLines.push("", `✅ Validity: ${validityLabel} — ${report.validity_justification || ""} — Confidence: ${(report.confidence as string) || "N/A"}`);
+
         const noteContent = noteLines.join("\n");
 
         // Save as comment
@@ -1329,7 +1360,7 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
           user_id: AI_BOT_USER_ID,
           user_email: AI_BOT_EMAIL,
           type: "ai_report_saved",
-          description: `Underwriting Review completed — ${newScore === "ready" ? "Ready" : newScore === "needs_attention" ? "Needs Attention" : "Not Ready"}`,
+          description: `Underwriting Review completed — ${report.score ?? "N/A"}/10 — ${validityLabel} — ${recLabel}`,
         });
       }
 
