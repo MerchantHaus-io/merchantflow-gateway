@@ -80,9 +80,7 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
-  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
-  const [selectedDocType, setSelectedDocType] = useState("");
-  const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [bulkSuggestions, setBulkSuggestions] = useState<SuggestedLabel[] | null>(null);
   const [previewDoc, setPreviewDoc] = useState<Document | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -103,24 +101,26 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length) {
-      setPendingFiles(files);
-      setShowUploadDialog(true);
+      const suggestions = suggestLabels(files);
+      setBulkSuggestions(suggestions);
     }
+    // Reset input so same files can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleUpload = async () => {
-    if (!pendingFiles.length) return;
-    // Validate label limit before uploading
-    const currentCount = getLabelCounts(documents)[selectedDocType] || 0;
-    const max = DOCUMENT_LABEL_LIMITS[selectedDocType] ?? DEFAULT_LABEL_LIMIT;
-    const remaining = max - currentCount;
-    if (pendingFiles.length > remaining) {
-      toast.error(`Only ${remaining} more "${selectedDocType}" document(s) allowed (max ${max})`);
-      return;
-    }
+  const handleBulkUpload = async (assignments: { file: File; type: string }[]) => {
     setIsUploading(true);
     try {
-      for (const file of pendingFiles) {
+      let successCount = 0;
+      for (const { file, type } of assignments) {
+        // Validate label limit
+        const currentCount = getLabelCounts(documents)[type] || 0;
+        const max = DOCUMENT_LABEL_LIMITS[type] ?? DEFAULT_LABEL_LIMIT;
+        if (currentCount >= max) {
+          toast.error(`"${type}" is at its limit (${max}/${max}) — skipping ${file.name}`);
+          continue;
+        }
+
         const path = `${opportunityId}/${Date.now()}_${file.name}`;
         const { error: uploadError } = await supabase.storage
           .from("opportunity-documents")
@@ -133,14 +133,13 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
           file_size: file.size,
           content_type: file.type,
           uploaded_by: user?.email,
-          document_type: selectedDocType,
+          document_type: type,
         });
         if (dbError) throw dbError;
+        successCount++;
       }
-      toast.success(`${pendingFiles.length} file(s) uploaded`);
-      setPendingFiles([]);
-      setShowUploadDialog(false);
-      setSelectedDocType("");
+      toast.success(`${successCount} file${successCount !== 1 ? "s" : ""} uploaded`);
+      setBulkSuggestions(null);
       fetchDocuments();
     } catch {
       toast.error("Upload failed");
