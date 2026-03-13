@@ -589,7 +589,7 @@ serve(async (req) => {
                 service_type: { type: "string", enum: ["processing", "gateway"], description: "Service type for the opportunity" },
                 assigned_to: { type: "string", description: "Email of team member to assign" },
                 referral_source: { type: "string", description: "How the lead came in" },
-                stage: { type: "string", enum: ["discovery", "qualification", "preboarding", "underwriting", "boarding", "live"], description: "Initial pipeline stage (defaults to discovery)" },
+                stage: { type: "string", enum: ["discovery", "qualified", "app_prep", "underwriting", "approved", "gateway_setup", "integration", "testing", "go_live_ready"], description: "Initial pipeline stage (defaults to discovery)" },
               },
               required: ["account_name", "first_name", "last_name"],
               additionalProperties: false,
