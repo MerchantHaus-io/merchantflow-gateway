@@ -658,6 +658,21 @@ serve(async (req) => {
             },
           },
         },
+        {
+          type: "function",
+          function: {
+            name: "view_document",
+            description: "View/read a document or image from the CRM. For images (jpg, png, webp, gif), you will see the image content directly. For PDFs and other files, you will get a downloadable signed URL. Use when someone asks you to look at, review, read, or check a specific document or image.",
+            parameters: {
+              type: "object",
+              properties: {
+                document_id: { type: "string", description: "UUID of the document from [doc:uuid] in the document inventory" },
+              },
+              required: ["document_id"],
+              additionalProperties: false,
+            },
+          },
+        },
       ];
 
       // ── Tool Execution Handler ──
