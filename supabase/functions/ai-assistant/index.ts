@@ -1071,6 +1071,7 @@ serve(async (req) => {
 
       let aiData = await aiResponse.json();
       let assistantMessage = aiData.choices?.[0]?.message;
+      console.log("Initial AI response - has tool_calls:", !!assistantMessage?.tool_calls, "content length:", assistantMessage?.content?.length);
 
       // ── Tool-calling loop (max 5 iterations) ──
       let iterations = 0;
