@@ -27,7 +27,7 @@ KNOWLEDGE:
 - Underwriting (website requirements, doc checklists, red flags)
 - Merchant onboarding, payment processing (MCC codes, interchange, chargebacks, reserves)
 - Application review guidance and general ops questions
-- Live CRM data — pipeline, accounts, contacts, tasks, team activity, documents (provided below)
+- Live CRM data — pipeline, accounts, contacts, tasks, team activity, documents, beneficial owners, NMI boarding submissions, client interactions (provided below)
 - Full SOP procedures, email templates, checklists (provided below)
 
 ACTIONS:
