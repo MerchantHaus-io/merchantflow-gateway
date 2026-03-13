@@ -954,6 +954,7 @@ serve(async (req) => {
 
             const contentType = (doc.content_type || "").toLowerCase();
             const isImage = contentType.startsWith("image/") || /\.(jpg|jpeg|png|webp|gif)$/i.test(doc.file_name);
+            const isPdf = contentType === "application/pdf" || /\.pdf$/i.test(doc.file_name);
 
             // Generate signed URL (valid 10 minutes)
             const { data: signedData, error: signErr } = await supabase.storage
@@ -972,15 +973,32 @@ serve(async (req) => {
                 const imgBuffer = await imgResponse.arrayBuffer();
                 const base64 = btoa(String.fromCharCode(...new Uint8Array(imgBuffer)));
                 const mimeType = contentType || "image/jpeg";
-                // Return a special marker that the tool loop will parse
                 return `__IMAGE__${mimeType}__${base64}__ENDIMAGE__Document "${doc.file_name}" (${doc.document_type || "Unassigned"}) — I can now see this image. Please describe what you observe.`;
               } catch (e) {
                 return `Error fetching image: ${e instanceof Error ? e.message : "Unknown error"}. Signed URL: ${signedData.signedUrl}`;
               }
             }
 
-            // For non-image files (PDFs etc), return metadata + signed URL
-            return `Document: "${doc.file_name}" (${doc.document_type || "Unassigned"}) | Type: ${contentType || "unknown"} | This is not an image so I cannot visually inspect it, but here is the download link: ${signedData.signedUrl}`;
+            if (isPdf) {
+              // Fetch PDF and convert to base64 for Gemini multimodal PDF reading
+              try {
+                const pdfResponse = await fetch(signedData.signedUrl);
+                if (!pdfResponse.ok) return `Error downloading PDF "${doc.file_name}": HTTP ${pdfResponse.status}`;
+                const pdfBuffer = await pdfResponse.arrayBuffer();
+                // Limit to ~10MB to avoid payload issues
+                if (pdfBuffer.byteLength > 10 * 1024 * 1024) {
+                  return `PDF "${doc.file_name}" is too large (${(pdfBuffer.byteLength / 1024 / 1024).toFixed(1)}MB) for inline analysis. Download link: ${signedData.signedUrl}`;
+                }
+                const base64 = btoa(String.fromCharCode(...new Uint8Array(pdfBuffer)));
+                // Use the same __IMAGE__ marker pattern — Gemini supports inline PDF via application/pdf mime
+                return `__IMAGE__application/pdf__${base64}__ENDIMAGE__Document "${doc.file_name}" (${doc.document_type || "Unassigned"}) — I can now read this PDF. Analyze its contents and respond to the user.`;
+              } catch (e) {
+                return `Error fetching PDF: ${e instanceof Error ? e.message : "Unknown error"}. Download link: ${signedData.signedUrl}`;
+              }
+            }
+
+            // For other file types, return metadata + signed URL
+            return `Document: "${doc.file_name}" (${doc.document_type || "Unassigned"}) | Type: ${contentType || "unknown"} | Download link: ${signedData.signedUrl}`;
           }
 
           default:
