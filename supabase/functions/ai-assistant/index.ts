@@ -240,6 +240,53 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
     })
     .join("\n");
 
+  // Build beneficial owners grouped by opportunity
+  const allBOs = beneficialOwnersRes.data || [];
+  const bosByOpp: Record<string, any[]> = {};
+  for (const bo of allBOs) {
+    const oppId = String((bo as any).opportunity_id);
+    if (!bosByOpp[oppId]) bosByOpp[oppId] = [];
+    bosByOpp[oppId].push(bo);
+  }
+  const beneficialOwnerRoster = Object.entries(bosByOpp)
+    .map(([oppId, bos]) => {
+      const acctName = oppToAccount[oppId] || "Unknown Account";
+      const boLines = bos
+        .map((b: any) => `      ${b.full_name} — ${b.title || "No title"} | ${b.ownership_percentage}% | ${[b.address_city, b.address_state].filter(Boolean).join(", ") || "No address"}`)
+        .join("\n");
+      return `  ${acctName}:\n${boLines}`;
+    })
+    .join("\n");
+
+  // Recent activities
+  const recentActivities = (activitiesRes.data || [])
+    .map((a: any) => {
+      const acctName = oppToAccount[a.opportunity_id] || "Unknown Account";
+      const date = a.created_at ? new Date(a.created_at).toLocaleDateString() : "unknown";
+      return `  ${date} | ${acctName} | ${a.type} | ${a.description || "No description"} | by ${a.user_email || "system"}`;
+    })
+    .join("\n");
+
+  // NMI boarding submissions
+  const allBoardings = nmiBoardingRes.data || [];
+  const boardingRoster = allBoardings
+    .map((b: any) => {
+      const acctName = b.account_id ? accountIdToName[b.account_id] || b.company_name : b.company_name;
+      const date = b.created_at ? new Date(b.created_at).toLocaleDateString() : "unknown";
+      return `  ${acctName}${b.dba_name ? " (DBA: " + b.dba_name + ")" : ""} — ${b.nmi_status}${b.nmi_gateway_id ? " | GW: " + b.nmi_gateway_id : ""}${b.error_message ? " | Error: " + b.error_message : ""} | ${date} by ${b.submitted_by_email}`;
+    })
+    .join("\n");
+
+  // Client interactions
+  const allInteractions = clientInteractionsRes.data || [];
+  const interactionRoster = allInteractions
+    .map((i: any) => {
+      const acctName = accountIdToName[i.account_id] || "Unknown Account";
+      const date = i.created_at ? new Date(i.created_at).toLocaleDateString() : "unknown";
+      return `  ${date} | ${acctName} | ${i.interaction_type} — ${i.subject} | ${i.status} (${i.priority}) | ${i.outcome || "No outcome"}${i.follow_up_at ? " | Follow-up: " + new Date(i.follow_up_at).toLocaleDateString() : ""} | by ${i.created_by_email || "unknown"}`;
+    })
+    .join("\n");
+
   return `
 
 ━━━ LIVE CRM DATA SNAPSHOT ━━━
@@ -266,6 +313,18 @@ ${documentRoster || "  No documents on file"}
 LATEST VALIDATION REPORTS:
 ${validationSummary || "  No validation reports yet"}
 
+BENEFICIAL OWNERS (${allBOs.length} across all deals):
+${beneficialOwnerRoster || "  None on file"}
+
+RECENT ACTIVITY LOG (last 50 events):
+${recentActivities || "  No recent activity"}
+
+NMI BOARDING SUBMISSIONS (${allBoardings.length} recent):
+${boardingRoster || "  No boarding submissions"}
+
+CLIENT INTERACTIONS (${allInteractions.length} recent):
+${interactionRoster || "  No interactions logged"}
+
 OPEN TASKS (${tasksRes.data?.length || 0}):
 ${openTasks || "  None"}
 
@@ -277,6 +336,8 @@ TOTALS:
   Contacts: ${contactCountRes.count ?? "Unknown"}
   All Opportunities: ${opps.length} (${activeOpps.length} active, ${deadOpps.length} dead/closed-lost)
   Documents: ${allDocs.length} total
+  Beneficial Owners: ${allBOs.length}
+  Boarding Submissions: ${allBoardings.length}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 }
 
