@@ -108,6 +108,14 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
 
   const handleUpload = async () => {
     if (!pendingFiles.length) return;
+    // Validate label limit before uploading
+    const currentCount = getLabelCounts(documents)[selectedDocType] || 0;
+    const max = DOCUMENT_LABEL_LIMITS[selectedDocType] ?? DEFAULT_LABEL_LIMIT;
+    const remaining = max - currentCount;
+    if (pendingFiles.length > remaining) {
+      toast.error(`Only ${remaining} more "${selectedDocType}" document(s) allowed (max ${max})`);
+      return;
+    }
     setIsUploading(true);
     try {
       for (const file of pendingFiles) {
