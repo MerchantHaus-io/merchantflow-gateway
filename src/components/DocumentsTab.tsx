@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Upload, Download, Trash2, FileText, Loader2, Eye, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
 import { DocumentPreviewDialog } from "@/components/DocumentPreviewDialog";
+import { suggestLabels, SuggestedLabel } from "@/lib/document-label-ai";
+import { BulkUploadReview } from "@/components/BulkUploadReview";
 
 interface Document {
   id: string;
@@ -78,9 +80,7 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
-  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
-  const [selectedDocType, setSelectedDocType] = useState("");
-  const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [bulkSuggestions, setBulkSuggestions] = useState<SuggestedLabel[] | null>(null);
   const [previewDoc, setPreviewDoc] = useState<Document | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -101,24 +101,26 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length) {
-      setPendingFiles(files);
-      setShowUploadDialog(true);
+      const suggestions = suggestLabels(files);
+      setBulkSuggestions(suggestions);
     }
+    // Reset input so same files can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleUpload = async () => {
-    if (!pendingFiles.length) return;
-    // Validate label limit before uploading
-    const currentCount = getLabelCounts(documents)[selectedDocType] || 0;
-    const max = DOCUMENT_LABEL_LIMITS[selectedDocType] ?? DEFAULT_LABEL_LIMIT;
-    const remaining = max - currentCount;
-    if (pendingFiles.length > remaining) {
-      toast.error(`Only ${remaining} more "${selectedDocType}" document(s) allowed (max ${max})`);
-      return;
-    }
+  const handleBulkUpload = async (assignments: { file: File; type: string }[]) => {
     setIsUploading(true);
     try {
-      for (const file of pendingFiles) {
+      let successCount = 0;
+      for (const { file, type } of assignments) {
+        // Validate label limit
+        const currentCount = getLabelCounts(documents)[type] || 0;
+        const max = DOCUMENT_LABEL_LIMITS[type] ?? DEFAULT_LABEL_LIMIT;
+        if (currentCount >= max) {
+          toast.error(`"${type}" is at its limit (${max}/${max}) — skipping ${file.name}`);
+          continue;
+        }
+
         const path = `${opportunityId}/${Date.now()}_${file.name}`;
         const { error: uploadError } = await supabase.storage
           .from("opportunity-documents")
@@ -131,14 +133,13 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
           file_size: file.size,
           content_type: file.type,
           uploaded_by: user?.email,
-          document_type: selectedDocType,
+          document_type: type,
         });
         if (dbError) throw dbError;
+        successCount++;
       }
-      toast.success(`${pendingFiles.length} file(s) uploaded`);
-      setPendingFiles([]);
-      setShowUploadDialog(false);
-      setSelectedDocType("");
+      toast.success(`${successCount} file${successCount !== 1 ? "s" : ""} uploaded`);
+      setBulkSuggestions(null);
       fetchDocuments();
     } catch {
       toast.error("Upload failed");
@@ -194,42 +195,17 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
         />
       </div>
 
-      {/* Pending upload confirmation */}
-      {showUploadDialog && pendingFiles.length > 0 && (
-        <div className="border border-border rounded-lg p-4 bg-muted/30 space-y-3">
-          <p className="text-sm font-medium">{pendingFiles.length} file(s) ready to upload</p>
-          {!selectedDocType && (
-            <p className="text-xs text-destructive font-medium">⚠ You must assign a document type before uploading</p>
-          )}
-          <div className="text-xs text-muted-foreground">
-            {pendingFiles.map(f => f.name).join(", ")}
-          </div>
-          <div className="flex items-center gap-3">
-            <Select value={selectedDocType} onValueChange={setSelectedDocType}>
-              <SelectTrigger className={`w-[220px] h-8 text-xs ${!selectedDocType ? 'border-destructive ring-1 ring-destructive/30' : ''}`}>
-                <SelectValue placeholder="Select document type…" />
-              </SelectTrigger>
-              <SelectContent>
-                {DOCUMENT_TYPE_OPTIONS.map(opt => {
-                  const atLimit = isLabelAtLimit(opt, labelCounts);
-                  const max = DOCUMENT_LABEL_LIMITS[opt] ?? DEFAULT_LABEL_LIMIT;
-                  return (
-                    <SelectItem key={opt} value={opt} className="text-xs" disabled={atLimit}>
-                      {opt}{atLimit ? ` (${max}/${max})` : ''}
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-            <Button size="sm" onClick={handleUpload} disabled={isUploading || !selectedDocType}>
-              {isUploading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Upload className="h-3 w-3 mr-1" />}
-              Upload
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => { setPendingFiles([]); setShowUploadDialog(false); }}>
-              Cancel
-            </Button>
-          </div>
-        </div>
+      {/* Bulk upload review with AI suggestions */}
+      {bulkSuggestions && bulkSuggestions.length > 0 && (
+        <BulkUploadReview
+          suggestions={bulkSuggestions}
+          labelCounts={labelCounts}
+          labelLimits={DOCUMENT_LABEL_LIMITS}
+          defaultLimit={DEFAULT_LABEL_LIMIT}
+          isUploading={isUploading}
+          onUpload={handleBulkUpload}
+          onCancel={() => setBulkSuggestions(null)}
+        />
       )}
 
       {/* Document list */}
