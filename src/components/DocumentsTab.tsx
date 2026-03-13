@@ -202,9 +202,15 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
                 <SelectValue placeholder="Select document type…" />
               </SelectTrigger>
               <SelectContent>
-                {DOCUMENT_TYPE_OPTIONS.map(opt => (
-                  <SelectItem key={opt} value={opt} className="text-xs">{opt}</SelectItem>
-                ))}
+                {DOCUMENT_TYPE_OPTIONS.map(opt => {
+                  const atLimit = isLabelAtLimit(opt, labelCounts);
+                  const max = DOCUMENT_LABEL_LIMITS[opt] ?? DEFAULT_LABEL_LIMIT;
+                  return (
+                    <SelectItem key={opt} value={opt} className="text-xs" disabled={atLimit}>
+                      {opt}{atLimit ? ` (${max}/${max})` : ''}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
             <Button size="sm" onClick={handleUpload} disabled={isUploading || !selectedDocType}>
