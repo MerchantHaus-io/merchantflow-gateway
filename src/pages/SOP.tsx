@@ -2037,6 +2037,136 @@ Sales Support`,
                       </div>
                     </section>
 
+                    {/* Android Build Guide */}
+                    <section id="android-build" className="print:break-before-page">
+                      <h2 className="text-2xl font-bold text-primary border-b-4 border-cyan-500 inline-block mb-6 pb-1">
+                        Android Build Guide
+                      </h2>
+                      <p className="text-muted-foreground mb-6 italic border-l-4 border-primary pl-4 bg-primary/5 py-2 pr-2 rounded-r">
+                        Step-by-step instructions for building, running, and publishing the Ops Terminal Android app via Capacitor and Android Studio.
+                      </p>
+
+                      {/* Prerequisites */}
+                      <div className="bg-card rounded-xl border border-border shadow-sm p-6 mb-6">
+                        <div className="flex items-center gap-2 mb-4">
+                          <Settings className="w-5 h-5 text-primary" />
+                          <h3 className="font-bold text-lg text-foreground">Prerequisites</h3>
+                        </div>
+                        <ul className="space-y-1.5 text-sm text-muted-foreground">
+                          <li>• <strong className="text-foreground">Android Studio</strong> installed (latest stable)</li>
+                          <li>• <strong className="text-foreground">Node.js</strong> and <strong className="text-foreground">npm</strong> installed</li>
+                          <li>• Project cloned from GitHub and dependencies installed (<code className="text-xs bg-background px-1 rounded">npm install</code>)</li>
+                          <li>• Android SDK and at least one emulator configured via <strong className="text-foreground">Tools → Device Manager</strong></li>
+                          <li>• For physical devices: <strong className="text-foreground">USB debugging</strong> enabled in Developer Options</li>
+                        </ul>
+                      </div>
+
+                      {/* Development Workflow */}
+                      <div className="bg-card rounded-xl border border-border shadow-sm p-6 mb-6">
+                        <div className="flex items-center gap-2 mb-4">
+                          <Zap className="w-5 h-5 text-amber-500" />
+                          <h3 className="font-bold text-lg text-foreground">Development Workflow</h3>
+                        </div>
+                        <div className="space-y-4">
+                          <div className="bg-accent/30 rounded-lg border border-border p-4">
+                            <h4 className="font-semibold text-foreground mb-3">Initial Setup (one-time)</h4>
+                            <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside">
+                              <li>Pull the latest code: <code className="text-xs bg-background px-1.5 py-0.5 rounded border border-border text-foreground">git pull && npm install</code></li>
+                              <li>Add Android platform: <code className="text-xs bg-background px-1.5 py-0.5 rounded border border-border text-foreground">npx cap add android</code></li>
+                              <li>Build the web assets: <code className="text-xs bg-background px-1.5 py-0.5 rounded border border-border text-foreground">npm run build</code></li>
+                              <li>Sync to Android: <code className="text-xs bg-background px-1.5 py-0.5 rounded border border-border text-foreground">npx cap sync android</code></li>
+                            </ol>
+                          </div>
+
+                          <div className="bg-accent/30 rounded-lg border border-border p-4">
+                            <h4 className="font-semibold text-foreground mb-3">After Every Code Change</h4>
+                            <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside">
+                              <li>Pull latest changes: <code className="text-xs bg-background px-1.5 py-0.5 rounded border border-border text-foreground">git pull && npm install</code></li>
+                              <li>Build: <code className="text-xs bg-background px-1.5 py-0.5 rounded border border-border text-foreground">npm run build</code></li>
+                              <li>Sync: <code className="text-xs bg-background px-1.5 py-0.5 rounded border border-border text-foreground">npx cap sync android</code></li>
+                              <li>Run: <code className="text-xs bg-background px-1.5 py-0.5 rounded border border-border text-foreground">npx cap run android</code></li>
+                            </ol>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Android Studio Steps */}
+                      <div className="bg-card rounded-xl border border-border shadow-sm p-6 mb-6">
+                        <div className="flex items-center gap-2 mb-4">
+                          <Rocket className="w-5 h-5 text-emerald-500" />
+                          <h3 className="font-bold text-lg text-foreground">Android Studio</h3>
+                        </div>
+                        <div className="space-y-4">
+                          <div className="bg-accent/30 rounded-lg border border-border p-4">
+                            <h4 className="font-semibold text-foreground mb-2">Open Project in Android Studio</h4>
+                            <p className="text-sm text-muted-foreground">
+                              Run <code className="text-xs bg-background px-1.5 py-0.5 rounded border border-border text-foreground">npx cap open android</code> to launch Android Studio with the project loaded.
+                            </p>
+                          </div>
+
+                          <div className="bg-accent/30 rounded-lg border border-border p-4">
+                            <h4 className="font-semibold text-foreground mb-2">Run on Device / Emulator</h4>
+                            <p className="text-sm text-muted-foreground">
+                              Click the green <strong className="text-foreground">▶️ Play</strong> button in the toolbar. Select your target device or emulator from the dropdown.
+                            </p>
+                          </div>
+
+                          <div className="bg-accent/30 rounded-lg border border-border p-4">
+                            <h4 className="font-semibold text-foreground mb-2">Build Debug APK</h4>
+                            <p className="text-sm text-muted-foreground">
+                              <strong className="text-foreground">Build → Build Bundle(s) / APK(s) → Build APK(s)</strong>. The APK will be output to <code className="text-xs bg-background px-1 rounded">android/app/build/outputs/apk/debug/</code>.
+                            </p>
+                          </div>
+
+                          <div className="bg-accent/30 rounded-lg border border-border p-4">
+                            <h4 className="font-semibold text-foreground mb-2">Generate Signed APK (Play Store)</h4>
+                            <p className="text-sm text-muted-foreground">
+                              <strong className="text-foreground">Build → Generate Signed Bundle / APK → APK</strong> → follow the keystore wizard. Use an existing keystore or create a new one. Select <strong className="text-foreground">release</strong> build variant.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Production Config */}
+                      <div className="bg-card rounded-xl border border-border shadow-sm p-6 mb-6">
+                        <div className="flex items-center gap-2 mb-4">
+                          <AlertTriangle className="w-5 h-5 text-amber-400" />
+                          <h3 className="font-bold text-lg text-foreground">Production Configuration</h3>
+                        </div>
+                        <div className="bg-amber-500/10 border border-amber-500/25 rounded-lg p-4">
+                          <p className="text-sm text-muted-foreground mb-3">
+                            <strong className="text-foreground">Important:</strong> Before building a production APK, ensure the <code className="text-xs bg-background px-1 rounded">server</code> block in <code className="text-xs bg-background px-1 rounded">capacitor.config.ts</code> is <strong className="text-foreground">removed or commented out</strong>.
+                          </p>
+                          <p className="text-sm text-muted-foreground mb-3">
+                            The <code className="text-xs bg-background px-1 rounded">server.url</code> property is used for <strong className="text-foreground">hot-reload during development</strong> (pointing to the Lovable preview). For production, the app must serve files from the local <code className="text-xs bg-background px-1 rounded">dist/</code> folder bundled into the APK.
+                          </p>
+                          <pre className="text-xs text-foreground/80 font-mono bg-background/50 rounded-md p-3 border border-border overflow-x-auto">
+{`// capacitor.config.ts — PRODUCTION
+// Remove or comment out:
+// server: {
+//   url: "https://...",
+//   cleartext: true
+// }`}
+                          </pre>
+                        </div>
+                      </div>
+
+                      {/* Troubleshooting */}
+                      <div className="bg-card rounded-xl border border-border shadow-sm p-6">
+                        <div className="flex items-center gap-2 mb-4">
+                          <HelpCircle className="w-5 h-5 text-primary" />
+                          <h3 className="font-bold text-lg text-foreground">Troubleshooting</h3>
+                        </div>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          <li>• <strong className="text-foreground">Gradle update prompt</strong> — Accept the update when Android Studio asks.</li>
+                          <li>• <strong className="text-foreground">No devices found</strong> — Create an emulator via <strong className="text-foreground">Tools → Device Manager</strong> or connect a physical device with USB debugging.</li>
+                          <li>• <strong className="text-foreground">White screen on launch</strong> — Ensure you ran <code className="text-xs bg-background px-1 rounded">npm run build</code> and <code className="text-xs bg-background px-1 rounded">npx cap sync android</code> before opening Android Studio.</li>
+                          <li>• <strong className="text-foreground">API errors on device</strong> — Verify the device has internet access. For development, ensure the <code className="text-xs bg-background px-1 rounded">server.url</code> is reachable from the device's network.</li>
+                          <li>• <strong className="text-foreground">Stale build</strong> — Run <code className="text-xs bg-background px-1 rounded">npx cap sync android</code> after every <code className="text-xs bg-background px-1 rounded">npm run build</code> to ensure web assets are current.</li>
+                        </ul>
+                      </div>
+                    </section>
+
                   </div>
                 </section>
 
