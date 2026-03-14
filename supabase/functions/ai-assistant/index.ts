@@ -664,7 +664,7 @@ serve(async (req) => {
           type: "function",
           function: {
             name: "view_document",
-            description: "ALWAYS USE THIS TOOL when asked to view, look at, review, read, check, or inspect any document or image. For images (jpg, png, webp, gif), you will see the actual image content and can describe what's in it. For PDFs and other files, you get a signed download URL. Pass the document UUID from [doc:uuid] in the CRM snapshot.",
+            description: "ALWAYS USE THIS TOOL when asked to view, look at, review, read, check, or inspect any document or image. For images (jpg, png, webp, gif), you will see the actual image content and can describe what's in it. For PDFs, this tool extracts and returns readable document text (with table/number fidelity) so you can analyze it directly. Pass the document UUID from [doc:uuid] in the CRM snapshot.",
             parameters: {
               type: "object",
               properties: {
