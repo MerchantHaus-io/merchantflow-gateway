@@ -664,7 +664,7 @@ serve(async (req) => {
           type: "function",
           function: {
             name: "view_document",
-            description: "ALWAYS USE THIS TOOL when asked to view, look at, review, read, check, or inspect any document or image. For images (jpg, png, webp, gif), you will see the actual image content and can describe what's in it. For PDFs and other files, you get a signed download URL. Pass the document UUID from [doc:uuid] in the CRM snapshot.",
+            description: "ALWAYS USE THIS TOOL when asked to view, look at, review, read, check, or inspect any document or image. For images (jpg, png, webp, gif), you will see the actual image content and can describe what's in it. For PDFs, this tool extracts and returns readable document text (with table/number fidelity) so you can analyze it directly. Pass the document UUID from [doc:uuid] in the CRM snapshot.",
             parameters: {
               type: "object",
               properties: {
@@ -980,39 +980,104 @@ serve(async (req) => {
             }
 
             if (isPdf) {
-              // For PDFs: use the AI gateway to read the document via a separate call
+              // For PDFs: extract readable text via Lovable AI with a resilient fallback strategy.
               try {
-                const pdfReadResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-                  method: "POST",
-                  headers: {
-                    Authorization: `Bearer ${LOVABLE_API_KEY}`,
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({
-                    model: "google/gemini-2.5-flash",
-                    messages: [
-                      { role: "system", content: "You are a document reader. Extract ALL text content from the provided PDF document. Return the raw text exactly as it appears. Include every number, name, date, and detail." },
-                      { role: "user", content: [
-                        { type: "text", text: `Read this PDF document "${doc.file_name}" and extract all text content from it.` },
-                        { type: "image_url", image_url: { url: signedData.signedUrl } },
-                      ]},
-                    ],
-                  }),
-                });
+                const parsePdfText = async (pdfUrl: string, attempt: "signed-url" | "inline-base64") => {
+                  const pdfReadResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                      Authorization: `Bearer ${LOVABLE_API_KEY}`,
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      model: "google/gemini-3-flash-preview",
+                      messages: [
+                        {
+                          role: "system",
+                          content: "You are a precise PDF reader. Extract all readable text, tables, monetary values, names, dates, and identifiers from the PDF. Return only the extracted content.",
+                        },
+                        {
+                          role: "user",
+                          content: [
+                            { type: "text", text: `Read this PDF document "${doc.file_name}" and extract all text exactly.` },
+                            { type: "image_url", image_url: { url: pdfUrl } },
+                          ],
+                        },
+                      ],
+                    }),
+                  });
 
-                if (pdfReadResponse.ok) {
+                  if (!pdfReadResponse.ok) {
+                    const errBody = await pdfReadResponse.text();
+                    return {
+                      text: "",
+                      error: `${attempt} read failed [${pdfReadResponse.status}] ${errBody.slice(0, 300)}`,
+                    };
+                  }
+
                   const pdfReadData = await pdfReadResponse.json();
-                  const extractedText = pdfReadData.choices?.[0]?.message?.content || "";
-                  if (extractedText) {
-                    const maxChars = 8000;
-                    const finalText = extractedText.length > maxChars
-                      ? extractedText.substring(0, maxChars) + "\n\n[... truncated ...]"
-                      : extractedText;
-                    return `Document: "${doc.file_name}" (${doc.document_type || "Unassigned"})\n\n--- EXTRACTED CONTENT ---\n${finalText}\n--- END ---\n\nI have successfully read this PDF.`;
+                  const rawContent = pdfReadData?.choices?.[0]?.message?.content;
+                  const extractedText = typeof rawContent === "string"
+                    ? rawContent
+                    : Array.isArray(rawContent)
+                      ? rawContent
+                        .map((part: any) => {
+                          if (typeof part === "string") return part;
+                          if (typeof part?.text === "string") return part.text;
+                          return "";
+                        })
+                        .join("\n")
+                      : "";
+
+                  return {
+                    text: extractedText.trim(),
+                    error: extractedText.trim() ? "" : `${attempt} read returned no text`,
+                  };
+                };
+
+                // 1) Primary pass: signed URL (best for large files).
+                let parsed = await parsePdfText(signedData.signedUrl, "signed-url");
+
+                // 2) Fallback pass: inline base64 data URL (helps when remote fetch is blocked).
+                if (!parsed.text) {
+                  const pdfResponse = await fetch(signedData.signedUrl);
+                  if (pdfResponse.ok) {
+                    const pdfBuffer = await pdfResponse.arrayBuffer();
+                    const maxInlineBytes = 8 * 1024 * 1024;
+
+                    if (pdfBuffer.byteLength <= maxInlineBytes) {
+                      const bytes = new Uint8Array(pdfBuffer);
+                      const chunkSize = 0x8000;
+                      let binary = "";
+                      for (let i = 0; i < bytes.length; i += chunkSize) {
+                        binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+                      }
+                      const base64Pdf = btoa(binary);
+                      const dataUrl = `data:application/pdf;base64,${base64Pdf}`;
+                      const inlineParsed = await parsePdfText(dataUrl, "inline-base64");
+                      if (inlineParsed.text) {
+                        parsed = inlineParsed;
+                      } else if (parsed.error) {
+                        parsed.error = `${parsed.error}; ${inlineParsed.error}`;
+                      }
+                    } else if (parsed.error) {
+                      parsed.error = `${parsed.error}; inline fallback skipped (PDF > 8MB)`;
+                    }
+                  } else if (parsed.error) {
+                    parsed.error = `${parsed.error}; failed to fetch PDF for fallback [${pdfResponse.status}]`;
                   }
                 }
-                // Fallback if AI read fails
-                return `Document: "${doc.file_name}" (${doc.document_type || "Unassigned"}) | Download link: ${signedData.signedUrl}`;
+
+                if (parsed.text) {
+                  const maxChars = 12000;
+                  const finalText = parsed.text.length > maxChars
+                    ? `${parsed.text.slice(0, maxChars)}\n\n[... truncated for length ...]`
+                    : parsed.text;
+
+                  return `Document: "${doc.file_name}" (${doc.document_type || "Unassigned"})\n\n--- EXTRACTED CONTENT ---\n${finalText}\n--- END ---\n\nI have successfully read this PDF.`;
+                }
+
+                return `Document: "${doc.file_name}" (${doc.document_type || "Unassigned"}) | I couldn't auto-extract text from this PDF yet (${parsed.error || "unknown reason"}). Download link: ${signedData.signedUrl}`;
               } catch (e) {
                 console.error("PDF AI read error:", e);
                 return `Error reading PDF "${doc.file_name}": ${e instanceof Error ? e.message : "Unknown error"}. Download link: ${signedData.signedUrl}`;
