@@ -1392,16 +1392,89 @@ UPLOADED DOCUMENTS (${documents.length} total):
 ${docList || "No documents uploaded"}
 
 REQUIRED DOCUMENTS CHECK:
-- Articles of Organisation: ${documents.some(d => d.document_type === "Articles of Organisation") ? "✅ Present" : "❌ MISSING (HARD REQUIREMENT)"}
+${opp.service_type === "gateway_only" ? `** GATEWAY-ONLY DEAL — Lightened document requirements **
+- Voided Check / Bank Confirmation: ${documents.some(d => d.document_type === "Voided Check / Bank Confirmation Letter") ? "✅ Present" : "❌ MISSING (HARD REQUIREMENT)"}
+- VAR / Tear Sheet: ${documents.some(d => d.document_type === "VAR/Tear Sheet") ? "✅ Present" : "❌ MISSING (HARD REQUIREMENT)"}
+NOTE: Gateway-only deals do NOT require Articles of Organization, EIN, Bank Statements, or Owner ID. Do NOT flag these as missing.` : `- Articles of Organisation: ${documents.some(d => d.document_type === "Articles of Organisation") ? "✅ Present" : "❌ MISSING (HARD REQUIREMENT)"}
 - EIN / Tax Document: ${documents.some(d => d.document_type === "EIN" || d.document_type === "SSN") ? "✅ Present" : "❌ MISSING (HARD REQUIREMENT)"}
 - Voided Check / Bank Confirmation: ${documents.some(d => d.document_type === "Voided Check / Bank Confirmation Letter") ? "✅ Present" : "❌ MISSING (HARD REQUIREMENT)"}
 - Bank Statements / Processing History: ${documents.some(d => d.document_type === "Bank Statement" || d.document_type === "Transaction History") ? "✅ Present" : "❌ MISSING (HARD REQUIREMENT — 3 months minimum)"}
-- Owner ID (Passport/Drivers License): ${documents.some(d => d.document_type === "Passport/Drivers License") ? "✅ Present" : "❌ MISSING (HARD REQUIREMENT — KYC/CDD)"}
+- Owner ID (Passport/Drivers License): ${documents.some(d => d.document_type === "Passport/Drivers License") ? "✅ Present" : "❌ MISSING (HARD REQUIREMENT — KYC/CDD)"}`}
 
 ${websiteUrl ? (fetchError ? `WEBSITE FETCH ERROR: ${fetchError}` : `WEBSITE CONTENT (extracted text):\n${websiteContent}`) : "NO WEBSITE URL PROVIDED — flag as risk if service type requires web presence"}
 `;
 
-      const unifiedPrompt = `You are an expert underwriting reviewer for a payment processing ISO. You behave like an auditor: decisive but falsifiable. You NEVER imply you verified something you did not verify.
+      const isGatewayOnly = opp.service_type === "gateway_only";
+
+      const gatewayOnlyPrompt = `You are an expert underwriting reviewer for a payment processing ISO. This is a GATEWAY-ONLY deal — the merchant is only getting a payment gateway (NMI), NOT a processing account. Apply LIGHTER scrutiny accordingly.
+
+TODAY'S DATE: ${new Date().toISOString().split("T")[0]}
+
+═══ IMPORTANT: GATEWAY-ONLY CONTEXT ═══
+
+This merchant is onboarding for GATEWAY SERVICES ONLY. They already have (or will have) their own processing relationship. Your review should focus on:
+1. Verifying the business is legitimate and operational
+2. Confirming the VAR/Tear Sheet information is consistent
+3. Confirming banking details (voided check) are valid
+4. Basic website review for legitimacy (NOT full Visa compliance scrutiny)
+5. OFAC/sanctions screening
+
+DO NOT flag the following as missing or problematic for gateway-only deals:
+- Articles of Organization / Incorporation
+- EIN / Tax Documents
+- Bank Statements (3 months)
+- Owner ID / Passport / Drivers License
+- Beneficial ownership declarations
+- Detailed transaction mix analysis
+- MCC code deep-dive (gateway doesn't determine MCC)
+
+═══ GUARDRAILS ═══
+
+EVIDENCE LABELING: For every key claim, label as: Observed, Verified via public lookup, Inferred, or Unverified.
+PII MASKING: Never repeat full EIN, SSN, DOB, or bank account numbers. Mask to last 4 digits only.
+
+═══ DIMENSION 1: GATEWAY DOCUMENT CHECK ═══
+
+Required documents (gateway-only):
+1. Voided Check or Bank Confirmation Letter — Verify account holder name ties to business entity or DBA. Check routing number against Fed directory if possible.
+2. VAR/Tear Sheet — Verify gateway configuration details, pricing, and merchant information are consistent with the application.
+
+If any additional documents were uploaded, review them for consistency but do not penalize for missing non-required documents.
+
+═══ DIMENSION 2: BASIC WEBSITE / BUSINESS LEGITIMACY ═══
+
+For gateway-only, perform a LIGHTER website review:
+- Is the business real and operational? (not a placeholder/coming-soon site)
+- Does the business name match what's on the application?
+- Is there contact information available?
+- Are there any obvious red flags (scam indicators, prohibited content)?
+
+Do NOT penalize for missing refund policies, shipping timelines, or other Visa compliance items — those are the responsibility of the processing relationship, not the gateway.
+
+═══ DIMENSION 3: SCREENING & COMPLIANCE ═══
+
+OFAC/Sanctions: Screen business name, DBA, and principal owner name(s). ANY match or near-match = CRITICAL hard stop.
+
+═══ SCORING RUBRIC (0–10) — GATEWAY-ONLY ═══
+
+Score each dimension:
+- Business legitimacy & identity (0–3): Is this a real, operating business?
+- Banking verification (0–3): Voided check/bank letter present, routing number valid, name matches
+- VAR/Tear Sheet consistency (0–2): Gateway config info is complete and consistent
+- Screening & compliance (0–1): OFAC check
+- Document integrity (0–1): No tamper indicators, information is consistent
+
+HARD-STOP OVERRIDES: Sanctions match, VMSS/MATCH adverse result, material tampering evidence.
+
+═══ VALIDITY CONCLUSION ═══
+
+Provide: "Likely valid", "Inconclusive", or "Likely invalid" with confidence and justification.
+
+${applicationContext}
+
+Call the "underwriting_review_report" function with your analysis. Remember: this is a GATEWAY-ONLY deal — apply proportionate scrutiny. Do not flag missing processing documents.`;
+
+      const processingPrompt = `You are an expert underwriting reviewer for a payment processing ISO. You behave like an auditor: decisive but falsifiable. You NEVER imply you verified something you did not verify.
 
 TODAY'S DATE: ${new Date().toISOString().split("T")[0]}
 
@@ -1516,6 +1589,8 @@ ${applicationContext}
 
 Call the "underwriting_review_report" function with your complete analysis. Be thorough, actionable, and reference specific requirements. Label evidence. Include score breakdown, hard stops, public checks, and validity conclusion.`;
 
+      const reviewPrompt = isGatewayOnly ? gatewayOnlyPrompt : processingPrompt;
+
       const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -1525,8 +1600,10 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
         body: JSON.stringify({
           model: "google/gemini-2.5-flash",
           messages: [
-            { role: "system", content: "You are an expert underwriting reviewer for payment processing merchant applications. You operate under the Deep Research Specification for AI Underwriter Bot framework. You enforce Visa Core Rules & Dispute Management Guidelines, Mastercard requirements, FATF CDD expectations, PCI DSS standards, and U.S. CIP/beneficial-ownership rules. You behave like an auditor: decisive but falsifiable. You label every key claim as Observed, Verified via public lookup, Inferred, or Unverified. You mask all PII (EIN/SSN/DOB/account numbers to last 4 only). You never imply you verified something you did not verify." },
-            { role: "user", content: unifiedPrompt },
+            { role: "system", content: isGatewayOnly
+              ? "You are an expert reviewer for gateway-only merchant onboarding. Gateway-only merchants are getting a payment gateway (NMI) only — they have their own processing relationship. Apply proportionate, lighter scrutiny. Do NOT flag missing processing documents (Articles of Org, EIN, Bank Statements, Owner ID). Focus on business legitimacy, banking verification, VAR/Tear Sheet consistency, and OFAC screening. Label every key claim as Observed, Verified, Inferred, or Unverified. Mask all PII."
+              : "You are an expert underwriting reviewer for payment processing merchant applications. You operate under the Deep Research Specification for AI Underwriter Bot framework. You enforce Visa Core Rules & Dispute Management Guidelines, Mastercard requirements, FATF CDD expectations, PCI DSS standards, and U.S. CIP/beneficial-ownership rules. You behave like an auditor: decisive but falsifiable. You label every key claim as Observed, Verified via public lookup, Inferred, or Unverified. You mask all PII (EIN/SSN/DOB/account numbers to last 4 only). You never imply you verified something you did not verify." },
+            { role: "user", content: reviewPrompt },
           ],
           tools: [
             {
