@@ -33,6 +33,7 @@ KNOWLEDGE:
 ACTIONS:
 - You can CREATE tasks, CREATE full deals (Account+Contact+Opportunity), UPDATE opportunity stages, ASSIGN opportunities, UPDATE statuses, UPDATE account/contact/opportunity records, ADD NOTES, RELABEL documents, LOG client interactions, RUN underwriting validation checks, VIEW/READ documents and images, and CLASSIFY/IDENTIFY documents by their actual content.
 - DOCUMENT CLASSIFICATION: When someone asks "what is this document", "identify this file", "what type of document is this", or wants you to figure out what a file is, use the classify_document tool. It analyzes the actual content of PDFs, images, and Word docs to determine the document type (bank statement, voided check, passport, etc.) regardless of the filename. You can also auto-relabel the document in the CRM if asked.
+- BULK CLASSIFICATION: When someone asks to "classify all docs", "label the unassigned files", "scan and tag documents on [account]", or similar, use the bulk_classify_documents tool. It scans all unassigned (or all) documents on an opportunity, classifies each one by content, and auto-relabels them in one shot.
 - IMPORTANT — DOCUMENT VIEWING: You ABSOLUTELY CAN view, read, and analyze ALL documents including PDFs and images. You have a tool called "view_document" that lets you open any uploaded file. For images (JPGs, PNGs, WEBPs), the tool fetches the actual image and you will see it directly. For PDFs, the tool fetches the full PDF and you can read every page — text, tables, numbers, names, everything. NEVER say you cannot view, open, or read documents or PDFs — always use the view_document tool when asked. If a user asks you to look at, review, check, read, or verify any document, call view_document immediately with the document's UUID from the inventory.
 - When asked to do something, use the available tools to take action immediately. Confirm what you did afterward.
 - For ambiguous requests, ask for clarification before acting.
@@ -692,6 +693,22 @@ serve(async (req) => {
             },
           },
         },
+        {
+          type: "function",
+          function: {
+            name: "bulk_classify_documents",
+            description: "Scan all unassigned (or all) documents on an opportunity, classify each one by content using AI vision, and auto-relabel them. Use when someone asks to 'classify all docs', 'label the unassigned files', or 'scan and tag the documents on [account]'.",
+            parameters: {
+              type: "object",
+              properties: {
+                opportunity_id: { type: "string", description: "UUID of the opportunity whose documents to classify" },
+                only_unassigned: { type: "boolean", description: "If true (default), only classify documents with no label or 'Unassigned'. If false, re-classify all documents." },
+              },
+              required: ["opportunity_id"],
+              additionalProperties: false,
+            },
+          },
+        },
       ];
 
       // ── Tool Execution Handler ──
@@ -1295,6 +1312,70 @@ Look at the actual content, logos, headers, formatting, and data to determine th
               console.error("Classification error:", e);
               return `Error during classification: ${e instanceof Error ? e.message : "Unknown error"}`;
             }
+          }
+
+          case "bulk_classify_documents": {
+            const { opportunity_id: bulkOppId, only_unassigned } = args;
+            const filterUnassigned = only_unassigned !== false; // default true
+
+            // Fetch documents for this opportunity
+            let docsQuery = supabase
+              .from("documents")
+              .select("id, file_name, file_path, content_type, document_type")
+              .eq("opportunity_id", bulkOppId as string)
+              .order("created_at", { ascending: true });
+
+            if (filterUnassigned) {
+              docsQuery = docsQuery.or("document_type.is.null,document_type.eq.Unassigned");
+            }
+
+            const { data: bulkDocs, error: bulkDocsErr } = await docsQuery;
+            if (bulkDocsErr) return `Error fetching documents: ${bulkDocsErr.message}`;
+            if (!bulkDocs || bulkDocs.length === 0) {
+              return filterUnassigned
+                ? "No unassigned documents found on this opportunity. All documents are already labelled."
+                : "No documents found on this opportunity.";
+            }
+
+            // Get account name for reporting
+            const { data: bulkOpp } = await supabase
+              .from("opportunities")
+              .select("accounts!inner(name)")
+              .eq("id", bulkOppId as string)
+              .single();
+            const bulkAcctName = (bulkOpp as any)?.accounts?.name || "this opportunity";
+
+            const results: string[] = [];
+            let classified = 0;
+            let failed = 0;
+
+            for (const bdoc of bulkDocs) {
+              // Call classify_document for each doc (reusing the existing handler)
+              try {
+                const result = await executeTool("classify_document", {
+                  document_id: bdoc.id,
+                  auto_relabel: true,
+                });
+                results.push(`${bdoc.file_name}: ${result}`);
+                if (result.includes("Classified and relabelled")) classified++;
+                else if (result.includes("Error") || result.includes("Unsupported")) failed++;
+                else classified++;
+              } catch (e) {
+                results.push(`${bdoc.file_name}: Error — ${e instanceof Error ? e.message : "Unknown"}`);
+                failed++;
+              }
+            }
+
+            // Log activity
+            await supabase.from("activities").insert({
+              opportunity_id: bulkOppId,
+              type: "bulk_classification",
+              description: `Atria bulk-classified ${classified} document(s) on ${bulkAcctName}${failed > 0 ? ` (${failed} failed)` : ""}`,
+              user_id: AI_BOT_USER_ID,
+              user_email: AI_BOT_EMAIL,
+            });
+
+            return `Bulk classification complete for ${bulkAcctName}: ${classified} classified, ${failed} failed out of ${bulkDocs.length} documents.\n\n${results.join("\n")}`;
           }
 
           default:
