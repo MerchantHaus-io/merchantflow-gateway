@@ -597,7 +597,7 @@ export default function PreboardingWizard() {
                     <ProcessingStep form={form} onChange={handleChange} />
                   )}
                   {(currentStep === "Documents" || currentStep === "Documents & Submit") && (
-                    <DocumentsStep form={form} onChange={handleChange} onDocsChange={handleDocsChange} opportunityId={selectedOpportunityId} onDocCountChange={setUploadedDocCount} />
+                    <DocumentsStep form={form} onChange={handleChange} onDocsChange={handleDocsChange} opportunityId={selectedOpportunityId} onDocCountChange={setUploadedDocCount} onDocTypeCountsChange={setUploadedDocTypeCounts} />
                   )}
                   {currentStep === "Review" && (
                     <ReviewStep form={form} missingBySection={missingBySection as any} />
