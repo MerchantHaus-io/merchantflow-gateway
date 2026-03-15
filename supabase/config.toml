@@ -53,3 +53,12 @@ verify_jwt = false
 
 [functions.sla-escalation]
 verify_jwt = false
+
+[functions.send-contact-form-email]
+verify_jwt = false
+
+[functions.send-qualified-docs-request]
+verify_jwt = false
+
+[functions.classify-document]
+verify_jwt = false
