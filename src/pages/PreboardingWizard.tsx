@@ -266,6 +266,7 @@ export default function PreboardingWizard() {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingState, setIsLoadingState] = useState(false);
   const [uploadedDocCount, setUploadedDocCount] = useState(0);
+  const [uploadedDocTypeCounts, setUploadedDocTypeCounts] = useState<Record<string, number>>({});
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
 
