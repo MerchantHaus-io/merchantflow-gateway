@@ -1313,6 +1313,70 @@ Look at the actual content, logos, headers, formatting, and data to determine th
             }
           }
 
+          case "bulk_classify_documents": {
+            const { opportunity_id: bulkOppId, only_unassigned } = args;
+            const filterUnassigned = only_unassigned !== false; // default true
+
+            // Fetch documents for this opportunity
+            let docsQuery = supabase
+              .from("documents")
+              .select("id, file_name, file_path, content_type, document_type")
+              .eq("opportunity_id", bulkOppId as string)
+              .order("created_at", { ascending: true });
+
+            if (filterUnassigned) {
+              docsQuery = docsQuery.or("document_type.is.null,document_type.eq.Unassigned");
+            }
+
+            const { data: bulkDocs, error: bulkDocsErr } = await docsQuery;
+            if (bulkDocsErr) return `Error fetching documents: ${bulkDocsErr.message}`;
+            if (!bulkDocs || bulkDocs.length === 0) {
+              return filterUnassigned
+                ? "No unassigned documents found on this opportunity. All documents are already labelled."
+                : "No documents found on this opportunity.";
+            }
+
+            // Get account name for reporting
+            const { data: bulkOpp } = await supabase
+              .from("opportunities")
+              .select("accounts!inner(name)")
+              .eq("id", bulkOppId as string)
+              .single();
+            const bulkAcctName = (bulkOpp as any)?.accounts?.name || "this opportunity";
+
+            const results: string[] = [];
+            let classified = 0;
+            let failed = 0;
+
+            for (const bdoc of bulkDocs) {
+              // Call classify_document for each doc (reusing the existing handler)
+              try {
+                const result = await executeTool("classify_document", {
+                  document_id: bdoc.id,
+                  auto_relabel: true,
+                });
+                results.push(`${bdoc.file_name}: ${result}`);
+                if (result.includes("Classified and relabelled")) classified++;
+                else if (result.includes("Error") || result.includes("Unsupported")) failed++;
+                else classified++;
+              } catch (e) {
+                results.push(`${bdoc.file_name}: Error — ${e instanceof Error ? e.message : "Unknown"}`);
+                failed++;
+              }
+            }
+
+            // Log activity
+            await supabase.from("activities").insert({
+              opportunity_id: bulkOppId,
+              type: "bulk_classification",
+              description: `Atria bulk-classified ${classified} document(s) on ${bulkAcctName}${failed > 0 ? ` (${failed} failed)` : ""}`,
+              user_id: AI_BOT_USER_ID,
+              user_email: AI_BOT_EMAIL,
+            });
+
+            return `Bulk classification complete for ${bulkAcctName}: ${classified} classified, ${failed} failed out of ${bulkDocs.length} documents.\n\n${results.join("\n")}`;
+          }
+
           default:
             return `Unknown tool: ${toolName}`;
         }
