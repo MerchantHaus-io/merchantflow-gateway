@@ -20,6 +20,7 @@ import {
   GATEWAY_ONLY_PIPELINE_STAGES
 } from "@/types/opportunity";
 import { sendStageChangeEmail } from "@/hooks/useEmailNotifications";
+import { sendQualifiedDocsRequest } from "@/hooks/useQualifiedDocsRequest";
 import { checkUnderwritingGate } from "@/lib/underwriting-gate";
 import { checkDuplicateMerchant } from "@/lib/duplicate-check";
 import { Input } from "@/components/ui/input";
