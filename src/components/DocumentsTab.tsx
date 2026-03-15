@@ -10,6 +10,7 @@ import { Upload, Download, Trash2, FileText, Loader2, Eye, CheckCircle2, XCircle
 import { DocumentPreviewDialog } from "@/components/DocumentPreviewDialog";
 import { suggestLabels, SuggestedLabel } from "@/lib/document-label-ai";
 import { BulkUploadReview } from "@/components/BulkUploadReview";
+import { autoClassifyDocuments } from "@/hooks/useAutoClassify";
 
 interface Document {
   id: string;
@@ -112,6 +113,7 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
     setIsUploading(true);
     try {
       let successCount = 0;
+      const uploadedDocIds: string[] = [];
       for (const { file, type } of assignments) {
         // Validate label limit
         const currentCount = getLabelCounts(documents)[type] || 0;
@@ -126,7 +128,7 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
           .from("opportunity-documents")
           .upload(path, file);
         if (uploadError) throw uploadError;
-        const { error: dbError } = await supabase.from("documents").insert({
+        const { data: docRow, error: dbError } = await supabase.from("documents").insert({
           opportunity_id: opportunityId,
           file_name: file.name,
           file_path: path,
@@ -134,13 +136,23 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
           content_type: file.type,
           uploaded_by: user?.email,
           document_type: type,
-        });
+        }).select("id").single();
         if (dbError) throw dbError;
         successCount++;
+        // Queue AI classification for unassigned docs
+        if (docRow && (!type || type === "Unassigned")) {
+          uploadedDocIds.push(docRow.id);
+        }
       }
       toast.success(`${successCount} file${successCount !== 1 ? "s" : ""} uploaded`);
       setBulkSuggestions(null);
       fetchDocuments();
+      // Fire-and-forget AI classification for unassigned docs
+      if (uploadedDocIds.length > 0) {
+        autoClassifyDocuments(uploadedDocIds, (_docId, _label) => {
+          fetchDocuments(); // Refresh to show new labels
+        });
+      }
     } catch {
       toast.error("Upload failed");
     } finally {
