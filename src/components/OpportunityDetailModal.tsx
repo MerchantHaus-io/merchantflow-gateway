@@ -918,6 +918,15 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                           ).catch(err => console.error("Failed to send stage change email:", err));
                         }
                         
+                        // Trigger qualified docs request email
+                        if (newStage === 'qualified') {
+                          sendQualifiedDocsRequest(
+                            opportunity.id,
+                            opportunity.account_id,
+                            opportunity.contact_id
+                          ).catch(err => console.error("Failed to send qualified docs email:", err));
+                        }
+                        
                         onUpdate({ ...opportunity, stage: newStage });
                         toast.success(`Stage updated to ${STAGE_CONFIG[newStage].label}`);
                       }}
