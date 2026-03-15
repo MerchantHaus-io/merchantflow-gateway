@@ -16,6 +16,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTasks } from "@/contexts/TasksContext";
 import { sendOpportunityAssignmentEmail, sendStageChangeEmail } from "@/hooks/useEmailNotifications";
+import { sendQualifiedDocsRequest } from "@/hooks/useQualifiedDocsRequest";
 import ActivitiesTab from "./ActivitiesTab";
 import {
   AlertDialog,
