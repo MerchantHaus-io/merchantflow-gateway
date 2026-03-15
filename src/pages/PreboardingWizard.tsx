@@ -418,7 +418,7 @@ export default function PreboardingWizard() {
       processing: getMissingFieldsForSection("processing"),
       documents: getMissingFieldsForSection("documents"),
     };
-  }, [form, isGatewayOnly, uploadedDocCount]);
+  }, [form, isGatewayOnly, uploadedDocCount, uploadedDocTypeCounts]);
 
   const totalRequiredFields = useMemo(() => {
     if (isGatewayOnly) {
