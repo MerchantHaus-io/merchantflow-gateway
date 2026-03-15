@@ -7,9 +7,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { CheckCircle2, Loader2 } from 'lucide-react';
-import { useTheme } from '@/contexts/ThemeContext';
-import logoDark from '@/assets/logo-dark.png';
-import logoLight from '@/assets/logo-light.png';
 
 type FormStatus = 'idle' | 'submitting' | 'success' | 'error';
 
