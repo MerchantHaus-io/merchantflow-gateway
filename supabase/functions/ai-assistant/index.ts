@@ -1105,6 +1105,198 @@ serve(async (req) => {
             return `Document: "${doc.file_name}" (${doc.document_type || "Unassigned"}) | Type: ${contentType || "unknown"} | Download link: ${signedData.signedUrl}`;
           }
 
+          case "classify_document": {
+            const { document_id, auto_relabel } = args;
+
+            // Fetch document metadata
+            const { data: classDoc, error: classDocErr } = await supabase
+              .from("documents")
+              .select("file_name, file_path, content_type, document_type, opportunity_id")
+              .eq("id", document_id)
+              .single();
+            if (classDocErr || !classDoc) return `Error: Document not found (${document_id}). ${classDocErr?.message || ""}`;
+
+            const classContentType = (classDoc.content_type || "").toLowerCase();
+            const classIsImage = classContentType.startsWith("image/") || /\.(jpg|jpeg|png|webp|gif)$/i.test(classDoc.file_name);
+            const classIsPdf = classContentType === "application/pdf" || /\.pdf$/i.test(classDoc.file_name);
+            const classIsWord = /\.(doc|docx)$/i.test(classDoc.file_name) || classContentType.includes("word") || classContentType.includes("openxmlformats");
+
+            // Generate signed URL
+            const { data: classSigned, error: classSignErr } = await supabase.storage
+              .from("opportunity-documents")
+              .createSignedUrl(classDoc.file_path, 600);
+            if (classSignErr || !classSigned?.signedUrl) {
+              return `Error generating access URL for "${classDoc.file_name}": ${classSignErr?.message || "Unknown error"}`;
+            }
+
+            // Build the content payload for the classification AI call
+            let classificationContent: unknown[];
+            const classificationPrompt = `Analyze this document and classify it into exactly ONE of these categories:
+- Bank Statement
+- Processing Statement
+- Voided Check
+- Bank Confirmation Letter
+- Articles of Organization
+- EIN / Tax Document
+- Passport/Drivers License
+- Business License
+- Lease Agreement
+- Transaction History
+- VAR/Tear Sheet
+- Signed Agreement
+- Other
+
+Look at the actual content, logos, headers, formatting, and data to determine the document type. Do not rely on the filename.`;
+
+            if (classIsImage) {
+              // Fetch image and send as base64
+              try {
+                const imgResp = await fetch(classSigned.signedUrl);
+                if (!imgResp.ok) return `Error downloading image "${classDoc.file_name}": HTTP ${imgResp.status}`;
+                const imgBuf = await imgResp.arrayBuffer();
+                const bytes = new Uint8Array(imgBuf);
+                const chunkSize = 0x8000;
+                let binary = "";
+                for (let i = 0; i < bytes.length; i += chunkSize) {
+                  binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+                }
+                const b64 = btoa(binary);
+                const mime = classContentType || "image/jpeg";
+                classificationContent = [
+                  { type: "text", text: classificationPrompt },
+                  { type: "image_url", image_url: { url: `data:${mime};base64,${b64}` } },
+                ];
+              } catch (e) {
+                return `Error fetching image for classification: ${e instanceof Error ? e.message : "Unknown error"}`;
+              }
+            } else if (classIsPdf) {
+              // Try signed URL first, then inline base64 fallback
+              classificationContent = [
+                { type: "text", text: classificationPrompt },
+                { type: "image_url", image_url: { url: classSigned.signedUrl } },
+              ];
+            } else if (classIsWord) {
+              // Fetch and send as base64 data URL
+              try {
+                const wordResp = await fetch(classSigned.signedUrl);
+                if (!wordResp.ok) return `Error downloading "${classDoc.file_name}": HTTP ${wordResp.status}`;
+                const wordBuf = await wordResp.arrayBuffer();
+                const maxBytes = 8 * 1024 * 1024;
+                if (wordBuf.byteLength > maxBytes) return `Document "${classDoc.file_name}" is too large for classification (${(wordBuf.byteLength / 1024 / 1024).toFixed(1)}MB). Max 8MB.`;
+                const bytes = new Uint8Array(wordBuf);
+                const chunkSize = 0x8000;
+                let binary = "";
+                for (let i = 0; i < bytes.length; i += chunkSize) {
+                  binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+                }
+                const b64 = btoa(binary);
+                const mime = classContentType || "application/octet-stream";
+                classificationContent = [
+                  { type: "text", text: classificationPrompt },
+                  { type: "image_url", image_url: { url: `data:${mime};base64,${b64}` } },
+                ];
+              } catch (e) {
+                return `Error fetching document for classification: ${e instanceof Error ? e.message : "Unknown error"}`;
+              }
+            } else {
+              return `Unsupported file type for classification: "${classDoc.file_name}" (${classContentType || "unknown"}). Supported: PDF, JPG, PNG, DOC, DOCX.`;
+            }
+
+            // Call AI gateway with tool calling for structured output
+            try {
+              const classifyResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${LOVABLE_API_KEY}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  model: "google/gemini-3-flash-preview",
+                  messages: [
+                    {
+                      role: "system",
+                      content: "You are a document classification specialist for a payment processing ISO. Analyze the document and classify it accurately using the provided tool.",
+                    },
+                    {
+                      role: "user",
+                      content: classificationContent,
+                    },
+                  ],
+                  tools: [
+                    {
+                      type: "function",
+                      function: {
+                        name: "classify_result",
+                        description: "Return the document classification result.",
+                        parameters: {
+                          type: "object",
+                          properties: {
+                            label: {
+                              type: "string",
+                              enum: [
+                                "Bank Statement", "Processing Statement", "Voided Check",
+                                "Bank Confirmation Letter", "Articles of Organization",
+                                "EIN / Tax Document", "Passport/Drivers License",
+                                "Business License", "Lease Agreement", "Transaction History",
+                                "VAR/Tear Sheet", "Signed Agreement", "Other",
+                              ],
+                              description: "The classified document type",
+                            },
+                            confidence: {
+                              type: "string",
+                              enum: ["high", "medium", "low"],
+                              description: "How confident the classification is",
+                            },
+                            reasoning: {
+                              type: "string",
+                              description: "Brief explanation of why this classification was chosen (1-2 sentences)",
+                            },
+                          },
+                          required: ["label", "confidence", "reasoning"],
+                          additionalProperties: false,
+                        },
+                      },
+                    },
+                  ],
+                  tool_choice: { type: "function", function: { name: "classify_result" } },
+                }),
+              });
+
+              if (!classifyResponse.ok) {
+                const errText = await classifyResponse.text();
+                console.error("Classification AI error:", classifyResponse.status, errText);
+                return `Error classifying document: AI gateway returned ${classifyResponse.status}`;
+              }
+
+              const classifyData = await classifyResponse.json();
+              const toolCall = classifyData?.choices?.[0]?.message?.tool_calls?.[0];
+              if (!toolCall?.function?.arguments) {
+                // Fallback: try to parse from message content
+                return `Classification inconclusive for "${classDoc.file_name}". The AI could not determine the document type with confidence.`;
+              }
+
+              const classification = JSON.parse(toolCall.function.arguments);
+              const { label, confidence, reasoning } = classification;
+
+              // Auto-relabel if requested
+              if (auto_relabel && label && label !== "Other") {
+                const { error: relabelErr } = await supabase
+                  .from("documents")
+                  .update({ document_type: label })
+                  .eq("id", document_id);
+                if (relabelErr) {
+                  return `Classified as "${label}" (${confidence} confidence) but failed to relabel: ${relabelErr.message}. Reasoning: ${reasoning}`;
+                }
+                return `Classified and relabelled "${classDoc.file_name}" as "${label}" (${confidence} confidence). ${reasoning}`;
+              }
+
+              return `Classification for "${classDoc.file_name}": ${label} (${confidence} confidence). ${reasoning}${classDoc.document_type && classDoc.document_type !== "Unassigned" ? ` Currently labelled as "${classDoc.document_type}".` : " Currently unlabelled."}`;
+            } catch (e) {
+              console.error("Classification error:", e);
+              return `Error during classification: ${e instanceof Error ? e.message : "Unknown error"}`;
+            }
+          }
+
           default:
             return `Unknown tool: ${toolName}`;
         }
