@@ -56,6 +56,7 @@ const DocumentsPage = () => {
   const [initialCollapseApplied, setInitialCollapseApplied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewDoc, setPreviewDoc] = useState<DocumentWithOpportunity | null>(null);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
 
   useEffect(() => {
     // Fetch documents on mount
