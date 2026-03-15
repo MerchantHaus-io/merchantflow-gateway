@@ -266,6 +266,7 @@ export default function PreboardingWizard() {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingState, setIsLoadingState] = useState(false);
   const [uploadedDocCount, setUploadedDocCount] = useState(0);
+  const [uploadedDocTypeCounts, setUploadedDocTypeCounts] = useState<Record<string, number>>({});
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
 
@@ -382,7 +383,25 @@ export default function PreboardingWizard() {
   const getMissingFieldsForSection = (sectionKey: string) => {
     const required = REQUIRED_FIELDS[sectionKey] ?? [];
     if (sectionKey === "documents") {
-      return (form.documents.length > 0 || uploadedDocCount > 0) ? [] : ["At least one supporting document"];
+      const missing: string[] = [];
+      if (form.documents.length === 0 && uploadedDocCount === 0) {
+        missing.push("At least one supporting document");
+      }
+      // Check 3-month Bank Statement or Transaction History requirement (processing only)
+      if (!isGatewayOnly) {
+        const bankCount = uploadedDocTypeCounts["Bank Statement"] || 0;
+        const txnCount = uploadedDocTypeCounts["Transaction History"] || 0;
+        if (bankCount < 3 && txnCount < 3) {
+          if (bankCount > 0) {
+            missing.push(`Bank Statements (${bankCount}/3 — need 3 months)`);
+          } else if (txnCount > 0) {
+            missing.push(`Transaction History (${txnCount}/3 — need 3 months)`);
+          } else {
+            missing.push("Bank Statements or Transaction History (3 months required)");
+          }
+        }
+      }
+      return missing;
     }
     return required.filter(field => !String(form[field as keyof PreboardingForm] ?? "").trim());
   };
@@ -399,7 +418,7 @@ export default function PreboardingWizard() {
       processing: getMissingFieldsForSection("processing"),
       documents: getMissingFieldsForSection("documents"),
     };
-  }, [form, isGatewayOnly, uploadedDocCount]);
+  }, [form, isGatewayOnly, uploadedDocCount, uploadedDocTypeCounts]);
 
   const totalRequiredFields = useMemo(() => {
     if (isGatewayOnly) {
@@ -578,7 +597,7 @@ export default function PreboardingWizard() {
                     <ProcessingStep form={form} onChange={handleChange} />
                   )}
                   {(currentStep === "Documents" || currentStep === "Documents & Submit") && (
-                    <DocumentsStep form={form} onChange={handleChange} onDocsChange={handleDocsChange} opportunityId={selectedOpportunityId} onDocCountChange={setUploadedDocCount} />
+                    <DocumentsStep form={form} onChange={handleChange} onDocsChange={handleDocsChange} opportunityId={selectedOpportunityId} onDocCountChange={setUploadedDocCount} onDocTypeCountsChange={setUploadedDocTypeCounts} />
                   )}
                   {currentStep === "Review" && (
                     <ReviewStep form={form} missingBySection={missingBySection as any} />
@@ -981,12 +1000,20 @@ function ProcessingStep({ form, onChange }: { form: PreboardingForm; onChange: <
   );
 }
 
-function DocumentsStep({ form, onChange, onDocsChange, opportunityId, onDocCountChange }: { form: PreboardingForm; onChange: <K extends keyof PreboardingForm>(field: K, value: PreboardingForm[K]) => void; onDocsChange: (event: ChangeEvent<HTMLInputElement>) => void; opportunityId: string | null; onDocCountChange: (count: number) => void; }) {
+function DocumentsStep({ form, onChange, onDocsChange, opportunityId, onDocCountChange, onDocTypeCountsChange }: { form: PreboardingForm; onChange: <K extends keyof PreboardingForm>(field: K, value: PreboardingForm[K]) => void; onDocsChange: (event: ChangeEvent<HTMLInputElement>) => void; opportunityId: string | null; onDocCountChange: (count: number) => void; onDocTypeCountsChange?: (counts: Record<string, number>) => void; }) {
   const [existingDocs, setExistingDocs] = useState<UploadedDocument[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedDocType, setSelectedDocType] = useState<string>("Unassigned");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const updateDocTypeCounts = useCallback((docs: UploadedDocument[]) => {
+    const counts: Record<string, number> = {};
+    for (const d of docs) {
+      if (d.document_type) counts[d.document_type] = (counts[d.document_type] || 0) + 1;
+    }
+    onDocTypeCountsChange?.(counts);
+  }, [onDocTypeCountsChange]);
 
   const fetchDocs = useCallback(async () => {
     if (!opportunityId) return;
@@ -999,8 +1026,9 @@ function DocumentsStep({ form, onChange, onDocsChange, opportunityId, onDocCount
     const docs = data ?? [];
     setExistingDocs(docs);
     onDocCountChange(docs.length);
+    updateDocTypeCounts(docs);
     setIsLoading(false);
-  }, [opportunityId, onDocCountChange]);
+  }, [opportunityId, onDocCountChange, updateDocTypeCounts]);
 
   useEffect(() => { fetchDocs(); }, [fetchDocs]);
 
@@ -1055,6 +1083,7 @@ function DocumentsStep({ form, onChange, onDocsChange, opportunityId, onDocCount
     const docs = updatedDocs ?? [];
     setExistingDocs(docs);
     onDocCountChange(docs.length);
+    updateDocTypeCounts(docs);
     syncDocsToWizard(docs);
     sonnerToast.success('Documents uploaded');
     setIsUploading(false);
@@ -1066,6 +1095,7 @@ function DocumentsStep({ form, onChange, onDocsChange, opportunityId, onDocCount
     const updated = existingDocs.filter(d => d.id !== doc.id);
     setExistingDocs(updated);
     onDocCountChange(updated.length);
+    updateDocTypeCounts(updated);
     syncDocsToWizard(updated);
     sonnerToast.success('Document deleted');
   };

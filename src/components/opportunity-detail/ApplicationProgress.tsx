@@ -150,6 +150,7 @@ const STATUS_ICON: Record<SectionStatus, React.ReactNode> = {
 export const ApplicationProgress = ({ opportunity, wizardState }: ApplicationProgressProps) => {
   const isGatewayOnly = opportunity.service_type === "gateway_only";
   const [uploadedTypes, setUploadedTypes] = useState<Set<string>>(new Set());
+  const [docCounts, setDocCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const fetchDocs = async () => {
@@ -157,7 +158,13 @@ export const ApplicationProgress = ({ opportunity, wizardState }: ApplicationPro
         .from("documents")
         .select("document_type")
         .eq("opportunity_id", opportunity.id);
-      setUploadedTypes(new Set((data || []).map((d) => d.document_type).filter(Boolean)));
+      const docs = data || [];
+      setUploadedTypes(new Set(docs.map((d) => d.document_type).filter(Boolean)));
+      const counts: Record<string, number> = {};
+      for (const d of docs) {
+        if (d.document_type) counts[d.document_type] = (counts[d.document_type] || 0) + 1;
+      }
+      setDocCounts(counts);
     };
     fetchDocs();
   }, [opportunity.id]);
@@ -181,10 +188,19 @@ export const ApplicationProgress = ({ opportunity, wizardState }: ApplicationPro
   const docChecklist = useMemo(() => {
     return requiredDocs.map((req) => {
       const altType = (req as { alt?: string }).alt;
+      if (req.type === "Bank Statement") {
+        // Require 3 bank statements OR 3 transaction history
+        const bankCount = docCounts["Bank Statement"] || 0;
+        const txnCount = docCounts["Transaction History"] || 0;
+        const present = bankCount >= 3 || txnCount >= 3;
+        const currentCount = Math.max(bankCount, txnCount);
+        const countLabel = `(${currentCount}/3)`;
+        return { ...req, present, label: `${req.label} ${countLabel}` };
+      }
       const present = uploadedTypes.has(req.type) || (altType ? uploadedTypes.has(altType) : false);
       return { ...req, present };
     });
-  }, [uploadedTypes, isGatewayOnly]);
+  }, [uploadedTypes, docCounts, isGatewayOnly]);
 
   const docsCompleted = docChecklist.filter((d) => d.present).length;
   const docsTotal = docChecklist.length;

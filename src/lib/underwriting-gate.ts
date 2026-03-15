@@ -64,14 +64,29 @@ export async function checkUnderwritingGate(opportunityId: string, serviceType?:
     .select("document_type")
     .eq("opportunity_id", opportunityId);
 
-  const uploadedTypes = new Set((docs || []).map((d) => d.document_type));
+  const docList = docs || [];
+  const uploadedTypes = new Set(docList.map((d) => d.document_type));
+
+  // Count documents by type
+  const docCounts: Record<string, number> = {};
+  for (const d of docList) {
+    if (d.document_type) docCounts[d.document_type] = (docCounts[d.document_type] || 0) + 1;
+  }
 
   const missing: string[] = [];
   for (const req of requiredDocs) {
     if (req.type === "Bank Statement") {
-      // Transaction History can substitute for Bank Statement (processing only)
-      const hasFinancialHistory = uploadedTypes.has("Bank Statement") || uploadedTypes.has("Transaction History");
-      if (!hasFinancialHistory) missing.push(req.label + " or Transaction History");
+      // Require 3 months of Bank Statements OR 3 months of Transaction History
+      const bankCount = docCounts["Bank Statement"] || 0;
+      const txnCount = docCounts["Transaction History"] || 0;
+      if (bankCount < 3 && txnCount < 3) {
+        const bestLabel = bankCount > 0
+          ? `Bank Statements (${bankCount}/3 uploaded — need 3 months)`
+          : txnCount > 0
+          ? `Transaction History (${txnCount}/3 uploaded — need 3 months)`
+          : "Bank Statements or Transaction History (3 months required)";
+        missing.push(bestLabel);
+      }
     } else if (!uploadedTypes.has(req.type)) {
       missing.push(req.label);
     }
