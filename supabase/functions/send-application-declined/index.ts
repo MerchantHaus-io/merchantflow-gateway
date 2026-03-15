@@ -107,6 +107,7 @@ const handler = async (req: Request): Promise<Response> => {
       body: JSON.stringify({
         from: "Merchant Haus <applications@merchanthaus.io>",
         to: [recipientEmail],
+        bcc: ["sales@merchanthaus.io"],
         subject: `Application Update — ${accountName || "Your Application"}`,
         html: buildDeclineEmailHtml(recipientName, accountName),
         reply_to: "sales@merchanthaus.io",
