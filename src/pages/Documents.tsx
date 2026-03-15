@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { QueryErrorCard } from "@/components/QueryErrorCard";
-import { Download, FileText, ChevronDown, ChevronRight, Eye } from "lucide-react";
+import { Download, FileText, ChevronDown, ChevronRight, Eye, Upload } from "lucide-react";
+import { DocumentUploadDialog } from "@/components/DocumentUploadDialog";
 import { supabase } from "@/integrations/supabase/client";
 import type { Document } from "@/types/opportunity";
 import { Button } from "@/components/ui/button";
