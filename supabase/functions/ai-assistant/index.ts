@@ -692,6 +692,22 @@ serve(async (req) => {
             },
           },
         },
+        {
+          type: "function",
+          function: {
+            name: "bulk_classify_documents",
+            description: "Scan all unassigned (or all) documents on an opportunity, classify each one by content using AI vision, and auto-relabel them. Use when someone asks to 'classify all docs', 'label the unassigned files', or 'scan and tag the documents on [account]'.",
+            parameters: {
+              type: "object",
+              properties: {
+                opportunity_id: { type: "string", description: "UUID of the opportunity whose documents to classify" },
+                only_unassigned: { type: "boolean", description: "If true (default), only classify documents with no label or 'Unassigned'. If false, re-classify all documents." },
+              },
+              required: ["opportunity_id"],
+              additionalProperties: false,
+            },
+          },
+        },
       ];
 
       // ── Tool Execution Handler ──
