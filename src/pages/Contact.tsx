@@ -7,9 +7,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { CheckCircle2, Loader2 } from 'lucide-react';
-import { useTheme } from '@/contexts/ThemeContext';
-import logoDark from '@/assets/logo-dark.png';
-import logoLight from '@/assets/logo-light.png';
 
 type FormStatus = 'idle' | 'submitting' | 'success' | 'error';
 
@@ -23,7 +20,6 @@ interface ContactFormData {
 }
 
 const Contact = () => {
-  const { theme } = useTheme();
   const [formStatus, setFormStatus] = useState<FormStatus>('idle');
   const [honeypot, setHoneypot] = useState('');
   const [countdown, setCountdown] = useState(15);
@@ -92,7 +88,7 @@ const Contact = () => {
         <CardHeader className="text-center">
           <div className="flex items-center justify-center mb-4">
             <img
-              src={theme === 'dark' ? logoDark : logoLight}
+              src="/images/merchanthaus-logo.png"
               alt="Merchant Haus"
               className="h-12 w-auto"
             />

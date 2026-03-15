@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TasksProvider } from "@/contexts/TasksContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -55,6 +55,22 @@ import { Dialler } from "./components/Dialler";
 import { CommandPalette } from "./components/CommandPalette";
 import { KeyboardShortcutsModal } from "./components/KeyboardShortcutsModal";
 
+const PUBLIC_ROUTES = ['/auth', '/login', '/contact', '/apply', '/merchant-apply', '/forgot-password', '/update-password', '/terms-processing'];
+
+const InternalWidgets = () => {
+  const { pathname } = useLocation();
+  if (PUBLIC_ROUTES.some(r => pathname.startsWith(r))) return null;
+  return (
+    <>
+      <IncomingCallToast />
+      <IncomingMessageToast />
+      <Dialler />
+      <CommandPalette />
+      <KeyboardShortcutsModal />
+    </>
+  );
+};
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -75,11 +91,7 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <TasksProvider>
-              <IncomingCallToast />
-              <IncomingMessageToast />
-              <Dialler />
-              <CommandPalette />
-              <KeyboardShortcutsModal />
+              <InternalWidgets />
               <Routes>
                 {/* Public routes */}
                 <Route path="/auth" element={<Auth />} />
