@@ -147,6 +147,12 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
       toast.success(`${successCount} file${successCount !== 1 ? "s" : ""} uploaded`);
       setBulkSuggestions(null);
       fetchDocuments();
+      // Fire-and-forget AI classification for unassigned docs
+      if (uploadedDocIds.length > 0) {
+        autoClassifyDocuments(uploadedDocIds, (_docId, _label) => {
+          fetchDocuments(); // Refresh to show new labels
+        });
+      }
     } catch {
       toast.error("Upload failed");
     } finally {
