@@ -89,7 +89,7 @@ const Contact = () => {
         <CardHeader className="text-center">
           <div className="flex items-center justify-center mb-4">
             <img
-              src={theme === 'dark' ? logoDark : logoLight}
+              src="/images/merchanthaus-logo.png"
               alt="Merchant Haus"
               className="h-12 w-auto"
             />

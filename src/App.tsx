@@ -75,11 +75,7 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <TasksProvider>
-              <IncomingCallToast />
-              <IncomingMessageToast />
-              <Dialler />
-              <CommandPalette />
-              <KeyboardShortcutsModal />
+              <InternalWidgets />
               <Routes>
                 {/* Public routes */}
                 <Route path="/auth" element={<Auth />} />
