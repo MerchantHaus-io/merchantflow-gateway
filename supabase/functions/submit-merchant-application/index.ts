@@ -32,7 +32,7 @@ const PrincipalSchema = z.object({
   principal_city: optText(100),
   principal_state: optText(50),
   principal_zip: optText(20),
-  principal_country: optText(10),
+  principal_country: optText(100),
   date_of_birth: reqText(20),
   ssn_full: z.string().trim().regex(/^\d{9}$/, "SSN must be exactly 9 digits"),
 });
