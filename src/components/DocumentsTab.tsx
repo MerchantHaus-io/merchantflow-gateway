@@ -127,7 +127,7 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
           .from("opportunity-documents")
           .upload(path, file);
         if (uploadError) throw uploadError;
-        const { error: dbError } = await supabase.from("documents").insert({
+        const { data: docRow, error: dbError } = await supabase.from("documents").insert({
           opportunity_id: opportunityId,
           file_name: file.name,
           file_path: path,
@@ -135,9 +135,13 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
           content_type: file.type,
           uploaded_by: user?.email,
           document_type: type,
-        });
+        }).select("id").single();
         if (dbError) throw dbError;
         successCount++;
+        // Queue AI classification for unassigned docs
+        if (docRow && (!type || type === "Unassigned")) {
+          uploadedDocIds.push(docRow.id);
+        }
       }
       toast.success(`${successCount} file${successCount !== 1 ? "s" : ""} uploaded`);
       setBulkSuggestions(null);
