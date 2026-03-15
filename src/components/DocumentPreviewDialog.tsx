@@ -103,8 +103,10 @@ export const DocumentPreviewDialog = ({
   };
 
   const canPreview = doc ? isPreviewable(doc.content_type, doc.file_name) : false;
+  const ext = doc?.file_name.split(".").pop()?.toLowerCase() || "";
   const isImage = doc?.content_type?.startsWith("image/") ||
-    ["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(doc?.file_name.split(".").pop()?.toLowerCase() || "");
+    ["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext);
+  const isPdf = doc?.content_type === "application/pdf" || ext === "pdf";
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
