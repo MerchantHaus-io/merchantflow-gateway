@@ -10,6 +10,7 @@ import { Upload, Download, Trash2, FileText, Loader2, Eye, CheckCircle2, XCircle
 import { DocumentPreviewDialog } from "@/components/DocumentPreviewDialog";
 import { suggestLabels, SuggestedLabel } from "@/lib/document-label-ai";
 import { BulkUploadReview } from "@/components/BulkUploadReview";
+import { autoClassifyDocuments } from "@/hooks/useAutoClassify";
 
 interface Document {
   id: string;
