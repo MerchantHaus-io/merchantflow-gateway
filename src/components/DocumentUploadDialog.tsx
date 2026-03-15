@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DOCUMENT_TYPE_OPTIONS } from "@/components/DocumentsTab";
 import { Upload, Plus, Building2, FileText, X, Loader2 } from "lucide-react";
+import { autoClassifyDocuments } from "@/hooks/useAutoClassify";
 
 interface Account {
   id: string;
