@@ -302,11 +302,34 @@ A separate "AI Validate" action in the Documents tab triggers Gemini to cross-re
 
 ### Service Types
 - **Processing** — Full merchant onboarding with underwriting
-- **Gateway Only** — Simplified gateway configuration flow
+- **Gateway Only** — Simplified gateway configuration flow (lightened requirements: Voided Check + VAR/Tear Sheet only, no AI validation or beneficial ownership gate)
 - **Document Submission** — Compliance document uploads only
 
-### Pipeline Stages (Database Values)
-\`discovery\` → \`qualification\` → \`preboarding\` → \`underwriting\` → \`boarding\` → \`live\`
+### Active Pipeline Stages
+\`Discovery\` → \`Qualified\` → \`App Prep\` → \`Underwriting\` → \`Approved\` → \`Gateway Setup\` → \`Integration\` → \`Testing\` → \`Go Live Ready\`
+
+### Terminal Outcomes (Off-Board)
+Selecting an outcome removes the deal from the active board, records a reason/notes/close date/closer, and disables further stage movement:
+- **Closed Won** — automatically tracked in Live & Billing report
+- **Closed Lost** — sets status to 'dead', preserves historical data
+- **Disqualified** — sets status to 'dead'
+- **No Decision / Dead** — sets status to 'dead'
+- **Underwriting Declined** — sets status to 'dead'
+
+### Underwriting Gate (Processing Deals)
+Before a deal can advance to Underwriting, it must pass document validation:
+1. ≥ 3 separate Bank Statements or Transaction History documents
+2. Articles of Organization
+3. Tax Document (EIN)
+4. Voided Check or Bank Confirmation
+5. Passport or Driver's License (KYC)
+6. ≥ 1 beneficial owner with 25%+ equity recorded
+
+### Pipeline UX
+- **Hybrid 75/25 layout** — Kanban board (top) + high-density List View (bottom, max-w-3xl)
+- **Sticky column headers** — fixed during vertical scroll
+- **Focus Mode** (\`?focus=true\`) — filters to active deals and tasks only
+- **SLA velocity alerts** — two-tier system: amber at 12 hours, red at 24 hours (resets on stage movement)
 
 ### Automation
 - SLA tracking: Automatic 24-hour SLA tasks on stage entry
@@ -315,6 +338,8 @@ A separate "AI Validate" action in the Documents tab triggers Gemini to cross-re
 - Stage change notifications: Email + in-app + push notifications on assignment and stage transitions
 - System messages: Automated chat posts to #ops-updates for assignments and key events
 - AI validation: On-demand document readiness checks via Gemini
+- Preboarding completion: "Mark Preboarding Complete" persists form state and logs activity but keeps the deal in App Prep for final review
+
 
 ---
 
