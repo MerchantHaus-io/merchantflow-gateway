@@ -1095,6 +1095,7 @@ function DocumentsStep({ form, onChange, onDocsChange, opportunityId, onDocCount
     const updated = existingDocs.filter(d => d.id !== doc.id);
     setExistingDocs(updated);
     onDocCountChange(updated.length);
+    updateDocTypeCounts(updated);
     syncDocsToWizard(updated);
     sonnerToast.success('Document deleted');
   };
