@@ -20,7 +20,6 @@ interface ContactFormData {
 }
 
 const Contact = () => {
-  const [formStatus
   const [formStatus, setFormStatus] = useState<FormStatus>('idle');
   const [honeypot, setHoneypot] = useState('');
   const [countdown, setCountdown] = useState(15);

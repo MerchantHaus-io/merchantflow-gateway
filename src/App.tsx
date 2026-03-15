@@ -55,6 +55,22 @@ import { Dialler } from "./components/Dialler";
 import { CommandPalette } from "./components/CommandPalette";
 import { KeyboardShortcutsModal } from "./components/KeyboardShortcutsModal";
 
+const PUBLIC_ROUTES = ['/auth', '/login', '/contact', '/apply', '/merchant-apply', '/forgot-password', '/update-password', '/terms-processing'];
+
+const InternalWidgets = () => {
+  const { pathname } = useLocation();
+  if (PUBLIC_ROUTES.some(r => pathname.startsWith(r))) return null;
+  return (
+    <>
+      <IncomingCallToast />
+      <IncomingMessageToast />
+      <Dialler />
+      <CommandPalette />
+      <KeyboardShortcutsModal />
+    </>
+  );
+};
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
