@@ -103,8 +103,10 @@ export const DocumentPreviewDialog = ({
   };
 
   const canPreview = doc ? isPreviewable(doc.content_type, doc.file_name) : false;
+  const ext = doc?.file_name.split(".").pop()?.toLowerCase() || "";
   const isImage = doc?.content_type?.startsWith("image/") ||
-    ["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(doc?.file_name.split(".").pop()?.toLowerCase() || "");
+    ["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext);
+  const isPdf = doc?.content_type === "application/pdf" || ext === "pdf";
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -159,12 +161,25 @@ export const DocumentPreviewDialog = ({
                   className="max-w-full max-h-full object-contain rounded"
                 />
               </div>
+            ) : isPdf ? (
+              <object
+                data={blobUrl}
+                type="application/pdf"
+                className="w-full h-full"
+              >
+                <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
+                  <FileText className="h-10 w-10 opacity-40" />
+                  <p className="text-sm">PDF preview not supported in this browser</p>
+                  <Button size="sm" variant="outline" onClick={handleDownload}>
+                    <Download className="h-3 w-3 mr-1" /> Download PDF
+                  </Button>
+                </div>
+              </object>
             ) : (
               <iframe
                 src={blobUrl}
                 title={doc?.file_name || "Preview"}
                 className="w-full h-full border-0"
-                sandbox="allow-same-origin allow-scripts"
               />
             )
           )}
