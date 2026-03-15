@@ -388,6 +388,10 @@ const DocumentsPage = () => {
             <Download className="h-4 w-4 mr-2" />
             {isDownloading && selectedDocuments.size > 0 ? "Preparing..." : "Download selected"}
           </Button>
+          <Button onClick={() => setUploadDialogOpen(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            Upload
+          </Button>
         </>
       }
     >
