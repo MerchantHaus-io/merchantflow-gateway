@@ -149,7 +149,7 @@ const handler = async (req: Request): Promise<Response> => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Merchant Haus <onboarding@resend.dev>",
+        from: "Merchant Haus <sales@merchanthaus.io>",
         to: [data.email],
         subject: "Thank you for contacting Merchant Haus",
         html: buildClientConfirmationHtml(data.first_name),
