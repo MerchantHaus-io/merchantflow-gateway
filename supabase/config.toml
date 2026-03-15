@@ -62,3 +62,6 @@ verify_jwt = false
 
 [functions.classify-document]
 verify_jwt = false
+
+[functions.send-application-declined]
+verify_jwt = false

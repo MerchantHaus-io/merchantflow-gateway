@@ -1042,7 +1042,23 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                           ...(isNegativeOutcome ? { status: 'dead' } : {}),
                         });
                         toast.success(`Outcome set: ${OUTCOME_CONFIG[outcome].label}`);
-                        if (isNegativeOutcome) {
+                        // Auto-send decline email to client for negative outcomes
+                        if (isNegativeOutcome && opportunity.contact?.email) {
+                          const contactName = [opportunity.contact?.first_name, opportunity.contact?.last_name].filter(Boolean).join(' ') || 'Valued Applicant';
+                          supabase.functions.invoke('send-application-declined', {
+                            body: {
+                              recipientEmail: opportunity.contact.email,
+                              recipientName: contactName,
+                              accountName: opportunity.account?.name || '',
+                              outcomeStatus: outcome,
+                              outcomeReason: reason,
+                            },
+                          }).then(({ error: emailErr }) => {
+                            if (emailErr) console.error('Failed to send decline email:', emailErr);
+                            else console.log('Decline email sent to', opportunity.contact?.email);
+                          });
+                          setTimeout(() => onClose(), 1500);
+                        } else if (isNegativeOutcome) {
                           setTimeout(() => onClose(), 1500);
                         }
                       }}
