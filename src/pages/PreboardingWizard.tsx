@@ -1007,6 +1007,14 @@ function DocumentsStep({ form, onChange, onDocsChange, opportunityId, onDocCount
   const [selectedDocType, setSelectedDocType] = useState<string>("Unassigned");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const updateDocTypeCounts = useCallback((docs: UploadedDocument[]) => {
+    const counts: Record<string, number> = {};
+    for (const d of docs) {
+      if (d.document_type) counts[d.document_type] = (counts[d.document_type] || 0) + 1;
+    }
+    onDocTypeCountsChange?.(counts);
+  }, [onDocTypeCountsChange]);
+
   const fetchDocs = useCallback(async () => {
     if (!opportunityId) return;
     setIsLoading(true);
@@ -1018,8 +1026,9 @@ function DocumentsStep({ form, onChange, onDocsChange, opportunityId, onDocCount
     const docs = data ?? [];
     setExistingDocs(docs);
     onDocCountChange(docs.length);
+    updateDocTypeCounts(docs);
     setIsLoading(false);
-  }, [opportunityId, onDocCountChange]);
+  }, [opportunityId, onDocCountChange, updateDocTypeCounts]);
 
   useEffect(() => { fetchDocs(); }, [fetchDocs]);
 
