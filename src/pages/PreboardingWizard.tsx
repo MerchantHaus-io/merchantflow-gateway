@@ -1083,6 +1083,7 @@ function DocumentsStep({ form, onChange, onDocsChange, opportunityId, onDocCount
     const docs = updatedDocs ?? [];
     setExistingDocs(docs);
     onDocCountChange(docs.length);
+    updateDocTypeCounts(docs);
     syncDocsToWizard(docs);
     sonnerToast.success('Documents uploaded');
     setIsUploading(false);
