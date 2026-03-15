@@ -188,10 +188,19 @@ export const ApplicationProgress = ({ opportunity, wizardState }: ApplicationPro
   const docChecklist = useMemo(() => {
     return requiredDocs.map((req) => {
       const altType = (req as { alt?: string }).alt;
+      if (req.type === "Bank Statement") {
+        // Require 3 bank statements OR 3 transaction history
+        const bankCount = docCounts["Bank Statement"] || 0;
+        const txnCount = docCounts["Transaction History"] || 0;
+        const present = bankCount >= 3 || txnCount >= 3;
+        const currentCount = Math.max(bankCount, txnCount);
+        const countLabel = `(${currentCount}/3)`;
+        return { ...req, present, label: `${req.label} ${countLabel}` };
+      }
       const present = uploadedTypes.has(req.type) || (altType ? uploadedTypes.has(altType) : false);
       return { ...req, present };
     });
-  }, [uploadedTypes, isGatewayOnly]);
+  }, [uploadedTypes, docCounts, isGatewayOnly]);
 
   const docsCompleted = docChecklist.filter((d) => d.present).length;
   const docsTotal = docChecklist.length;
