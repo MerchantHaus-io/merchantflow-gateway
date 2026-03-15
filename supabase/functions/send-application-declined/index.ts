@@ -45,7 +45,7 @@ const buildDeclineEmailHtml = (recipientName: string, accountName: string): stri
   <div class="wrapper">
     <div class="card">
       <div class="header">
-        <h1>Merchant Haus</h1>
+        <img src="https://ops-terminal.lovable.app/images/merchanthaus-logo.png" alt="Merchant Haus" style="height: 32px;" />
       </div>
       <div class="body">
         <p>Dear ${recipientName},</p>
