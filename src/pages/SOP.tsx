@@ -138,6 +138,19 @@ Resend (email), Netlify (hosting), GitHub (source control), OpenPhone (telephony
 - **Admin check:** \`is_admin_email()\` SQL function (security definer)
 - **Role check:** \`has_role(uuid, app_role)\` SQL function — separate \`user_roles\` table (never stored on profiles)
 - **Public forms:** INSERT-only policies (no \`.select()\`) for merchant applications & consents
+- **Public route isolation:** Internal-only widgets (Quo Dialler, call/message toasts, command palette, keyboard shortcuts) are automatically hidden on all public routes via the \`InternalWidgets\` guard component
+
+### Public Routes (No Authentication Required)
+| Route | Purpose |
+|-------|---------|
+| \`/auth\` | Sign-in / sign-up |
+| \`/login\` | Alternative login entry |
+| \`/forgot-password\` | Password reset request |
+| \`/update-password\` | Password reset completion |
+| \`/apply\` | Simplified merchant inquiry form |
+| \`/contact\` | Public contact form (branded with Merchant Haus logo, honeypot spam protection, auto-redirect to merchanthaus.io on success) |
+| \`/merchant-apply\` | Full 7-step merchant application wizard |
+| \`/terms-processing\` | Processing terms & conditions |
 
 ---
 
