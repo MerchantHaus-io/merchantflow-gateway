@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { QueryErrorCard } from "@/components/QueryErrorCard";
-import { Download, FileText, ChevronDown, ChevronRight, Eye } from "lucide-react";
+import { Download, FileText, ChevronDown, ChevronRight, Eye, Upload } from "lucide-react";
+import { DocumentUploadDialog } from "@/components/DocumentUploadDialog";
 import { supabase } from "@/integrations/supabase/client";
 import type { Document } from "@/types/opportunity";
 import { Button } from "@/components/ui/button";
@@ -55,6 +56,7 @@ const DocumentsPage = () => {
   const [initialCollapseApplied, setInitialCollapseApplied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewDoc, setPreviewDoc] = useState<DocumentWithOpportunity | null>(null);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
 
   useEffect(() => {
     // Fetch documents on mount
@@ -386,6 +388,10 @@ const DocumentsPage = () => {
             <Download className="h-4 w-4 mr-2" />
             {isDownloading && selectedDocuments.size > 0 ? "Preparing..." : "Download selected"}
           </Button>
+          <Button onClick={() => setUploadDialogOpen(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            Upload
+          </Button>
         </>
       }
     >
@@ -568,6 +574,12 @@ const DocumentsPage = () => {
         document={previewDoc}
         open={!!previewDoc}
         onOpenChange={(open) => { if (!open) setPreviewDoc(null); }}
+      />
+
+      <DocumentUploadDialog
+        open={uploadDialogOpen}
+        onOpenChange={setUploadDialogOpen}
+        onUploaded={fetchDocuments}
       />
     </AppLayout>
   );
