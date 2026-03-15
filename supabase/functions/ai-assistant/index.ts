@@ -676,6 +676,22 @@ serve(async (req) => {
             },
           },
         },
+        {
+          type: "function",
+          function: {
+            name: "classify_document",
+            description: "Analyze a document's actual content (PDF, JPG, PNG, DOC, DOCX) using AI vision/extraction and classify it into one of the standard CRM document types. Use when someone asks 'what is this document', 'identify this file', or 'what type of document is this'. Can optionally auto-relabel the document in the CRM.",
+            parameters: {
+              type: "object",
+              properties: {
+                document_id: { type: "string", description: "UUID of the document from [doc:uuid] in the document inventory" },
+                auto_relabel: { type: "boolean", description: "If true, automatically update the document's label in the CRM to the classified type. Defaults to false." },
+              },
+              required: ["document_id"],
+              additionalProperties: false,
+            },
+          },
+        },
       ];
 
       // ── Tool Execution Handler ──
