@@ -150,6 +150,7 @@ const STATUS_ICON: Record<SectionStatus, React.ReactNode> = {
 export const ApplicationProgress = ({ opportunity, wizardState }: ApplicationProgressProps) => {
   const isGatewayOnly = opportunity.service_type === "gateway_only";
   const [uploadedTypes, setUploadedTypes] = useState<Set<string>>(new Set());
+  const [docCounts, setDocCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const fetchDocs = async () => {
@@ -157,7 +158,13 @@ export const ApplicationProgress = ({ opportunity, wizardState }: ApplicationPro
         .from("documents")
         .select("document_type")
         .eq("opportunity_id", opportunity.id);
-      setUploadedTypes(new Set((data || []).map((d) => d.document_type).filter(Boolean)));
+      const docs = data || [];
+      setUploadedTypes(new Set(docs.map((d) => d.document_type).filter(Boolean)));
+      const counts: Record<string, number> = {};
+      for (const d of docs) {
+        if (d.document_type) counts[d.document_type] = (counts[d.document_type] || 0) + 1;
+      }
+      setDocCounts(counts);
     };
     fetchDocs();
   }, [opportunity.id]);
