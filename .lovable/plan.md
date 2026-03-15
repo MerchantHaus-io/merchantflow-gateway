@@ -1,44 +1,43 @@
 
 
-# Add Document Classification Tool to Atria
+# Industry-Standard Compliance Features — Implemented
 
-## What
-Give Atria a new `classify_document` tool that opens any uploaded file (PDF, JPG, PNG, DOC, DOCX), analyzes its content using AI vision/extraction, and returns a classification label plus confidence score. Atria can then auto-relabel the document in the CRM.
+## ✅ 1. Owner Identity Verification (KYC / CDD)
+- Added "Passport/Drivers License" as 5th hard-requirement document in underwriting gate (`src/lib/underwriting-gate.ts`)
+- Updated ApplicationProgress checklist to show 5 required docs
+- Updated AI underwriting review prompt to flag missing Owner ID
 
-## Why
-Currently document labeling relies on filename heuristics only. Users want Atria to look at the actual content of a file and determine what it is -- a bank statement, a voided check, a passport, etc. -- regardless of what the file is named.
+## ✅ 2. OFAC / Sanctions Screening
+- Extended AI underwriting review prompt with OFAC/SDN screening dimension
+- AI now screens business name, DBA, and principal owner names against sanctions patterns
+- Results included in auto-saved note with 🛡️ OFAC Screening section
+- Added `ofac_screening` field to the AI tool schema
 
-## How
+## ✅ 3. Beneficial Ownership Declaration (FinCEN CDD Rule)
+- Created `beneficial_owners` table with RLS policies (migration applied)
+- Built `BeneficialOwners` component in opportunity detail modal overview
+- Underwriting gate now verifies at least one beneficial owner is recorded
+- Form captures: name, title, ownership %, DOB, address
 
-### 1. New tool definition: `classify_document`
-Add to the `crmTools` array in `supabase/functions/ai-assistant/index.ts`:
-- Name: `classify_document`
-- Parameters: `document_id` (required), `auto_relabel` (optional boolean, default false)
-- Description: Analyze a document's content and classify it into one of the standard CRM document types
+## ✅ 4. Stage SLA Timers with Escalation
+- Created `sla-escalation` edge function with per-stage thresholds
+- Automatically calculates amber/red SLA status for all active opportunities
+- Creates high-priority tasks on red breach with notification
+- SLA config also available client-side via `src/lib/sla-config.ts`
+- Registered in `supabase/config.toml`
 
-### 2. Tool execution handler
-In the `executeTool` switch, add a `classify_document` case that:
+## ✅ 5. Duplicate / Existing Merchant Check
+- Created `src/lib/duplicate-check.ts` utility
+- Checks EIN, legal entity name, and DBA against existing records
+- Fires warning toast when moving past Discovery on the pipeline board
+- Non-blocking (warning only) to avoid false positive blocks
 
-1. Fetches the document metadata (file_name, file_path, content_type) from the `documents` table
-2. Generates a signed URL
-3. Determines file type:
-   - **Images** (JPG, PNG): Fetch binary, convert to base64, send as multimodal image to AI gateway
-   - **PDFs**: Reuse the existing `parsePdfText` helper (signed URL with inline base64 fallback)
-   - **DOC/DOCX**: Fetch binary, convert to base64, send to AI gateway for analysis (Gemini can process these via multimodal input)
-4. Sends content to AI gateway (`google/gemini-3-flash-preview`) with a classification prompt that:
-   - Lists the valid labels: Bank Statement, Processing Statement, Voided Check, Bank Confirmation Letter, Articles of Organization, EIN / Tax Document, Passport/Drivers License, Business License, Lease Agreement, Transaction History, VAR/Tear Sheet, Signed Agreement, Other
-   - Uses tool calling to return structured output: `{ label, confidence, reasoning }`
-5. If `auto_relabel` is true, updates the document's `document_type` in the database
-6. Returns the classification result to Atria so she can report it conversationally
+## ✅ 6. High-Risk MCC Flagging
+- Created `src/lib/high-risk-mcc.ts` with known high-risk MCC codes
+- Added `risk_tier` column to `validation_reports` table (migration applied)
+- AI underwriting review now assesses and returns `risk_tier`
+- Auto-saved note includes 🔴 HIGH-RISK MCC warning when flagged
 
-### 3. System prompt update
-Add a line to the ACTIONS section mentioning that Atria can classify/identify documents by content, not just filename. Instruct her to use `classify_document` when someone asks "what is this document" or "identify this file."
-
-### 4. Supported file types
-- `.pdf` -- Extract via existing PDF pipeline, classify extracted text
-- `.jpg`, `.png` -- Send as base64 image for visual classification
-- `.doc`, `.docx` -- Fetch binary, send as base64 document to Gemini (which supports these natively via multimodal)
-
-### Files changed
-- `supabase/functions/ai-assistant/index.ts` -- Add tool definition, execution handler, and system prompt update
-
+## Pipeline Board Hardening
+- Added underwriting gate check to Index.tsx `handleUpdateOpportunity` (was only on Opportunities page)
+- Duplicate check fires on Discovery → next stage transition
