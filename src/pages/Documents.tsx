@@ -575,6 +575,12 @@ const DocumentsPage = () => {
         open={!!previewDoc}
         onOpenChange={(open) => { if (!open) setPreviewDoc(null); }}
       />
+
+      <DocumentUploadDialog
+        open={uploadDialogOpen}
+        onOpenChange={setUploadDialogOpen}
+        onUploaded={fetchDocuments}
+      />
     </AppLayout>
   );
 };
