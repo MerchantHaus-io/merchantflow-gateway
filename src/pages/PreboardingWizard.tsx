@@ -383,7 +383,25 @@ export default function PreboardingWizard() {
   const getMissingFieldsForSection = (sectionKey: string) => {
     const required = REQUIRED_FIELDS[sectionKey] ?? [];
     if (sectionKey === "documents") {
-      return (form.documents.length > 0 || uploadedDocCount > 0) ? [] : ["At least one supporting document"];
+      const missing: string[] = [];
+      if (form.documents.length === 0 && uploadedDocCount === 0) {
+        missing.push("At least one supporting document");
+      }
+      // Check 3-month Bank Statement or Transaction History requirement (processing only)
+      if (!isGatewayOnly) {
+        const bankCount = uploadedDocTypeCounts["Bank Statement"] || 0;
+        const txnCount = uploadedDocTypeCounts["Transaction History"] || 0;
+        if (bankCount < 3 && txnCount < 3) {
+          if (bankCount > 0) {
+            missing.push(`Bank Statements (${bankCount}/3 — need 3 months)`);
+          } else if (txnCount > 0) {
+            missing.push(`Transaction History (${txnCount}/3 — need 3 months)`);
+          } else {
+            missing.push("Bank Statements or Transaction History (3 months required)");
+          }
+        }
+      }
+      return missing;
     }
     return required.filter(field => !String(form[field as keyof PreboardingForm] ?? "").trim());
   };
