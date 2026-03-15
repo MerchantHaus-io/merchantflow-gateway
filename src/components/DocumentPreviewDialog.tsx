@@ -164,7 +164,7 @@ export const DocumentPreviewDialog = ({
                 src={blobUrl}
                 title={doc?.file_name || "Preview"}
                 className="w-full h-full border-0"
-                sandbox="allow-same-origin"
+                sandbox="allow-same-origin allow-scripts"
               />
             )
           )}
