@@ -16,6 +16,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTasks } from "@/contexts/TasksContext";
 import { sendOpportunityAssignmentEmail, sendStageChangeEmail } from "@/hooks/useEmailNotifications";
+import { sendQualifiedDocsRequest } from "@/hooks/useQualifiedDocsRequest";
 import ActivitiesTab from "./ActivitiesTab";
 import {
   AlertDialog,
@@ -915,6 +916,15 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                             newStage,
                             user?.email
                           ).catch(err => console.error("Failed to send stage change email:", err));
+                        }
+                        
+                        // Trigger qualified docs request email
+                        if (newStage === 'qualified') {
+                          sendQualifiedDocsRequest(
+                            opportunity.id,
+                            opportunity.account_id,
+                            opportunity.contact_id
+                          ).catch(err => console.error("Failed to send qualified docs email:", err));
                         }
                         
                         onUpdate({ ...opportunity, stage: newStage });

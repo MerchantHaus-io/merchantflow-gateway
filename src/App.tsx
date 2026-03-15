@@ -21,6 +21,7 @@ import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import UpdatePassword from "./pages/UpdatePassword";
 import Apply from "./pages/Apply";
+import Contact from "./pages/Contact";
 import SOP from "./pages/SOP";
 import RevenueCalculator from "./pages/RevenueCalculator";
 import PreboardingWizard from "./pages/PreboardingWizard";
@@ -86,6 +87,7 @@ const App = () => (
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/update-password" element={<UpdatePassword />} />
                 <Route path="/apply" element={<Apply />} />
+                <Route path="/contact" element={<Contact />} />
                 <Route path="/merchant-apply" element={<MerchantApply />} />
                 <Route path="/terms-processing" element={<TermsProcessing />} />
                 <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />

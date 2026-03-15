@@ -20,6 +20,7 @@ import {
   GATEWAY_ONLY_PIPELINE_STAGES
 } from "@/types/opportunity";
 import { sendStageChangeEmail } from "@/hooks/useEmailNotifications";
+import { sendQualifiedDocsRequest } from "@/hooks/useQualifiedDocsRequest";
 import { checkUnderwritingGate } from "@/lib/underwriting-gate";
 import { checkDuplicateMerchant } from "@/lib/duplicate-check";
 import { Input } from "@/components/ui/input";
@@ -560,9 +561,18 @@ const Opportunities = () => {
                                        newStage,
                                        user?.email
                                      ).catch(err => console.error("Failed to send stage change email:", err));
-                                   }
-                                   
-                                   toast({ title: `Stage updated to ${STAGE_CONFIG[newStage].label}` });
+                                    }
+                                    
+                                    // Trigger qualified docs request email
+                                    if (newStage === 'qualified') {
+                                      sendQualifiedDocsRequest(
+                                        opp.id,
+                                        opp.account_id,
+                                        opp.contact_id
+                                      ).catch(err => console.error("Failed to send qualified docs email:", err));
+                                    }
+                                    
+                                    toast({ title: `Stage updated to ${STAGE_CONFIG[newStage].label}` });
                                 }}
                               >
                                 <SelectTrigger className="h-7 w-auto min-w-[100px] border-0 bg-transparent hover:bg-muted/50 px-2 text-xs gap-1">
