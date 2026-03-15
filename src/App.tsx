@@ -21,6 +21,7 @@ import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import UpdatePassword from "./pages/UpdatePassword";
 import Apply from "./pages/Apply";
+import Contact from "./pages/Contact";
 import SOP from "./pages/SOP";
 import RevenueCalculator from "./pages/RevenueCalculator";
 import PreboardingWizard from "./pages/PreboardingWizard";
