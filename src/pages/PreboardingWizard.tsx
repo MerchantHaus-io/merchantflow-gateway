@@ -1000,7 +1000,7 @@ function ProcessingStep({ form, onChange }: { form: PreboardingForm; onChange: <
   );
 }
 
-function DocumentsStep({ form, onChange, onDocsChange, opportunityId, onDocCountChange }: { form: PreboardingForm; onChange: <K extends keyof PreboardingForm>(field: K, value: PreboardingForm[K]) => void; onDocsChange: (event: ChangeEvent<HTMLInputElement>) => void; opportunityId: string | null; onDocCountChange: (count: number) => void; }) {
+function DocumentsStep({ form, onChange, onDocsChange, opportunityId, onDocCountChange, onDocTypeCountsChange }: { form: PreboardingForm; onChange: <K extends keyof PreboardingForm>(field: K, value: PreboardingForm[K]) => void; onDocsChange: (event: ChangeEvent<HTMLInputElement>) => void; opportunityId: string | null; onDocCountChange: (count: number) => void; onDocTypeCountsChange?: (counts: Record<string, number>) => void; }) {
   const [existingDocs, setExistingDocs] = useState<UploadedDocument[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
