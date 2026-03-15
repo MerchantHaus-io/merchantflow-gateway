@@ -160,6 +160,7 @@ export const DocumentUploadDialog = ({ open, onOpenChange, onUploaded }: Documen
 
       // Upload each file
       let successCount = 0;
+      const uploadedDocIds: string[] = [];
       for (const { file, type } of files) {
         const path = `${opportunityId}/${Date.now()}_${file.name}`;
         const { error: uploadError } = await supabase.storage
@@ -169,7 +170,7 @@ export const DocumentUploadDialog = ({ open, onOpenChange, onUploaded }: Documen
           toast.error(`Failed to upload ${file.name}`);
           continue;
         }
-        const { error: dbError } = await supabase.from("documents").insert({
+        const { data: docRow, error: dbError } = await supabase.from("documents").insert({
           opportunity_id: opportunityId,
           file_name: file.name,
           file_path: path,
@@ -177,18 +178,23 @@ export const DocumentUploadDialog = ({ open, onOpenChange, onUploaded }: Documen
           content_type: file.type,
           uploaded_by: user?.email,
           document_type: type,
-        });
+        }).select("id").single();
         if (dbError) {
           toast.error(`Failed to save record for ${file.name}`);
           continue;
         }
         successCount++;
+        if (docRow) uploadedDocIds.push(docRow.id);
       }
 
       if (successCount > 0) {
         toast.success(`${successCount} file${successCount !== 1 ? "s" : ""} uploaded`);
         onUploaded?.();
         onOpenChange(false);
+        // Fire-and-forget AI classification
+        if (uploadedDocIds.length > 0) {
+          autoClassifyDocuments(uploadedDocIds, () => onUploaded?.());
+        }
       }
     } catch (err: any) {
       toast.error(err?.message || "Upload failed");
