@@ -113,6 +113,7 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
     setIsUploading(true);
     try {
       let successCount = 0;
+      const uploadedDocIds: string[] = [];
       for (const { file, type } of assignments) {
         // Validate label limit
         const currentCount = getLabelCounts(documents)[type] || 0;
