@@ -32,6 +32,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onContactSearchChange,
   onSelectChannel,
   onSelectContact,
+  onSelectAI,
 }) => {
   const filteredContacts = contactSearch
     ? onlineUsers.filter(u =>
