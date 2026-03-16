@@ -785,6 +785,87 @@ serve(async (req) => {
             },
           },
         },
+        {
+          type: "function",
+          function: {
+            name: "search_duplicates",
+            description: "Check for potential duplicate accounts by fuzzy-matching business name or EIN/Tax ID. Use when creating a new deal, during onboarding, or when someone asks 'do we already have this merchant'. Helps prevent duplicate records.",
+            parameters: {
+              type: "object",
+              properties: {
+                business_name: { type: "string", description: "Business or DBA name to check for duplicates" },
+                ein: { type: "string", description: "Optional EIN/Federal Tax ID to cross-check (last 4 digits or full)" },
+              },
+              required: ["business_name"],
+              additionalProperties: false,
+            },
+          },
+        },
+        {
+          type: "function",
+          function: {
+            name: "rep_performance",
+            description: "Generate performance metrics for a team member or the entire team. Shows deals by stage, conversion rates, average time in pipeline, SLA adherence, and recent activity. Use when someone asks 'how is [person] doing', 'team performance', 'my stats', or 'leaderboard'.",
+            parameters: {
+              type: "object",
+              properties: {
+                assignee_email: { type: "string", description: "Email of the team member to report on. Omit for full team report." },
+                days: { type: "number", description: "Lookback period in days (default 30)" },
+              },
+              additionalProperties: false,
+            },
+          },
+        },
+        {
+          type: "function",
+          function: {
+            name: "schedule_followup",
+            description: "Create a follow-up task or reminder linked to an opportunity. Sets a due date and assigns to the right person. Use when someone says 'remind me', 'follow up in X days', 'schedule a check-in', or 'set a reminder'.",
+            parameters: {
+              type: "object",
+              properties: {
+                opportunity_id: { type: "string", description: "UUID of the opportunity to follow up on" },
+                follow_up_days: { type: "number", description: "Number of days from now for the follow-up (default 3)" },
+                assignee: { type: "string", description: "Email of the team member to assign the follow-up to" },
+                subject: { type: "string", description: "Brief description of what the follow-up is about" },
+                priority: { type: "string", enum: ["low", "medium", "high"], description: "Priority level (default medium)" },
+              },
+              required: ["opportunity_id", "subject"],
+              additionalProperties: false,
+            },
+          },
+        },
+        {
+          type: "function",
+          function: {
+            name: "draft_email",
+            description: "Draft a context-aware email based on a deal's current stage and data. Generates professional emails for document requests, status updates, welcome messages, or follow-ups. Use when someone asks to 'draft an email', 'write an email to the merchant', or 'send a doc request'.",
+            parameters: {
+              type: "object",
+              properties: {
+                opportunity_id: { type: "string", description: "UUID of the opportunity for context" },
+                email_type: { type: "string", enum: ["document_request", "status_update", "welcome", "follow_up", "approval_notice", "custom"], description: "Type of email to draft" },
+                custom_instructions: { type: "string", description: "Optional custom instructions or talking points for the email" },
+              },
+              required: ["opportunity_id", "email_type"],
+              additionalProperties: false,
+            },
+          },
+        },
+        {
+          type: "function",
+          function: {
+            name: "check_outreach_status",
+            description: "Check the status of outreach campaigns including sent/bounced/replied counts and individual contact statuses. Use when someone asks 'how is the campaign doing', 'outreach status', 'email campaign results', or 'who replied'.",
+            parameters: {
+              type: "object",
+              properties: {
+                campaign_id: { type: "string", description: "Optional UUID of a specific campaign. If omitted, returns summary of all recent campaigns." },
+              },
+              additionalProperties: false,
+            },
+          },
+        },
       ];
 
       // ── Tool Execution Handler ──
