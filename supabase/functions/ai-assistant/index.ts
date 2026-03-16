@@ -1906,6 +1906,409 @@ Look at the actual content, logos, headers, formatting, and data to determine th
             return `✅ ${acctName} advanced from ${(opp as any).stage} → ${nextStage} successfully.${targetIdx >= STAGE_ORDER.indexOf("underwriting") && currentIdx < STAGE_ORDER.indexOf("underwriting") ? " All underwriting gate checks passed." : ""}`;
           }
 
+          case "search_duplicates": {
+            const { business_name, ein } = args;
+            const searchName = (business_name as string).trim().toLowerCase();
+            const results: string[] = [];
+
+            // Fuzzy search accounts by name
+            const { data: matchingAccounts } = await supabase
+              .from("accounts")
+              .select("id, name, status, website, city, state")
+              .or(`name.ilike.%${searchName}%`)
+              .limit(20);
+
+            // Also search with common variations (remove LLC, Inc, etc.)
+            const stripped = searchName.replace(/\b(llc|inc|corp|ltd|co|company|group|enterprises?|services?|solutions?)\b/gi, "").trim();
+            let extraAccounts: any[] = [];
+            if (stripped.length >= 3 && stripped !== searchName) {
+              const { data } = await supabase
+                .from("accounts")
+                .select("id, name, status, website, city, state")
+                .ilike("name", `%${stripped}%`)
+                .limit(10);
+              extraAccounts = (data || []).filter((a: any) => !(matchingAccounts || []).find((m: any) => m.id === a.id));
+            }
+
+            const allMatches = [...(matchingAccounts || []), ...extraAccounts];
+
+            // EIN check if provided
+            if (ein) {
+              const einClean = (ein as string).replace(/\D/g, "");
+              // Search merchants table for matching federal_tax_id
+              const { data: einMatches } = await supabase
+                .from("merchants")
+                .select("application_id, legal_entity_name, federal_tax_id, dba_name")
+                .or(`federal_tax_id.ilike.%${einClean}%`);
+
+              if (einMatches?.length) {
+                results.push(`⚠️ EIN MATCHES FOUND (${einMatches.length}):`);
+                for (const m of einMatches) {
+                  results.push(`  🔴 ${m.legal_entity_name || m.dba_name || "Unknown"} — EIN: ***${einClean.slice(-4)} (Application: ${m.application_id})`);
+                }
+              }
+
+              // Also check applications table
+              const { data: appEinMatches } = await supabase
+                .from("applications")
+                .select("id, company_name, legal_name, federal_tax_id, status")
+                .or(`federal_tax_id.ilike.%${einClean}%`);
+
+              if (appEinMatches?.length) {
+                results.push(`⚠️ EIN matches in applications (${appEinMatches.length}):`);
+                for (const a of appEinMatches) {
+                  results.push(`  🔴 ${a.legal_name || a.company_name || "Unknown"} — Status: ${a.status} (App: ${a.id})`);
+                }
+              }
+            }
+
+            if (allMatches.length > 0) {
+              results.push(`\nNAME MATCHES (${allMatches.length}):`);
+              for (const a of allMatches) {
+                // Check if there are opportunities linked
+                const { data: opps } = await supabase
+                  .from("opportunities")
+                  .select("id, stage, status")
+                  .eq("account_id", a.id)
+                  .limit(5);
+                const oppInfo = opps?.length ? ` | ${opps.length} opp(s): ${opps.map((o: any) => `${o.stage}/${o.status}`).join(", ")}` : " | No opportunities";
+                results.push(`  [acct:${a.id}] ${a.name} (${a.status || "active"})${a.city && a.state ? ` — ${a.city}, ${a.state}` : ""}${oppInfo}`);
+              }
+            }
+
+            if (results.length === 0) {
+              return `No duplicates found for "${business_name}"${ein ? ` or EIN ***${(ein as string).replace(/\D/g, "").slice(-4)}` : ""}. Safe to create a new record.`;
+            }
+
+            return `DUPLICATE CHECK for "${business_name}":\n${results.join("\n")}\n\n⚠️ Review matches before creating a new record to avoid duplicates.`;
+          }
+
+          case "rep_performance": {
+            const { assignee_email, days } = args;
+            const lookbackDays = (days as number) || 30;
+            const since = new Date(Date.now() - lookbackDays * 24 * 60 * 60 * 1000).toISOString();
+
+            // Fetch opportunities
+            let oppQuery = supabase
+              .from("opportunities")
+              .select("id, stage, status, assigned_to, created_at, stage_entered_at, service_type, outcome_status, outcome_closed_at, sla_status, accounts!inner(name)");
+            if (assignee_email) oppQuery = oppQuery.eq("assigned_to", assignee_email as string);
+
+            const { data: allOpps } = await oppQuery;
+            const opps = allOpps || [];
+
+            // Fetch recent activities
+            let actQuery = supabase
+              .from("activities")
+              .select("type, user_email, created_at")
+              .gte("created_at", since);
+            if (assignee_email) actQuery = actQuery.eq("user_email", assignee_email as string);
+            const { data: activities } = await actQuery;
+
+            // Fetch tasks
+            let taskQuery = supabase
+              .from("tasks")
+              .select("status, assignee, created_at, due_at");
+            if (assignee_email) taskQuery = taskQuery.eq("assignee", assignee_email as string);
+            const { data: tasks } = await taskQuery;
+
+            // Compute metrics per assignee
+            const repStats: Record<string, {
+              active: number; closed_won: number; closed_lost: number; dead: number;
+              stages: Record<string, number>;
+              recentCreated: number;
+              activitiesCount: number;
+              tasksOpen: number; tasksDone: number; tasksOverdue: number;
+              slaBreaches: number;
+              avgDaysInStage: number[];
+            }> = {};
+
+            const ensureRep = (email: string) => {
+              if (!repStats[email]) repStats[email] = {
+                active: 0, closed_won: 0, closed_lost: 0, dead: 0,
+                stages: {}, recentCreated: 0, activitiesCount: 0,
+                tasksOpen: 0, tasksDone: 0, tasksOverdue: 0,
+                slaBreaches: 0, avgDaysInStage: [],
+              };
+            };
+
+            const now = Date.now();
+            for (const o of opps) {
+              const rep = (o as any).assigned_to || "Unassigned";
+              ensureRep(rep);
+              const s = repStats[rep];
+
+              if ((o as any).status === "active") {
+                s.active++;
+                const stage = (o as any).stage || "unknown";
+                s.stages[stage] = (s.stages[stage] || 0) + 1;
+                if ((o as any).stage_entered_at) {
+                  s.avgDaysInStage.push((now - new Date((o as any).stage_entered_at).getTime()) / (24 * 60 * 60 * 1000));
+                }
+              } else if ((o as any).outcome_status === "closed_won") s.closed_won++;
+              else if ((o as any).outcome_status === "closed_lost") s.closed_lost++;
+              else if ((o as any).status === "dead") s.dead++;
+
+              if (new Date((o as any).created_at).toISOString() >= since) s.recentCreated++;
+              if ((o as any).sla_status === "breached") s.slaBreaches++;
+            }
+
+            for (const a of (activities || [])) {
+              const rep = (a as any).user_email || "unknown";
+              ensureRep(rep);
+              repStats[rep].activitiesCount++;
+            }
+
+            for (const t of (tasks || [])) {
+              const rep = (t as any).assignee || "Unassigned";
+              ensureRep(rep);
+              if ((t as any).status === "done") repStats[rep].tasksDone++;
+              else {
+                repStats[rep].tasksOpen++;
+                if ((t as any).due_at && new Date((t as any).due_at).getTime() < now) repStats[rep].tasksOverdue++;
+              }
+            }
+
+            // Build report
+            const lines: string[] = [
+              `REP PERFORMANCE${assignee_email ? ` — ${assignee_email}` : " — FULL TEAM"} (last ${lookbackDays} days)`,
+              "",
+            ];
+
+            for (const [rep, s] of Object.entries(repStats)) {
+              if (rep === "Unassigned" && !assignee_email) continue;
+              const totalClosed = s.closed_won + s.closed_lost + s.dead;
+              const winRate = totalClosed > 0 ? Math.round((s.closed_won / totalClosed) * 100) : 0;
+              const avgDays = s.avgDaysInStage.length > 0 ? Math.round(s.avgDaysInStage.reduce((a, b) => a + b, 0) / s.avgDaysInStage.length) : 0;
+
+              lines.push(`📊 ${rep}`);
+              lines.push(`  Active deals: ${s.active} | Won: ${s.closed_won} | Lost: ${s.closed_lost} | Dead: ${s.dead}`);
+              lines.push(`  Win rate: ${winRate}% | New deals (${lookbackDays}d): ${s.recentCreated}`);
+              lines.push(`  Avg days in current stage: ${avgDays}`);
+              if (Object.keys(s.stages).length) {
+                lines.push(`  Stage breakdown: ${Object.entries(s.stages).map(([st, c]) => `${st}: ${c}`).join(", ")}`);
+              }
+              lines.push(`  Activities logged: ${s.activitiesCount} | Tasks: ${s.tasksOpen} open, ${s.tasksDone} done, ${s.tasksOverdue} overdue`);
+              if (s.slaBreaches > 0) lines.push(`  ⚠️ SLA breaches: ${s.slaBreaches}`);
+              lines.push("");
+            }
+
+            // Unassigned summary
+            if (!assignee_email && repStats["Unassigned"]?.active > 0) {
+              lines.push(`⚠️ ${repStats["Unassigned"].active} unassigned active deal(s) need attention.`);
+            }
+
+            return lines.join("\n");
+          }
+
+          case "schedule_followup": {
+            const { opportunity_id, follow_up_days, assignee, subject, priority } = args;
+            const daysOut = (follow_up_days as number) || 3;
+            const dueDate = new Date(Date.now() + daysOut * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+
+            // Get opportunity context
+            const { data: opp } = await supabase
+              .from("opportunities")
+              .select("assigned_to, accounts!inner(name)")
+              .eq("id", opportunity_id)
+              .single();
+
+            const acctName = (opp as any)?.accounts?.name || "Unknown";
+            const assignTo = (assignee as string) || (opp as any)?.assigned_to || "ai-assistant@ops.internal";
+
+            const taskData: Record<string, unknown> = {
+              title: `Follow-up: ${subject}`,
+              description: `Scheduled follow-up for ${acctName}. ${subject}`,
+              assignee: assignTo,
+              priority: (priority as string) || "medium",
+              status: "open",
+              source: "ai-scheduled",
+              due_at: dueDate,
+              related_opportunity_id: opportunity_id,
+              created_by: AI_BOT_EMAIL,
+            };
+
+            const { data: task, error: taskErr } = await supabase
+              .from("tasks").insert(taskData).select("id").single();
+            if (taskErr) return `Error scheduling follow-up: ${taskErr.message}`;
+
+            // Log activity
+            await supabase.from("activities").insert({
+              opportunity_id,
+              type: "followup_scheduled",
+              description: `Atria scheduled follow-up for ${acctName}: "${subject}" — due ${dueDate}, assigned to ${assignTo}`,
+              user_id: AI_BOT_USER_ID,
+              user_email: AI_BOT_EMAIL,
+            });
+
+            return `✅ Follow-up scheduled for ${acctName}. "${subject}" — due ${dueDate}, assigned to ${assignTo}. Task ID: ${task.id}`;
+          }
+
+          case "draft_email": {
+            const { opportunity_id, email_type, custom_instructions } = args;
+
+            // Fetch opportunity context
+            const { data: opp, error: oppErr } = await supabase
+              .from("opportunities")
+              .select("id, stage, service_type, assigned_to, accounts!inner(name, website), contacts!inner(first_name, last_name, email)")
+              .eq("id", opportunity_id)
+              .single();
+            if (oppErr || !opp) return `Error: Opportunity not found (${opportunity_id}).`;
+
+            const acctName = (opp as any).accounts?.name || "Unknown";
+            const contactName = [(opp as any).contacts?.first_name, (opp as any).contacts?.last_name].filter(Boolean).join(" ") || "Merchant";
+            const contactEmail = (opp as any).contacts?.email || "N/A";
+            const stage = (opp as any).stage || "discovery";
+            const serviceType = (opp as any).service_type || "processing";
+
+            // Fetch docs for context
+            const { data: docs } = await supabase
+              .from("documents")
+              .select("document_type")
+              .eq("opportunity_id", opportunity_id as string);
+            const docTypes = (docs || []).map((d: any) => d.document_type).filter(Boolean);
+
+            // Build email drafting prompt
+            const emailContext = `
+Merchant: ${acctName}
+Contact: ${contactName} (${contactEmail})
+Current Stage: ${stage}
+Service Type: ${serviceType}
+Documents on file: ${docTypes.length > 0 ? docTypes.join(", ") : "None"}
+Email Type: ${email_type}
+${custom_instructions ? `Additional Instructions: ${custom_instructions}` : ""}
+`;
+
+            const emailPrompt = `Draft a professional email for the following context. The email should be from a Merchant Haus team member (ISO/payment processing company). Keep it warm, professional, and concise. Do not include fake signatures or placeholder names — just the email body.
+
+${emailContext}
+
+EMAIL TYPE GUIDELINES:
+- document_request: Ask for specific missing documents. Reference the checklist. Be specific about what's needed.
+- status_update: Update the merchant on where their application stands. Be positive and informative.
+- welcome: Welcome the merchant to Merchant Haus. Introduce the team and next steps.
+- follow_up: Gentle follow-up on a previous communication or pending items.
+- approval_notice: Congratulate on approval. Outline next steps for gateway setup.
+- custom: Follow the custom instructions provided.
+
+Return ONLY the email subject line and body, formatted as:
+Subject: [subject line]
+
+[email body]`;
+
+            try {
+              const emailResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${LOVABLE_API_KEY}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  model: "google/gemini-2.5-flash-lite",
+                  messages: [
+                    { role: "system", content: "You are a professional email writer for Merchant Haus, a payment processing ISO. Write warm, concise, professional emails. Never use markdown formatting." },
+                    { role: "user", content: emailPrompt },
+                  ],
+                }),
+              });
+
+              if (!emailResponse.ok) {
+                return `Error drafting email: AI gateway returned ${emailResponse.status}`;
+              }
+
+              const emailData = await emailResponse.json();
+              const draft = emailData?.choices?.[0]?.message?.content || "Unable to generate draft.";
+
+              return `📧 EMAIL DRAFT for ${acctName} (${email_type}):\n\nTo: ${contactEmail}\n\n${draft}\n\n---\nThis is a draft — review and send via your email client. Not sent automatically.`;
+            } catch (e) {
+              return `Error drafting email: ${e instanceof Error ? e.message : "Unknown error"}`;
+            }
+          }
+
+          case "check_outreach_status": {
+            const { campaign_id } = args;
+
+            if (campaign_id) {
+              // Specific campaign
+              const { data: campaign, error: campErr } = await supabase
+                .from("outreach_campaigns")
+                .select("id, name, status, subject, from_email, total_contacts, sent_count, bounced_count, replied_count, converted_count, scheduled_at, created_at, created_by_email")
+                .eq("id", campaign_id)
+                .single();
+              if (campErr || !campaign) return `Error: Campaign not found (${campaign_id}).`;
+
+              // Get contact details
+              const { data: contacts } = await supabase
+                .from("outreach_contacts")
+                .select("first_name, last_name, email, company, status, sent_at, bounced_at, replied_at, converted_at, reply_snippet, bounce_reason, current_step")
+                .eq("campaign_id", campaign_id as string)
+                .order("updated_at", { ascending: false });
+
+              const c = campaign as any;
+              const openRate = c.sent_count > 0 ? Math.round(((c.sent_count - c.bounced_count) / c.sent_count) * 100) : 0;
+              const replyRate = c.sent_count > 0 ? Math.round((c.replied_count / c.sent_count) * 100) : 0;
+
+              const lines: string[] = [
+                `📧 CAMPAIGN: ${c.name}`,
+                `Status: ${c.status} | Subject: "${c.subject}"`,
+                `From: ${c.from_email} | Created by: ${c.created_by_email}`,
+                c.scheduled_at ? `Scheduled: ${new Date(c.scheduled_at).toLocaleString()}` : "",
+                "",
+                `METRICS:`,
+                `  Total contacts: ${c.total_contacts}`,
+                `  Sent: ${c.sent_count} | Delivered: ~${c.sent_count - c.bounced_count} (${openRate}%)`,
+                `  Bounced: ${c.bounced_count}`,
+                `  Replied: ${c.replied_count} (${replyRate}%)`,
+                `  Converted: ${c.converted_count}`,
+              ].filter(Boolean);
+
+              // Contact breakdown
+              if (contacts?.length) {
+                const replied = contacts.filter((ct: any) => ct.replied_at);
+                const bounced = contacts.filter((ct: any) => ct.bounced_at);
+                const pending = contacts.filter((ct: any) => ct.status === "pending");
+
+                if (replied.length > 0) {
+                  lines.push("", `REPLIES (${replied.length}):`);
+                  for (const r of replied) {
+                    lines.push(`  ✉️ ${[r.first_name, r.last_name].filter(Boolean).join(" ") || r.email}${r.company ? ` (${r.company})` : ""} — ${r.reply_snippet || "No snippet"}`);
+                  }
+                }
+
+                if (bounced.length > 0) {
+                  lines.push("", `BOUNCES (${bounced.length}):`);
+                  for (const b of bounced.slice(0, 5)) {
+                    lines.push(`  ❌ ${b.email} — ${b.bounce_reason || "Unknown reason"}`);
+                  }
+                  if (bounced.length > 5) lines.push(`  ... and ${bounced.length - 5} more`);
+                }
+
+                if (pending.length > 0) {
+                  lines.push("", `PENDING: ${pending.length} contact(s) not yet sent`);
+                }
+              }
+
+              return lines.join("\n");
+            } else {
+              // All recent campaigns summary
+              const { data: campaigns } = await supabase
+                .from("outreach_campaigns")
+                .select("id, name, status, total_contacts, sent_count, bounced_count, replied_count, converted_count, created_at, created_by_email")
+                .order("created_at", { ascending: false })
+                .limit(10);
+
+              if (!campaigns?.length) return "No outreach campaigns found.";
+
+              const lines: string[] = [`📧 OUTREACH CAMPAIGNS (${campaigns.length} recent):`, ""];
+              for (const c of campaigns) {
+                const replyRate = (c as any).sent_count > 0 ? Math.round(((c as any).replied_count / (c as any).sent_count) * 100) : 0;
+                lines.push(`  ${(c as any).name} (${(c as any).status}) — ${(c as any).sent_count}/${(c as any).total_contacts} sent | ${(c as any).replied_count} replies (${replyRate}%) | ${(c as any).bounced_count} bounced | by ${(c as any).created_by_email}`);
+              }
+
+              return lines.join("\n");
+            }
+          }
+
           default:
             return `Unknown tool: ${toolName}`;
         }
