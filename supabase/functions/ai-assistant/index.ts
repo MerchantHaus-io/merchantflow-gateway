@@ -709,6 +709,82 @@ serve(async (req) => {
             },
           },
         },
+        {
+          type: "function",
+          function: {
+            name: "lookup_mcc",
+            description: "Look up an MCC (Merchant Category Code) by code number or keyword. Returns the description, risk tier, interchange guidance, and whether reserves/enhanced monitoring are typically required. Use when someone asks about an MCC code, wants to know if a business type is high-risk, or needs interchange info.",
+            parameters: {
+              type: "object",
+              properties: {
+                query: { type: "string", description: "MCC code (e.g. '5999') or keyword to search (e.g. 'gambling', 'restaurant', 'pharmacy')" },
+              },
+              required: ["query"],
+              additionalProperties: false,
+            },
+          },
+        },
+        {
+          type: "function",
+          function: {
+            name: "search_crm",
+            description: "Search the CRM across accounts, contacts, and opportunities by keyword. Use when someone asks 'find', 'search', 'look up', or 'who is' for a business name, person name, email, or phone number.",
+            parameters: {
+              type: "object",
+              properties: {
+                query: { type: "string", description: "Search term — business name, person name, email, or phone number" },
+              },
+              required: ["query"],
+              additionalProperties: false,
+            },
+          },
+        },
+        {
+          type: "function",
+          function: {
+            name: "pipeline_summary",
+            description: "Generate a detailed pipeline analytics summary including stage distribution, stuck deals (>5 days in stage), revenue potential, assignee workload, and recent activity trends. Use when someone asks for a pipeline overview, status report, stuck deals, or team workload.",
+            parameters: {
+              type: "object",
+              properties: {
+                filter_assignee: { type: "string", description: "Optional: filter by assignee email to show only their deals" },
+                filter_stage: { type: "string", description: "Optional: filter by specific stage" },
+              },
+              additionalProperties: false,
+            },
+          },
+        },
+        {
+          type: "function",
+          function: {
+            name: "document_completeness",
+            description: "Check document completeness for an opportunity against the required checklist. Returns a detailed gap analysis showing which documents are present, missing, or need attention. Use when someone asks 'what docs are missing', 'is this deal ready', or 'check documents on [account]'.",
+            parameters: {
+              type: "object",
+              properties: {
+                opportunity_id: { type: "string", description: "UUID of the opportunity to check" },
+              },
+              required: ["opportunity_id"],
+              additionalProperties: false,
+            },
+          },
+        },
+        {
+          type: "function",
+          function: {
+            name: "advance_stage",
+            description: "Advance an opportunity to the next pipeline stage with built-in validation gates. Checks document completeness, beneficial owners, and other requirements before allowing advancement. Use when someone asks to 'advance', 'move forward', or 'progress' a deal. This is safer than update_opportunity_stage because it enforces gates.",
+            parameters: {
+              type: "object",
+              properties: {
+                opportunity_id: { type: "string", description: "UUID of the opportunity to advance" },
+                target_stage: { type: "string", enum: ["discovery", "qualified", "app_prep", "underwriting", "approved", "gateway_setup", "integration", "testing", "go_live_ready"], description: "The target stage to advance to. If omitted, advances to the next sequential stage." },
+              },
+              required: ["opportunity_id"],
+              additionalProperties: false,
+            },
+          },
+        },
       ];
 
       // ── Tool Execution Handler ──
