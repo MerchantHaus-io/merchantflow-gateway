@@ -67,7 +67,7 @@ export type Reaction = {
   emoji: string;
 };
 
-export type ChatView = "contacts" | "chat" | "dm";
+export type ChatView = "contacts" | "chat" | "dm" | "ai";
 
 export const COMMON_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🎉', '🔥', '👏'];
 

@@ -7,7 +7,6 @@ import { ActionItemsWidget } from "@/components/ActionItemsWidget";
 import { BroadcastPopup } from "@/components/BroadcastPopup";
 import { ComplianceBroadcast } from "@/components/ComplianceBroadcast";
 import { AtriaBroadcast } from "@/components/AtriaBroadcast";
-import { AtriaFAB } from "@/components/AtriaFAB";
 import { MobileAppDock } from "@/components/MobileAppDock";
 import { PageTransition } from "@/components/PageTransition";
 import { OfficeSimulatorOverlay } from "@/components/chat/OfficeSimulatorOverlay";
@@ -96,7 +95,7 @@ export function AppLayout({
       {!focusMode && <BroadcastPopup />}
       <ComplianceBroadcast />
       <AtriaBroadcast />
-      {!focusMode && <AtriaFAB />}
+      {/* AtriaFAB removed — AI is now a tab inside FloatingChat */}
       {!focusMode && isMobile && !isChatRoute && <MobileAppDock />}
       {!focusMode && <OfficeSimulatorOverlay />}
     </div>

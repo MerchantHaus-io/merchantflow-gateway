@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   MessageCircle, X, Send, Hash, ChevronLeft, Search, Bell, BellOff,
-  ArrowDown, WifiOff, RefreshCw, Volume2, VolumeX, Minus, Gamepad2
+  ArrowDown, WifiOff, RefreshCw, Volume2, VolumeX, Minus, Gamepad2, Sparkles
 } from "lucide-react";
+import { AIChatPanel } from "@/components/chat/AIChatPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -778,15 +779,25 @@ const FloatingChat: React.FC = () => {
         )}>
           <div className="flex items-center justify-between px-4 py-2.5 bg-[hsl(var(--wa-header))] text-[hsl(var(--wa-header-foreground))] shrink-0">
             <div className="flex items-center gap-2.5 min-w-0">
-              {isMobile && (view === "chat" || view === "dm") && (
+              {isMobile && (view === "chat" || view === "dm" || view === "ai") && (
                 <button onClick={() => setView("contacts")} className="hover:bg-white/10 p-1.5 rounded-full transition-colors">
                   <ChevronLeft className="h-5 w-5" />
                 </button>
               )}
-              {(view === "contacts" || (!isMobile && !(view === "chat" || view === "dm"))) && (
+              {(view === "contacts" || (!isMobile && !(view === "chat" || view === "dm" || view === "ai"))) && (
                 <div className="flex items-center gap-2">
                   <MessageCircle className="h-5 w-5" />
                   <h3 className="font-semibold text-sm">Messaging</h3>
+                </div>
+              )}
+              {isMobile && view === "ai" && (
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-primary/30 flex items-center justify-center">
+                    <Sparkles className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm">Atria AI</h3>
+                  </div>
                 </div>
               )}
               {isMobile && view === "chat" && (
@@ -898,8 +909,10 @@ const FloatingChat: React.FC = () => {
                     view={view} channelUnreadCounts={channelUnreadCounts}
                     contactSearch={contactSearch} onContactSearchChange={setContactSearch}
                     onSelectChannel={handleSelectChannel} onSelectContact={handleSelectContact}
+                    onSelectAI={() => setView("ai")}
                   />
                 )}
+                {view === "ai" && <AIChatPanel />}
                 {(view === "chat" || view === "dm") && (
                   <div className="flex-1 flex flex-col overflow-hidden relative bg-[hsl(var(--wa-chat-bg))]">
                     {renderMessagesList(activeMessages, isChannel)}
@@ -915,10 +928,13 @@ const FloatingChat: React.FC = () => {
                     view={view} channelUnreadCounts={channelUnreadCounts}
                     contactSearch={contactSearch} onContactSearchChange={setContactSearch}
                     onSelectChannel={handleSelectChannel} onSelectContact={handleSelectContact}
+                    onSelectAI={() => setView("ai")}
                   />
                 </div>
                 <div className="flex-1 flex flex-col overflow-hidden relative">
-                  {(view === "chat" || view === "dm") ? (
+                  {view === "ai" ? (
+                    <AIChatPanel />
+                  ) : (view === "chat" || view === "dm") ? (
                     <>
                       <div className="px-4 py-2 border-b border-[hsl(var(--wa-divider))] bg-[hsl(var(--wa-sidebar-bg))] flex items-center gap-2.5 shrink-0">
                         {view === "chat" && (
