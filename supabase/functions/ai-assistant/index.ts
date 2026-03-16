@@ -1454,6 +1454,377 @@ Look at the actual content, logos, headers, formatting, and data to determine th
             return `Bulk classification complete for ${bulkAcctName}: ${classified} classified, ${failed} failed out of ${bulkDocs.length} documents.\n\n${results.join("\n")}`;
           }
 
+          case "lookup_mcc": {
+            const { query } = args;
+            const q = (query as string).trim().toLowerCase();
+
+            // Comprehensive MCC database
+            const MCC_DATABASE: Record<string, { description: string; risk: string; interchange_note: string }> = {
+              "4816": { description: "Computer Network Services", risk: "high_risk", interchange_note: "Higher interchange due to elevated chargeback risk. Reserves typically required." },
+              "5411": { description: "Grocery Stores, Supermarkets", risk: "standard", interchange_note: "Regulated debit interchange caps apply. Low risk category." },
+              "5499": { description: "Miscellaneous Food Stores", risk: "standard", interchange_note: "Standard interchange. Generally low risk." },
+              "5541": { description: "Service Stations (with fuel)", risk: "standard", interchange_note: "AFD (Automated Fuel Dispenser) interchange rates apply." },
+              "5542": { description: "Automated Fuel Dispensers", risk: "standard", interchange_note: "Pay-at-pump transactions qualify for AFD rates." },
+              "5812": { description: "Eating Places, Restaurants", risk: "standard", interchange_note: "Standard restaurant interchange. Tip adjustment allowed." },
+              "5813": { description: "Drinking Places, Bars, Taverns", risk: "standard", interchange_note: "Standard interchange. Tip adjustment allowed." },
+              "5814": { description: "Fast Food Restaurants", risk: "standard", interchange_note: "QSR interchange may apply for qualifying transactions." },
+              "5912": { description: "Drug Stores, Pharmacies", risk: "high_risk", interchange_note: "Enhanced monitoring for controlled substance sales. May require reserves." },
+              "5921": { description: "Package Stores - Beer, Wine, Liquor", risk: "standard", interchange_note: "Standard interchange. Age verification recommended." },
+              "5941": { description: "Sporting Goods Stores", risk: "standard", interchange_note: "Standard retail interchange." },
+              "5942": { description: "Book Stores", risk: "standard", interchange_note: "Standard retail interchange." },
+              "5944": { description: "Jewelry, Watch, Clock, and Silverware Stores", risk: "standard", interchange_note: "Standard interchange. Higher ticket items." },
+              "5945": { description: "Hobby, Toy, and Game Stores", risk: "standard", interchange_note: "Standard retail interchange." },
+              "5947": { description: "Gift, Card, Novelty Stores", risk: "standard", interchange_note: "Standard retail interchange." },
+              "5962": { description: "Direct Marketing – Travel", risk: "high_risk", interchange_note: "Direct marketing tier. High chargeback risk. Reserves and delayed funding typical." },
+              "5964": { description: "Direct Marketing – Catalog Merchant", risk: "standard", interchange_note: "MOTO/e-commerce interchange. CNP surcharge may apply." },
+              "5965": { description: "Direct Marketing – Combination", risk: "standard", interchange_note: "MOTO/e-commerce interchange rates." },
+              "5966": { description: "Direct Marketing – Outbound Telemarketing", risk: "high_risk", interchange_note: "Very high risk. Reserves required. Enhanced monitoring mandatory." },
+              "5967": { description: "Direct Marketing – Inbound Teleservices", risk: "high_risk", interchange_note: "High risk. Reserves typically required." },
+              "5968": { description: "Direct Marketing – Continuity/Subscription", risk: "high_risk", interchange_note: "Subscription billing. High chargeback risk. Clear disclosure requirements." },
+              "5969": { description: "Direct Marketing – Not Elsewhere Classified", risk: "high_risk", interchange_note: "Catch-all high-risk direct marketing. Reserves required." },
+              "5999": { description: "Miscellaneous and Specialty Retail Stores", risk: "standard", interchange_note: "Catch-all retail. Standard interchange." },
+              "5122": { description: "Drugs, Drug Proprietors", risk: "high_risk", interchange_note: "Pharmaceutical distribution. Enhanced due diligence required." },
+              "6051": { description: "Non-Financial Institutions – Foreign Currency/Money Orders", risk: "high_risk", interchange_note: "Money services business. BSA/AML compliance critical. Reserves required." },
+              "6211": { description: "Security Brokers/Dealers", risk: "high_risk", interchange_note: "Financial services. Regulatory compliance required." },
+              "6513": { description: "Real Estate Agents and Managers – Rentals", risk: "high_risk", interchange_note: "High ticket. Chargeback risk on deposits." },
+              "7011": { description: "Lodging – Hotels, Motels, Resorts", risk: "standard", interchange_note: "Lodging interchange rates. Authorization and settlement best practices apply." },
+              "7012": { description: "Timeshares", risk: "high_risk", interchange_note: "Very high chargeback risk. Reserves and delayed funding required." },
+              "7230": { description: "Beauty and Barber Shops", risk: "standard", interchange_note: "Standard service interchange." },
+              "7273": { description: "Dating/Escort Services", risk: "high_risk", interchange_note: "Adult services. Many acquirers will decline. Enhanced monitoring." },
+              "7297": { description: "Massage Parlors", risk: "high_risk", interchange_note: "Enhanced due diligence required. Reputational risk." },
+              "7298": { description: "Health and Beauty Spas", risk: "standard", interchange_note: "Standard service interchange." },
+              "7311": { description: "Advertising Services", risk: "standard", interchange_note: "Standard interchange." },
+              "7372": { description: "Computer Programming, Data Processing", risk: "standard", interchange_note: "Standard interchange. SaaS/subscription models common." },
+              "7399": { description: "Business Services – Not Elsewhere Classified", risk: "standard", interchange_note: "Catch-all B2B services. Level II/III data can reduce interchange." },
+              "7801": { description: "Government-Licensed Online Casinos (Gambling)", risk: "high_risk", interchange_note: "Gambling. Most acquirers decline. Requires specialized processor. Reserves mandatory." },
+              "7802": { description: "Government-Licensed Horse/Dog Racing", risk: "high_risk", interchange_note: "Gambling. Requires specialized processor." },
+              "7995": { description: "Betting/Casino Gambling", risk: "high_risk", interchange_note: "Gambling. Most acquirers decline. Requires specialized processor. Reserves mandatory." },
+              "8011": { description: "Doctors (not elsewhere classified)", risk: "standard", interchange_note: "Healthcare interchange. HIPAA considerations." },
+              "8021": { description: "Dentists, Orthodontists", risk: "standard", interchange_note: "Healthcare interchange." },
+              "8041": { description: "Chiropractors", risk: "standard", interchange_note: "Healthcare interchange." },
+              "8042": { description: "Optometrists, Ophthalmologists", risk: "standard", interchange_note: "Healthcare interchange." },
+              "8049": { description: "Podiatrists, Chiropodists", risk: "standard", interchange_note: "Healthcare interchange." },
+              "8050": { description: "Nursing and Personal Care Facilities", risk: "standard", interchange_note: "Healthcare interchange." },
+              "8062": { description: "Hospitals", risk: "standard", interchange_note: "Healthcare interchange. Large ticket." },
+              "8111": { description: "Legal Services, Attorneys", risk: "standard", interchange_note: "Standard B2B interchange. Trust account considerations." },
+              "8211": { description: "Schools, Educational Services", risk: "standard", interchange_note: "Education interchange. May qualify for lower rates." },
+              "8641": { description: "Civic, Social, Fraternal Associations", risk: "high_risk", interchange_note: "Non-profit. May qualify for lower interchange with proper registration." },
+              "8651": { description: "Political Organizations", risk: "high_risk", interchange_note: "Campaign contributions. Compliance requirements." },
+              "8661": { description: "Religious Organizations", risk: "high_risk", interchange_note: "Donations/tithes. Non-profit interchange may apply." },
+              "8999": { description: "Professional Services – Not Elsewhere Classified", risk: "standard", interchange_note: "Catch-all professional services." },
+              "9223": { description: "Bail and Bond Payments", risk: "high_risk", interchange_note: "High risk. Enhanced monitoring required." },
+              "9311": { description: "Tax Payments", risk: "high_risk", interchange_note: "Government payments. Convenience fee models." },
+              "9399": { description: "Government Services – Not Elsewhere Classified", risk: "standard", interchange_note: "Government interchange rates may apply." },
+            };
+
+            // Search by code or keyword
+            let results: string[] = [];
+            if (MCC_DATABASE[q]) {
+              const m = MCC_DATABASE[q];
+              results.push(`MCC ${q}: ${m.description} | Risk: ${m.risk === "high_risk" ? "🔴 HIGH RISK" : "🟢 Standard"} | ${m.interchange_note}`);
+            } else {
+              // Keyword search
+              for (const [code, m] of Object.entries(MCC_DATABASE)) {
+                if (m.description.toLowerCase().includes(q)) {
+                  results.push(`MCC ${code}: ${m.description} | Risk: ${m.risk === "high_risk" ? "🔴 HIGH RISK" : "🟢 Standard"} | ${m.interchange_note}`);
+                }
+              }
+            }
+
+            if (results.length === 0) {
+              return `No MCC codes found matching "${query}". Try a different keyword (e.g. "restaurant", "gambling", "retail") or a specific 4-digit code.`;
+            }
+            return results.join("\n");
+          }
+
+          case "search_crm": {
+            const { query } = args;
+            const q = (query as string).trim().toLowerCase();
+            if (q.length < 2) return "Search query too short. Please provide at least 2 characters.";
+
+            const results: string[] = [];
+
+            // Search accounts
+            const { data: accounts } = await supabase
+              .from("accounts")
+              .select("id, name, status, website, city, state")
+              .or(`name.ilike.%${q}%,website.ilike.%${q}%,city.ilike.%${q}%`)
+              .limit(10);
+
+            if (accounts?.length) {
+              results.push(`ACCOUNTS (${accounts.length} matches):`);
+              for (const a of accounts) {
+                results.push(`  [acct:${a.id}] ${a.name} (${a.status || "active"})${a.city && a.state ? ` — ${a.city}, ${a.state}` : ""}${a.website ? ` | ${a.website}` : ""}`);
+              }
+            }
+
+            // Search contacts
+            const { data: contacts } = await supabase
+              .from("contacts")
+              .select("id, account_id, first_name, last_name, email, phone")
+              .or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,email.ilike.%${q}%,phone.ilike.%${q}%`)
+              .limit(10);
+
+            if (contacts?.length) {
+              results.push(`\nCONTACTS (${contacts.length} matches):`);
+              for (const c of contacts) {
+                // Get account name
+                const acctName = accounts?.find(a => a.id === c.account_id)?.name;
+                let acctLabel = acctName || "";
+                if (!acctLabel) {
+                  const { data: acct } = await supabase.from("accounts").select("name").eq("id", c.account_id).single();
+                  acctLabel = acct?.name || "Unknown Account";
+                }
+                results.push(`  [contact:${c.id}] ${[c.first_name, c.last_name].filter(Boolean).join(" ") || "Unnamed"} | ${c.email || "no email"} | ${c.phone || "no phone"} | Account: ${acctLabel}`);
+              }
+            }
+
+            // Search opportunities via account name
+            const { data: opps } = await supabase
+              .from("opportunities")
+              .select("id, stage, status, assigned_to, service_type, accounts!inner(name)")
+              .ilike("accounts.name", `%${q}%`)
+              .limit(10);
+
+            if (opps?.length) {
+              results.push(`\nOPPORTUNITIES (${opps.length} matches):`);
+              for (const o of opps as any[]) {
+                results.push(`  [opp:${o.id}] ${o.accounts?.name} | ${o.stage} (${o.status || "active"}) | ${o.service_type || "processing"} | ${o.assigned_to || "Unassigned"}`);
+              }
+            }
+
+            if (results.length === 0) {
+              return `No results found for "${query}". Try a different search term.`;
+            }
+            return results.join("\n");
+          }
+
+          case "pipeline_summary": {
+            const { filter_assignee, filter_stage } = args;
+
+            let query = supabase
+              .from("opportunities")
+              .select("id, stage, status, assigned_to, created_at, stage_entered_at, service_type, sla_status, accounts!inner(name)");
+
+            if (filter_assignee) query = query.eq("assigned_to", filter_assignee as string);
+            if (filter_stage) query = query.eq("stage", filter_stage as string);
+
+            const { data: allOpps, error: oppErr } = await query;
+            if (oppErr) return `Error fetching pipeline data: ${oppErr.message}`;
+
+            const opps = allOpps || [];
+            const active = opps.filter((o: any) => o.status === "active");
+            const dead = opps.filter((o: any) => o.status === "dead" || o.status === "closed-lost");
+
+            // Stage distribution
+            const stageDist: Record<string, number> = {};
+            for (const o of active) {
+              const s = (o as any).stage || "unknown";
+              stageDist[s] = (stageDist[s] || 0) + 1;
+            }
+
+            // Stuck deals (>5 days in current stage)
+            const now = Date.now();
+            const fiveDaysMs = 5 * 24 * 60 * 60 * 1000;
+            const stuckDeals = active.filter((o: any) => {
+              if (!o.stage_entered_at) return false;
+              return (now - new Date(o.stage_entered_at).getTime()) > fiveDaysMs;
+            }).map((o: any) => {
+              const daysStuck = Math.round((now - new Date(o.stage_entered_at).getTime()) / (24 * 60 * 60 * 1000));
+              return `  ⚠️ ${(o as any).accounts?.name} — stuck in ${o.stage} for ${daysStuck} days (${o.assigned_to || "Unassigned"})${o.sla_status ? ` | SLA: ${o.sla_status}` : ""}`;
+            });
+
+            // Assignee workload
+            const assigneeWork: Record<string, { total: number; stages: Record<string, number> }> = {};
+            for (const o of active) {
+              const a = (o as any).assigned_to || "Unassigned";
+              if (!assigneeWork[a]) assigneeWork[a] = { total: 0, stages: {} };
+              assigneeWork[a].total++;
+              const s = (o as any).stage || "unknown";
+              assigneeWork[a].stages[s] = (assigneeWork[a].stages[s] || 0) + 1;
+            }
+
+            // Service type breakdown
+            const serviceTypes: Record<string, number> = {};
+            for (const o of active) {
+              const st = (o as any).service_type || "processing";
+              serviceTypes[st] = (serviceTypes[st] || 0) + 1;
+            }
+
+            // Build report
+            const lines: string[] = [
+              `PIPELINE ANALYTICS${filter_assignee ? ` (filtered: ${filter_assignee})` : ""}${filter_stage ? ` (stage: ${filter_stage})` : ""}`,
+              "",
+              `Total: ${opps.length} opportunities (${active.length} active, ${dead.length} dead/closed)`,
+              "",
+              "STAGE DISTRIBUTION:",
+              ...Object.entries(stageDist).map(([s, c]) => `  ${s}: ${c} deal${c !== 1 ? "s" : ""}`),
+              "",
+              "SERVICE TYPE BREAKDOWN:",
+              ...Object.entries(serviceTypes).map(([st, c]) => `  ${st}: ${c}`),
+              "",
+              `STUCK DEALS (>5 days in stage): ${stuckDeals.length}`,
+              ...(stuckDeals.length ? stuckDeals : ["  None — all deals are moving"]),
+              "",
+              "TEAM WORKLOAD:",
+              ...Object.entries(assigneeWork).map(([a, w]) => `  ${a}: ${w.total} deal${w.total !== 1 ? "s" : ""} (${Object.entries(w.stages).map(([s, c]) => `${c} in ${s}`).join(", ")})`),
+            ];
+
+            return lines.join("\n");
+          }
+
+          case "document_completeness": {
+            const { opportunity_id } = args;
+
+            // Fetch opportunity, docs, and beneficial owners in parallel
+            const [oppRes, docsRes, bosRes] = await Promise.all([
+              supabase.from("opportunities").select("id, service_type, stage, accounts!inner(name)").eq("id", opportunity_id).single(),
+              supabase.from("documents").select("file_name, document_type").eq("opportunity_id", opportunity_id as string),
+              supabase.from("beneficial_owners").select("full_name, ownership_percentage").eq("opportunity_id", opportunity_id as string),
+            ]);
+
+            if (oppRes.error || !oppRes.data) return `Error: Opportunity not found (${opportunity_id}).`;
+
+            const opp = oppRes.data as any;
+            const docs = docsRes.data || [];
+            const bos = bosRes.data || [];
+            const acctName = opp.accounts?.name || "Unknown";
+            const isGateway = opp.service_type === "gateway" || opp.service_type === "gateway_only";
+
+            const docTypes = docs.map((d: any) => d.document_type || "");
+            const lines: string[] = [`DOCUMENT COMPLETENESS — ${acctName} (${opp.stage})`, ""];
+
+            if (isGateway) {
+              // Gateway path
+              const checks = [
+                { label: "Voided Check / Bank Confirmation", present: docTypes.includes("Voided Check") || docTypes.includes("Bank Confirmation Letter") },
+                { label: "VAR / Tear Sheet", present: docTypes.includes("VAR/Tear Sheet") },
+              ];
+              lines.push("PATH: Gateway Only (lightened requirements)", "");
+              let allMet = true;
+              for (const c of checks) {
+                lines.push(`  ${c.present ? "✅" : "❌"} ${c.label}`);
+                if (!c.present) allMet = false;
+              }
+              lines.push("", allMet ? "🟢 All gateway documents present. Ready to proceed." : "🔴 Missing required documents for gateway submission.");
+            } else {
+              // Processing path
+              const bankCount = docTypes.filter((t: string) => t === "Bank Statement").length;
+              const checks = [
+                { label: `Bank Statements (${bankCount}/3 minimum)`, present: bankCount >= 3 },
+                { label: "Articles of Organization", present: docTypes.includes("Articles of Organization") },
+                { label: "EIN / Tax Document", present: docTypes.includes("EIN / Tax Document") },
+                { label: "Voided Check / Bank Confirmation", present: docTypes.includes("Voided Check") || docTypes.includes("Bank Confirmation Letter") },
+                { label: "Passport / Drivers License (KYC)", present: docTypes.includes("Passport/Drivers License") },
+              ];
+              lines.push("PATH: Processing (full requirements)", "");
+              let missingCount = 0;
+              for (const c of checks) {
+                lines.push(`  ${c.present ? "✅" : "❌"} ${c.label}`);
+                if (!c.present) missingCount++;
+              }
+
+              lines.push("", `BENEFICIAL OWNERS: ${bos.length > 0 ? "✅" : "❌"} ${bos.length} on file${bos.length > 0 ? ` (${bos.map((b: any) => `${b.full_name} ${b.ownership_percentage}%`).join(", ")})` : " — at least 1 required (25%+ equity)"}`);
+              if (!bos.length) missingCount++;
+
+              lines.push("");
+              if (missingCount === 0) {
+                lines.push("🟢 All requirements met. Ready for underwriting submission.");
+              } else if (missingCount <= 2) {
+                lines.push(`🟡 ${missingCount} item(s) still needed. Almost ready.`);
+              } else {
+                lines.push(`🔴 ${missingCount} item(s) missing. Not ready for underwriting.`);
+              }
+            }
+
+            // Additional docs on file
+            const extraDocs = docs.filter((d: any) => d.document_type && d.document_type !== "Unassigned");
+            const unassigned = docs.filter((d: any) => !d.document_type || d.document_type === "Unassigned");
+            lines.push("", `TOTAL DOCUMENTS: ${docs.length} (${extraDocs.length} labelled, ${unassigned.length} unassigned)`);
+            if (unassigned.length > 0) {
+              lines.push("UNASSIGNED FILES:");
+              unassigned.forEach((d: any) => lines.push(`  📄 ${d.file_name}`));
+            }
+
+            return lines.join("\n");
+          }
+
+          case "advance_stage": {
+            const { opportunity_id, target_stage } = args;
+
+            const STAGE_ORDER = ["discovery", "qualified", "app_prep", "underwriting", "approved", "gateway_setup", "integration", "testing", "go_live_ready"];
+
+            // Fetch current opportunity
+            const { data: opp, error: oppErr } = await supabase
+              .from("opportunities")
+              .select("id, stage, status, service_type, accounts!inner(name)")
+              .eq("id", opportunity_id)
+              .single();
+
+            if (oppErr || !opp) return `Error: Opportunity not found (${opportunity_id}).`;
+            if ((opp as any).status !== "active") return `Cannot advance — opportunity is ${(opp as any).status}. Only active deals can be advanced.`;
+
+            const currentIdx = STAGE_ORDER.indexOf((opp as any).stage);
+            const nextStage = target_stage || STAGE_ORDER[currentIdx + 1];
+            if (!nextStage) return `Cannot advance — ${(opp as any).stage} is the last stage. Use outcomes (closed_won, etc.) to close.`;
+
+            const targetIdx = STAGE_ORDER.indexOf(nextStage as string);
+            if (targetIdx <= currentIdx) return `Cannot move backward from ${(opp as any).stage} to ${nextStage}. Use update_opportunity_stage for non-sequential moves.`;
+
+            const acctName = (opp as any).accounts?.name || "Unknown";
+
+            // Gate checks for specific transitions
+            const warnings: string[] = [];
+
+            // Underwriting gate
+            if (nextStage === "underwriting" || (targetIdx >= STAGE_ORDER.indexOf("underwriting") && currentIdx < STAGE_ORDER.indexOf("underwriting"))) {
+              const isGateway = (opp as any).service_type === "gateway" || (opp as any).service_type === "gateway_only";
+
+              const [docsRes, bosRes] = await Promise.all([
+                supabase.from("documents").select("document_type").eq("opportunity_id", opportunity_id as string),
+                supabase.from("beneficial_owners").select("id").eq("opportunity_id", opportunity_id as string),
+              ]);
+
+              const docTypes = (docsRes.data || []).map((d: any) => d.document_type || "");
+
+              if (isGateway) {
+                if (!docTypes.includes("Voided Check") && !docTypes.includes("Bank Confirmation Letter")) warnings.push("Missing: Voided Check or Bank Confirmation");
+                if (!docTypes.includes("VAR/Tear Sheet")) warnings.push("Missing: VAR/Tear Sheet");
+              } else {
+                const bankCount = docTypes.filter((t: string) => t === "Bank Statement").length;
+                if (bankCount < 3) warnings.push(`Missing: Bank Statements (${bankCount}/3)`);
+                if (!docTypes.includes("Articles of Organization")) warnings.push("Missing: Articles of Organization");
+                if (!docTypes.includes("EIN / Tax Document")) warnings.push("Missing: EIN / Tax Document");
+                if (!docTypes.includes("Voided Check") && !docTypes.includes("Bank Confirmation Letter")) warnings.push("Missing: Voided Check or Bank Confirmation");
+                if (!docTypes.includes("Passport/Drivers License")) warnings.push("Missing: Passport/Drivers License (KYC)");
+                if (!(bosRes.data || []).length) warnings.push("Missing: Beneficial Owner(s) — at least 1 required");
+              }
+            }
+
+            if (warnings.length > 0) {
+              return `⛔ Cannot advance ${acctName} from ${(opp as any).stage} to ${nextStage}. Gate check failed:\n${warnings.map(w => `  ❌ ${w}`).join("\n")}\n\nResolve these items first, then try again.`;
+            }
+
+            // Perform the stage update
+            const { error: updateErr } = await supabase
+              .from("opportunities")
+              .update({ stage: nextStage })
+              .eq("id", opportunity_id);
+
+            if (updateErr) return `Error advancing stage: ${updateErr.message}`;
+
+            // Log activity
+            await supabase.from("activities").insert({
+              opportunity_id: opportunity_id,
+              type: "stage_change",
+              description: `Atria advanced ${acctName} from ${(opp as any).stage} to ${nextStage}`,
+              user_id: AI_BOT_USER_ID,
+              user_email: AI_BOT_EMAIL,
+            });
+
+            return `✅ ${acctName} advanced from ${(opp as any).stage} → ${nextStage} successfully.${targetIdx >= STAGE_ORDER.indexOf("underwriting") && currentIdx < STAGE_ORDER.indexOf("underwriting") ? " All underwriting gate checks passed." : ""}`;
+          }
+
           default:
             return `Unknown tool: ${toolName}`;
         }
