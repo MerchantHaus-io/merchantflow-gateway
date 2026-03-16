@@ -922,7 +922,9 @@ const FloatingChat: React.FC = () => {
                   />
                 </div>
                 <div className="flex-1 flex flex-col overflow-hidden relative">
-                  {(view === "chat" || view === "dm") ? (
+                  {view === "ai" ? (
+                    <AIChatPanel />
+                  ) : (view === "chat" || view === "dm") ? (
                     <>
                       <div className="px-4 py-2 border-b border-[hsl(var(--wa-divider))] bg-[hsl(var(--wa-sidebar-bg))] flex items-center gap-2.5 shrink-0">
                         {view === "chat" && (
