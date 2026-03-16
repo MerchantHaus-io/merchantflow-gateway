@@ -357,9 +357,9 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
 
           {/* Score Breakdown (always visible) */}
           {!meta?.no_change && report.score_breakdown && report.score_breakdown.length > 0 && (
-            <div className="space-y-1">
+            <div className="space-y-1.5 border border-border rounded-lg p-3 bg-card/50">
               <p className="text-xs font-medium flex items-center gap-1"><BarChart3 className="h-3 w-3" /> Score Breakdown</p>
-              <div className="grid gap-1">
+              <div className="grid gap-1.5">
                 {report.score_breakdown.map((b, i) => (
                   <div key={i} className="flex items-center gap-2 text-xs">
                     <div className="w-[180px] shrink-0 text-muted-foreground truncate">{b.category} (0–{b.max_score})</div>
