@@ -1,5 +1,5 @@
 import React from "react";
-import { Search, Hash, Bot } from "lucide-react";
+import { Search, Hash, Bot, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -18,6 +18,7 @@ interface ChatSidebarProps {
   onContactSearchChange: (val: string) => void;
   onSelectChannel: (id: string) => void;
   onSelectContact: (id: string) => void;
+  onSelectAI?: () => void;
 }
 
 export const ChatSidebar: React.FC<ChatSidebarProps> = ({
