@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   MessageCircle, X, Send, Hash, ChevronLeft, Search, Bell, BellOff,
-  ArrowDown, WifiOff, RefreshCw, Volume2, VolumeX, Minus, Gamepad2
+  ArrowDown, WifiOff, RefreshCw, Volume2, VolumeX, Minus, Gamepad2, Sparkles
 } from "lucide-react";
+import { AIChatPanel } from "@/components/chat/AIChatPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
