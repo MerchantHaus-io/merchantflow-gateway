@@ -721,9 +721,8 @@ const FloatingChat: React.FC = () => {
       )}
 
       <ChatComposer
-        input={input}
-        onInputChange={setInput}
-        onSend={handleSendMessage}
+        value={input}
+        onSubmit={handleSendMessage}
         onTyping={handleTyping}
         replyTo={replyTo}
         onCancelReply={() => setReplyTo(null)}
