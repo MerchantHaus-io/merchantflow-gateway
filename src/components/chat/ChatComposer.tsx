@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { Send, Smile, Paperclip, Mic, X, Square, File, Reply } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -6,9 +6,9 @@ import { cn } from "@/lib/utils";
 import { ChannelMessage, DirectMessage, Profile, EMOJI_CATEGORIES, formatFileSize } from "./types";
 
 interface ChatComposerProps {
-  input: string;
-  onInputChange: (val: string) => void;
-  onSend: () => void;
+  /** Controlled value is only used for initial/reset — internal state drives the input */
+  value: string;
+  onSubmit: (text: string) => void;
   onTyping: () => void;
   replyTo: ChannelMessage | DirectMessage | null;
   onCancelReply: () => void;
@@ -29,12 +29,46 @@ interface ChatComposerProps {
   onCancelRecording: () => void;
 }
 
-export const ChatComposer: React.FC<ChatComposerProps> = ({
-  input, onInputChange, onSend, onTyping,
+export const ChatComposer: React.FC<ChatComposerProps> = React.memo(({
+  value, onSubmit, onTyping,
   replyTo, onCancelReply, isChannel, profiles, getDisplayName,
   pendingAttachment, onCancelAttachment, onFileSelect, fileInputRef, onFileChange,
   isRecording, recordingTime, onStartRecording, onStopRecording, onCancelRecording,
 }) => {
+  // Local input state — avoids re-rendering the entire parent on every keystroke
+  const [localInput, setLocalInput] = useState(value);
+  const typingThrottleRef = useRef<number>(0);
+
+  // Sync from parent when value resets (e.g. after send)
+  useEffect(() => {
+    setLocalInput(value);
+  }, [value]);
+
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalInput(e.target.value);
+
+    // Throttle typing indicator to max once per 1.5s
+    const now = Date.now();
+    if (now - typingThrottleRef.current > 1500) {
+      typingThrottleRef.current = now;
+      onTyping();
+    }
+  }, [onTyping]);
+
+  const handleSend = useCallback(() => {
+    const text = localInput.trim();
+    if (!text && !pendingAttachment) return;
+    onSubmit(text);
+    setLocalInput("");
+  }, [localInput, pendingAttachment, onSubmit]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  }, [handleSend]);
+
   return (
     <div className="bg-[hsl(var(--wa-composer-bg))] border-t border-[hsl(var(--wa-divider))]">
       {/* Reply preview */}
@@ -109,7 +143,7 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
                   <p className="text-xs font-medium text-[hsl(var(--wa-meta))] mb-1 px-1">{cat.label}</p>
                   <div className="flex flex-wrap gap-0.5">
                     {cat.emojis.map(emoji => (
-                      <button key={emoji} onClick={() => onInputChange(input + emoji)} className="text-lg hover:scale-125 hover:bg-white/10 transition-all p-1 rounded">{emoji}</button>
+                      <button key={emoji} onClick={() => setLocalInput(prev => prev + emoji)} className="text-lg hover:scale-125 hover:bg-white/10 transition-all p-1 rounded">{emoji}</button>
                     ))}
                   </div>
                 </div>
@@ -128,20 +162,20 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
         <div className="flex-1">
           <Input
             placeholder="Type a message"
-            value={input}
-            onChange={(e) => { onInputChange(e.target.value); onTyping(); }}
-            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && onSend()}
+            value={localInput}
+            onChange={handleChange}
+            onKeyDown={handleKeyDown}
             className="bg-[hsl(var(--wa-search-bg))] border-0 text-[hsl(var(--wa-bubble-in-foreground))] placeholder:text-[hsl(var(--wa-meta))] rounded-lg focus-visible:ring-0 focus-visible:ring-offset-0"
             disabled={isRecording}
           />
         </div>
 
         {/* Send or Mic */}
-        {input.trim() || pendingAttachment ? (
+        {localInput.trim() || pendingAttachment ? (
           <button
-            onClick={onSend}
+            onClick={handleSend}
             className="p-2.5 bg-[hsl(var(--wa-accent))] hover:bg-[hsl(var(--wa-accent)/0.85)] rounded-full transition-colors shrink-0"
-            disabled={!input.trim() && !pendingAttachment}
+            disabled={!localInput.trim() && !pendingAttachment}
           >
             <Send className="h-5 w-5 text-white" />
           </button>
@@ -159,4 +193,4 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({
       </div>
     </div>
   );
-};
+});

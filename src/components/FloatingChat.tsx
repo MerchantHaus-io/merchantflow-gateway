@@ -506,8 +506,8 @@ const FloatingChat: React.FC = () => {
     }
   };
 
-  const handleSendChannelMessage = async () => {
-    const text = input.trim();
+  const handleSendChannelMessage = async (submittedText: string) => {
+    const text = submittedText;
     const hasAttachment = !!pendingAttachment;
     if (!hasAttachment) { const v = validateMessage(text); if (!v.valid) { if (v.error) toast.error(v.error); return; } }
     if (!user || !currentChannelId) return;
@@ -523,7 +523,6 @@ const FloatingChat: React.FC = () => {
     const { error } = await supabase.from("chat_messages").insert({ channel_id: currentChannelId, user_id: user.id, user_email: user.email || "", user_name: userName, content: text, reply_to_id: replyTo?.id || null });
     if (error) { setChannelMessages(prev => prev.filter(m => m.id !== optimisticMessage.id)); toast.error("Failed to send message."); }
     else {
-      // Check if this is the AI channel and trigger bot response
       const currentChannel = channels.find(ch => ch.id === currentChannelId);
       if (currentChannel && isAIChannel(currentChannel.name)) {
         triggerAIResponse(currentChannelId, text);
@@ -531,8 +530,8 @@ const FloatingChat: React.FC = () => {
     }
   };
 
-  const handleSendDirectMessage = async () => {
-    const text = input.trim();
+  const handleSendDirectMessage = async (submittedText: string) => {
+    const text = submittedText;
     const hasAttachment = !!pendingAttachment;
     if (!hasAttachment) { const v = validateMessage(text); if (!v.valid) { if (v.error) toast.error(v.error); return; } }
     if (!user || !currentDMUserId) return;
@@ -549,7 +548,7 @@ const FloatingChat: React.FC = () => {
     if (error) { setDirectMessages(prev => prev.filter(m => m.id !== optimisticMessage.id)); toast.error("Failed to send message."); }
   };
 
-  const handleSendMessage = () => { playSentSound(); if (view === "dm") handleSendDirectMessage(); else handleSendChannelMessage(); };
+  const handleSendMessage = useCallback((text: string) => { playSentSound(); if (view === "dm") handleSendDirectMessage(text); else handleSendChannelMessage(text); }, [view, playSentSound]);
 
   const handleSelectChannel = (channelId: string) => {
     setCurrentChannelId(channelId); setCurrentDMUserId(""); setChannelMessages([]); setTypingUsers([]); setReplyTo(null); setSearchQuery(""); setShowSearch(false); setView("chat"); markChannelRead(channelId);
@@ -722,9 +721,8 @@ const FloatingChat: React.FC = () => {
       )}
 
       <ChatComposer
-        input={input}
-        onInputChange={setInput}
-        onSend={handleSendMessage}
+        value={input}
+        onSubmit={handleSendMessage}
         onTyping={handleTyping}
         replyTo={replyTo}
         onCancelReply={() => setReplyTo(null)}
