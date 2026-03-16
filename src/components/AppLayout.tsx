@@ -96,7 +96,7 @@ export function AppLayout({
       {!focusMode && <BroadcastPopup />}
       <ComplianceBroadcast />
       <AtriaBroadcast />
-      {!focusMode && <AtriaFAB />}
+      {/* AtriaFAB removed — AI is now a tab inside FloatingChat */}
       {!focusMode && isMobile && !isChatRoute && <MobileAppDock />}
       {!focusMode && <OfficeSimulatorOverlay />}
     </div>
