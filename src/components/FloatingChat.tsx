@@ -899,8 +899,10 @@ const FloatingChat: React.FC = () => {
                     view={view} channelUnreadCounts={channelUnreadCounts}
                     contactSearch={contactSearch} onContactSearchChange={setContactSearch}
                     onSelectChannel={handleSelectChannel} onSelectContact={handleSelectContact}
+                    onSelectAI={() => setView("ai")}
                   />
                 )}
+                {view === "ai" && <AIChatPanel />}
                 {(view === "chat" || view === "dm") && (
                   <div className="flex-1 flex flex-col overflow-hidden relative bg-[hsl(var(--wa-chat-bg))]">
                     {renderMessagesList(activeMessages, isChannel)}
