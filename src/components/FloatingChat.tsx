@@ -779,15 +779,25 @@ const FloatingChat: React.FC = () => {
         )}>
           <div className="flex items-center justify-between px-4 py-2.5 bg-[hsl(var(--wa-header))] text-[hsl(var(--wa-header-foreground))] shrink-0">
             <div className="flex items-center gap-2.5 min-w-0">
-              {isMobile && (view === "chat" || view === "dm") && (
+              {isMobile && (view === "chat" || view === "dm" || view === "ai") && (
                 <button onClick={() => setView("contacts")} className="hover:bg-white/10 p-1.5 rounded-full transition-colors">
                   <ChevronLeft className="h-5 w-5" />
                 </button>
               )}
-              {(view === "contacts" || (!isMobile && !(view === "chat" || view === "dm"))) && (
+              {(view === "contacts" || (!isMobile && !(view === "chat" || view === "dm" || view === "ai"))) && (
                 <div className="flex items-center gap-2">
                   <MessageCircle className="h-5 w-5" />
                   <h3 className="font-semibold text-sm">Messaging</h3>
+                </div>
+              )}
+              {isMobile && view === "ai" && (
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-primary/30 flex items-center justify-center">
+                    <Sparkles className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm">Atria AI</h3>
+                  </div>
                 </div>
               )}
               {isMobile && view === "chat" && (
