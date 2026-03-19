@@ -156,6 +156,26 @@ export function ActionItemsWidget() {
         status: "open",
         priority: "medium",
       });
+
+      // Send email notification to all tagged users
+      if (selectedUsers.length > 0) {
+        const taggedEmails = selectedUsers
+          .map((name) => profiles.find((p) => p.full_name === name || p.email === name)?.email)
+          .filter(Boolean) as string[];
+
+        if (taggedEmails.length > 0) {
+          const posterName = profiles.find((p) => p.id === user.id)?.full_name || user.email || "Someone";
+          supabase.functions.invoke("send-notice-email", {
+            body: {
+              title: newTitle.trim(),
+              postedBy: posterName,
+              taggedUsers: taggedEmails,
+              attachmentName,
+            },
+          }).catch((err) => console.error("Notice email error:", err));
+        }
+      }
+
       playNoticeBoardSound();
       setNewTitle("");
       setSelectedUsers([]);
