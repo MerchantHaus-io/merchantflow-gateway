@@ -908,6 +908,7 @@ const FloatingChat: React.FC = () => {
                     contactSearch={contactSearch} onContactSearchChange={setContactSearch}
                     onSelectChannel={handleSelectChannel} onSelectContact={handleSelectContact}
                     onSelectAI={() => setView("ai")}
+                    onChannelsChanged={fetchChannels}
                   />
                 )}
                 {view === "ai" && <AIChatPanel />}
