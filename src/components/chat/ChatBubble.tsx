@@ -35,6 +35,7 @@ interface ChatBubbleProps {
   onEditContent: (val: string) => void;
   onSubmitEdit: (id: string, isChannel: boolean) => void;
   onReaction: (messageId: string, emoji: string, type: 'channel' | 'direct') => void;
+  onDeleteMessage: (messageId: string, isChannel: boolean) => void;
   onProfileClick: (userId: string) => void;
   onResolveAttachment: (msgId: string, url: string) => void;
 }
