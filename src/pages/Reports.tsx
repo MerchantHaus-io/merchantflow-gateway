@@ -138,7 +138,7 @@ const Reports = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     const [oppRes, actRes, campRes] = await Promise.all([
-      supabase.from("opportunities").select("id, stage, assigned_to, created_at, updated_at, status, stage_entered_at, account:accounts(name), contact:contacts(first_name, last_name)"),
+      supabase.from("opportunities").select("id, stage, assigned_to, created_at, updated_at, status, stage_entered_at, outcome_status, outcome_reason, account:accounts(name), contact:contacts(first_name, last_name)"),
       supabase.from("activities").select("id, type, created_at, opportunity_id").order("created_at", { ascending: false }).limit(1000),
       supabase.from("outreach_campaigns").select("*").order("created_at", { ascending: false }),
     ]);
