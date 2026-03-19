@@ -92,8 +92,34 @@ const FloatingChat: React.FC = () => {
   useEffect(() => { viewRef.current = view; }, [view]);
   useEffect(() => { currentDMUserIdRef.current = currentDMUserId; }, [currentDMUserId]);
   useEffect(() => { currentChannelIdRef.current = currentChannelId; }, [currentChannelId]);
+  // ── Resize handlers ──
+  const handleResizeMouseDown = useCallback((edge: 'top' | 'left' | 'topleft') => (e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizingRef.current = edge;
+    resizeStartRef.current = { x: e.clientX, y: e.clientY, w: chatWidth, h: chatHeight };
 
-  useEffect(() => {
+    const handleMouseMove = (ev: MouseEvent) => {
+      const dir = isResizingRef.current;
+      if (!dir) return;
+      const dx = resizeStartRef.current.x - ev.clientX;
+      const dy = resizeStartRef.current.y - ev.clientY;
+      if (dir === 'left' || dir === 'topleft') {
+        setChatWidth(Math.max(500, Math.min(1200, resizeStartRef.current.w + dx)));
+      }
+      if (dir === 'top' || dir === 'topleft') {
+        setChatHeight(Math.max(360, Math.min(900, resizeStartRef.current.h + dy)));
+      }
+    };
+    const handleMouseUp = () => {
+      isResizingRef.current = null;
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  }, [chatWidth, chatHeight]);
+
+
     const handleOpenChat = () => setIsOpen(true);
     window.addEventListener('openFloatingChat', handleOpenChat);
     return () => window.removeEventListener('openFloatingChat', handleOpenChat);
