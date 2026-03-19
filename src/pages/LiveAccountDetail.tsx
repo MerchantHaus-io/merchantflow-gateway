@@ -602,17 +602,31 @@ const LiveAccountDetail = () => {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {activities.map((act) => (
-                      <div key={act.id} className="flex gap-3 text-sm">
-                        <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 mt-2 shrink-0" />
-                        <div className="min-w-0">
-                          <p className="text-foreground">{act.description || act.type}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(act.created_at), { addSuffix: true })}
-                          </p>
+                    {activities.map((act) => {
+                      const userName = act.user_email
+                        ? (EMAIL_TO_USER[act.user_email.toLowerCase()] || act.user_email.split('@')[0])
+                        : null;
+                      return (
+                        <div key={act.id} className="flex gap-3 text-sm">
+                          <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 mt-2 shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-foreground">{act.description || act.type}</p>
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+                              {userName && (
+                                <>
+                                  <span className="font-medium">{userName}</span>
+                                  <span>·</span>
+                                </>
+                              )}
+                              <span>{format(new Date(act.created_at), "MMM d, yyyy h:mm a")}</span>
+                              <span className="text-muted-foreground/50">
+                                ({formatDistanceToNow(new Date(act.created_at), { addSuffix: true })})
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
