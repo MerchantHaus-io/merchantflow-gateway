@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Search, Hash, Bot, Sparkles, Plus, Trash2, X } from "lucide-react";
+import { Search, Hash, Bot, Sparkles, Plus, Trash2, X, ChevronDown, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
