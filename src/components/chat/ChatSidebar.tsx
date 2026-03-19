@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Search, Hash, Bot, Sparkles, Plus, Trash2, X } from "lucide-react";
+import { Search, Hash, Bot, Sparkles, Plus, Trash2, X, ChevronDown, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -41,6 +41,8 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const [showNewChannel, setShowNewChannel] = useState(false);
   const [newChannelName, setNewChannelName] = useState("");
   const [creating, setCreating] = useState(false);
+  const [channelsOpen, setChannelsOpen] = useState(true);
+  const [dmsOpen, setDmsOpen] = useState(true);
 
   const filteredContacts = contactSearch
     ? onlineUsers.filter(u =>
@@ -136,7 +138,13 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
           {filteredChannels.length > 0 && (
             <>
               <div className="flex items-center justify-between px-4 py-2">
-                <p className="text-[10px] font-semibold text-[hsl(var(--wa-accent))] uppercase tracking-widest">Channels</p>
+                <button
+                  onClick={() => setChannelsOpen(v => !v)}
+                  className="flex items-center gap-1 text-[10px] font-semibold text-[hsl(var(--wa-accent))] uppercase tracking-widest hover:text-[hsl(var(--wa-bubble-in-foreground))] transition-colors"
+                >
+                  {channelsOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                  Channels
+                </button>
                 <button
                   onClick={() => setShowNewChannel(v => !v)}
                   className="text-[hsl(var(--wa-accent))] hover:text-[hsl(var(--wa-bubble-in-foreground))] transition-colors"
@@ -146,132 +154,146 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 </button>
               </div>
 
-              {/* New channel input */}
-              {showNewChannel && (
-                <div className="px-4 pb-2 flex gap-2">
-                  <Input
-                    placeholder="channel-name"
-                    value={newChannelName}
-                    onChange={(e) => setNewChannelName(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleCreateChannel()}
-                    className="h-8 text-xs rounded-md bg-[hsl(var(--wa-search-bg))] border-0 text-[hsl(var(--wa-bubble-in-foreground))] placeholder:text-[hsl(var(--wa-meta))] focus-visible:ring-0"
-                    autoFocus
-                    disabled={creating}
-                  />
-                  <button
-                    onClick={handleCreateChannel}
-                    disabled={creating || !newChannelName.trim()}
-                    className="text-[hsl(var(--wa-accent))] hover:text-[hsl(var(--wa-bubble-in-foreground))] disabled:opacity-40 transition-colors shrink-0"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </button>
-                </div>
-              )}
-
-              {filteredChannels.map((ch) => {
-                const isActive = currentChannelId === ch.id && view === "chat";
-                const unread = channelUnreadCounts[ch.id] || 0;
-                const isProtected = protectedChannels.includes(ch.name.toLowerCase());
-                return (
-                  <button
-                    key={ch.id}
-                    onClick={() => onSelectChannel(ch.id)}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-4 py-3 transition-colors border-b border-[hsl(var(--wa-divider))] group",
-                      isActive
-                        ? "bg-[hsl(var(--wa-sidebar-hover))]"
-                        : "hover:bg-[hsl(var(--wa-sidebar-hover))]"
-                    )}
-                  >
-                    <div className={cn(
-                      "w-10 h-10 rounded-full flex items-center justify-center shrink-0",
-                      ch.name.toLowerCase() === "atria-ai"
-                        ? "bg-purple-500"
-                        : "bg-[hsl(var(--wa-accent))]"
-                    )}>
-                      {ch.name.toLowerCase() === "atria-ai" ? (
-                        <Bot className="h-5 w-5 text-white" />
-                      ) : (
-                        <Hash className="h-5 w-5 text-white" />
-                      )}
-                    </div>
-                    <div className="flex-1 text-left min-w-0">
-                      <p className="font-medium text-sm text-[hsl(var(--wa-bubble-in-foreground))] truncate">
-                        {ch.name}
-                      </p>
-                    </div>
-                    {!isProtected && (
+              {channelsOpen && (
+                <>
+                  {/* New channel input */}
+                  {showNewChannel && (
+                    <div className="px-4 pb-2 flex gap-2">
+                      <Input
+                        placeholder="channel-name"
+                        value={newChannelName}
+                        onChange={(e) => setNewChannelName(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleCreateChannel()}
+                        className="h-8 text-xs rounded-md bg-[hsl(var(--wa-search-bg))] border-0 text-[hsl(var(--wa-bubble-in-foreground))] placeholder:text-[hsl(var(--wa-meta))] focus-visible:ring-0"
+                        autoFocus
+                        disabled={creating}
+                      />
                       <button
-                        onClick={(e) => handleDeleteChannel(e, ch)}
-                        className="opacity-0 group-hover:opacity-100 text-[hsl(var(--wa-meta))] hover:text-red-400 transition-all shrink-0"
-                        title={`Delete #${ch.name}`}
+                        onClick={handleCreateChannel}
+                        disabled={creating || !newChannelName.trim()}
+                        className="text-[hsl(var(--wa-accent))] hover:text-[hsl(var(--wa-bubble-in-foreground))] disabled:opacity-40 transition-colors shrink-0"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Plus className="h-4 w-4" />
                       </button>
-                    )}
-                    {unread > 0 && (
-                      <span className="bg-[hsl(var(--wa-unread))] text-white text-[11px] font-medium min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center">
-                        {unread > 99 ? "99+" : unread}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+                    </div>
+                  )}
+
+                  {filteredChannels.map((ch) => {
+                    const isActive = currentChannelId === ch.id && view === "chat";
+                    const unread = channelUnreadCounts[ch.id] || 0;
+                    const isProtected = protectedChannels.includes(ch.name.toLowerCase());
+                    return (
+                      <button
+                        key={ch.id}
+                        onClick={() => onSelectChannel(ch.id)}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-4 py-3 transition-colors border-b border-[hsl(var(--wa-divider))] group",
+                          isActive
+                            ? "bg-[hsl(var(--wa-sidebar-hover))]"
+                            : "hover:bg-[hsl(var(--wa-sidebar-hover))]"
+                        )}
+                      >
+                        <div className={cn(
+                          "w-10 h-10 rounded-full flex items-center justify-center shrink-0",
+                          ch.name.toLowerCase() === "atria-ai"
+                            ? "bg-purple-500"
+                            : "bg-[hsl(var(--wa-accent))]"
+                        )}>
+                          {ch.name.toLowerCase() === "atria-ai" ? (
+                            <Bot className="h-5 w-5 text-white" />
+                          ) : (
+                            <Hash className="h-5 w-5 text-white" />
+                          )}
+                        </div>
+                        <div className="flex-1 text-left min-w-0">
+                          <p className="font-medium text-sm text-[hsl(var(--wa-bubble-in-foreground))] truncate">
+                            {ch.name}
+                          </p>
+                        </div>
+                        {!isProtected && (
+                          <button
+                            onClick={(e) => handleDeleteChannel(e, ch)}
+                            className="opacity-0 group-hover:opacity-100 text-[hsl(var(--wa-meta))] hover:text-red-400 transition-all shrink-0"
+                            title={`Delete #${ch.name}`}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                        {unread > 0 && (
+                          <span className="bg-[hsl(var(--wa-unread))] text-white text-[11px] font-medium min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center">
+                            {unread > 99 ? "99+" : unread}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </>
+              )}
             </>
           )}
 
           {/* Contacts */}
-          <p className="text-[10px] font-semibold text-[hsl(var(--wa-accent))] uppercase tracking-widest px-4 py-2 mt-1">Direct Messages</p>
-          {filteredContacts.length === 0 ? (
-            <p className="text-center text-[hsl(var(--wa-meta))] text-sm py-6">No contacts found</p>
-          ) : (
-            filteredContacts.map((u) => {
-              const isActive = currentDMUserId === u.id && view === "dm";
-              return (
-                <button
-                  key={u.id}
-                  onClick={() => onSelectContact(u.id)}
-                  className={cn(
-                    "w-full flex items-center gap-3 px-4 py-3 transition-colors border-b border-[hsl(var(--wa-divider))]",
-                    isActive
-                      ? "bg-[hsl(var(--wa-sidebar-hover))]"
-                      : "hover:bg-[hsl(var(--wa-sidebar-hover))]"
-                  )}
-                >
-                  <div className="relative">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={u.avatarUrl || undefined} />
-                      <AvatarFallback className={cn(getAvatarColor(u.email || u.name), "text-white text-sm font-medium")}>
-                        {getInitials(u.name, u.email)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span
+          <button
+            onClick={() => setDmsOpen(v => !v)}
+            className="flex items-center gap-1 text-[10px] font-semibold text-[hsl(var(--wa-accent))] uppercase tracking-widest px-4 py-2 mt-1 hover:text-[hsl(var(--wa-bubble-in-foreground))] transition-colors w-full text-left"
+          >
+            {dmsOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+            Direct Messages
+          </button>
+          {dmsOpen && (
+            <>
+              {filteredContacts.length === 0 ? (
+                <p className="text-center text-[hsl(var(--wa-meta))] text-sm py-6">No contacts found</p>
+              ) : (
+                filteredContacts.map((u) => {
+                  const isActive = currentDMUserId === u.id && view === "dm";
+                  return (
+                    <button
+                      key={u.id}
+                      onClick={() => onSelectContact(u.id)}
                       className={cn(
-                        "absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[hsl(var(--wa-sidebar-bg))]",
-                        u.isOnline ? "bg-[hsl(var(--wa-accent))]" : "bg-[hsl(var(--wa-meta))]"
+                        "w-full flex items-center gap-3 px-4 py-3 transition-colors border-b border-[hsl(var(--wa-divider))]",
+                        isActive
+                          ? "bg-[hsl(var(--wa-sidebar-hover))]"
+                          : "hover:bg-[hsl(var(--wa-sidebar-hover))]"
                       )}
-                    />
-                  </div>
-                  <div className="flex-1 text-left min-w-0">
-                    <p className="font-medium text-sm text-[hsl(var(--wa-bubble-in-foreground))] truncate">
-                      {u.name}
-                    </p>
-                    <p className="text-xs text-[hsl(var(--wa-meta))] truncate">
-                      {u.isOnline
-                        ? "online"
-                        : u.lastSeen
-                        ? `last seen ${formatDistanceToNow(new Date(u.lastSeen), { addSuffix: true })}`
-                        : "offline"}
-                    </p>
-                  </div>
-                  {(u.unreadCount || 0) > 0 && (
-                    <span className="bg-[hsl(var(--wa-unread))] text-white text-[11px] font-medium min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center">
-                      {(u.unreadCount || 0) > 99 ? "99+" : u.unreadCount}
-                    </span>
-                  )}
-                </button>
-              );
-            })
+                    >
+                      <div className="relative">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={u.avatarUrl || undefined} />
+                          <AvatarFallback className={cn(getAvatarColor(u.email || u.name), "text-white text-sm font-medium")}>
+                            {getInitials(u.name, u.email)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span
+                          className={cn(
+                            "absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[hsl(var(--wa-sidebar-bg))]",
+                            u.isOnline ? "bg-[hsl(var(--wa-accent))]" : "bg-[hsl(var(--wa-meta))]"
+                          )}
+                        />
+                      </div>
+                      <div className="flex-1 text-left min-w-0">
+                        <p className="font-medium text-sm text-[hsl(var(--wa-bubble-in-foreground))] truncate">
+                          {u.name}
+                        </p>
+                        <p className="text-xs text-[hsl(var(--wa-meta))] truncate">
+                          {u.isOnline
+                            ? "online"
+                            : u.lastSeen
+                            ? `last seen ${formatDistanceToNow(new Date(u.lastSeen), { addSuffix: true })}`
+                            : "offline"}
+                        </p>
+                      </div>
+                      {(u.unreadCount || 0) > 0 && (
+                        <span className="bg-[hsl(var(--wa-unread))] text-white text-[11px] font-medium min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center">
+                          {(u.unreadCount || 0) > 99 ? "99+" : u.unreadCount}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })
+              )}
+            </>
           )}
         </div>
       </ScrollArea>

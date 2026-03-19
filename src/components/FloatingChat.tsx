@@ -63,6 +63,10 @@ const FloatingChat: React.FC = () => {
   const [recordingTime, setRecordingTime] = useState(0);
   const [pendingAttachment, setPendingAttachment] = useState<{ file: File; url: string } | null>(null);
   const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
+  const [chatWidth, setChatWidth] = useState(740);
+  const [chatHeight, setChatHeight] = useState(540);
+  const isResizingRef = useRef<'top' | 'left' | 'topleft' | null>(null);
+  const resizeStartRef = useRef<{ x: number; y: number; w: number; h: number }>({ x: 0, y: 0, w: 740, h: 540 });
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const scrollViewportRef = useRef<HTMLDivElement | null>(null);
   const presenceChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -88,6 +92,32 @@ const FloatingChat: React.FC = () => {
   useEffect(() => { viewRef.current = view; }, [view]);
   useEffect(() => { currentDMUserIdRef.current = currentDMUserId; }, [currentDMUserId]);
   useEffect(() => { currentChannelIdRef.current = currentChannelId; }, [currentChannelId]);
+  // ── Resize handlers ──
+  const handleResizeMouseDown = useCallback((edge: 'top' | 'left' | 'topleft') => (e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizingRef.current = edge;
+    resizeStartRef.current = { x: e.clientX, y: e.clientY, w: chatWidth, h: chatHeight };
+
+    const handleMouseMove = (ev: MouseEvent) => {
+      const dir = isResizingRef.current;
+      if (!dir) return;
+      const dx = resizeStartRef.current.x - ev.clientX;
+      const dy = resizeStartRef.current.y - ev.clientY;
+      if (dir === 'left' || dir === 'topleft') {
+        setChatWidth(Math.max(500, Math.min(1200, resizeStartRef.current.w + dx)));
+      }
+      if (dir === 'top' || dir === 'topleft') {
+        setChatHeight(Math.max(360, Math.min(900, resizeStartRef.current.h + dy)));
+      }
+    };
+    const handleMouseUp = () => {
+      isResizingRef.current = null;
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  }, [chatWidth, chatHeight]);
 
   useEffect(() => {
     const handleOpenChat = () => setIsOpen(true);
@@ -767,14 +797,34 @@ const FloatingChat: React.FC = () => {
       )}
 
       {isOpen && (
-        <div className={cn(
-          "fixed z-50 flex flex-col overflow-hidden shadow-2xl",
-          "bg-[hsl(var(--wa-chat-bg))] transition-all duration-300 ease-out",
-          "animate-in slide-in-from-bottom-4 fade-in-0 rounded-t-xl",
-          isMobile
-            ? "bottom-16 right-2 left-2 top-16 rounded-xl"
-            : "bottom-0 right-6 w-[740px] h-[540px] border-b-0"
-        )}>
+        <div
+          className={cn(
+            "fixed z-50 flex flex-col overflow-hidden shadow-2xl",
+            "bg-[hsl(var(--wa-chat-bg))]",
+            "animate-in slide-in-from-bottom-4 fade-in-0 rounded-t-xl",
+            isMobile
+              ? "bottom-16 right-2 left-2 top-16 rounded-xl"
+              : "bottom-0 right-6 border-b-0"
+          )}
+          style={!isMobile ? { width: chatWidth, height: chatHeight } : undefined}
+        >
+          {/* Resize handles (desktop only) */}
+          {!isMobile && (
+            <>
+              <div
+                onMouseDown={handleResizeMouseDown('top')}
+                className="absolute top-0 left-4 right-4 h-1.5 cursor-n-resize z-10 hover:bg-[hsl(var(--wa-accent)/0.3)] transition-colors rounded-b"
+              />
+              <div
+                onMouseDown={handleResizeMouseDown('left')}
+                className="absolute left-0 top-4 bottom-4 w-1.5 cursor-w-resize z-10 hover:bg-[hsl(var(--wa-accent)/0.3)] transition-colors rounded-r"
+              />
+              <div
+                onMouseDown={handleResizeMouseDown('topleft')}
+                className="absolute top-0 left-0 w-4 h-4 cursor-nw-resize z-20"
+              />
+            </>
+          )}
           <div className="flex items-center justify-between px-4 py-2.5 bg-[hsl(var(--wa-header))] text-[hsl(var(--wa-header-foreground))] shrink-0">
             <div className="flex items-center gap-2.5 min-w-0">
               {isMobile && (view === "chat" || view === "dm" || view === "ai") && (
