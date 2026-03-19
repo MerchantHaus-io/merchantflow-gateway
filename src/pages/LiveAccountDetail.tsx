@@ -90,8 +90,7 @@ const LiveAccountDetail = () => {
           wizard_state:onboarding_wizard_states(*)
         `)
         .eq("account_id", accountId!)
-        .eq("stage", "live_activated")
-        .eq("status", "active")
+        .eq("outcome_status", "closed_won")
         .order("created_at", { ascending: true });
 
       if (error) throw error;
