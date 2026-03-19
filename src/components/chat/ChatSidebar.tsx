@@ -41,6 +41,8 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const [showNewChannel, setShowNewChannel] = useState(false);
   const [newChannelName, setNewChannelName] = useState("");
   const [creating, setCreating] = useState(false);
+  const [channelsOpen, setChannelsOpen] = useState(true);
+  const [dmsOpen, setDmsOpen] = useState(true);
 
   const filteredContacts = contactSearch
     ? onlineUsers.filter(u =>
