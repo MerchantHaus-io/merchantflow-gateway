@@ -1041,9 +1041,18 @@ export default function OfficeChat({
   const tvIframeRef = useRef<HTMLIFrameElement>(null);
   const tvOverlayVisibleRef = useRef(false);
 
+  // TV2 state (north wall, live feed)
+  const [nearTV2, setNearTV2] = useState(false);
+  const [tv2Unmuted, setTv2Unmuted] = useState(false);
+  const tv2OverlayRef = useRef<HTMLDivElement>(null);
+  const tv2IframeRef = useRef<HTMLIFrameElement>(null);
+  const tv2OverlayVisibleRef = useRef(false);
+  const tv2OverlayRectRef = useRef({ x: -1, y: -1, w: -1, h: -1 });
+
   // Randomised YouTube playlist for the office TV
   const TV_PLAYLIST = useRef(['T0C9d8anDT4', 'oM9WfDBRNcg']).current;
   const [tvVideoId] = useState(() => TV_PLAYLIST[Math.floor(Math.random() * TV_PLAYLIST.length)]);
+  const TV2_VIDEO_ID = '9siH2meEaGI'; // Live feed
 
   // Mute/unmute via postMessage so the video doesn't restart
   useEffect(() => {
@@ -1052,6 +1061,15 @@ export default function OfficeChat({
     const cmd = tvUnmuted ? 'unMute' : 'mute';
     iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: cmd, args: [] }), '*');
   }, [tvUnmuted]);
+
+  // Mute/unmute TV2
+  useEffect(() => {
+    const iframe = tv2IframeRef.current;
+    if (!iframe?.contentWindow) return;
+    const cmd = tv2Unmuted ? 'unMute' : 'mute';
+    iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: cmd, args: [] }), '*');
+  }, [tv2Unmuted]);
+
   const tvOverlayRectRef = useRef({ x: -1, y: -1, w: -1, h: -1 });
   const [nearInteract, setNearInteract] = useState<InteractionPoint | null>(null);
   const [isSitting, setIsSitting] = useState(false);
