@@ -36,6 +36,8 @@ interface OppData {
   updated_at: string;
   status: string | null;
   stage_entered_at?: string | null;
+  outcome_status?: string | null;
+  outcome_reason?: string | null;
   account?: { name: string } | null;
   contact?: { first_name: string | null; last_name: string | null } | null;
 }
@@ -136,7 +138,7 @@ const Reports = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     const [oppRes, actRes, campRes] = await Promise.all([
-      supabase.from("opportunities").select("id, stage, assigned_to, created_at, updated_at, status, stage_entered_at, account:accounts(name), contact:contacts(first_name, last_name)"),
+      supabase.from("opportunities").select("id, stage, assigned_to, created_at, updated_at, status, stage_entered_at, outcome_status, outcome_reason, account:accounts(name), contact:contacts(first_name, last_name)"),
       supabase.from("activities").select("id, type, created_at, opportunity_id").order("created_at", { ascending: false }).limit(1000),
       supabase.from("outreach_campaigns").select("*").order("created_at", { ascending: false }),
     ]);
@@ -184,7 +186,7 @@ const Reports = () => {
       if (!o.assigned_to) return;
       if (!data[o.assigned_to]) data[o.assigned_to] = { name: o.assigned_to, won: 0, total: 0 };
       data[o.assigned_to].total++;
-      if (o.stage === "go_live_ready" || (o as any).outcome_status === "closed_won") data[o.assigned_to].won++;
+      if (o.stage === "go_live_ready" || o.outcome_status === "closed_won") data[o.assigned_to].won++;
     });
     return Object.values(data).sort((a, b) => b.won - a.won).filter(d => d.total > 0);
   }, [filteredOpps]);
@@ -228,7 +230,7 @@ const Reports = () => {
   // ── Top KPIs ──
   const kpis = useMemo(() => {
     const active    = filteredOpps.filter(o => o.status !== "dead").length;
-    const live      = filteredOpps.filter(o => (o as any).outcome_status === 'closed_won').length;
+    const live      = filteredOpps.filter(o => o.outcome_status === 'closed_won').length;
     const openTasks = filteredTasks.filter(t => t.status !== "done").length;
     const overdue   = filteredTasks.filter(t => t.dueAt && t.status !== "done" && new Date(t.dueAt) < new Date()).length;
     return { active, live, openTasks, overdue };
@@ -286,7 +288,7 @@ const Reports = () => {
             <StatCard label="Active Opportunities" value={kpis.active}   icon={Target}       color="primary"
               onClick={() => openModal("Active Opportunities", `${kpis.active} active`, "opportunities", filteredOpps.filter(o => o.status !== "dead"), [])} />
             <StatCard label="Closed Won"            value={kpis.live}     icon={Zap}          color="success"
-              onClick={() => openModal("Closed Won", `${kpis.live} won`, "opportunities", filteredOpps.filter(o => (o as any).outcome_status === "closed_won"), [])} />
+              onClick={() => openModal("Closed Won", `${kpis.live} won`, "opportunities", filteredOpps.filter(o => o.outcome_status === "closed_won"), [])} />
             <StatCard label="Open Tasks"            value={kpis.openTasks}icon={Clock}        color="teal"
               onClick={() => openModal("Open Tasks", `${kpis.openTasks} open`, "tasks", [], filteredTasks.filter(t => t.status !== "done"))} />
             <StatCard label="Overdue Tasks"         value={kpis.overdue}  icon={AlertTriangle} color="destructive"

@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { Task } from "@/types/task";
-import { STAGE_CONFIG, OpportunityStage } from "@/types/opportunity";
+import { STAGE_CONFIG, OUTCOME_CONFIG, OpportunityStage, OutcomeStatus } from "@/types/opportunity";
 
 interface OpportunityData {
   id: string;
@@ -11,6 +11,8 @@ interface OpportunityData {
   assigned_to: string | null;
   created_at: string;
   status: string | null;
+  outcome_status?: string | null;
+  outcome_reason?: string | null;
   account?: { name: string } | null;
   contact?: { first_name: string | null; last_name: string | null } | null;
 }
@@ -62,35 +64,52 @@ const ReportDetailModal = ({
                     </TableCell>
                   </TableRow>
                 ) : (
-                  opportunities.map((opp) => (
-                    <TableRow key={opp.id}>
-                      <TableCell className="font-medium">
-                        {opp.account?.name || "—"}
-                      </TableCell>
-                      <TableCell>
-                        {opp.contact
-                          ? `${opp.contact.first_name || ""} ${opp.contact.last_name || ""}`.trim() || "—"
-                          : "—"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs">
-                          {STAGE_CONFIG[opp.stage]?.label || opp.stage}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{opp.assigned_to || "Unassigned"}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {format(new Date(opp.created_at), "MMM d, yyyy")}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={opp.status === "dead" ? "destructive" : "default"}
-                          className="text-xs"
-                        >
-                          {opp.status || "active"}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  opportunities.map((opp) => {
+                    const outcomeKey = opp.outcome_status as OutcomeStatus | undefined;
+                    const outcomeConf = outcomeKey ? OUTCOME_CONFIG[outcomeKey] : null;
+                    return (
+                      <TableRow key={opp.id}>
+                        <TableCell className="font-medium">
+                          {opp.account?.name || "—"}
+                        </TableCell>
+                        <TableCell>
+                          {opp.contact
+                            ? `${opp.contact.first_name || ""} ${opp.contact.last_name || ""}`.trim() || "—"
+                            : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">
+                            {STAGE_CONFIG[opp.stage]?.label || opp.stage}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{opp.assigned_to || "Unassigned"}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {format(new Date(opp.created_at), "MMM d, yyyy")}
+                        </TableCell>
+                        <TableCell>
+                          {outcomeConf ? (
+                            <div className="space-y-0.5">
+                              <Badge className={`text-xs ${outcomeConf.bgClass} ${outcomeConf.textClass} border-0`}>
+                                {outcomeConf.icon} {outcomeConf.label}
+                              </Badge>
+                              {opp.outcome_reason && (
+                                <p className="text-[10px] text-muted-foreground truncate max-w-[140px]">
+                                  {opp.outcome_reason}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <Badge
+                              variant={opp.status === "dead" ? "destructive" : "default"}
+                              className="text-xs"
+                            >
+                              {opp.status || "active"}
+                            </Badge>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
