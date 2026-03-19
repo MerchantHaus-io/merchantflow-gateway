@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Keyboard } from "lucide-react";
 
 const SHORTCUTS = [
-  { keys: ["⌘", "K"], description: "Open command palette" },
+  { keys: ["Ctrl", "K"], description: "Open command palette" },
   { keys: ["Esc"], description: "Close dialogs / exit focus mode" },
   { keys: ["?"], description: "Show this shortcuts guide" },
   { keys: ["↑", "↓"], description: "Navigate command results" },
