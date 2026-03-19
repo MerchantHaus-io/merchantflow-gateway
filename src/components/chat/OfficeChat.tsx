@@ -199,12 +199,15 @@ const INTERACT_POINTS: InteractionPoint[] = [
   { id: "whiteboard", pos: new THREE.Vector3(0, 0, -20.5), label: "Use whiteboard", action: "whiteboard", radius: 2.5 },
   // Meeting room table
   { id: "meeting-sit", pos: new THREE.Vector3(16, 0, 8), label: "Join meeting", action: "sit", radius: 2 },
-  // TV
+  // TV (east wall)
   { id: "tv", pos: new THREE.Vector3(20, 0, 6), label: "Toggle TV", action: "tv", radius: 3.5 },
+  // TV2 (north wall, near desks)
+  { id: "tv2", pos: new THREE.Vector3(0, 0, -20), label: "Toggle News", action: "tv2", radius: 3.5 },
 ];
 
 const INTERACT_DIST = 2.5;
-const TV_POS = new THREE.Vector3(20, 0, 6);  // East wall, visible from open floor
+const TV_POS = new THREE.Vector3(20, 0, 6);   // East wall
+const TV2_POS = new THREE.Vector3(0, 0, -20); // North wall, near desks
 
 /**
  * Compute a CSS matrix3d string that maps a rectangle (0,0)-(w,h)
