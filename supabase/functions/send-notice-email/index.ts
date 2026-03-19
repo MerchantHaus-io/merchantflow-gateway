@@ -62,7 +62,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const html = buildHtml(title, postedBy, attachmentName);
-    const subject = `📌 Notice Board: ${title.slice(0, 80)}`;
+    const subject = `📌 Notice Board: ${title.replace(/[\r\n]+/g, ' ').trim().slice(0, 80)}`;
 
     const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
