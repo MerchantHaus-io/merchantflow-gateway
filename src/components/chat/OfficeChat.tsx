@@ -2204,6 +2204,9 @@ export default function OfficeChat({
         <div className="absolute inset-0 pointer-events-none rounded-sm" style={{
           boxShadow: 'inset 0 0 8px 2px rgba(170,68,34,0.25), inset 0 0 20px 4px rgba(0,0,0,0.4)',
         }} />
+      </div>
+
+      {/* Controls hint */}
       {!isMobile && (
         <div className="absolute top-3 left-3 pointer-events-none">
           <Badge variant="outline" className="bg-black/60 text-white/60 border-white/10 text-xs">
