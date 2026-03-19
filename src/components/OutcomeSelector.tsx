@@ -24,7 +24,7 @@ interface OutcomeSelectorProps {
   disabled?: boolean;
 }
 
-export const OutcomeSelector = ({ currentOutcome, onSelect, disabled }: OutcomeSelectorProps) => {
+export const OutcomeSelector = ({ currentOutcome, currentReason, onSelect, disabled }: OutcomeSelectorProps) => {
   const [open, setOpen] = useState(false);
   const [selectedOutcome, setSelectedOutcome] = useState<OutcomeStatus | null>(null);
   const [reason, setReason] = useState("");

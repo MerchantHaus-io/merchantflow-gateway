@@ -601,9 +601,16 @@ const Opportunities = () => {
                               {opp.outcome_status ? (() => {
                                 const oc = OUTCOME_CONFIG[opp.outcome_status as OutcomeStatus];
                                 return oc ? (
-                                  <Badge variant="outline" className={`text-[10px] h-5 px-1.5 ${oc.bgClass} ${oc.textClass} border-current/20`}>
-                                    <span className="mr-1">{oc.icon}</span>{oc.label}
-                                  </Badge>
+                                  <div className="flex flex-col gap-0.5">
+                                    <Badge variant="outline" className={`text-[10px] h-5 px-1.5 ${oc.bgClass} ${oc.textClass} border-current/20`}>
+                                      <span className="mr-1">{oc.icon}</span>{oc.label}
+                                    </Badge>
+                                    {opp.outcome_reason && (
+                                      <span className="text-[9px] text-muted-foreground truncate max-w-[140px]" title={opp.outcome_reason}>
+                                        {opp.outcome_reason}
+                                      </span>
+                                    )}
+                                  </div>
                                 ) : <span className="text-xs text-muted-foreground/40">—</span>;
                               })() : <span className="text-xs text-muted-foreground/40">—</span>}
                             </TableCell>
