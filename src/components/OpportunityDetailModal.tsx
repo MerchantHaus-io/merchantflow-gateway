@@ -1053,10 +1053,22 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                               accountName: opportunity.account?.name || '',
                               outcomeStatus: outcome,
                               outcomeReason: reason,
+                              outcomeNotes: notes,
                             },
                           }).then(({ error: emailErr }) => {
-                            if (emailErr) console.error('Failed to send decline email:', emailErr);
-                            else console.log('Decline email sent to', opportunity.contact?.email);
+                            if (emailErr) {
+                              console.error('Failed to send decline email:', emailErr);
+                            } else {
+                              console.log('Decline email sent to', opportunity.contact?.email);
+                              // Log the email send as an activity note
+                              supabase.from('activities').insert({
+                                opportunity_id: opportunity.id,
+                                type: 'email_sent',
+                                description: `Decline email sent to ${opportunity.contact?.email} (${OUTCOME_CONFIG[outcome].label}: ${reason})`,
+                                user_id: user?.id,
+                                user_email: user?.email,
+                              }).then(() => {});
+                            }
                           });
                           setTimeout(() => onClose(), 1500);
                         } else if (isNegativeOutcome) {
