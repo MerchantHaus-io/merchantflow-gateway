@@ -804,7 +804,7 @@ const FloatingChat: React.FC = () => {
           <span className="font-semibold text-sm">Messaging</span>
           {totalUnreadCount > 0 && (
             <span className="ml-auto bg-white/20 text-white text-xs font-medium min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center">
-              {totalUnreadCount > 9 ? "9+" : totalUnreadCount}
+              {totalUnreadCount > 99 ? "99+" : totalUnreadCount}
             </span>
           )}
         </button>
