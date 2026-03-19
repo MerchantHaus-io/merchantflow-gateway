@@ -688,6 +688,7 @@ const FloatingChat: React.FC = () => {
         onEditContent={setEditContent}
         onSubmitEdit={handleEditMessage}
         onReaction={handleReaction}
+        onDeleteMessage={handleDeleteMessage}
         onProfileClick={setProfileModalUserId}
         onResolveAttachment={resolveAttachmentUrl}
       />

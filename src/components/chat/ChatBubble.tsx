@@ -1,7 +1,7 @@
 import React, { useCallback, useRef } from "react";
 import { Bot } from "lucide-react";
 import {
-  Check, CheckCheck, Reply, Edit2, Smile, File, Download,
+  Check, CheckCheck, Reply, Edit2, Smile, File, Download, Trash2,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
