@@ -309,10 +309,7 @@ const OpportunityCard = ({
             {isGreyed ? (
               <div className="flex items-center w-full">
                 {opportunity.assigned_to && (
-                  <span className={cn(
-                    "text-[9px] font-bold px-1.5 py-0.5 rounded-full truncate",
-                    teamColors.bg, teamColors.text
-                  )}>
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full truncate bg-white/20 text-white">
                     {opportunity.assigned_to}
                   </span>
                 )}
