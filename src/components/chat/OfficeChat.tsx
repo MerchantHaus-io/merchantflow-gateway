@@ -1324,84 +1324,104 @@ export default function OfficeChat({
         return closestIP;
       });
 
-      // Project TV screen onto 2D overlay — direct DOM manipulation to avoid re-renders
+      // Project TV screen onto 2D overlay with perspective-correct matrix3d
       {
         const tvEl = tvOverlayRef.current;
         if (tvEl) {
-          // Match exact tvScreen mesh: pos (wOff-0.12, 2.8, 6), size (0.06, 2.3, 4.0)
-          // wOff = ROOM = 22, so screen x = 21.88, half-h = 1.15, half-w = 2.0
-          // Shrink projection corners slightly inward to crop tightly to visible screen area
           const screenX = ROOM - 0.12;
           const screenY = 2.8;
           const screenZ = 6;
-          const halfH = 1.1;  // slightly less than 1.15 to crop bezel overlap
-          const halfW = 1.92; // slightly less than 2.0 to crop bezel overlap
+          const halfH = 1.1;
+          const halfW = 1.92;
           const tvCenter = new THREE.Vector3(screenX, screenY, screenZ);
-          const tvTL = new THREE.Vector3(screenX, screenY + halfH, screenZ - halfW);
-          const tvBR = new THREE.Vector3(screenX, screenY - halfH, screenZ + halfW);
+          // 4 corners in 3D: TL, TR, BR, BL (TV faces west, so Z- is left, Z+ is right)
+          const corners3D = [
+            new THREE.Vector3(screenX, screenY + halfH, screenZ - halfW), // TL
+            new THREE.Vector3(screenX, screenY + halfH, screenZ + halfW), // TR
+            new THREE.Vector3(screenX, screenY - halfH, screenZ + halfW), // BR
+            new THREE.Vector3(screenX, screenY - halfH, screenZ - halfW), // BL
+          ];
 
           const toTV = tvCenter.clone().sub(camera.position);
           const camDir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
           const dot = toTV.normalize().dot(camDir);
           const dist = camera.position.distanceTo(tvCenter);
 
-          const centerCam = tvCenter.clone().applyMatrix4(camera.matrixWorldInverse);
-          const tlCam = tvTL.clone().applyMatrix4(camera.matrixWorldInverse);
-          const brCam = tvBR.clone().applyMatrix4(camera.matrixWorldInverse);
           const nearClipBuffer = camera.near + 0.06;
-          const fullyInFrontOfNearPlane =
-            centerCam.z < -nearClipBuffer &&
-            tlCam.z < -nearClipBuffer &&
-            brCam.z < -nearClipBuffer;
-
+          const allInFront = corners3D.every(c => {
+            const cam = c.clone().applyMatrix4(camera.matrixWorldInverse);
+            return cam.z < -nearClipBuffer;
+          });
           const tooCloseToProject = dist < 2.6;
 
-          if (dot > 0.12 && dist < 30 && !tooCloseToProject && fullyInFrontOfNearPlane) {
-            const tl = tvTL.clone().project(camera);
-            const br = tvBR.clone().project(camera);
+          if (dot > 0.12 && dist < 30 && !tooCloseToProject && allInFront) {
             const cw = renderer.domElement.clientWidth;
             const ch = renderer.domElement.clientHeight;
 
-            const sx1 = (tl.x * 0.5 + 0.5) * cw;
-            const sy1 = (-tl.y * 0.5 + 0.5) * ch;
-            const sx2 = (br.x * 0.5 + 0.5) * cw;
-            const sy2 = (-br.y * 0.5 + 0.5) * ch;
+            // Project all 4 corners to screen space
+            const screenPts = corners3D.map(c => {
+              const p = c.clone().project(camera);
+              return {
+                x: (p.x * 0.5 + 0.5) * cw,
+                y: (-p.y * 0.5 + 0.5) * ch,
+                z: p.z,
+              };
+            });
 
-            const x = Math.min(sx1, sx2);
-            const y = Math.min(sy1, sy2);
-            const w = Math.abs(sx2 - sx1);
-            const h = Math.abs(sy2 - sy1);
+            const clipValid = screenPts.every(p => p.z >= -1 && p.z <= 1);
+            const allFinite = screenPts.every(p => Number.isFinite(p.x) && Number.isFinite(p.y));
+            // Bounding box checks
+            const xs = screenPts.map(p => p.x);
+            const ys = screenPts.map(p => p.y);
+            const minX = Math.min(...xs), maxX = Math.max(...xs);
+            const minY = Math.min(...ys), maxY = Math.max(...ys);
+            const bw = maxX - minX, bh = maxY - minY;
+            const onScreen = minX >= -10 && minY >= -10 && maxX <= cw + 10 && maxY <= ch + 10;
+            const bigEnough = bw > 20 && bh > 12;
+            const notFullscreenSized = bw < cw * 0.95 && bh < ch * 0.95;
 
-            // Reject unstable/off-screen projections instead of clamping (prevents edge bars/flashes)
-            const clipValid = tl.z >= -1 && tl.z <= 1 && br.z >= -1 && br.z <= 1;
-            const onScreen = x >= 0 && y >= 0 && (x + w) <= cw && (y + h) <= ch;
-            const bigEnough = w > 20 && h > 12;
-            const notFullscreenSized = w < cw * 0.95 && h < ch * 0.95;
+            if (clipValid && allFinite && onScreen && bigEnough && notFullscreenSized) {
+              // Compute CSS matrix3d to map a fixed-size div to the 4 projected corners
+              // The div is sized as the bounding box; we use transform-origin: 0 0
+              // and a matrix3d that maps (0,0), (bw,0), (bw,bh), (0,bh) to the 4 screen points
+              // offset relative to (minX, minY)
+              const dstPts = screenPts.map(p => ({ x: p.x - minX, y: p.y - minY }));
+              // [TL, TR, BR, BL] → map from unit rect (0,0)-(bw,bh) to dst
+              const sw = bw, sh = bh;
+              // Solve perspective transform: src corners (0,0),(sw,0),(sw,sh),(0,sh) → dst
+              const m = computeMatrix3d(sw, sh, dstPts);
 
-            if (clipValid && onScreen && bigEnough && notFullscreenSized && Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(w) && Number.isFinite(h)) {
-              const nx = Math.round(x);
-              const ny = Math.round(y);
-              const nw = Math.round(w);
-              const nh = Math.round(h);
-              const prev = tvOverlayRectRef.current;
+              if (m) {
+                const nx = Math.round(minX);
+                const ny = Math.round(minY);
+                const nw = Math.round(bw);
+                const nh = Math.round(bh);
+                const prev = tvOverlayRectRef.current;
 
-              if (
-                Math.abs(prev.x - nx) > 1 ||
-                Math.abs(prev.y - ny) > 1 ||
-                Math.abs(prev.w - nw) > 1 ||
-                Math.abs(prev.h - nh) > 1
-              ) {
-                tvEl.style.left = `${nx}px`;
-                tvEl.style.top = `${ny}px`;
-                tvEl.style.width = `${nw}px`;
-                tvEl.style.height = `${nh}px`;
-                tvOverlayRectRef.current = { x: nx, y: ny, w: nw, h: nh };
-              }
+                if (
+                  Math.abs(prev.x - nx) > 1 ||
+                  Math.abs(prev.y - ny) > 1 ||
+                  Math.abs(prev.w - nw) > 1 ||
+                  Math.abs(prev.h - nh) > 1
+                ) {
+                  tvEl.style.left = `${nx}px`;
+                  tvEl.style.top = `${ny}px`;
+                  tvEl.style.width = `${nw}px`;
+                  tvEl.style.height = `${nh}px`;
+                  tvEl.style.transformOrigin = '0 0';
+                  tvEl.style.transform = m;
+                  tvOverlayRectRef.current = { x: nx, y: ny, w: nw, h: nh };
+                }
 
-              if (!tvOverlayVisibleRef.current) {
-                tvOverlayVisibleRef.current = true;
-                tvEl.style.visibility = 'visible';
-                tvEl.style.opacity = '1';
+                if (!tvOverlayVisibleRef.current) {
+                  tvOverlayVisibleRef.current = true;
+                  tvEl.style.visibility = 'visible';
+                  tvEl.style.opacity = '1';
+                }
+              } else if (tvOverlayVisibleRef.current) {
+                tvOverlayVisibleRef.current = false;
+                tvEl.style.visibility = 'hidden';
+                tvEl.style.opacity = '0';
               }
             } else if (tvOverlayVisibleRef.current) {
               tvOverlayVisibleRef.current = false;
