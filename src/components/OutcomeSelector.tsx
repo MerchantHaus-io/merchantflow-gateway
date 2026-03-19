@@ -19,6 +19,7 @@ const OUTCOME_ICONS: Record<OutcomeStatus, React.ReactNode> = {
 
 interface OutcomeSelectorProps {
   currentOutcome?: OutcomeStatus | null;
+  currentReason?: string | null;
   onSelect: (outcome: OutcomeStatus, reason: string, notes: string) => Promise<void>;
   disabled?: boolean;
 }
