@@ -548,7 +548,7 @@ const FloatingChat: React.FC = () => {
     if (error) { setDirectMessages(prev => prev.filter(m => m.id !== optimisticMessage.id)); toast.error("Failed to send message."); }
   };
 
-  const handleSendMessage = useCallback((text: string) => { playSentSound(); if (view === "dm") handleSendDirectMessage(text); else handleSendChannelMessage(text); }, [view, playSentSound]);
+  const handleSendMessage = (text: string) => { playSentSound(); if (view === "dm") handleSendDirectMessage(text); else handleSendChannelMessage(text); };
 
   const handleSelectChannel = (channelId: string) => {
     setCurrentChannelId(channelId); setCurrentDMUserId(""); setChannelMessages([]); setTypingUsers([]); setReplyTo(null); setSearchQuery(""); setShowSearch(false); setView("chat"); markChannelRead(channelId);
