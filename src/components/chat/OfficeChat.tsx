@@ -1427,6 +1427,11 @@ export default function OfficeChat({
         const nextNearTV = state.playerPos.distanceTo(TV_POS) < 3.5 && !closestUser;
         setNearTV(prev => prev === nextNearTV ? prev : nextNearTV);
       }
+      // TV2 proximity
+      {
+        const nextNearTV2 = state.playerPos.distanceTo(TV2_POS) < 3.5 && !closestUser;
+        setNearTV2(prev => prev === nextNearTV2 ? prev : nextNearTV2);
+      }
 
       // Interaction point proximity
       let closestIP: InteractionPoint | null = null;
