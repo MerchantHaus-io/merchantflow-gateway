@@ -307,10 +307,16 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
               <Reply className="h-3.5 w-3.5 text-[hsl(var(--wa-meta))]" />
             </button>
             {isOwn && (
-              <button onClick={() => onSetEditingMessage(msg.id, msg.content)}
-                className="p-1 hover:bg-white/10 rounded-md transition-colors" title="Edit">
-                <Edit2 className="h-3.5 w-3.5 text-[hsl(var(--wa-meta))]" />
-              </button>
+              <>
+                <button onClick={() => onSetEditingMessage(msg.id, msg.content)}
+                  className="p-1 hover:bg-white/10 rounded-md transition-colors" title="Edit">
+                  <Edit2 className="h-3.5 w-3.5 text-[hsl(var(--wa-meta))]" />
+                </button>
+                <button onClick={() => onDeleteMessage(msg.id, isChannel)}
+                  className="p-1 hover:bg-red-500/20 rounded-md transition-colors" title="Delete">
+                  <Trash2 className="h-3.5 w-3.5 text-[hsl(var(--wa-meta))] hover:text-red-400" />
+                </button>
+              </>
             )}
           </div>
         </div>
