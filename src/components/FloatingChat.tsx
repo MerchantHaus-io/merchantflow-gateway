@@ -928,6 +928,7 @@ const FloatingChat: React.FC = () => {
                     contactSearch={contactSearch} onContactSearchChange={setContactSearch}
                     onSelectChannel={handleSelectChannel} onSelectContact={handleSelectContact}
                     onSelectAI={() => setView("ai")}
+                    onChannelsChanged={fetchChannels}
                   />
                 </div>
                 <div className="flex-1 flex flex-col overflow-hidden relative">
