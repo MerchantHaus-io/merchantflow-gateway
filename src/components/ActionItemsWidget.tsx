@@ -169,6 +169,7 @@ export function ActionItemsWidget() {
             body: {
               title: newTitle.trim(),
               postedBy: posterName,
+              postedByEmail: user.email || "",
               taggedUsers: taggedEmails,
               attachmentName,
             },
