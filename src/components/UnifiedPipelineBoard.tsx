@@ -21,10 +21,6 @@ interface UnifiedPipelineBoardProps {
   onMoveToProcessing?: (opportunity: Opportunity) => Promise<void> | void;
   onRefresh?: () => Promise<void>;
   currentUser?: string;
-  /** Controlled focus mode state from parent */
-  focusMode?: boolean;
-  /** Called when focus mode should change */
-  onFocusModeChange?: (active: boolean) => void;
   isAdmin?: boolean;
 }
 
