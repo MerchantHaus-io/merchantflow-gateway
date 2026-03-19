@@ -206,6 +206,74 @@ const INTERACT_POINTS: InteractionPoint[] = [
 const INTERACT_DIST = 2.5;
 const TV_POS = new THREE.Vector3(20, 0, 6);  // East wall, visible from open floor
 
+/**
+ * Compute a CSS matrix3d string that maps a rectangle (0,0)-(w,h)
+ * to an arbitrary quadrilateral defined by 4 destination points [TL, TR, BR, BL].
+ * Uses a projective (homography) transform so the overlay follows perspective correctly.
+ */
+function computeMatrix3d(
+  w: number, h: number,
+  dst: { x: number; y: number }[]
+): string | null {
+  // Source corners: TL(0,0), TR(w,0), BR(w,h), BL(0,h)
+  // Destination corners: dst[0]=TL, dst[1]=TR, dst[2]=BR, dst[3]=BL
+  // Solve for 3x3 homography matrix H such that H * src_i = dst_i (in homogeneous coords)
+  const [tl, tr, br, bl] = dst;
+
+  // Build 8x8 system for homography (a,b,c,d,e,f,g,h) where i=1
+  // Each point gives 2 equations:
+  // x'(1+g*x+h*y) = a*x + b*y + c
+  // y'(1+g*x+h*y) = d*x + e*y + f
+  const srcPts = [
+    { x: 0, y: 0 },
+    { x: w, y: 0 },
+    { x: w, y: h },
+    { x: 0, y: h },
+  ];
+  const dstPts = [tl, tr, br, bl];
+
+  // Construct matrix A and vector b for Ax = b
+  const A: number[][] = [];
+  const B: number[] = [];
+  for (let i = 0; i < 4; i++) {
+    const sx = srcPts[i].x, sy = srcPts[i].y;
+    const dx = dstPts[i].x, dy = dstPts[i].y;
+    A.push([sx, sy, 1, 0, 0, 0, -dx * sx, -dx * sy]);
+    B.push(dx);
+    A.push([0, 0, 0, sx, sy, 1, -dy * sx, -dy * sy]);
+    B.push(dy);
+  }
+
+  // Gaussian elimination
+  const n = 8;
+  const M = A.map((row, i) => [...row, B[i]]);
+  for (let col = 0; col < n; col++) {
+    let maxRow = col;
+    for (let row = col + 1; row < n; row++) {
+      if (Math.abs(M[row][col]) > Math.abs(M[maxRow][col])) maxRow = row;
+    }
+    [M[col], M[maxRow]] = [M[maxRow], M[col]];
+    if (Math.abs(M[col][col]) < 1e-10) return null;
+    for (let row = col + 1; row < n; row++) {
+      const f = M[row][col] / M[col][col];
+      for (let j = col; j <= n; j++) M[row][j] -= f * M[col][j];
+    }
+  }
+  const x = new Array(n).fill(0);
+  for (let row = n - 1; row >= 0; row--) {
+    x[row] = M[row][n];
+    for (let col = row + 1; col < n; col++) x[row] -= M[row][col] * x[col];
+    x[row] /= M[row][row];
+    if (!Number.isFinite(x[row])) return null;
+  }
+
+  const [a, b, c, d, e, f, g, hh] = x;
+  // CSS matrix3d maps (x,y,0,1) → column-major 4x4
+  // H = [[a,b,c],[d,e,f],[g,h,1]] in row-major
+  // CSS matrix3d is column-major: matrix3d(m11,m21,m31,m41, m12,m22,m32,m42, ...)
+  return `matrix3d(${a},${d},0,${g}, ${b},${e},0,${hh}, 0,0,1,0, ${c},${f},0,1)`;
+}
+
 // ── CHARACTER BUILDER ─────────────────────────────────────────────────────────
 
 function buildCharacterMesh(user: CRMUser, isPlayer: boolean): THREE.Group {
