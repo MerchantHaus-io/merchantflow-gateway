@@ -248,7 +248,7 @@ const OpportunityCard = ({
           <div className="flex items-start justify-between gap-1">
             <h3 className={cn(
               "font-semibold text-xs leading-tight flex-1 min-w-0 transition-colors",
-              isGreyed ? "text-muted-foreground" : isComplete ? "text-white" : "text-foreground group-hover:text-indigo-500 dark:group-hover:text-indigo-400"
+              isGreyed ? "text-white" : isComplete ? "text-white" : "text-foreground group-hover:text-indigo-500 dark:group-hover:text-indigo-400"
             )}>
               {account?.name || "Unknown"}
             </h3>
