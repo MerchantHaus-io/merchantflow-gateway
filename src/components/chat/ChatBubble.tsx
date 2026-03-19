@@ -45,7 +45,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
   replyMessage, replySourceName, reactions: msgReactions, userId,
   editingMessageId, editContent, signedUrls,
   onSetReplyTo, onSetEditingMessage, onCancelEdit, onEditContent, onSubmitEdit,
-  onReaction, onProfileClick, onResolveAttachment,
+  onReaction, onDeleteMessage, onProfileClick, onResolveAttachment,
 }) => {
   const senderId = isChannel ? (msg as ChannelMessage).user_id : (msg as DirectMessage).sender_id;
   const senderEmail = isChannel ? (msg as ChannelMessage).user_email : "";
