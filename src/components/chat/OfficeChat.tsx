@@ -1561,6 +1561,80 @@ export default function OfficeChat({
         }
       }
 
+      // ── TV2 projection (north wall, facing south) ──
+      {
+        const tv2El = tv2OverlayRef.current;
+        if (tv2El) {
+          const t2X = 0, t2Y = 2.8, t2Z = -ROOM + 0.20; // screen z slightly in front of wall
+          const halfH2 = 0.96, halfW2 = 1.64;
+          const tv2Center = new THREE.Vector3(t2X, t2Y, t2Z);
+          // TL, TR, BR, BL — TV faces south (+Z), so X- is left from viewer
+          const corners2 = [
+            new THREE.Vector3(t2X - halfW2, t2Y + halfH2, t2Z),
+            new THREE.Vector3(t2X + halfW2, t2Y + halfH2, t2Z),
+            new THREE.Vector3(t2X + halfW2, t2Y - halfH2, t2Z),
+            new THREE.Vector3(t2X - halfW2, t2Y - halfH2, t2Z),
+          ];
+          const toTV2 = tv2Center.clone().sub(camera.position);
+          const camDir2 = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+          const dot2 = toTV2.normalize().dot(camDir2);
+          const dist2 = camera.position.distanceTo(tv2Center);
+          const nearClipBuffer2 = camera.near + 0.06;
+          const allInFront2 = corners2.every(c => c.clone().applyMatrix4(camera.matrixWorldInverse).z < -nearClipBuffer2);
+          const tooClose2 = dist2 < 2.6;
+
+          if (dot2 > 0.12 && dist2 < 30 && !tooClose2 && allInFront2) {
+            const cw = renderer.domElement.clientWidth;
+            const ch = renderer.domElement.clientHeight;
+            const screenPts2 = corners2.map(c => {
+              const p = c.clone().project(camera);
+              return { x: (p.x * 0.5 + 0.5) * cw, y: (-p.y * 0.5 + 0.5) * ch, z: p.z };
+            });
+            const clipValid2 = screenPts2.every(p => p.z >= -1 && p.z <= 1);
+            const allFinite2 = screenPts2.every(p => Number.isFinite(p.x) && Number.isFinite(p.y));
+            const xs2 = screenPts2.map(p => p.x), ys2 = screenPts2.map(p => p.y);
+            const minX2 = Math.min(...xs2), maxX2 = Math.max(...xs2);
+            const minY2 = Math.min(...ys2), maxY2 = Math.max(...ys2);
+            const bw2 = maxX2 - minX2, bh2 = maxY2 - minY2;
+            const onScreen2 = minX2 >= -10 && minY2 >= -10 && maxX2 <= cw + 10 && maxY2 <= ch + 10;
+            const bigEnough2 = bw2 > 20 && bh2 > 12;
+            const notFull2 = bw2 < cw * 0.95 && bh2 < ch * 0.95;
+
+            if (clipValid2 && allFinite2 && onScreen2 && bigEnough2 && notFull2) {
+              const dstPts2 = screenPts2.map(p => ({ x: p.x - minX2, y: p.y - minY2 }));
+              const m2 = computeMatrix3d(bw2, bh2, dstPts2);
+              if (m2) {
+                const nx2 = Math.round(minX2), ny2 = Math.round(minY2), nw2 = Math.round(bw2), nh2 = Math.round(bh2);
+                const prev2 = tv2OverlayRectRef.current;
+                if (Math.abs(prev2.x - nx2) > 1 || Math.abs(prev2.y - ny2) > 1 || Math.abs(prev2.w - nw2) > 1 || Math.abs(prev2.h - nh2) > 1) {
+                  tv2El.style.left = `${nx2}px`;
+                  tv2El.style.top = `${ny2}px`;
+                  tv2El.style.width = `${nw2}px`;
+                  tv2El.style.height = `${nh2}px`;
+                  tv2El.style.transformOrigin = '0 0';
+                  tv2El.style.transform = m2;
+                  tv2OverlayRectRef.current = { x: nx2, y: ny2, w: nw2, h: nh2 };
+                }
+                if (!tv2OverlayVisibleRef.current) {
+                  tv2OverlayVisibleRef.current = true;
+                  tv2El.style.visibility = 'visible';
+                  tv2El.style.opacity = '1';
+                }
+              } else if (tv2OverlayVisibleRef.current) {
+                tv2OverlayVisibleRef.current = false;
+                tv2El.style.visibility = 'hidden'; tv2El.style.opacity = '0';
+              }
+            } else if (tv2OverlayVisibleRef.current) {
+              tv2OverlayVisibleRef.current = false;
+              tv2El.style.visibility = 'hidden'; tv2El.style.opacity = '0';
+            }
+          } else if (tv2OverlayVisibleRef.current) {
+            tv2OverlayVisibleRef.current = false;
+            tv2El.style.visibility = 'hidden'; tv2El.style.opacity = '0';
+          }
+        }
+      }
+
       renderer.render(scene, camera);
     };
     state.raf = requestAnimationFrame(loop);
