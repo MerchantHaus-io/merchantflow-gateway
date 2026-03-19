@@ -36,6 +36,8 @@ interface OppData {
   updated_at: string;
   status: string | null;
   stage_entered_at?: string | null;
+  outcome_status?: string | null;
+  outcome_reason?: string | null;
   account?: { name: string } | null;
   contact?: { first_name: string | null; last_name: string | null } | null;
 }
