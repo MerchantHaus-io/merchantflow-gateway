@@ -269,7 +269,7 @@ const OpportunityCard = ({
 
           {/* Contact name */}
           {contactName && (
-            <p className={cn("text-[10px] truncate flex items-center gap-1", isGreyed ? "text-muted-foreground/60" : "text-muted-foreground")}>
+            <p className={cn("text-[10px] truncate flex items-center gap-1", isGreyed ? "text-white/70" : "text-muted-foreground")}>
               <User className="h-2.5 w-2.5 shrink-0" />
               {contactName}
             </p>
