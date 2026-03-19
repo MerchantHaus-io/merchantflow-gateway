@@ -241,56 +241,59 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
             Direct Messages
           </button>
           {dmsOpen && (
-          {filteredContacts.length === 0 ? (
-            <p className="text-center text-[hsl(var(--wa-meta))] text-sm py-6">No contacts found</p>
-          ) : (
-            filteredContacts.map((u) => {
-              const isActive = currentDMUserId === u.id && view === "dm";
-              return (
-                <button
-                  key={u.id}
-                  onClick={() => onSelectContact(u.id)}
-                  className={cn(
-                    "w-full flex items-center gap-3 px-4 py-3 transition-colors border-b border-[hsl(var(--wa-divider))]",
-                    isActive
-                      ? "bg-[hsl(var(--wa-sidebar-hover))]"
-                      : "hover:bg-[hsl(var(--wa-sidebar-hover))]"
-                  )}
-                >
-                  <div className="relative">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={u.avatarUrl || undefined} />
-                      <AvatarFallback className={cn(getAvatarColor(u.email || u.name), "text-white text-sm font-medium")}>
-                        {getInitials(u.name, u.email)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span
+            <>
+              {filteredContacts.length === 0 ? (
+                <p className="text-center text-[hsl(var(--wa-meta))] text-sm py-6">No contacts found</p>
+              ) : (
+                filteredContacts.map((u) => {
+                  const isActive = currentDMUserId === u.id && view === "dm";
+                  return (
+                    <button
+                      key={u.id}
+                      onClick={() => onSelectContact(u.id)}
                       className={cn(
-                        "absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[hsl(var(--wa-sidebar-bg))]",
-                        u.isOnline ? "bg-[hsl(var(--wa-accent))]" : "bg-[hsl(var(--wa-meta))]"
+                        "w-full flex items-center gap-3 px-4 py-3 transition-colors border-b border-[hsl(var(--wa-divider))]",
+                        isActive
+                          ? "bg-[hsl(var(--wa-sidebar-hover))]"
+                          : "hover:bg-[hsl(var(--wa-sidebar-hover))]"
                       )}
-                    />
-                  </div>
-                  <div className="flex-1 text-left min-w-0">
-                    <p className="font-medium text-sm text-[hsl(var(--wa-bubble-in-foreground))] truncate">
-                      {u.name}
-                    </p>
-                    <p className="text-xs text-[hsl(var(--wa-meta))] truncate">
-                      {u.isOnline
-                        ? "online"
-                        : u.lastSeen
-                        ? `last seen ${formatDistanceToNow(new Date(u.lastSeen), { addSuffix: true })}`
-                        : "offline"}
-                    </p>
-                  </div>
-                  {(u.unreadCount || 0) > 0 && (
-                    <span className="bg-[hsl(var(--wa-unread))] text-white text-[11px] font-medium min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center">
-                      {(u.unreadCount || 0) > 99 ? "99+" : u.unreadCount}
-                    </span>
-                  )}
-                </button>
-              );
-            })
+                    >
+                      <div className="relative">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={u.avatarUrl || undefined} />
+                          <AvatarFallback className={cn(getAvatarColor(u.email || u.name), "text-white text-sm font-medium")}>
+                            {getInitials(u.name, u.email)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span
+                          className={cn(
+                            "absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[hsl(var(--wa-sidebar-bg))]",
+                            u.isOnline ? "bg-[hsl(var(--wa-accent))]" : "bg-[hsl(var(--wa-meta))]"
+                          )}
+                        />
+                      </div>
+                      <div className="flex-1 text-left min-w-0">
+                        <p className="font-medium text-sm text-[hsl(var(--wa-bubble-in-foreground))] truncate">
+                          {u.name}
+                        </p>
+                        <p className="text-xs text-[hsl(var(--wa-meta))] truncate">
+                          {u.isOnline
+                            ? "online"
+                            : u.lastSeen
+                            ? `last seen ${formatDistanceToNow(new Date(u.lastSeen), { addSuffix: true })}`
+                            : "offline"}
+                        </p>
+                      </div>
+                      {(u.unreadCount || 0) > 0 && (
+                        <span className="bg-[hsl(var(--wa-unread))] text-white text-[11px] font-medium min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center">
+                          {(u.unreadCount || 0) > 99 ? "99+" : u.unreadCount}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })
+              )}
+            </>
           )}
         </div>
       </ScrollArea>
