@@ -912,6 +912,37 @@ function buildRoom(): THREE.Group {
   const tvStrip = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 4.2), new THREE.MeshStandardMaterial({ color: 0x111111 }));
   tvStrip.position.set(wOff - 0.08, 1.55, 6); g.add(tvStrip);
 
+  // ── TV2 (north wall, facing south into cubicle area) ──
+  const nWall = -ROOM; // z = -22
+  const tv2X = 0;
+  const tv2Y = 2.8;
+  const tv2Z = nWall + 0.12;
+  // Mount bracket
+  const tv2Bracket = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.06, 0.3), new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.2 }));
+  tv2Bracket.position.set(tv2X, 2.4, nWall + 0.3); g.add(tv2Bracket);
+  // Bezel
+  const tv2Bezel = new THREE.Mesh(new THREE.BoxGeometry(3.6, 2.2, 0.1), new THREE.MeshStandardMaterial({ color: 0x0a0a0a }));
+  tv2Bezel.position.set(tv2X, tv2Y, tv2Z + 0.04); g.add(tv2Bezel);
+  // Bezel glow strips
+  const glow2Mat = new THREE.MeshStandardMaterial({ color: 0x2a1a1a, emissive: 0xaa4422, emissiveIntensity: 0.4, transparent: true, opacity: 0.7 });
+  const g2Top = new THREE.Mesh(new THREE.BoxGeometry(3.45, 0.04, 0.02), glow2Mat);
+  g2Top.position.set(tv2X, tv2Y + 1.02, tv2Z + 0.1); g.add(g2Top);
+  const g2Bot = new THREE.Mesh(new THREE.BoxGeometry(3.45, 0.04, 0.02), glow2Mat);
+  g2Bot.position.set(tv2X, tv2Y - 1.02, tv2Z + 0.1); g.add(g2Bot);
+  const g2Left = new THREE.Mesh(new THREE.BoxGeometry(0.04, 2.0, 0.02), glow2Mat);
+  g2Left.position.set(tv2X - 1.73, tv2Y, tv2Z + 0.1); g.add(g2Left);
+  const g2Right = new THREE.Mesh(new THREE.BoxGeometry(0.04, 2.0, 0.02), glow2Mat);
+  g2Right.position.set(tv2X + 1.73, tv2Y, tv2Z + 0.1); g.add(g2Right);
+  // Ambient glow behind TV2
+  const tv2Glow = new THREE.PointLight(0xaa4422, 0.5, 5);
+  tv2Glow.position.set(tv2X, tv2Y, nWall - 0.3); g.add(tv2Glow);
+  // Screen
+  const tv2Screen = new THREE.Mesh(new THREE.BoxGeometry(3.4, 2.0, 0.06), new THREE.MeshStandardMaterial({ color: 0x0d1117, emissive: 0x2a1a1a, emissiveIntensity: 0.5 }));
+  tv2Screen.position.set(tv2X, tv2Y, tv2Z + 0.08); g.add(tv2Screen);
+  // Bottom strip
+  const tv2Strip = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.04, 0.04), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+  tv2Strip.position.set(tv2X, tv2Y - 1.1, tv2Z + 0.04); g.add(tv2Strip);
+
   // ── Plants ──
   const plantPositions: [number, number][] = [
     [-20, -20], [20, -20], [-20, 20], [20, 20],
