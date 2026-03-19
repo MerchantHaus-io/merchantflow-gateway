@@ -14,6 +14,7 @@ interface DeclineEmailRequest {
   accountName: string;
   outcomeStatus: string;
   outcomeReason: string;
+  outcomeNotes?: string;
 }
 
 const buildDeclineEmailHtml = (recipientName: string, accountName: string): string => `
@@ -58,7 +59,7 @@ const buildDeclineEmailHtml = (recipientName: string, accountName: string): stri
 
         <div class="divider"></div>
 
-        <p>If you have any questions regarding this decision, or if your circumstances change in the future, please don't hesitate to reach out to us at <a href="mailto:sales@merchanthaus.io" style="color: #18181b; text-decoration: underline;">sales@merchanthaus.io</a>. We would be happy to revisit your application.</p>
+        <p>If you have any questions regarding this decision, or if your circumstances change in the future, please don't hesitate to reach out to us at <a href="mailto:onboarding@merchanthaus.io" style="color: #18181b; text-decoration: underline;">onboarding@merchanthaus.io</a>. We would be happy to revisit your application.</p>
 
         <div class="closing">
           <p>Kind regards,</p>
@@ -73,13 +74,67 @@ const buildDeclineEmailHtml = (recipientName: string, accountName: string): stri
 </body>
 </html>`;
 
+const buildTeamNotificationHtml = (
+  recipientName: string,
+  accountName: string,
+  outcomeStatus: string,
+  outcomeReason: string,
+  outcomeNotes: string,
+  applicantEmail: string,
+): string => `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; margin: 0; padding: 0; background: #f4f4f5; }
+    .wrapper { max-width: 600px; margin: 0 auto; padding: 24px 16px; }
+    .card { background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .header { background: linear-gradient(135deg, #18181b 0%, #27272a 100%); padding: 20px 24px; }
+    .header h1 { margin: 0; font-size: 16px; font-weight: 600; color: #fafafa; }
+    .body { padding: 24px; }
+    .body p { margin: 0 0 12px; font-size: 14px; color: #3f3f46; }
+    .detail { background: #f4f4f5; border-radius: 8px; padding: 16px; margin: 16px 0; }
+    .detail-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; }
+    .detail-label { color: #71717a; font-weight: 500; }
+    .detail-value { color: #18181b; font-weight: 600; }
+    .footer { text-align: center; padding: 16px 24px; border-top: 1px solid #f4f4f5; }
+    .footer p { margin: 0; font-size: 11px; color: #a1a1aa; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="card">
+      <div class="header">
+        <h1>⛔ Application Declined — Account Update</h1>
+      </div>
+      <div class="body">
+        <p>The following application has been declined and a notification email has been sent to the applicant.</p>
+        <div class="detail">
+          <div class="detail-row"><span class="detail-label">Account</span><span class="detail-value">${accountName || 'N/A'}</span></div>
+          <div class="detail-row"><span class="detail-label">Applicant</span><span class="detail-value">${recipientName}</span></div>
+          <div class="detail-row"><span class="detail-label">Email</span><span class="detail-value">${applicantEmail}</span></div>
+          <div class="detail-row"><span class="detail-label">Outcome</span><span class="detail-value">${outcomeStatus}</span></div>
+          <div class="detail-row"><span class="detail-label">Reason</span><span class="detail-value">${outcomeReason}</span></div>
+          ${outcomeNotes ? `<div class="detail-row"><span class="detail-label">Notes</span><span class="detail-value">${outcomeNotes}</span></div>` : ''}
+        </div>
+      </div>
+      <div class="footer">
+        <p>Merchant Haus Ops Terminal</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { recipientEmail, recipientName, accountName, outcomeStatus, outcomeReason }: DeclineEmailRequest = await req.json();
+    const { recipientEmail, recipientName, accountName, outcomeStatus, outcomeReason, outcomeNotes }: DeclineEmailRequest = await req.json();
 
     if (!recipientEmail || !recipientName) {
       return new Response(
@@ -98,6 +153,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Sending application declined email to ${recipientEmail} for ${accountName} (${outcomeStatus}: ${outcomeReason})`);
 
+    // 1. Send decline email to applicant from noreply@
     const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -105,12 +161,11 @@ const handler = async (req: Request): Promise<Response> => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Merchant Haus <applications@merchanthaus.io>",
+        from: "Merchant Haus <noreply@merchanthaus.io>",
         to: [recipientEmail],
-        bcc: ["sales@merchanthaus.io"],
         subject: `Application Update — ${accountName || "Your Application"}`,
         html: buildDeclineEmailHtml(recipientName, accountName),
-        reply_to: "sales@merchanthaus.io",
+        reply_to: "onboarding@merchanthaus.io",
       }),
     });
 
@@ -124,6 +179,43 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     console.log("Decline email sent successfully:", result);
+
+    // 2. Send team notification email to all internal users
+    const teamRecipients = [
+      "support@merchanthaus.io",
+      "admin@merchanthaus.io",
+      "sales@merchanthaus.io",
+    ];
+
+    const teamEmailResponse = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "Merchant Haus <noreply@merchanthaus.io>",
+        to: teamRecipients,
+        subject: `⛔ Application Declined — ${accountName || recipientName}`,
+        html: buildTeamNotificationHtml(
+          recipientName,
+          accountName,
+          outcomeStatus,
+          outcomeReason,
+          outcomeNotes || '',
+          recipientEmail,
+        ),
+        reply_to: "onboarding@merchanthaus.io",
+      }),
+    });
+
+    const teamResult = await teamEmailResponse.json();
+    if (!teamEmailResponse.ok) {
+      console.error("Team notification email error:", teamResult);
+      // Don't fail the whole request — applicant email was sent
+    } else {
+      console.log("Team notification email sent:", teamResult);
+    }
 
     return new Response(
       JSON.stringify({ success: true }),
