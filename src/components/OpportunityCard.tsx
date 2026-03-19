@@ -212,7 +212,7 @@ const OpportunityCard = ({
           "cursor-grab active:cursor-grabbing group touch-manipulation relative",
           "rounded-xl",
           isGreyed
-            ? "pipeline-card border-l-[3px] border-l-transparent bg-zinc-500 dark:bg-zinc-700 opacity-60"
+            ? "pipeline-card-muted border-l-[3px] border-l-transparent bg-zinc-500 dark:bg-zinc-700 opacity-60"
             : isClosedWon
               ? "pipeline-card-live bg-gradient-to-br from-amber-50 via-yellow-50/80 to-amber-100/60 dark:from-amber-950/40 dark:via-yellow-950/30 dark:to-amber-900/20"
               : isComplete
