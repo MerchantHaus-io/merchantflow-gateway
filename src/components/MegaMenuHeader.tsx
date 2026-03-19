@@ -351,7 +351,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+            onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true }))}
             className={cn(
               "hidden lg:inline-flex h-8 gap-1.5 px-2.5 rounded-md text-xs",
               isDark
@@ -361,7 +361,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
           >
             <Search className="h-3.5 w-3.5" />
             <span className="text-muted-foreground/60">Search…</span>
-            <kbd className="text-[10px] font-mono bg-muted/50 px-1 py-0.5 rounded border border-border/50">⌘K</kbd>
+            <kbd className="text-[10px] font-mono bg-muted/50 px-1 py-0.5 rounded border border-border/50">Ctrl+K</kbd>
           </Button>
 
           {/* +New dropdown */}
