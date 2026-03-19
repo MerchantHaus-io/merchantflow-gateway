@@ -358,7 +358,7 @@ export function ActionItemsWidget() {
                 }}
               />
               <div className="flex items-center justify-between">
-                <span className="text-[10px] text-muted-foreground">⌘+Enter to post</span>
+                <span className="text-[10px] text-muted-foreground">Ctrl+Enter to post</span>
                 <Button size="sm" onClick={addItem} disabled={!newTitle.trim() || isUploading} className="bg-gold text-haus-charcoal hover:bg-gold/90 h-8 px-3 gap-1">
                   <Plus className="h-3.5 w-3.5" />
                   Post
