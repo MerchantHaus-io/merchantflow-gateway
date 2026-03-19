@@ -195,11 +195,48 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
         )
       )}
       <div
-        className="max-w-[75%] min-w-0 overflow-hidden"
+        className="max-w-[75%] min-w-0 relative group"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
+        {/* Hover actions - outside bubble to avoid overflow clipping */}
+        <div className={cn(
+          "absolute -top-8 z-10 opacity-0 group-hover:opacity-100 transition-all flex items-center gap-0.5",
+          "bg-[hsl(var(--wa-sidebar-bg))] border border-[hsl(var(--wa-divider))] rounded-lg shadow-lg p-0.5",
+          isOwn ? "left-0" : "right-0"
+        )}>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="p-1 hover:bg-white/10 rounded-md transition-colors" title="React">
+                <Smile className="h-3.5 w-3.5 text-[hsl(var(--wa-meta))]" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2" align="end">
+              <div className="flex gap-1">
+                {COMMON_EMOJIS.map(emoji => (
+                  <button key={emoji} onClick={() => onReaction(msg.id, emoji, isChannel ? 'channel' : 'direct')} className="text-lg hover:scale-125 transition-transform p-1">{emoji}</button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+          <button onClick={() => onSetReplyTo(msg)} className="p-1 hover:bg-white/10 rounded-md transition-colors" title="Reply">
+            <Reply className="h-3.5 w-3.5 text-[hsl(var(--wa-meta))]" />
+          </button>
+          {isOwn && (
+            <>
+              <button onClick={() => onSetEditingMessage(msg.id, msg.content)}
+                className="p-1 hover:bg-white/10 rounded-md transition-colors" title="Edit">
+                <Edit2 className="h-3.5 w-3.5 text-[hsl(var(--wa-meta))]" />
+              </button>
+              <button onClick={() => onDeleteMessage(msg.id, isChannel)}
+                className="p-1 hover:bg-red-500/20 rounded-md transition-colors" title="Delete">
+                <Trash2 className="h-3.5 w-3.5 text-[hsl(var(--wa-meta))] hover:text-red-400" />
+              </button>
+            </>
+          )}
+        </div>
+
         {/* Reply context */}
         {replyMessage && (
           <button
@@ -228,7 +265,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
         <div
           id={`msg-${msg.id}`}
           className={cn(
-            "relative group px-3 py-1.5 break-words overflow-hidden transition-all duration-300",
+            "relative px-3 py-1.5 break-words overflow-hidden transition-all duration-300",
             isOwn
               ? "bg-[hsl(var(--wa-bubble-out))] text-[hsl(var(--wa-bubble-out-foreground))] rounded-lg rounded-tr-none"
               : "bg-[hsl(var(--wa-bubble-in))] text-[hsl(var(--wa-bubble-in-foreground))] rounded-lg rounded-tl-none",
@@ -282,43 +319,6 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
           </div>
 
           {renderReactions()}
-
-          {/* Hover actions */}
-          <div className={cn(
-            "absolute top-1 opacity-0 group-hover:opacity-100 transition-all flex items-center gap-0.5",
-            "bg-[hsl(var(--wa-sidebar-bg))] border border-[hsl(var(--wa-divider))] rounded-lg shadow-lg p-0.5",
-            isOwn ? "left-1" : "right-1"
-          )}>
-            <Popover>
-              <PopoverTrigger asChild>
-                <button className="p-1 hover:bg-white/10 rounded-md transition-colors" title="React">
-                  <Smile className="h-3.5 w-3.5 text-[hsl(var(--wa-meta))]" />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-2" align="end">
-                <div className="flex gap-1">
-                  {COMMON_EMOJIS.map(emoji => (
-                    <button key={emoji} onClick={() => onReaction(msg.id, emoji, isChannel ? 'channel' : 'direct')} className="text-lg hover:scale-125 transition-transform p-1">{emoji}</button>
-                  ))}
-                </div>
-              </PopoverContent>
-            </Popover>
-            <button onClick={() => onSetReplyTo(msg)} className="p-1 hover:bg-white/10 rounded-md transition-colors" title="Reply">
-              <Reply className="h-3.5 w-3.5 text-[hsl(var(--wa-meta))]" />
-            </button>
-            {isOwn && (
-              <>
-                <button onClick={() => onSetEditingMessage(msg.id, msg.content)}
-                  className="p-1 hover:bg-white/10 rounded-md transition-colors" title="Edit">
-                  <Edit2 className="h-3.5 w-3.5 text-[hsl(var(--wa-meta))]" />
-                </button>
-                <button onClick={() => onDeleteMessage(msg.id, isChannel)}
-                  className="p-1 hover:bg-red-500/20 rounded-md transition-colors" title="Delete">
-                  <Trash2 className="h-3.5 w-3.5 text-[hsl(var(--wa-meta))] hover:text-red-400" />
-                </button>
-              </>
-            )}
-          </div>
         </div>
       </div>
     </div>
