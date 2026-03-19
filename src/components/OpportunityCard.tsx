@@ -178,7 +178,7 @@ const OpportunityCard = ({
   const cardRef = useRef<HTMLDivElement>(null);
   const showAssigneePill = opportunity.assigned_to && opportunity.assigned_to !== currentUser;
   const isOwnCard = opportunity.assigned_to === currentUser;
-  const isGreyed = !isOwnCard && !isAdmin && !!opportunity.assigned_to;
+  const isGreyed = !isOwnCard;
 
   return (
     <>
