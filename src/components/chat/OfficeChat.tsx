@@ -199,12 +199,15 @@ const INTERACT_POINTS: InteractionPoint[] = [
   { id: "whiteboard", pos: new THREE.Vector3(0, 0, -20.5), label: "Use whiteboard", action: "whiteboard", radius: 2.5 },
   // Meeting room table
   { id: "meeting-sit", pos: new THREE.Vector3(16, 0, 8), label: "Join meeting", action: "sit", radius: 2 },
-  // TV
+  // TV (east wall)
   { id: "tv", pos: new THREE.Vector3(20, 0, 6), label: "Toggle TV", action: "tv", radius: 3.5 },
+  // TV2 (north wall, near desks)
+  { id: "tv2", pos: new THREE.Vector3(0, 0, -20), label: "Toggle News", action: "tv2", radius: 3.5 },
 ];
 
 const INTERACT_DIST = 2.5;
-const TV_POS = new THREE.Vector3(20, 0, 6);  // East wall, visible from open floor
+const TV_POS = new THREE.Vector3(20, 0, 6);   // East wall
+const TV2_POS = new THREE.Vector3(0, 0, -20); // North wall, near desks
 
 /**
  * Compute a CSS matrix3d string that maps a rectangle (0,0)-(w,h)
@@ -909,6 +912,37 @@ function buildRoom(): THREE.Group {
   const tvStrip = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 4.2), new THREE.MeshStandardMaterial({ color: 0x111111 }));
   tvStrip.position.set(wOff - 0.08, 1.55, 6); g.add(tvStrip);
 
+  // ── TV2 (north wall, facing south into cubicle area) ──
+  const nWall = -ROOM; // z = -22
+  const tv2X = 0;
+  const tv2Y = 2.8;
+  const tv2Z = nWall + 0.12;
+  // Mount bracket
+  const tv2Bracket = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.06, 0.3), new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.2 }));
+  tv2Bracket.position.set(tv2X, 2.4, nWall + 0.3); g.add(tv2Bracket);
+  // Bezel
+  const tv2Bezel = new THREE.Mesh(new THREE.BoxGeometry(3.6, 2.2, 0.1), new THREE.MeshStandardMaterial({ color: 0x0a0a0a }));
+  tv2Bezel.position.set(tv2X, tv2Y, tv2Z + 0.04); g.add(tv2Bezel);
+  // Bezel glow strips
+  const glow2Mat = new THREE.MeshStandardMaterial({ color: 0x2a1a1a, emissive: 0xaa4422, emissiveIntensity: 0.4, transparent: true, opacity: 0.7 });
+  const g2Top = new THREE.Mesh(new THREE.BoxGeometry(3.45, 0.04, 0.02), glow2Mat);
+  g2Top.position.set(tv2X, tv2Y + 1.02, tv2Z + 0.1); g.add(g2Top);
+  const g2Bot = new THREE.Mesh(new THREE.BoxGeometry(3.45, 0.04, 0.02), glow2Mat);
+  g2Bot.position.set(tv2X, tv2Y - 1.02, tv2Z + 0.1); g.add(g2Bot);
+  const g2Left = new THREE.Mesh(new THREE.BoxGeometry(0.04, 2.0, 0.02), glow2Mat);
+  g2Left.position.set(tv2X - 1.73, tv2Y, tv2Z + 0.1); g.add(g2Left);
+  const g2Right = new THREE.Mesh(new THREE.BoxGeometry(0.04, 2.0, 0.02), glow2Mat);
+  g2Right.position.set(tv2X + 1.73, tv2Y, tv2Z + 0.1); g.add(g2Right);
+  // Ambient glow behind TV2
+  const tv2Glow = new THREE.PointLight(0xaa4422, 0.5, 5);
+  tv2Glow.position.set(tv2X, tv2Y, nWall - 0.3); g.add(tv2Glow);
+  // Screen
+  const tv2Screen = new THREE.Mesh(new THREE.BoxGeometry(3.4, 2.0, 0.06), new THREE.MeshStandardMaterial({ color: 0x0d1117, emissive: 0x2a1a1a, emissiveIntensity: 0.5 }));
+  tv2Screen.position.set(tv2X, tv2Y, tv2Z + 0.08); g.add(tv2Screen);
+  // Bottom strip
+  const tv2Strip = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.04, 0.04), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+  tv2Strip.position.set(tv2X, tv2Y - 1.1, tv2Z + 0.04); g.add(tv2Strip);
+
   // ── Plants ──
   const plantPositions: [number, number][] = [
     [-20, -20], [20, -20], [-20, 20], [20, 20],
@@ -1007,9 +1041,18 @@ export default function OfficeChat({
   const tvIframeRef = useRef<HTMLIFrameElement>(null);
   const tvOverlayVisibleRef = useRef(false);
 
+  // TV2 state (north wall, live feed)
+  const [nearTV2, setNearTV2] = useState(false);
+  const [tv2Unmuted, setTv2Unmuted] = useState(false);
+  const tv2OverlayRef = useRef<HTMLDivElement>(null);
+  const tv2IframeRef = useRef<HTMLIFrameElement>(null);
+  const tv2OverlayVisibleRef = useRef(false);
+  const tv2OverlayRectRef = useRef({ x: -1, y: -1, w: -1, h: -1 });
+
   // Randomised YouTube playlist for the office TV
   const TV_PLAYLIST = useRef(['T0C9d8anDT4', 'oM9WfDBRNcg']).current;
   const [tvVideoId] = useState(() => TV_PLAYLIST[Math.floor(Math.random() * TV_PLAYLIST.length)]);
+  const TV2_VIDEO_ID = '9siH2meEaGI'; // Live feed
 
   // Mute/unmute via postMessage so the video doesn't restart
   useEffect(() => {
@@ -1018,6 +1061,15 @@ export default function OfficeChat({
     const cmd = tvUnmuted ? 'unMute' : 'mute';
     iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: cmd, args: [] }), '*');
   }, [tvUnmuted]);
+
+  // Mute/unmute TV2
+  useEffect(() => {
+    const iframe = tv2IframeRef.current;
+    if (!iframe?.contentWindow) return;
+    const cmd = tv2Unmuted ? 'unMute' : 'mute';
+    iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: cmd, args: [] }), '*');
+  }, [tv2Unmuted]);
+
   const tvOverlayRectRef = useRef({ x: -1, y: -1, w: -1, h: -1 });
   const [nearInteract, setNearInteract] = useState<InteractionPoint | null>(null);
   const [isSitting, setIsSitting] = useState(false);
@@ -1375,6 +1427,11 @@ export default function OfficeChat({
         const nextNearTV = state.playerPos.distanceTo(TV_POS) < 3.5 && !closestUser;
         setNearTV(prev => prev === nextNearTV ? prev : nextNearTV);
       }
+      // TV2 proximity
+      {
+        const nextNearTV2 = state.playerPos.distanceTo(TV2_POS) < 3.5 && !closestUser;
+        setNearTV2(prev => prev === nextNearTV2 ? prev : nextNearTV2);
+      }
 
       // Interaction point proximity
       let closestIP: InteractionPoint | null = null;
@@ -1504,6 +1561,80 @@ export default function OfficeChat({
         }
       }
 
+      // ── TV2 projection (north wall, facing south) ──
+      {
+        const tv2El = tv2OverlayRef.current;
+        if (tv2El) {
+          const t2X = 0, t2Y = 2.8, t2Z = -ROOM + 0.20; // screen z slightly in front of wall
+          const halfH2 = 0.96, halfW2 = 1.64;
+          const tv2Center = new THREE.Vector3(t2X, t2Y, t2Z);
+          // TL, TR, BR, BL — TV faces south (+Z), so X- is left from viewer
+          const corners2 = [
+            new THREE.Vector3(t2X - halfW2, t2Y + halfH2, t2Z),
+            new THREE.Vector3(t2X + halfW2, t2Y + halfH2, t2Z),
+            new THREE.Vector3(t2X + halfW2, t2Y - halfH2, t2Z),
+            new THREE.Vector3(t2X - halfW2, t2Y - halfH2, t2Z),
+          ];
+          const toTV2 = tv2Center.clone().sub(camera.position);
+          const camDir2 = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+          const dot2 = toTV2.normalize().dot(camDir2);
+          const dist2 = camera.position.distanceTo(tv2Center);
+          const nearClipBuffer2 = camera.near + 0.06;
+          const allInFront2 = corners2.every(c => c.clone().applyMatrix4(camera.matrixWorldInverse).z < -nearClipBuffer2);
+          const tooClose2 = dist2 < 2.6;
+
+          if (dot2 > 0.12 && dist2 < 30 && !tooClose2 && allInFront2) {
+            const cw = renderer.domElement.clientWidth;
+            const ch = renderer.domElement.clientHeight;
+            const screenPts2 = corners2.map(c => {
+              const p = c.clone().project(camera);
+              return { x: (p.x * 0.5 + 0.5) * cw, y: (-p.y * 0.5 + 0.5) * ch, z: p.z };
+            });
+            const clipValid2 = screenPts2.every(p => p.z >= -1 && p.z <= 1);
+            const allFinite2 = screenPts2.every(p => Number.isFinite(p.x) && Number.isFinite(p.y));
+            const xs2 = screenPts2.map(p => p.x), ys2 = screenPts2.map(p => p.y);
+            const minX2 = Math.min(...xs2), maxX2 = Math.max(...xs2);
+            const minY2 = Math.min(...ys2), maxY2 = Math.max(...ys2);
+            const bw2 = maxX2 - minX2, bh2 = maxY2 - minY2;
+            const onScreen2 = minX2 >= -10 && minY2 >= -10 && maxX2 <= cw + 10 && maxY2 <= ch + 10;
+            const bigEnough2 = bw2 > 20 && bh2 > 12;
+            const notFull2 = bw2 < cw * 0.95 && bh2 < ch * 0.95;
+
+            if (clipValid2 && allFinite2 && onScreen2 && bigEnough2 && notFull2) {
+              const dstPts2 = screenPts2.map(p => ({ x: p.x - minX2, y: p.y - minY2 }));
+              const m2 = computeMatrix3d(bw2, bh2, dstPts2);
+              if (m2) {
+                const nx2 = Math.round(minX2), ny2 = Math.round(minY2), nw2 = Math.round(bw2), nh2 = Math.round(bh2);
+                const prev2 = tv2OverlayRectRef.current;
+                if (Math.abs(prev2.x - nx2) > 1 || Math.abs(prev2.y - ny2) > 1 || Math.abs(prev2.w - nw2) > 1 || Math.abs(prev2.h - nh2) > 1) {
+                  tv2El.style.left = `${nx2}px`;
+                  tv2El.style.top = `${ny2}px`;
+                  tv2El.style.width = `${nw2}px`;
+                  tv2El.style.height = `${nh2}px`;
+                  tv2El.style.transformOrigin = '0 0';
+                  tv2El.style.transform = m2;
+                  tv2OverlayRectRef.current = { x: nx2, y: ny2, w: nw2, h: nh2 };
+                }
+                if (!tv2OverlayVisibleRef.current) {
+                  tv2OverlayVisibleRef.current = true;
+                  tv2El.style.visibility = 'visible';
+                  tv2El.style.opacity = '1';
+                }
+              } else if (tv2OverlayVisibleRef.current) {
+                tv2OverlayVisibleRef.current = false;
+                tv2El.style.visibility = 'hidden'; tv2El.style.opacity = '0';
+              }
+            } else if (tv2OverlayVisibleRef.current) {
+              tv2OverlayVisibleRef.current = false;
+              tv2El.style.visibility = 'hidden'; tv2El.style.opacity = '0';
+            }
+          } else if (tv2OverlayVisibleRef.current) {
+            tv2OverlayVisibleRef.current = false;
+            tv2El.style.visibility = 'hidden'; tv2El.style.opacity = '0';
+          }
+        }
+      }
+
       renderer.render(scene, camera);
     };
     state.raf = requestAnimationFrame(loop);
@@ -1530,6 +1661,8 @@ export default function OfficeChat({
           document.exitPointerLock();
         } else if (nearTV && !activeChat && !showTerminal) {
           setTvUnmuted(prev => !prev);
+        } else if (nearTV2 && !activeChat && !showTerminal) {
+          setTv2Unmuted(prev => !prev);
         } else if (nearDesk && !activeChat && !showTerminal) {
           setShowTerminal(true); setDeskView("computer");
           document.exitPointerLock();
@@ -1544,6 +1677,8 @@ export default function OfficeChat({
             setTimeout(() => setCoffeeEmote(false), 3000);
           } else if (nearInteract.action === "tv") {
             setTvUnmuted(prev => !prev);
+          } else if (nearInteract.action === "tv2") {
+            setTv2Unmuted(prev => !prev);
           }
         }
       }
@@ -1554,7 +1689,7 @@ export default function OfficeChat({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [nearby, activeChat, nearDesk, showTerminal, nearTV, nearInteract, showWhiteboard]);
+  }, [nearby, activeChat, nearDesk, showTerminal, nearTV, nearTV2, nearInteract, showWhiteboard]);
 
   // Presence sync
   useEffect(() => {
@@ -1685,7 +1820,7 @@ export default function OfficeChat({
       )}
 
       {/* Interaction prompt (generic) */}
-      {!isMobile && interactPrompt && !nearby && !nearDesk && !nearTV && (
+      {!isMobile && interactPrompt && !nearby && !nearDesk && !nearTV && !nearTV2 && (
         <div className="absolute bottom-24 left-1/2 -translate-x-1/2 pointer-events-none">
           <Badge className="bg-black/80 text-white border-0 text-sm px-4 py-2">
             Press <kbd className="mx-1 px-1 bg-white/20 rounded">E</kbd> {interactPrompt}
@@ -1707,6 +1842,15 @@ export default function OfficeChat({
         <div className="absolute bottom-24 left-1/2 -translate-x-1/2 pointer-events-none">
           <Badge className="bg-black/80 text-white border-0 text-sm px-4 py-2">
             Press <kbd className="mx-1 px-1 bg-white/20 rounded">E</kbd> to {tvUnmuted ? "mute" : "unmute"} TV
+          </Badge>
+        </div>
+      )}
+
+      {/* Near TV2 */}
+      {nearTV2 && !activeChat && !showTerminal && !isMobile && (
+        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 pointer-events-none">
+          <Badge className="bg-black/80 text-white border-0 text-sm px-4 py-2">
+            Press <kbd className="mx-1 px-1 bg-white/20 rounded">E</kbd> to {tv2Unmuted ? "mute" : "unmute"} News
           </Badge>
         </div>
       )}
@@ -2042,6 +2186,35 @@ export default function OfficeChat({
         }} />
       </div>
 
+      {/* TV2 — projected onto north wall via ref */}
+      <div
+        ref={tv2OverlayRef}
+        className="absolute z-10 overflow-hidden pointer-events-none"
+        style={{ visibility: 'hidden', opacity: 0, transition: 'opacity 120ms linear', willChange: 'transform, width, height', backgroundColor: '#0d1117' }}
+      >
+        <iframe
+          ref={tv2IframeRef}
+          src={`https://www.youtube-nocookie.com/embed/${TV2_VIDEO_ID}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&playsinline=1&enablejsapi=1`}
+          className="w-full h-full border-0 pointer-events-none"
+          title="Office TV2 - Live Feed"
+          allow="autoplay; encrypted-media; picture-in-picture"
+          style={{ pointerEvents: "none", backgroundColor: "#0d1117" }}
+        />
+        {/* Scanline overlay */}
+        <div className="absolute inset-0 pointer-events-none" style={{
+          background: 'repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px)',
+          mixBlendMode: 'multiply',
+        }} />
+        {/* Subtle vignette */}
+        <div className="absolute inset-0 pointer-events-none" style={{
+          background: 'radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.35) 100%)',
+        }} />
+        {/* Inner bezel glow edge — warm tint */}
+        <div className="absolute inset-0 pointer-events-none rounded-sm" style={{
+          boxShadow: 'inset 0 0 8px 2px rgba(170,68,34,0.25), inset 0 0 20px 4px rgba(0,0,0,0.4)',
+        }} />
+      </div>
+
       {/* Controls hint */}
       {!isMobile && (
         <div className="absolute top-3 left-3 pointer-events-none">
@@ -2099,13 +2272,14 @@ export default function OfficeChat({
             </div>
           </div>
 
-          {(nearby || nearDesk || nearTV || nearInteract) && (
+          {(nearby || nearDesk || nearTV || nearTV2 || nearInteract) && (
             <button
               className="mobile-interact-btn absolute bottom-8 right-8 z-20 w-16 h-16 rounded-full bg-primary/80 text-white font-bold text-xs flex items-center justify-center border-2 border-white/30 active:scale-90 transition-transform"
               onTouchStart={(e) => {
                 e.stopPropagation();
                 if (nearby) setActiveChat(nearby);
                 else if (nearTV) setTvUnmuted(prev => !prev);
+                else if (nearTV2) setTv2Unmuted(prev => !prev);
                 else if (nearDesk) { setShowTerminal(true); setDeskView("computer"); }
                 else if (nearInteract) {
                   if (nearInteract.action === "sit") setIsSitting(prev => !prev);
@@ -2114,14 +2288,14 @@ export default function OfficeChat({
                 }
               }}
             >
-              {nearby ? `Chat\n${nearby.name}` : nearTV ? (tvUnmuted ? "Mute" : "Unmute") : nearDesk ? "Terminal" : nearInteract?.label ?? "Interact"}
+              {nearby ? `Chat\n${nearby.name}` : nearTV ? (tvUnmuted ? "Mute" : "Unmute") : nearTV2 ? (tv2Unmuted ? "Mute" : "Unmute") : nearDesk ? "Terminal" : nearInteract?.label ?? "Interact"}
             </button>
           )}
 
-          {(nearby || nearDesk || nearTV || nearInteract) && (
+          {(nearby || nearDesk || nearTV || nearTV2 || nearInteract) && (
             <div className="absolute bottom-28 left-1/2 -translate-x-1/2 pointer-events-none z-20">
               <Badge className="bg-black/80 text-white border-0 text-xs px-3 py-1">
-                {nearby ? `Near ${nearby.name}` : nearTV ? "Near TV" : nearDesk ? "Near Terminal" : nearInteract?.label ?? ""}
+                {nearby ? `Near ${nearby.name}` : nearTV ? "Near TV" : nearTV2 ? "Near News" : nearDesk ? "Near Terminal" : nearInteract?.label ?? ""}
               </Badge>
             </div>
           )}
