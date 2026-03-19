@@ -186,21 +186,9 @@ const Index = () => {
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
   const [splashType, setSplashType] = useState<"1up" | "level-up" | null>(null);
   const [listSelectedOpp, setListSelectedOpp] = useState<Opportunity | null>(null);
-  const [isFocusMode, setIsFocusMode] = useState(false);
-  const [searchParams, setSearchParams] = useSearchParams();
-  const {
-    toast
-  } = useToast();
+  const [searchParams] = useSearchParams();
+  const { toast } = useToast();
   const { ensureSlaTask } = useTasks();
-
-  // Activate focus mode from URL param (e.g. header nav)
-  useEffect(() => {
-    if (searchParams.get('focus') === 'true') {
-      setIsFocusMode(true);
-      searchParams.delete('focus');
-      setSearchParams(searchParams, { replace: true });
-    }
-  }, [searchParams, setSearchParams]);
   
   // Get current user's display name for filtering
   const currentUserDisplayName = EMAIL_TO_USER[user?.email?.toLowerCase() || ''] || user?.email?.split('@')[0] || '';
@@ -815,9 +803,9 @@ const Index = () => {
   return (
     <>
 
-      <AppLayout onNewApplication={() => setIsModalOpen(true)} focusMode={isFocusMode}>
-        <div className={isFocusMode ? "flex-1 flex flex-col min-h-0 overflow-hidden" : "flex-1 flex flex-col gap-2 sm:gap-3 p-2 sm:p-3 lg:p-4 min-h-0 overflow-hidden mobile-landscape:gap-2"}>
-        {!isFocusMode && (
+      <AppLayout onNewApplication={() => setIsModalOpen(true)}>
+        <div className="flex-1 flex flex-col gap-2 sm:gap-3 p-2 sm:p-3 lg:p-4 min-h-0 overflow-hidden mobile-landscape:gap-2">
+        {(
            <header className="h-12 flex items-center px-4 rounded-lg border shadow-sm backdrop-blur-md gap-2 flex-shrink-0 sticky top-0 z-20 border-border/60 bg-card/90 dark:bg-card/80">
             
             <a
@@ -852,9 +840,9 @@ const Index = () => {
             </div>
           </header>
         )}
-        <main className={isFocusMode ? "flex-1 flex flex-col min-h-0 overflow-hidden" : "flex-1 flex flex-col min-h-0 overflow-hidden"}>
+        <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
           {/* Pipeline board — takes ~75% of available space */}
-          <div className={isFocusMode ? "flex-1 flex flex-col min-h-0" : "flex flex-col min-h-0"} style={isFocusMode ? undefined : { flex: '3 1 0%' }}>
+          <div className="flex flex-col min-h-0" style={{ flex: '3 1 0%' }}>
             <UnifiedPipelineBoard
               opportunities={filteredOpportunities}
               onUpdateOpportunity={handleUpdateOpportunity}
@@ -867,13 +855,11 @@ const Index = () => {
               onMoveToProcessing={handleMoveToProcessing}
               onRefresh={fetchOpportunities}
               currentUser={currentUserDisplayName || undefined}
-              focusMode={isFocusMode}
-              onFocusModeChange={setIsFocusMode}
               isAdmin={isAdmin}
             />
           </div>
           {/* Pipeline list view — takes ~25% of available space */}
-          {!isFocusMode && (
+          {(
             <div className="flex flex-col min-h-0 overflow-hidden" style={{ flex: '1 1 0%', minHeight: '180px' }}>
               <PipelineListView
                 opportunities={filteredOpportunities}

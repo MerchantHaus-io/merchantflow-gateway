@@ -22,8 +22,6 @@ interface AppLayoutProps {
   pageTitle?: string;
   /** Optional header actions slot */
   headerActions?: ReactNode;
-  /** When true, all chrome (header, footer, widgets) is hidden for focus mode */
-  focusMode?: boolean;
 }
 
 export function AppLayout({
@@ -31,7 +29,6 @@ export function AppLayout({
   onNewApplication,
   pageTitle,
   headerActions,
-  focusMode = false,
 }: AppLayoutProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
@@ -44,16 +41,15 @@ export function AppLayout({
   const { pullDistance, isRefreshing } = usePullToRefresh({
     containerRef: scrollRef,
     onRefresh: handleRefresh,
-    disabled: focusMode,
   });
 
   const showIndicator = pullDistance > 0 || isRefreshing;
 
   return (
     <div className="h-screen h-dvh min-h-0 flex flex-col w-full overflow-hidden">
-      {!focusMode && <MegaMenuHeader onNewApplication={onNewApplication} />}
-      <main className={cn("flex-1 flex flex-col min-h-0 overflow-hidden", focusMode && "transition-all duration-500")}>
-        {!focusMode && (pageTitle || headerActions) && (
+      <MegaMenuHeader onNewApplication={onNewApplication} />
+      <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        {(pageTitle || headerActions) && (
           <div className="gradient-header px-4 lg:px-6 py-3">
             <div className="flex items-center justify-between gap-4 flex-wrap">
               {pageTitle && (
@@ -82,22 +78,22 @@ export function AppLayout({
 
         <div
           ref={scrollRef}
-          className={focusMode ? "flex-1 min-h-0 overflow-hidden" : "flex-1 min-h-0 overflow-y-auto scroll-smooth pb-16 lg:pb-0"}
+          className="flex-1 min-h-0 overflow-y-auto scroll-smooth pb-16 lg:pb-0"
         >
           <PageTransition key={location.pathname}>
             {children}
           </PageTransition>
         </div>
       </main>
-      {!focusMode && <MobileBottomNav />}
-      {!focusMode && <FloatingChat />}
-      {!focusMode && <ActionItemsWidget />}
-      {!focusMode && <BroadcastPopup />}
+      <MobileBottomNav />
+      <FloatingChat />
+      <ActionItemsWidget />
+      <BroadcastPopup />
       <ComplianceBroadcast />
       <AtriaBroadcast />
       {/* AtriaFAB removed — AI is now a tab inside FloatingChat */}
-      {!focusMode && isMobile && !isChatRoute && <MobileAppDock />}
-      {!focusMode && <OfficeSimulatorOverlay />}
+      {isMobile && !isChatRoute && <MobileAppDock />}
+      <OfficeSimulatorOverlay />
     </div>
   );
 }
