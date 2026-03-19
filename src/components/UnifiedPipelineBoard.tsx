@@ -36,26 +36,15 @@ const UnifiedPipelineBoard = ({
   onMoveToProcessing,
   onRefresh,
   currentUser,
-  focusMode: externalFocusMode,
-  onFocusModeChange,
   isAdmin,
 }: UnifiedPipelineBoardProps) => {
   const [draggedOpportunity, setDraggedOpportunity] = useState<Opportunity | null>(null);
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
   const [isCompact, setIsCompact] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [internalFocusMode, setInternalFocusMode] = useState(false);
-  const [showExitButton, setShowExitButton] = useState(false);
   const [currentColumnIndex, setCurrentColumnIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
-
-  // Use external focus mode if provided, otherwise internal
-  const isFocusMode = externalFocusMode !== undefined ? externalFocusMode : internalFocusMode;
-  const setIsFocusMode = useCallback((active: boolean) => {
-    if (onFocusModeChange) onFocusModeChange(active);
-    else setInternalFocusMode(active);
-  }, [onFocusModeChange]);
 
   const handleRefresh = async () => {
     if (!onRefresh || isRefreshing) return;
