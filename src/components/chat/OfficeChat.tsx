@@ -1661,6 +1661,8 @@ export default function OfficeChat({
           document.exitPointerLock();
         } else if (nearTV && !activeChat && !showTerminal) {
           setTvUnmuted(prev => !prev);
+        } else if (nearTV2 && !activeChat && !showTerminal) {
+          setTv2Unmuted(prev => !prev);
         } else if (nearDesk && !activeChat && !showTerminal) {
           setShowTerminal(true); setDeskView("computer");
           document.exitPointerLock();
@@ -1675,6 +1677,8 @@ export default function OfficeChat({
             setTimeout(() => setCoffeeEmote(false), 3000);
           } else if (nearInteract.action === "tv") {
             setTvUnmuted(prev => !prev);
+          } else if (nearInteract.action === "tv2") {
+            setTv2Unmuted(prev => !prev);
           }
         }
       }
@@ -1685,7 +1689,7 @@ export default function OfficeChat({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [nearby, activeChat, nearDesk, showTerminal, nearTV, nearInteract, showWhiteboard]);
+  }, [nearby, activeChat, nearDesk, showTerminal, nearTV, nearTV2, nearInteract, showWhiteboard]);
 
   // Presence sync
   useEffect(() => {
