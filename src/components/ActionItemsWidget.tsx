@@ -156,6 +156,26 @@ export function ActionItemsWidget() {
         status: "open",
         priority: "medium",
       });
+
+      // Send email notification to all tagged users
+      if (selectedUsers.length > 0) {
+        const taggedEmails = selectedUsers
+          .map((name) => profiles.find((p) => p.full_name === name || p.email === name)?.email)
+          .filter(Boolean) as string[];
+
+        if (taggedEmails.length > 0) {
+          const posterName = profiles.find((p) => p.id === user.id)?.full_name || user.email || "Someone";
+          supabase.functions.invoke("send-notice-email", {
+            body: {
+              title: newTitle.trim(),
+              postedBy: posterName,
+              taggedUsers: taggedEmails,
+              attachmentName,
+            },
+          }).catch((err) => console.error("Notice email error:", err));
+        }
+      }
+
       playNoticeBoardSound();
       setNewTitle("");
       setSelectedUsers([]);
@@ -338,7 +358,7 @@ export function ActionItemsWidget() {
                 }}
               />
               <div className="flex items-center justify-between">
-                <span className="text-[10px] text-muted-foreground">⌘+Enter to post</span>
+                <span className="text-[10px] text-muted-foreground">Ctrl+Enter to post</span>
                 <Button size="sm" onClick={addItem} disabled={!newTitle.trim() || isUploading} className="bg-gold text-haus-charcoal hover:bg-gold/90 h-8 px-3 gap-1">
                   <Plus className="h-3.5 w-3.5" />
                   Post
