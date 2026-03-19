@@ -212,7 +212,7 @@ const OpportunityCard = ({
           "cursor-grab active:cursor-grabbing group touch-manipulation relative",
           "rounded-xl",
           isGreyed
-            ? "pipeline-card border-l-[3px] border-l-muted-foreground/20 bg-muted/60 opacity-50"
+            ? "pipeline-card border-l-[3px] border-l-transparent bg-zinc-500 dark:bg-zinc-700 opacity-60"
             : isClosedWon
               ? "pipeline-card-live bg-gradient-to-br from-amber-50 via-yellow-50/80 to-amber-100/60 dark:from-amber-950/40 dark:via-yellow-950/30 dark:to-amber-900/20"
               : isComplete
@@ -248,7 +248,7 @@ const OpportunityCard = ({
           <div className="flex items-start justify-between gap-1">
             <h3 className={cn(
               "font-semibold text-xs leading-tight flex-1 min-w-0 transition-colors",
-              isGreyed ? "text-muted-foreground" : isComplete ? "text-white" : "text-foreground group-hover:text-indigo-500 dark:group-hover:text-indigo-400"
+              isGreyed ? "text-white" : isComplete ? "text-white" : "text-foreground group-hover:text-indigo-500 dark:group-hover:text-indigo-400"
             )}>
               {account?.name || "Unknown"}
             </h3>
@@ -269,7 +269,7 @@ const OpportunityCard = ({
 
           {/* Contact name */}
           {contactName && (
-            <p className={cn("text-[10px] truncate flex items-center gap-1", isGreyed ? "text-muted-foreground/60" : "text-muted-foreground")}>
+            <p className={cn("text-[10px] truncate flex items-center gap-1", isGreyed ? "text-white/70" : "text-muted-foreground")}>
               <User className="h-2.5 w-2.5 shrink-0" />
               {contactName}
             </p>
@@ -309,10 +309,7 @@ const OpportunityCard = ({
             {isGreyed ? (
               <div className="flex items-center w-full">
                 {opportunity.assigned_to && (
-                  <span className={cn(
-                    "text-[9px] font-bold px-1.5 py-0.5 rounded-full truncate",
-                    teamColors.bg, teamColors.text
-                  )}>
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full truncate bg-white/20 text-white">
                     {opportunity.assigned_to}
                   </span>
                 )}
