@@ -65,3 +65,9 @@ verify_jwt = false
 
 [functions.send-application-declined]
 verify_jwt = false
+
+[functions.send-terminal-update-email]
+verify_jwt = false
+
+[functions.send-account-closed]
+verify_jwt = false

@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AppLayout } from "@/components/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   Sparkles,
   Bug,
@@ -22,6 +23,7 @@ import {
   FileText,
   Phone,
   Download,
+  Mail,
   type LucideIcon,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
@@ -55,6 +57,7 @@ interface DayBlock {
 }
 
 export default function TerminalUpdates() {
+  const [sending, setSending] = useState(false);
   const { data: updates, isLoading } = useQuery({
     queryKey: ["terminal-updates"],
     queryFn: async () => {
@@ -102,6 +105,26 @@ export default function TerminalUpdates() {
     URL.revokeObjectURL(url);
   }, [dayBlocks]);
 
+  const sendUpdateEmail = useCallback(async (date?: string) => {
+    setSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-terminal-update-email", {
+        body: date ? { date } : {},
+      });
+      if (error) throw error;
+      if (data?.success) {
+        toast.success(`Update email sent to ${data.recipients} team members`);
+      } else {
+        toast.info(data?.message || "No updates to send");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to send";
+      toast.error(msg);
+    } finally {
+      setSending(false);
+    }
+  }, []);
+
   return (
     <AppLayout>
       <div className="max-w-3xl mx-auto py-6 px-4 sm:px-6 space-y-8">
@@ -112,10 +135,16 @@ export default function TerminalUpdates() {
               What's new, fixed, and improved — updated daily.
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={downloadMarkdown} className="gap-1.5" disabled={isLoading}>
-            <Download className="h-4 w-4" />
-            Download .md
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => sendUpdateEmail()} className="gap-1.5" disabled={isLoading || sending}>
+              <Mail className="h-4 w-4" />
+              {sending ? "Sending…" : "Email Team"}
+            </Button>
+            <Button variant="outline" size="sm" onClick={downloadMarkdown} className="gap-1.5" disabled={isLoading}>
+              <Download className="h-4 w-4" />
+              Download .md
+            </Button>
+          </div>
         </div>
 
         {isLoading ? (
