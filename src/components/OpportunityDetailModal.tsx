@@ -1009,6 +1009,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                     {/* Outcome Selector */}
                     <OutcomeSelector
                       currentOutcome={opportunity.outcome_status as OutcomeStatus | null}
+                      currentReason={opportunity.outcome_reason}
                       disabled={!!opportunity.outcome_status}
                       onSelect={async (outcome, reason, notes) => {
                         const isNegativeOutcome = outcome !== 'closed_won';
