@@ -840,9 +840,9 @@ const Index = () => {
             </div>
           </header>
         )}
-        <main className={isFocusMode ? "flex-1 flex flex-col min-h-0 overflow-hidden" : "flex-1 flex flex-col min-h-0 overflow-hidden"}>
+        <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
           {/* Pipeline board — takes ~75% of available space */}
-          <div className={isFocusMode ? "flex-1 flex flex-col min-h-0" : "flex flex-col min-h-0"} style={isFocusMode ? undefined : { flex: '3 1 0%' }}>
+          <div className="flex flex-col min-h-0" style={{ flex: '3 1 0%' }}>
             <UnifiedPipelineBoard
               opportunities={filteredOpportunities}
               onUpdateOpportunity={handleUpdateOpportunity}
@@ -855,13 +855,11 @@ const Index = () => {
               onMoveToProcessing={handleMoveToProcessing}
               onRefresh={fetchOpportunities}
               currentUser={currentUserDisplayName || undefined}
-              focusMode={isFocusMode}
-              onFocusModeChange={setIsFocusMode}
               isAdmin={isAdmin}
             />
           </div>
           {/* Pipeline list view — takes ~25% of available space */}
-          {!isFocusMode && (
+          {(
             <div className="flex flex-col min-h-0 overflow-hidden" style={{ flex: '1 1 0%', minHeight: '180px' }}>
               <PipelineListView
                 opportunities={filteredOpportunities}
