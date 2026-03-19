@@ -105,6 +105,26 @@ export default function TerminalUpdates() {
     URL.revokeObjectURL(url);
   }, [dayBlocks]);
 
+  const sendUpdateEmail = useCallback(async (date?: string) => {
+    setSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-terminal-update-email", {
+        body: date ? { date } : {},
+      });
+      if (error) throw error;
+      if (data?.success) {
+        toast.success(`Update email sent to ${data.recipients} team members`);
+      } else {
+        toast.info(data?.message || "No updates to send");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to send";
+      toast.error(msg);
+    } finally {
+      setSending(false);
+    }
+  }, []);
+
   return (
     <AppLayout>
       <div className="max-w-3xl mx-auto py-6 px-4 sm:px-6 space-y-8">
