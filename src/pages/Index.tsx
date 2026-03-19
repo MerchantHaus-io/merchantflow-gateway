@@ -187,6 +187,8 @@ const Index = () => {
   const [splashType, setSplashType] = useState<"1up" | "level-up" | null>(null);
   const [listSelectedOpp, setListSelectedOpp] = useState<Opportunity | null>(null);
   const [searchParams] = useSearchParams();
+  const { toast } = useToast();
+  const { ensureSlaTask } = useTasks();
   
   // Get current user's display name for filtering
   const currentUserDisplayName = EMAIL_TO_USER[user?.email?.toLowerCase() || ''] || user?.email?.split('@')[0] || '';
