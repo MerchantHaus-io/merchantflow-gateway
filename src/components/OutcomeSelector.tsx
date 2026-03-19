@@ -19,11 +19,12 @@ const OUTCOME_ICONS: Record<OutcomeStatus, React.ReactNode> = {
 
 interface OutcomeSelectorProps {
   currentOutcome?: OutcomeStatus | null;
+  currentReason?: string | null;
   onSelect: (outcome: OutcomeStatus, reason: string, notes: string) => Promise<void>;
   disabled?: boolean;
 }
 
-export const OutcomeSelector = ({ currentOutcome, onSelect, disabled }: OutcomeSelectorProps) => {
+export const OutcomeSelector = ({ currentOutcome, currentReason, onSelect, disabled }: OutcomeSelectorProps) => {
   const [open, setOpen] = useState(false);
   const [selectedOutcome, setSelectedOutcome] = useState<OutcomeStatus | null>(null);
   const [reason, setReason] = useState("");
@@ -47,10 +48,15 @@ export const OutcomeSelector = ({ currentOutcome, onSelect, disabled }: OutcomeS
   if (currentOutcome) {
     const cfg = OUTCOME_CONFIG[currentOutcome];
     return (
-      <Badge variant="outline" className={cn("gap-1.5 text-xs font-semibold border", cfg.bgClass, cfg.textClass)}>
-        <span>{cfg.icon}</span>
-        {cfg.label}
-      </Badge>
+      <div className="flex flex-col gap-0.5">
+        <Badge variant="outline" className={cn("gap-1.5 text-xs font-semibold border", cfg.bgClass, cfg.textClass)}>
+          <span>{cfg.icon}</span>
+          {cfg.label}
+        </Badge>
+        {currentReason && (
+          <span className="text-[10px] text-muted-foreground pl-0.5">{currentReason}</span>
+        )}
+      </div>
     );
   }
 
