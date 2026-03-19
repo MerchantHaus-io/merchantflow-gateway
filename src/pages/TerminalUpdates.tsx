@@ -57,6 +57,7 @@ interface DayBlock {
 }
 
 export default function TerminalUpdates() {
+  const [sending, setSending] = useState(false);
   const { data: updates, isLoading } = useQuery({
     queryKey: ["terminal-updates"],
     queryFn: async () => {
