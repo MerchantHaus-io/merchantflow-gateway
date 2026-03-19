@@ -1,7 +1,7 @@
 import React, { useCallback, useRef } from "react";
 import { Bot } from "lucide-react";
 import {
-  Check, CheckCheck, Reply, Edit2, Smile, File, Download,
+  Check, CheckCheck, Reply, Edit2, Smile, File, Download, Trash2,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -35,6 +35,7 @@ interface ChatBubbleProps {
   onEditContent: (val: string) => void;
   onSubmitEdit: (id: string, isChannel: boolean) => void;
   onReaction: (messageId: string, emoji: string, type: 'channel' | 'direct') => void;
+  onDeleteMessage: (messageId: string, isChannel: boolean) => void;
   onProfileClick: (userId: string) => void;
   onResolveAttachment: (msgId: string, url: string) => void;
 }
@@ -44,7 +45,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
   replyMessage, replySourceName, reactions: msgReactions, userId,
   editingMessageId, editContent, signedUrls,
   onSetReplyTo, onSetEditingMessage, onCancelEdit, onEditContent, onSubmitEdit,
-  onReaction, onProfileClick, onResolveAttachment,
+  onReaction, onDeleteMessage, onProfileClick, onResolveAttachment,
 }) => {
   const senderId = isChannel ? (msg as ChannelMessage).user_id : (msg as DirectMessage).sender_id;
   const senderEmail = isChannel ? (msg as ChannelMessage).user_email : "";
@@ -306,10 +307,16 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
               <Reply className="h-3.5 w-3.5 text-[hsl(var(--wa-meta))]" />
             </button>
             {isOwn && (
-              <button onClick={() => onSetEditingMessage(msg.id, msg.content)}
-                className="p-1 hover:bg-white/10 rounded-md transition-colors" title="Edit">
-                <Edit2 className="h-3.5 w-3.5 text-[hsl(var(--wa-meta))]" />
-              </button>
+              <>
+                <button onClick={() => onSetEditingMessage(msg.id, msg.content)}
+                  className="p-1 hover:bg-white/10 rounded-md transition-colors" title="Edit">
+                  <Edit2 className="h-3.5 w-3.5 text-[hsl(var(--wa-meta))]" />
+                </button>
+                <button onClick={() => onDeleteMessage(msg.id, isChannel)}
+                  className="p-1 hover:bg-red-500/20 rounded-md transition-colors" title="Delete">
+                  <Trash2 className="h-3.5 w-3.5 text-[hsl(var(--wa-meta))] hover:text-red-400" />
+                </button>
+              </>
             )}
           </div>
         </div>

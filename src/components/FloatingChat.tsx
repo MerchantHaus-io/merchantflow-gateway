@@ -603,6 +603,19 @@ const FloatingChat: React.FC = () => {
     setEditingMessageId(null); setEditContent("");
   };
 
+  const handleDeleteMessage = async (messageId: string, isChannel: boolean) => {
+    if (!confirm("Delete this message?")) return;
+    const table = isChannel ? "chat_messages" : "direct_messages";
+    const { error } = await supabase.from(table).delete().eq("id", messageId);
+    if (error) { toast.error("Failed to delete message"); return; }
+    if (isChannel) {
+      setChannelMessages(prev => prev.filter(m => m.id !== messageId));
+    } else {
+      setDirectMessages(prev => prev.filter(m => m.id !== messageId));
+    }
+    toast.success("Message deleted");
+  };
+
   const getDisplayName = (userId: string) => { const p = profiles[userId]; return p?.full_name || p?.email?.split("@")[0] || "User"; };
 
   const getReplyMessage = (replyToId: string | null) => {
@@ -675,6 +688,7 @@ const FloatingChat: React.FC = () => {
         onEditContent={setEditContent}
         onSubmitEdit={handleEditMessage}
         onReaction={handleReaction}
+        onDeleteMessage={handleDeleteMessage}
         onProfileClick={setProfileModalUserId}
         onResolveAttachment={resolveAttachmentUrl}
       />
