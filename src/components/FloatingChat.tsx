@@ -63,6 +63,10 @@ const FloatingChat: React.FC = () => {
   const [recordingTime, setRecordingTime] = useState(0);
   const [pendingAttachment, setPendingAttachment] = useState<{ file: File; url: string } | null>(null);
   const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
+  const [chatWidth, setChatWidth] = useState(740);
+  const [chatHeight, setChatHeight] = useState(540);
+  const isResizingRef = useRef<'top' | 'left' | 'topleft' | null>(null);
+  const resizeStartRef = useRef<{ x: number; y: number; w: number; h: number }>({ x: 0, y: 0, w: 740, h: 540 });
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const scrollViewportRef = useRef<HTMLDivElement | null>(null);
   const presenceChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
