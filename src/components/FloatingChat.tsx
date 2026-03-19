@@ -797,14 +797,34 @@ const FloatingChat: React.FC = () => {
       )}
 
       {isOpen && (
-        <div className={cn(
-          "fixed z-50 flex flex-col overflow-hidden shadow-2xl",
-          "bg-[hsl(var(--wa-chat-bg))] transition-all duration-300 ease-out",
-          "animate-in slide-in-from-bottom-4 fade-in-0 rounded-t-xl",
-          isMobile
-            ? "bottom-16 right-2 left-2 top-16 rounded-xl"
-            : "bottom-0 right-6 w-[740px] h-[540px] border-b-0"
-        )}>
+        <div
+          className={cn(
+            "fixed z-50 flex flex-col overflow-hidden shadow-2xl",
+            "bg-[hsl(var(--wa-chat-bg))]",
+            "animate-in slide-in-from-bottom-4 fade-in-0 rounded-t-xl",
+            isMobile
+              ? "bottom-16 right-2 left-2 top-16 rounded-xl"
+              : "bottom-0 right-6 border-b-0"
+          )}
+          style={!isMobile ? { width: chatWidth, height: chatHeight } : undefined}
+        >
+          {/* Resize handles (desktop only) */}
+          {!isMobile && (
+            <>
+              <div
+                onMouseDown={handleResizeMouseDown('top')}
+                className="absolute top-0 left-4 right-4 h-1.5 cursor-n-resize z-10 hover:bg-[hsl(var(--wa-accent)/0.3)] transition-colors rounded-b"
+              />
+              <div
+                onMouseDown={handleResizeMouseDown('left')}
+                className="absolute left-0 top-4 bottom-4 w-1.5 cursor-w-resize z-10 hover:bg-[hsl(var(--wa-accent)/0.3)] transition-colors rounded-r"
+              />
+              <div
+                onMouseDown={handleResizeMouseDown('topleft')}
+                className="absolute top-0 left-0 w-4 h-4 cursor-nw-resize z-20"
+              />
+            </>
+          )}
           <div className="flex items-center justify-between px-4 py-2.5 bg-[hsl(var(--wa-header))] text-[hsl(var(--wa-header-foreground))] shrink-0">
             <div className="flex items-center gap-2.5 min-w-0">
               {isMobile && (view === "chat" || view === "dm" || view === "ai") && (
