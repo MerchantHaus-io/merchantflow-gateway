@@ -2177,7 +2177,33 @@ export default function OfficeChat({
         }} />
       </div>
 
-      {/* Controls hint */}
+      {/* TV2 — projected onto north wall via ref */}
+      <div
+        ref={tv2OverlayRef}
+        className="absolute z-10 overflow-hidden pointer-events-none"
+        style={{ visibility: 'hidden', opacity: 0, transition: 'opacity 120ms linear', willChange: 'transform, width, height', backgroundColor: '#0d1117' }}
+      >
+        <iframe
+          ref={tv2IframeRef}
+          src={`https://www.youtube-nocookie.com/embed/${TV2_VIDEO_ID}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&playsinline=1&enablejsapi=1`}
+          className="w-full h-full border-0 pointer-events-none"
+          title="Office TV2 - Live Feed"
+          allow="autoplay; encrypted-media; picture-in-picture"
+          style={{ pointerEvents: "none", backgroundColor: "#0d1117" }}
+        />
+        {/* Scanline overlay */}
+        <div className="absolute inset-0 pointer-events-none" style={{
+          background: 'repeating-linear-gradient(0deg, transparent 0px, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px)',
+          mixBlendMode: 'multiply',
+        }} />
+        {/* Subtle vignette */}
+        <div className="absolute inset-0 pointer-events-none" style={{
+          background: 'radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.35) 100%)',
+        }} />
+        {/* Inner bezel glow edge — warm tint */}
+        <div className="absolute inset-0 pointer-events-none rounded-sm" style={{
+          boxShadow: 'inset 0 0 8px 2px rgba(170,68,34,0.25), inset 0 0 20px 4px rgba(0,0,0,0.4)',
+        }} />
       {!isMobile && (
         <div className="absolute top-3 left-3 pointer-events-none">
           <Badge variant="outline" className="bg-black/60 text-white/60 border-white/10 text-xs">
