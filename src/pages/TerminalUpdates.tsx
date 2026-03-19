@@ -135,10 +135,16 @@ export default function TerminalUpdates() {
               What's new, fixed, and improved — updated daily.
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={downloadMarkdown} className="gap-1.5" disabled={isLoading}>
-            <Download className="h-4 w-4" />
-            Download .md
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => sendUpdateEmail()} className="gap-1.5" disabled={isLoading || sending}>
+              <Mail className="h-4 w-4" />
+              {sending ? "Sending…" : "Email Team"}
+            </Button>
+            <Button variant="outline" size="sm" onClick={downloadMarkdown} className="gap-1.5" disabled={isLoading}>
+              <Download className="h-4 w-4" />
+              Download .md
+            </Button>
+          </div>
         </div>
 
         {isLoading ? (
