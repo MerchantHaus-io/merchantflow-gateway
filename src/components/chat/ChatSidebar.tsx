@@ -1,11 +1,13 @@
-import React from "react";
-import { Search, Hash, Bot, Sparkles } from "lucide-react";
+import React, { useState } from "react";
+import { Search, Hash, Bot, Sparkles, Plus, Trash2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { Channel, OnlineUser, ChatView, getAvatarColor, getInitials } from "./types";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface ChatSidebarProps {
   channels: Channel[];
@@ -19,6 +21,7 @@ interface ChatSidebarProps {
   onSelectChannel: (id: string) => void;
   onSelectContact: (id: string) => void;
   onSelectAI?: () => void;
+  onChannelsChanged?: () => void;
 }
 
 export const ChatSidebar: React.FC<ChatSidebarProps> = ({
@@ -33,7 +36,12 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onSelectChannel,
   onSelectContact,
   onSelectAI,
+  onChannelsChanged,
 }) => {
+  const [showNewChannel, setShowNewChannel] = useState(false);
+  const [newChannelName, setNewChannelName] = useState("");
+  const [creating, setCreating] = useState(false);
+
   const filteredContacts = contactSearch
     ? onlineUsers.filter(u =>
         u.name.toLowerCase().includes(contactSearch.toLowerCase()) ||
@@ -44,6 +52,47 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const filteredChannels = channels
     .filter(ch => !ch.name.toLowerCase().startsWith("dm-"))
     .filter(ch => !contactSearch || ch.name.toLowerCase().includes(contactSearch.toLowerCase()));
+
+  const protectedChannels = ["general", "ops-updates", "atria-ai"];
+
+  const handleCreateChannel = async () => {
+    const name = newChannelName.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+    if (!name) return;
+    if (channels.some(ch => ch.name.toLowerCase() === name)) {
+      toast.error("Channel already exists");
+      return;
+    }
+    setCreating(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase.from("chat_channels").insert({ name, created_by: user?.id || null });
+    setCreating(false);
+    if (error) {
+      toast.error("Failed to create channel");
+    } else {
+      toast.success(`#${name} created`);
+      setNewChannelName("");
+      setShowNewChannel(false);
+      onChannelsChanged?.();
+    }
+  };
+
+  const handleDeleteChannel = async (e: React.MouseEvent, ch: Channel) => {
+    e.stopPropagation();
+    if (protectedChannels.includes(ch.name.toLowerCase())) {
+      toast.error("Cannot delete system channel");
+      return;
+    }
+    if (!confirm(`Delete #${ch.name}? All messages will be lost.`)) return;
+    // Delete messages first, then channel
+    await supabase.from("chat_messages").delete().eq("channel_id", ch.id);
+    const { error } = await supabase.from("chat_channels").delete().eq("id", ch.id);
+    if (error) {
+      toast.error("Failed to delete channel");
+    } else {
+      toast.success(`#${ch.name} deleted`);
+      onChannelsChanged?.();
+    }
+  };
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-[hsl(var(--wa-sidebar-bg))]">
@@ -86,16 +135,49 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
           {/* Channels */}
           {filteredChannels.length > 0 && (
             <>
-              <p className="text-[10px] font-semibold text-[hsl(var(--wa-accent))] uppercase tracking-widest px-4 py-2">Channels</p>
+              <div className="flex items-center justify-between px-4 py-2">
+                <p className="text-[10px] font-semibold text-[hsl(var(--wa-accent))] uppercase tracking-widest">Channels</p>
+                <button
+                  onClick={() => setShowNewChannel(v => !v)}
+                  className="text-[hsl(var(--wa-accent))] hover:text-[hsl(var(--wa-bubble-in-foreground))] transition-colors"
+                  title="New channel"
+                >
+                  {showNewChannel ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                </button>
+              </div>
+
+              {/* New channel input */}
+              {showNewChannel && (
+                <div className="px-4 pb-2 flex gap-2">
+                  <Input
+                    placeholder="channel-name"
+                    value={newChannelName}
+                    onChange={(e) => setNewChannelName(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleCreateChannel()}
+                    className="h-8 text-xs rounded-md bg-[hsl(var(--wa-search-bg))] border-0 text-[hsl(var(--wa-bubble-in-foreground))] placeholder:text-[hsl(var(--wa-meta))] focus-visible:ring-0"
+                    autoFocus
+                    disabled={creating}
+                  />
+                  <button
+                    onClick={handleCreateChannel}
+                    disabled={creating || !newChannelName.trim()}
+                    className="text-[hsl(var(--wa-accent))] hover:text-[hsl(var(--wa-bubble-in-foreground))] disabled:opacity-40 transition-colors shrink-0"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+
               {filteredChannels.map((ch) => {
                 const isActive = currentChannelId === ch.id && view === "chat";
                 const unread = channelUnreadCounts[ch.id] || 0;
+                const isProtected = protectedChannels.includes(ch.name.toLowerCase());
                 return (
                   <button
                     key={ch.id}
                     onClick={() => onSelectChannel(ch.id)}
                     className={cn(
-                      "w-full flex items-center gap-3 px-4 py-3 transition-colors border-b border-[hsl(var(--wa-divider))]",
+                      "w-full flex items-center gap-3 px-4 py-3 transition-colors border-b border-[hsl(var(--wa-divider))] group",
                       isActive
                         ? "bg-[hsl(var(--wa-sidebar-hover))]"
                         : "hover:bg-[hsl(var(--wa-sidebar-hover))]"
@@ -118,6 +200,15 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                         {ch.name}
                       </p>
                     </div>
+                    {!isProtected && (
+                      <button
+                        onClick={(e) => handleDeleteChannel(e, ch)}
+                        className="opacity-0 group-hover:opacity-100 text-[hsl(var(--wa-meta))] hover:text-red-400 transition-all shrink-0"
+                        title={`Delete #${ch.name}`}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                     {unread > 0 && (
                       <span className="bg-[hsl(var(--wa-unread))] text-white text-[11px] font-medium min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center">
                         {unread > 99 ? "99+" : unread}
