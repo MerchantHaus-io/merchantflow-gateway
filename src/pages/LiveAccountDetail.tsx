@@ -76,6 +76,8 @@ const LiveAccountDetail = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { theme } = useTheme();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<any>(null);
 
