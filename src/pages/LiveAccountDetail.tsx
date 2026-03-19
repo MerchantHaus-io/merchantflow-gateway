@@ -316,29 +316,83 @@ const LiveAccountDetail = () => {
                 </div>
               </div>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="shrink-0 text-muted-foreground hover:text-foreground"
-              onClick={async () => {
-                if (!opportunities) return;
-                for (const opp of opportunities) {
-                  await supabase
-                    .from("opportunities")
-                    .update({ status: "archived" })
-                    .eq("id", opp.id);
-                  await supabase.from("activities").insert({
-                    opportunity_id: opp.id,
-                    type: "archived",
-                    description: "Archived from Live & Billing",
-                  });
-                }
-                navigate("/live-billing");
-              }}
-            >
-              <Archive className="h-4 w-4 mr-1.5" />
-              <span className="hidden sm:inline">Archive</span>
-            </Button>
+            <div className="flex items-center gap-2 shrink-0">
+              <OutcomeSelector
+                onSelect={async (outcome: OutcomeStatus, reason: string, notes: string) => {
+                  if (!opportunities || !user) return;
+                  const closerEmail = user.email || "";
+                  const closerName = closerEmail.split("@")[0];
+                  
+                  // Update all opportunities for this account
+                  for (const opp of opportunities) {
+                    await supabase
+                      .from("opportunities")
+                      .update({
+                        outcome_status: outcome,
+                        outcome_reason: reason,
+                        outcome_notes: notes,
+                        outcome_closed_at: new Date().toISOString(),
+                        outcome_closed_by: closerEmail,
+                        status: outcome === "closed_won" ? "active" : "dead",
+                      })
+                      .eq("id", opp.id);
+
+                    await supabase.from("activities").insert({
+                      opportunity_id: opp.id,
+                      type: "outcome_set",
+                      description: `Account closed: ${outcome} — ${reason}`,
+                      user_email: closerEmail,
+                      user_id: user.id,
+                    });
+                  }
+
+                  // Send closure email to merchant + team notification
+                  const contactName = [contact?.first_name, contact?.last_name].filter(Boolean).join(" ") || "Merchant";
+                  const contactEmail = contact?.email;
+
+                  if (contactEmail) {
+                    supabase.functions.invoke("send-account-closed", {
+                      body: {
+                        recipientEmail: contactEmail,
+                        recipientName: contactName,
+                        accountName: account?.name || "",
+                        outcomeStatus: outcome,
+                        outcomeReason: reason,
+                        closedBy: closerName.charAt(0).toUpperCase() + closerName.slice(1),
+                      },
+                    }).catch((err) => console.error("Closure email error:", err));
+                  }
+
+                  toast.success("Account closed and merchant notified");
+                  queryClient.invalidateQueries({ queryKey: ["live-account-detail", accountId] });
+                  queryClient.invalidateQueries({ queryKey: ["live-billing-opportunities"] });
+                  navigate("/live-billing");
+                }}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                className="shrink-0 text-muted-foreground hover:text-foreground"
+                onClick={async () => {
+                  if (!opportunities) return;
+                  for (const opp of opportunities) {
+                    await supabase
+                      .from("opportunities")
+                      .update({ status: "archived" })
+                      .eq("id", opp.id);
+                    await supabase.from("activities").insert({
+                      opportunity_id: opp.id,
+                      type: "archived",
+                      description: "Archived from Live & Billing",
+                    });
+                  }
+                  navigate("/live-billing");
+                }}
+              >
+                <Archive className="h-4 w-4 mr-1.5" />
+                <span className="hidden sm:inline">Archive</span>
+              </Button>
+            </div>
           </div>
         </div>
 
