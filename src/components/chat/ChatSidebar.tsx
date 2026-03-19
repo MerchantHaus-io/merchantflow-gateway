@@ -138,7 +138,13 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
           {filteredChannels.length > 0 && (
             <>
               <div className="flex items-center justify-between px-4 py-2">
-                <p className="text-[10px] font-semibold text-[hsl(var(--wa-accent))] uppercase tracking-widest">Channels</p>
+                <button
+                  onClick={() => setChannelsOpen(v => !v)}
+                  className="flex items-center gap-1 text-[10px] font-semibold text-[hsl(var(--wa-accent))] uppercase tracking-widest hover:text-[hsl(var(--wa-bubble-in-foreground))] transition-colors"
+                >
+                  {channelsOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                  Channels
+                </button>
                 <button
                   onClick={() => setShowNewChannel(v => !v)}
                   className="text-[hsl(var(--wa-accent))] hover:text-[hsl(var(--wa-bubble-in-foreground))] transition-colors"
