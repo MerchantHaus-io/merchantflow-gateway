@@ -406,22 +406,6 @@ const UnifiedPipelineBoard = ({
             Revenue: {formatCurrency(totalPipelineValue)}/mo
           </span>
         )}
-        {currentUser && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsFocusMode(true)}
-                className="h-7 px-2.5 gap-1 text-xs font-medium"
-              >
-                <Focus className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Focus Mode</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Show only your deals in focus mode</TooltipContent>
-          </Tooltip>
-        )}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
