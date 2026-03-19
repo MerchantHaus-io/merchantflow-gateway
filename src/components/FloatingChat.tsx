@@ -119,7 +119,7 @@ const FloatingChat: React.FC = () => {
     window.addEventListener('mouseup', handleMouseUp);
   }, [chatWidth, chatHeight]);
 
-
+  useEffect(() => {
     const handleOpenChat = () => setIsOpen(true);
     window.addEventListener('openFloatingChat', handleOpenChat);
     return () => window.removeEventListener('openFloatingChat', handleOpenChat);
