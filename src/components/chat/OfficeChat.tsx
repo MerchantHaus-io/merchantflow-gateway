@@ -2272,13 +2272,14 @@ export default function OfficeChat({
             </div>
           </div>
 
-          {(nearby || nearDesk || nearTV || nearInteract) && (
+          {(nearby || nearDesk || nearTV || nearTV2 || nearInteract) && (
             <button
               className="mobile-interact-btn absolute bottom-8 right-8 z-20 w-16 h-16 rounded-full bg-primary/80 text-white font-bold text-xs flex items-center justify-center border-2 border-white/30 active:scale-90 transition-transform"
               onTouchStart={(e) => {
                 e.stopPropagation();
                 if (nearby) setActiveChat(nearby);
                 else if (nearTV) setTvUnmuted(prev => !prev);
+                else if (nearTV2) setTv2Unmuted(prev => !prev);
                 else if (nearDesk) { setShowTerminal(true); setDeskView("computer"); }
                 else if (nearInteract) {
                   if (nearInteract.action === "sit") setIsSitting(prev => !prev);
@@ -2287,14 +2288,14 @@ export default function OfficeChat({
                 }
               }}
             >
-              {nearby ? `Chat\n${nearby.name}` : nearTV ? (tvUnmuted ? "Mute" : "Unmute") : nearDesk ? "Terminal" : nearInteract?.label ?? "Interact"}
+              {nearby ? `Chat\n${nearby.name}` : nearTV ? (tvUnmuted ? "Mute" : "Unmute") : nearTV2 ? (tv2Unmuted ? "Mute" : "Unmute") : nearDesk ? "Terminal" : nearInteract?.label ?? "Interact"}
             </button>
           )}
 
-          {(nearby || nearDesk || nearTV || nearInteract) && (
+          {(nearby || nearDesk || nearTV || nearTV2 || nearInteract) && (
             <div className="absolute bottom-28 left-1/2 -translate-x-1/2 pointer-events-none z-20">
               <Badge className="bg-black/80 text-white border-0 text-xs px-3 py-1">
-                {nearby ? `Near ${nearby.name}` : nearTV ? "Near TV" : nearDesk ? "Near Terminal" : nearInteract?.label ?? ""}
+                {nearby ? `Near ${nearby.name}` : nearTV ? "Near TV" : nearTV2 ? "Near News" : nearDesk ? "Near Terminal" : nearInteract?.label ?? ""}
               </Badge>
             </div>
           )}
