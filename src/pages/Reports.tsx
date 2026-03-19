@@ -288,7 +288,7 @@ const Reports = () => {
             <StatCard label="Active Opportunities" value={kpis.active}   icon={Target}       color="primary"
               onClick={() => openModal("Active Opportunities", `${kpis.active} active`, "opportunities", filteredOpps.filter(o => o.status !== "dead"), [])} />
             <StatCard label="Closed Won"            value={kpis.live}     icon={Zap}          color="success"
-              onClick={() => openModal("Closed Won", `${kpis.live} won`, "opportunities", filteredOpps.filter(o => (o as any).outcome_status === "closed_won"), [])} />
+              onClick={() => openModal("Closed Won", `${kpis.live} won`, "opportunities", filteredOpps.filter(o => o.outcome_status === "closed_won"), [])} />
             <StatCard label="Open Tasks"            value={kpis.openTasks}icon={Clock}        color="teal"
               onClick={() => openModal("Open Tasks", `${kpis.openTasks} open`, "tasks", [], filteredTasks.filter(t => t.status !== "done"))} />
             <StatCard label="Overdue Tasks"         value={kpis.overdue}  icon={AlertTriangle} color="destructive"
