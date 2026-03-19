@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { RefreshCw, Minimize2, Maximize2, ChevronLeft, ChevronRight, Focus, Minimize, X, User, CreditCard, Zap, Calendar, Plus } from "lucide-react";
+import { RefreshCw, Minimize2, Maximize2, ChevronLeft, ChevronRight, Minimize, X, User, CreditCard, Zap, Calendar, Plus } from "lucide-react";
 import { Opportunity, OpportunityStage, UNIFIED_PIPELINE_STAGES, STAGE_CONFIG, getServiceType, migrateStage } from "@/types/opportunity";
 import PipelineColumn from "./PipelineColumn";
 import OpportunityDetailModal from "./OpportunityDetailModal";
