@@ -1,43 +1,38 @@
 
 
-# Industry-Standard Compliance Features — Implemented
+## Fix: Document Submission Uploads Failing Silently on Public Form
 
-## ✅ 1. Owner Identity Verification (KYC / CDD)
-- Added "Passport/Drivers License" as 5th hard-requirement document in underwriting gate (`src/lib/underwriting-gate.ts`)
-- Updated ApplicationProgress checklist to show 5 required docs
-- Updated AI underwriting review prompt to flag missing Owner ID
+### Problem
+Kip's document submission (March 18) created the application record successfully but **zero documents were saved**. The client-side file upload uses the anonymous Supabase client against the private `opportunity-documents` bucket. When storage rejects the upload, the error is silently swallowed — no toast, no feedback to the user.
 
-## ✅ 2. OFAC / Sanctions Screening
-- Extended AI underwriting review prompt with OFAC/SDN screening dimension
-- AI now screens business name, DBA, and principal owner names against sanctions patterns
-- Results included in auto-saved note with 🛡️ OFAC Screening section
-- Added `ofac_screening` field to the AI tool schema
+### Root Cause
+The `MerchantApply.tsx` public form uploads files client-side with `supabase.storage.upload()`, but the visitor has no auth session. The private bucket rejects the request. The code pattern `if (!storageError) { insert record }` means failures are invisible.
 
-## ✅ 3. Beneficial Ownership Declaration (FinCEN CDD Rule)
-- Created `beneficial_owners` table with RLS policies (migration applied)
-- Built `BeneficialOwners` component in opportunity detail modal overview
-- Underwriting gate now verifies at least one beneficial owner is recorded
-- Form captures: name, title, ownership %, DOB, address
+### Solution
+Move document uploads to the **server-side edge function** (`submit-merchant-application`), which uses the service role key and can write to private storage.
 
-## ✅ 4. Stage SLA Timers with Escalation
-- Created `sla-escalation` edge function with per-stage thresholds
-- Automatically calculates amber/red SLA status for all active opportunities
-- Creates high-priority tasks on red breach with notification
-- SLA config also available client-side via `src/lib/sla-config.ts`
-- Registered in `supabase/config.toml`
+### Steps
 
-## ✅ 5. Duplicate / Existing Merchant Check
-- Created `src/lib/duplicate-check.ts` utility
-- Checks EIN, legal entity name, and DBA against existing records
-- Fires warning toast when moving past Discovery on the pipeline board
-- Non-blocking (warning only) to avoid false positive blocks
+1. **Update `submit-merchant-application` edge function**
+   - Accept base64-encoded file data in the request payload for document submissions
+   - Upload files server-side using the service role client
+   - Insert `application_documents` records server-side
+   - Return upload results (success/failure count) in the response
 
-## ✅ 6. High-Risk MCC Flagging
-- Created `src/lib/high-risk-mcc.ts` with known high-risk MCC codes
-- Added `risk_tier` column to `validation_reports` table (migration applied)
-- AI underwriting review now assesses and returns `risk_tier`
-- Auto-saved note includes 🔴 HIGH-RISK MCC warning when flagged
+2. **Update `MerchantApply.tsx` client code**
+   - Convert selected files to base64 before submission
+   - Include file data in the JSON payload sent to the edge function
+   - Remove the client-side storage upload block for document submissions
+   - Add a file size cap (e.g., 10MB total) with user feedback
+   - Show error toasts if the server reports upload failures
 
-## Pipeline Board Hardening
-- Added underwriting gate check to Index.tsx `handleUpdateOpportunity` (was only on Opportunities page)
-- Duplicate check fires on Discovery → next stage transition
+3. **Add error visibility for all upload paths**
+   - For processing applications (statement_docs, void_check_docs), apply the same server-side pattern or add visible error handling for client-side failures
+   - Ensure users always see a toast if any file fails to upload
+
+### Technical Details
+- Files will be base64-encoded and sent as part of the JSON body to the edge function
+- The edge function already has access to `SUPABASE_SERVICE_ROLE_KEY` for storage writes
+- A reasonable payload limit of ~15MB covers most document uploads
+- The `application_documents` table and storage paths remain unchanged
+
