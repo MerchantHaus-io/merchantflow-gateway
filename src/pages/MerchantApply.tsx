@@ -452,6 +452,56 @@ export default function MerchantApply() {
         clientIp = ipData.ip || 'unknown';
       } catch { /* non-blocking */ }
 
+      // Helper: convert File to base64 string
+      const fileToBase64 = (file: File): Promise<string> =>
+        new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result as string;
+            // Strip the data URL prefix (e.g. "data:application/pdf;base64,")
+            const base64 = result.split(',')[1] || '';
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+      // Collect all files with their document types
+      let filesToUpload: { file: File; document_type: string }[] = [];
+
+      if (isDocSubmission) {
+        filesToUpload = form.general_docs.map(f => ({ file: f, document_type: 'General Submission' }));
+      } else if (isGatewayOnly) {
+        filesToUpload = [
+          ...form.gateway_var_docs.map(f => ({ file: f, document_type: 'VAR Sheet' })),
+          ...form.gateway_void_docs.map(f => ({ file: f, document_type: 'Voided Check / Bank Confirmation Letter' })),
+        ];
+      } else {
+        filesToUpload = [
+          ...form.statement_docs.map(f => ({ file: f, document_type: 'Bank Statement' })),
+          ...form.void_check_docs.map(f => ({ file: f, document_type: 'Voided Check / Bank Confirmation Letter' })),
+        ];
+      }
+
+      // Enforce total file size limit (15MB)
+      const totalSize = filesToUpload.reduce((sum, f) => sum + f.file.size, 0);
+      if (totalSize > 15 * 1024 * 1024) {
+        toast({ variant: "destructive", title: "Files too large", description: "Total file size must be under 15MB. Please reduce file sizes or upload fewer documents." });
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Convert files to base64
+      const encodedFiles = await Promise.all(
+        filesToUpload.map(async ({ file, document_type }) => ({
+          name: file.name,
+          size: file.size,
+          type: file.type || undefined,
+          data: await fileToBase64(file),
+          document_type,
+        }))
+      );
+
       // Build validated payload based on service type
       let payload: Record<string, any>;
 
@@ -462,6 +512,7 @@ export default function MerchantApply() {
           dba_contact_last_name: form.dba_contact_last_name,
           dba_contact_email: form.dba_contact_email,
           additional_notes: form.additional_notes,
+          files: encodedFiles,
         };
       } else if (isGatewayOnly) {
         payload = {
@@ -481,6 +532,7 @@ export default function MerchantApply() {
           current_processor: form.current_processor,
           additional_notes: form.additional_notes,
           pricing_plan: form.pricing_plan,
+          files: encodedFiles,
         };
       } else {
         payload = {
@@ -546,6 +598,7 @@ export default function MerchantApply() {
           beneficial_owner_certification: form.beneficial_owner_certification,
           additional_notes: form.additional_notes,
           pricing_plan: form.pricing_plan,
+          files: encodedFiles,
         };
       }
 
@@ -581,81 +634,19 @@ export default function MerchantApply() {
         throw new Error(msg);
       }
 
-      const applicationId = result.application_id;
-
-      // Upload documents client-side (files can't go through JSON)
-      if (isDocSubmission) {
-        for (const doc of form.general_docs) {
-          const filePath = `applications/${applicationId}/${Date.now()}_${doc.name}`;
-          const { error: storageError } = await supabase.storage
-            .from('opportunity-documents')
-            .upload(filePath, doc);
-          if (!storageError) {
-            await supabase.from('application_documents' as any).insert({
-              application_id: applicationId,
-              file_name: doc.name,
-              file_path: filePath,
-              file_size: doc.size,
-              content_type: doc.type || null,
-              document_type: 'General Submission',
-              ip_address: clientIp,
-              user_agent: navigator.userAgent,
-            });
-          }
-        }
-      } else if (!isGatewayOnly) {
-        const allDocs = [
-          ...form.statement_docs.map(f => ({ file: f, type: 'Bank Statement' })),
-          ...form.void_check_docs.map(f => ({ file: f, type: 'Voided Check / Bank Confirmation Letter' })),
-        ];
-        for (const doc of allDocs) {
-          const filePath = `applications/${applicationId}/${Date.now()}_${doc.file.name}`;
-          const { error: storageError } = await supabase.storage
-            .from('opportunity-documents')
-            .upload(filePath, doc.file);
-          if (!storageError) {
-            await supabase.from('application_documents' as any).insert({
-              application_id: applicationId,
-              file_name: doc.file.name,
-              file_path: filePath,
-              file_size: doc.file.size,
-              content_type: doc.file.type || null,
-              document_type: doc.type,
-              ip_address: clientIp,
-              user_agent: navigator.userAgent,
-            });
-          }
-        }
-      } else {
-        const gwDocs = [
-          ...form.gateway_var_docs.map(f => ({ file: f, type: 'VAR Sheet' })),
-          ...form.gateway_void_docs.map(f => ({ file: f, type: 'Voided Check / Bank Confirmation Letter' })),
-        ];
-        for (const doc of gwDocs) {
-          const filePath = `applications/${applicationId}/${Date.now()}_${doc.file.name}`;
-          const { error: storageError } = await supabase.storage
-            .from('opportunity-documents')
-            .upload(filePath, doc.file);
-          if (!storageError) {
-            await supabase.from('application_documents' as any).insert({
-              application_id: applicationId,
-              file_name: doc.file.name,
-              file_path: filePath,
-              file_size: doc.file.size,
-              content_type: doc.file.type || null,
-              document_type: doc.type,
-              ip_address: clientIp,
-              user_agent: navigator.userAgent,
-            });
-          }
-        }
+      // Check for file upload failures and warn the user
+      if (result.files && result.files.failed > 0) {
+        toast({
+          variant: "destructive",
+          title: `${result.files.failed} document(s) failed to upload`,
+          description: "Your application was submitted but some files could not be saved. Please contact us to re-submit the missing documents.",
+        });
       }
 
       setIsSubmitted(true);
       window.location.href = "https://merchanthaus.io";
     } catch (error: any) {
       const message = error?.message || '';
-      // If the error already contains field-level details from server validation, show it directly
       const friendly = message && message.length < 500
         ? message
         : (await import('@/lib/friendly-errors')).getFriendlyError(error);
