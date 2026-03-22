@@ -37,9 +37,16 @@ const PrincipalSchema = z.object({
   ssn_full: z.string().trim().regex(/^\d{9}$/, "SSN must be exactly 9 digits"),
 });
 
+const FileSchema = z.object({
+  name: z.string().min(1).max(500),
+  size: z.number().max(10 * 1024 * 1024), // 10MB per file
+  type: z.string().max(200).optional(),
+  data: z.string(), // base64 encoded
+  document_type: z.string().max(200),
+});
+
 const ProcessingSchema = z.object({
   service_type: z.literal("processing"),
-  // Business Profile
   dba_name: reqText(200),
   product_description: reqText(2000),
   nature_of_business: reqText(500),
@@ -53,7 +60,6 @@ const ProcessingSchema = z.object({
   dba_state: reqText(50),
   dba_zip: reqText(20),
   dba_country: optText(10),
-  // Legal
   legal_entity_name: reqText(200),
   federal_tax_id: z.string().trim().min(1).max(20),
   ownership_type: reqText(100),
@@ -66,7 +72,6 @@ const ProcessingSchema = z.object({
   legal_state: reqText(50),
   legal_zip: reqText(20),
   legal_country: optText(10),
-  // Processing Profile
   monthly_volume: reqText(50),
   average_transaction: reqText(50),
   high_ticket: reqText(50),
@@ -78,21 +83,17 @@ const ProcessingSchema = z.object({
   percent_b2c: optText(10),
   website_url: optText(500),
   sic_mcc_code: optText(20),
-  // Principals
   principals: z.array(PrincipalSchema).min(1).max(5),
-  // Banking
   bank_name: reqText(200),
   account_holder_name: reqText(200),
   routing_number: z.string().trim().regex(/^\d{9}$/, "Routing number must be 9 digits"),
   account_number: z.string().trim().regex(/^\d{4,17}$/, "Account number must be 4-17 digits"),
-  // Agreements
   merchant_agreement_accepted: z.literal(true, { errorMap: () => ({ message: "Agreement required" }) }),
   account_authorization_accepted: z.literal(true, { errorMap: () => ({ message: "Authorization required" }) }),
   beneficial_owner_certification: z.boolean(),
-  // Notes
   additional_notes: optText(5000),
-  // Pricing
   pricing_plan: optText(50),
+  files: z.array(FileSchema).max(20).optional(),
 });
 
 const GatewaySchema = z.object({
@@ -112,6 +113,7 @@ const GatewaySchema = z.object({
   current_processor: reqText(200),
   additional_notes: optText(5000),
   pricing_plan: optText(50),
+  files: z.array(FileSchema).max(20).optional(),
 });
 
 const DocSubmissionSchema = z.object({
@@ -120,6 +122,7 @@ const DocSubmissionSchema = z.object({
   dba_contact_last_name: reqText(100),
   dba_contact_email: email(),
   additional_notes: optText(5000),
+  files: z.array(FileSchema).max(20).optional(),
 });
 
 const InputSchema = z.discriminatedUnion("service_type", [
@@ -127,6 +130,72 @@ const InputSchema = z.discriminatedUnion("service_type", [
   GatewaySchema,
   DocSubmissionSchema,
 ]);
+
+// ─── File Upload Helper ───
+
+async function uploadFiles(
+  supabase: any,
+  applicationId: string,
+  files: z.infer<typeof FileSchema>[],
+  clientIp: string,
+  userAgent: string,
+): Promise<{ uploaded: number; failed: number; errors: string[] }> {
+  let uploaded = 0;
+  let failed = 0;
+  const errors: string[] = [];
+
+  for (const file of files) {
+    try {
+      // Decode base64 to Uint8Array
+      const binaryStr = atob(file.data);
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) {
+        bytes[i] = binaryStr.charCodeAt(i);
+      }
+
+      const filePath = `applications/${applicationId}/${Date.now()}_${file.name}`;
+      const { error: storageError } = await supabase.storage
+        .from("opportunity-documents")
+        .upload(filePath, bytes, {
+          contentType: file.type || "application/octet-stream",
+          upsert: false,
+        });
+
+      if (storageError) {
+        console.error(`Storage upload failed for ${file.name}:`, storageError);
+        errors.push(`${file.name}: ${storageError.message}`);
+        failed++;
+        continue;
+      }
+
+      const { error: dbError } = await supabase.from("application_documents").insert({
+        application_id: applicationId,
+        file_name: file.name,
+        file_path: filePath,
+        file_size: file.size,
+        content_type: file.type || null,
+        document_type: file.document_type || "General Submission",
+        ip_address: clientIp,
+        user_agent: userAgent,
+      });
+
+      if (dbError) {
+        console.error(`DB insert failed for ${file.name}:`, dbError);
+        errors.push(`${file.name}: record failed`);
+        failed++;
+        continue;
+      }
+
+      uploaded++;
+    } catch (e) {
+      console.error(`File processing error for ${file.name}:`, e);
+      errors.push(`${file.name}: processing failed`);
+      failed++;
+    }
+  }
+
+  return { uploaded, failed, errors };
+}
 
 // ─── Handler ───
 
@@ -148,6 +217,7 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceKey);
 
     const applicationId = crypto.randomUUID();
+    const files = (parsed as any).files as z.infer<typeof FileSchema>[] | undefined;
 
     if (parsed.service_type === "document_submission") {
       const { error } = await supabase.from("applications").insert({
@@ -160,8 +230,14 @@ Deno.serve(async (req) => {
       });
       if (error) throw error;
 
+      // Upload files server-side
+      let fileResult = { uploaded: 0, failed: 0, errors: [] as string[] };
+      if (files && files.length > 0) {
+        fileResult = await uploadFiles(supabase, applicationId, files, clientIp, userAgent);
+      }
+
       return new Response(
-        JSON.stringify({ success: true, application_id: applicationId }),
+        JSON.stringify({ success: true, application_id: applicationId, files: fileResult }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -200,8 +276,14 @@ Deno.serve(async (req) => {
         account_authorization_accepted: false,
       });
 
+      // Upload files server-side
+      let fileResult = { uploaded: 0, failed: 0, errors: [] as string[] };
+      if (files && files.length > 0) {
+        fileResult = await uploadFiles(supabase, applicationId, files, clientIp, userAgent);
+      }
+
       return new Response(
-        JSON.stringify({ success: true, application_id: applicationId }),
+        JSON.stringify({ success: true, application_id: applicationId, files: fileResult }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -391,8 +473,14 @@ Deno.serve(async (req) => {
       account_authorization_accepted: parsed.account_authorization_accepted,
     });
 
+    // 7. Upload files server-side
+    let fileResult = { uploaded: 0, failed: 0, errors: [] as string[] };
+    if (files && files.length > 0) {
+      fileResult = await uploadFiles(supabase, applicationId, files, clientIp, userAgent);
+    }
+
     return new Response(
-      JSON.stringify({ success: true, application_id: applicationId }),
+      JSON.stringify({ success: true, application_id: applicationId, files: fileResult }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
