@@ -1224,15 +1224,12 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                     } : null}
                   />
                   <BeneficialOwners opportunityId={opportunity.id} />
-                  <AIValidatePanel opportunityId={opportunity.id} />
+                  <OverviewUnderwritingSummary opportunityId={opportunity.id} onNavigate={() => setActiveSection('underwriting')} />
                 </div>
               )}
 
-              {activeSection === 'tasks' && (
-                <OpportunityTasks 
-                  opportunityId={opportunity.id} 
-                  tasks={relatedTasks}
-                />
+              {activeSection === 'underwriting' && (
+                <AIValidatePanel opportunityId={opportunity.id} />
               )}
 
               {activeSection === 'notes' && (
