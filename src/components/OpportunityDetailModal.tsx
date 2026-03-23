@@ -299,16 +299,15 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
 
   // Icon rail items for section navigation
   const iconRailItems: IconRailItem[] = useMemo(() => {
-    const openTaskCount = relatedTasks.filter(t => t.status !== 'done').length;
     return [
       { id: 'overview', icon: <ClipboardList className="h-4 w-4" />, label: 'Overview' },
-      { id: 'tasks', icon: <ListChecks className="h-4 w-4" />, label: 'Tasks', badge: openTaskCount || undefined, badgeVariant: openTaskCount > 0 ? 'default' as const : undefined },
+      { id: 'underwriting', icon: <Wand2 className="h-4 w-4" />, label: 'UW Review' },
       { id: 'notes', icon: <MessageSquare className="h-4 w-4" />, label: 'Notes' },
       { id: 'documents', icon: <FileText className="h-4 w-4" />, label: 'Docs' },
       { id: 'details', icon: <Building2 className="h-4 w-4" />, label: 'Details' },
       { id: 'activity', icon: <Activity className="h-4 w-4" />, label: 'Activity' },
     ];
-  }, [relatedTasks]);
+  }, []);
 
   const handleSectionSelect = useCallback((id: string) => {
     setActiveSection(id as ModalSection);
