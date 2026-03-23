@@ -187,6 +187,7 @@ const Index = () => {
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
   const [splashType, setSplashType] = useState<"1up" | "level-up" | null>(null);
   const [listSelectedOpp, setListSelectedOpp] = useState<Opportunity | null>(null);
+  const [listPreviewOpp, setListPreviewOpp] = useState<Opportunity | null>(null);
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { ensureSlaTask } = useTasks();
