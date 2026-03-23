@@ -860,13 +860,27 @@ const Index = () => {
               isAdmin={isAdmin}
             />
           </div>
-          {/* Pipeline list view — takes ~25% of available space */}
+          {/* Pipeline list view with UW preview split — takes ~25% of available space */}
           {(
-            <div className="flex flex-col min-h-0 overflow-hidden" style={{ flex: '1 1 0%', minHeight: '180px' }}>
-              <PipelineListView
-                opportunities={filteredOpportunities}
-                onCardClick={setListSelectedOpp}
-              />
+            <div className="flex min-h-0 overflow-hidden gap-2" style={{ flex: '1 1 0%', minHeight: '180px' }}>
+              <div className={cn("flex flex-col min-h-0 overflow-hidden transition-all", listPreviewOpp ? "w-[60%]" : "w-full")}>
+                <PipelineListView
+                  opportunities={filteredOpportunities}
+                  onCardClick={setListSelectedOpp}
+                  selectedId={listPreviewOpp?.id}
+                  onSelect={setListPreviewOpp}
+                />
+              </div>
+              {listPreviewOpp && (
+                <div className="w-[40%] rounded-xl border border-border/60 bg-card/80 backdrop-blur-md overflow-hidden">
+                  <PipelineUWPreview
+                    opportunity={listPreviewOpp}
+                    onOpenModal={(opp) => {
+                      setListSelectedOpp(opp);
+                    }}
+                  />
+                </div>
+              )}
             </div>
           )}
         </main>

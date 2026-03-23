@@ -198,7 +198,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   const [showRequestDeleteDialog, setShowRequestDeleteDialog] = useState(false);
   const [showDeathSplash, setShowDeathSplash] = useState(false);
   const [reactivateConfirm, setReactivateConfirm] = useState<{ assignee: string } | null>(null);
-  const [activeSection, setActiveSection] = useState<ModalSection>('overview');
+  const [activeSection, setActiveSection] = useState<ModalSection>('underwriting');
   const isMobile = useIsMobile();
   // Keyboard shortcuts for section navigation
   useEffect(() => {
