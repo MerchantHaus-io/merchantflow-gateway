@@ -1992,6 +1992,7 @@ export type Database = {
       validation_reports: {
         Row: {
           classification_issues: Json
+          confidence: string | null
           created_at: string
           data_gaps: Json
           document_completeness: Json
@@ -1999,14 +2000,18 @@ export type Database = {
           no_change: boolean
           opportunity_id: string
           readiness_score: string
+          recommendation: string | null
           recommended_actions: Json
           risk_flags: Json
           risk_tier: string | null
+          score: number | null
           summary: string | null
           triggered_by: string
+          website_score: number | null
         }
         Insert: {
           classification_issues?: Json
+          confidence?: string | null
           created_at?: string
           data_gaps?: Json
           document_completeness?: Json
@@ -2014,14 +2019,18 @@ export type Database = {
           no_change?: boolean
           opportunity_id: string
           readiness_score?: string
+          recommendation?: string | null
           recommended_actions?: Json
           risk_flags?: Json
           risk_tier?: string | null
+          score?: number | null
           summary?: string | null
           triggered_by: string
+          website_score?: number | null
         }
         Update: {
           classification_issues?: Json
+          confidence?: string | null
           created_at?: string
           data_gaps?: Json
           document_completeness?: Json
@@ -2029,11 +2038,14 @@ export type Database = {
           no_change?: boolean
           opportunity_id?: string
           readiness_score?: string
+          recommendation?: string | null
           recommended_actions?: Json
           risk_flags?: Json
           risk_tier?: string | null
+          score?: number | null
           summary?: string | null
           triggered_by?: string
+          website_score?: number | null
         }
         Relationships: [
           {
