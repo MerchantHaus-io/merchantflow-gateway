@@ -2,10 +2,12 @@ import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react
 import { useSearchParams } from "react-router-dom";
 import UnifiedPipelineBoard from "@/components/UnifiedPipelineBoard";
 import PipelineListView from "@/components/PipelineListView";
+import PipelineUWPreview from "@/components/PipelineUWPreview";
 import OpportunityDetailModal from "@/components/OpportunityDetailModal";
 import NewApplicationModal, { ApplicationFormData } from "@/components/NewApplicationModal";
 import { AppLayout } from "@/components/AppLayout";
 import { getServiceType, ServiceType, OnboardingWizardState, Opportunity, OpportunityStage, OutcomeStatus, migrateStage, EMAIL_TO_USER, TEAM_MEMBERS } from "@/types/opportunity";
+import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -186,6 +188,7 @@ const Index = () => {
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
   const [splashType, setSplashType] = useState<"1up" | "level-up" | null>(null);
   const [listSelectedOpp, setListSelectedOpp] = useState<Opportunity | null>(null);
+  const [listPreviewOpp, setListPreviewOpp] = useState<Opportunity | null>(null);
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { ensureSlaTask } = useTasks();
@@ -858,13 +861,27 @@ const Index = () => {
               isAdmin={isAdmin}
             />
           </div>
-          {/* Pipeline list view — takes ~25% of available space */}
+          {/* Pipeline list view with UW preview split — takes ~25% of available space */}
           {(
-            <div className="flex flex-col min-h-0 overflow-hidden" style={{ flex: '1 1 0%', minHeight: '180px' }}>
-              <PipelineListView
-                opportunities={filteredOpportunities}
-                onCardClick={setListSelectedOpp}
-              />
+            <div className="flex min-h-0 overflow-hidden gap-2" style={{ flex: '1 1 0%', minHeight: '180px' }}>
+              <div className={cn("flex flex-col min-h-0 overflow-hidden transition-all", listPreviewOpp ? "w-[60%]" : "w-full")}>
+                <PipelineListView
+                  opportunities={filteredOpportunities}
+                  onCardClick={setListSelectedOpp}
+                  selectedId={listPreviewOpp?.id}
+                  onSelect={setListPreviewOpp}
+                />
+              </div>
+              {listPreviewOpp && (
+                <div className="w-[40%] rounded-xl border border-border/60 bg-card/80 backdrop-blur-md overflow-hidden">
+                  <PipelineUWPreview
+                    opportunity={listPreviewOpp}
+                    onOpenModal={(opp) => {
+                      setListSelectedOpp(opp);
+                    }}
+                  />
+                </div>
+              )}
             </div>
           )}
         </main>

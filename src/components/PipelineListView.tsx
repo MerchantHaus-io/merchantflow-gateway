@@ -7,12 +7,14 @@ import { formatDistanceToNow } from "date-fns";
 interface PipelineListViewProps {
   opportunities: Opportunity[];
   onCardClick: (opportunity: Opportunity) => void;
+  selectedId?: string | null;
+  onSelect?: (opportunity: Opportunity) => void;
 }
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
 
-const PipelineListView = ({ opportunities, onCardClick }: PipelineListViewProps) => {
+const PipelineListView = ({ opportunities, onCardClick, selectedId, onSelect }: PipelineListViewProps) => {
   const activeOpps = useMemo(
     () =>
       opportunities
@@ -77,8 +79,11 @@ const PipelineListView = ({ opportunities, onCardClick }: PipelineListViewProps)
           return (
             <div
               key={opp.id}
-              onClick={() => onCardClick(opp)}
-              className="grid grid-cols-[2fr_1.5fr_1fr_120px] gap-2 px-4 py-2.5 border-b border-border/20 hover:bg-muted/40 cursor-pointer transition-colors group items-center"
+              onClick={() => onSelect ? onSelect(opp) : onCardClick(opp)}
+              className={cn(
+                "grid grid-cols-[2fr_1.5fr_1fr_120px] gap-2 px-4 py-2.5 border-b border-border/20 hover:bg-muted/40 cursor-pointer transition-colors group items-center",
+                selectedId === opp.id && "bg-primary/5 border-l-2 border-l-primary"
+              )}
             >
               {/* Merchant / Contact */}
               <div className="flex items-center gap-2.5 min-w-0">

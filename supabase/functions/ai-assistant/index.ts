@@ -3101,6 +3101,10 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
           summary: (report.summary as string) || null,
           no_change: !!isNoChange,
           risk_tier: (report.risk_tier as string) || null,
+          score: (report.score as number) ?? null,
+          website_score: (report.website_score as number) ?? null,
+          confidence: (report.confidence as string) || null,
+          recommendation: (report.recommendation as string) || null,
         })
         .select()
         .single();
