@@ -7,6 +7,8 @@ import { formatDistanceToNow } from "date-fns";
 interface PipelineListViewProps {
   opportunities: Opportunity[];
   onCardClick: (opportunity: Opportunity) => void;
+  selectedId?: string | null;
+  onSelect?: (opportunity: Opportunity) => void;
 }
 
 const formatCurrency = (value: number) =>
