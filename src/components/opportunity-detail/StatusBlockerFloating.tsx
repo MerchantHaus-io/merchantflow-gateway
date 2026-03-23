@@ -124,7 +124,7 @@ export const StatusBlockerFloating = ({ opportunity, wizardProgress, onUpdate }:
   };
 
   return (
-    <div className="absolute top-2 right-14 z-20">
+    <div className="flex justify-end -mt-1 mb-1">
       <Popover>
         <PopoverTrigger asChild>
           <button className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium transition-colors ${statusConfig.bgClass} ${statusConfig.colorClass} hover:opacity-90`}>
