@@ -285,10 +285,6 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     () => computeWizardSectionProgress(wizardFormState),
     [wizardFormState],
   );
-  const relatedTasks = useMemo(
-    () => (opportunity ? getTasksForOpportunity(opportunity.id) : []),
-    [getTasksForOpportunity, opportunity],
-  );
   const assigneeOptions = useMemo(
     () =>
       Array.from(
