@@ -46,7 +46,7 @@ import { BeneficialOwners } from "./opportunity-detail/BeneficialOwners";
 import { DocumentsTab } from "./DocumentsTab";
 import GameSplash from "./GameSplash";
 import CommentsTab from "./CommentsTab";
-import { Task } from "@/types/task";
+
 import liveBadge from "@/assets/live-badge.webp";
 
 interface Document {
