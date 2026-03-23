@@ -1182,16 +1182,19 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
               </div>
             ) : (
               <>
-                <StatusBlockerPanel 
-                  opportunity={opportunity} 
-                  wizardProgress={wizardState?.progress ?? 0}
-                  onUpdate={onUpdate}
-                  compact={activeSection !== 'overview'}
-                />
                 {activeSection === 'overview' && <StagePath opportunity={opportunity} />}
               </>
             )}
           </div>
+
+          {/* Floating Status/Blocker Popover */}
+          {opportunity.outcome_status !== 'closed_won' && (
+            <StatusBlockerFloating
+              opportunity={opportunity}
+              wizardProgress={wizardState?.progress ?? 0}
+              onUpdate={onUpdate}
+            />
+          )}
 
           {/* Icon Rail + Dynamic Panel Layout */}
           <div className={cn(
