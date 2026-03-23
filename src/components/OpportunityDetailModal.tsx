@@ -8,13 +8,13 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Opportunity, STAGE_CONFIG, Account, Contact, getServiceType, EMAIL_TO_USER, TEAM_MEMBERS, OpportunityStage, PROCESSING_PIPELINE_STAGES, GATEWAY_ONLY_PIPELINE_STAGES, OutcomeStatus, OUTCOME_CONFIG } from "@/types/opportunity";
 import { OutcomeSelector } from "./OutcomeSelector";
-import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, ListChecks, Zap, CreditCard, Maximize2, Minimize2, Loader2, Wand2, RotateCcw, Eye, Check } from "lucide-react";
+import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, Zap, CreditCard, Maximize2, Minimize2, Loader2, Wand2, RotateCcw, Eye, Check } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTasks } from "@/contexts/TasksContext";
+
 import { sendOpportunityAssignmentEmail, sendStageChangeEmail } from "@/hooks/useEmailNotifications";
 import { sendQualifiedDocsRequest } from "@/hooks/useQualifiedDocsRequest";
 import ActivitiesTab from "./ActivitiesTab";
@@ -34,11 +34,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "./AutoSaveIndicator";
-import { StatusBlockerPanel } from "./opportunity-detail/StatusBlockerPanel";
+import { StatusBlockerFloating } from "./opportunity-detail/StatusBlockerFloating";
 import { StagePath } from "./opportunity-detail/StagePath";
 import { ApplicationProgress } from "./opportunity-detail/ApplicationProgress";
-import { OpportunityTasks } from "./opportunity-detail/OpportunityTasks";
 import { NotesSection } from "./opportunity-detail/NotesSection";
+import { OverviewUnderwritingSummary } from "./opportunity-detail/OverviewUnderwritingSummary";
 import { checkUnderwritingGate } from "@/lib/underwriting-gate";
 import { checkDuplicateMerchant } from "@/lib/duplicate-check";
 import { AIValidatePanel } from "./opportunity-detail/AIValidatePanel";
@@ -46,7 +46,7 @@ import { BeneficialOwners } from "./opportunity-detail/BeneficialOwners";
 import { DocumentsTab } from "./DocumentsTab";
 import GameSplash from "./GameSplash";
 import CommentsTab from "./CommentsTab";
-import { Task } from "@/types/task";
+
 import liveBadge from "@/assets/live-badge.webp";
 
 interface Document {
@@ -182,13 +182,13 @@ interface OpportunityDetailModalProps {
   hasGatewayOpportunity?: boolean;
 }
 
-const MODAL_SECTIONS = ['overview', 'tasks', 'notes', 'documents', 'details', 'activity'] as const;
+const MODAL_SECTIONS = ['overview', 'underwriting', 'notes', 'documents', 'details', 'activity'] as const;
 type ModalSection = typeof MODAL_SECTIONS[number];
 
 const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, onDelete, onConvertToGateway, onMoveToProcessing, hasGatewayOpportunity }: OpportunityDetailModalProps) => {
   const { isAdmin } = useUserRole();
   const { user } = useAuth();
-  const { getTasksForOpportunity, addTask, updateTaskStatus } = useTasks();
+  
   const [isEditing, setIsEditing] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
@@ -285,10 +285,6 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     () => computeWizardSectionProgress(wizardFormState),
     [wizardFormState],
   );
-  const relatedTasks = useMemo(
-    () => (opportunity ? getTasksForOpportunity(opportunity.id) : []),
-    [getTasksForOpportunity, opportunity],
-  );
   const assigneeOptions = useMemo(
     () =>
       Array.from(
@@ -299,16 +295,15 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
 
   // Icon rail items for section navigation
   const iconRailItems: IconRailItem[] = useMemo(() => {
-    const openTaskCount = relatedTasks.filter(t => t.status !== 'done').length;
     return [
       { id: 'overview', icon: <ClipboardList className="h-4 w-4" />, label: 'Overview' },
-      { id: 'tasks', icon: <ListChecks className="h-4 w-4" />, label: 'Tasks', badge: openTaskCount || undefined, badgeVariant: openTaskCount > 0 ? 'default' as const : undefined },
+      { id: 'underwriting', icon: <Wand2 className="h-4 w-4" />, label: 'UW Review' },
       { id: 'notes', icon: <MessageSquare className="h-4 w-4" />, label: 'Notes' },
       { id: 'documents', icon: <FileText className="h-4 w-4" />, label: 'Docs' },
       { id: 'details', icon: <Building2 className="h-4 w-4" />, label: 'Details' },
       { id: 'activity', icon: <Activity className="h-4 w-4" />, label: 'Activity' },
     ];
-  }, [relatedTasks]);
+  }, []);
 
   const handleSectionSelect = useCallback((id: string) => {
     setActiveSection(id as ModalSection);
@@ -1183,16 +1178,19 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
               </div>
             ) : (
               <>
-                <StatusBlockerPanel 
-                  opportunity={opportunity} 
-                  wizardProgress={wizardState?.progress ?? 0}
-                  onUpdate={onUpdate}
-                  compact={activeSection !== 'overview'}
-                />
                 {activeSection === 'overview' && <StagePath opportunity={opportunity} />}
               </>
             )}
           </div>
+
+          {/* Floating Status/Blocker Popover */}
+          {opportunity.outcome_status !== 'closed_won' && (
+            <StatusBlockerFloating
+              opportunity={opportunity}
+              wizardProgress={wizardState?.progress ?? 0}
+              onUpdate={onUpdate}
+            />
+          )}
 
           {/* Icon Rail + Dynamic Panel Layout */}
           <div className={cn(
@@ -1222,15 +1220,12 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                     } : null}
                   />
                   <BeneficialOwners opportunityId={opportunity.id} />
-                  <AIValidatePanel opportunityId={opportunity.id} />
+                  <OverviewUnderwritingSummary opportunityId={opportunity.id} onNavigate={() => setActiveSection('underwriting')} />
                 </div>
               )}
 
-              {activeSection === 'tasks' && (
-                <OpportunityTasks 
-                  opportunityId={opportunity.id} 
-                  tasks={relatedTasks}
-                />
+              {activeSection === 'underwriting' && (
+                <AIValidatePanel opportunityId={opportunity.id} />
               )}
 
               {activeSection === 'notes' && (
