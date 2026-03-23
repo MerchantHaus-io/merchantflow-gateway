@@ -14,7 +14,7 @@ interface PipelineListViewProps {
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
 
-const PipelineListView = ({ opportunities, onCardClick }: PipelineListViewProps) => {
+const PipelineListView = ({ opportunities, onCardClick, selectedId, onSelect }: PipelineListViewProps) => {
   const activeOpps = useMemo(
     () =>
       opportunities
