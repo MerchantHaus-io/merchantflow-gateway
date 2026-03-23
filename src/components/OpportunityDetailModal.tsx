@@ -188,7 +188,7 @@ type ModalSection = typeof MODAL_SECTIONS[number];
 const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, onDelete, onConvertToGateway, onMoveToProcessing, hasGatewayOpportunity }: OpportunityDetailModalProps) => {
   const { isAdmin } = useUserRole();
   const { user } = useAuth();
-  const { getTasksForOpportunity, addTask, updateTaskStatus } = useTasks();
+  
   const [isEditing, setIsEditing] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
