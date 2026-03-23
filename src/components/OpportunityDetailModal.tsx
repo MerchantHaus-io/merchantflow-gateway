@@ -34,10 +34,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "./AutoSaveIndicator";
-import { StatusBlockerPanel } from "./opportunity-detail/StatusBlockerPanel";
+import { StatusBlockerFloating } from "./opportunity-detail/StatusBlockerFloating";
 import { StagePath } from "./opportunity-detail/StagePath";
 import { ApplicationProgress } from "./opportunity-detail/ApplicationProgress";
-import { OpportunityTasks } from "./opportunity-detail/OpportunityTasks";
+import { NotesSection } from "./opportunity-detail/NotesSection";
+import { OverviewUnderwritingSummary } from "./opportunity-detail/OverviewUnderwritingSummary";
 import { NotesSection } from "./opportunity-detail/NotesSection";
 import { checkUnderwritingGate } from "@/lib/underwriting-gate";
 import { checkDuplicateMerchant } from "@/lib/duplicate-check";
