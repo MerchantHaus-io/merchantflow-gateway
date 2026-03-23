@@ -182,7 +182,7 @@ interface OpportunityDetailModalProps {
   hasGatewayOpportunity?: boolean;
 }
 
-const MODAL_SECTIONS = ['overview', 'tasks', 'notes', 'documents', 'details', 'activity'] as const;
+const MODAL_SECTIONS = ['overview', 'underwriting', 'notes', 'documents', 'details', 'activity'] as const;
 type ModalSection = typeof MODAL_SECTIONS[number];
 
 const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, onDelete, onConvertToGateway, onMoveToProcessing, hasGatewayOpportunity }: OpportunityDetailModalProps) => {
