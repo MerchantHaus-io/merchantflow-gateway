@@ -39,7 +39,6 @@ import { StagePath } from "./opportunity-detail/StagePath";
 import { ApplicationProgress } from "./opportunity-detail/ApplicationProgress";
 import { NotesSection } from "./opportunity-detail/NotesSection";
 import { OverviewUnderwritingSummary } from "./opportunity-detail/OverviewUnderwritingSummary";
-import { NotesSection } from "./opportunity-detail/NotesSection";
 import { checkUnderwritingGate } from "@/lib/underwriting-gate";
 import { checkDuplicateMerchant } from "@/lib/duplicate-check";
 import { AIValidatePanel } from "./opportunity-detail/AIValidatePanel";
