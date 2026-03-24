@@ -109,9 +109,9 @@ const validityColor = (v?: string) => {
 };
 
 const scoreColor = (score: number) => {
-  if (score >= 8) return "text-emerald-500";
-  if (score >= 6) return "text-amber-500";
-  if (score >= 4) return "text-orange-500";
+  if (score >= 80) return "text-emerald-500";
+  if (score >= 60) return "text-amber-500";
+  if (score >= 40) return "text-orange-500";
   return "text-destructive";
 };
 
