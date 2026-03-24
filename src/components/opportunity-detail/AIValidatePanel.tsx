@@ -109,9 +109,9 @@ const validityColor = (v?: string) => {
 };
 
 const scoreColor = (score: number) => {
-  if (score >= 8) return "text-emerald-500";
-  if (score >= 6) return "text-amber-500";
-  if (score >= 4) return "text-orange-500";
+  if (score >= 80) return "text-emerald-500";
+  if (score >= 60) return "text-amber-500";
+  if (score >= 40) return "text-orange-500";
   return "text-destructive";
 };
 
@@ -138,8 +138,8 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
       const { data: { user } } = await supabase.auth.getUser();
       const lines: string[] = [];
       lines.push(`## AI Underwriting Review — ${statusLabel(report.readiness_score)}`);
-      if (report.score !== undefined) lines.push(`Score: ${report.score}/10 | Confidence: ${report.confidence || "N/A"} | Recommendation: ${recommendationLabel(report.recommendation)}`);
-      if (report.website_score !== undefined) lines.push(`Website Score: ${report.website_score}/10 (${report.website_score_label || ""})`);
+      if (report.score !== undefined) lines.push(`Score: ${report.score}/100 | Confidence: ${report.confidence || "N/A"} | Recommendation: ${recommendationLabel(report.recommendation)}`);
+      if (report.website_score !== undefined) lines.push(`Website Score: ${report.website_score}/100 (${report.website_score_label || ""})`);
       if (report.summary) lines.push(`\n${report.summary}`);
 
       if (report.score_breakdown?.length) {
@@ -197,7 +197,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
       await supabase.from("activities").insert({
         opportunity_id: opportunityId,
         type: "ai_report_saved",
-        description: `AI Underwriting Review saved as note — ${report.score ?? "N/A"}/10 — ${validityLabel(report.validity_conclusion)}`,
+        description: `AI Underwriting Review saved as note — ${report.score ?? "N/A"}/100 — ${validityLabel(report.validity_conclusion)}`,
         user_id: user?.id || null,
         user_email: user?.email || null,
       });
@@ -288,7 +288,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
               </h4>
               {report.score !== undefined && (
                 <Badge variant="outline" className="text-[10px] gap-1 font-mono">
-                  <span className={scoreColor(report.score)}>{report.score}/10</span>
+                  <span className={scoreColor(report.score)}>{report.score}/100</span>
                 </Badge>
               )}
               {report.confidence && (
@@ -299,7 +299,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
               {report.website_score !== undefined && (
                 <Badge variant="outline" className="text-[10px] gap-1">
                   <Globe className="h-3 w-3" />
-                  <span className={scoreColor(report.website_score)}>{report.website_score}/10</span>
+                  <span className={scoreColor(report.website_score)}>{report.website_score}/100</span>
                 </Badge>
               )}
             </div>
@@ -371,7 +371,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
                         />
                       </div>
                     </div>
-                    <span className={cn("font-mono text-[10px] w-8 shrink-0", scoreColor((b.score / b.max_score) * 10))}>{b.score}/{b.max_score}</span>
+                    <span className={cn("font-mono text-[10px] w-8 shrink-0", scoreColor((b.score / b.max_score) * 100))}>{b.score}/{b.max_score}</span>
                     <span className="text-muted-foreground truncate">{b.note}</span>
                   </div>
                 ))}

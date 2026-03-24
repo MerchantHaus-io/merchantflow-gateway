@@ -2693,14 +2693,14 @@ Do NOT penalize for missing refund policies, shipping timelines, or other Visa c
 
 OFAC/Sanctions: Screen business name, DBA, and principal owner name(s). ANY match or near-match = CRITICAL hard stop.
 
-═══ SCORING RUBRIC (0–10) — GATEWAY-ONLY ═══
+═══ SCORING RUBRIC (0–100) — GATEWAY-ONLY ═══
 
 Score each dimension:
-- Business legitimacy & identity (0–3): Is this a real, operating business?
-- Banking verification (0–3): Voided check/bank letter present, routing number valid, name matches
-- VAR/Tear Sheet consistency (0–2): Gateway config info is complete and consistent
-- Screening & compliance (0–1): OFAC check
-- Document integrity (0–1): No tamper indicators, information is consistent
+- Business legitimacy & identity (0–30): Is this a real, operating business?
+- Banking verification (0–30): Voided check/bank letter present, routing number valid, name matches
+- VAR/Tear Sheet consistency (0–20): Gateway config info is complete and consistent
+- Screening & compliance (0–10): OFAC check
+- Document integrity (0–10): No tamper indicators, information is consistent
 
 HARD-STOP OVERRIDES: Sanctions match, VMSS/MATCH adverse result, material tampering evidence.
 
@@ -2788,16 +2788,16 @@ Terminated-merchant screening (VMSS/MATCH): If not available, mark as "Not run �
 
 Evaluate if recommended MCC falls into high-risk category requiring reserves, delayed funding, or enhanced monitoring. High-risk MCCs include: 5962-5969 (Direct Marketing), 6051 (Money Services), 7801-7802/7995 (Gambling), 7273 (Dating), 4816 (Computer Network Services), 5122 (Drugs/Pharmaceuticals).
 
-═══ SCORING RUBRIC (0–10) ═══
+═══ SCORING RUBRIC (0–100) ═══
 
 Score each dimension:
-- Entity & ownership verification (0–2): formation doc present + state registry match
-- Tax identity coherence (0–1): CP 575/147C/SS-4/W-9 coherence across docs (NOT "IRS-verified" unless you truly have that capability)
-- Bank settlement proof (0–2): bank letter/voided cheque + routing sanity check (Fed directory) + name match
-- Financial evidence & capacity (0–1.5): statement coverage, recency, plausible volumes
-- Website transparency & dispute-risk controls (0–2): policies + contact + fulfilment clarity aligned to Visa disclosure emphasis
-- Screening & compliance (0–1): VMSS/MATCH if available; OFAC checks
-- Document integrity & internal consistency (0–0.5): misclassification, tamper indicators, cross-document mismatches
+- Entity & ownership verification (0–20): formation doc present + state registry match
+- Tax identity coherence (0–10): CP 575/147C/SS-4/W-9 coherence across docs (NOT "IRS-verified" unless you truly have that capability)
+- Bank settlement proof (0–20): bank letter/voided cheque + routing sanity check (Fed directory) + name match
+- Financial evidence & capacity (0–15): statement coverage, recency, plausible volumes
+- Website transparency & dispute-risk controls (0–20): policies + contact + fulfilment clarity aligned to Visa disclosure emphasis
+- Screening & compliance (0–10): VMSS/MATCH if available; OFAC checks
+- Document integrity & internal consistency (0–5): misclassification, tamper indicators, cross-document mismatches
 
 HARD-STOP OVERRIDES (these override score optimism):
 - Sanctions probable match → escalate (OFAC)
@@ -2859,7 +2859,7 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
                     },
                     website_score: {
                       type: "number",
-                      description: "Website readiness score from 0 to 10",
+                      description: "Website readiness score from 0 to 100",
                     },
                     website_score_label: {
                       type: "string",
@@ -2953,7 +2953,7 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
                     },
                     score: {
                       type: "number",
-                      description: "Overall numerical score out of 10, sum of all score_breakdown categories.",
+                      description: "Overall numerical score out of 100, sum of all score_breakdown categories.",
                     },
                     confidence: {
                       type: "string",
@@ -2967,7 +2967,7 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
                     },
                     score_breakdown: {
                       type: "array",
-                      description: "Per-category scoring breakdown (7 categories summing to max 10).",
+                      description: "Per-category scoring breakdown (7 categories summing to max 100).",
                       items: {
                         type: "object",
                         properties: {
@@ -3143,7 +3143,7 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
 
         const noteLines: string[] = [
           `📋 UNDERWRITING REVIEW — ${newScore === "ready" ? "🟢 Proceed" : newScore === "needs_attention" ? "🟡 Needs Attention" : "🔴 Decline/Escalate"}`,
-          `Score: ${report.score ?? "N/A"}/10 | Confidence: ${(report.confidence as string)?.charAt(0).toUpperCase()}${(report.confidence as string)?.slice(1) || "N/A"} | Recommendation: ${recLabel}`,
+          `Score: ${report.score ?? "N/A"}/100 | Confidence: ${(report.confidence as string)?.charAt(0).toUpperCase()}${(report.confidence as string)?.slice(1) || "N/A"} | Recommendation: ${recLabel}`,
           "",
           (report.summary as string) || "",
         ];
@@ -3177,7 +3177,7 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
         }
 
         if (websiteUrl && report.website_score !== undefined) {
-          noteLines.push("", `🌐 Website Score: ${report.website_score}/10 (${report.website_score_label || "N/A"})`, `   URL: ${websiteUrl}`);
+          noteLines.push("", `🌐 Website Score: ${report.website_score}/100 (${report.website_score_label || "N/A"})`, `   URL: ${websiteUrl}`);
         }
 
         // Public checks
@@ -3224,7 +3224,7 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
           user_id: AI_BOT_USER_ID,
           user_email: AI_BOT_EMAIL,
           type: "ai_report_saved",
-          description: `Underwriting Review completed — ${report.score ?? "N/A"}/10 — ${validityLabel} — ${recLabel}`,
+          description: `Underwriting Review completed — ${report.score ?? "N/A"}/100 — ${validityLabel} — ${recLabel}`,
         });
       }
 

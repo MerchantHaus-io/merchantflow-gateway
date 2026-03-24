@@ -43,9 +43,9 @@ interface ReportRow {
 const displayName = (email: string) => EMAIL_TO_USER[email?.toLowerCase()] || email || "Unknown";
 
 const scoreColor = (score: number) => {
-  if (score >= 8) return "text-emerald-500";
-  if (score >= 6) return "text-amber-500";
-  if (score >= 4) return "text-orange-500";
+  if (score >= 80) return "text-emerald-500";
+  if (score >= 60) return "text-amber-500";
+  if (score >= 40) return "text-orange-500";
   return "text-destructive";
 };
 
@@ -235,13 +235,13 @@ const PipelineUWPreview = ({ opportunity, onOpenModal }: Props) => {
                 {latestReport.score !== null && (
                   <Badge variant="outline" className="text-[10px] gap-1 font-mono">
                     <BarChart3 className="h-3 w-3" />
-                    <span className={scoreColor(latestReport.score)}>{latestReport.score}/10</span>
+                    <span className={scoreColor(latestReport.score)}>{latestReport.score}/100</span>
                   </Badge>
                 )}
                 {latestReport.website_score !== null && (
                   <Badge variant="outline" className="text-[10px] gap-1">
                     <Globe className="h-3 w-3" />
-                    <span className={scoreColor(latestReport.website_score)}>{latestReport.website_score}/10</span>
+                    <span className={scoreColor(latestReport.website_score)}>{latestReport.website_score}/100</span>
                   </Badge>
                 )}
                 {latestReport.recommendation && (
