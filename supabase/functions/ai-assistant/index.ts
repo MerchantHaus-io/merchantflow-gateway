@@ -2788,16 +2788,16 @@ Terminated-merchant screening (VMSS/MATCH): If not available, mark as "Not run �
 
 Evaluate if recommended MCC falls into high-risk category requiring reserves, delayed funding, or enhanced monitoring. High-risk MCCs include: 5962-5969 (Direct Marketing), 6051 (Money Services), 7801-7802/7995 (Gambling), 7273 (Dating), 4816 (Computer Network Services), 5122 (Drugs/Pharmaceuticals).
 
-═══ SCORING RUBRIC (0–10) ═══
+═══ SCORING RUBRIC (0–100) ═══
 
 Score each dimension:
-- Entity & ownership verification (0–2): formation doc present + state registry match
-- Tax identity coherence (0–1): CP 575/147C/SS-4/W-9 coherence across docs (NOT "IRS-verified" unless you truly have that capability)
-- Bank settlement proof (0–2): bank letter/voided cheque + routing sanity check (Fed directory) + name match
-- Financial evidence & capacity (0–1.5): statement coverage, recency, plausible volumes
-- Website transparency & dispute-risk controls (0–2): policies + contact + fulfilment clarity aligned to Visa disclosure emphasis
-- Screening & compliance (0–1): VMSS/MATCH if available; OFAC checks
-- Document integrity & internal consistency (0–0.5): misclassification, tamper indicators, cross-document mismatches
+- Entity & ownership verification (0–20): formation doc present + state registry match
+- Tax identity coherence (0–10): CP 575/147C/SS-4/W-9 coherence across docs (NOT "IRS-verified" unless you truly have that capability)
+- Bank settlement proof (0–20): bank letter/voided cheque + routing sanity check (Fed directory) + name match
+- Financial evidence & capacity (0–15): statement coverage, recency, plausible volumes
+- Website transparency & dispute-risk controls (0–20): policies + contact + fulfilment clarity aligned to Visa disclosure emphasis
+- Screening & compliance (0–10): VMSS/MATCH if available; OFAC checks
+- Document integrity & internal consistency (0–5): misclassification, tamper indicators, cross-document mismatches
 
 HARD-STOP OVERRIDES (these override score optimism):
 - Sanctions probable match → escalate (OFAC)
