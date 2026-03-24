@@ -3143,7 +3143,7 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
 
         const noteLines: string[] = [
           `📋 UNDERWRITING REVIEW — ${newScore === "ready" ? "🟢 Proceed" : newScore === "needs_attention" ? "🟡 Needs Attention" : "🔴 Decline/Escalate"}`,
-          `Score: ${report.score ?? "N/A"}/10 | Confidence: ${(report.confidence as string)?.charAt(0).toUpperCase()}${(report.confidence as string)?.slice(1) || "N/A"} | Recommendation: ${recLabel}`,
+          `Score: ${report.score ?? "N/A"}/100 | Confidence: ${(report.confidence as string)?.charAt(0).toUpperCase()}${(report.confidence as string)?.slice(1) || "N/A"} | Recommendation: ${recLabel}`,
           "",
           (report.summary as string) || "",
         ];
