@@ -371,7 +371,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
                         />
                       </div>
                     </div>
-                    <span className={cn("font-mono text-[10px] w-8 shrink-0", scoreColor((b.score / b.max_score) * 10))}>{b.score}/{b.max_score}</span>
+                    <span className={cn("font-mono text-[10px] w-8 shrink-0", scoreColor((b.score / b.max_score) * 100))}>{b.score}/{b.max_score}</span>
                     <span className="text-muted-foreground truncate">{b.note}</span>
                   </div>
                 ))}

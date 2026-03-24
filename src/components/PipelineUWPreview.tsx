@@ -241,7 +241,7 @@ const PipelineUWPreview = ({ opportunity, onOpenModal }: Props) => {
                 {latestReport.website_score !== null && (
                   <Badge variant="outline" className="text-[10px] gap-1">
                     <Globe className="h-3 w-3" />
-                    <span className={scoreColor(latestReport.website_score)}>{latestReport.website_score}/10</span>
+                    <span className={scoreColor(latestReport.website_score)}>{latestReport.website_score}/100</span>
                   </Badge>
                 )}
                 {latestReport.recommendation && (
