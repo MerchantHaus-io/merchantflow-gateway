@@ -2967,7 +2967,7 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
                     },
                     score_breakdown: {
                       type: "array",
-                      description: "Per-category scoring breakdown (7 categories summing to max 10).",
+                      description: "Per-category scoring breakdown (7 categories summing to max 100).",
                       items: {
                         type: "object",
                         properties: {
