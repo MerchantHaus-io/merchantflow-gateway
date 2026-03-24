@@ -3177,7 +3177,7 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
         }
 
         if (websiteUrl && report.website_score !== undefined) {
-          noteLines.push("", `🌐 Website Score: ${report.website_score}/10 (${report.website_score_label || "N/A"})`, `   URL: ${websiteUrl}`);
+          noteLines.push("", `🌐 Website Score: ${report.website_score}/100 (${report.website_score_label || "N/A"})`, `   URL: ${websiteUrl}`);
         }
 
         // Public checks
