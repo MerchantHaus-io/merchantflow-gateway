@@ -2953,7 +2953,7 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
                     },
                     score: {
                       type: "number",
-                      description: "Overall numerical score out of 10, sum of all score_breakdown categories.",
+                      description: "Overall numerical score out of 100, sum of all score_breakdown categories.",
                     },
                     confidence: {
                       type: "string",
