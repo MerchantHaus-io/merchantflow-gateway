@@ -2693,14 +2693,14 @@ Do NOT penalize for missing refund policies, shipping timelines, or other Visa c
 
 OFAC/Sanctions: Screen business name, DBA, and principal owner name(s). ANY match or near-match = CRITICAL hard stop.
 
-═══ SCORING RUBRIC (0–10) — GATEWAY-ONLY ═══
+═══ SCORING RUBRIC (0–100) — GATEWAY-ONLY ═══
 
 Score each dimension:
-- Business legitimacy & identity (0–3): Is this a real, operating business?
-- Banking verification (0–3): Voided check/bank letter present, routing number valid, name matches
-- VAR/Tear Sheet consistency (0–2): Gateway config info is complete and consistent
-- Screening & compliance (0–1): OFAC check
-- Document integrity (0–1): No tamper indicators, information is consistent
+- Business legitimacy & identity (0–30): Is this a real, operating business?
+- Banking verification (0–30): Voided check/bank letter present, routing number valid, name matches
+- VAR/Tear Sheet consistency (0–20): Gateway config info is complete and consistent
+- Screening & compliance (0–10): OFAC check
+- Document integrity (0–10): No tamper indicators, information is consistent
 
 HARD-STOP OVERRIDES: Sanctions match, VMSS/MATCH adverse result, material tampering evidence.
 
