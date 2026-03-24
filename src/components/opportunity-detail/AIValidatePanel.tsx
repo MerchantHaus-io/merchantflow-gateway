@@ -299,7 +299,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
               {report.website_score !== undefined && (
                 <Badge variant="outline" className="text-[10px] gap-1">
                   <Globe className="h-3 w-3" />
-                  <span className={scoreColor(report.website_score)}>{report.website_score}/10</span>
+                  <span className={scoreColor(report.website_score)}>{report.website_score}/100</span>
                 </Badge>
               )}
             </div>
