@@ -138,8 +138,8 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
       const { data: { user } } = await supabase.auth.getUser();
       const lines: string[] = [];
       lines.push(`## AI Underwriting Review — ${statusLabel(report.readiness_score)}`);
-      if (report.score !== undefined) lines.push(`Score: ${report.score}/10 | Confidence: ${report.confidence || "N/A"} | Recommendation: ${recommendationLabel(report.recommendation)}`);
-      if (report.website_score !== undefined) lines.push(`Website Score: ${report.website_score}/10 (${report.website_score_label || ""})`);
+      if (report.score !== undefined) lines.push(`Score: ${report.score}/100 | Confidence: ${report.confidence || "N/A"} | Recommendation: ${recommendationLabel(report.recommendation)}`);
+      if (report.website_score !== undefined) lines.push(`Website Score: ${report.website_score}/100 (${report.website_score_label || ""})`);
       if (report.summary) lines.push(`\n${report.summary}`);
 
       if (report.score_breakdown?.length) {
