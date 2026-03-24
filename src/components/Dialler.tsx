@@ -239,7 +239,7 @@ export const Dialler = () => {
         <button
           onClick={() => setOpen(true)}
           className={cn(
-            "fixed bottom-0 left-[254px] z-50 w-[220px] h-11 rounded-t-xl flex items-center gap-3 px-4",
+            "fixed bottom-0 left-[254px] z-[35] w-[220px] h-11 rounded-t-xl flex items-center gap-3 px-4",
             "bg-amber-400 text-black",
             "shadow-xl hover:shadow-2xl hover:bg-amber-300 transition-all duration-200 ease-out",
             "border border-b-0 border-amber-500"

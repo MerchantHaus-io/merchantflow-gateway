@@ -813,7 +813,7 @@ const FloatingChat: React.FC = () => {
       {isOpen && (
         <div
           className={cn(
-            "fixed z-50 flex flex-col overflow-hidden shadow-2xl",
+            "fixed z-[45] flex flex-col overflow-hidden shadow-2xl",
             "bg-[hsl(var(--wa-chat-bg))]",
             "animate-in slide-in-from-bottom-4 fade-in-0 rounded-t-xl",
             isMobile
