@@ -197,7 +197,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
       await supabase.from("activities").insert({
         opportunity_id: opportunityId,
         type: "ai_report_saved",
-        description: `AI Underwriting Review saved as note — ${report.score ?? "N/A"}/10 — ${validityLabel(report.validity_conclusion)}`,
+        description: `AI Underwriting Review saved as note — ${report.score ?? "N/A"}/100 — ${validityLabel(report.validity_conclusion)}`,
         user_id: user?.id || null,
         user_email: user?.email || null,
       });
