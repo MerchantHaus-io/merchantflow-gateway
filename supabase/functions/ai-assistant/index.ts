@@ -3224,7 +3224,7 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
           user_id: AI_BOT_USER_ID,
           user_email: AI_BOT_EMAIL,
           type: "ai_report_saved",
-          description: `Underwriting Review completed — ${report.score ?? "N/A"}/10 — ${validityLabel} — ${recLabel}`,
+          description: `Underwriting Review completed — ${report.score ?? "N/A"}/100 — ${validityLabel} — ${recLabel}`,
         });
       }
 
