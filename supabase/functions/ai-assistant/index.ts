@@ -2859,7 +2859,7 @@ Call the "underwriting_review_report" function with your complete analysis. Be t
                     },
                     website_score: {
                       type: "number",
-                      description: "Website readiness score from 0 to 10",
+                      description: "Website readiness score from 0 to 100",
                     },
                     website_score_label: {
                       type: "string",
