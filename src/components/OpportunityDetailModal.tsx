@@ -1394,7 +1394,8 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                     )}
                   </div>
 
-                  {/* Wizard: Legal Info */}
+                  {/* Wizard: Legal Info - Processing only */}
+                  {!isGatewayCard && (
                   <div className="border-t border-border pt-4 space-y-4">
                     <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
                       <ClipboardList className="h-4 w-4" />
@@ -1426,8 +1427,10 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                       </div>
                     )}
                   </div>
+                  )}
 
-                  {/* Wizard: Processing */}
+                  {/* Wizard: Processing - Processing only */}
+                  {!isGatewayCard && (
                   <div className="border-t border-border pt-4 space-y-4">
                     <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
                       <Zap className="h-4 w-4" />
@@ -1465,9 +1468,10 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                       </div>
                     )}
                   </div>
+                  )}
 
                   {/* Wizard: Gateway Only fields */}
-                  {opportunity.service_type === 'gateway_only' && (
+                  {isGatewayCard && (
                     <div className="border-t border-border pt-4 space-y-4">
                       <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
                         <Zap className="h-4 w-4" />
