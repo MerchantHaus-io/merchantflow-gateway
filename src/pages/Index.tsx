@@ -863,7 +863,7 @@ const Index = () => {
           </div>
           {/* Pipeline list view with UW preview split — takes ~25% of available space */}
           {(
-            <div className="flex min-h-0 overflow-hidden gap-2" style={{ flex: '1 1 0%', minHeight: '180px' }}>
+            <div className="flex min-h-0 overflow-hidden" style={{ flex: '1 1 0%', minHeight: '180px' }}>
               <div className={cn("flex flex-col min-h-0 overflow-hidden transition-all", listPreviewOpp ? "w-[60%]" : "w-full")}>
                 <PipelineListView
                   opportunities={filteredOpportunities}
@@ -873,12 +873,18 @@ const Index = () => {
                 />
               </div>
               {listPreviewOpp && (
-                <div className="w-[40%] rounded-xl border border-border/60 bg-card/80 backdrop-blur-md overflow-hidden">
-                  <PipelineUWPreview
-                    opportunity={listPreviewOpp}
-                    onOpenModal={(opp) => {
-                      setListSelectedOpp(opp);
-                    }}
+                <div className="w-[40%] border-l border-border/60 bg-card/80 backdrop-blur-md overflow-y-auto p-3">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-bold text-foreground truncate">
+                      {[listPreviewOpp.contact?.first_name, listPreviewOpp.contact?.last_name].filter(Boolean).join(" ") || "No contact"}
+                    </h3>
+                    <Button size="sm" variant="outline" className="h-7 text-xs shrink-0" onClick={() => setListSelectedOpp(listPreviewOpp)}>
+                      <Eye className="h-3 w-3 mr-1" /> Full View
+                    </Button>
+                  </div>
+                  <AIValidatePanel
+                    key={listPreviewOpp.id}
+                    opportunityId={listPreviewOpp.id}
                   />
                 </div>
               )}
