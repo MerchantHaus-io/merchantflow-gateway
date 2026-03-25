@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react
 import { useSearchParams } from "react-router-dom";
 import UnifiedPipelineBoard from "@/components/UnifiedPipelineBoard";
 import PipelineListView from "@/components/PipelineListView";
-import PipelineUWPreview from "@/components/PipelineUWPreview";
+import { AIValidatePanel } from "@/components/opportunity-detail/AIValidatePanel";
 import OpportunityDetailModal from "@/components/OpportunityDetailModal";
 import NewApplicationModal, { ApplicationFormData } from "@/components/NewApplicationModal";
 import { AppLayout } from "@/components/AppLayout";
@@ -14,7 +14,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTasks } from "@/contexts/TasksContext";
 import DateRangeFilter from "@/components/DateRangeFilter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, ExternalLink } from "lucide-react";
+import { User, ExternalLink, Eye } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { DateRange } from "react-day-picker";
 import { isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import GameSplash from "@/components/GameSplash";
@@ -678,16 +679,29 @@ const Index = () => {
     if (updates.service_type) dbUpdates.service_type = updates.service_type;
     if (updates.processing_services !== undefined) dbUpdates.processing_services = updates.processing_services;
     if (updates.value_services !== undefined) dbUpdates.value_services = updates.value_services;
-    const {
-      error
-    } = await supabase.from('opportunities').update(dbUpdates).eq('id', id);
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update opportunity",
-        variant: "destructive"
-      });
-      return;
+    if (updates.assigned_to !== undefined) dbUpdates.assigned_to = updates.assigned_to || null;
+    if (updates.status !== undefined) dbUpdates.status = updates.status;
+    if (updates.outcome_status !== undefined) dbUpdates.outcome_status = updates.outcome_status;
+    if (updates.outcome_reason !== undefined) dbUpdates.outcome_reason = updates.outcome_reason;
+    if (updates.outcome_notes !== undefined) dbUpdates.outcome_notes = updates.outcome_notes;
+    if (updates.outcome_closed_at !== undefined) dbUpdates.outcome_closed_at = updates.outcome_closed_at;
+    if (updates.outcome_closed_by !== undefined) dbUpdates.outcome_closed_by = updates.outcome_closed_by;
+    if (updates.username !== undefined) dbUpdates.username = updates.username || null;
+    if (updates.referral_source !== undefined) dbUpdates.referral_source = updates.referral_source || null;
+    if (updates.timezone !== undefined) dbUpdates.timezone = updates.timezone || null;
+    if (updates.language !== undefined) dbUpdates.language = updates.language || null;
+
+    // Only write to DB if there are actual opportunity-level changes
+    if (Object.keys(dbUpdates).length > 0) {
+      const { error } = await supabase.from('opportunities').update(dbUpdates).eq('id', id);
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to update opportunity",
+          variant: "destructive"
+        });
+        return;
+      }
     }
 
     // Log stage change activity and show level up splash
@@ -863,7 +877,7 @@ const Index = () => {
           </div>
           {/* Pipeline list view with UW preview split — takes ~25% of available space */}
           {(
-            <div className="flex min-h-0 overflow-hidden gap-2" style={{ flex: '1 1 0%', minHeight: '180px' }}>
+            <div className="flex min-h-0 overflow-hidden" style={{ flex: '1 1 0%', minHeight: '180px' }}>
               <div className={cn("flex flex-col min-h-0 overflow-hidden transition-all", listPreviewOpp ? "w-[60%]" : "w-full")}>
                 <PipelineListView
                   opportunities={filteredOpportunities}
@@ -873,12 +887,18 @@ const Index = () => {
                 />
               </div>
               {listPreviewOpp && (
-                <div className="w-[40%] rounded-xl border border-border/60 bg-card/80 backdrop-blur-md overflow-hidden">
-                  <PipelineUWPreview
-                    opportunity={listPreviewOpp}
-                    onOpenModal={(opp) => {
-                      setListSelectedOpp(opp);
-                    }}
+                <div className="w-[40%] border-l border-border/60 bg-card/80 backdrop-blur-md overflow-y-auto p-3">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-bold text-foreground truncate">
+                      {[listPreviewOpp.contact?.first_name, listPreviewOpp.contact?.last_name].filter(Boolean).join(" ") || "No contact"}
+                    </h3>
+                    <Button size="sm" variant="outline" className="h-7 text-xs shrink-0" onClick={() => setListSelectedOpp(listPreviewOpp)}>
+                      <Eye className="h-3 w-3 mr-1" /> Full View
+                    </Button>
+                  </div>
+                  <AIValidatePanel
+                    key={listPreviewOpp.id}
+                    opportunityId={listPreviewOpp.id}
                   />
                 </div>
               )}
