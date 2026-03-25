@@ -74,6 +74,13 @@ const UnifiedPipelineBoard = ({
   const handleDrop = (e: React.DragEvent, stage: OpportunityStage) => {
     e.preventDefault();
     if (draggedOpportunity && draggedOpportunity.stage !== stage && !draggedOpportunity.outcome_status) {
+      // Block gateway-only deals from Underwriting and Approved stages
+      const GATEWAY_BLOCKED_STAGES: OpportunityStage[] = ['underwriting_review', 'processor_approval'];
+      if (getServiceType(draggedOpportunity) === 'gateway_only' && GATEWAY_BLOCKED_STAGES.includes(stage)) {
+        // Silently reject - gateway deals can't go to UW or Approved
+        setDraggedOpportunity(null);
+        return;
+      }
       onUpdateOpportunity(draggedOpportunity.id, { stage });
     }
     setDraggedOpportunity(null);
