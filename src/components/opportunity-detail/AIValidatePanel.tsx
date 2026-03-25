@@ -131,6 +131,30 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
   const [showDetails, setShowDetails] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Auto-load the latest report on mount
+  const hasFetchedRef = useRef(false);
+  useEffect(() => {
+    if (hasFetchedRef.current) return;
+    hasFetchedRef.current = true;
+    (async () => {
+      const { data } = await supabase
+        .from("validation_reports")
+        .select("*")
+        .eq("opportunity_id", opportunityId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+      if (data) {
+        setReport(data as unknown as UnifiedReport);
+        setMeta({
+          triggered_by: (data as any).triggered_by || "unknown",
+          created_at: (data as any).created_at || "",
+          no_change: !!(data as any).no_change,
+        });
+      }
+    })();
+  }, [opportunityId]);
+
   const handleSaveAsNote = useCallback(async () => {
     if (!report) return;
     setIsSaving(true);
