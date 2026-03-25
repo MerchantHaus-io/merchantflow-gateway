@@ -679,16 +679,29 @@ const Index = () => {
     if (updates.service_type) dbUpdates.service_type = updates.service_type;
     if (updates.processing_services !== undefined) dbUpdates.processing_services = updates.processing_services;
     if (updates.value_services !== undefined) dbUpdates.value_services = updates.value_services;
-    const {
-      error
-    } = await supabase.from('opportunities').update(dbUpdates).eq('id', id);
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update opportunity",
-        variant: "destructive"
-      });
-      return;
+    if (updates.assigned_to !== undefined) dbUpdates.assigned_to = updates.assigned_to || null;
+    if (updates.status !== undefined) dbUpdates.status = updates.status;
+    if (updates.outcome_status !== undefined) dbUpdates.outcome_status = updates.outcome_status;
+    if (updates.outcome_reason !== undefined) dbUpdates.outcome_reason = updates.outcome_reason;
+    if (updates.outcome_notes !== undefined) dbUpdates.outcome_notes = updates.outcome_notes;
+    if (updates.outcome_closed_at !== undefined) dbUpdates.outcome_closed_at = updates.outcome_closed_at;
+    if (updates.outcome_closed_by !== undefined) dbUpdates.outcome_closed_by = updates.outcome_closed_by;
+    if (updates.username !== undefined) dbUpdates.username = updates.username || null;
+    if (updates.referral_source !== undefined) dbUpdates.referral_source = updates.referral_source || null;
+    if (updates.timezone !== undefined) dbUpdates.timezone = updates.timezone || null;
+    if (updates.language !== undefined) dbUpdates.language = updates.language || null;
+
+    // Only write to DB if there are actual opportunity-level changes
+    if (Object.keys(dbUpdates).length > 0) {
+      const { error } = await supabase.from('opportunities').update(dbUpdates).eq('id', id);
+      if (error) {
+        toast({
+          title: "Error",
+          description: "Failed to update opportunity",
+          variant: "destructive"
+        });
+        return;
+      }
     }
 
     // Log stage change activity and show level up splash
