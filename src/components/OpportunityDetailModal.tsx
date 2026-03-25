@@ -866,6 +866,13 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                         const newStage = value as OpportunityStage;
                         const oldStage = opportunity.stage;
                         
+                        // Block gateway deals from Underwriting and Approved
+                        const GATEWAY_BLOCKED_STAGES: OpportunityStage[] = ['underwriting_review', 'processor_approval'];
+                        if (isGatewayCard && GATEWAY_BLOCKED_STAGES.includes(newStage)) {
+                          toast.error("Gateway-only deals cannot enter Underwriting or Approved stages", { duration: 4000 });
+                          return;
+                        }
+                        
                         // Underwriting gate check
                         if (newStage === 'underwriting_review') {
                           const gate = await checkUnderwritingGate(opportunity.id, opportunity.service_type);
