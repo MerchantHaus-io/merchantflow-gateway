@@ -1303,6 +1303,43 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                     {isEditing ? (
                       <div className="grid grid-cols-2 gap-4">
                         <InfoItem label="Stage" value={stageConfig.label} />
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground uppercase tracking-wide">Service Type</Label>
+                          <Select
+                            value={opportunity.service_type || 'processing'}
+                            onValueChange={async (value) => {
+                              const newType = value as 'processing' | 'gateway_only';
+                              // If switching to gateway, ensure stage is valid
+                              const GATEWAY_BLOCKED_STAGES: OpportunityStage[] = ['underwriting_review', 'processor_approval'];
+                              if (newType === 'gateway_only' && GATEWAY_BLOCKED_STAGES.includes(opportunity.stage)) {
+                                toast.error("Move out of Underwriting/Approved before switching to Gateway");
+                                return;
+                              }
+                              const { error } = await supabase
+                                .from('opportunities')
+                                .update({ service_type: newType })
+                                .eq('id', opportunity.id);
+                              if (error) { toast.error("Failed to update service type"); return; }
+                              await supabase.from('activities').insert({
+                                opportunity_id: opportunity.id,
+                                type: 'service_type_change',
+                                description: `Service type changed to ${newType === 'gateway_only' ? 'Gateway Only' : 'Processing'}`,
+                                user_id: user?.id,
+                                user_email: user?.email,
+                              });
+                              onUpdate({ ...opportunity, service_type: newType });
+                              toast.success(`Switched to ${newType === 'gateway_only' ? 'Gateway Only' : 'Processing'}`);
+                            }}
+                          >
+                            <SelectTrigger className="h-9">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-popover z-50">
+                              <SelectItem value="processing">Processing</SelectItem>
+                              <SelectItem value="gateway_only">Gateway Only</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                         <EditField label="Username" value={username} onChange={setUsername} />
                         <EditField label="Referral Source" value={referralSource} onChange={setReferralSource} />
                         <EditField label="Timezone" value={timezone} onChange={setTimezone} />
@@ -1311,6 +1348,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                     ) : (
                       <div className="grid grid-cols-2 gap-4">
                         <InfoItem label="Stage" value={stageConfig.label} />
+                        <InfoItem label="Service Type" value={isGatewayCard ? 'Gateway Only' : 'Processing'} />
                         <InfoItem label="Username" value={opportunity.username} />
                         <InfoItem label="Referral Source" value={opportunity.referral_source} />
                         <InfoItem label="Timezone" value={opportunity.timezone} />
