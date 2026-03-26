@@ -18,7 +18,7 @@ import { Opportunity, TEAM_MEMBERS, getServiceType } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { differenceInHours, differenceInDays } from "date-fns";
+import { differenceInHours, differenceInDays, format } from "date-fns";
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
