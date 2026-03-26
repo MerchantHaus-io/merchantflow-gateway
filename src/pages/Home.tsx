@@ -18,7 +18,7 @@ import { Carousel3D, type CarouselItem } from "@/components/home/Carousel3D";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { UpcomingMeetingsWidget } from "@/components/UpcomingMeetingsWidget";
+import { format, isToday, isTomorrow, differenceInHours } from "date-fns";
 
 interface ShortcutGroup {
   title: string;
@@ -106,6 +106,56 @@ const borderColorMap: Record<string, string> = {
   success: "border-success",
   warning: "border-warning",
 };
+
+// ── Next Meeting Chip (discreet inline widget) ──────────────
+function NextMeetingChip() {
+  const [event, setEvent] = useState<{ title: string; start_time: string; html_link: string | null } | null>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const now = new Date().toISOString();
+    const tomorrow = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+    supabase
+      .from("calendar_events")
+      .select("title, start_time, html_link")
+      .gte("start_time", now)
+      .lte("start_time", tomorrow)
+      .eq("status", "confirmed")
+      .order("start_time", { ascending: true })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => { if (data) setEvent(data); });
+  }, []);
+
+  if (!event) return null;
+
+  const start = new Date(event.start_time);
+  const hoursUntil = differenceInHours(start, new Date());
+  const timeLabel = isToday(start)
+    ? format(start, "h:mm a")
+    : isTomorrow(start)
+      ? `Tomorrow ${format(start, "h:mm a")}`
+      : format(start, "EEE h:mm a");
+
+  const isUrgent = hoursUntil <= 1;
+
+  return (
+    <button
+      onClick={() => navigate("/calendar")}
+      className={cn(
+        "flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium transition-all",
+        "hover:bg-accent/40 cursor-pointer shrink-0",
+        isUrgent
+          ? "border-warning/50 bg-warning/10 text-warning"
+          : "border-border/40 bg-card/60 text-muted-foreground hover:text-foreground"
+      )}
+    >
+      <CalendarDays className="h-3.5 w-3.5 shrink-0" />
+      <span className="truncate max-w-[180px]">{event.title}</span>
+      <span className="text-[10px] opacity-70">{timeLabel}</span>
+    </button>
+  );
+}
 
 // ── Grid View (card layout) ─────────────────────────────────
 function GridView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeGroup: number }) {
@@ -291,19 +341,22 @@ export default function Home() {
     )}
     <AppLayout>
       <div className="max-w-6xl mx-auto px-4 lg:px-8 py-6 lg:py-10">
-        {/* Hero greeting */}
+        {/* Hero greeting + next meeting */}
         <motion.div
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
-          className="text-center mb-4"
+          className="flex flex-col sm:flex-row items-center justify-center gap-x-4 gap-y-1 mb-4"
         >
-          <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-1">
-            {greeting}, <span className="text-primary">{displayName}</span>
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Quick access to everything you need.
-          </p>
+          <div className="text-center sm:text-left">
+            <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-0.5">
+              {greeting}, <span className="text-primary">{displayName}</span>
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Quick access to everything you need.
+            </p>
+          </div>
+          <NextMeetingChip />
         </motion.div>
 
         {/* Category tabs + layout toggle */}
@@ -393,10 +446,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Upcoming Meetings */}
-        <div className="mt-4 mb-4">
-          <UpcomingMeetingsWidget />
-        </div>
 
         {/* Content */}
         {layout === "carousel" ? (
