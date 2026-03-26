@@ -301,6 +301,19 @@ const OpportunityCard = ({
             </span>
           )}
 
+          {/* Upcoming meeting indicator */}
+          {!isGreyed && nextEvent && (
+            <span className={cn(
+              "flex items-center gap-1 text-[9px] font-medium px-1.5 py-0.5 rounded-md truncate max-w-full border",
+              differenceInHours(new Date(nextEvent.start_time), new Date()) <= 2
+                ? "text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30"
+                : "text-teal-600 dark:text-teal-400 bg-teal-500/10 border-teal-500/30"
+            )}>
+              <CalendarDays className="h-2.5 w-2.5 shrink-0" />
+              {format(new Date(nextEvent.start_time), "MMM d, h:mm a")}
+            </span>
+          )}
+
           {/* Footer row */}
           <div className="flex items-center justify-between pt-1 border-t border-border/40 gap-1">
             {/* Deal value — hidden when greyed */}
