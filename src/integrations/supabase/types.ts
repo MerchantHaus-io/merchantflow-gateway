@@ -1160,6 +1160,42 @@ export type Database = {
           },
         ]
       }
+      google_calendar_tokens: {
+        Row: {
+          access_token: string
+          created_at: string | null
+          expires_at: string
+          id: string
+          refresh_token: string
+          scopes: string | null
+          updated_at: string | null
+          user_email: string
+          user_id: string | null
+        }
+        Insert: {
+          access_token: string
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          refresh_token: string
+          scopes?: string | null
+          updated_at?: string | null
+          user_email: string
+          user_id?: string | null
+        }
+        Update: {
+          access_token?: string
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          refresh_token?: string
+          scopes?: string | null
+          updated_at?: string | null
+          user_email?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       merchant_consents: {
         Row: {
           accepted_at: string
