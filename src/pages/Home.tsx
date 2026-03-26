@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Briefcase, Building2, Users, FileText, BarChart3,
   Activity, BadgeDollarSign, Globe, BookOpen, BookMarked, ClipboardList,
   Calculator, Sparkles, FileSpreadsheet, Download, Cloud, Send, ListChecks,
-  Settings, LayoutGrid, Box, CircleDot, List, FolderOpen, UserPlus,
+  Settings, LayoutGrid, Box, CircleDot, List, FolderOpen, UserPlus, CalendarDays,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,6 +18,7 @@ import { Carousel3D, type CarouselItem } from "@/components/home/Carousel3D";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { UpcomingMeetingsWidget } from "@/components/UpcomingMeetingsWidget";
 
 interface ShortcutGroup {
   title: string;
@@ -33,6 +34,7 @@ const groups: ShortcutGroup[] = [
       { title: "Email Outreach", description: "Campaign tracker & sender", url: "/outreach", icon: Send, color: "teal" },
       { title: "Web Submissions", description: "Incoming applications", url: "/admin/web-submissions", icon: Globe, color: "gold" },
       { title: "Tasks", description: "Team task board", url: "/tasks", icon: ListChecks, color: "success" },
+      { title: "Calendar", description: "Meetings & events", url: "/calendar", icon: CalendarDays, color: "teal" },
     ],
   },
   {
@@ -389,6 +391,11 @@ export default function Home() {
               </motion.div>
             )}
           </div>
+        </div>
+
+        {/* Upcoming Meetings */}
+        <div className="mt-4 mb-4">
+          <UpcomingMeetingsWidget />
         </div>
 
         {/* Content */}

@@ -575,6 +575,109 @@ export type Database = {
           },
         ]
       }
+      calendar_events: {
+        Row: {
+          account_id: string | null
+          all_day: boolean
+          attendees: Json | null
+          calendar_id: string | null
+          calendar_owner_email: string | null
+          color: string | null
+          contact_id: string | null
+          created_at: string
+          description: string | null
+          end_time: string
+          google_event_id: string | null
+          html_link: string | null
+          id: string
+          location: string | null
+          opportunity_id: string | null
+          organizer_email: string | null
+          reminder_1h_sent: boolean
+          reminder_24h_sent: boolean
+          reminder_created_sent: boolean
+          start_time: string
+          status: string | null
+          synced_at: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          all_day?: boolean
+          attendees?: Json | null
+          calendar_id?: string | null
+          calendar_owner_email?: string | null
+          color?: string | null
+          contact_id?: string | null
+          created_at?: string
+          description?: string | null
+          end_time: string
+          google_event_id?: string | null
+          html_link?: string | null
+          id?: string
+          location?: string | null
+          opportunity_id?: string | null
+          organizer_email?: string | null
+          reminder_1h_sent?: boolean
+          reminder_24h_sent?: boolean
+          reminder_created_sent?: boolean
+          start_time: string
+          status?: string | null
+          synced_at?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          all_day?: boolean
+          attendees?: Json | null
+          calendar_id?: string | null
+          calendar_owner_email?: string | null
+          color?: string | null
+          contact_id?: string | null
+          created_at?: string
+          description?: string | null
+          end_time?: string
+          google_event_id?: string | null
+          html_link?: string | null
+          id?: string
+          location?: string | null
+          opportunity_id?: string | null
+          organizer_email?: string | null
+          reminder_1h_sent?: boolean
+          reminder_24h_sent?: boolean
+          reminder_created_sent?: boolean
+          start_time?: string
+          status?: string | null
+          synced_at?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_events_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_events_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       call_logs: {
         Row: {
           account_id: string | null
