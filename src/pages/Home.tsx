@@ -396,10 +396,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Upcoming Meetings */}
-        <div className="mt-4 mb-4">
-          <UpcomingMeetingsWidget />
-        </div>
 
         {/* Content */}
         {layout === "carousel" ? (
