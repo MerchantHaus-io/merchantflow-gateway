@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { GripVertical, CreditCard, Zap, Trash2, User, Clock } from "lucide-react";
+import { GripVertical, CreditCard, Zap, Trash2, User, Clock, CalendarDays } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -18,7 +18,7 @@ import { Opportunity, TEAM_MEMBERS, getServiceType } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { differenceInHours, differenceInDays } from "date-fns";
+import { differenceInHours, differenceInDays, format } from "date-fns";
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
@@ -100,6 +100,25 @@ const OpportunityCard = ({
   const dragStartPosRef = useRef<{ x: number; y: number } | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [nextEvent, setNextEvent] = useState<{ title: string; start_time: string } | null>(null);
+
+  // Fetch next upcoming calendar event for this opportunity
+  useEffect(() => {
+    const fetchEvent = async () => {
+      const now = new Date().toISOString();
+      const { data } = await supabase
+        .from("calendar_events")
+        .select("title, start_time")
+        .eq("opportunity_id", opportunity.id)
+        .eq("status", "confirmed")
+        .gte("start_time", now)
+        .order("start_time", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      setNextEvent(data || null);
+    };
+    fetchEvent();
+  }, [opportunity.id]);
 
   const slaInfo = useMemo(() => {
     if (isClosedWon) return { status: "green" as const, label: "Won", priority: null, hidden: true, daysInStage: 0 };
@@ -279,6 +298,19 @@ const OpportunityCard = ({
           {!isGreyed && opportunity.referral_source && (
             <span className="text-[9px] text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded-md truncate inline-block max-w-full border border-border/30">
               {opportunity.referral_source}
+            </span>
+          )}
+
+          {/* Upcoming meeting indicator */}
+          {!isGreyed && nextEvent && (
+            <span className={cn(
+              "flex items-center gap-1 text-[9px] font-medium px-1.5 py-0.5 rounded-md truncate max-w-full border",
+              differenceInHours(new Date(nextEvent.start_time), new Date()) <= 2
+                ? "text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30"
+                : "text-teal-600 dark:text-teal-400 bg-teal-500/10 border-teal-500/30"
+            )}>
+              <CalendarDays className="h-2.5 w-2.5 shrink-0" />
+              {format(new Date(nextEvent.start_time), "MMM d, h:mm a")}
             </span>
           )}
 
