@@ -100,6 +100,25 @@ const OpportunityCard = ({
   const dragStartPosRef = useRef<{ x: number; y: number } | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [nextEvent, setNextEvent] = useState<{ title: string; start_time: string } | null>(null);
+
+  // Fetch next upcoming calendar event for this opportunity
+  useEffect(() => {
+    const fetchEvent = async () => {
+      const now = new Date().toISOString();
+      const { data } = await supabase
+        .from("calendar_events")
+        .select("title, start_time")
+        .eq("opportunity_id", opportunity.id)
+        .eq("status", "confirmed")
+        .gte("start_time", now)
+        .order("start_time", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      setNextEvent(data || null);
+    };
+    fetchEvent();
+  }, [opportunity.id]);
 
   const slaInfo = useMemo(() => {
     if (isClosedWon) return { status: "green" as const, label: "Won", priority: null, hidden: true, daysInStage: 0 };
