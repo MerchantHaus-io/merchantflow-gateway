@@ -291,19 +291,22 @@ export default function Home() {
     )}
     <AppLayout>
       <div className="max-w-6xl mx-auto px-4 lg:px-8 py-6 lg:py-10">
-        {/* Hero greeting */}
+        {/* Hero greeting + next meeting */}
         <motion.div
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
-          className="text-center mb-4"
+          className="flex flex-col sm:flex-row items-center justify-center gap-x-4 gap-y-1 mb-4"
         >
-          <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-1">
-            {greeting}, <span className="text-primary">{displayName}</span>
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Quick access to everything you need.
-          </p>
+          <div className="text-center sm:text-left">
+            <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-0.5">
+              {greeting}, <span className="text-primary">{displayName}</span>
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Quick access to everything you need.
+            </p>
+          </div>
+          <NextMeetingChip />
         </motion.div>
 
         {/* Category tabs + layout toggle */}
