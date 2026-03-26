@@ -2,11 +2,14 @@ import { useState, useEffect, useMemo } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, parseISO } from "date-fns";
-import { ChevronLeft, ChevronRight, CalendarDays, Clock, MapPin, Users, ExternalLink } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, Clock, MapPin, Users, ExternalLink, Link2, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import { useSearchParams } from "react-router-dom";
 
 interface CalendarEvent {
   id: string;
@@ -32,6 +35,40 @@ export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("month");
+  const [isConnected, setIsConnected] = useState<boolean | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Handle OAuth redirect params
+  useEffect(() => {
+    if (searchParams.get("gcal_connected") === "true") {
+      toast.success("Google Calendar connected successfully!");
+      setIsConnected(true);
+      searchParams.delete("gcal_connected");
+      setSearchParams(searchParams, { replace: true });
+    }
+    if (searchParams.get("gcal_error")) {
+      toast.error(`Calendar connection failed: ${searchParams.get("gcal_error")}`);
+      searchParams.delete("gcal_error");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, []);
+
+  // Check connection status
+  useEffect(() => {
+    if (!user?.email) return;
+    checkConnection();
+  }, [user?.email]);
+
+  async function checkConnection() {
+    const { data } = await supabase
+      .from("google_calendar_tokens")
+      .select("id")
+      .eq("user_email", user?.email || "")
+      .maybeSingle();
+    setIsConnected(!!data);
+  }
 
   useEffect(() => {
     fetchEvents();
@@ -70,6 +107,45 @@ export default function Calendar() {
 
     setEvents((data as CalendarEvent[]) || []);
     setLoading(false);
+  }
+
+  function handleConnect() {
+    const clientId = import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID;
+    if (!clientId) {
+      toast.error("Google OAuth is not configured yet.");
+      return;
+    }
+
+    const redirectUri = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-calendar-callback`;
+    const state = btoa(JSON.stringify({ email: user?.email, user_id: user?.id }));
+    const scopes = "https://www.googleapis.com/auth/calendar.readonly";
+
+    const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+    authUrl.searchParams.set("client_id", clientId);
+    authUrl.searchParams.set("redirect_uri", redirectUri);
+    authUrl.searchParams.set("response_type", "code");
+    authUrl.searchParams.set("scope", scopes);
+    authUrl.searchParams.set("access_type", "offline");
+    authUrl.searchParams.set("prompt", "consent");
+    authUrl.searchParams.set("state", state);
+
+    window.location.href = authUrl.toString();
+  }
+
+  async function handleSync() {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("google-calendar-sync", {
+        body: { user_email: user?.email },
+      });
+      if (error) throw error;
+      toast.success(`Synced ${data?.synced || 0} events`);
+      fetchEvents();
+    } catch (err: any) {
+      toast.error("Sync failed: " + (err.message || "Unknown error"));
+    } finally {
+      setSyncing(false);
+    }
   }
 
   const calendarDays = useMemo(() => {
@@ -125,21 +201,43 @@ export default function Calendar() {
             </Button>
           </div>
 
-          <div className="flex items-center rounded-lg border border-border/60 bg-card/40 p-0.5">
-            {(["month", "week", "day"] as ViewMode[]).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => setViewMode(mode)}
-                className={cn(
-                  "px-3 py-1 text-xs font-semibold rounded-md transition-all capitalize",
-                  viewMode === mode
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {mode}
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            {/* Connection status + actions */}
+            {isConnected === false && (
+              <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={handleConnect}>
+                <Link2 className="h-3.5 w-3.5" />
+                Connect Google Calendar
+              </Button>
+            )}
+            {isConnected === true && (
+              <>
+                <Badge variant="secondary" className="gap-1 text-[10px]">
+                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                  Connected
+                </Badge>
+                <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={handleSync} disabled={syncing}>
+                  {syncing ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                  Sync
+                </Button>
+              </>
+            )}
+
+            <div className="flex items-center rounded-lg border border-border/60 bg-card/40 p-0.5">
+              {(["month", "week", "day"] as ViewMode[]).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  className={cn(
+                    "px-3 py-1 text-xs font-semibold rounded-md transition-all capitalize",
+                    viewMode === mode
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {mode}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 

@@ -6,77 +6,27 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Google Calendar API base
 const GCAL_API = "https://www.googleapis.com/calendar/v3";
 
-interface ServiceAccountKey {
-  client_email: string;
-  private_key: string;
-  token_uri: string;
-}
-
-// Create a JWT and exchange for access token
-async function getAccessToken(sa: ServiceAccountKey, impersonateEmail?: string): Promise<string> {
-  const now = Math.floor(Date.now() / 1000);
-  const header = { alg: "RS256", typ: "JWT" };
-  const payload: any = {
-    iss: sa.client_email,
-    scope: "https://www.googleapis.com/auth/calendar.readonly",
-    aud: sa.token_uri,
-    iat: now,
-    exp: now + 3600,
-  };
-  if (impersonateEmail) {
-    payload.sub = impersonateEmail;
-  }
-
-  const enc = (obj: any) => btoa(JSON.stringify(obj)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-  const headerB64 = enc(header);
-  const payloadB64 = enc(payload);
-  const unsignedToken = `${headerB64}.${payloadB64}`;
-
-  // Import private key
-  const pemBody = sa.private_key
-    .replace("-----BEGIN PRIVATE KEY-----", "")
-    .replace("-----END PRIVATE KEY-----", "")
-    .replace(/\n/g, "");
-  const binaryKey = Uint8Array.from(atob(pemBody), (c) => c.charCodeAt(0));
-
-  const cryptoKey = await crypto.subtle.importKey(
-    "pkcs8",
-    binaryKey.buffer,
-    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-
-  const signature = await crypto.subtle.sign(
-    "RSASSA-PKCS1-v1_5",
-    cryptoKey,
-    new TextEncoder().encode(unsignedToken)
-  );
-
-  const sigB64 = btoa(String.fromCharCode(...new Uint8Array(signature)))
-    .replace(/=/g, "")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
-
-  const jwt = `${unsignedToken}.${sigB64}`;
-
-  // Exchange JWT for access token
-  const resp = await fetch(sa.token_uri, {
+async function refreshAccessToken(refreshToken: string, clientId: string, clientSecret: string): Promise<{ access_token: string; expires_in: number } | null> {
+  const resp = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
+    body: new URLSearchParams({
+      refresh_token: refreshToken,
+      client_id: clientId,
+      client_secret: clientSecret,
+      grant_type: "refresh_token",
+    }),
   });
 
   if (!resp.ok) {
     const errBody = await resp.text();
-    throw new Error(`Token exchange failed [${resp.status}]: ${errBody}`);
+    console.error(`Token refresh failed: ${resp.status} ${errBody}`);
+    return null;
   }
 
-  const tokenData = await resp.json();
-  return tokenData.access_token;
+  return await resp.json();
 }
 
 async function fetchCalendarEvents(accessToken: string, calendarId: string, timeMin: string, timeMax: string) {
@@ -108,47 +58,88 @@ serve(async (req) => {
   }
 
   try {
-    const saJson = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
-    if (!saJson) throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON not configured");
-
-    const calendarIds = Deno.env.get("GOOGLE_CALENDAR_IDS") || "";
-    const teamEmails = (Deno.env.get("GOOGLE_TEAM_EMAILS") || "admin@merchanthaus.io,darryn@merchanthaus.io,support@merchanthaus.io,sales@merchanthaus.io,taryn@merchanthaus.io").split(",").map(e => e.trim());
-
-    const sa: ServiceAccountKey = JSON.parse(saJson);
+    const clientId = Deno.env.get("GOOGLE_OAUTH_CLIENT_ID");
+    const clientSecret = Deno.env.get("GOOGLE_OAUTH_CLIENT_SECRET");
+    if (!clientId || !clientSecret) throw new Error("Google OAuth credentials not configured");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Time range: sync 30 days ahead
+    // Optional: sync only a specific user
+    let filterEmail: string | null = null;
+    try {
+      const body = await req.json();
+      filterEmail = body?.user_email || null;
+    } catch { /* no body */ }
+
+    // Fetch all stored tokens
+    let tokenQuery = supabase.from("google_calendar_tokens").select("*");
+    if (filterEmail) {
+      tokenQuery = tokenQuery.eq("user_email", filterEmail);
+    }
+    const { data: tokenRows, error: tokenErr } = await tokenQuery;
+
+    if (tokenErr) throw new Error(`Failed to fetch tokens: ${tokenErr.message}`);
+    if (!tokenRows || tokenRows.length === 0) {
+      return new Response(
+        JSON.stringify({ success: true, synced: 0, message: "No connected calendars" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const now = new Date();
     const timeMin = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
     const timeMax = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
     const allEvents: any[] = [];
+    const sharedCalIds = (Deno.env.get("GOOGLE_CALENDAR_IDS") || "").split(",").map(c => c.trim()).filter(Boolean);
+    let sharedCalsFetched = false;
 
-    // 1. Fetch shared calendar events (no impersonation needed if SA has access)
-    const sharedCalIds = calendarIds.split(",").map(c => c.trim()).filter(Boolean);
-    if (sharedCalIds.length > 0) {
-      const sharedToken = await getAccessToken(sa);
-      for (const calId of sharedCalIds) {
-        const events = await fetchCalendarEvents(sharedToken, calId, timeMin, timeMax);
-        for (const ev of events) {
-          allEvents.push({ ...ev, _calendarId: calId, _ownerEmail: "shared" });
+    for (const token of tokenRows) {
+      let accessToken = token.access_token;
+
+      // Refresh if expired
+      const expiresAt = new Date(token.expires_at);
+      if (expiresAt <= now) {
+        const refreshed = await refreshAccessToken(token.refresh_token, clientId, clientSecret);
+        if (!refreshed) {
+          console.error(`Failed to refresh token for ${token.user_email}`);
+          continue;
         }
-      }
-    }
+        accessToken = refreshed.access_token;
+        const newExpiry = new Date(Date.now() + refreshed.expires_in * 1000).toISOString();
 
-    // 2. Fetch individual user calendars via impersonation
-    for (const email of teamEmails) {
+        await supabase.from("google_calendar_tokens").update({
+          access_token: accessToken,
+          expires_at: newExpiry,
+          updated_at: new Date().toISOString(),
+        }).eq("user_email", token.user_email);
+      }
+
+      // Fetch user's primary calendar
       try {
-        const userToken = await getAccessToken(sa, email);
-        const events = await fetchCalendarEvents(userToken, "primary", timeMin, timeMax);
+        const events = await fetchCalendarEvents(accessToken, "primary", timeMin, timeMax);
         for (const ev of events) {
-          allEvents.push({ ...ev, _calendarId: "primary", _ownerEmail: email });
+          allEvents.push({ ...ev, _calendarId: "primary", _ownerEmail: token.user_email });
         }
       } catch (err) {
-        console.error(`Failed to fetch calendar for ${email}:`, err);
+        console.error(`Failed to fetch primary calendar for ${token.user_email}:`, err);
+      }
+
+      // Fetch shared calendars using the first available token
+      if (!sharedCalsFetched && sharedCalIds.length > 0) {
+        for (const calId of sharedCalIds) {
+          try {
+            const events = await fetchCalendarEvents(accessToken, calId, timeMin, timeMax);
+            for (const ev of events) {
+              allEvents.push({ ...ev, _calendarId: calId, _ownerEmail: "shared" });
+            }
+            sharedCalsFetched = true;
+          } catch (err) {
+            console.error(`Failed to fetch shared calendar ${calId}:`, err);
+          }
+        }
       }
     }
 
@@ -207,7 +198,6 @@ serve(async (req) => {
     // Clean up cancelled/deleted events
     const googleIds = Array.from(uniqueEvents.keys());
     if (googleIds.length > 0) {
-      // Delete events that are no longer in Google Calendar
       const { data: existing } = await supabase
         .from("calendar_events")
         .select("id, google_event_id")
