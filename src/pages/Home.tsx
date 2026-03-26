@@ -18,7 +18,7 @@ import { Carousel3D, type CarouselItem } from "@/components/home/Carousel3D";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { UpcomingMeetingsWidget } from "@/components/UpcomingMeetingsWidget";
+import { format, isToday, isTomorrow, differenceInHours } from "date-fns";
 
 interface ShortcutGroup {
   title: string;
