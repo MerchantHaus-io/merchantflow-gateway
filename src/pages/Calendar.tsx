@@ -109,27 +109,19 @@ export default function Calendar() {
     setLoading(false);
   }
 
-  function handleConnect() {
-    const clientId = import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID;
-    if (!clientId) {
-      toast.error("Google OAuth is not configured yet.");
-      return;
+  async function handleConnect() {
+    try {
+      const { data, error } = await supabase.functions.invoke("google-calendar-auth-url", {
+        body: { user_email: user?.email, user_id: user?.id },
+      });
+      if (error || !data?.url) {
+        toast.error("Failed to start Google Calendar connection.");
+        return;
+      }
+      window.location.href = data.url;
+    } catch {
+      toast.error("Failed to start Google Calendar connection.");
     }
-
-    const redirectUri = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-calendar-callback`;
-    const state = btoa(JSON.stringify({ email: user?.email, user_id: user?.id }));
-    const scopes = "https://www.googleapis.com/auth/calendar.readonly";
-
-    const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
-    authUrl.searchParams.set("client_id", clientId);
-    authUrl.searchParams.set("redirect_uri", redirectUri);
-    authUrl.searchParams.set("response_type", "code");
-    authUrl.searchParams.set("scope", scopes);
-    authUrl.searchParams.set("access_type", "offline");
-    authUrl.searchParams.set("prompt", "consent");
-    authUrl.searchParams.set("state", state);
-
-    window.location.href = authUrl.toString();
   }
 
   async function handleSync() {
