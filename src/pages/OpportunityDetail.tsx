@@ -623,13 +623,48 @@ const OpportunityDetail = () => {
                               )}
                             </div>
                           )}
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            {serviceType === 'gateway_only' ? (
-                              <><Zap className="h-3 w-3 text-amber-500" /> Gateway</>
-                            ) : (
-                              <><CreditCard className="h-3 w-3 text-blue-500" /> Processing</>
-                            )}
-                          </div>
+                          <Select
+                            value={serviceType}
+                            onValueChange={async (value) => {
+                              const newType = value as 'processing' | 'gateway_only';
+                              if (newType === serviceType) return;
+                              // Block if current stage is invalid for gateway
+                              const GATEWAY_BLOCKED: OpportunityStage[] = ['underwriting_review', 'processor_approval'];
+                              if (newType === 'gateway_only' && GATEWAY_BLOCKED.includes(opportunity.stage)) {
+                                toast.error("Move out of Underwriting/Approved before switching to Gateway");
+                                return;
+                              }
+                              // Reset stage if not valid for new pipeline
+                              const stageUpdate = newType === 'gateway_only' && !GATEWAY_ONLY_PIPELINE_STAGES.includes(opportunity.stage)
+                                ? 'discovery' : undefined;
+                              const { error } = await supabase
+                                .from('opportunities')
+                                .update({ service_type: newType, ...(stageUpdate && { stage: stageUpdate }) })
+                                .eq('id', opportunity.id);
+                              if (error) { toast.error("Failed to switch pipeline"); return; }
+                              await supabase.from('activities').insert({
+                                opportunity_id: opportunity.id,
+                                type: 'pipeline_change',
+                                description: `Pipeline switched to ${newType === 'gateway_only' ? 'Gateway Only' : 'Processing'}${stageUpdate ? ' (stage reset to Discovery)' : ''}`,
+                                user_id: user?.id,
+                                user_email: user?.email,
+                              });
+                              setOpportunity(prev => prev ? { ...prev, service_type: newType, ...(stageUpdate && { stage: stageUpdate as OpportunityStage }) } : null);
+                              toast.success(`Switched to ${newType === 'gateway_only' ? 'Gateway' : 'Processing'}`);
+                            }}
+                          >
+                            <SelectTrigger className="h-7 w-auto border-0 bg-transparent hover:bg-muted/50 px-2 text-sm gap-1 text-foreground">
+                              {serviceType === 'gateway_only' ? (
+                                <span className="flex items-center gap-1 text-teal-600 dark:text-teal-400"><Zap className="h-3 w-3" /> Gateway</span>
+                              ) : (
+                                <span className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400"><CreditCard className="h-3 w-3" /> Processing</span>
+                              )}
+                            </SelectTrigger>
+                            <SelectContent className="bg-popover z-50">
+                              <SelectItem value="processing"><span className="flex items-center gap-2"><CreditCard className="h-3 w-3" /> Processing</span></SelectItem>
+                              <SelectItem value="gateway_only"><span className="flex items-center gap-2"><Zap className="h-3 w-3" /> Gateway Only</span></SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
                     </div>
