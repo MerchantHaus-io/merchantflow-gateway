@@ -1,7 +1,7 @@
 import { useEffect, useRef, memo } from "react";
 
-const STAR_COUNT = 220;
-const SPEED = 0.15;
+const STAR_COUNT = 120;
+const SPEED = 0.12;
 
 // Shooting star timing
 const SHOOT_MIN_DELAY = 8000; // 8s
@@ -31,8 +31,8 @@ function createStars(w: number, h: number): Star[] {
     x: Math.random() * w,
     y: Math.random() * h,
     z: Math.random(),
-    size: Math.random() * 1.8 + 0.4,
-    opacity: Math.random() * 0.6 + 0.2,
+    size: Math.random() * 1.2 + 0.2,
+    opacity: Math.random() * 0.35 + 0.08,
   }));
 }
 
