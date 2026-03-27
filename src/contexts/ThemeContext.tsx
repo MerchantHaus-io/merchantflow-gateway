@@ -32,6 +32,7 @@ export const THEME_OPTIONS: ThemeOption[] = [
   { id: 'dark-charcoal', name: 'Charcoal', mode: 'dark', description: 'Warm grey tones' },
   { id: 'dark-mono', name: 'Mono', mode: 'dark', description: 'Minimalist black & white' },
   { id: 'dark-ps1', name: 'PS1 Classic', mode: 'dark', description: 'Retro grey console' },
+  { id: 'dark-doom', name: 'DOOM', mode: 'dark', description: 'Hellfire & brimstone' },
   { id: 'light-default', name: 'Default Light', mode: 'light', description: 'Standard light theme' },
   { id: 'light-ocean', name: 'Ocean', mode: 'light', description: 'Cool blue tones' },
   { id: 'light-warm', name: 'Warm', mode: 'light', description: 'Warm sepia tones' },
