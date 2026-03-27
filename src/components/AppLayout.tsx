@@ -1,4 +1,4 @@
-import { ReactNode, useRef, useCallback } from "react";
+import { ReactNode, useRef, useCallback, lazy, Suspense } from "react";
 import { useLocation } from "react-router-dom";
 import { MegaMenuHeader } from "@/components/MegaMenuHeader";
 import FloatingChat from "@/components/FloatingChat";
@@ -12,8 +12,11 @@ import { PageTransition } from "@/components/PageTransition";
 import { OfficeSimulatorOverlay } from "@/components/chat/OfficeSimulatorOverlay";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useTheme } from "@/contexts/ThemeContext";
 import { RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const Starfield = lazy(() => import("@/components/Starfield"));
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -33,6 +36,8 @@ export function AppLayout({
   const scrollRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const location = useLocation();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const isChatRoute = location.pathname === "/chat";
   const handleRefresh = useCallback(async () => {
     window.location.reload();
@@ -46,7 +51,12 @@ export function AppLayout({
   const showIndicator = pullDistance > 0 || isRefreshing;
 
   return (
-    <div className="h-screen h-dvh min-h-0 flex flex-col w-full overflow-hidden">
+    <div className="h-screen h-dvh min-h-0 flex flex-col w-full overflow-hidden relative">
+      {isDark && (
+        <Suspense fallback={null}>
+          <Starfield />
+        </Suspense>
+      )}
       <MegaMenuHeader onNewApplication={onNewApplication} />
       <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {(pageTitle || headerActions) && (
