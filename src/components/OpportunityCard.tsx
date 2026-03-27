@@ -324,6 +324,20 @@ const OpportunityCard = ({
             </span>
           )}
 
+          {/* Underwriting score */}
+          {!isGreyed && uwScore !== null && (
+            <span className={cn(
+              "flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-md border",
+              uwScore >= 80 ? "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30"
+                : uwScore >= 60 ? "text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30"
+                : uwScore >= 40 ? "text-orange-600 dark:text-orange-400 bg-orange-500/10 border-orange-500/30"
+                : "text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/30"
+            )}>
+              <ShieldCheck className="h-2.5 w-2.5 shrink-0" />
+              {Math.round(uwScore)}
+            </span>
+          )}
+
           {/* Footer row */}
           <div className="flex items-center justify-between pt-1 border-t border-border/40 gap-1">
             {/* Deal value — hidden when greyed */}
