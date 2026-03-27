@@ -1003,6 +1003,68 @@ const OpportunityDetail = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Pipeline Switch Confirmation */}
+      <AlertDialog open={showPipelineSwitch} onOpenChange={setShowPipelineSwitch}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              {serviceType === 'processing' ? (
+                <><Zap className="h-5 w-5 text-teal-500" /> Convert to Gateway?</>
+              ) : (
+                <><CreditCard className="h-5 w-5 text-indigo-500" /> Convert to Processing?</>
+              )}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {serviceType === 'processing' ? (
+                <>
+                  Are you sure you'd like to convert <strong>{account?.name}</strong> from a <strong>Processing</strong> account to a <strong>Gateway Only</strong> account? 
+                  {!GATEWAY_ONLY_PIPELINE_STAGES.includes(opportunity.stage) && (
+                    <span className="block mt-2 text-amber-600 dark:text-amber-400 font-medium">
+                      ⚠ The current stage is not available on the Gateway pipeline — this deal will be reset to Discovery.
+                    </span>
+                  )}
+                </>
+              ) : (
+                <>Are you sure you'd like to convert <strong>{account?.name}</strong> from a <strong>Gateway Only</strong> account to a <strong>Processing</strong> account?</>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                const newType = serviceType === 'processing' ? 'gateway_only' : 'processing';
+                const GATEWAY_BLOCKED: OpportunityStage[] = ['underwriting_review', 'processor_approval'];
+                if (newType === 'gateway_only' && GATEWAY_BLOCKED.includes(opportunity.stage)) {
+                  toast.error("Move out of Underwriting/Approved before switching to Gateway");
+                  return;
+                }
+                const stageUpdate = newType === 'gateway_only' && !GATEWAY_ONLY_PIPELINE_STAGES.includes(opportunity.stage)
+                  ? 'discovery' : undefined;
+                const { error } = await supabase
+                  .from('opportunities')
+                  .update({ service_type: newType, ...(stageUpdate && { stage: stageUpdate }) })
+                  .eq('id', opportunity.id);
+                if (error) { toast.error("Failed to switch pipeline"); return; }
+                await supabase.from('activities').insert({
+                  opportunity_id: opportunity.id,
+                  type: 'pipeline_change',
+                  description: `Pipeline switched to ${newType === 'gateway_only' ? 'Gateway Only' : 'Processing'}${stageUpdate ? ' (stage reset to Discovery)' : ''}`,
+                  user_id: user?.id,
+                  user_email: user?.email,
+                });
+                setOpportunity(prev => prev ? { ...prev, service_type: newType, ...(stageUpdate && { stage: stageUpdate as OpportunityStage }) } : null);
+                toast.success(`Switched to ${newType === 'gateway_only' ? 'Gateway' : 'Processing'}`);
+                setShowPipelineSwitch(false);
+              }}
+              className={serviceType === 'processing' ? "bg-teal-600 hover:bg-teal-700" : "bg-indigo-600 hover:bg-indigo-700"}
+            >
+              Yes, Convert
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <GameSplash
         type="death"
         show={showDeathSplash}
