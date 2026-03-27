@@ -1,7 +1,7 @@
 import { useEffect, useRef, memo } from "react";
 
-const STAR_COUNT = 220;
-const SPEED = 0.15;
+const STAR_COUNT = 120;
+const SPEED = 0.12;
 
 // Shooting star timing
 const SHOOT_MIN_DELAY = 8000; // 8s
