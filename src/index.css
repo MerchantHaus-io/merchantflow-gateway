@@ -273,7 +273,7 @@ All colors MUST be HSL.
 
   /* Dark Forest - Green accents */
   .dark-forest.dark {
-    --background: 150 20% 4%;
+    --background: 150 20% 2%;
     --foreground: 120 10% 95%;
 
     --card: 150 20% 10%;
