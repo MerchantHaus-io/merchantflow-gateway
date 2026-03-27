@@ -56,7 +56,8 @@ import {
   OpportunityStage,
   TEAM_MEMBERS,
   getServiceType,
-  migrateStage 
+  migrateStage,
+  GATEWAY_ONLY_PIPELINE_STAGES,
 } from "@/types/opportunity";
 import ThemeToggle from "@/components/ThemeToggle";
 import ActivitiesTab from "@/components/ActivitiesTab";
