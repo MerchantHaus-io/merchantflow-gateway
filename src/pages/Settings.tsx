@@ -11,7 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Shield, RefreshCw, LogOut, Camera, User, Loader2, Save, Bell, Palette, Sun, Moon, Trees, Waves, Flame, Stars, MessageCircle, Volume2, Download, FileArchive, Users, Cloudy, Circle, Smartphone, DatabaseBackup, Gamepad2, Cloud } from "lucide-react";
+import { Shield, RefreshCw, LogOut, Camera, User, Loader2, Save, Bell, Palette, Sun, Moon, Trees, Waves, Flame, Stars, MessageCircle, Volume2, Download, FileArchive, Users, Cloudy, Circle, Smartphone, DatabaseBackup, Gamepad2, Cloud, Skull } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import JSZip from "jszip";
 import { Switch } from "@/components/ui/switch";
@@ -26,6 +26,7 @@ const VARIANT_ICONS: Record<ThemeVariant, React.ReactNode> = {
   'dark-charcoal': <Cloudy className="h-4 w-4" />,
   'dark-mono': <Circle className="h-4 w-4" />,
   'dark-ps1': <Gamepad2 className="h-4 w-4" />,
+  'dark-doom': <Skull className="h-4 w-4" />,
   'light-default': <Sun className="h-4 w-4" />,
   'light-ocean': <Waves className="h-4 w-4" />,
   'light-warm': <Flame className="h-4 w-4" />,

@@ -9,6 +9,7 @@ export type ThemeVariant =
   | 'dark-charcoal'
   | 'dark-mono'
   | 'dark-ps1'
+  | 'dark-doom'
   | 'light-default' 
   | 'light-ocean' 
   | 'light-warm'
@@ -31,6 +32,7 @@ export const THEME_OPTIONS: ThemeOption[] = [
   { id: 'dark-charcoal', name: 'Charcoal', mode: 'dark', description: 'Warm grey tones' },
   { id: 'dark-mono', name: 'Mono', mode: 'dark', description: 'Minimalist black & white' },
   { id: 'dark-ps1', name: 'PS1 Classic', mode: 'dark', description: 'Retro grey console' },
+  { id: 'dark-doom', name: 'DOOM', mode: 'dark', description: 'Hellfire & brimstone' },
   { id: 'light-default', name: 'Default Light', mode: 'light', description: 'Standard light theme' },
   { id: 'light-ocean', name: 'Ocean', mode: 'light', description: 'Cool blue tones' },
   { id: 'light-warm', name: 'Warm', mode: 'light', description: 'Warm sepia tones' },
@@ -171,7 +173,7 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
     const root = document.documentElement;
     
     // Remove all theme classes
-    root.classList.remove('dark', 'light', 'dark-default', 'dark-midnight', 'dark-forest', 'dark-charcoal', 'dark-mono', 'dark-ps1', 'light-default', 'light-ocean', 'light-warm', 'light-silver', 'light-mono', 'light-salesforce', 'light-star');
+    root.classList.remove('dark', 'light', 'dark-default', 'dark-midnight', 'dark-forest', 'dark-charcoal', 'dark-mono', 'dark-ps1', 'dark-doom', 'light-default', 'light-ocean', 'light-warm', 'light-silver', 'light-mono', 'light-salesforce', 'light-star');
     
     // Add base mode and variant
     root.classList.add(theme);

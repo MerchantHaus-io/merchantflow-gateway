@@ -36,8 +36,9 @@ export function AppLayout({
   const scrollRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const location = useLocation();
-  const { theme } = useTheme();
+  const { theme, variant } = useTheme();
   const isDark = theme === "dark";
+  const isDoom = variant === "dark-doom";
   const isChatRoute = location.pathname === "/chat";
   const handleRefresh = useCallback(async () => {
     window.location.reload();
@@ -57,12 +58,14 @@ export function AppLayout({
           <Suspense fallback={null}>
             <Starfield />
           </Suspense>
-          {/* Earth horizon glow */}
+          {/* Earth / Hell horizon glow */}
           <div
             className="pointer-events-none fixed inset-x-0 bottom-0 z-[1]"
             style={{
               height: "40%",
-              background: "radial-gradient(ellipse 120% 60% at 50% 110%, hsla(200, 80%, 35%, 0.25) 0%, hsla(200, 80%, 35%, 0.08) 40%, transparent 70%)",
+              background: isDoom
+                ? "radial-gradient(ellipse 120% 60% at 50% 110%, hsla(0, 85%, 35%, 0.35) 0%, hsla(0, 85%, 35%, 0.12) 40%, transparent 70%)"
+                : "radial-gradient(ellipse 120% 60% at 50% 110%, hsla(200, 80%, 35%, 0.25) 0%, hsla(200, 80%, 35%, 0.08) 40%, transparent 70%)",
             }}
             aria-hidden="true"
           />
