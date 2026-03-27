@@ -660,7 +660,7 @@ All colors MUST be HSL.
 
   /* ═══ Dark PS1 Classic — Retro PlayStation 1 grey console aesthetic ═══ */
   .dark-ps1.dark {
-    --background: 0 0% 12%;
+    --background: 0 0% 3%;
     --foreground: 0 0% 88%;
 
     --card: 0 0% 16%;
