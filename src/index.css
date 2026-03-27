@@ -237,7 +237,7 @@ All colors MUST be HSL.
 
   /* Dark Midnight - Deep blue tones */
   .dark-midnight.dark {
-    --background: 222 47% 5%;
+    --background: 222 47% 2%;
     --foreground: 210 40% 98%;
 
     --card: 222 47% 12%;
