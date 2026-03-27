@@ -933,7 +933,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                         toast.success(`Stage updated to ${STAGE_CONFIG[newStage].label}`);
                       }}
                     >
-                      <SelectTrigger className="h-6 w-auto border-0 bg-transparent hover:bg-muted/50 px-2 text-sm gap-1">
+                      <SelectTrigger className="h-6 w-auto border-0 bg-transparent hover:bg-muted/50 px-2 text-sm gap-1 text-foreground">
                         <div className={`w-2 h-2 rounded-full ${stageConfig.colorClass}`} />
                         <SelectValue />
                       </SelectTrigger>
