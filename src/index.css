@@ -825,6 +825,14 @@ All colors MUST be HSL.
     --radius: 0.25rem;
   }
 
+  /* Dark DOOM: hellfire lava background */
+  .dark-doom.dark body {
+    background-image: linear-gradient(hsla(0 0% 2% / 0.75), hsla(0 0% 2% / 0.75)), url('/src/assets/bg-dark-doom.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
 
   /* ═══ Light Star Admin — Warm Orange & Dark Navy ═══ */
   .light-star.light {
