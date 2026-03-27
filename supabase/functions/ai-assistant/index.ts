@@ -565,7 +565,7 @@ serve(async (req) => {
               type: "object",
               properties: {
                 opportunity_id: { type: "string", description: "UUID of the opportunity" },
-                service_type: { type: "string", enum: ["processing", "gateway"], description: "Service type" },
+                service_type: { type: "string", enum: ["processing", "gateway_only"], description: "Service type — use 'processing' for full processing deals or 'gateway_only' for gateway-only deals" },
                 referral_source: { type: "string", description: "Referral source" },
                 language: { type: "string", description: "Language preference" },
                 timezone: { type: "string", description: "Timezone" },
