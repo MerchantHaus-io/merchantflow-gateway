@@ -142,7 +142,11 @@ export const EMAIL_TO_USER: Record<string, string> = {
 
 // Allowed emails that can access the dashboard
 export const ALLOWED_EMAILS = [
+  'admin@merchanthaus.io',
   'darryn@merchanthaus.io',
+  'support@merchanthaus.io',
+  'sales@merchanthaus.io',
+  'taryn@merchanthaus.io',
 ];
 
 // Helper to get team member name from email
