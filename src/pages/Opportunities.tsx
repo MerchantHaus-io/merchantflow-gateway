@@ -682,6 +682,42 @@ const Opportunities = () => {
                                     <Eye className="h-4 w-4 mr-2" />
                                     View Details
                                   </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onClick={async () => {
+                                    const currentType = getServiceType(opp);
+                                    const newType = currentType === 'gateway_only' ? 'processing' : 'gateway_only';
+                                    const newStage = opp.stage;
+                                    // If switching to gateway_only and current stage is not in gateway pipeline, reset to discovery
+                                    const GATEWAY_STAGES = ['discovery', 'qualified', 'gateway_submitted', 'integration_setup', 'testing', 'go_live_ready'];
+                                    const stageUpdate = (newType === 'gateway_only' && !GATEWAY_STAGES.includes(newStage)) ? 'discovery' : undefined;
+                                    
+                                    const updatePayload: Record<string, unknown> = { service_type: newType };
+                                    if (stageUpdate) updatePayload.stage = stageUpdate;
+                                    
+                                    const { error } = await supabase
+                                      .from('opportunities')
+                                      .update(updatePayload)
+                                      .eq('id', opp.id);
+                                    if (error) {
+                                      toast({ title: "Failed to switch pipeline", variant: "destructive" });
+                                      return;
+                                    }
+                                    await supabase.from('activities').insert({
+                                      opportunity_id: opp.id,
+                                      type: 'pipeline_change',
+                                      description: `Switched from ${currentType === 'gateway_only' ? 'Gateway' : 'Processing'} to ${newType === 'gateway_only' ? 'Gateway' : 'Processing'}${stageUpdate ? ' (stage reset to Discovery)' : ''}`,
+                                      user_id: user?.id,
+                                      user_email: user?.email,
+                                    });
+                                    toast({ title: `Switched to ${newType === 'gateway_only' ? 'Gateway' : 'Processing'} pipeline` });
+                                    fetchOpportunities();
+                                  }}>
+                                    {getServiceType(opp) === 'gateway_only' ? (
+                                      <><CreditCard className="h-4 w-4 mr-2" />Switch to Processing</>
+                                    ) : (
+                                      <><Zap className="h-4 w-4 mr-2" />Switch to Gateway</>
+                                    )}
+                                  </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </TableCell>
