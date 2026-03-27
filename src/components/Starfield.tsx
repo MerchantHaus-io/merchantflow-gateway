@@ -31,8 +31,8 @@ function createStars(w: number, h: number): Star[] {
     x: Math.random() * w,
     y: Math.random() * h,
     z: Math.random(),
-    size: Math.random() * 1.2 + 0.2,
-    opacity: Math.random() * 0.35 + 0.08,
+    size: Math.random() * 1.8 + 0.4,
+    opacity: Math.random() * 0.6 + 0.2,
   }));
 }
 
