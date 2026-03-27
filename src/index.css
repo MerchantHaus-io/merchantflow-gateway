@@ -827,7 +827,7 @@ All colors MUST be HSL.
 
   /* Dark DOOM: hellfire lava background */
   .dark-doom.dark body {
-    background-image: linear-gradient(hsla(0 0% 2% / 0.88), hsla(0 0% 2% / 0.75)), url('/src/assets/bg-dark-doom.jpg');
+    background-image: linear-gradient(hsla(0 0% 2% / 0.93), hsla(0 0% 2% / 0.93)), url('/src/assets/bg-dark-doom.jpg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -983,7 +983,7 @@ All colors MUST be HSL.
 
   /* Dark mode: default background */
   .dark body {
-    background-image: linear-gradient(hsla(0 0% 0% / 0.45), hsla(0 0% 0% / 0.45)), url('/src/assets/bg-dark-default.png');
+    background-image: linear-gradient(hsla(0 0% 0% / 0.88), hsla(0 0% 0% / 0.88)), url('/src/assets/bg-dark-default.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -992,7 +992,7 @@ All colors MUST be HSL.
 
   /* Dark Midnight: deep blue background */
   .dark-midnight.dark body {
-    background-image: linear-gradient(hsla(222 47% 2% / 0.85), hsla(222 47% 2% / 0.7)), url('/src/assets/bg-dark-midnight.png');
+    background-image: linear-gradient(hsla(222 47% 2% / 0.92), hsla(222 47% 2% / 0.92)), url('/src/assets/bg-dark-midnight.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -1001,7 +1001,7 @@ All colors MUST be HSL.
 
   /* Dark Forest: emerald background */
   .dark-forest.dark body {
-    background-image: linear-gradient(hsla(150 20% 2% / 0.85), hsla(150 20% 2% / 0.7)), url('/src/assets/bg-dark-forest.png');
+    background-image: linear-gradient(hsla(150 20% 2% / 0.92), hsla(150 20% 2% / 0.92)), url('/src/assets/bg-dark-forest.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -1010,7 +1010,7 @@ All colors MUST be HSL.
 
   /* Dark Charcoal: warm grey background */
   .dark-charcoal.dark body {
-    background-image: linear-gradient(hsla(30 5% 2% / 0.85), hsla(30 5% 2% / 0.7)), url('/src/assets/bg-dark-charcoal.png');
+    background-image: linear-gradient(hsla(30 5% 2% / 0.92), hsla(30 5% 2% / 0.92)), url('/src/assets/bg-dark-charcoal.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -1067,7 +1067,7 @@ All colors MUST be HSL.
 
   /* Dark PS1: retro polygonal background */
   .dark-ps1.dark body {
-    background-image: linear-gradient(hsla(240 8% 3% / 0.85), hsla(240 8% 3% / 0.7)), url('/src/assets/bg-dark-ps1.png');
+    background-image: linear-gradient(hsla(240 8% 3% / 0.92), hsla(240 8% 3% / 0.92)), url('/src/assets/bg-dark-ps1.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
