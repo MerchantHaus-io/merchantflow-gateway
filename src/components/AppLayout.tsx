@@ -53,9 +53,21 @@ export function AppLayout({
   return (
     <div className="h-screen h-dvh min-h-0 flex flex-col w-full overflow-hidden relative">
       {isDark && (
-        <Suspense fallback={null}>
-          <Starfield />
-        </Suspense>
+        <>
+          <Suspense fallback={null}>
+            <Starfield />
+          </Suspense>
+          {/* Earth horizon glow */}
+          <div
+            className="pointer-events-none fixed inset-x-0 bottom-0 z-[1]"
+            style={{
+              height: "40%",
+              background: "radial-gradient(ellipse 120% 60% at 50% 110%, hsla(200, 80%, 35%, 0.25) 0%, hsla(200, 80%, 35%, 0.08) 40%, transparent 70%)",
+            }}
+            aria-hidden="true"
+          />
+        </>
+      )}
       )}
       <MegaMenuHeader onNewApplication={onNewApplication} />
       <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
