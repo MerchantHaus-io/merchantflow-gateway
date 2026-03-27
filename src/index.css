@@ -1008,7 +1008,7 @@ All colors MUST be HSL.
 
   /* Dark PS1: retro polygonal background */
   .dark-ps1.dark body {
-    background-image: linear-gradient(hsla(240 8% 6% / 0.5), hsla(240 8% 6% / 0.5)), url('/src/assets/bg-dark-ps1.png');
+    background-image: linear-gradient(hsla(240 8% 3% / 0.7), hsla(240 8% 3% / 0.7)), url('/src/assets/bg-dark-ps1.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
