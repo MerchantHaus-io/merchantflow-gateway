@@ -101,6 +101,7 @@ const OpportunityCard = ({
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [nextEvent, setNextEvent] = useState<{ title: string; start_time: string } | null>(null);
+  const [uwScore, setUwScore] = useState<number | null>(null);
 
   // Fetch next upcoming calendar event for this opportunity
   useEffect(() => {
