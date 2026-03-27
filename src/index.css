@@ -933,7 +933,7 @@ All colors MUST be HSL.
 
   /* Dark Midnight: deep blue background */
   .dark-midnight.dark body {
-    background-image: linear-gradient(hsla(222 47% 5% / 0.4), hsla(222 47% 5% / 0.4)), url('/src/assets/bg-dark-midnight.png');
+    background-image: linear-gradient(hsla(222 47% 2% / 0.7), hsla(222 47% 2% / 0.7)), url('/src/assets/bg-dark-midnight.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
