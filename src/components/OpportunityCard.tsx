@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { GripVertical, CreditCard, Zap, Trash2, User, Clock, CalendarDays } from "lucide-react";
+import { GripVertical, CreditCard, Zap, Trash2, User, Clock, CalendarDays, ShieldCheck } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -101,23 +101,33 @@ const OpportunityCard = ({
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [nextEvent, setNextEvent] = useState<{ title: string; start_time: string } | null>(null);
+  const [uwScore, setUwScore] = useState<number | null>(null);
 
-  // Fetch next upcoming calendar event for this opportunity
   useEffect(() => {
-    const fetchEvent = async () => {
+    const fetchCardData = async () => {
       const now = new Date().toISOString();
-      const { data } = await supabase
-        .from("calendar_events")
-        .select("title, start_time")
-        .eq("opportunity_id", opportunity.id)
-        .eq("status", "confirmed")
-        .gte("start_time", now)
-        .order("start_time", { ascending: true })
-        .limit(1)
-        .maybeSingle();
-      setNextEvent(data || null);
+      const [eventRes, scoreRes] = await Promise.all([
+        supabase
+          .from("calendar_events")
+          .select("title, start_time")
+          .eq("opportunity_id", opportunity.id)
+          .eq("status", "confirmed")
+          .gte("start_time", now)
+          .order("start_time", { ascending: true })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from("validation_reports")
+          .select("score")
+          .eq("opportunity_id", opportunity.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+      setNextEvent(eventRes.data || null);
+      setUwScore(scoreRes.data?.score != null ? Number(scoreRes.data.score) : null);
     };
-    fetchEvent();
+    fetchCardData();
   }, [opportunity.id]);
 
   const slaInfo = useMemo(() => {
@@ -311,6 +321,20 @@ const OpportunityCard = ({
             )}>
               <CalendarDays className="h-2.5 w-2.5 shrink-0" />
               {format(new Date(nextEvent.start_time), "MMM d, h:mm a")}
+            </span>
+          )}
+
+          {/* Underwriting score */}
+          {!isGreyed && uwScore !== null && (
+            <span className={cn(
+              "flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-md border",
+              uwScore >= 80 ? "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30"
+                : uwScore >= 60 ? "text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30"
+                : uwScore >= 40 ? "text-orange-600 dark:text-orange-400 bg-orange-500/10 border-orange-500/30"
+                : "text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/30"
+            )}>
+              <ShieldCheck className="h-2.5 w-2.5 shrink-0" />
+              {Math.round(uwScore)}
             </span>
           )}
 
