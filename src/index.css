@@ -237,7 +237,7 @@ All colors MUST be HSL.
 
   /* Dark Midnight - Deep blue tones */
   .dark-midnight.dark {
-    --background: 222 47% 5%;
+    --background: 222 47% 2%;
     --foreground: 210 40% 98%;
 
     --card: 222 47% 12%;
@@ -273,7 +273,7 @@ All colors MUST be HSL.
 
   /* Dark Forest - Green accents */
   .dark-forest.dark {
-    --background: 150 20% 4%;
+    --background: 150 20% 2%;
     --foreground: 120 10% 95%;
 
     --card: 150 20% 10%;
@@ -309,7 +309,7 @@ All colors MUST be HSL.
 
   /* Dark Charcoal - Warm grey tones */
   .dark-charcoal.dark {
-    --background: 30 5% 6%;
+    --background: 30 5% 2%;
     --foreground: 30 10% 92%;
 
     --card: 30 5% 11%;
@@ -660,7 +660,7 @@ All colors MUST be HSL.
 
   /* ═══ Dark PS1 Classic — Retro PlayStation 1 grey console aesthetic ═══ */
   .dark-ps1.dark {
-    --background: 0 0% 12%;
+    --background: 0 0% 3%;
     --foreground: 0 0% 88%;
 
     --card: 0 0% 16%;
@@ -933,7 +933,7 @@ All colors MUST be HSL.
 
   /* Dark Midnight: deep blue background */
   .dark-midnight.dark body {
-    background-image: linear-gradient(hsla(222 47% 5% / 0.4), hsla(222 47% 5% / 0.4)), url('/src/assets/bg-dark-midnight.png');
+    background-image: linear-gradient(hsla(222 47% 2% / 0.7), hsla(222 47% 2% / 0.7)), url('/src/assets/bg-dark-midnight.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -942,7 +942,7 @@ All colors MUST be HSL.
 
   /* Dark Forest: emerald background */
   .dark-forest.dark body {
-    background-image: linear-gradient(hsla(150 20% 4% / 0.4), hsla(150 20% 4% / 0.4)), url('/src/assets/bg-dark-forest.png');
+    background-image: linear-gradient(hsla(150 20% 2% / 0.7), hsla(150 20% 2% / 0.7)), url('/src/assets/bg-dark-forest.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -951,7 +951,7 @@ All colors MUST be HSL.
 
   /* Dark Charcoal: warm grey background */
   .dark-charcoal.dark body {
-    background-image: linear-gradient(hsla(30 5% 6% / 0.4), hsla(30 5% 6% / 0.4)), url('/src/assets/bg-dark-charcoal.png');
+    background-image: linear-gradient(hsla(30 5% 2% / 0.7), hsla(30 5% 2% / 0.7)), url('/src/assets/bg-dark-charcoal.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -1008,7 +1008,7 @@ All colors MUST be HSL.
 
   /* Dark PS1: retro polygonal background */
   .dark-ps1.dark body {
-    background-image: linear-gradient(hsla(240 8% 6% / 0.5), hsla(240 8% 6% / 0.5)), url('/src/assets/bg-dark-ps1.png');
+    background-image: linear-gradient(hsla(240 8% 3% / 0.7), hsla(240 8% 3% / 0.7)), url('/src/assets/bg-dark-ps1.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
