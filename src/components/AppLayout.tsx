@@ -1,4 +1,4 @@
-import { ReactNode, useRef, useCallback } from "react";
+import { ReactNode, useRef, useCallback, lazy, Suspense } from "react";
 import { useLocation } from "react-router-dom";
 import { MegaMenuHeader } from "@/components/MegaMenuHeader";
 import FloatingChat from "@/components/FloatingChat";
@@ -12,8 +12,11 @@ import { PageTransition } from "@/components/PageTransition";
 import { OfficeSimulatorOverlay } from "@/components/chat/OfficeSimulatorOverlay";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useTheme } from "@/contexts/ThemeContext";
 import { RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const Starfield = lazy(() => import("@/components/Starfield"));
 
 interface AppLayoutProps {
   children: ReactNode;
