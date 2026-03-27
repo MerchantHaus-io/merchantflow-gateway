@@ -18,7 +18,7 @@ All colors MUST be HSL.
     --card-foreground: 210 40% 98%;
 
     /* Semi-transparent card for floating panels */
-    --card-glass: 217 33% 17% / 0.85;
+    --card-glass: 217 33% 17% / 0.96;
 
     --popover: 217 33% 17%;
     --popover-foreground: 210 40% 98%;
@@ -80,7 +80,7 @@ All colors MUST be HSL.
     --stage-live: var(--team-darryn);
     --stage-declined: 0 0% 45%;
 
-    --sidebar-background: 217 33% 17% / 0.85;
+    --sidebar-background: 217 33% 17% / 0.96;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 174 72% 46%;
     --sidebar-primary-foreground: 0 0% 100%;
@@ -118,7 +118,7 @@ All colors MUST be HSL.
 
     --card: 0 30% 8%;
     --card-foreground: 0 10% 92%;
-    --card-glass: 0 30% 8% / 0.90;
+    --card-glass: 0 30% 8% / 0.97;
 
     --popover: 0 30% 8%;
     --popover-foreground: 0 10% 92%;
@@ -153,7 +153,7 @@ All colors MUST be HSL.
 
     --gold: 30 80% 55%;
 
-    --sidebar-background: 0 30% 8% / 0.90;
+    --sidebar-background: 0 30% 8% / 0.97;
     --sidebar-foreground: 0 10% 92%;
     --sidebar-primary: 0 85% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
@@ -171,7 +171,7 @@ All colors MUST be HSL.
     --card: 0 0% 100%;
     --card-foreground: 222 25% 12%;
 
-    --card-glass: 0 0% 100% / 0.85;
+    --card-glass: 0 0% 100% / 0.96;
 
     --popover: 0 0% 100%;
     --popover-foreground: 222 25% 12%;
@@ -210,7 +210,7 @@ All colors MUST be HSL.
     --card-foreground: 210 40% 98%;
 
     /* Semi-transparent card for floating panels */
-    --card-glass: 217 33% 17% / 0.85;
+    --card-glass: 217 33% 17% / 0.96;
 
     --popover: 217 33% 17%;
     --popover-foreground: 210 40% 98%;
@@ -263,7 +263,7 @@ All colors MUST be HSL.
     --stage-live: var(--team-darryn);
     --stage-declined: 0 0% 45%;
 
-    --sidebar-background: 217 33% 17% / 0.85;
+    --sidebar-background: 217 33% 17% / 0.96;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 174 72% 46%;
     --sidebar-primary-foreground: 0 0% 100%;
@@ -293,7 +293,7 @@ All colors MUST be HSL.
 
     --card: 222 47% 12%;
     --card-foreground: 210 40% 98%;
-    --card-glass: 222 47% 12% / 0.85;
+    --card-glass: 222 47% 12% / 0.96;
 
     --popover: 222 47% 12%;
     --popover-foreground: 210 40% 98%;
@@ -314,7 +314,7 @@ All colors MUST be HSL.
     --input: 222 47% 22%;
     --ring: 217 91% 60%;
 
-    --sidebar-background: 222 47% 12% / 0.85;
+    --sidebar-background: 222 47% 12% / 0.96;
     --sidebar-primary: 217 91% 60%;
     --sidebar-accent: 222 47% 18%;
     --sidebar-accent-foreground: 217 91% 70%;
@@ -329,7 +329,7 @@ All colors MUST be HSL.
 
     --card: 150 20% 10%;
     --card-foreground: 120 10% 95%;
-    --card-glass: 150 20% 10% / 0.85;
+    --card-glass: 150 20% 10% / 0.96;
 
     --popover: 150 20% 10%;
     --popover-foreground: 120 10% 95%;
@@ -350,7 +350,7 @@ All colors MUST be HSL.
     --input: 150 20% 20%;
     --ring: 142 71% 45%;
 
-    --sidebar-background: 150 20% 10% / 0.85;
+    --sidebar-background: 150 20% 10% / 0.96;
     --sidebar-primary: 142 71% 45%;
     --sidebar-accent: 150 20% 15%;
     --sidebar-accent-foreground: 142 71% 55%;
@@ -365,7 +365,7 @@ All colors MUST be HSL.
 
     --card: 30 5% 11%;
     --card-foreground: 30 10% 92%;
-    --card-glass: 30 5% 11% / 0.85;
+    --card-glass: 30 5% 11% / 0.96;
 
     --popover: 30 5% 11%;
     --popover-foreground: 30 10% 92%;
@@ -386,7 +386,7 @@ All colors MUST be HSL.
     --input: 30 5% 22%;
     --ring: 348 83% 47%;
 
-    --sidebar-background: 30 5% 11% / 0.85;
+    --sidebar-background: 30 5% 11% / 0.96;
     --sidebar-primary: 348 83% 47%;
     --sidebar-accent: 30 5% 16%;
     --sidebar-accent-foreground: 348 83% 57%;
@@ -401,7 +401,7 @@ All colors MUST be HSL.
 
     --card: 0 0% 6%;
     --card-foreground: 0 0% 100%;
-    --card-glass: 0 0% 6% / 0.95;
+    --card-glass: 0 0% 6% / 0.98;
 
     --popover: 0 0% 6%;
     --popover-foreground: 0 0% 100%;
@@ -442,7 +442,7 @@ All colors MUST be HSL.
     --team-yaseen: 0 0% 40%;
     --team-sales: 0 0% 60%;
 
-    --sidebar-background: 0 0% 6% / 0.95;
+    --sidebar-background: 0 0% 6% / 0.98;
     --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 0 0% 100%;
     --sidebar-primary-foreground: 0 0% 0%;
@@ -461,7 +461,7 @@ All colors MUST be HSL.
     --card-foreground: 221 39% 11%;     /* #1F2937 - Dark Slate */
 
     /* Semi-transparent card for floating panels in light mode */
-    --card-glass: 0 0% 100% / 0.95;
+    --card-glass: 0 0% 100% / 0.98;
 
     --popover: 0 0% 100%;               /* White */
     --popover-foreground: 221 39% 11%;  /* Dark Slate */
@@ -514,7 +514,7 @@ All colors MUST be HSL.
     --stage-live: var(--team-darryn);
     --stage-declined: 0 0% 45%;
 
-    --sidebar-background: 0 0% 100% / 0.95;
+    --sidebar-background: 0 0% 100% / 0.98;
     --sidebar-foreground: 221 39% 11%;
     --sidebar-primary: 348 83% 47%;
     --sidebar-primary-foreground: 0 0% 100%;
@@ -544,7 +544,7 @@ All colors MUST be HSL.
 
     --card: 0 0% 100%;
     --card-foreground: 200 50% 10%;
-    --card-glass: 0 0% 100% / 0.95;
+    --card-glass: 0 0% 100% / 0.98;
 
     --popover: 0 0% 100%;
     --popover-foreground: 200 50% 10%;
@@ -565,7 +565,7 @@ All colors MUST be HSL.
     --input: 200 20% 82%;
     --ring: 199 89% 48%;
 
-    --sidebar-background: 0 0% 100% / 0.95;
+    --sidebar-background: 0 0% 100% / 0.98;
     --sidebar-foreground: 200 50% 10%;
     --sidebar-primary: 199 89% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
@@ -582,7 +582,7 @@ All colors MUST be HSL.
 
     --card: 40 20% 99%;
     --card-foreground: 25 30% 12%;
-    --card-glass: 40 20% 99% / 0.95;
+    --card-glass: 40 20% 99% / 0.98;
 
     --popover: 40 20% 99%;
     --popover-foreground: 25 30% 12%;
@@ -603,7 +603,7 @@ All colors MUST be HSL.
     --input: 35 20% 82%;
     --ring: 25 95% 53%;
 
-    --sidebar-background: 40 20% 99% / 0.95;
+    --sidebar-background: 40 20% 99% / 0.98;
     --sidebar-foreground: 25 30% 12%;
     --sidebar-primary: 25 95% 53%;
     --sidebar-primary-foreground: 0 0% 100%;
@@ -620,7 +620,7 @@ All colors MUST be HSL.
 
     --card: 0 0% 100%;
     --card-foreground: 220 20% 12%;
-    --card-glass: 0 0% 100% / 0.95;
+    --card-glass: 0 0% 100% / 0.98;
 
     --popover: 0 0% 100%;
     --popover-foreground: 220 20% 12%;
@@ -641,7 +641,7 @@ All colors MUST be HSL.
     --input: 220 12% 82%;
     --ring: 348 83% 47%;
 
-    --sidebar-background: 0 0% 100% / 0.95;
+    --sidebar-background: 0 0% 100% / 0.98;
     --sidebar-foreground: 220 20% 12%;
     --sidebar-primary: 348 83% 47%;
     --sidebar-primary-foreground: 0 0% 100%;
@@ -658,7 +658,7 @@ All colors MUST be HSL.
 
     --card: 0 0% 98%;
     --card-foreground: 0 0% 0%;
-    --card-glass: 0 0% 98% / 0.95;
+    --card-glass: 0 0% 98% / 0.98;
 
     --popover: 0 0% 98%;
     --popover-foreground: 0 0% 0%;
@@ -699,7 +699,7 @@ All colors MUST be HSL.
     --team-yaseen: 0 0% 30%;
     --team-sales: 0 0% 50%;
 
-    --sidebar-background: 0 0% 98% / 0.95;
+    --sidebar-background: 0 0% 98% / 0.98;
     --sidebar-foreground: 0 0% 0%;
     --sidebar-primary: 0 0% 0%;
     --sidebar-primary-foreground: 0 0% 100%;
@@ -716,7 +716,7 @@ All colors MUST be HSL.
 
     --card: 0 0% 16%;
     --card-foreground: 0 0% 88%;
-    --card-glass: 0 0% 16% / 0.90;
+    --card-glass: 0 0% 16% / 0.97;
 
     --popover: 0 0% 16%;
     --popover-foreground: 0 0% 88%;
@@ -827,7 +827,7 @@ All colors MUST be HSL.
 
   /* Dark DOOM: hellfire lava background */
   .dark-doom.dark body {
-    background-image: linear-gradient(hsla(0 0% 2% / 0.75), hsla(0 0% 2% / 0.75)), url('/src/assets/bg-dark-doom.jpg');
+    background-image: linear-gradient(hsla(0 0% 2% / 0.88), hsla(0 0% 2% / 0.75)), url('/src/assets/bg-dark-doom.jpg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -992,7 +992,7 @@ All colors MUST be HSL.
 
   /* Dark Midnight: deep blue background */
   .dark-midnight.dark body {
-    background-image: linear-gradient(hsla(222 47% 2% / 0.7), hsla(222 47% 2% / 0.7)), url('/src/assets/bg-dark-midnight.png');
+    background-image: linear-gradient(hsla(222 47% 2% / 0.85), hsla(222 47% 2% / 0.7)), url('/src/assets/bg-dark-midnight.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -1001,7 +1001,7 @@ All colors MUST be HSL.
 
   /* Dark Forest: emerald background */
   .dark-forest.dark body {
-    background-image: linear-gradient(hsla(150 20% 2% / 0.7), hsla(150 20% 2% / 0.7)), url('/src/assets/bg-dark-forest.png');
+    background-image: linear-gradient(hsla(150 20% 2% / 0.85), hsla(150 20% 2% / 0.7)), url('/src/assets/bg-dark-forest.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -1010,7 +1010,7 @@ All colors MUST be HSL.
 
   /* Dark Charcoal: warm grey background */
   .dark-charcoal.dark body {
-    background-image: linear-gradient(hsla(30 5% 2% / 0.7), hsla(30 5% 2% / 0.7)), url('/src/assets/bg-dark-charcoal.png');
+    background-image: linear-gradient(hsla(30 5% 2% / 0.85), hsla(30 5% 2% / 0.7)), url('/src/assets/bg-dark-charcoal.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -1067,7 +1067,7 @@ All colors MUST be HSL.
 
   /* Dark PS1: retro polygonal background */
   .dark-ps1.dark body {
-    background-image: linear-gradient(hsla(240 8% 3% / 0.7), hsla(240 8% 3% / 0.7)), url('/src/assets/bg-dark-ps1.png');
+    background-image: linear-gradient(hsla(240 8% 3% / 0.85), hsla(240 8% 3% / 0.7)), url('/src/assets/bg-dark-ps1.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
