@@ -51,7 +51,12 @@ export function AppLayout({
   const showIndicator = pullDistance > 0 || isRefreshing;
 
   return (
-    <div className="h-screen h-dvh min-h-0 flex flex-col w-full overflow-hidden">
+    <div className="h-screen h-dvh min-h-0 flex flex-col w-full overflow-hidden relative">
+      {isDark && (
+        <Suspense fallback={null}>
+          <Starfield />
+        </Suspense>
+      )}
       <MegaMenuHeader onNewApplication={onNewApplication} />
       <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {(pageTitle || headerActions) && (
