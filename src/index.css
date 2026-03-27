@@ -1686,8 +1686,11 @@ main {
   transform: translateZ(0);
 }
 
-/* No grid on mono dark */
-.dark-mono.dark body::before {
+/* No grid on these dark themes */
+.dark-mono.dark body::before,
+.dark-forest.dark body::before,
+.dark-charcoal.dark body::before,
+.dark-doom.dark body::before {
   display: none;
 }
 
