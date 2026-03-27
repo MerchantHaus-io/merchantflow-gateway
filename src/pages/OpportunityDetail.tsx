@@ -231,6 +231,7 @@ const OpportunityDetail = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showDeathSplash, setShowDeathSplash] = useState(false);
   const [reactivateConfirm, setReactivateConfirm] = useState<{ assignee: string } | null>(null);
+  const [showPipelineSwitch, setShowPipelineSwitch] = useState(false);
   
   // Form state
   const [accountName, setAccountName] = useState("");
