@@ -9,6 +9,7 @@ export type ThemeVariant =
   | 'dark-charcoal'
   | 'dark-mono'
   | 'dark-ps1'
+  | 'dark-doom'
   | 'light-default' 
   | 'light-ocean' 
   | 'light-warm'
