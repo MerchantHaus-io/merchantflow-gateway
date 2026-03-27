@@ -36,8 +36,9 @@ export function AppLayout({
   const scrollRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const location = useLocation();
-  const { theme } = useTheme();
+  const { theme, variant } = useTheme();
   const isDark = theme === "dark";
+  const isDoom = variant === "dark-doom";
   const isChatRoute = location.pathname === "/chat";
   const handleRefresh = useCallback(async () => {
     window.location.reload();
