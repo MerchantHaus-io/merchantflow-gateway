@@ -942,7 +942,7 @@ All colors MUST be HSL.
 
   /* Dark Forest: emerald background */
   .dark-forest.dark body {
-    background-image: linear-gradient(hsla(150 20% 4% / 0.4), hsla(150 20% 4% / 0.4)), url('/src/assets/bg-dark-forest.png');
+    background-image: linear-gradient(hsla(150 20% 2% / 0.7), hsla(150 20% 2% / 0.7)), url('/src/assets/bg-dark-forest.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
