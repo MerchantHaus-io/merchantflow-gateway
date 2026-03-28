@@ -699,7 +699,6 @@ const NMIBoarding = () => {
                     <ReviewField label="Document" value={tearsheetFiles.length > 0 ? `${tearsheetFiles.length} file(s) attached` : ""} />
                   </>
                 )}
-                </div>
               </div>
             )}
 
