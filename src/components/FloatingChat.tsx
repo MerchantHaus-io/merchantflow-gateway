@@ -796,8 +796,9 @@ const FloatingChat: React.FC = () => {
           className={cn(
             "fixed bottom-0 right-6 z-[35] w-[220px] h-11 rounded-t-xl flex items-center gap-3 px-4",
             "bg-emerald-600 text-white",
-            "shadow-xl hover:shadow-2xl hover:bg-emerald-500 transition-all duration-200 ease-out",
-            "border border-b-0 border-emerald-700"
+            "shadow-xl hover:shadow-2xl hover:bg-emerald-500 transition-all duration-300 ease-out",
+            "border border-b-0 border-emerald-700",
+            "translate-y-[calc(100%-6px)] hover:translate-y-0"
           )}
         >
           <MessageCircle className="h-5 w-5 shrink-0" />

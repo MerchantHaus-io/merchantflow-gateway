@@ -246,8 +246,9 @@ export function ActionItemsWidget() {
           className={cn(
             "fixed bottom-0 left-6 z-[35] w-[220px] h-11 rounded-t-xl flex items-center gap-3 px-4",
             "bg-gradient-to-r from-slate-800 to-slate-700 dark:from-slate-900 dark:to-slate-800",
-            "text-white shadow-xl hover:shadow-2xl transition-all duration-200 ease-out",
-            "border border-b-0 border-slate-600"
+            "text-white shadow-xl hover:shadow-2xl transition-all duration-300 ease-out",
+            "border border-b-0 border-slate-600",
+            "translate-y-[calc(100%-6px)] hover:translate-y-0"
           )}
           aria-label="Toggle notice board"
         >
