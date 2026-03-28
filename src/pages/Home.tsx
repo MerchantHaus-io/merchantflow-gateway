@@ -349,10 +349,10 @@ export default function Home() {
           className="flex flex-col sm:flex-row items-center justify-center gap-x-4 gap-y-1 mb-4"
         >
           <div className="text-center sm:text-left">
-            <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-0.5">
+            <h1 className="text-2xl lg:text-3xl font-display font-bold text-foreground tracking-tight mb-0.5">
               {greeting}, <span className="text-primary">{displayName}</span>
             </h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm font-serif italic text-muted-foreground tracking-wide">
               Quick access to everything you need.
             </p>
           </div>
