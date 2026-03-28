@@ -224,67 +224,6 @@ export function Carousel3D({ items }: Carousel3DProps) {
                 </span>
               </div>
 
-              {/* 3D depth — right edge */}
-              <div
-                className="absolute top-0 pointer-events-none rounded-r-lg"
-                style={{
-                  right: 0,
-                  width: "10px",
-                  height: "100%",
-                  transform: "rotateY(90deg) translateZ(5px)",
-                  transformOrigin: "right center",
-                  background: "linear-gradient(to right, hsl(var(--card) / 0.7), hsl(var(--card) / 0.4))",
-                  borderRight: "1px solid hsl(var(--border) / 0.3)",
-                }}
-              />
-
-              {/* 3D depth — left edge */}
-              <div
-                className="absolute top-0 pointer-events-none rounded-l-lg"
-                style={{
-                  left: 0,
-                  width: "10px",
-                  height: "100%",
-                  transform: "rotateY(-90deg) translateZ(5px)",
-                  transformOrigin: "left center",
-                  background: "linear-gradient(to left, hsl(var(--card) / 0.7), hsl(var(--card) / 0.4))",
-                  borderLeft: "1px solid hsl(var(--border) / 0.3)",
-                }}
-              />
-
-              {/* Mirror reflection */}
-              {/* Horizontal mirror reflection */}
-              <div
-                className="absolute top-0 pointer-events-none"
-                style={{
-                  left: "100%",
-                  width: "100%",
-                  height: "100%",
-                  transform: "scaleX(-1)",
-                  maskImage: "linear-gradient(to right, rgba(0,0,0,0.2) 0%, transparent 50%)",
-                  WebkitMaskImage: "linear-gradient(to right, rgba(0,0,0,0.2) 0%, transparent 50%)",
-                  filter: "blur(1.5px)",
-                }}
-              >
-                <div
-                  className={cn(
-                    "w-full h-full rounded-xl border backdrop-blur-xl flex flex-col items-center justify-center gap-2.5",
-                    "bg-card border-border/60",
-                    glowColorMap[item.color]
-                  )}
-                  style={{
-                    boxShadow: "0 8px 32px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.08)",
-                    opacity: 0.35,
-                  }}
-                >
-                  <div className={cn("w-14 h-14 rounded-full flex items-center justify-center", bgColorMap[item.color])}>
-                    <item.icon className={cn("h-7 w-7", iconColorMap[item.color])} strokeWidth={1.8} />
-                  </div>
-                  <span className="text-[11px] font-bold text-foreground font-display text-center leading-tight px-2">
-                    {item.title}
-                  </span>
-                </div>
-              </div>
               {/* Floating label */}
               <div
                 className="absolute -top-7 left-1/2 whitespace-nowrap pointer-events-none"
