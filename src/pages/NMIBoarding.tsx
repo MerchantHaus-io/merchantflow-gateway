@@ -866,6 +866,41 @@ const NMIBoarding = () => {
                     </SelectContent>
                   </Select>
                 </div>
+
+                <Separator />
+
+                {/* Merchant's Required Fields */}
+                <div>
+                  <p className="text-xs font-semibold text-foreground uppercase tracking-wider mb-3">Merchant's Required Fields</p>
+                  <p className="text-[10px] text-muted-foreground mb-3">
+                    Select which fields should be required when the merchant processes transactions.
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {([
+                      { key: "req_name" as const, label: "Name" },
+                      { key: "req_company" as const, label: "Company" },
+                      { key: "req_address" as const, label: "Address" },
+                      { key: "req_city" as const, label: "City" },
+                      { key: "req_state" as const, label: "State" },
+                      { key: "req_zip" as const, label: "Zip Code" },
+                      { key: "req_country" as const, label: "Country" },
+                      { key: "req_phone" as const, label: "Phone Number" },
+                      { key: "req_email" as const, label: "Email Address" },
+                      { key: "req_drivers_license" as const, label: "Driver's License" },
+                      { key: "req_dl_state" as const, label: "Driver's License State" },
+                      { key: "req_dl_dob" as const, label: "Driver's License DOB" },
+                      { key: "req_ssn" as const, label: "Social Security Number" },
+                    ]).map(({ key, label }) => (
+                      <label key={key} className="flex items-center gap-2 cursor-pointer group">
+                        <Checkbox
+                          checked={form[key] as boolean}
+                          onCheckedChange={(v) => update(key, !!v)}
+                        />
+                        <span className="text-sm text-foreground group-hover:text-primary transition-colors">{label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 
