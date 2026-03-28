@@ -362,7 +362,7 @@ export default function Home() {
         {/* Category tabs + layout toggle */}
         <div className="flex items-center justify-center gap-2 mb-2 flex-wrap overflow-visible">
           {/* Categorised / All toggle */}
-          <div className="flex items-center rounded-full border border-border/40 bg-card/40 p-0.5 mr-1">
+          <div className="flex items-center rounded-full border border-border/40 bg-card/80 p-0.5 mr-1">
             <button
               onClick={() => setShowAll(false)}
               className={cn(
