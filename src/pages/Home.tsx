@@ -429,7 +429,7 @@ export default function Home() {
               >
                 {/* Arrow */}
                 <div className="absolute -top-1.5 right-4 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto w-3 h-3 rotate-45 bg-card border-l border-t border-border/60" />
-                <div className="bg-card/95 dark:bg-card/90 backdrop-blur-xl border border-border/60 rounded-xl p-3 shadow-lg">
+                <div className="bg-card backdrop-blur-xl border border-border/60 rounded-xl p-3 shadow-lg">
                   <p className="text-xs text-foreground font-semibold mb-1">Switch view style</p>
                   <p className="text-[10px] text-muted-foreground leading-relaxed mb-2">
                     Toggle between Icons, Cards, and 3D Carousel layouts.
