@@ -197,14 +197,15 @@ export function Carousel3D({ items }: Carousel3DProps) {
               <div
                 className={cn(
                   "w-full h-full rounded-xl border backdrop-blur-xl flex flex-col items-center justify-center gap-2.5 pointer-events-none",
-                  "bg-card dark:bg-card/90 border-border/60 dark:border-border/40",
+                  "bg-card border-border/60",
                   isActive && "ring-2 ring-primary/60 scale-105",
                   glowColorMap[item.color]
                 )}
                 style={{
                   boxShadow: "0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.08)",
                   transition: "transform 0.3s, box-shadow 0.3s",
-                  transformStyle: "preserve-3d",
+                  backfaceVisibility: "hidden",
+                  WebkitBackfaceVisibility: "hidden",
                 }}
               >
                 {/* Icon orb */}
@@ -268,7 +269,7 @@ export function Carousel3D({ items }: Carousel3DProps) {
                 <div
                   className={cn(
                     "w-full h-full rounded-xl border backdrop-blur-xl flex flex-col items-center justify-center gap-2.5",
-                    "bg-card dark:bg-card/90 border-border/60 dark:border-border/40",
+                    "bg-card border-border/60",
                     glowColorMap[item.color]
                   )}
                   style={{
@@ -289,7 +290,7 @@ export function Carousel3D({ items }: Carousel3DProps) {
                 className="absolute -top-7 left-1/2 whitespace-nowrap pointer-events-none"
                 style={{ transform: "translateX(-50%) translateZ(30px)" }}
               >
-                <span className="text-[10px] font-semibold text-foreground/80 dark:text-muted-foreground bg-card/95 dark:bg-card/85 backdrop-blur-xl px-2.5 py-1 rounded-full border border-border/50 dark:border-border/30 shadow-sm">
+                <span className="text-[10px] font-semibold text-foreground/80 dark:text-muted-foreground bg-card backdrop-blur-xl px-2.5 py-1 rounded-full border border-border/50 shadow-sm">
                   {item.description}
                 </span>
               </div>
