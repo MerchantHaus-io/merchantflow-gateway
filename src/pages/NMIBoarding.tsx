@@ -53,6 +53,23 @@ interface FormData {
   routing_number: string;
   account_number: string;
   account_type: string;
+  // VAR/Tear Sheet fields
+  ts_discount_rate: string;
+  ts_per_transaction_fee: string;
+  ts_monthly_minimum: string;
+  ts_statement_fee: string;
+  ts_monthly_gateway_fee: string;
+  ts_batch_fee: string;
+  ts_annual_fee: string;
+  ts_pci_fee: string;
+  ts_chargeback_fee: string;
+  ts_avs_fee: string;
+  ts_voice_auth_fee: string;
+  ts_setup_fee: string;
+  ts_early_termination_fee: string;
+  ts_contract_term: string;
+  ts_equipment: string;
+  ts_notes: string;
 }
 
 const initialFormData: FormData = {
@@ -77,6 +94,23 @@ const initialFormData: FormData = {
   routing_number: "",
   account_number: "",
   account_type: "checking",
+  // VAR/Tear Sheet defaults
+  ts_discount_rate: "",
+  ts_per_transaction_fee: "",
+  ts_monthly_minimum: "",
+  ts_statement_fee: "",
+  ts_monthly_gateway_fee: "",
+  ts_batch_fee: "",
+  ts_annual_fee: "",
+  ts_pci_fee: "",
+  ts_chargeback_fee: "",
+  ts_avs_fee: "",
+  ts_voice_auth_fee: "",
+  ts_setup_fee: "",
+  ts_early_termination_fee: "",
+  ts_contract_term: "",
+  ts_equipment: "",
+  ts_notes: "",
 };
 
 type Step = "details" | "address" | "settings" | "banking" | "tearsheet" | "review";
