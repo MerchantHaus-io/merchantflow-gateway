@@ -204,8 +204,6 @@ export function Carousel3D({ items }: Carousel3DProps) {
                 style={{
                   boxShadow: "0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.08)",
                   transition: "transform 0.3s, box-shadow 0.3s",
-                  backfaceVisibility: "hidden",
-                  WebkitBackfaceVisibility: "hidden",
                 }}
               >
                 {/* Icon orb */}
