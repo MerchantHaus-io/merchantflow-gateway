@@ -241,8 +241,9 @@ export const Dialler = () => {
           className={cn(
             "fixed bottom-0 left-[254px] z-[35] w-[220px] h-11 rounded-t-xl flex items-center gap-3 px-4",
             "bg-amber-400 text-black",
-            "shadow-xl hover:shadow-2xl hover:bg-amber-300 transition-all duration-200 ease-out",
-            "border border-b-0 border-amber-500"
+            "shadow-xl hover:shadow-2xl hover:bg-amber-300 transition-all duration-300 ease-out",
+            "border border-b-0 border-amber-500",
+            "translate-y-[calc(100%-6px)] hover:translate-y-0"
           )}
           aria-label="Open dialler"
         >
