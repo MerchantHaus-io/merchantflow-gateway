@@ -7,6 +7,7 @@ import { ActionItemsWidget } from "@/components/ActionItemsWidget";
 import { BroadcastPopup } from "@/components/BroadcastPopup";
 import { ComplianceBroadcast } from "@/components/ComplianceBroadcast";
 import { AtriaBroadcast } from "@/components/AtriaBroadcast";
+import { NMIBoardingBroadcast } from "@/components/NMIBoardingBroadcast";
 import { MobileAppDock } from "@/components/MobileAppDock";
 import { PageTransition } from "@/components/PageTransition";
 import { OfficeSimulatorOverlay } from "@/components/chat/OfficeSimulatorOverlay";
