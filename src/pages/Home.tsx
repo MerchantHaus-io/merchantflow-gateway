@@ -339,8 +339,12 @@ export default function Home() {
     localStorage.setItem("home_layout_hint_seen", "1");
   };
 
+  const { isFavorite, toggle: toggleFavorite, count: favCount } = useFavorites();
   const allItems = groups.flatMap((g) => g.items);
-  const currentItems = showAll ? allItems : groups[activeGroup].items;
+  const favoriteItems = allItems.filter((item) => isFavorite(item.url));
+  const currentItems = showFavorites ? favoriteItems : showAll ? allItems : groups[activeGroup].items;
+  const allGroup: ShortcutGroup = { title: "All", items: allItems };
+  const favGroup: ShortcutGroup = { title: "Favorites", items: favoriteItems };
   const allGroup: ShortcutGroup = { title: "All", items: allItems };
   const CurrentIcon = layoutIcons[layout];
   const currentLabel = layoutLabels[layout];
