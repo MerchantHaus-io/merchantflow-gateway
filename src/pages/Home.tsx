@@ -178,6 +178,7 @@ function GridView({ groups: g, activeGroup, isFavorite, onToggleFavorite }: { gr
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.04, duration: 0.3 }}
+          whileHover={{ scale: 1.05 }}
           className={cn(
             "group relative flex flex-col items-center gap-2 p-4 rounded-xl border border-border/60",
             "bg-card hover:bg-card hover:border-border transition-all duration-200",
