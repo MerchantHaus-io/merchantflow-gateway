@@ -666,7 +666,39 @@ const NMIBoarding = () => {
                   {form.bank_name && <ReviewField label="Bank" value={form.bank_name} />}
                   {form.routing_number && <ReviewField label="Routing" value={`···${form.routing_number.slice(-4)}`} />}
                   {form.account_number && <ReviewField label="Account" value={`···${form.account_number.slice(-4)}`} />}
-                  <ReviewField label="VAR/Tear Sheet" value={tearsheetFiles.length > 0 ? `${tearsheetFiles.length} file(s) attached` : "None"} />
+                </div>
+
+                {/* Tear Sheet Review */}
+                {(form.ts_discount_rate || form.ts_per_transaction_fee || form.ts_monthly_gateway_fee || form.ts_contract_term || tearsheetFiles.length > 0) && (
+                  <>
+                    <Separator />
+                    <p className="text-xs font-semibold text-foreground uppercase tracking-wider">VAR/Tear Sheet</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-sm">
+                      <ReviewField label="Discount Rate" value={form.ts_discount_rate ? `${form.ts_discount_rate}%` : ""} />
+                      <ReviewField label="Per Txn Fee" value={form.ts_per_transaction_fee ? `$${form.ts_per_transaction_fee}` : ""} />
+                      <ReviewField label="Monthly Min" value={form.ts_monthly_minimum ? `$${form.ts_monthly_minimum}` : ""} />
+                      <ReviewField label="Statement Fee" value={form.ts_statement_fee ? `$${form.ts_statement_fee}` : ""} />
+                      <ReviewField label="Gateway Fee" value={form.ts_monthly_gateway_fee ? `$${form.ts_monthly_gateway_fee}` : ""} />
+                      <ReviewField label="Batch Fee" value={form.ts_batch_fee ? `$${form.ts_batch_fee}` : ""} />
+                      <ReviewField label="Annual Fee" value={form.ts_annual_fee ? `$${form.ts_annual_fee}` : ""} />
+                      <ReviewField label="PCI Fee" value={form.ts_pci_fee ? `$${form.ts_pci_fee}` : ""} />
+                      <ReviewField label="Chargeback Fee" value={form.ts_chargeback_fee ? `$${form.ts_chargeback_fee}` : ""} />
+                      <ReviewField label="AVS Fee" value={form.ts_avs_fee ? `$${form.ts_avs_fee}` : ""} />
+                      <ReviewField label="Voice Auth Fee" value={form.ts_voice_auth_fee ? `$${form.ts_voice_auth_fee}` : ""} />
+                      <ReviewField label="Setup Fee" value={form.ts_setup_fee ? `$${form.ts_setup_fee}` : ""} />
+                      <ReviewField label="ETF" value={form.ts_early_termination_fee ? `$${form.ts_early_termination_fee}` : ""} />
+                      <ReviewField label="Contract Term" value={form.ts_contract_term ? `${form.ts_contract_term} months` : ""} />
+                      <ReviewField label="Equipment" value={form.ts_equipment} />
+                    </div>
+                    {form.ts_notes && (
+                      <div>
+                        <span className="text-muted-foreground text-xs">Notes</span>
+                        <p className="text-sm text-foreground whitespace-pre-line">{form.ts_notes}</p>
+                      </div>
+                    )}
+                    <ReviewField label="Document" value={tearsheetFiles.length > 0 ? `${tearsheetFiles.length} file(s) attached` : ""} />
+                  </>
+                )}
                 </div>
               </div>
             )}
