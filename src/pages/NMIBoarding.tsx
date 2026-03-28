@@ -551,6 +551,9 @@ const NMIBoarding = () => {
             {step === "review" && (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                  {selectedOpportunityId && selectedOpportunityId !== "none" && (
+                    <ReviewField label="Linked Opportunity" value={opportunities.find(o => o.id === selectedOpportunityId)?.accountName || "Yes"} />
+                  )}
                   <ReviewField label="Company" value={form.company} />
                   <ReviewField label="DBA" value={form.dba_name} />
                   <ReviewField label="Type" value={form.merchant_type} />
