@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const cardVariants = cva(
-  "rounded-lg border bg-card text-card-foreground transition-all duration-200 bg-[linear-gradient(180deg,_rgba(255,255,255,0.035)_0%,_transparent_48px)] shadow-[0_2px_8px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.04),inset_0_1px_0_rgba(255,255,255,0.06)] hover:translate-y-[-1px] hover:shadow-[0_4px_16px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.06),inset_0_1px_0_rgba(255,255,255,0.08)]",
+  "rounded-lg border bg-card text-card-foreground transition-all duration-200 shadow-[0_2px_8px_rgba(0,0,0,0.5),0_0_0_1px_rgba(255,255,255,0.06),inset_0_1px_0_rgba(255,255,255,0.08)] hover:translate-y-[-1px] hover:shadow-[0_4px_16px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.08),inset_0_1px_0_rgba(255,255,255,0.1)]",
   {
     variants: {
       variant: {

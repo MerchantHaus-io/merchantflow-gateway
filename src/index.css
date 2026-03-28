@@ -14,11 +14,11 @@ All colors MUST be HSL.
     --background: 0 0% 0%;
     --foreground: 210 40% 98%;
 
-    --card: 217 33% 17%;
+    --card: 217 33% 19%;
     --card-foreground: 210 40% 98%;
 
     /* Semi-transparent card for floating panels */
-    --card-glass: 217 33% 17% / 0.96;
+    --card-glass: 217 33% 19% / 0.98;
 
     --popover: 217 33% 17%;
     --popover-foreground: 210 40% 98%;
@@ -116,9 +116,9 @@ All colors MUST be HSL.
     --background: 0 0% 2%;
     --foreground: 0 10% 92%;
 
-    --card: 0 30% 8%;
+    --card: 0 30% 10%;
     --card-foreground: 0 10% 92%;
-    --card-glass: 0 30% 8% / 0.97;
+    --card-glass: 0 30% 10% / 0.98;
 
     --popover: 0 30% 8%;
     --popover-foreground: 0 10% 92%;
@@ -206,11 +206,11 @@ All colors MUST be HSL.
     --background: 0 0% 0%;
     --foreground: 210 40% 98%;
 
-    --card: 217 33% 17%;
+    --card: 217 33% 19%;
     --card-foreground: 210 40% 98%;
 
     /* Semi-transparent card for floating panels */
-    --card-glass: 217 33% 17% / 0.96;
+    --card-glass: 217 33% 19% / 0.98;
 
     --popover: 217 33% 17%;
     --popover-foreground: 210 40% 98%;
@@ -291,9 +291,9 @@ All colors MUST be HSL.
     --background: 222 47% 2%;
     --foreground: 210 40% 98%;
 
-    --card: 222 47% 12%;
+    --card: 222 47% 14%;
     --card-foreground: 210 40% 98%;
-    --card-glass: 222 47% 12% / 0.96;
+    --card-glass: 222 47% 14% / 0.98;
 
     --popover: 222 47% 12%;
     --popover-foreground: 210 40% 98%;
@@ -327,9 +327,9 @@ All colors MUST be HSL.
     --background: 150 20% 2%;
     --foreground: 120 10% 95%;
 
-    --card: 150 20% 10%;
+    --card: 150 20% 12%;
     --card-foreground: 120 10% 95%;
-    --card-glass: 150 20% 10% / 0.96;
+    --card-glass: 150 20% 12% / 0.98;
 
     --popover: 150 20% 10%;
     --popover-foreground: 120 10% 95%;
@@ -363,9 +363,9 @@ All colors MUST be HSL.
     --background: 30 5% 2%;
     --foreground: 30 10% 92%;
 
-    --card: 30 5% 11%;
+    --card: 30 5% 13%;
     --card-foreground: 30 10% 92%;
-    --card-glass: 30 5% 11% / 0.96;
+    --card-glass: 30 5% 13% / 0.98;
 
     --popover: 30 5% 11%;
     --popover-foreground: 30 10% 92%;
@@ -399,9 +399,9 @@ All colors MUST be HSL.
     --background: 0 0% 0%;
     --foreground: 0 0% 100%;
 
-    --card: 0 0% 6%;
+    --card: 0 0% 8%;
     --card-foreground: 0 0% 100%;
-    --card-glass: 0 0% 6% / 0.98;
+    --card-glass: 0 0% 8% / 0.99;
 
     --popover: 0 0% 6%;
     --popover-foreground: 0 0% 100%;
@@ -714,9 +714,9 @@ All colors MUST be HSL.
     --background: 0 0% 3%;
     --foreground: 0 0% 88%;
 
-    --card: 0 0% 16%;
+    --card: 0 0% 18%;
     --card-foreground: 0 0% 88%;
-    --card-glass: 0 0% 16% / 0.97;
+    --card-glass: 0 0% 18% / 0.98;
 
     --popover: 0 0% 16%;
     --popover-foreground: 0 0% 88%;
