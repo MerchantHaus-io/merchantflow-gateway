@@ -605,6 +605,24 @@ const NMIBoarding = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Confirmation Dialog */}
+        <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Submit to NMI Gateway?</AlertDialogTitle>
+              <AlertDialogDescription>
+                You are about to submit <span className="font-semibold text-foreground">{form.company}</span> to the NMI gateway for boarding. This action will create a live merchant record. Are you sure you want to proceed?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => { setShowConfirm(false); handleSubmit(); }}>
+                Yes, Submit
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </AppLayout>
   );
