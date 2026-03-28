@@ -1036,39 +1036,40 @@ export default function OfficeChat({
   const [photoFrameUrl, setPhotoFrameUrl] = useState<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [nearTV, setNearTV] = useState(false);
-  const [tvUnmuted, setTvUnmuted] = useState(false);
   const tvOverlayRef = useRef<HTMLDivElement>(null);
   const tvIframeRef = useRef<HTMLIFrameElement>(null);
   const tvOverlayVisibleRef = useRef(false);
+  const tvVolumeRef = useRef(-1); // last sent volume (0-100)
 
   // TV2 state (north wall, live feed)
   const [nearTV2, setNearTV2] = useState(false);
-  const [tv2Unmuted, setTv2Unmuted] = useState(false);
   const tv2OverlayRef = useRef<HTMLDivElement>(null);
   const tv2IframeRef = useRef<HTMLIFrameElement>(null);
   const tv2OverlayVisibleRef = useRef(false);
   const tv2OverlayRectRef = useRef({ x: -1, y: -1, w: -1, h: -1 });
+  const tv2VolumeRef = useRef(-1);
 
   // Randomised YouTube playlist for the office TV
   const TV_PLAYLIST = useRef(['T0C9d8anDT4', 'oM9WfDBRNcg']).current;
   const [tvVideoId] = useState(() => TV_PLAYLIST[Math.floor(Math.random() * TV_PLAYLIST.length)]);
   const TV2_VIDEO_ID = '9siH2meEaGI'; // Live feed
 
-  // Mute/unmute via postMessage so the video doesn't restart
+  // Unmute both TVs on first load so proximity volume works
+  const tvInitRef = useRef(false);
   useEffect(() => {
-    const iframe = tvIframeRef.current;
-    if (!iframe?.contentWindow) return;
-    const cmd = tvUnmuted ? 'unMute' : 'mute';
-    iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: cmd, args: [] }), '*');
-  }, [tvUnmuted]);
-
-  // Mute/unmute TV2
-  useEffect(() => {
-    const iframe = tv2IframeRef.current;
-    if (!iframe?.contentWindow) return;
-    const cmd = tv2Unmuted ? 'unMute' : 'mute';
-    iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: cmd, args: [] }), '*');
-  }, [tv2Unmuted]);
+    if (tvInitRef.current) return;
+    const timer = setTimeout(() => {
+      tvInitRef.current = true;
+      [tvIframeRef, tv2IframeRef].forEach(ref => {
+        const iframe = ref.current;
+        if (iframe?.contentWindow) {
+          iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'unMute', args: [] }), '*');
+          iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setVolume', args: [0] }), '*');
+        }
+      });
+    }, 3000); // wait for iframes to load
+    return () => clearTimeout(timer);
+  }, []);
 
   const tvOverlayRectRef = useRef({ x: -1, y: -1, w: -1, h: -1 });
   const [nearInteract, setNearInteract] = useState<InteractionPoint | null>(null);
@@ -1433,6 +1434,34 @@ export default function OfficeChat({
         setNearTV2(prev => prev === nextNearTV2 ? prev : nextNearTV2);
       }
 
+      // ── Proximity-based TV volume ──
+      // TV1 (boardroom, east wall): audible within ~12 units, full at <3
+      // TV2 (office, north wall): audible within ~15 units, full at <3
+      {
+        const distTV1 = state.playerPos.distanceTo(TV_POS);
+        const distTV2 = state.playerPos.distanceTo(TV2_POS);
+
+        // TV1: starts audible at 12 units, full volume at 3 units
+        const tv1Vol = Math.round(Math.max(0, Math.min(100, (1 - (distTV1 - 3) / 9) * 80)));
+        // TV2: starts audible at 15 units, full volume at 3 units  
+        const tv2Vol = Math.round(Math.max(0, Math.min(100, (1 - (distTV2 - 3) / 12) * 80)));
+
+        if (Math.abs(tv1Vol - tvVolumeRef.current) >= 3) {
+          tvVolumeRef.current = tv1Vol;
+          const iframe = tvIframeRef.current;
+          if (iframe?.contentWindow) {
+            iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setVolume', args: [tv1Vol] }), '*');
+          }
+        }
+        if (Math.abs(tv2Vol - tv2VolumeRef.current) >= 3) {
+          tv2VolumeRef.current = tv2Vol;
+          const iframe = tv2IframeRef.current;
+          if (iframe?.contentWindow) {
+            iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setVolume', args: [tv2Vol] }), '*');
+          }
+        }
+      }
+
       // Interaction point proximity
       let closestIP: InteractionPoint | null = null;
       let closestIPDist = Infinity;
@@ -1659,10 +1688,6 @@ export default function OfficeChat({
         if (nearby && !activeChat && !showTerminal) {
           setActiveChat(nearby);
           document.exitPointerLock();
-        } else if (nearTV && !activeChat && !showTerminal) {
-          setTvUnmuted(prev => !prev);
-        } else if (nearTV2 && !activeChat && !showTerminal) {
-          setTv2Unmuted(prev => !prev);
         } else if (nearDesk && !activeChat && !showTerminal) {
           setShowTerminal(true); setDeskView("computer");
           document.exitPointerLock();
@@ -1675,10 +1700,6 @@ export default function OfficeChat({
           } else if (nearInteract.action === "coffee") {
             setCoffeeEmote(true);
             setTimeout(() => setCoffeeEmote(false), 3000);
-          } else if (nearInteract.action === "tv") {
-            setTvUnmuted(prev => !prev);
-          } else if (nearInteract.action === "tv2") {
-            setTv2Unmuted(prev => !prev);
           }
         }
       }
@@ -1689,7 +1710,7 @@ export default function OfficeChat({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [nearby, activeChat, nearDesk, showTerminal, nearTV, nearTV2, nearInteract, showWhiteboard]);
+  }, [nearby, activeChat, nearDesk, showTerminal, nearInteract, showWhiteboard]);
 
   // Presence sync
   useEffect(() => {
@@ -1837,23 +1858,7 @@ export default function OfficeChat({
         </div>
       )}
 
-      {/* Near TV */}
-      {nearTV && !activeChat && !showTerminal && !isMobile && (
-        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 pointer-events-none">
-          <Badge className="bg-black/80 text-white border-0 text-sm px-4 py-2">
-            Press <kbd className="mx-1 px-1 bg-white/20 rounded">E</kbd> to {tvUnmuted ? "mute" : "unmute"} TV
-          </Badge>
-        </div>
-      )}
-
-      {/* Near TV2 */}
-      {nearTV2 && !activeChat && !showTerminal && !isMobile && (
-        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 pointer-events-none">
-          <Badge className="bg-black/80 text-white border-0 text-sm px-4 py-2">
-            Press <kbd className="mx-1 px-1 bg-white/20 rounded">E</kbd> to {tv2Unmuted ? "mute" : "unmute"} News
-          </Badge>
-        </div>
-      )}
+      {/* TV prompts removed — volume is now proximity-based */}
 
       {/* Near NPC */}
       {nearby && !activeChat && !showTerminal && !isMobile && (
@@ -2272,14 +2277,12 @@ export default function OfficeChat({
             </div>
           </div>
 
-          {(nearby || nearDesk || nearTV || nearTV2 || nearInteract) && (
+          {(nearby || nearDesk || nearInteract) && (
             <button
               className="mobile-interact-btn absolute bottom-8 right-8 z-20 w-16 h-16 rounded-full bg-primary/80 text-white font-bold text-xs flex items-center justify-center border-2 border-white/30 active:scale-90 transition-transform"
               onTouchStart={(e) => {
                 e.stopPropagation();
                 if (nearby) setActiveChat(nearby);
-                else if (nearTV) setTvUnmuted(prev => !prev);
-                else if (nearTV2) setTv2Unmuted(prev => !prev);
                 else if (nearDesk) { setShowTerminal(true); setDeskView("computer"); }
                 else if (nearInteract) {
                   if (nearInteract.action === "sit") setIsSitting(prev => !prev);
@@ -2288,14 +2291,14 @@ export default function OfficeChat({
                 }
               }}
             >
-              {nearby ? `Chat\n${nearby.name}` : nearTV ? (tvUnmuted ? "Mute" : "Unmute") : nearTV2 ? (tv2Unmuted ? "Mute" : "Unmute") : nearDesk ? "Terminal" : nearInteract?.label ?? "Interact"}
+              {nearby ? `Chat\n${nearby.name}` : nearDesk ? "Terminal" : nearInteract?.label ?? "Interact"}
             </button>
           )}
 
-          {(nearby || nearDesk || nearTV || nearTV2 || nearInteract) && (
+          {(nearby || nearDesk || nearInteract) && (
             <div className="absolute bottom-28 left-1/2 -translate-x-1/2 pointer-events-none z-20">
               <Badge className="bg-black/80 text-white border-0 text-xs px-3 py-1">
-                {nearby ? `Near ${nearby.name}` : nearTV ? "Near TV" : nearTV2 ? "Near News" : nearDesk ? "Near Terminal" : nearInteract?.label ?? ""}
+                {nearby ? `Near ${nearby.name}` : nearDesk ? "Near Terminal" : nearInteract?.label ?? ""}
               </Badge>
             </div>
           )}
