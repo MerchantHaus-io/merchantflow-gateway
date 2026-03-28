@@ -185,7 +185,7 @@ export function Carousel3D({ items }: Carousel3DProps) {
           return (
             <div
               key={item.url}
-              className="absolute inset-0"
+              className="absolute inset-0 group/card"
               style={{
                 transform: `rotateY(${angle}deg) translateZ(${radius}px)`,
                 transition: "transform 0.6s cubic-bezier(0.25, 1, 0.5, 1)",
@@ -197,7 +197,8 @@ export function Carousel3D({ items }: Carousel3DProps) {
               <div
                 className={cn(
                   "w-full h-full rounded-xl border flex flex-col items-center justify-center gap-2.5 pointer-events-none",
-                  "bg-card border-border/60",
+                  "bg-card border-border/60 transition-transform duration-300",
+                  "group-hover/card:scale-110",
                   isActive && "ring-2 ring-primary/60 scale-105",
                   glowColorMap[item.color]
                 )}
@@ -209,15 +210,15 @@ export function Carousel3D({ items }: Carousel3DProps) {
                 {/* Icon orb */}
                 <div
                   className={cn(
-                    "w-14 h-14 rounded-full flex items-center justify-center",
+                    "w-14 h-14 rounded-full flex items-center justify-center transition-transform duration-300 group-hover/card:scale-125",
                     bgColorMap[item.color]
                   )}
                 >
-                  <item.icon className={cn("h-7 w-7", iconColorMap[item.color])} strokeWidth={1.8} />
+                  <item.icon className={cn("h-7 w-7 transition-transform duration-300 group-hover/card:scale-110", iconColorMap[item.color])} strokeWidth={1.8} />
                 </div>
 
                 {/* Title */}
-                <span className="text-[11px] font-bold text-foreground font-display text-center leading-tight px-2 drop-shadow-sm">
+                <span className="text-[11px] font-bold text-foreground font-display text-center leading-tight px-2 drop-shadow-sm transition-transform duration-300 group-hover/card:scale-115">
                   {item.title}
                 </span>
               </div>
