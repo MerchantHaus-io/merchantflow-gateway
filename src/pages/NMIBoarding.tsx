@@ -96,6 +96,18 @@ const NMIBoarding = () => {
   const [form, setForm] = useState<FormData>(initialFormData);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ success: boolean; gateway_id?: string; error?: string } | null>(null);
+  const [tearsheetFiles, setTearsheetFiles] = useState<File[]>([]);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
+
+  const handleTearsheetUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setTearsheetFiles((prev) => [...prev, ...files]);
+    e.target.value = "";
+  };
+
+  const removeTearsheetFile = (index: number) => {
+    setTearsheetFiles((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const update = (field: keyof FormData, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
