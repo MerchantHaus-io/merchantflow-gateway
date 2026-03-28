@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,10 +10,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Building2, User, MapPin, Globe, CreditCard, Send, Loader2, CheckCircle, AlertCircle, ArrowLeft, FileText, Upload, X, FileCheck, LinkIcon } from "lucide-react";
+import { Building2, User, MapPin, Globe, CreditCard, Send, Loader2, CheckCircle, AlertCircle, ArrowLeft, FileText, Upload, X, FileCheck, LinkIcon, Settings2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MCC_CODES, MCC_CATEGORIES, PROCESSING_PLATFORMS } from "@/lib/mcc-codes";
 
 const US_STATES = [
   "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA",
@@ -53,6 +56,26 @@ interface FormData {
   routing_number: string;
   account_number: string;
   account_type: string;
+  // Processing config
+  processing_platform: string;
+  processor_name: string;
+  mcc_code: string;
+  classification: string;
+  payment_visa: boolean;
+  payment_mc: boolean;
+  payment_amex: boolean;
+  payment_discover: boolean;
+  payment_diners: boolean;
+  payment_jcb: boolean;
+  max_monthly_volume: string;
+  max_ticket_amount: string;
+  limit_all_types: boolean;
+  avs_cvv_method: string;
+  duplicate_checking: boolean;
+  duplicate_merchant_override: boolean;
+  duplicate_time_limit: string;
+  // Required fields config
+  req_cvv: string;
   // VAR/Tear Sheet fields
   ts_discount_rate: string;
   ts_per_transaction_fee: string;
@@ -94,6 +117,25 @@ const initialFormData: FormData = {
   routing_number: "",
   account_number: "",
   account_type: "checking",
+  // Processing config defaults
+  processing_platform: "",
+  processor_name: "",
+  mcc_code: "",
+  classification: "ecommerce",
+  payment_visa: true,
+  payment_mc: true,
+  payment_amex: true,
+  payment_discover: true,
+  payment_diners: false,
+  payment_jcb: false,
+  max_monthly_volume: "0.00",
+  max_ticket_amount: "0.00",
+  limit_all_types: true,
+  avs_cvv_method: "void",
+  duplicate_checking: true,
+  duplicate_merchant_override: true,
+  duplicate_time_limit: "1200",
+  req_cvv: "not_required",
   // VAR/Tear Sheet defaults
   ts_discount_rate: "",
   ts_per_transaction_fee: "",
@@ -113,12 +155,13 @@ const initialFormData: FormData = {
   ts_notes: "",
 };
 
-type Step = "details" | "address" | "settings" | "banking" | "tearsheet" | "review";
+type Step = "details" | "address" | "settings" | "processing" | "banking" | "tearsheet" | "review";
 
 const STEPS: { key: Step; label: string; icon: React.ReactNode }[] = [
   { key: "details", label: "Business Info", icon: <Building2 className="h-4 w-4" /> },
   { key: "address", label: "Address", icon: <MapPin className="h-4 w-4" /> },
   { key: "settings", label: "Gateway Settings", icon: <Globe className="h-4 w-4" /> },
+  { key: "processing", label: "Processing", icon: <Settings2 className="h-4 w-4" /> },
   { key: "banking", label: "Banking", icon: <CreditCard className="h-4 w-4" /> },
   { key: "tearsheet", label: "VAR/Tear Sheet", icon: <FileText className="h-4 w-4" /> },
   { key: "review", label: "Review & Submit", icon: <Send className="h-4 w-4" /> },
@@ -156,6 +199,22 @@ const NMIBoarding = () => {
   const [opportunities, setOpportunities] = useState<OpportunityOption[]>([]);
   const [selectedOpportunityId, setSelectedOpportunityId] = useState<string>("");
   const [loadingOpps, setLoadingOpps] = useState(true);
+  const [mccSearch, setMccSearch] = useState("");
+  const [mccCategory, setMccCategory] = useState("All Categories");
+
+  const filteredMCCs = useMemo(() => {
+    let codes = MCC_CODES;
+    if (mccCategory !== "All Categories") {
+      codes = codes.filter((c) => c.category === mccCategory);
+    }
+    if (mccSearch) {
+      const q = mccSearch.toLowerCase();
+      codes = codes.filter(
+        (c) => c.code.includes(q) || c.description.toLowerCase().includes(q)
+      );
+    }
+    return codes.slice(0, 50); // limit display for performance
+  }, [mccSearch, mccCategory]);
 
   useEffect(() => {
     const fetchOpportunities = async () => {
@@ -232,7 +291,7 @@ const NMIBoarding = () => {
     setTearsheetFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const update = (field: keyof FormData, value: string) =>
+  const update = (field: keyof FormData, value: string | boolean) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
   const stepIndex = STEPS.findIndex((s) => s.key === step);
@@ -245,7 +304,7 @@ const NMIBoarding = () => {
       case "settings":
         return !!(form.username && form.timezone);
       case "banking":
-        return true; // banking is optional
+        return true;
       default:
         return true;
     }
@@ -294,7 +353,7 @@ const NMIBoarding = () => {
       </Label>
       <Input
         type={opts?.type || "text"}
-        value={form[field]}
+        value={form[field] as string}
         onChange={(e) => update(field, e.target.value)}
         placeholder={opts?.placeholder}
         className="h-9"
@@ -302,10 +361,20 @@ const NMIBoarding = () => {
     </div>
   );
 
+  const selectedMcc = MCC_CODES.find((m) => m.code === form.mcc_code);
+
+  const paymentTypes = [
+    { key: "payment_visa" as const, label: "Visa" },
+    { key: "payment_mc" as const, label: "Mastercard" },
+    { key: "payment_amex" as const, label: "American Express" },
+    { key: "payment_discover" as const, label: "Discover" },
+    { key: "payment_diners" as const, label: "Diner's Club" },
+    { key: "payment_jcb" as const, label: "JCB" },
+  ];
+
   return (
     <AppLayout pageTitle="NMI Merchant Boarding">
       <div className="p-4 lg:p-6 max-w-3xl mx-auto space-y-6">
-        {/* Back button */}
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="gap-1.5 -ml-2">
           <ArrowLeft className="h-4 w-4" /> Back
         </Button>
@@ -349,9 +418,7 @@ const NMIBoarding = () => {
                   {result.success ? "Merchant Boarded Successfully" : "Boarding Failed"}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {result.success
-                    ? `Gateway ID: ${result.gateway_id}`
-                    : result.error}
+                  {result.success ? `Gateway ID: ${result.gateway_id}` : result.error}
                 </p>
                 {result.success && (
                   <Button
@@ -385,6 +452,7 @@ const NMIBoarding = () => {
               {step === "details" && "Enter the merchant's business and contact information."}
               {step === "address" && "Enter the merchant's business address."}
               {step === "settings" && "Configure gateway username, timezone, and website."}
+              {step === "processing" && "Configure processing platform, MCC, payment types, and account rules."}
               {step === "banking" && "Banking information for merchant billing (optional)."}
               {step === "tearsheet" && "Upload a VAR/Tear Sheet document (optional)."}
               {step === "review" && "Review all details before submitting to NMI."}
@@ -509,9 +577,228 @@ const NMIBoarding = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="es">Spanish</SelectItem>
-                      <SelectItem value="fr">French</SelectItem>
+                      <SelectItem value="en_US">English (US)</SelectItem>
+                      <SelectItem value="es_ES">Spanish (Spain)</SelectItem>
+                      <SelectItem value="es_CR">Spanish (Costa Rica)</SelectItem>
+                      <SelectItem value="es_PA">Spanish (Panama)</SelectItem>
+                      <SelectItem value="fr_CA">French (Canada)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+
+            {/* ===== PROCESSING CONFIG STEP ===== */}
+            {step === "processing" && (
+              <div className="space-y-5">
+                {/* Processing Platform */}
+                <div>
+                  <p className="text-xs font-semibold text-foreground uppercase tracking-wider mb-3">Processing Platform</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium text-muted-foreground">Select a Processor</Label>
+                      <Select value={form.processing_platform} onValueChange={(v) => update("processing_platform", v)}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Select a Processor" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {PROCESSING_PLATFORMS.map((p) => (
+                            <SelectItem key={p} value={p}>{p}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {renderField("Processor Name", "processor_name", { placeholder: "Displayed as processor in merchant panel" })}
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* MCC Code */}
+                <div>
+                  <p className="text-xs font-semibold text-foreground uppercase tracking-wider mb-3">Merchant Category Code (MCC)</p>
+                  {selectedMcc && (
+                    <div className="mb-3 flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs font-mono">{selectedMcc.code}</Badge>
+                      <span className="text-sm text-foreground">{selectedMcc.description}</span>
+                      <button onClick={() => update("mcc_code", "")} className="text-muted-foreground hover:text-destructive ml-auto">
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+                      <Input
+                        value={mccSearch}
+                        onChange={(e) => setMccSearch(e.target.value)}
+                        placeholder="Search MCC code or description…"
+                        className="h-9 pl-8 text-xs"
+                      />
+                    </div>
+                    <Select value={mccCategory} onValueChange={setMccCategory}>
+                      <SelectTrigger className="h-9 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MCC_CATEGORIES.map((cat) => (
+                          <SelectItem key={cat} value={cat} className="text-xs">{cat}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="border border-border rounded-lg max-h-48 overflow-y-auto">
+                    {filteredMCCs.length === 0 ? (
+                      <p className="text-xs text-muted-foreground p-3 text-center">No matching MCC codes found</p>
+                    ) : (
+                      filteredMCCs.map((mcc) => (
+                        <button
+                          key={mcc.code}
+                          onClick={() => { update("mcc_code", mcc.code); setMccSearch(""); }}
+                          className={cn(
+                            "w-full text-left px-3 py-2 text-xs flex items-center gap-3 hover:bg-muted/50 transition-colors border-b border-border last:border-b-0",
+                            form.mcc_code === mcc.code && "bg-primary/10 text-primary"
+                          )}
+                        >
+                          <span className="font-mono text-muted-foreground shrink-0 w-10">{mcc.code}</span>
+                          <span className="text-foreground truncate">{mcc.description}</span>
+                          <Badge variant="outline" className="ml-auto text-[10px] shrink-0 hidden sm:inline-flex">{mcc.category}</Badge>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                  {filteredMCCs.length === 50 && (
+                    <p className="text-[10px] text-muted-foreground mt-1">Showing first 50 results. Refine your search to see more.</p>
+                  )}
+                </div>
+
+                <Separator />
+
+                {/* Account Classification */}
+                <div>
+                  <p className="text-xs font-semibold text-foreground uppercase tracking-wider mb-3">Account Classification</p>
+                  <p className="text-[10px] text-muted-foreground mb-2">
+                    Selecting "Retail" or "Restaurant" will prevent AVS or CVV rejection rules.
+                  </p>
+                  <Select value={form.classification} onValueChange={(v) => update("classification", v)}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ecommerce">E-Commerce</SelectItem>
+                      <SelectItem value="retail">Retail</SelectItem>
+                      <SelectItem value="moto">MOTO (Mail Order / Telephone Order)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Separator />
+
+                {/* Payment Types */}
+                <div>
+                  <p className="text-xs font-semibold text-foreground uppercase tracking-wider mb-3">Payment Types Allowed</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {paymentTypes.map(({ key, label }) => (
+                      <label key={key} className="flex items-center gap-2 cursor-pointer group">
+                        <Checkbox
+                          checked={form[key] as boolean}
+                          onCheckedChange={(v) => update(key, !!v)}
+                        />
+                        <span className="text-sm text-foreground group-hover:text-primary transition-colors">{label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Account Limitations */}
+                <div>
+                  <p className="text-xs font-semibold text-foreground uppercase tracking-wider mb-2">Account Limitations</p>
+                  <p className="text-[10px] text-muted-foreground mb-3">
+                    Hard limits on gateway volume. "0.00" means unlimited.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {renderField("Max Monthly Volume ($)", "max_monthly_volume", { placeholder: "0.00" })}
+                    {renderField("Max Ticket Amount ($)", "max_ticket_amount", { placeholder: "0.00" })}
+                  </div>
+                  <label className="flex items-center gap-2 mt-3 cursor-pointer">
+                    <Checkbox
+                      checked={form.limit_all_types}
+                      onCheckedChange={(v) => update("limit_all_types", !!v)}
+                    />
+                    <span className="text-xs text-muted-foreground">Include all payment types within these limits</span>
+                  </label>
+                </div>
+
+                <Separator />
+
+                {/* AVS/CVV Pre-Check Method */}
+                <div>
+                  <p className="text-xs font-semibold text-foreground uppercase tracking-wider mb-2">AVS/CVV Pre-Check Method</p>
+                  <Select value={form.avs_cvv_method} onValueChange={(v) => update("avs_cvv_method", v)}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="void">Void on Decline</SelectItem>
+                      <SelectItem value="preauth">Separate Pre-auth Transaction</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-muted-foreground mt-1.5">
+                    {form.avs_cvv_method === "void"
+                      ? "Transaction is attempted; if AVS/CVV rules block it, the gateway sends a void to release held funds."
+                      : "An account validation is performed first. If it passes, the full transaction proceeds."}
+                  </p>
+                </div>
+
+                <Separator />
+
+                {/* Duplicate Velocity Controls */}
+                <div>
+                  <p className="text-xs font-semibold text-foreground uppercase tracking-wider mb-3">Duplicate Velocity Controls</p>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-foreground">Enable Duplicate Checking</p>
+                        <p className="text-[10px] text-muted-foreground">Prevents duplicate transactions (same card, same amount)</p>
+                      </div>
+                      <Switch
+                        checked={form.duplicate_checking}
+                        onCheckedChange={(v) => update("duplicate_checking", v)}
+                      />
+                    </div>
+                    {form.duplicate_checking && (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-foreground">Allow Merchant Override</p>
+                            <p className="text-[10px] text-muted-foreground">Adds override checkbox to Virtual Terminal</p>
+                          </div>
+                          <Switch
+                            checked={form.duplicate_merchant_override}
+                            onCheckedChange={(v) => update("duplicate_merchant_override", v)}
+                          />
+                        </div>
+                        {renderField("Duplicate Time Limit (seconds)", "duplicate_time_limit", { placeholder: "1200" })}
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* CVV Requirement */}
+                <div>
+                  <p className="text-xs font-semibold text-foreground uppercase tracking-wider mb-3">Card Security Code (CVV)</p>
+                  <Select value={form.req_cvv} onValueChange={(v) => update("req_cvv", v)}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="not_required">Not Required</SelectItem>
+                      <SelectItem value="always">Always Required</SelectItem>
+                      <SelectItem value="first_txn">Required on First Transaction</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -547,7 +834,6 @@ const NMIBoarding = () => {
                   Enter VAR/Tear Sheet pricing and terms per NMI. All fields are optional.
                 </p>
 
-                {/* Pricing */}
                 <div>
                   <p className="text-xs font-semibold text-foreground uppercase tracking-wider mb-3">Rate & Fee Schedule</p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -562,7 +848,6 @@ const NMIBoarding = () => {
 
                 <Separator />
 
-                {/* Compliance & Risk Fees */}
                 <div>
                   <p className="text-xs font-semibold text-foreground uppercase tracking-wider mb-3">Compliance & Risk Fees</p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -576,7 +861,6 @@ const NMIBoarding = () => {
 
                 <Separator />
 
-                {/* Contract Terms */}
                 <div>
                   <p className="text-xs font-semibold text-foreground uppercase tracking-wider mb-3">Contract Terms</p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -588,7 +872,6 @@ const NMIBoarding = () => {
 
                 <Separator />
 
-                {/* Equipment & Notes */}
                 <div className="space-y-4">
                   {renderField("Equipment / Terminal", "ts_equipment", { placeholder: "Dejavoo Z11, PAX A920, Virtual Terminal, etc." })}
                   <div className="space-y-1.5">
@@ -605,7 +888,6 @@ const NMIBoarding = () => {
 
                 <Separator />
 
-                {/* File Upload */}
                 <div>
                   <p className="text-xs font-semibold text-foreground uppercase tracking-wider mb-3">Attach Document (optional)</p>
                   <div className="border-2 border-dashed border-border rounded-lg p-5 text-center hover:border-primary/50 transition-colors">
@@ -662,10 +944,30 @@ const NMIBoarding = () => {
                   <ReviewField label="Country" value={form.country} />
                   <ReviewField label="Username" value={form.username} />
                   <ReviewField label="Timezone" value={form.timezone} />
+                  <ReviewField label="Language" value={form.language} />
                   <ReviewField label="Website" value={form.url} />
                   {form.bank_name && <ReviewField label="Bank" value={form.bank_name} />}
                   {form.routing_number && <ReviewField label="Routing" value={`···${form.routing_number.slice(-4)}`} />}
                   {form.account_number && <ReviewField label="Account" value={`···${form.account_number.slice(-4)}`} />}
+                </div>
+
+                {/* Processing Config Review */}
+                <Separator />
+                <p className="text-xs font-semibold text-foreground uppercase tracking-wider">Processing Configuration</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                  <ReviewField label="Platform" value={form.processing_platform} />
+                  <ReviewField label="Processor Name" value={form.processor_name} />
+                  <ReviewField label="MCC Code" value={selectedMcc ? `${selectedMcc.code} — ${selectedMcc.description}` : form.mcc_code} />
+                  <ReviewField label="Classification" value={form.classification.toUpperCase()} />
+                  <ReviewField
+                    label="Payment Types"
+                    value={paymentTypes.filter(({ key }) => form[key]).map(({ label }) => label).join(", ") || "None"}
+                  />
+                  <ReviewField label="Max Monthly Volume" value={form.max_monthly_volume === "0.00" ? "Unlimited" : `$${form.max_monthly_volume}`} />
+                  <ReviewField label="Max Ticket" value={form.max_ticket_amount === "0.00" ? "Unlimited" : `$${form.max_ticket_amount}`} />
+                  <ReviewField label="AVS/CVV Method" value={form.avs_cvv_method === "void" ? "Void on Decline" : "Separate Pre-auth"} />
+                  <ReviewField label="Duplicate Checking" value={form.duplicate_checking ? `Enabled (${form.duplicate_time_limit}s)` : "Disabled"} />
+                  <ReviewField label="CVV Requirement" value={form.req_cvv === "always" ? "Always Required" : form.req_cvv === "first_txn" ? "Required on First Txn" : "Not Required"} />
                 </div>
 
                 {/* Tear Sheet Review */}
