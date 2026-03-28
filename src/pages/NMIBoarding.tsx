@@ -59,6 +59,11 @@ interface FormData {
   // Processing config
   processing_platform: string;
   processor_name: string;
+  // Processor-specific info (World Pay, First Data, etc.)
+  proc_merchant_number: string;
+  proc_terminal_number: string;
+  proc_check_digit: string;
+  proc_device_id: string;
   mcc_code: string;
   classification: string;
   payment_visa: boolean;
@@ -76,6 +81,20 @@ interface FormData {
   duplicate_time_limit: string;
   // Required fields config
   req_cvv: string;
+  // Merchant's Required Fields
+  req_name: boolean;
+  req_company: boolean;
+  req_address: boolean;
+  req_city: boolean;
+  req_state: boolean;
+  req_zip: boolean;
+  req_country: boolean;
+  req_phone: boolean;
+  req_email: boolean;
+  req_drivers_license: boolean;
+  req_dl_state: boolean;
+  req_dl_dob: boolean;
+  req_ssn: boolean;
   // VAR/Tear Sheet fields
   ts_discount_rate: string;
   ts_per_transaction_fee: string;
