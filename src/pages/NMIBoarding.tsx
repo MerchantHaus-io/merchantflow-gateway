@@ -55,7 +55,7 @@ interface FormData {
 }
 
 const initialFormData: FormData = {
-  merchant_type: "standard",
+  merchant_type: "gateway",
   company: "",
   dba_name: "",
   first_name: "",
@@ -70,7 +70,7 @@ const initialFormData: FormData = {
   country: "US",
   url: "",
   timezone: "America/New_York",
-  language: "en",
+  language: "en_US",
   username: "",
   bank_name: "",
   routing_number: "",
@@ -267,8 +267,10 @@ const NMIBoarding = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="standard">Standard</SelectItem>
-                      <SelectItem value="reseller">Reseller</SelectItem>
+                      <SelectItem value="gateway">Gateway</SelectItem>
+                      <SelectItem value="test">Test</SelectItem>
+                      <SelectItem value="splitFunding">Split Funding</SelectItem>
+                      <SelectItem value="mobile">Mobile</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
