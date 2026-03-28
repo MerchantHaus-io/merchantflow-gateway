@@ -2295,10 +2295,10 @@ export default function OfficeChat({
             </button>
           )}
 
-          {(nearby || nearDesk || nearTV || nearTV2 || nearInteract) && (
+          {(nearby || nearDesk || nearInteract) && (
             <div className="absolute bottom-28 left-1/2 -translate-x-1/2 pointer-events-none z-20">
               <Badge className="bg-black/80 text-white border-0 text-xs px-3 py-1">
-                {nearby ? `Near ${nearby.name}` : nearTV ? "Near TV" : nearTV2 ? "Near News" : nearDesk ? "Near Terminal" : nearInteract?.label ?? ""}
+                {nearby ? `Near ${nearby.name}` : nearDesk ? "Near Terminal" : nearInteract?.label ?? ""}
               </Badge>
             </div>
           )}
