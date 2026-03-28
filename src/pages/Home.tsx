@@ -345,7 +345,6 @@ export default function Home() {
   const currentItems = showFavorites ? favoriteItems : showAll ? allItems : groups[activeGroup].items;
   const allGroup: ShortcutGroup = { title: "All", items: allItems };
   const favGroup: ShortcutGroup = { title: "Favorites", items: favoriteItems };
-  const allGroup: ShortcutGroup = { title: "All", items: allItems };
   const CurrentIcon = layoutIcons[layout];
   const currentLabel = layoutLabels[layout];
   const NextIcon = layoutIcons[layoutCycle[(layoutCycle.indexOf(layout) + 1) % layoutCycle.length]];
