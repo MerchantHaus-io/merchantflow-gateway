@@ -328,6 +328,7 @@ const NMIBoarding = () => {
                       setForm(initialFormData);
                       setResult(null);
                       setTearsheetFiles([]);
+                      setSelectedOpportunityId("");
                       setStep("details");
                     }}
                   >
