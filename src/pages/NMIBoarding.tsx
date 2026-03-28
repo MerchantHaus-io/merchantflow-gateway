@@ -90,6 +90,25 @@ const STEPS: { key: Step; label: string; icon: React.ReactNode }[] = [
   { key: "review", label: "Review & Submit", icon: <Send className="h-4 w-4" /> },
 ];
 
+interface OpportunityOption {
+  id: string;
+  accountName: string;
+  contactFirstName: string | null;
+  contactLastName: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  accountAddress1: string | null;
+  accountAddress2: string | null;
+  accountCity: string | null;
+  accountState: string | null;
+  accountZip: string | null;
+  accountCountry: string | null;
+  accountWebsite: string | null;
+  username: string | null;
+  timezone: string | null;
+  language: string | null;
+}
+
 const NMIBoarding = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -99,6 +118,75 @@ const NMIBoarding = () => {
   const [result, setResult] = useState<{ success: boolean; gateway_id?: string; error?: string } | null>(null);
   const [tearsheetFiles, setTearsheetFiles] = useState<File[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [opportunities, setOpportunities] = useState<OpportunityOption[]>([]);
+  const [selectedOpportunityId, setSelectedOpportunityId] = useState<string>("");
+  const [loadingOpps, setLoadingOpps] = useState(true);
+
+  useEffect(() => {
+    const fetchOpportunities = async () => {
+      setLoadingOpps(true);
+      const { data, error } = await supabase
+        .from("opportunities")
+        .select(`
+          id, username, timezone, language,
+          accounts:account_id (name, address1, address2, city, state, zip, country, website),
+          contacts:contact_id (first_name, last_name, email, phone)
+        `)
+        .eq("status", "active")
+        .order("created_at", { ascending: false });
+
+      if (!error && data) {
+        const mapped: OpportunityOption[] = data.map((opp: any) => ({
+          id: opp.id,
+          accountName: opp.accounts?.name || "",
+          contactFirstName: opp.contacts?.first_name,
+          contactLastName: opp.contacts?.last_name,
+          contactEmail: opp.contacts?.email,
+          contactPhone: opp.contacts?.phone,
+          accountAddress1: opp.accounts?.address1,
+          accountAddress2: opp.accounts?.address2,
+          accountCity: opp.accounts?.city,
+          accountState: opp.accounts?.state,
+          accountZip: opp.accounts?.zip,
+          accountCountry: opp.accounts?.country,
+          accountWebsite: opp.accounts?.website,
+          username: opp.username,
+          timezone: opp.timezone,
+          language: opp.language,
+        }));
+        setOpportunities(mapped);
+      }
+      setLoadingOpps(false);
+    };
+    fetchOpportunities();
+  }, []);
+
+  const handleSelectOpportunity = (oppId: string) => {
+    setSelectedOpportunityId(oppId);
+    if (oppId === "none") return;
+    const opp = opportunities.find((o) => o.id === oppId);
+    if (!opp) return;
+    setForm((prev) => ({
+      ...prev,
+      company: opp.accountName || prev.company,
+      first_name: opp.contactFirstName || prev.first_name,
+      last_name: opp.contactLastName || prev.last_name,
+      email: opp.contactEmail || prev.email,
+      phone: opp.contactPhone || prev.phone,
+      address1: opp.accountAddress1 || prev.address1,
+      address2: opp.accountAddress2 || prev.address2,
+      city: opp.accountCity || prev.city,
+      state: opp.accountState || prev.state,
+      zip: opp.accountZip || prev.zip,
+      country: opp.accountCountry || prev.country,
+      url: opp.accountWebsite || prev.url,
+      username: opp.username || prev.username,
+      timezone: opp.timezone || prev.timezone,
+      language: opp.language || prev.language,
+    }));
+    toast.success("Opportunity data synced to form");
+  };
 
   const handleTearsheetUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
