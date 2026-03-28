@@ -384,10 +384,10 @@ export default function Home() {
           {/* Categorised / All toggle */}
           <div className="flex items-center rounded-full border border-border/40 bg-card/80 p-0.5 mr-1">
             <button
-              onClick={() => setShowAll(false)}
+              onClick={() => { setShowAll(false); setShowFavorites(false); }}
               className={cn(
                 "flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider transition-all duration-200",
-                !showAll
+                !showAll && !showFavorites
                   ? "bg-primary/15 text-primary shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               )}
@@ -396,16 +396,29 @@ export default function Home() {
               <span className="hidden sm:inline">Categories</span>
             </button>
             <button
-              onClick={() => setShowAll(true)}
+              onClick={() => { setShowAll(true); setShowFavorites(false); }}
               className={cn(
                 "flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider transition-all duration-200",
-                showAll
+                showAll && !showFavorites
                   ? "bg-primary/15 text-primary shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
               <List className="h-3 w-3" />
               <span className="hidden sm:inline">All</span>
+            </button>
+            <button
+              onClick={() => { setShowFavorites(true); setShowAll(false); }}
+              className={cn(
+                "flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider transition-all duration-200",
+                showFavorites
+                  ? "bg-gold/15 text-gold shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Star className={cn("h-3 w-3", favCount > 0 && "fill-gold text-gold")} />
+              <span className="hidden sm:inline">Favorites</span>
+              {favCount > 0 && <span className="text-[9px] opacity-70">{favCount}</span>}
             </button>
           </div>
 
