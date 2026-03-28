@@ -160,7 +160,7 @@ function NextMeetingChip() {
 }
 
 // ── Grid View (card layout) ─────────────────────────────────
-function GridView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeGroup: number }) {
+function GridView({ groups: g, activeGroup, isFavorite, onToggleFavorite }: { groups: ShortcutGroup[]; activeGroup: number; isFavorite: (url: string) => boolean; onToggleFavorite: (url: string) => void }) {
   const navigate = useNavigate();
   const items = g[activeGroup].items;
 
@@ -173,12 +173,11 @@ function GridView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeG
       className="flex flex-wrap justify-center gap-3 mt-4"
     >
       {items.map((item, i) => (
-        <motion.button
+        <motion.div
           key={item.url}
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.04, duration: 0.3 }}
-          onClick={() => item.external ? window.open(item.url, "_blank") : navigate(item.url)}
           className={cn(
             "group relative flex flex-col items-center gap-2 p-4 rounded-xl border border-border/60",
             "bg-card hover:bg-card hover:border-border transition-all duration-200",
@@ -186,7 +185,15 @@ function GridView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeG
             "w-[calc(50%-6px)] sm:w-[calc(33.333%-8px)] lg:w-[calc(25%-9px)] xl:w-[calc(20%-10px)]",
             glowColorMap[item.color],
           )}
+          onClick={() => item.external ? window.open(item.url, "_blank") : navigate(item.url)}
         >
+          {/* Favorite star */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleFavorite(item.url); }}
+            className="absolute top-2 right-2 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent/40"
+          >
+            <Star className={cn("h-3.5 w-3.5 transition-colors", isFavorite(item.url) ? "fill-gold text-gold" : "text-muted-foreground")} />
+          </button>
           <div className={cn(
             "w-11 h-11 rounded-full flex items-center justify-center",
             bgColorMap[item.color],
@@ -195,7 +202,7 @@ function GridView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeG
           </div>
           <span className="text-xs font-display font-semibold text-foreground leading-tight tracking-tight">{item.title}</span>
           <span className="text-[10px] font-serif text-muted-foreground leading-tight italic">{item.description}</span>
-        </motion.button>
+        </motion.div>
       ))}
     </motion.div>
   );
