@@ -1434,6 +1434,34 @@ export default function OfficeChat({
         setNearTV2(prev => prev === nextNearTV2 ? prev : nextNearTV2);
       }
 
+      // ── Proximity-based TV volume ──
+      // TV1 (boardroom, east wall): audible within ~12 units, full at <3
+      // TV2 (office, north wall): audible within ~15 units, full at <3
+      {
+        const distTV1 = state.playerPos.distanceTo(TV_POS);
+        const distTV2 = state.playerPos.distanceTo(TV2_POS);
+
+        // TV1: starts audible at 12 units, full volume at 3 units
+        const tv1Vol = Math.round(Math.max(0, Math.min(100, (1 - (distTV1 - 3) / 9) * 80)));
+        // TV2: starts audible at 15 units, full volume at 3 units  
+        const tv2Vol = Math.round(Math.max(0, Math.min(100, (1 - (distTV2 - 3) / 12) * 80)));
+
+        if (Math.abs(tv1Vol - tvVolumeRef.current) >= 3) {
+          tvVolumeRef.current = tv1Vol;
+          const iframe = tvIframeRef.current;
+          if (iframe?.contentWindow) {
+            iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setVolume', args: [tv1Vol] }), '*');
+          }
+        }
+        if (Math.abs(tv2Vol - tv2VolumeRef.current) >= 3) {
+          tv2VolumeRef.current = tv2Vol;
+          const iframe = tv2IframeRef.current;
+          if (iframe?.contentWindow) {
+            iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setVolume', args: [tv2Vol] }), '*');
+          }
+        }
+      }
+
       // Interaction point proximity
       let closestIP: InteractionPoint | null = null;
       let closestIPDist = Infinity;
