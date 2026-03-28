@@ -14,11 +14,11 @@ All colors MUST be HSL.
     --background: 0 0% 0%;
     --foreground: 210 40% 98%;
 
-    --card: 217 33% 17%;
+    --card: 217 33% 19%;
     --card-foreground: 210 40% 98%;
 
     /* Semi-transparent card for floating panels */
-    --card-glass: 217 33% 17% / 0.96;
+    --card-glass: 217 33% 19% / 0.98;
 
     --popover: 217 33% 17%;
     --popover-foreground: 210 40% 98%;
