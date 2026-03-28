@@ -17,6 +17,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { EMAIL_TO_USER } from "@/types/opportunity";
 import { Carousel3D, type CarouselItem } from "@/components/home/Carousel3D";
 import { cn } from "@/lib/utils";
+import { useFavorites } from "@/hooks/useFavorites";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { format, isToday, isTomorrow, differenceInHours } from "date-fns";
