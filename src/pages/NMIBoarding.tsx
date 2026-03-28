@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Building2, User, MapPin, Globe, CreditCard, Send, Loader2, CheckCircle, AlertCircle, ArrowLeft, FileText, Upload, X, FileCheck } from "lucide-react";
+import { Building2, User, MapPin, Globe, CreditCard, Send, Loader2, CheckCircle, AlertCircle, ArrowLeft, FileText, Upload, X, FileCheck, LinkIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const US_STATES = [
@@ -89,6 +90,25 @@ const STEPS: { key: Step; label: string; icon: React.ReactNode }[] = [
   { key: "review", label: "Review & Submit", icon: <Send className="h-4 w-4" /> },
 ];
 
+interface OpportunityOption {
+  id: string;
+  accountName: string;
+  contactFirstName: string | null;
+  contactLastName: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  accountAddress1: string | null;
+  accountAddress2: string | null;
+  accountCity: string | null;
+  accountState: string | null;
+  accountZip: string | null;
+  accountCountry: string | null;
+  accountWebsite: string | null;
+  username: string | null;
+  timezone: string | null;
+  language: string | null;
+}
+
 const NMIBoarding = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -98,6 +118,75 @@ const NMIBoarding = () => {
   const [result, setResult] = useState<{ success: boolean; gateway_id?: string; error?: string } | null>(null);
   const [tearsheetFiles, setTearsheetFiles] = useState<File[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [opportunities, setOpportunities] = useState<OpportunityOption[]>([]);
+  const [selectedOpportunityId, setSelectedOpportunityId] = useState<string>("");
+  const [loadingOpps, setLoadingOpps] = useState(true);
+
+  useEffect(() => {
+    const fetchOpportunities = async () => {
+      setLoadingOpps(true);
+      const { data, error } = await supabase
+        .from("opportunities")
+        .select(`
+          id, username, timezone, language,
+          accounts:account_id (name, address1, address2, city, state, zip, country, website),
+          contacts:contact_id (first_name, last_name, email, phone)
+        `)
+        .eq("status", "active")
+        .order("created_at", { ascending: false });
+
+      if (!error && data) {
+        const mapped: OpportunityOption[] = data.map((opp: any) => ({
+          id: opp.id,
+          accountName: opp.accounts?.name || "",
+          contactFirstName: opp.contacts?.first_name,
+          contactLastName: opp.contacts?.last_name,
+          contactEmail: opp.contacts?.email,
+          contactPhone: opp.contacts?.phone,
+          accountAddress1: opp.accounts?.address1,
+          accountAddress2: opp.accounts?.address2,
+          accountCity: opp.accounts?.city,
+          accountState: opp.accounts?.state,
+          accountZip: opp.accounts?.zip,
+          accountCountry: opp.accounts?.country,
+          accountWebsite: opp.accounts?.website,
+          username: opp.username,
+          timezone: opp.timezone,
+          language: opp.language,
+        }));
+        setOpportunities(mapped);
+      }
+      setLoadingOpps(false);
+    };
+    fetchOpportunities();
+  }, []);
+
+  const handleSelectOpportunity = (oppId: string) => {
+    setSelectedOpportunityId(oppId);
+    if (oppId === "none") return;
+    const opp = opportunities.find((o) => o.id === oppId);
+    if (!opp) return;
+    setForm((prev) => ({
+      ...prev,
+      company: opp.accountName || prev.company,
+      first_name: opp.contactFirstName || prev.first_name,
+      last_name: opp.contactLastName || prev.last_name,
+      email: opp.contactEmail || prev.email,
+      phone: opp.contactPhone || prev.phone,
+      address1: opp.accountAddress1 || prev.address1,
+      address2: opp.accountAddress2 || prev.address2,
+      city: opp.accountCity || prev.city,
+      state: opp.accountState || prev.state,
+      zip: opp.accountZip || prev.zip,
+      country: opp.accountCountry || prev.country,
+      url: opp.accountWebsite || prev.url,
+      username: opp.username || prev.username,
+      timezone: opp.timezone || prev.timezone,
+      language: opp.language || prev.language,
+    }));
+    toast.success("Opportunity data synced to form");
+  };
 
   const handleTearsheetUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -239,6 +328,7 @@ const NMIBoarding = () => {
                       setForm(initialFormData);
                       setResult(null);
                       setTearsheetFiles([]);
+                      setSelectedOpportunityId("");
                       setStep("details");
                     }}
                   >
@@ -269,6 +359,27 @@ const NMIBoarding = () => {
           <CardContent className="space-y-4">
             {step === "details" && (
               <>
+                {/* Opportunity Selector */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                    <LinkIcon className="h-3.5 w-3.5" /> Link to Opportunity
+                  </Label>
+                  <Select value={selectedOpportunityId} onValueChange={handleSelectOpportunity}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder={loadingOpps ? "Loading opportunities…" : "Select an opportunity to auto-fill"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— No opportunity —</SelectItem>
+                      {opportunities.map((opp) => (
+                        <SelectItem key={opp.id} value={opp.id}>
+                          {opp.accountName}{opp.contactFirstName ? ` — ${opp.contactFirstName} ${opp.contactLastName || ""}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-muted-foreground">Selecting an opportunity will auto-populate known fields.</p>
+                </div>
+                <Separator />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {renderField("Company Name", "company", { required: true, placeholder: "Acme Corp" })}
                   {renderField("DBA Name", "dba_name", { placeholder: "Doing Business As" })}
@@ -440,6 +551,9 @@ const NMIBoarding = () => {
             {step === "review" && (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                  {selectedOpportunityId && selectedOpportunityId !== "none" && (
+                    <ReviewField label="Linked Opportunity" value={opportunities.find(o => o.id === selectedOpportunityId)?.accountName || "Yes"} />
+                  )}
                   <ReviewField label="Company" value={form.company} />
                   <ReviewField label="DBA" value={form.dba_name} />
                   <ReviewField label="Type" value={form.merchant_type} />
@@ -473,7 +587,7 @@ const NMIBoarding = () => {
               {step === "review" ? (
                 <Button
                   size="sm"
-                  onClick={handleSubmit}
+                  onClick={() => setShowConfirm(true)}
                   disabled={submitting || result?.success === true}
                   className="gap-1.5"
                 >
@@ -495,6 +609,24 @@ const NMIBoarding = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Confirmation Dialog */}
+        <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Submit to NMI Gateway?</AlertDialogTitle>
+              <AlertDialogDescription>
+                You are about to submit <span className="font-semibold text-foreground">{form.company}</span> to the NMI gateway for boarding. This action will create a live merchant record. Are you sure you want to proceed?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={() => { setShowConfirm(false); handleSubmit(); }}>
+                Yes, Submit
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </AppLayout>
   );
