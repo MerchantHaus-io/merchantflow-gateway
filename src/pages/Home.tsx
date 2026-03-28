@@ -423,7 +423,7 @@ export default function Home() {
           </div>
 
           {/* Category tabs — only visible when not showing all */}
-          {!showAll && groupKeys.map((title, idx) => (
+          {!showAll && !showFavorites && groupKeys.map((title, idx) => (
             <button
               key={title}
               onClick={() => setActiveGroup(idx)}
