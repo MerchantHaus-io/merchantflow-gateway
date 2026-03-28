@@ -209,7 +209,7 @@ function GridView({ groups: g, activeGroup, isFavorite, onToggleFavorite }: { gr
 }
 
 // ── Icon View (large icons, minimal chrome) ──────────────────
-function IconView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeGroup: number }) {
+function IconView({ groups: g, activeGroup, isFavorite, onToggleFavorite }: { groups: ShortcutGroup[]; activeGroup: number; isFavorite: (url: string) => boolean; onToggleFavorite: (url: string) => void }) {
   const navigate = useNavigate();
   const items = g[activeGroup].items;
 
@@ -222,17 +222,24 @@ function IconView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeG
       className="grid grid-cols-3 sm:grid-cols-5 justify-items-center gap-x-4 gap-y-6 mt-6 max-w-3xl mx-auto"
     >
       {items.map((item, i) => (
-        <motion.button
+        <motion.div
           key={item.url}
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: i * 0.035, duration: 0.3 }}
-          onClick={() => item.external ? window.open(item.url, "_blank") : navigate(item.url)}
           className={cn(
-            "group flex flex-col items-center gap-2.5 cursor-pointer focus:outline-none w-24 sm:w-28 p-3 rounded-2xl transition-all duration-200",
+            "group relative flex flex-col items-center gap-2.5 cursor-pointer focus:outline-none w-24 sm:w-28 p-3 rounded-2xl transition-all duration-200",
             "hover:bg-card/90 dark:hover:bg-card/80",
           )}
+          onClick={() => item.external ? window.open(item.url, "_blank") : navigate(item.url)}
         >
+          {/* Favorite star */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleFavorite(item.url); }}
+            className="absolute top-1 right-1 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent/40 z-10"
+          >
+            <Star className={cn("h-3 w-3 transition-colors", isFavorite(item.url) ? "fill-gold text-gold" : "text-muted-foreground")} />
+          </button>
           {/* Large icon orb */}
           <div
             className={cn(
@@ -258,7 +265,7 @@ function IconView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeG
           <span className="text-[10px] text-muted-foreground leading-tight text-center -mt-1 drop-shadow-sm">
             {item.description}
           </span>
-        </motion.button>
+        </motion.div>
       ))}
     </motion.div>
   );
