@@ -59,6 +59,11 @@ interface FormData {
   // Processing config
   processing_platform: string;
   processor_name: string;
+  // Processor-specific info (World Pay, First Data, etc.)
+  proc_merchant_number: string;
+  proc_terminal_number: string;
+  proc_check_digit: string;
+  proc_device_id: string;
   mcc_code: string;
   classification: string;
   payment_visa: boolean;
@@ -76,6 +81,20 @@ interface FormData {
   duplicate_time_limit: string;
   // Required fields config
   req_cvv: string;
+  // Merchant's Required Fields
+  req_name: boolean;
+  req_company: boolean;
+  req_address: boolean;
+  req_city: boolean;
+  req_state: boolean;
+  req_zip: boolean;
+  req_country: boolean;
+  req_phone: boolean;
+  req_email: boolean;
+  req_drivers_license: boolean;
+  req_dl_state: boolean;
+  req_dl_dob: boolean;
+  req_ssn: boolean;
   // VAR/Tear Sheet fields
   ts_discount_rate: string;
   ts_per_transaction_fee: string;
@@ -120,6 +139,10 @@ const initialFormData: FormData = {
   // Processing config defaults
   processing_platform: "",
   processor_name: "",
+  proc_merchant_number: "",
+  proc_terminal_number: "",
+  proc_check_digit: "",
+  proc_device_id: "",
   mcc_code: "",
   classification: "ecommerce",
   payment_visa: true,
@@ -136,6 +159,20 @@ const initialFormData: FormData = {
   duplicate_merchant_override: true,
   duplicate_time_limit: "1200",
   req_cvv: "not_required",
+  // Merchant's Required Fields defaults
+  req_name: false,
+  req_company: false,
+  req_address: false,
+  req_city: false,
+  req_state: false,
+  req_zip: false,
+  req_country: false,
+  req_phone: false,
+  req_email: false,
+  req_drivers_license: false,
+  req_dl_state: false,
+  req_dl_dob: false,
+  req_ssn: false,
   // VAR/Tear Sheet defaults
   ts_discount_rate: "",
   ts_per_transaction_fee: "",
@@ -612,6 +649,32 @@ const NMIBoarding = () => {
                   </div>
                 </div>
 
+                {/* Processor-Specific Information (shown when a processor is selected) */}
+                {form.processing_platform && (
+                  <>
+                    <Separator />
+                    <div>
+                      <p className="text-xs font-semibold text-foreground uppercase tracking-wider mb-3">
+                        {form.processing_platform} Processor Information
+                      </p>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div className="col-span-2 sm:col-span-1">
+                          {renderField("Merchant Number", "proc_merchant_number", { placeholder: "15 Digits" })}
+                        </div>
+                        <div>
+                          {renderField("Terminal Number", "proc_terminal_number", { placeholder: "6 Digits" })}
+                        </div>
+                        <div>
+                          {renderField("Check-Digit", "proc_check_digit", { placeholder: "1 Digit" })}
+                        </div>
+                        <div>
+                          {renderField("Device Identification", "proc_device_id", { placeholder: "2 Digits" })}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+
                 <Separator />
 
                 {/* MCC Code */}
@@ -687,6 +750,7 @@ const NMIBoarding = () => {
                     <SelectContent>
                       <SelectItem value="ecommerce">E-Commerce</SelectItem>
                       <SelectItem value="retail">Retail</SelectItem>
+                      <SelectItem value="restaurant">Restaurant</SelectItem>
                       <SelectItem value="moto">MOTO (Mail Order / Telephone Order)</SelectItem>
                     </SelectContent>
                   </Select>
@@ -801,6 +865,41 @@ const NMIBoarding = () => {
                       <SelectItem value="first_txn">Required on First Transaction</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                <Separator />
+
+                {/* Merchant's Required Fields */}
+                <div>
+                  <p className="text-xs font-semibold text-foreground uppercase tracking-wider mb-3">Merchant's Required Fields</p>
+                  <p className="text-[10px] text-muted-foreground mb-3">
+                    Select which fields should be required when the merchant processes transactions.
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {([
+                      { key: "req_name" as const, label: "Name" },
+                      { key: "req_company" as const, label: "Company" },
+                      { key: "req_address" as const, label: "Address" },
+                      { key: "req_city" as const, label: "City" },
+                      { key: "req_state" as const, label: "State" },
+                      { key: "req_zip" as const, label: "Zip Code" },
+                      { key: "req_country" as const, label: "Country" },
+                      { key: "req_phone" as const, label: "Phone Number" },
+                      { key: "req_email" as const, label: "Email Address" },
+                      { key: "req_drivers_license" as const, label: "Driver's License" },
+                      { key: "req_dl_state" as const, label: "Driver's License State" },
+                      { key: "req_dl_dob" as const, label: "Driver's License DOB" },
+                      { key: "req_ssn" as const, label: "Social Security Number" },
+                    ]).map(({ key, label }) => (
+                      <label key={key} className="flex items-center gap-2 cursor-pointer group">
+                        <Checkbox
+                          checked={form[key] as boolean}
+                          onCheckedChange={(v) => update(key, !!v)}
+                        />
+                        <span className="text-sm text-foreground group-hover:text-primary transition-colors">{label}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
