@@ -399,9 +399,9 @@ All colors MUST be HSL.
     --background: 0 0% 0%;
     --foreground: 0 0% 100%;
 
-    --card: 0 0% 6%;
+    --card: 0 0% 8%;
     --card-foreground: 0 0% 100%;
-    --card-glass: 0 0% 6% / 0.98;
+    --card-glass: 0 0% 8% / 0.99;
 
     --popover: 0 0% 6%;
     --popover-foreground: 0 0% 100%;
