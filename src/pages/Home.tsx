@@ -10,12 +10,14 @@ import {
   Activity, BadgeDollarSign, Globe, BookOpen, BookMarked, ClipboardList,
   Calculator, Sparkles, FileSpreadsheet, Download, Cloud, Send, ListChecks,
   Settings, LayoutGrid, Box, CircleDot, List, FolderOpen, UserPlus, CalendarDays,
+  Star,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { EMAIL_TO_USER } from "@/types/opportunity";
 import { Carousel3D, type CarouselItem } from "@/components/home/Carousel3D";
 import { cn } from "@/lib/utils";
+import { useFavorites } from "@/hooks/useFavorites";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { format, isToday, isTomorrow, differenceInHours } from "date-fns";
@@ -158,7 +160,7 @@ function NextMeetingChip() {
 }
 
 // ── Grid View (card layout) ─────────────────────────────────
-function GridView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeGroup: number }) {
+function GridView({ groups: g, activeGroup, isFavorite, onToggleFavorite }: { groups: ShortcutGroup[]; activeGroup: number; isFavorite: (url: string) => boolean; onToggleFavorite: (url: string) => void }) {
   const navigate = useNavigate();
   const items = g[activeGroup].items;
 
@@ -171,12 +173,11 @@ function GridView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeG
       className="flex flex-wrap justify-center gap-3 mt-4"
     >
       {items.map((item, i) => (
-        <motion.button
+        <motion.div
           key={item.url}
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.04, duration: 0.3 }}
-          onClick={() => item.external ? window.open(item.url, "_blank") : navigate(item.url)}
           className={cn(
             "group relative flex flex-col items-center gap-2 p-4 rounded-xl border border-border/60",
             "bg-card hover:bg-card hover:border-border transition-all duration-200",
@@ -184,7 +185,15 @@ function GridView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeG
             "w-[calc(50%-6px)] sm:w-[calc(33.333%-8px)] lg:w-[calc(25%-9px)] xl:w-[calc(20%-10px)]",
             glowColorMap[item.color],
           )}
+          onClick={() => item.external ? window.open(item.url, "_blank") : navigate(item.url)}
         >
+          {/* Favorite star */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleFavorite(item.url); }}
+            className="absolute top-2 right-2 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent/40"
+          >
+            <Star className={cn("h-3.5 w-3.5 transition-colors", isFavorite(item.url) ? "fill-gold text-gold" : "text-muted-foreground")} />
+          </button>
           <div className={cn(
             "w-11 h-11 rounded-full flex items-center justify-center",
             bgColorMap[item.color],
@@ -193,14 +202,14 @@ function GridView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeG
           </div>
           <span className="text-xs font-display font-semibold text-foreground leading-tight tracking-tight">{item.title}</span>
           <span className="text-[10px] font-serif text-muted-foreground leading-tight italic">{item.description}</span>
-        </motion.button>
+        </motion.div>
       ))}
     </motion.div>
   );
 }
 
 // ── Icon View (large icons, minimal chrome) ──────────────────
-function IconView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeGroup: number }) {
+function IconView({ groups: g, activeGroup, isFavorite, onToggleFavorite }: { groups: ShortcutGroup[]; activeGroup: number; isFavorite: (url: string) => boolean; onToggleFavorite: (url: string) => void }) {
   const navigate = useNavigate();
   const items = g[activeGroup].items;
 
@@ -213,17 +222,24 @@ function IconView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeG
       className="grid grid-cols-3 sm:grid-cols-5 justify-items-center gap-x-4 gap-y-6 mt-6 max-w-3xl mx-auto"
     >
       {items.map((item, i) => (
-        <motion.button
+        <motion.div
           key={item.url}
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: i * 0.035, duration: 0.3 }}
-          onClick={() => item.external ? window.open(item.url, "_blank") : navigate(item.url)}
           className={cn(
-            "group flex flex-col items-center gap-2.5 cursor-pointer focus:outline-none w-24 sm:w-28 p-3 rounded-2xl transition-all duration-200",
+            "group relative flex flex-col items-center gap-2.5 cursor-pointer focus:outline-none w-24 sm:w-28 p-3 rounded-2xl transition-all duration-200",
             "hover:bg-card/90 dark:hover:bg-card/80",
           )}
+          onClick={() => item.external ? window.open(item.url, "_blank") : navigate(item.url)}
         >
+          {/* Favorite star */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleFavorite(item.url); }}
+            className="absolute top-1 right-1 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent/40 z-10"
+          >
+            <Star className={cn("h-3 w-3 transition-colors", isFavorite(item.url) ? "fill-gold text-gold" : "text-muted-foreground")} />
+          </button>
           {/* Large icon orb */}
           <div
             className={cn(
@@ -249,7 +265,7 @@ function IconView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeG
           <span className="text-[10px] text-muted-foreground leading-tight text-center -mt-1 drop-shadow-sm">
             {item.description}
           </span>
-        </motion.button>
+        </motion.div>
       ))}
     </motion.div>
   );
@@ -279,6 +295,7 @@ export default function Home() {
 
   const [activeGroup, setActiveGroup] = useState(0);
   const [showAll, setShowAll] = useState(false);
+  const [showFavorites, setShowFavorites] = useState(false);
   const [layout, setLayout] = useState<LayoutMode>("icons");
   const [loaded, setLoaded] = useState(false);
   const [showToggleHint, setShowToggleHint] = useState(false);
@@ -322,9 +339,12 @@ export default function Home() {
     localStorage.setItem("home_layout_hint_seen", "1");
   };
 
+  const { isFavorite, toggle: toggleFavorite, count: favCount } = useFavorites();
   const allItems = groups.flatMap((g) => g.items);
-  const currentItems = showAll ? allItems : groups[activeGroup].items;
+  const favoriteItems = allItems.filter((item) => isFavorite(item.url));
+  const currentItems = showFavorites ? favoriteItems : showAll ? allItems : groups[activeGroup].items;
   const allGroup: ShortcutGroup = { title: "All", items: allItems };
+  const favGroup: ShortcutGroup = { title: "Favorites", items: favoriteItems };
   const CurrentIcon = layoutIcons[layout];
   const currentLabel = layoutLabels[layout];
   const NextIcon = layoutIcons[layoutCycle[(layoutCycle.indexOf(layout) + 1) % layoutCycle.length]];
@@ -364,10 +384,10 @@ export default function Home() {
           {/* Categorised / All toggle */}
           <div className="flex items-center rounded-full border border-border/40 bg-card/80 p-0.5 mr-1">
             <button
-              onClick={() => setShowAll(false)}
+              onClick={() => { setShowAll(false); setShowFavorites(false); }}
               className={cn(
                 "flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider transition-all duration-200",
-                !showAll
+                !showAll && !showFavorites
                   ? "bg-primary/15 text-primary shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               )}
@@ -376,10 +396,10 @@ export default function Home() {
               <span className="hidden sm:inline">Categories</span>
             </button>
             <button
-              onClick={() => setShowAll(true)}
+              onClick={() => { setShowAll(true); setShowFavorites(false); }}
               className={cn(
                 "flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider transition-all duration-200",
-                showAll
+                showAll && !showFavorites
                   ? "bg-primary/15 text-primary shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               )}
@@ -387,10 +407,23 @@ export default function Home() {
               <List className="h-3 w-3" />
               <span className="hidden sm:inline">All</span>
             </button>
+            <button
+              onClick={() => { setShowFavorites(true); setShowAll(false); }}
+              className={cn(
+                "flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider transition-all duration-200",
+                showFavorites
+                  ? "bg-gold/15 text-gold shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Star className={cn("h-3 w-3", favCount > 0 && "fill-gold text-gold")} />
+              <span className="hidden sm:inline">Favorites</span>
+              {favCount > 0 && <span className="text-[9px] opacity-70">{favCount}</span>}
+            </button>
           </div>
 
           {/* Category tabs — only visible when not showing all */}
-          {!showAll && groupKeys.map((title, idx) => (
+          {!showAll && !showFavorites && groupKeys.map((title, idx) => (
             <button
               key={title}
               onClick={() => setActiveGroup(idx)}
@@ -448,12 +481,18 @@ export default function Home() {
 
 
         {/* Content */}
-        {layout === "carousel" ? (
-          <Carousel3D key={showAll ? "all" : activeGroup} items={currentItems} />
+        {showFavorites && favoriteItems.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <Star className="h-10 w-10 text-muted-foreground/30 mb-3" />
+            <p className="text-sm font-display font-semibold text-foreground mb-1">No favorites yet</p>
+            <p className="text-xs text-muted-foreground">Hover over any shortcut and click the ★ to add it here.</p>
+          </div>
+        ) : layout === "carousel" ? (
+          <Carousel3D key={showFavorites ? "fav" : showAll ? "all" : activeGroup} items={currentItems} />
         ) : layout === "icons" ? (
-          <IconView groups={showAll ? [allGroup] : groups} activeGroup={showAll ? 0 : activeGroup} key={showAll ? "all" : activeGroup} />
+          <IconView groups={showFavorites ? [favGroup] : showAll ? [allGroup] : groups} activeGroup={showFavorites ? 0 : showAll ? 0 : activeGroup} key={showFavorites ? "fav" : showAll ? "all" : activeGroup} isFavorite={isFavorite} onToggleFavorite={toggleFavorite} />
         ) : (
-          <GridView groups={showAll ? [allGroup] : groups} activeGroup={showAll ? 0 : activeGroup} key={showAll ? "all" : activeGroup} />
+          <GridView groups={showFavorites ? [favGroup] : showAll ? [allGroup] : groups} activeGroup={showFavorites ? 0 : showAll ? 0 : activeGroup} key={showFavorites ? "fav" : showAll ? "all" : activeGroup} isFavorite={isFavorite} onToggleFavorite={toggleFavorite} />
         )}
       </div>
     </AppLayout>
