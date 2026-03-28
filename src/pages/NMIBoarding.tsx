@@ -583,7 +583,7 @@ const NMIBoarding = () => {
               {step === "review" ? (
                 <Button
                   size="sm"
-                  onClick={handleSubmit}
+                  onClick={() => setShowConfirm(true)}
                   disabled={submitting || result?.success === true}
                   className="gap-1.5"
                 >
