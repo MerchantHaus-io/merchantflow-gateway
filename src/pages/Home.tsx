@@ -179,7 +179,7 @@ function GridView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeG
           onClick={() => item.external ? window.open(item.url, "_blank") : navigate(item.url)}
           className={cn(
             "group relative flex flex-col items-center gap-2 p-4 rounded-xl border border-border/60",
-            "bg-card dark:bg-card/90 hover:bg-card hover:border-border transition-all duration-200",
+            "bg-card hover:bg-card hover:border-border transition-all duration-200",
             "cursor-pointer text-center",
             "w-[calc(50%-6px)] sm:w-[calc(33.333%-8px)] lg:w-[calc(25%-9px)] xl:w-[calc(20%-10px)]",
             glowColorMap[item.color],
@@ -221,7 +221,7 @@ function IconView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeG
           onClick={() => item.external ? window.open(item.url, "_blank") : navigate(item.url)}
           className={cn(
             "group flex flex-col items-center gap-2.5 cursor-pointer focus:outline-none w-24 sm:w-28 p-3 rounded-2xl transition-all duration-200",
-            "hover:bg-card/80 dark:hover:bg-card/40",
+            "hover:bg-card/90 dark:hover:bg-card/80",
           )}
         >
           {/* Large icon orb */}
@@ -362,7 +362,7 @@ export default function Home() {
         {/* Category tabs + layout toggle */}
         <div className="flex items-center justify-center gap-2 mb-2 flex-wrap overflow-visible">
           {/* Categorised / All toggle */}
-          <div className="flex items-center rounded-full border border-border/40 bg-card/40 p-0.5 mr-1">
+          <div className="flex items-center rounded-full border border-border/40 bg-card/80 p-0.5 mr-1">
             <button
               onClick={() => setShowAll(false)}
               className={cn(
@@ -399,7 +399,7 @@ export default function Home() {
                 "border",
                 idx === activeGroup
                   ? "bg-primary/15 border-primary/40 text-primary shadow-[0_0_12px_hsl(348_83%_47%/0.2)]"
-                  : "bg-card/40 border-border/40 text-muted-foreground hover:text-foreground hover:border-border"
+                  : "bg-card/80 border-border/40 text-muted-foreground hover:text-foreground hover:border-border"
               )}
             >
               {title}
@@ -429,7 +429,7 @@ export default function Home() {
               >
                 {/* Arrow */}
                 <div className="absolute -top-1.5 right-4 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto w-3 h-3 rotate-45 bg-card border-l border-t border-border/60" />
-                <div className="bg-card/95 dark:bg-card/90 backdrop-blur-xl border border-border/60 rounded-xl p-3 shadow-lg">
+                <div className="bg-card backdrop-blur-xl border border-border/60 rounded-xl p-3 shadow-lg">
                   <p className="text-xs text-foreground font-semibold mb-1">Switch view style</p>
                   <p className="text-[10px] text-muted-foreground leading-relaxed mb-2">
                     Toggle between Icons, Cards, and 3D Carousel layouts.
