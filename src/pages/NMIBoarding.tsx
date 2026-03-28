@@ -358,6 +358,27 @@ const NMIBoarding = () => {
           <CardContent className="space-y-4">
             {step === "details" && (
               <>
+                {/* Opportunity Selector */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                    <LinkIcon className="h-3.5 w-3.5" /> Link to Opportunity
+                  </Label>
+                  <Select value={selectedOpportunityId} onValueChange={handleSelectOpportunity}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder={loadingOpps ? "Loading opportunities…" : "Select an opportunity to auto-fill"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">— No opportunity —</SelectItem>
+                      {opportunities.map((opp) => (
+                        <SelectItem key={opp.id} value={opp.id}>
+                          {opp.accountName}{opp.contactFirstName ? ` — ${opp.contactFirstName} ${opp.contactLastName || ""}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-muted-foreground">Selecting an opportunity will auto-populate known fields.</p>
+                </div>
+                <Separator />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {renderField("Company Name", "company", { required: true, placeholder: "Acme Corp" })}
                   {renderField("DBA Name", "dba_name", { placeholder: "Doing Business As" })}
