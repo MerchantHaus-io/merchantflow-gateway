@@ -56,7 +56,7 @@ serve(async (req) => {
       submission_id,
       opportunity_id,
       account_id,
-      merchant_type = 'standard',
+      merchant_type = 'gateway',
       company,
       dba_name,
       first_name,
@@ -71,9 +71,9 @@ serve(async (req) => {
       country = 'US',
       url: websiteUrl,
       timezone = 'America/New_York',
-      language = 'en',
+      language = 'en_US',
       username,
-      // Banking info
+      // Banking info (stored locally only, not sent to NMI)
       bank_name,
       routing_number,
       account_number,
