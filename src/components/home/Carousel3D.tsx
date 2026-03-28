@@ -269,7 +269,7 @@ export function Carousel3D({ items }: Carousel3DProps) {
                 <div
                   className={cn(
                     "w-full h-full rounded-xl border backdrop-blur-xl flex flex-col items-center justify-center gap-2.5",
-                    "bg-card dark:bg-card/90 border-border/60 dark:border-border/40",
+                    "bg-card border-border/60",
                     glowColorMap[item.color]
                   )}
                   style={{
