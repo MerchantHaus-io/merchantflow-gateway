@@ -542,43 +542,106 @@ const NMIBoarding = () => {
             )}
 
             {step === "tearsheet" && (
-              <div className="space-y-4">
+              <div className="space-y-5">
                 <p className="text-xs text-muted-foreground">
-                  Upload a VAR/Tear Sheet if available. This step is optional — you can skip to review.
+                  Enter VAR/Tear Sheet pricing and terms per NMI. All fields are optional.
                 </p>
-                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
-                  <input
-                    type="file"
-                    id="tearsheet-upload"
-                    className="hidden"
-                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                    multiple
-                    onChange={handleTearsheetUpload}
-                  />
-                  <label htmlFor="tearsheet-upload" className="cursor-pointer flex flex-col items-center gap-2">
-                    <Upload className="h-8 w-8 text-muted-foreground" />
-                    <span className="text-sm font-medium text-foreground">Click to upload VAR/Tear Sheet</span>
-                    <span className="text-xs text-muted-foreground">PDF, JPG, PNG, DOC — max 10MB each</span>
-                  </label>
-                </div>
-                {tearsheetFiles.length > 0 && (
-                  <div className="space-y-2">
-                    {tearsheetFiles.map((file, i) => (
-                      <div key={i} className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted/30 px-3 py-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <FileCheck className="h-4 w-4 text-primary shrink-0" />
-                          <span className="text-sm text-foreground truncate">{file.name}</span>
-                          <span className="text-xs text-muted-foreground shrink-0">
-                            {(file.size / 1024).toFixed(0)} KB
-                          </span>
-                        </div>
-                        <button onClick={() => removeTearsheetFile(i)} className="text-muted-foreground hover:text-destructive transition-colors">
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ))}
+
+                {/* Pricing */}
+                <div>
+                  <p className="text-xs font-semibold text-foreground uppercase tracking-wider mb-3">Rate & Fee Schedule</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {renderField("Discount Rate (%)", "ts_discount_rate", { placeholder: "2.90" })}
+                    {renderField("Per Transaction Fee ($)", "ts_per_transaction_fee", { placeholder: "0.30" })}
+                    {renderField("Monthly Minimum ($)", "ts_monthly_minimum", { placeholder: "25.00" })}
+                    {renderField("Statement Fee ($)", "ts_statement_fee", { placeholder: "10.00" })}
+                    {renderField("Monthly Gateway Fee ($)", "ts_monthly_gateway_fee", { placeholder: "10.00" })}
+                    {renderField("Batch Fee ($)", "ts_batch_fee", { placeholder: "0.25" })}
                   </div>
-                )}
+                </div>
+
+                <Separator />
+
+                {/* Compliance & Risk Fees */}
+                <div>
+                  <p className="text-xs font-semibold text-foreground uppercase tracking-wider mb-3">Compliance & Risk Fees</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {renderField("Annual Fee ($)", "ts_annual_fee", { placeholder: "99.00" })}
+                    {renderField("PCI Compliance Fee ($)", "ts_pci_fee", { placeholder: "99.00" })}
+                    {renderField("Chargeback Fee ($)", "ts_chargeback_fee", { placeholder: "25.00" })}
+                    {renderField("AVS Fee ($)", "ts_avs_fee", { placeholder: "0.05" })}
+                    {renderField("Voice Auth Fee ($)", "ts_voice_auth_fee", { placeholder: "3.00" })}
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Contract Terms */}
+                <div>
+                  <p className="text-xs font-semibold text-foreground uppercase tracking-wider mb-3">Contract Terms</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {renderField("Setup Fee ($)", "ts_setup_fee", { placeholder: "0.00" })}
+                    {renderField("Early Termination Fee ($)", "ts_early_termination_fee", { placeholder: "295.00" })}
+                    {renderField("Contract Term (months)", "ts_contract_term", { placeholder: "36" })}
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Equipment & Notes */}
+                <div className="space-y-4">
+                  {renderField("Equipment / Terminal", "ts_equipment", { placeholder: "Dejavoo Z11, PAX A920, Virtual Terminal, etc." })}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-muted-foreground">Additional Notes</Label>
+                    <textarea
+                      value={form.ts_notes}
+                      onChange={(e) => update("ts_notes", e.target.value)}
+                      placeholder="Special pricing arrangements, volume tiers, interchange pass-through notes…"
+                      rows={3}
+                      className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    />
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* File Upload */}
+                <div>
+                  <p className="text-xs font-semibold text-foreground uppercase tracking-wider mb-3">Attach Document (optional)</p>
+                  <div className="border-2 border-dashed border-border rounded-lg p-5 text-center hover:border-primary/50 transition-colors">
+                    <input
+                      type="file"
+                      id="tearsheet-upload"
+                      className="hidden"
+                      accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                      multiple
+                      onChange={handleTearsheetUpload}
+                    />
+                    <label htmlFor="tearsheet-upload" className="cursor-pointer flex flex-col items-center gap-2">
+                      <Upload className="h-6 w-6 text-muted-foreground" />
+                      <span className="text-sm font-medium text-foreground">Upload signed tear sheet</span>
+                      <span className="text-xs text-muted-foreground">PDF, JPG, PNG, DOC — max 10MB each</span>
+                    </label>
+                  </div>
+                  {tearsheetFiles.length > 0 && (
+                    <div className="space-y-2 mt-3">
+                      {tearsheetFiles.map((file, i) => (
+                        <div key={i} className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted/30 px-3 py-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <FileCheck className="h-4 w-4 text-primary shrink-0" />
+                            <span className="text-sm text-foreground truncate">{file.name}</span>
+                            <span className="text-xs text-muted-foreground shrink-0">
+                              {(file.size / 1024).toFixed(0)} KB
+                            </span>
+                          </div>
+                          <button onClick={() => removeTearsheetFile(i)} className="text-muted-foreground hover:text-destructive transition-colors">
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
