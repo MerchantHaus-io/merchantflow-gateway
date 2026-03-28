@@ -90,9 +90,17 @@ serve(async (req) => {
       });
     }
 
-    // Build NMI request payload
+    // Validate merchant_type against NMI accepted values
+    const validTypes = ['gateway', 'test', 'splitFunding', 'mobile'];
+    const resolvedType = validTypes.includes(merchant_type) ? merchant_type : 'gateway';
+
+    // Validate language against NMI accepted values
+    const validLanguages = ['en_US', 'es_ES', 'es_CR', 'es_PA', 'fr_CA'];
+    const resolvedLanguage = validLanguages.includes(language) ? language : 'en_US';
+
+    // Build NMI request payload (no accountInfo — NMI v4 doesn't accept it here)
     const nmiPayload: Record<string, any> = {
-      type: merchant_type,
+      type: resolvedType,
       company,
       firstName: first_name,
       lastName: last_name,
@@ -104,23 +112,13 @@ serve(async (req) => {
       zip,
       country,
       timezone,
-      language,
+      language: resolvedLanguage,
       username,
     };
 
     if (address2) nmiPayload.address2 = address2;
     if (websiteUrl) nmiPayload.url = websiteUrl;
     if (dba_name) nmiPayload.externalIdentifier = dba_name;
-
-    // Add banking info if provided
-    if (routing_number && account_number) {
-      nmiPayload.accountInfo = {
-        bankName: bank_name || '',
-        routingNumber: routing_number,
-        accountNumber: account_number,
-        accountType: account_type,
-      };
-    }
 
     console.log('Submitting merchant boarding to NMI:', { company, username, merchant_type });
 
