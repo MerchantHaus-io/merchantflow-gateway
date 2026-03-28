@@ -750,6 +750,7 @@ const NMIBoarding = () => {
                     <SelectContent>
                       <SelectItem value="ecommerce">E-Commerce</SelectItem>
                       <SelectItem value="retail">Retail</SelectItem>
+                      <SelectItem value="restaurant">Restaurant</SelectItem>
                       <SelectItem value="moto">MOTO (Mail Order / Telephone Order)</SelectItem>
                     </SelectContent>
                   </Select>
