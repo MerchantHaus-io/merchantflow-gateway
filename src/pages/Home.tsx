@@ -228,6 +228,7 @@ function IconView({ groups: g, activeGroup, isFavorite, onToggleFavorite }: { gr
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: i * 0.035, duration: 0.3 }}
+          whileHover={{ scale: 1.08 }}
           className={cn(
             "group relative flex flex-col items-center gap-2.5 cursor-pointer focus:outline-none w-24 sm:w-28 p-3 rounded-2xl transition-all duration-200",
             "hover:bg-card/90 dark:hover:bg-card/80",
