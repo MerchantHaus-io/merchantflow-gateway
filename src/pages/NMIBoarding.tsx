@@ -70,7 +70,7 @@ const initialFormData: FormData = {
   country: "US",
   url: "",
   timezone: "America/New_York",
-  language: "en",
+  language: "en_US",
   username: "",
   bank_name: "",
   routing_number: "",
