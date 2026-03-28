@@ -290,7 +290,7 @@ export function Carousel3D({ items }: Carousel3DProps) {
                 className="absolute -top-7 left-1/2 whitespace-nowrap pointer-events-none"
                 style={{ transform: "translateX(-50%) translateZ(30px)" }}
               >
-                <span className="text-[10px] font-semibold text-foreground/80 dark:text-muted-foreground bg-card/95 dark:bg-card/85 backdrop-blur-xl px-2.5 py-1 rounded-full border border-border/50 dark:border-border/30 shadow-sm">
+                <span className="text-[10px] font-semibold text-foreground/80 dark:text-muted-foreground bg-card backdrop-blur-xl px-2.5 py-1 rounded-full border border-border/50 shadow-sm">
                   {item.description}
                 </span>
               </div>
