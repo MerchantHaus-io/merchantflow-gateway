@@ -1036,39 +1036,40 @@ export default function OfficeChat({
   const [photoFrameUrl, setPhotoFrameUrl] = useState<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [nearTV, setNearTV] = useState(false);
-  const [tvUnmuted, setTvUnmuted] = useState(false);
   const tvOverlayRef = useRef<HTMLDivElement>(null);
   const tvIframeRef = useRef<HTMLIFrameElement>(null);
   const tvOverlayVisibleRef = useRef(false);
+  const tvVolumeRef = useRef(-1); // last sent volume (0-100)
 
   // TV2 state (north wall, live feed)
   const [nearTV2, setNearTV2] = useState(false);
-  const [tv2Unmuted, setTv2Unmuted] = useState(false);
   const tv2OverlayRef = useRef<HTMLDivElement>(null);
   const tv2IframeRef = useRef<HTMLIFrameElement>(null);
   const tv2OverlayVisibleRef = useRef(false);
   const tv2OverlayRectRef = useRef({ x: -1, y: -1, w: -1, h: -1 });
+  const tv2VolumeRef = useRef(-1);
 
   // Randomised YouTube playlist for the office TV
   const TV_PLAYLIST = useRef(['T0C9d8anDT4', 'oM9WfDBRNcg']).current;
   const [tvVideoId] = useState(() => TV_PLAYLIST[Math.floor(Math.random() * TV_PLAYLIST.length)]);
   const TV2_VIDEO_ID = '9siH2meEaGI'; // Live feed
 
-  // Mute/unmute via postMessage so the video doesn't restart
+  // Unmute both TVs on first load so proximity volume works
+  const tvInitRef = useRef(false);
   useEffect(() => {
-    const iframe = tvIframeRef.current;
-    if (!iframe?.contentWindow) return;
-    const cmd = tvUnmuted ? 'unMute' : 'mute';
-    iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: cmd, args: [] }), '*');
-  }, [tvUnmuted]);
-
-  // Mute/unmute TV2
-  useEffect(() => {
-    const iframe = tv2IframeRef.current;
-    if (!iframe?.contentWindow) return;
-    const cmd = tv2Unmuted ? 'unMute' : 'mute';
-    iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: cmd, args: [] }), '*');
-  }, [tv2Unmuted]);
+    if (tvInitRef.current) return;
+    const timer = setTimeout(() => {
+      tvInitRef.current = true;
+      [tvIframeRef, tv2IframeRef].forEach(ref => {
+        const iframe = ref.current;
+        if (iframe?.contentWindow) {
+          iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'unMute', args: [] }), '*');
+          iframe.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setVolume', args: [0] }), '*');
+        }
+      });
+    }, 3000); // wait for iframes to load
+    return () => clearTimeout(timer);
+  }, []);
 
   const tvOverlayRectRef = useRef({ x: -1, y: -1, w: -1, h: -1 });
   const [nearInteract, setNearInteract] = useState<InteractionPoint | null>(null);
