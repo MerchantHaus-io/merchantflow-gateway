@@ -238,6 +238,7 @@ const NMIBoarding = () => {
                     onClick={() => {
                       setForm(initialFormData);
                       setResult(null);
+                      setTearsheetFiles([]);
                       setStep("details");
                     }}
                   >
