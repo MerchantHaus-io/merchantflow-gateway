@@ -649,6 +649,32 @@ const NMIBoarding = () => {
                   </div>
                 </div>
 
+                {/* Processor-Specific Information (shown when a processor is selected) */}
+                {form.processing_platform && (
+                  <>
+                    <Separator />
+                    <div>
+                      <p className="text-xs font-semibold text-foreground uppercase tracking-wider mb-3">
+                        {form.processing_platform} Processor Information
+                      </p>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div className="col-span-2 sm:col-span-1">
+                          {renderField("Merchant Number", "proc_merchant_number", { placeholder: "15 Digits" })}
+                        </div>
+                        <div>
+                          {renderField("Terminal Number", "proc_terminal_number", { placeholder: "6 Digits" })}
+                        </div>
+                        <div>
+                          {renderField("Check-Digit", "proc_check_digit", { placeholder: "1 Digit" })}
+                        </div>
+                        <div>
+                          {renderField("Device Identification", "proc_device_id", { placeholder: "2 Digits" })}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+
                 <Separator />
 
                 {/* MCC Code */}
