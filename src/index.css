@@ -363,9 +363,9 @@ All colors MUST be HSL.
     --background: 30 5% 2%;
     --foreground: 30 10% 92%;
 
-    --card: 30 5% 11%;
+    --card: 30 5% 13%;
     --card-foreground: 30 10% 92%;
-    --card-glass: 30 5% 11% / 0.96;
+    --card-glass: 30 5% 13% / 0.98;
 
     --popover: 30 5% 11%;
     --popover-foreground: 30 10% 92%;
