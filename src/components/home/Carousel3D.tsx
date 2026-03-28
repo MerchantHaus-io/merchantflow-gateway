@@ -196,7 +196,7 @@ export function Carousel3D({ items }: Carousel3DProps) {
               {/* Card front face */}
               <div
                 className={cn(
-                  "w-full h-full rounded-xl border backdrop-blur-xl flex flex-col items-center justify-center gap-2.5 pointer-events-none",
+                  "w-full h-full rounded-xl border flex flex-col items-center justify-center gap-2.5 pointer-events-none",
                   "bg-card border-border/60",
                   isActive && "ring-2 ring-primary/60 scale-105",
                   glowColorMap[item.color]
