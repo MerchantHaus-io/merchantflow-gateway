@@ -191,8 +191,8 @@ function GridView({ groups: g, activeGroup }: { groups: ShortcutGroup[]; activeG
           )}>
             <item.icon className={cn("h-5 w-5", iconColorMap[item.color])} strokeWidth={1.8} />
           </div>
-          <span className="text-xs font-semibold text-foreground leading-tight">{item.title}</span>
-          <span className="text-[10px] text-muted-foreground leading-tight">{item.description}</span>
+          <span className="text-xs font-display font-semibold text-foreground leading-tight tracking-tight">{item.title}</span>
+          <span className="text-[10px] font-serif text-muted-foreground leading-tight italic">{item.description}</span>
         </motion.button>
       ))}
     </motion.div>
