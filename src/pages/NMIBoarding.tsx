@@ -55,7 +55,7 @@ interface FormData {
 }
 
 const initialFormData: FormData = {
-  merchant_type: "standard",
+  merchant_type: "gateway",
   company: "",
   dba_name: "",
   first_name: "",
