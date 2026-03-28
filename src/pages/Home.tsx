@@ -399,7 +399,7 @@ export default function Home() {
                 "border",
                 idx === activeGroup
                   ? "bg-primary/15 border-primary/40 text-primary shadow-[0_0_12px_hsl(348_83%_47%/0.2)]"
-                  : "bg-card/40 border-border/40 text-muted-foreground hover:text-foreground hover:border-border"
+                  : "bg-card/80 border-border/40 text-muted-foreground hover:text-foreground hover:border-border"
               )}
             >
               {title}
