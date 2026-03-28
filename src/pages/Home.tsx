@@ -481,12 +481,18 @@ export default function Home() {
 
 
         {/* Content */}
-        {layout === "carousel" ? (
-          <Carousel3D key={showAll ? "all" : activeGroup} items={currentItems} />
+        {showFavorites && favoriteItems.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <Star className="h-10 w-10 text-muted-foreground/30 mb-3" />
+            <p className="text-sm font-display font-semibold text-foreground mb-1">No favorites yet</p>
+            <p className="text-xs text-muted-foreground">Hover over any shortcut and click the ★ to add it here.</p>
+          </div>
+        ) : layout === "carousel" ? (
+          <Carousel3D key={showFavorites ? "fav" : showAll ? "all" : activeGroup} items={currentItems} />
         ) : layout === "icons" ? (
-          <IconView groups={showAll ? [allGroup] : groups} activeGroup={showAll ? 0 : activeGroup} key={showAll ? "all" : activeGroup} />
+          <IconView groups={showFavorites ? [favGroup] : showAll ? [allGroup] : groups} activeGroup={showFavorites ? 0 : showAll ? 0 : activeGroup} key={showFavorites ? "fav" : showAll ? "all" : activeGroup} isFavorite={isFavorite} onToggleFavorite={toggleFavorite} />
         ) : (
-          <GridView groups={showAll ? [allGroup] : groups} activeGroup={showAll ? 0 : activeGroup} key={showAll ? "all" : activeGroup} />
+          <GridView groups={showFavorites ? [favGroup] : showAll ? [allGroup] : groups} activeGroup={showFavorites ? 0 : showAll ? 0 : activeGroup} key={showFavorites ? "fav" : showAll ? "all" : activeGroup} isFavorite={isFavorite} onToggleFavorite={toggleFavorite} />
         )}
       </div>
     </AppLayout>
