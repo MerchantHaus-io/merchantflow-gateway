@@ -267,8 +267,10 @@ const NMIBoarding = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="standard">Standard</SelectItem>
-                      <SelectItem value="reseller">Reseller</SelectItem>
+                      <SelectItem value="gateway">Gateway</SelectItem>
+                      <SelectItem value="test">Test</SelectItem>
+                      <SelectItem value="splitFunding">Split Funding</SelectItem>
+                      <SelectItem value="mobile">Mobile</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
