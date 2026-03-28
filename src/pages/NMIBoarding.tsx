@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Building2, User, MapPin, Globe, CreditCard, Send, Loader2, CheckCircle, AlertCircle, ArrowLeft } from "lucide-react";
+import { Building2, User, MapPin, Globe, CreditCard, Send, Loader2, CheckCircle, AlertCircle, ArrowLeft, FileText, Upload, X, FileCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const US_STATES = [
@@ -78,13 +78,14 @@ const initialFormData: FormData = {
   account_type: "checking",
 };
 
-type Step = "details" | "address" | "settings" | "banking" | "review";
+type Step = "details" | "address" | "settings" | "banking" | "tearsheet" | "review";
 
 const STEPS: { key: Step; label: string; icon: React.ReactNode }[] = [
   { key: "details", label: "Business Info", icon: <Building2 className="h-4 w-4" /> },
   { key: "address", label: "Address", icon: <MapPin className="h-4 w-4" /> },
   { key: "settings", label: "Gateway Settings", icon: <Globe className="h-4 w-4" /> },
   { key: "banking", label: "Banking", icon: <CreditCard className="h-4 w-4" /> },
+  { key: "tearsheet", label: "VAR/Tear Sheet", icon: <FileText className="h-4 w-4" /> },
   { key: "review", label: "Review & Submit", icon: <Send className="h-4 w-4" /> },
 ];
 
@@ -95,6 +96,18 @@ const NMIBoarding = () => {
   const [form, setForm] = useState<FormData>(initialFormData);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ success: boolean; gateway_id?: string; error?: string } | null>(null);
+  const [tearsheetFiles, setTearsheetFiles] = useState<File[]>([]);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
+
+  const handleTearsheetUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setTearsheetFiles((prev) => [...prev, ...files]);
+    e.target.value = "";
+  };
+
+  const removeTearsheetFile = (index: number) => {
+    setTearsheetFiles((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const update = (field: keyof FormData, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -225,6 +238,7 @@ const NMIBoarding = () => {
                     onClick={() => {
                       setForm(initialFormData);
                       setResult(null);
+                      setTearsheetFiles([]);
                       setStep("details");
                     }}
                   >
@@ -248,6 +262,7 @@ const NMIBoarding = () => {
               {step === "address" && "Enter the merchant's business address."}
               {step === "settings" && "Configure gateway username, timezone, and website."}
               {step === "banking" && "Banking information for merchant billing (optional)."}
+              {step === "tearsheet" && "Upload a VAR/Tear Sheet document (optional)."}
               {step === "review" && "Review all details before submitting to NMI."}
             </CardDescription>
           </CardHeader>
@@ -381,6 +396,47 @@ const NMIBoarding = () => {
               </div>
             )}
 
+            {step === "tearsheet" && (
+              <div className="space-y-4">
+                <p className="text-xs text-muted-foreground">
+                  Upload a VAR/Tear Sheet if available. This step is optional — you can skip to review.
+                </p>
+                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
+                  <input
+                    type="file"
+                    id="tearsheet-upload"
+                    className="hidden"
+                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                    multiple
+                    onChange={handleTearsheetUpload}
+                  />
+                  <label htmlFor="tearsheet-upload" className="cursor-pointer flex flex-col items-center gap-2">
+                    <Upload className="h-8 w-8 text-muted-foreground" />
+                    <span className="text-sm font-medium text-foreground">Click to upload VAR/Tear Sheet</span>
+                    <span className="text-xs text-muted-foreground">PDF, JPG, PNG, DOC — max 10MB each</span>
+                  </label>
+                </div>
+                {tearsheetFiles.length > 0 && (
+                  <div className="space-y-2">
+                    {tearsheetFiles.map((file, i) => (
+                      <div key={i} className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted/30 px-3 py-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <FileCheck className="h-4 w-4 text-primary shrink-0" />
+                          <span className="text-sm text-foreground truncate">{file.name}</span>
+                          <span className="text-xs text-muted-foreground shrink-0">
+                            {(file.size / 1024).toFixed(0)} KB
+                          </span>
+                        </div>
+                        <button onClick={() => removeTearsheetFile(i)} className="text-muted-foreground hover:text-destructive transition-colors">
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {step === "review" && (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
@@ -399,6 +455,7 @@ const NMIBoarding = () => {
                   {form.bank_name && <ReviewField label="Bank" value={form.bank_name} />}
                   {form.routing_number && <ReviewField label="Routing" value={`···${form.routing_number.slice(-4)}`} />}
                   {form.account_number && <ReviewField label="Account" value={`···${form.account_number.slice(-4)}`} />}
+                  <ReviewField label="VAR/Tear Sheet" value={tearsheetFiles.length > 0 ? `${tearsheetFiles.length} file(s) attached` : "None"} />
                 </div>
               </div>
             )}
