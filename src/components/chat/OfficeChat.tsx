@@ -2277,14 +2277,12 @@ export default function OfficeChat({
             </div>
           </div>
 
-          {(nearby || nearDesk || nearTV || nearTV2 || nearInteract) && (
+          {(nearby || nearDesk || nearInteract) && (
             <button
               className="mobile-interact-btn absolute bottom-8 right-8 z-20 w-16 h-16 rounded-full bg-primary/80 text-white font-bold text-xs flex items-center justify-center border-2 border-white/30 active:scale-90 transition-transform"
               onTouchStart={(e) => {
                 e.stopPropagation();
                 if (nearby) setActiveChat(nearby);
-                else if (nearTV) setTvUnmuted(prev => !prev);
-                else if (nearTV2) setTv2Unmuted(prev => !prev);
                 else if (nearDesk) { setShowTerminal(true); setDeskView("computer"); }
                 else if (nearInteract) {
                   if (nearInteract.action === "sit") setIsSitting(prev => !prev);
@@ -2293,7 +2291,7 @@ export default function OfficeChat({
                 }
               }}
             >
-              {nearby ? `Chat\n${nearby.name}` : nearTV ? (tvUnmuted ? "Mute" : "Unmute") : nearTV2 ? (tv2Unmuted ? "Mute" : "Unmute") : nearDesk ? "Terminal" : nearInteract?.label ?? "Interact"}
+              {nearby ? `Chat\n${nearby.name}` : nearDesk ? "Terminal" : nearInteract?.label ?? "Interact"}
             </button>
           )}
 
