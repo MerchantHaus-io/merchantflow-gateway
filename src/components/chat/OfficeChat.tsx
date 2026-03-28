@@ -1858,23 +1858,7 @@ export default function OfficeChat({
         </div>
       )}
 
-      {/* Near TV */}
-      {nearTV && !activeChat && !showTerminal && !isMobile && (
-        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 pointer-events-none">
-          <Badge className="bg-black/80 text-white border-0 text-sm px-4 py-2">
-            Press <kbd className="mx-1 px-1 bg-white/20 rounded">E</kbd> to {tvUnmuted ? "mute" : "unmute"} TV
-          </Badge>
-        </div>
-      )}
-
-      {/* Near TV2 */}
-      {nearTV2 && !activeChat && !showTerminal && !isMobile && (
-        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 pointer-events-none">
-          <Badge className="bg-black/80 text-white border-0 text-sm px-4 py-2">
-            Press <kbd className="mx-1 px-1 bg-white/20 rounded">E</kbd> to {tv2Unmuted ? "mute" : "unmute"} News
-          </Badge>
-        </div>
-      )}
+      {/* TV prompts removed — volume is now proximity-based */}
 
       {/* Near NPC */}
       {nearby && !activeChat && !showTerminal && !isMobile && (
