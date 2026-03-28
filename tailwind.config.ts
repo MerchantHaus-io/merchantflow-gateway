@@ -70,6 +70,13 @@ export default {
         ],
         serif: [
           'Playfair Display',
+          'Georgia',
+          'Cambria',
+          'Times New Roman',
+          'serif'
+        ],
+        serif: [
+          'Playfair Display',
           'ui-serif',
           'Georgia',
           'Cambria',

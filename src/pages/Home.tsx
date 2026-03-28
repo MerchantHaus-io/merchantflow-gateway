@@ -395,7 +395,7 @@ export default function Home() {
               key={title}
               onClick={() => setActiveGroup(idx)}
               className={cn(
-                "px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider transition-all duration-300",
+                "px-4 py-1.5 rounded-full text-xs font-display font-semibold uppercase tracking-widest transition-all duration-300",
                 "border",
                 idx === activeGroup
                   ? "bg-primary/15 border-primary/40 text-primary shadow-[0_0_12px_hsl(348_83%_47%/0.2)]"
