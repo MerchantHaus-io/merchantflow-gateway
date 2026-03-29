@@ -113,17 +113,27 @@ export default function Calendar() {
       rangeStart = startOfWeek(currentDate, { weekStartsOn: 0 });
       rangeEnd = endOfWeek(currentDate, { weekStartsOn: 0 });
     } else {
+      // For day/team views, compute range in CT so we fetch the correct CT day
+      // CT is UTC-5 (CST) or UTC-6 depending on DST; use date-fns-tz for accuracy
       rangeStart = new Date(currentDate);
       rangeStart.setHours(0, 0, 0, 0);
       rangeEnd = new Date(currentDate);
       rangeEnd.setHours(23, 59, 59, 999);
     }
 
+    // Widen the query range by ±1 day for day/team views to avoid timezone edge-case misses
+    const queryStart = (viewMode === "day" || viewMode === "team")
+      ? new Date(rangeStart.getTime() - 24 * 60 * 60 * 1000)
+      : rangeStart;
+    const queryEnd = (viewMode === "day" || viewMode === "team")
+      ? new Date(rangeEnd.getTime() + 24 * 60 * 60 * 1000)
+      : rangeEnd;
+
     const { data } = await supabase
       .from("calendar_events")
       .select("*")
-      .gte("start_time", rangeStart.toISOString())
-      .lte("start_time", rangeEnd.toISOString())
+      .gte("start_time", queryStart.toISOString())
+      .lte("start_time", queryEnd.toISOString())
       .order("start_time", { ascending: true });
 
     setEvents((data as CalendarEvent[]) || []);
@@ -495,10 +505,19 @@ function TeamDayGrid({
   const dayStart = startOfDay(currentDate);
 
   // Separate all-day vs timed events per member
+  // Assign events to members: match by calendar_owner_email, or by attendee email
+  const unassigned: CalendarEvent[] = [];
   const memberData = teamMembers.map((member) => {
-    const memberEvents = events.filter(
-      (e) => e.calendar_owner_email === member.email && isSameDayCT(e.start_time, currentDate)
-    );
+    const memberEvents = events.filter((e) => {
+      if (!isSameDayCT(e.start_time, currentDate)) return false;
+      // Direct ownership match
+      if (e.calendar_owner_email === member.email) return true;
+      // Check attendees for shared calendar events
+      if (e.calendar_owner_email === "shared" && Array.isArray(e.attendees)) {
+        return e.attendees.some((a: any) => a.email === member.email);
+      }
+      return false;
+    });
     const allDay = memberEvents.filter((e) => e.all_day);
     const timed = memberEvents.filter((e) => !e.all_day);
     const colors = getTeamColor(member.email);
