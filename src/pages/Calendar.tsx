@@ -520,7 +520,7 @@ function TeamDayGrid({
   const unassigned: CalendarEvent[] = [];
   const memberData = teamMembers.map((member) => {
     const memberEvents = events.filter((e) => {
-      if (!isSameDayCT(e.start_time, currentDate)) return false;
+      if (!isSameDayCT(e.start_time, currentDate, e.all_day)) return false;
       // Direct ownership match
       if (e.calendar_owner_email === member.email) return true;
       // Check attendees for shared calendar events
