@@ -240,6 +240,9 @@ export default function Calendar() {
                 ))}
               </SelectContent>
             </Select>
+
+            {/* Connection status + actions */}
+            {isConnected === false && (
               <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={handleConnect}>
                 <Link2 className="h-3.5 w-3.5" />
                 Connect Google (Calendar + Gmail)
