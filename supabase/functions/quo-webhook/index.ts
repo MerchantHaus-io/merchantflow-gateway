@@ -105,14 +105,54 @@ Deno.serve(async (req) => {
       console.log('Call log upserted:', callData.id);
     }
 
-    // Also log as activity if we have an opportunity
-    if (opportunityId && eventType === 'call.completed') {
+    // Log as activity on ALL matched opportunities for this contact
+    if (contactId && eventType === 'call.completed') {
       const durationMin = Math.round((callData.duration || 0) / 60);
-      await supabase.from('activities').insert({
-        opportunity_id: opportunityId,
-        type: 'call',
-        description: `${isIncoming ? 'Incoming' : 'Outgoing'} call (${durationMin}m) - ${externalNumber || 'Unknown'}`,
-      });
+      const durationLabel = durationMin > 0 ? `${durationMin}m` : `${callData.duration || 0}s`;
+
+      // Get contact name for richer activity description
+      const { data: contactInfo } = await supabase
+        .from('contacts')
+        .select('first_name, last_name')
+        .eq('id', contactId)
+        .single();
+      const contactDisplay = contactInfo
+        ? `${contactInfo.first_name || ''} ${contactInfo.last_name || ''}`.trim()
+        : externalNumber || 'Unknown';
+
+      // Find ALL opportunities for this contact and log activity on each
+      const { data: allOpps } = await supabase
+        .from('opportunities')
+        .select('id')
+        .eq('contact_id', contactId);
+
+      if (allOpps && allOpps.length > 0) {
+        const activityRows = allOpps.map((opp: { id: string }) => ({
+          opportunity_id: opp.id,
+          type: 'call',
+          description: `${isIncoming ? 'Incoming' : 'Outgoing'} call with ${contactDisplay} (${durationLabel}) — ${externalNumber || 'Unknown'}`,
+        }));
+        const { error: actErr } = await supabase.from('activities').insert(activityRows);
+        if (actErr) console.error('Error inserting call activities:', actErr);
+        else console.log(`Logged call activity on ${allOpps.length} opportunity(ies)`);
+      } else {
+        console.log('Contact matched but no opportunities found for activity logging');
+      }
+
+      // Also log a client_interaction on the account for full history
+      if (accountId) {
+        await supabase.from('client_interactions').insert({
+          account_id: accountId,
+          interaction_type: 'call',
+          subject: `${isIncoming ? 'Incoming' : 'Outgoing'} Call — ${contactDisplay}`,
+          notes: `Phone: ${externalNumber || 'N/A'} | Duration: ${durationLabel}`,
+          status: 'resolved',
+          priority: 'medium',
+          contact_name: contactDisplay,
+          contact_phone: externalNumber || null,
+        });
+        console.log('Client interaction logged for account:', accountId);
+      }
     }
 
     // Handle call recordings
