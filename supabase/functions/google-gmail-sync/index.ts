@@ -298,7 +298,7 @@ serve(async (req) => {
                 .insert({
                   account_id: newAccount.id,
                   contact_id: newContact.id,
-                  stage: "Discovery",
+                  stage: "discovery",
                   referral_source: "Email (Auto-Synced)",
                 })
                 .select("id")
