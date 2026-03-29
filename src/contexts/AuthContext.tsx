@@ -239,7 +239,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // Session may already be invalidated server-side (e.g. admin sign-out-all)
+    }
+    // Always clear local state regardless of server response
+    setUser(null);
+    setSession(null);
+    setMustChangePassword(false);
   };
 
   return (
