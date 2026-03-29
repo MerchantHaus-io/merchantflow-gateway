@@ -103,7 +103,7 @@ export const ChatComposer: React.FC<ChatComposerProps> = React.memo(({
             <p className="text-xs font-medium text-[hsl(var(--wa-bubble-in-foreground))] truncate">{pendingAttachment.file.name}</p>
             <p className="text-[10px] text-[hsl(var(--wa-meta))]">{formatFileSize(pendingAttachment.file.size)}</p>
           </div>
-          <button onClick={onCancelAttachment} className="p-1 hover:bg-white/10 rounded">
+          <button onClick={onCancelAttachment} className="p-1 hover:bg-[hsl(var(--wa-sidebar-hover))] rounded">
             <X className="h-4 w-4 text-[hsl(var(--wa-meta))]" />
           </button>
         </div>
