@@ -1,4 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from "react";
+import { UpcomingMeetingsWidget } from "@/components/UpcomingMeetingsWidget";
 import { useTheme } from "@/contexts/ThemeContext";
 
 const Starfield = lazy(() => import("@/components/Starfield"));
