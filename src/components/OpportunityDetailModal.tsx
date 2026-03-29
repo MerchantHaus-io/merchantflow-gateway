@@ -1079,31 +1079,29 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                       }}
                     />
 
-                    {/* Pipeline toggle button */}
+                    {/* Pipeline toggle button — always available for switching service type */}
                     {!opportunity.outcome_status && (
-                      isGatewayCard ? (
-                        onMoveToProcessing && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button variant="outline" size="icon" className="h-8 w-8 text-amber-500 border-amber-500 hover:bg-amber-500/10" onClick={() => setShowMoveDialog(true)} disabled={isConverting}>
-                                <CreditCard className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Move to Processing</TooltipContent>
-                          </Tooltip>
-                        )
-                      ) : (
-                        onConvertToGateway && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button variant="outline" size="icon" className="h-8 w-8 text-amber-500 border-amber-500 hover:bg-amber-500/10" onClick={handleConvertToGateway} disabled={isConverting || hasGatewayOpportunity}>
-                                <Zap className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>{hasGatewayOpportunity ? 'Gateway Added' : 'Add to Gateway'}</TooltipContent>
-                          </Tooltip>
-                        )
-                      )
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className={cn(
+                              "h-8 w-8",
+                              isGatewayCard
+                                ? "text-indigo-500 border-indigo-500 hover:bg-indigo-500/10"
+                                : "text-teal-500 border-teal-500 hover:bg-teal-500/10"
+                            )}
+                            onClick={() => setShowMoveDialog(true)}
+                            disabled={isConverting}
+                          >
+                            {isGatewayCard ? <CreditCard className="h-4 w-4" /> : <Zap className="h-4 w-4" />}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {isGatewayCard ? 'Switch to Processing' : 'Switch to Gateway'}
+                        </TooltipContent>
+                      </Tooltip>
                     )}
 
                     {/* Delete - admin only */}
