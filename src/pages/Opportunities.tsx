@@ -26,7 +26,7 @@ import { checkDuplicateMerchant } from "@/lib/duplicate-check";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -75,6 +75,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { SortableTableHead } from "@/components/SortableTableHead";
 import { PageHeader } from "@/components/PageHeader";
+import { StatCard } from "@/components/StatCard";
 import { EmptyState } from "@/components/EmptyState";
 
 type SortField = 'name' | 'stage' | 'outcome' | 'pipeline' | 'owner' | 'tasks' | 'progress' | 'created' | 'updated';
@@ -347,58 +348,65 @@ const Opportunities = () => {
     <AppLayout
       onNewApplication={() => setShowNewModal(true)}
     >
-      <PageHeader
-        icon={TrendingUp}
-        title="Opportunities"
-        description={`${stats.total} active · ${stats.inProgress} in progress · ${stats.won} won`}
-        color="success"
-        actions={
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-              <button
-                onClick={() => setViewTab('all')}
-                className={cn(
-                  "px-3 py-1 text-xs font-medium rounded-md transition-colors",
-                  viewTab === 'all' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                All
-              </button>
-              <button
-                onClick={() => setViewTab('archive')}
-                className={cn(
-                  "px-3 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1",
-                  viewTab === 'archive' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <Archive className="h-3 w-3" />
-                Archive
-                {stats.archived > 0 && (
-                  <Badge variant="muted" className="h-4 px-1 text-[10px] ml-0.5">{stats.archived}</Badge>
-                )}
-              </button>
+      <div className="flex flex-col h-full overflow-hidden">
+        <PageHeader
+          icon={TrendingUp}
+          title="Opportunities"
+          color="success"
+          actions={
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+                <button
+                  onClick={() => setViewTab('all')}
+                  className={cn(
+                    "px-3 py-1 text-xs font-medium rounded-md transition-colors",
+                    viewTab === 'all' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setViewTab('archive')}
+                  className={cn(
+                    "px-3 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1",
+                    viewTab === 'archive' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Archive className="h-3 w-3" />
+                  Archive
+                  {stats.archived > 0 && (
+                    <Badge variant="muted" className="h-4 px-1 text-[10px] ml-0.5">{stats.archived}</Badge>
+                  )}
+                </button>
+              </div>
+              <Button size="sm" onClick={() => setShowNewModal(true)}>
+                <Plus className="h-4 w-4 mr-1" /> New Application
+              </Button>
             </div>
-            <Button size="sm" onClick={() => setShowNewModal(true)}>
-              <Plus className="h-4 w-4 mr-1" /> New Application
-            </Button>
+          }
+        />
+        <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-5">
+          {/* KPI Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 stagger-children">
+            <StatCard label="Active Deals" value={stats.total} icon={TrendingUp} color="success" />
+            <StatCard label="In Progress" value={stats.inProgress} icon={Clock} color="warning" />
+            <StatCard label="Won" value={stats.won} icon={CheckCircle2} color="primary" />
+            <StatCard label="Closed / Dead" value={stats.lost} icon={XCircle} color="destructive" />
+            <StatCard label="Archived" value={stats.archived} icon={Archive} color="muted" />
           </div>
-        }
-      />
-      <div className="p-4 lg:p-6 space-y-6">
-        {/* Compact stats + search in one row */}
-          <div className="flex items-center gap-3 flex-wrap">
-            {/* Live stat pills */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <button onClick={() => setStageFilter('all')} className={cn("text-xs px-2 py-1 rounded-md font-medium transition-colors", stageFilter === 'all' ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground")}>
-                {stats.total} Active
-              </button>
-              <span className="text-muted-foreground/30">·</span>
-              <span className="text-xs text-amber-500 font-medium">{stats.inProgress} in progress</span>
-              <span className="text-muted-foreground/30">·</span>
-              <span className="text-xs text-emerald-500 font-medium">{stats.won} won</span>
-              {stats.lost > 0 && <><span className="text-muted-foreground/30">·</span><span className="text-xs text-destructive font-medium">{stats.lost} closed</span></>}
+
+          {/* Filters toolbar */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold">{filteredOpportunities.length} {filteredOpportunities.length === 1 ? 'opportunity' : 'opportunities'}</span>
+              {(stageFilter !== 'all' || ownerFilter !== 'all' || pipelineFilter !== 'all' || searchQuery) && (
+                <button onClick={() => { setStageFilter('all'); setOwnerFilter('all'); setPipelineFilter('all'); setSearchQuery(''); }}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  Clear filters ×
+                </button>
+              )}
             </div>
-            <div className="flex items-center gap-2 ml-auto flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input placeholder="Search…" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-8 h-8 w-48 text-sm" />
@@ -432,18 +440,10 @@ const Opportunities = () => {
           </div>
 
           {/* Results */}
-          <Card>
+          <Card className="border-border/60 overflow-hidden">
             <CardHeader className="pb-2 pt-3 px-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-semibold">{filteredOpportunities.length} {filteredOpportunities.length === 1 ? 'opportunity' : 'opportunities'}</span>
-                  {(stageFilter !== 'all' || ownerFilter !== 'all' || pipelineFilter !== 'all' || searchQuery) && (
-                    <button onClick={() => { setStageFilter('all'); setOwnerFilter('all'); setPipelineFilter('all'); setSearchQuery(''); }}
-                      className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                      Clear filters ×
-                    </button>
-                  )}
-                </div>
+                <span className="text-xs text-muted-foreground">Click a row to view details · Stage & pipeline editable inline</span>
                 <div className="flex items-center gap-1 bg-muted rounded-md p-0.5">
                   <button onClick={() => setViewMode('table')} className={cn("px-2 py-1 text-xs rounded transition-colors", viewMode === 'table' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground")}>Table</button>
                   <button onClick={() => setViewMode('cards')} className={cn("px-2 py-1 text-xs rounded transition-colors", viewMode === 'cards' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground")}>Cards</button>
@@ -896,6 +896,7 @@ const Opportunities = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+      </div>
     </AppLayout>
   );
 };

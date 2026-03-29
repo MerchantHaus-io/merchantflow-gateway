@@ -31,6 +31,7 @@ import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
 import { SortableTableHead } from "@/components/SortableTableHead";
 import { PageHeader } from "@/components/PageHeader";
+import { StatCard } from "@/components/StatCard";
 import { EmptyState } from "@/components/EmptyState";
 import { Building2 as Building2Icon } from "lucide-react";
 
@@ -364,36 +365,54 @@ const Accounts = () => {
 
   return (
     <AppLayout>
-      <PageHeader
-        icon={Building2Icon}
-        title="Accounts"
-        description={`${totalAccounts} accounts · ${accountsWithContacts} with contacts · ${Object.keys(accountOpportunities).length} active deals`}
-        color="teal"
-        actions={
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search accounts..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 w-48 lg:w-64"
-              />
-            </div>
+      <div className="flex flex-col h-full overflow-hidden">
+        <PageHeader
+          icon={Building2Icon}
+          title="Accounts"
+          color="teal"
+          actions={
             <Button size="sm" onClick={() => toast.info('Use New Application on the Pipeline to create accounts')}>
               <Plus className="h-4 w-4 mr-1" /> Add Account
             </Button>
+          }
+        />
+        <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-5">
+          {/* KPI Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 stagger-children">
+            <StatCard label="Total Accounts" value={totalAccounts} icon={Building2Icon} color="teal" />
+            <StatCard label="With Contacts" value={accountsWithContacts} icon={Users} color="primary" />
+            <StatCard label="Active Deals" value={Object.keys(accountOpportunities).length} icon={TrendingUp} color="success" />
+            <StatCard label="Have Website" value={accountsWithWebsites} icon={Globe} color="muted" />
           </div>
-        }
-      />
-      <div className="p-4 lg:p-6 space-y-4">
 
-            <Card>
-              <CardHeader className="pb-0 pt-3 px-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Click any cell to edit inline · Deal stage shown from latest active opportunity</span>
-                </div>
-              </CardHeader>
+          {/* Filters toolbar */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold">{filteredAccounts.length} accounts</span>
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  Clear ×
+                </button>
+              )}
+            </div>
+            <div className="relative w-64">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Search accounts…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 h-8 text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Table */}
+          <Card className="border-border/60 overflow-hidden">
+            <CardHeader className="pb-0 pt-3 px-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Click any cell to edit inline · Deal stage shown from latest active opportunity</span>
+              </div>
+            </CardHeader>
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
@@ -559,6 +578,7 @@ const Accounts = () => {
               </CardContent>
             </Card>
           </div>
+        </div>
       <Dialog
         open={!!editingAccount}
         onOpenChange={(open) => {
