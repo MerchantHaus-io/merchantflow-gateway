@@ -896,10 +896,16 @@ const Index = () => {
                       <Eye className="h-3 w-3 mr-1" /> Full View
                     </Button>
                   </div>
-                  <AIValidatePanel
-                    key={listPreviewOpp.id}
-                    opportunityId={listPreviewOpp.id}
-                  />
+                  {listPreviewOpp.service_type !== 'gateway_only' ? (
+                    <AIValidatePanel
+                      key={listPreviewOpp.id}
+                      opportunityId={listPreviewOpp.id}
+                    />
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground text-xs">
+                      <p>Gateway-only deals do not require underwriting review.</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

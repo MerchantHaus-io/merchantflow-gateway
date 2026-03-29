@@ -1226,11 +1226,11 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                     } : null}
                   />
                   {!isGatewayCard && <BeneficialOwners opportunityId={opportunity.id} />}
-                  <OverviewUnderwritingSummary opportunityId={opportunity.id} onNavigate={() => setActiveSection('underwriting')} />
+                  {!isGatewayCard && <OverviewUnderwritingSummary opportunityId={opportunity.id} onNavigate={() => setActiveSection('underwriting')} />}
                 </div>
               )}
 
-              {activeSection === 'underwriting' && (
+              {activeSection === 'underwriting' && !isGatewayCard && (
                 <AIValidatePanel opportunityId={opportunity.id} />
               )}
 
