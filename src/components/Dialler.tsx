@@ -265,7 +265,7 @@ export const Dialler = () => {
           </div>
         )}
         {/* Quo branded header */}
-        <div className="bg-[hsl(0,0%,7%)] text-white px-4 pt-4 pb-3 space-y-2">
+        <div className="bg-card text-card-foreground px-4 pt-4 pb-3 space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <span className="text-xl font-black tracking-tight">QUO</span>
