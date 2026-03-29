@@ -2,6 +2,13 @@ import { useState, useEffect, useMemo } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, parseISO, startOfDay, addHours, differenceInMinutes, eachDayOfInterval as eachDay } from "date-fns";
+import { toZonedTime } from "date-fns-tz";
+
+const CT_TZ = "America/Chicago";
+/** Convert an ISO string to a Date in Central Time for display */
+const toCT = (iso: string) => toZonedTime(parseISO(iso), CT_TZ);
+/** Check if a CT-converted event falls on a given date */
+const isSameDayCT = (iso: string, date: Date) => isSameDay(toCT(iso), date);
 import { ChevronLeft, ChevronRight, CalendarDays, Clock, MapPin, Users, ExternalLink, Link2, CheckCircle2, Loader2, Mail, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -178,7 +185,7 @@ export default function Calendar() {
   }, [events, filterUser]);
 
   const eventsForDate = (date: Date) =>
-    filteredEvents.filter((e) => isSameDay(parseISO(e.start_time), date));
+    filteredEvents.filter((e) => isSameDayCT(e.start_time, date));
 
   const selectedEvents = selectedDate ? eventsForDate(selectedDate) : [];
 
@@ -311,7 +318,7 @@ export default function Calendar() {
                                 className={cn("text-[9px] leading-tight truncate rounded px-1 py-0.5 font-medium flex items-center gap-1", c.bg, "text-foreground/80")}
                               >
                                 <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", c.dot)} />
-                                {ev.all_day ? "All Day" : format(parseISO(ev.start_time), "h:mm a")} {ev.title}
+                                {ev.all_day ? "All Day" : format(toCT(ev.start_time), "h:mm a")} {ev.title}
                               </div>
                             );
                           })}
@@ -424,7 +431,7 @@ function EventCard({ event }: { event: CalendarEvent }) {
             <span className="text-[10px] text-muted-foreground">
               {event.all_day
                 ? "All Day"
-                : `${format(parseISO(event.start_time), "h:mm a")} – ${format(parseISO(event.end_time), "h:mm a")}`}
+                : `${format(toCT(event.start_time), "h:mm a")} – ${format(toCT(event.end_time), "h:mm a")} CT`}
             </span>
             <span className="text-[9px] text-muted-foreground/70 capitalize">{ownerName}</span>
           </div>
@@ -474,7 +481,7 @@ function TeamDayGrid({
   // Separate all-day vs timed events per member
   const memberData = teamMembers.map((member) => {
     const memberEvents = events.filter(
-      (e) => e.calendar_owner_email === member.email && isSameDay(parseISO(e.start_time), currentDate)
+      (e) => e.calendar_owner_email === member.email && isSameDayCT(e.start_time, currentDate)
     );
     const allDay = memberEvents.filter((e) => e.all_day);
     const timed = memberEvents.filter((e) => !e.all_day);
@@ -577,8 +584,8 @@ function TeamDayGrid({
 
               {/* Events positioned by time */}
               {timed.map((ev) => {
-                const evStart = parseISO(ev.start_time);
-                const evEnd = parseISO(ev.end_time);
+                const evStart = toCT(ev.start_time);
+                const evEnd = toCT(ev.end_time);
                 const startMin = differenceInMinutes(evStart, addHours(dayStart, 6));
                 const duration = Math.max(differenceInMinutes(evEnd, evStart), 15);
                 const top = Math.max((startMin / 60) * HOUR_HEIGHT, 0);
@@ -594,11 +601,11 @@ function TeamDayGrid({
                     )}
                     style={{ top, height: Math.min(height, HOURS.length * HOUR_HEIGHT - top) }}
                     onClick={() => ev.html_link && window.open(ev.html_link, "_blank")}
-                    title={`${ev.title}\n${format(evStart, "h:mm a")} – ${format(evEnd, "h:mm a")}`}
+                    title={`${ev.title}\n${format(evStart, "h:mm a")} – ${format(evEnd, "h:mm a")} CT`}
                   >
                     <span className="text-[9px] font-bold text-foreground line-clamp-1 leading-tight">{ev.title}</span>
                     <span className="text-[8px] text-muted-foreground leading-none">
-                      {format(evStart, "h:mm")}–{format(evEnd, "h:mm a")}
+                      {format(evStart, "h:mm")}–{format(evEnd, "h:mm a")} CT
                     </span>
                   </div>
                 );
