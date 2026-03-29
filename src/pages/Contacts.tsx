@@ -41,6 +41,7 @@ import { ClickToCall } from "@/components/ClickToCall";
 import { cn } from "@/lib/utils";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { PageHeader } from "@/components/PageHeader";
+import { StatCard } from "@/components/StatCard";
 import { EmptyState } from "@/components/EmptyState";
 import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
 import { SortableTableHead } from "@/components/SortableTableHead";
