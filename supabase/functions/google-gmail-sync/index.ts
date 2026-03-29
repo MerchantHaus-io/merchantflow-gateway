@@ -144,22 +144,35 @@ serve(async (req) => {
         continue;
       }
 
-      // Fetch recent messages (last 2 days)
-      const twoDaysAgo = Math.floor((now.getTime() - 2 * 24 * 60 * 60 * 1000) / 1000);
-      const query = `after:${twoDaysAgo}`;
+      // Fetch ALL messages (paginated)
+      let allMessageIds: string[] = [];
+      let pageToken: string | null = null;
+      let pageCount = 0;
+      const MAX_PAGES = 50; // safety cap ~2500 emails per user
 
-      const listResp = await fetch(
-        `${GMAIL_API}/users/me/messages?q=${encodeURIComponent(query)}&maxResults=50`,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
+      do {
+        const listUrl = new URL(`${GMAIL_API}/users/me/messages`);
+        listUrl.searchParams.set("maxResults", "50");
+        if (pageToken) listUrl.searchParams.set("pageToken", pageToken);
 
-      if (!listResp.ok) {
-        console.error(`Gmail list failed for ${token.user_email}: ${listResp.status} ${await listResp.text()}`);
-        continue;
-      }
+        const listResp = await fetch(listUrl.toString(), {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
 
-      const listData = await listResp.json();
-      const messageIds = (listData.messages || []).map((m: any) => m.id);
+        if (!listResp.ok) {
+          console.error(`Gmail list failed for ${token.user_email}: ${listResp.status} ${await listResp.text()}`);
+          break;
+        }
+
+        const listData = await listResp.json();
+        const ids = (listData.messages || []).map((m: any) => m.id);
+        allMessageIds = allMessageIds.concat(ids);
+        pageToken = listData.nextPageToken || null;
+        pageCount++;
+      } while (pageToken && pageCount < MAX_PAGES);
+
+      const messageIds = allMessageIds;
+      console.log(`${token.user_email}: found ${messageIds.length} total messages across ${pageCount} pages`);
 
       for (const msgId of messageIds) {
         // Check if already synced
