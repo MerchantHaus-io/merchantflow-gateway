@@ -7,8 +7,17 @@ import { toZonedTime } from "date-fns-tz";
 const CT_TZ = "America/Chicago";
 /** Convert an ISO string to a Date in Central Time for display */
 const toCT = (iso: string) => toZonedTime(parseISO(iso), CT_TZ);
-/** Check if a CT-converted event falls on a given date */
-const isSameDayCT = (iso: string, date: Date) => isSameDay(toCT(iso), date);
+/** Check if an event falls on a given date. All-day events use the date portion directly (no TZ shift). */
+const isSameDayCT = (iso: string, date: Date, allDay?: boolean) => {
+  if (allDay) {
+    // All-day events are stored as YYYY-MM-DDT00:00:00Z — use date portion directly
+    const eventDate = parseISO(iso);
+    return eventDate.getUTCFullYear() === date.getFullYear() &&
+           eventDate.getUTCMonth() === date.getMonth() &&
+           eventDate.getUTCDate() === date.getDate();
+  }
+  return isSameDay(toCT(iso), date);
+};
 import { ChevronLeft, ChevronRight, CalendarDays, Clock, MapPin, Users, ExternalLink, Link2, CheckCircle2, Loader2, Mail, Filter, CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
