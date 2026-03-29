@@ -930,7 +930,7 @@ const FloatingChat: React.FC = () => {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button onClick={() => { setIsOpen(false); setTimeout(() => window.dispatchEvent(new CustomEvent("openOfficeSimulator")), 100); }} className="hover:bg-white/10 p-2 rounded-full transition-colors" aria-label="Office Simulator">
+                  <button onClick={() => { setIsOpen(false); setTimeout(() => window.dispatchEvent(new CustomEvent("openOfficeSimulator")), 100); }} className="hover:bg-[hsl(var(--wa-header)/0.7)] p-2 rounded-full transition-colors" aria-label="Office Simulator">
                     <Gamepad2 className="h-4 w-4" />
                   </button>
                 </TooltipTrigger>
