@@ -185,7 +185,7 @@ export default function Calendar() {
   }, [events, filterUser]);
 
   const eventsForDate = (date: Date) =>
-    filteredEvents.filter((e) => isSameDay(parseISO(e.start_time), date));
+    filteredEvents.filter((e) => isSameDayCT(e.start_time, date));
 
   const selectedEvents = selectedDate ? eventsForDate(selectedDate) : [];
 
