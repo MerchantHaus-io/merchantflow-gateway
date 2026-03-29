@@ -75,6 +75,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { SortableTableHead } from "@/components/SortableTableHead";
 import { PageHeader } from "@/components/PageHeader";
+import { StatCard } from "@/components/StatCard";
 import { EmptyState } from "@/components/EmptyState";
 
 type SortField = 'name' | 'stage' | 'outcome' | 'pipeline' | 'owner' | 'tasks' | 'progress' | 'created' | 'updated';
