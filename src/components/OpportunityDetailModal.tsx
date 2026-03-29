@@ -1224,7 +1224,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                       updated_at: wizardState.updated_at
                     } : null}
                   />
-                  <BeneficialOwners opportunityId={opportunity.id} />
+                  {!isGatewayCard && <BeneficialOwners opportunityId={opportunity.id} />}
                   <OverviewUnderwritingSummary opportunityId={opportunity.id} onNavigate={() => setActiveSection('underwriting')} />
                 </div>
               )}
