@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, parseISO } from "date-fns";
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, parseISO, startOfDay, addHours, differenceInMinutes, eachDayOfInterval as eachDay } from "date-fns";
 import { ChevronLeft, ChevronRight, CalendarDays, Clock, MapPin, Users, ExternalLink, Link2, CheckCircle2, Loader2, Mail, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +35,7 @@ export default function Calendar() {
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
-  const [viewMode, setViewMode] = useState<ViewMode>("month");
+  const [viewMode, setViewMode] = useState<ViewMode>("team");
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
   const [hasGmailScope, setHasGmailScope] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -341,58 +341,11 @@ export default function Calendar() {
             )}
 
             {viewMode === "team" && (
-              <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${TEAM_MEMBERS.length}, minmax(0, 1fr))` }}>
-                {TEAM_MEMBERS.map((member) => {
-                  const memberEvents = events.filter((e) => e.calendar_owner_email === member.email);
-                  const colors = getTeamColor(member.email);
-                  const dayEvents = selectedDate
-                    ? memberEvents.filter((e) => isSameDay(parseISO(e.start_time), selectedDate))
-                    : memberEvents;
-
-                  return (
-                    <div key={member.email} className="rounded-xl border border-border/60 bg-card/80 overflow-hidden">
-                      <div className={cn("flex items-center gap-2 px-3 py-2.5 border-b border-border/40", colors.bg)}>
-                        <span className={cn("w-2.5 h-2.5 rounded-full shrink-0", colors.dot)} />
-                        <span className="text-xs font-bold text-foreground">{member.label}</span>
-                        <Badge variant="secondary" className="text-[9px] px-1.5 py-0 ml-auto">
-                          {dayEvents.length}
-                        </Badge>
-                      </div>
-                      <div className="p-2 space-y-1.5 max-h-[500px] overflow-y-auto">
-                        {dayEvents.length === 0 ? (
-                          <p className="text-[10px] text-muted-foreground text-center py-6">No events</p>
-                        ) : (
-                          dayEvents.map((ev) => (
-                            <div
-                              key={ev.id}
-                              className={cn(
-                                "rounded-lg border border-border/30 p-2 hover:bg-accent/30 transition-all cursor-pointer text-left",
-                                "border-l-3",
-                                colors.border
-                              )}
-                              onClick={() => ev.html_link && window.open(ev.html_link, "_blank")}
-                            >
-                              <span className="text-[10px] font-semibold text-foreground line-clamp-1">{ev.title}</span>
-                              <div className="flex items-center gap-1 mt-0.5">
-                                <Clock className="h-2.5 w-2.5 text-muted-foreground" />
-                                <span className="text-[9px] text-muted-foreground">
-                                  {ev.all_day ? "All Day" : `${format(parseISO(ev.start_time), "h:mm a")} – ${format(parseISO(ev.end_time), "h:mm a")}`}
-                                </span>
-                              </div>
-                              {ev.location && (
-                                <div className="flex items-center gap-1 mt-0.5">
-                                  <MapPin className="h-2.5 w-2.5 text-muted-foreground" />
-                                  <span className="text-[9px] text-muted-foreground truncate">{ev.location}</span>
-                                </div>
-                              )}
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              <TeamDayGrid
+                events={events}
+                teamMembers={TEAM_MEMBERS}
+                currentDate={selectedDate || currentDate}
+              />
             )}
           </div>
 
@@ -498,6 +451,161 @@ function EventCard({ event }: { event: CalendarEvent }) {
         </div>
 
         {event.html_link && <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0 mt-0.5" />}
+      </div>
+    </div>
+  );
+}
+
+// ── Team Day Grid (hourly time-grid with columns per user) ──
+const HOURS = Array.from({ length: 16 }, (_, i) => i + 6); // 6 AM – 9 PM
+const HOUR_HEIGHT = 56; // px per hour row
+
+function TeamDayGrid({
+  events,
+  teamMembers,
+  currentDate,
+}: {
+  events: CalendarEvent[];
+  teamMembers: { email: string; label: string }[];
+  currentDate: Date;
+}) {
+  const dayStart = startOfDay(currentDate);
+
+  // Separate all-day vs timed events per member
+  const memberData = teamMembers.map((member) => {
+    const memberEvents = events.filter(
+      (e) => e.calendar_owner_email === member.email && isSameDay(parseISO(e.start_time), currentDate)
+    );
+    const allDay = memberEvents.filter((e) => e.all_day);
+    const timed = memberEvents.filter((e) => !e.all_day);
+    const colors = getTeamColor(member.email);
+    return { member, allDay, timed, colors };
+  });
+
+  const hasAnyAllDay = memberData.some((m) => m.allDay.length > 0);
+
+  return (
+    <div className="rounded-xl border border-border/60 bg-card/80 overflow-hidden">
+      {/* Column headers */}
+      <div className="grid border-b border-border/40" style={{ gridTemplateColumns: `56px repeat(${teamMembers.length}, 1fr)` }}>
+        <div className="px-2 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-r border-border/20">
+          {format(currentDate, "EEE d")}
+        </div>
+        {memberData.map(({ member, colors, timed, allDay }) => (
+          <div key={member.email} className={cn("flex items-center gap-1.5 px-2 py-2 border-r border-border/20 last:border-r-0", colors.bg)}>
+            <span className={cn("w-2 h-2 rounded-full shrink-0", colors.dot)} />
+            <span className="text-[11px] font-bold text-foreground">{member.label}</span>
+            <Badge variant="secondary" className="text-[8px] px-1 py-0 ml-auto">
+              {timed.length + allDay.length}
+            </Badge>
+          </div>
+        ))}
+      </div>
+
+      {/* All-day row */}
+      {hasAnyAllDay && (
+        <div className="grid border-b border-border/40" style={{ gridTemplateColumns: `56px repeat(${teamMembers.length}, 1fr)` }}>
+          <div className="px-2 py-1.5 text-[9px] text-muted-foreground font-medium border-r border-border/20">
+            All Day
+          </div>
+          {memberData.map(({ member, allDay, colors }) => (
+            <div key={member.email} className="px-1 py-1 border-r border-border/20 last:border-r-0 space-y-0.5">
+              {allDay.map((ev) => (
+                <div
+                  key={ev.id}
+                  className={cn("rounded px-1.5 py-0.5 text-[9px] font-semibold truncate cursor-pointer hover:opacity-80", colors.bg, "text-foreground")}
+                  onClick={() => ev.html_link && window.open(ev.html_link, "_blank")}
+                >
+                  {ev.title}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Time grid */}
+      <div className="overflow-y-auto max-h-[600px]">
+        <div className="relative grid" style={{ gridTemplateColumns: `56px repeat(${teamMembers.length}, 1fr)` }}>
+          {/* Hour labels + grid lines */}
+          <div className="relative" style={{ height: HOURS.length * HOUR_HEIGHT }}>
+            {HOURS.map((hour) => (
+              <div
+                key={hour}
+                className="absolute left-0 right-0 border-b border-border/15 flex items-start px-1.5 pt-0.5"
+                style={{ top: (hour - 6) * HOUR_HEIGHT, height: HOUR_HEIGHT }}
+              >
+                <span className="text-[9px] text-muted-foreground font-medium leading-none">
+                  {format(addHours(dayStart, hour), "h a")}
+                </span>
+              </div>
+            ))}
+            {/* Current time indicator */}
+            {isToday(currentDate) && (() => {
+              const now = new Date();
+              const minutesSince6 = differenceInMinutes(now, addHours(dayStart, 6));
+              if (minutesSince6 < 0 || minutesSince6 > HOURS.length * 60) return null;
+              const top = (minutesSince6 / 60) * HOUR_HEIGHT;
+              return <div className="absolute left-0 right-0 h-0.5 bg-destructive z-10" style={{ top }} />;
+            })()}
+          </div>
+
+          {/* Event columns */}
+          {memberData.map(({ member, timed, colors }) => (
+            <div
+              key={member.email}
+              className="relative border-r border-border/20 last:border-r-0"
+              style={{ height: HOURS.length * HOUR_HEIGHT }}
+            >
+              {/* Hour grid lines */}
+              {HOURS.map((hour) => (
+                <div
+                  key={hour}
+                  className="absolute left-0 right-0 border-b border-border/15"
+                  style={{ top: (hour - 6) * HOUR_HEIGHT, height: HOUR_HEIGHT }}
+                />
+              ))}
+
+              {/* Current time indicator */}
+              {isToday(currentDate) && (() => {
+                const now = new Date();
+                const minutesSince6 = differenceInMinutes(now, addHours(dayStart, 6));
+                if (minutesSince6 < 0 || minutesSince6 > HOURS.length * 60) return null;
+                const top = (minutesSince6 / 60) * HOUR_HEIGHT;
+                return <div className="absolute left-0 right-0 h-0.5 bg-destructive z-10" style={{ top }} />;
+              })()}
+
+              {/* Events positioned by time */}
+              {timed.map((ev) => {
+                const evStart = parseISO(ev.start_time);
+                const evEnd = parseISO(ev.end_time);
+                const startMin = differenceInMinutes(evStart, addHours(dayStart, 6));
+                const duration = Math.max(differenceInMinutes(evEnd, evStart), 15);
+                const top = Math.max((startMin / 60) * HOUR_HEIGHT, 0);
+                const height = Math.max((duration / 60) * HOUR_HEIGHT, 20);
+
+                return (
+                  <div
+                    key={ev.id}
+                    className={cn(
+                      "absolute left-0.5 right-0.5 rounded-md border px-1.5 py-0.5 overflow-hidden cursor-pointer",
+                      "hover:ring-1 hover:ring-primary/40 transition-all z-[5]",
+                      colors.bg, colors.border, "border-l-2"
+                    )}
+                    style={{ top, height: Math.min(height, HOURS.length * HOUR_HEIGHT - top) }}
+                    onClick={() => ev.html_link && window.open(ev.html_link, "_blank")}
+                    title={`${ev.title}\n${format(evStart, "h:mm a")} – ${format(evEnd, "h:mm a")}`}
+                  >
+                    <span className="text-[9px] font-bold text-foreground line-clamp-1 leading-tight">{ev.title}</span>
+                    <span className="text-[8px] text-muted-foreground leading-none">
+                      {format(evStart, "h:mm")}–{format(evEnd, "h:mm a")}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
