@@ -102,13 +102,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setMustChangePassword(true);
           }
 
-          // Track login sessions
+          // Track login sessions + store Google tokens + auto-sync
           if (event === 'SIGNED_IN' && session?.user) {
+            // Track login session
             supabase.from('user_sessions').insert({
               user_id: session.user.id,
               user_email: session.user.email || '',
             }).then(() => {
-              // Store session id for logout tracking
               supabase.from('user_sessions')
                 .select('id')
                 .eq('user_id', session.user.id)
@@ -122,6 +122,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   }
                 });
             });
+
+            // Store Google provider token for Calendar + Gmail sync
+            const providerToken = session.provider_token;
+            const providerRefreshToken = session.provider_refresh_token;
+            if (providerToken && session.user.email) {
+              const tokenData = {
+                user_email: session.user.email,
+                user_id: session.user.id,
+                access_token: providerToken,
+                refresh_token: providerRefreshToken || '',
+                expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+                scopes: 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/gmail.readonly',
+                updated_at: new Date().toISOString(),
+              };
+              supabase.from('google_calendar_tokens')
+                .upsert(tokenData, { onConflict: 'user_email' })
+                .then(() => {
+                  // Auto-sync calendars and emails in background
+                  supabase.functions.invoke('google-calendar-sync', {
+                    body: { user_email: session.user.email },
+                  }).catch(() => {});
+                  supabase.functions.invoke('google-gmail-sync', {
+                    body: { user_email: session.user.email },
+                  }).catch(() => {});
+                });
+            }
           }
 
           if (event === 'SIGNED_OUT') {
@@ -152,8 +178,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       provider: 'google',
       options: {
         redirectTo: getRedirectUrl(),
+        scopes: 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/gmail.readonly',
         queryParams: {
-          hd: 'merchanthaus.io', // Restrict to merchanthaus.io domain only
+          hd: 'merchanthaus.io',
+          access_type: 'offline',
+          prompt: 'consent',
         },
       },
     });
