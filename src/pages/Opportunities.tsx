@@ -173,7 +173,7 @@ const Opportunities = () => {
 
   const filteredOpportunities = useMemo(() => {
     // Exclude auto-synced email leads — they belong on the Leads page only
-    let filtered = opportunities.filter(opp => opp.account?.status !== 'lead');
+    let filtered = opportunities.filter(opp => (opp.account?.status as string) !== 'lead');
 
     // Tab-level filter: archive tab shows only archived, all tab excludes archived
     if (viewTab === 'archive') {
