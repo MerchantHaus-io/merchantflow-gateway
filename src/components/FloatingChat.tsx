@@ -843,7 +843,7 @@ const FloatingChat: React.FC = () => {
           <div className="flex items-center justify-between px-4 py-2.5 bg-[hsl(var(--wa-header))] text-[hsl(var(--wa-header-foreground))] shrink-0">
             <div className="flex items-center gap-2.5 min-w-0">
               {isMobile && (view === "chat" || view === "dm" || view === "ai") && (
-                <button onClick={() => setView("contacts")} className="hover:bg-white/10 p-1.5 rounded-full transition-colors">
+                <button onClick={() => setView("contacts")} className="hover:bg-[hsl(var(--wa-header)/0.7)] p-1.5 rounded-full transition-colors">
                   <ChevronLeft className="h-5 w-5" />
                 </button>
               )}
