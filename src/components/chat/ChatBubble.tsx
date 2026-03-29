@@ -147,7 +147,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
             <TooltipTrigger asChild>
               <button onClick={() => onReaction(msg.id, emoji, isChannel ? 'channel' : 'direct')}
                 className={cn("text-xs px-1.5 py-0.5 rounded-full border transition-all",
-                  data.hasOwn ? "bg-[hsl(var(--wa-accent)/0.2)] border-[hsl(var(--wa-accent)/0.4)]" : "bg-white/5 border-white/10 hover:bg-white/10"
+                  data.hasOwn ? "bg-[hsl(var(--wa-accent)/0.2)] border-[hsl(var(--wa-accent)/0.4)]" : "bg-[hsl(var(--wa-search-bg))] border-[hsl(var(--wa-divider))] hover:bg-[hsl(var(--wa-sidebar-hover))]"
                 )}
               >{emoji} {data.count}</button>
             </TooltipTrigger>
