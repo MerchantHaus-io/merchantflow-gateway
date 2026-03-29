@@ -182,7 +182,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         queryParams: {
           hd: 'merchanthaus.io',
           access_type: 'offline',
-          prompt: 'consent',
+          prompt: 'select_account',
         },
       },
     });
