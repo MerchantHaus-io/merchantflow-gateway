@@ -231,6 +231,7 @@ export default function Calendar() {
                 />
               </PopoverContent>
             </Popover>
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigate(1)}>
               <ChevronRight className="h-4 w-4" />
             </Button>
             <Button
