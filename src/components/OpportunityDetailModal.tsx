@@ -293,7 +293,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     [opportunity?.assigned_to, user?.email],
   );
 
-  // Icon rail items for section navigation — hide UW Review for gateway deals
+  const isGatewayCard = opportunity ? getServiceType(opportunity) === 'gateway_only' : false;
   const iconRailItems: IconRailItem[] = useMemo(() => {
     const items: IconRailItem[] = [
       { id: 'overview', icon: <ClipboardList className="h-4 w-4" />, label: 'Overview' },
