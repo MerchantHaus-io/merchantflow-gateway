@@ -200,9 +200,9 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                             : "bg-[hsl(var(--wa-accent))]"
                         )}>
                           {ch.name.toLowerCase() === "atria-ai" ? (
-                            <Bot className="h-5 w-5 text-white" />
+                            <Bot className="h-5 w-5 text-[hsl(var(--wa-header-foreground))]" />
                           ) : (
-                            <Hash className="h-5 w-5 text-white" />
+                            <Hash className="h-5 w-5 text-[hsl(var(--wa-header-foreground))]" />
                           )}
                         </div>
                         <div className="flex-1 text-left min-w-0">
