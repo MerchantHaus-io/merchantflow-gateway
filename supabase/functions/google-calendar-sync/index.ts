@@ -101,8 +101,8 @@ serve(async (req) => {
     }
 
     const now = new Date();
-    const timeMin = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
-    const timeMax = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    // Sync all-time: no timeMin, 1 year forward
+    const timeMax = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString();
 
     const allEvents: any[] = [];
     const sharedCalIds = (Deno.env.get("GOOGLE_CALENDAR_IDS") || "").split(",").map(c => c.trim()).filter(Boolean);
