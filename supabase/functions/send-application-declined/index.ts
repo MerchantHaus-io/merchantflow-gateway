@@ -218,6 +218,29 @@ const handler = async (req: Request): Promise<Response> => {
       console.log("Team notification email sent:", teamResult);
     }
 
+    // Log as activity on matching opportunity
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const sb = createClient(supabaseUrl, supabaseServiceKey);
+      if (accountName) {
+        const { data: accounts } = await sb.from("accounts").select("id").eq("name", accountName).limit(1);
+        if (accounts && accounts.length > 0) {
+          const { data: opps } = await sb.from("opportunities").select("id").eq("account_id", accounts[0].id).limit(1);
+          if (opps && opps.length > 0) {
+            await sb.from("activities").insert({
+              opportunity_id: opps[0].id,
+              type: "email_decline_sent",
+              description: `📧 Application declined email sent to ${recipientName} (${recipientEmail}). Reason: ${outcomeReason}`,
+              user_email: "system@ops.internal",
+            });
+          }
+        }
+      }
+    } catch (logErr) {
+      console.error("Failed to log email activity:", logErr);
+    }
+
     return new Response(
       JSON.stringify({ success: true }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

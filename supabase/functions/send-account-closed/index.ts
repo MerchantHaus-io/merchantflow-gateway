@@ -219,6 +219,29 @@ const handler = async (req: Request): Promise<Response> => {
       console.log("Team closure notification sent:", teamResult);
     }
 
+    // Log as activity on matching opportunity
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const sb = createClient(supabaseUrl, supabaseServiceKey);
+      if (accountName) {
+        const { data: accounts } = await sb.from("accounts").select("id").eq("name", accountName).limit(1);
+        if (accounts && accounts.length > 0) {
+          const { data: opps } = await sb.from("opportunities").select("id").eq("account_id", accounts[0].id).limit(1);
+          if (opps && opps.length > 0) {
+            await sb.from("activities").insert({
+              opportunity_id: opps[0].id,
+              type: "email_account_closed",
+              description: `📧 Account closure email sent to ${recipientName} (${recipientEmail}). Reason: ${outcomeReason}`,
+              user_email: closedBy || "system@ops.internal",
+            });
+          }
+        }
+      }
+    } catch (logErr) {
+      console.error("Failed to log email activity:", logErr);
+    }
+
     return new Response(
       JSON.stringify({ success: true }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
