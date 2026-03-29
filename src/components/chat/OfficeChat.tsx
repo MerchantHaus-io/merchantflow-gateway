@@ -67,7 +67,7 @@ interface OfficeChatProps {
 const USERS: CRMUser[] = [
   { email: "taryn@merchanthaus.io", name: "Taryn", title: "Operations", shirtColor: 0xe05a2b, hairColor: 0x3a1a08, skinColor: 0xffcba8, hairstyle: "bob", scale: 1.0 },
   { email: "admin@merchanthaus.io", name: "Jamie", title: "Admin", shirtColor: 0x3a7bd5, hairColor: 0xd4b96a, skinColor: 0xffe0bb, stubble: true, stubbleColor: 0xc8aa70, scale: 1.0 },
-  { email: "sales@merchanthaus.io", name: "Dylan", title: "Sales", shirtColor: 0x2eaa5e, hairColor: 0x1a3a1a, skinColor: 0xffdbac, prostheticLeg: true, scale: 1.15 },
+  { email: "sales@merchanthaus.io", name: "Wesley", title: "Sales", shirtColor: 0x2eaa5e, hairColor: 0x1a3a1a, skinColor: 0xffdbac, prostheticLeg: true, scale: 1.15 },
   { email: "support@merchanthaus.io", name: "Sheiky", title: "Support", shirtColor: 0x9b30d0, hairColor: 0x2a1a40, skinColor: 0xd4a574, beard: true, beardColor: 0x9a9a9a, scale: 1.08 },
   { email: "darryn@merchanthaus.io", name: "Darryn", title: "Dev", shirtColor: 0xd03060, hairColor: 0x3a1010, skinColor: 0xffdbac, scale: 1.0 },
   { email: "atria@merchanthaus.io", name: "Atria", title: "AI Assistant", shirtColor: 0x7c3aed, hairColor: 0xc0c0ff, skinColor: 0xe8d8f0, hairstyle: "bob", scale: 0.95, online: true },
@@ -574,7 +574,7 @@ function buildRoom(): THREE.Group {
       eye1.position.set(0.74, 0.868, 0.015); cg.add(eye1);
       const eye2 = eye1.clone(); eye2.position.set(0.76, 0.868, 0.015); cg.add(eye2);
     },
-    // Dylan: mini trophy
+    // Wesley: mini trophy
     "sales@merchanthaus.io": (cg) => {
       const base = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.02, 0.05), new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.3 }));
       base.position.set(0.75, 0.79, 0.05); cg.add(base);

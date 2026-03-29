@@ -115,9 +115,8 @@ export const TEAM_MEMBERS = [
   'Taryn',
   'Darryn',
   'Jamie',
-  'Yaseen',
+  'Sheiky',
   'Wesley',
-  'Sales',
 ] as const;
 
 export type TeamMember = typeof TEAM_MEMBERS[number];
@@ -127,15 +126,14 @@ export const TEAM_MEMBER_COLORS: Record<string, string> = {
   'Jamie': 'border-team-jamie',
   'Darryn': 'border-team-darryn',
   'Taryn': 'border-team-taryn',
-  'Yaseen': 'border-team-yaseen',
-  'Sales': 'border-team-sales',
+  'Sheiky': 'border-team-yaseen',
 };
 
 // Map user emails to display names
 export const EMAIL_TO_USER: Record<string, string> = {
   'admin@merchanthaus.io': 'Jamie',
   'darryn@merchanthaus.io': 'Darryn',
-  'support@merchanthaus.io': 'Yaseen',
+  'support@merchanthaus.io': 'Sheiky',
   'sales@merchanthaus.io': 'Wesley',
   'taryn@merchanthaus.io': 'Taryn',
 };

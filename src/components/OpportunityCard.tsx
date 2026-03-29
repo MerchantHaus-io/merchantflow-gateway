@@ -40,17 +40,15 @@ const TEAM_COLORS: Record<string, { border: string; bg: string; text: string }> 
   Jamie:   { border: "border-l-team-jamie",   bg: "bg-yellow-100 dark:bg-yellow-900/30", text: "text-yellow-700 dark:text-yellow-300" },
   Darryn:  { border: "border-l-team-darryn",  bg: "bg-green-100 dark:bg-green-900/30",  text: "text-green-700 dark:text-green-300" },
   Taryn:   { border: "border-l-team-taryn",   bg: "bg-blue-100 dark:bg-blue-900/30",    text: "text-blue-700 dark:text-blue-300" },
-  Yaseen:  { border: "border-l-team-yaseen",  bg: "bg-violet-100 dark:bg-violet-900/30", text: "text-violet-700 dark:text-violet-300" },
-  Sales:   { border: "border-l-team-sales",   bg: "bg-orange-100 dark:bg-orange-900/30", text: "text-orange-700 dark:text-orange-300" },
+  Sheiky:  { border: "border-l-team-yaseen",  bg: "bg-violet-100 dark:bg-violet-900/30", text: "text-violet-700 dark:text-violet-300" },
 };
 
 const TEAM_EMAIL_MAP: Record<string, string> = {
-  Wesley: "dylan@merchanthaus.io",
+  Wesley: "sales@merchanthaus.io",
   Jamie:  "admin@merchanthaus.io",
   Darryn: "darryn@merchanthaus.io",
   Taryn:  "taryn@merchanthaus.io",
-  Yaseen: "support@merchanthaus.io",
-  Sales:  "sales@merchanthaus.io",
+  Sheiky: "support@merchanthaus.io",
 };
 
 const formatCurrency = (value: number) =>

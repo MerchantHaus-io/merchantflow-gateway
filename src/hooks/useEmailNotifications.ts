@@ -43,7 +43,7 @@ export const sendEmailNotification = async ({
 // Helper to get user email from team member name
 export const getTeamMemberEmail = (teamMemberName: string): string | null => {
   const emailMap: Record<string, string> = {
-    "Yaseen": "yaseen@merchanthaus.io",
+    "Sheiky": "support@merchanthaus.io",
     "Taryn": "taryn@merchanthaus.io",
     "Kyle": "kyle@merchanthaus.io",
     "Ryan": "ryan@merchanthaus.io",

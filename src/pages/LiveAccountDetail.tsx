@@ -44,12 +44,11 @@ import logoLight from "@/assets/logo-light.png";
 import liveBadge from "@/assets/live-badge.webp";
 
 const TEAM_EMAIL_MAP: Record<string, string> = {
-  'Wesley': 'dylan@merchanthaus.io',
+  'Wesley': 'sales@merchanthaus.io',
   'Jamie': 'admin@merchanthaus.io',
   'Darryn': 'darryn@merchanthaus.io',
   'Taryn': 'taryn@merchanthaus.io',
-  'Yaseen': 'support@merchanthaus.io',
-  'Sales': 'sales@merchanthaus.io',
+  'Sheiky': 'support@merchanthaus.io',
 };
 
 const InfoRow = ({ icon: Icon, label, value, href }: { icon: any; label: string; value?: string | null; href?: string }) => {
