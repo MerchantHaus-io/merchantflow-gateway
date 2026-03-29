@@ -922,7 +922,7 @@ const FloatingChat: React.FC = () => {
               )}
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button onClick={toggleSound} className="hover:bg-white/10 p-2 rounded-full transition-colors">
+                  <button onClick={toggleSound} className="hover:bg-[hsl(var(--wa-header)/0.7)] p-2 rounded-full transition-colors">
                     {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4 opacity-60" />}
                   </button>
                 </TooltipTrigger>
