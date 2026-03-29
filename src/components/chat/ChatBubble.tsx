@@ -98,7 +98,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
 
     if (!attachmentUrl) {
       return (
-        <div className="mt-2 flex items-center gap-2 p-2 rounded-lg bg-white/10 text-xs opacity-60">
+        <div className="mt-2 flex items-center gap-2 p-2 rounded-lg bg-[hsl(var(--wa-bubble-in))] text-xs opacity-60">
           <File className="h-4 w-4 shrink-0 animate-pulse" />
           <span className="truncate flex-1">{msg.attachment_name || 'Loading...'}</span>
         </div>
