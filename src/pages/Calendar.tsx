@@ -341,58 +341,11 @@ export default function Calendar() {
             )}
 
             {viewMode === "team" && (
-              <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${TEAM_MEMBERS.length}, minmax(0, 1fr))` }}>
-                {TEAM_MEMBERS.map((member) => {
-                  const memberEvents = events.filter((e) => e.calendar_owner_email === member.email);
-                  const colors = getTeamColor(member.email);
-                  const dayEvents = selectedDate
-                    ? memberEvents.filter((e) => isSameDay(parseISO(e.start_time), selectedDate))
-                    : memberEvents;
-
-                  return (
-                    <div key={member.email} className="rounded-xl border border-border/60 bg-card/80 overflow-hidden">
-                      <div className={cn("flex items-center gap-2 px-3 py-2.5 border-b border-border/40", colors.bg)}>
-                        <span className={cn("w-2.5 h-2.5 rounded-full shrink-0", colors.dot)} />
-                        <span className="text-xs font-bold text-foreground">{member.label}</span>
-                        <Badge variant="secondary" className="text-[9px] px-1.5 py-0 ml-auto">
-                          {dayEvents.length}
-                        </Badge>
-                      </div>
-                      <div className="p-2 space-y-1.5 max-h-[500px] overflow-y-auto">
-                        {dayEvents.length === 0 ? (
-                          <p className="text-[10px] text-muted-foreground text-center py-6">No events</p>
-                        ) : (
-                          dayEvents.map((ev) => (
-                            <div
-                              key={ev.id}
-                              className={cn(
-                                "rounded-lg border border-border/30 p-2 hover:bg-accent/30 transition-all cursor-pointer text-left",
-                                "border-l-3",
-                                colors.border
-                              )}
-                              onClick={() => ev.html_link && window.open(ev.html_link, "_blank")}
-                            >
-                              <span className="text-[10px] font-semibold text-foreground line-clamp-1">{ev.title}</span>
-                              <div className="flex items-center gap-1 mt-0.5">
-                                <Clock className="h-2.5 w-2.5 text-muted-foreground" />
-                                <span className="text-[9px] text-muted-foreground">
-                                  {ev.all_day ? "All Day" : `${format(parseISO(ev.start_time), "h:mm a")} – ${format(parseISO(ev.end_time), "h:mm a")}`}
-                                </span>
-                              </div>
-                              {ev.location && (
-                                <div className="flex items-center gap-1 mt-0.5">
-                                  <MapPin className="h-2.5 w-2.5 text-muted-foreground" />
-                                  <span className="text-[9px] text-muted-foreground truncate">{ev.location}</span>
-                                </div>
-                              )}
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              <TeamDayGrid
+                events={events}
+                teamMembers={TEAM_MEMBERS}
+                currentDate={selectedDate || currentDate}
+              />
             )}
           </div>
 
