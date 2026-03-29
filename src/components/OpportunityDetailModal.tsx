@@ -293,17 +293,18 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     [opportunity?.assigned_to, user?.email],
   );
 
-  // Icon rail items for section navigation
+  // Icon rail items for section navigation — hide UW Review for gateway deals
   const iconRailItems: IconRailItem[] = useMemo(() => {
-    return [
+    const items: IconRailItem[] = [
       { id: 'overview', icon: <ClipboardList className="h-4 w-4" />, label: 'Overview' },
-      { id: 'underwriting', icon: <Wand2 className="h-4 w-4" />, label: 'UW Review' },
+      ...(!isGatewayCard ? [{ id: 'underwriting' as const, icon: <Wand2 className="h-4 w-4" />, label: 'UW Review' }] : []),
       { id: 'notes', icon: <MessageSquare className="h-4 w-4" />, label: 'Notes' },
       { id: 'documents', icon: <FileText className="h-4 w-4" />, label: 'Docs' },
       { id: 'details', icon: <Building2 className="h-4 w-4" />, label: 'Details' },
       { id: 'activity', icon: <Activity className="h-4 w-4" />, label: 'Activity' },
     ];
-  }, []);
+    return items;
+  }, [isGatewayCard]);
 
   const handleSectionSelect = useCallback((id: string) => {
     setActiveSection(id as ModalSection);
