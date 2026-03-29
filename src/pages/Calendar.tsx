@@ -481,7 +481,7 @@ function TeamDayGrid({
   // Separate all-day vs timed events per member
   const memberData = teamMembers.map((member) => {
     const memberEvents = events.filter(
-      (e) => e.calendar_owner_email === member.email && isSameDay(parseISO(e.start_time), currentDate)
+      (e) => e.calendar_owner_email === member.email && isSameDayCT(e.start_time, currentDate)
     );
     const allDay = memberEvents.filter((e) => e.all_day);
     const timed = memberEvents.filter((e) => !e.all_day);
