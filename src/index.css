@@ -424,6 +424,23 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 142 71% 55%;
     --sidebar-border: 150 20% 22%;
     --sidebar-ring: 142 71% 45%;
+
+    /* WhatsApp Chat Tokens — Forest */
+    --wa-header: 150 40% 22%;
+    --wa-header-foreground: 120 10% 95%;
+    --wa-sidebar-bg: 150 20% 7%;
+    --wa-sidebar-hover: 150 20% 11%;
+    --wa-chat-bg: 150 20% 4%;
+    --wa-bubble-out: 142 50% 18%;
+    --wa-bubble-out-foreground: 120 10% 95%;
+    --wa-bubble-in: 150 20% 12%;
+    --wa-bubble-in-foreground: 120 10% 90%;
+    --wa-composer-bg: 150 20% 7%;
+    --wa-accent: 142 71% 45%;
+    --wa-unread: 142 71% 45%;
+    --wa-search-bg: 150 20% 10%;
+    --wa-meta: 140 15% 52%;
+    --wa-divider: 150 20% 16%;
   }
 
   /* Dark Charcoal - Warm grey tones */
