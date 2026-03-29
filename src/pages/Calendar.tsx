@@ -241,31 +241,11 @@ export default function Calendar() {
               </SelectContent>
             </Select>
 
-            {/* Connection status + actions */}
-            {isConnected === false && (
-              <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={handleConnect}>
-                <Link2 className="h-3.5 w-3.5" />
-                Connect Google (Calendar + Gmail)
-              </Button>
-            )}
-            {isConnected === true && (
-              <>
-                <Badge variant="secondary" className="gap-1 text-[10px]">
-                  <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                  Connected
-                </Badge>
-                {!hasGmailScope && (
-                  <Button variant="outline" size="sm" className="text-xs gap-1 border-amber-500/50 text-amber-600" onClick={handleConnect}>
-                    <Mail className="h-3 w-3" />
-                    Enable Gmail Sync
-                  </Button>
-                )}
-                <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={handleSync} disabled={syncing}>
-                  {syncing ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
-                  Sync
-                </Button>
-              </>
-            )}
+            {/* Sync button */}
+            <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={handleSync} disabled={syncing}>
+              {syncing ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+              Sync
+            </Button>
 
             <div className="flex items-center rounded-lg border border-border/60 bg-card/40 p-0.5">
               {(["month", "week", "day", "team"] as ViewMode[]).map((mode) => (
