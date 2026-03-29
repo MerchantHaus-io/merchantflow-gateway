@@ -865,7 +865,7 @@ const FloatingChat: React.FC = () => {
               )}
               {isMobile && view === "chat" && (
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-[hsl(var(--wa-header)/0.5)] flex items-center justify-center">
                     <Hash className="h-4 w-4" />
                   </div>
                   <div>
