@@ -116,6 +116,23 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Docs request email sent successfully:", emailResult);
 
+    // Log as activity on the opportunity
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const sb = createClient(supabaseUrl, supabaseServiceKey);
+      if (opportunity_id) {
+        await sb.from("activities").insert({
+          opportunity_id,
+          type: "email_docs_request",
+          description: `📧 Document request email sent to ${contact_first_name || ''} (${contact_email}) for ${account_name}`,
+          user_email: "system@ops.internal",
+        });
+      }
+    } catch (logErr) {
+      console.error("Failed to log email activity:", logErr);
+    }
+
     return new Response(
       JSON.stringify({ success: true }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }

@@ -1,6 +1,9 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -225,6 +228,36 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     console.log("Email sent successfully:", emailData);
+
+    // Log as activity if opportunity-related
+    try {
+      const sb = createClient(supabaseUrl, supabaseServiceKey);
+      if (type === "stage_change" || type === "opportunity_assignment") {
+        // Try to find the opportunity by account name to log activity
+        const emailType = type === "stage_change" ? "email_stage_notification" : "email_assignment_notification";
+        const desc = type === "stage_change"
+          ? `📧 Stage change email sent to ${recipientName || recipientEmail}: ${data.oldStage} → ${data.newStage}`
+          : `📧 Assignment email sent to ${recipientName || recipientEmail}`;
+        
+        // Find opportunity by account name
+        if (data.accountName) {
+          const { data: accounts } = await sb.from("accounts").select("id").eq("name", data.accountName as string).limit(1);
+          if (accounts && accounts.length > 0) {
+            const { data: opps } = await sb.from("opportunities").select("id").eq("account_id", accounts[0].id).eq("status", "active").limit(1);
+            if (opps && opps.length > 0) {
+              await sb.from("activities").insert({
+                opportunity_id: opps[0].id,
+                type: emailType,
+                description: desc,
+                user_email: "system@ops.internal",
+              });
+            }
+          }
+        }
+      }
+    } catch (logErr) {
+      console.error("Failed to log email activity:", logErr);
+    }
 
     return new Response(JSON.stringify(emailData), {
       status: 200,

@@ -11,7 +11,8 @@ import {
   MessageSquare,
   Zap,
   Skull,
-  ListChecks
+  ListChecks,
+  Mail
 } from "lucide-react";
 import { format, formatDistanceToNow, subDays, subWeeks, subMonths, isAfter } from "date-fns";
 import { STAGE_CONFIG, OpportunityStage, EMAIL_TO_USER } from "@/types/opportunity";
@@ -106,6 +107,12 @@ const ACTIVITY_CONFIG: Record<string, {
     bgColor: "bg-teal-500/10",
     label: "Wizard Progress"
   },
+  email_sent: { icon: Mail, color: "text-sky-500", bgColor: "bg-sky-500/10", label: "Email Sent" },
+  email_stage_notification: { icon: Mail, color: "text-sky-500", bgColor: "bg-sky-500/10", label: "Stage Email" },
+  email_assignment_notification: { icon: Mail, color: "text-sky-500", bgColor: "bg-sky-500/10", label: "Assignment Email" },
+  email_docs_request: { icon: Mail, color: "text-amber-500", bgColor: "bg-amber-500/10", label: "Docs Request Email" },
+  email_decline_sent: { icon: Mail, color: "text-red-500", bgColor: "bg-red-500/10", label: "Decline Email" },
+  email_account_closed: { icon: Mail, color: "text-red-600", bgColor: "bg-red-600/10", label: "Closure Email" },
 };
 
 const ActivitiesTab = ({ opportunityId, compact = false }: ActivitiesTabProps) => {
