@@ -877,6 +877,23 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 0 0% 15%;
     --sidebar-border: 0 0% 82%;
     --sidebar-ring: 0 0% 50%;
+
+    /* WhatsApp Chat Tokens — Light Mono */
+    --wa-header: 0 0% 15%;
+    --wa-header-foreground: 0 0% 100%;
+    --wa-sidebar-bg: 0 0% 97%;
+    --wa-sidebar-hover: 0 0% 93%;
+    --wa-chat-bg: 0 0% 95%;
+    --wa-bubble-out: 0 0% 88%;
+    --wa-bubble-out-foreground: 0 0% 0%;
+    --wa-bubble-in: 0 0% 98%;
+    --wa-bubble-in-foreground: 0 0% 0%;
+    --wa-composer-bg: 0 0% 97%;
+    --wa-accent: 0 0% 20%;
+    --wa-unread: 0 0% 20%;
+    --wa-search-bg: 0 0% 93%;
+    --wa-meta: 0 0% 50%;
+    --wa-divider: 0 0% 82%;
   }
 
   /* ═══ Dark PS1 Classic — Retro PlayStation 1 grey console aesthetic ═══ */
