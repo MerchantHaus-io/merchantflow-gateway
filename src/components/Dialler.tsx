@@ -299,7 +299,7 @@ export const Dialler = () => {
             </Select>
           )}
           {loadingLines && (
-            <div className="flex items-center gap-2 text-xs text-white/60 mt-1">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
               <Loader2 className="h-3 w-3 animate-spin" /> Loading Quo lines...
             </div>
           )}
