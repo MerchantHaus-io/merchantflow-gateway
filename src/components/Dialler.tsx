@@ -285,7 +285,7 @@ export const Dialler = () => {
           {/* Quo line selector */}
           {quoNumbers.length > 0 && (
             <Select value={selectedLineId} onValueChange={setSelectedLineId}>
-              <SelectTrigger className="h-9 text-sm bg-white/10 border-white/20 text-white hover:bg-white/15 [&>svg]:text-white/60">
+              <SelectTrigger className="h-9 text-sm bg-muted border-border text-foreground hover:bg-muted/80 [&>svg]:text-muted-foreground">
                 <SelectValue placeholder="Select Quo line" />
               </SelectTrigger>
               <SelectContent>
