@@ -143,7 +143,7 @@ serve(async (req) => {
       if (!sharedCalsFetched && sharedCalIds.length > 0) {
         for (const calId of sharedCalIds) {
           try {
-            const events = await fetchCalendarEvents(accessToken, calId, timeMin, timeMax);
+            const events = await fetchCalendarEvents(accessToken, calId, undefined, timeMax);
             for (const ev of events) {
               allEvents.push({ ...ev, _calendarId: calId, _ownerEmail: "shared" });
             }
