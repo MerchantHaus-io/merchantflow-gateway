@@ -127,17 +127,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             const providerToken = session.provider_token;
             const providerRefreshToken = session.provider_refresh_token;
             if (providerToken && session.user.email) {
-              const tokenData: Record<string, unknown> = {
+              const tokenData = {
                 user_email: session.user.email,
                 user_id: session.user.id,
                 access_token: providerToken,
+                refresh_token: providerRefreshToken || '',
                 expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
                 scopes: 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/gmail.readonly',
                 updated_at: new Date().toISOString(),
               };
-              if (providerRefreshToken) {
-                tokenData.refresh_token = providerRefreshToken;
-              }
               supabase.from('google_calendar_tokens')
                 .upsert(tokenData, { onConflict: 'user_email' })
                 .then(() => {
