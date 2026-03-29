@@ -431,7 +431,7 @@ function EventCard({ event }: { event: CalendarEvent }) {
             <span className="text-[10px] text-muted-foreground">
               {event.all_day
                 ? "All Day"
-                : `${format(parseISO(event.start_time), "h:mm a")} – ${format(parseISO(event.end_time), "h:mm a")}`}
+                : `${format(toCT(event.start_time), "h:mm a")} – ${format(toCT(event.end_time), "h:mm a")} CT`}
             </span>
             <span className="text-[9px] text-muted-foreground/70 capitalize">{ownerName}</span>
           </div>
