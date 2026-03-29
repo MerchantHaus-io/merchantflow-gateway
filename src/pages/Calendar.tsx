@@ -221,9 +221,25 @@ export default function Calendar() {
             </Button>
           </div>
 
-          <div className="flex items-center gap-2">
-            {/* Connection status + actions */}
-            {isConnected === false && (
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* User filter */}
+            <Select value={filterUser} onValueChange={setFilterUser}>
+              <SelectTrigger className="h-8 w-[140px] text-xs">
+                <Filter className="h-3 w-3 mr-1 text-muted-foreground" />
+                <SelectValue placeholder="All users" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Users</SelectItem>
+                {TEAM_MEMBERS.map((m) => (
+                  <SelectItem key={m.email} value={m.email}>
+                    <span className="flex items-center gap-1.5">
+                      <span className={cn("w-2 h-2 rounded-full", getTeamColor(m.email).dot)} />
+                      {m.label}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
               <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={handleConnect}>
                 <Link2 className="h-3.5 w-3.5" />
                 Connect Google (Calendar + Gmail)
