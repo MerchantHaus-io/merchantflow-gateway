@@ -956,6 +956,23 @@ All colors MUST be HSL.
     --sidebar-ring: 0 0% 55%;
 
     --radius: 0.25rem;
+
+    /* WhatsApp Chat Tokens — PS1 */
+    --wa-header: 0 0% 15%;
+    --wa-header-foreground: 0 0% 88%;
+    --wa-sidebar-bg: 0 0% 6%;
+    --wa-sidebar-hover: 0 0% 10%;
+    --wa-chat-bg: 0 0% 4%;
+    --wa-bubble-out: 0 0% 20%;
+    --wa-bubble-out-foreground: 0 0% 88%;
+    --wa-bubble-in: 0 0% 14%;
+    --wa-bubble-in-foreground: 0 0% 85%;
+    --wa-composer-bg: 0 0% 6%;
+    --wa-accent: 0 0% 62%;
+    --wa-unread: 0 0% 62%;
+    --wa-search-bg: 0 0% 10%;
+    --wa-meta: 0 0% 48%;
+    --wa-divider: 0 0% 18%;
   }
 
   /* ═══ Light Salesforce — Enterprise Cloud CRM ═══ */
