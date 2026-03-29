@@ -285,7 +285,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                         </p>
                       </div>
                       {(u.unreadCount || 0) > 0 && (
-                        <span className="bg-[hsl(var(--wa-unread))] text-white text-[11px] font-medium min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center">
+                        <span className="bg-[hsl(var(--wa-unread))] text-[hsl(var(--wa-header-foreground))] text-[11px] font-medium min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center">
                           {(u.unreadCount || 0) > 99 ? "99+" : u.unreadCount}
                         </span>
                       )}
