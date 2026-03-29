@@ -1015,7 +1015,7 @@ const FloatingChat: React.FC = () => {
                             <div className="relative">
                               <Avatar className="h-8 w-8">
                                 <AvatarImage src={currentDMUser.avatarUrl || undefined} />
-                                <AvatarFallback className={cn(getAvatarColor(currentDMUser.email || currentDMUser.name), "text-white text-[10px]")}>
+                                <AvatarFallback className={cn(getAvatarColor(currentDMUser.email || currentDMUser.name), "text-primary-foreground text-[10px]")}>
                                   {getInitials(currentDMUser.name, currentDMUser.email)}
                                 </AvatarFallback>
                               </Avatar>
