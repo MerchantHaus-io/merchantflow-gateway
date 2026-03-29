@@ -55,8 +55,32 @@ const TEAM_EMAILS = [
   "taryn@merchanthaus.io",
 ];
 
+// Domains/patterns that should never create leads (newsletters, services, etc.)
+const NOISE_DOMAINS = [
+  "noreply", "no-reply", "newsletter", "notifications", "mailer-daemon",
+  "postmaster", "donotreply", "do-not-reply", "unsubscribe", "bounce",
+  "updates@", "marketing@", "info@google", "feedback@",
+];
+const NOISE_EMAIL_DOMAINS = [
+  "google.com", "googlemail.com", "mercury.com", "read.ai",
+  "linkedin.com", "facebook.com", "twitter.com", "instagram.com",
+  "slack.com", "zoom.us", "calendly.com", "stripe.com", "square.com",
+  "hubspot.com", "mailchimp.com", "sendgrid.net", "amazonses.com",
+  "intuit.com", "quickbooks.com", "docusign.com", "dropbox.com",
+  "github.com", "atlassian.com", "notion.so", "canva.com",
+  "theepochtimes.com", "substack.com",
+];
+
 function isTeamEmail(email: string): boolean {
   return TEAM_EMAILS.includes(email.toLowerCase()) || email.toLowerCase().endsWith("@merchanthaus.io");
+}
+
+function isNoiseEmail(email: string): boolean {
+  const lower = email.toLowerCase();
+  if (NOISE_DOMAINS.some((n) => lower.includes(n))) return true;
+  const domain = lower.split("@")[1] || "";
+  if (NOISE_EMAIL_DOMAINS.includes(domain)) return true;
+  return false;
 }
 
 serve(async (req) => {
