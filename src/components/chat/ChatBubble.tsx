@@ -226,7 +226,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
           {isOwn && (
             <>
               <button onClick={() => onSetEditingMessage(msg.id, msg.content)}
-                className="p-1 hover:bg-white/10 rounded-md transition-colors" title="Edit">
+                className="p-1 hover:bg-[hsl(var(--wa-sidebar-hover))] rounded-md transition-colors" title="Edit">
                 <Edit2 className="h-3.5 w-3.5 text-[hsl(var(--wa-meta))]" />
               </button>
               <button onClick={() => onDeleteMessage(msg.id, isChannel)}
