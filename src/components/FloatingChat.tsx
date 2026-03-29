@@ -795,16 +795,16 @@ const FloatingChat: React.FC = () => {
           onClick={() => setIsOpen(true)}
           className={cn(
             "fixed bottom-0 right-6 z-[35] w-[220px] h-11 rounded-t-xl flex items-center gap-3 px-4",
-            "bg-emerald-600 text-white",
-            "shadow-xl hover:shadow-2xl hover:bg-emerald-500 transition-all duration-300 ease-out",
-            "border border-b-0 border-emerald-700",
+            "bg-[hsl(var(--wa-header))] text-[hsl(var(--wa-header-foreground))]",
+            "shadow-xl hover:shadow-2xl hover:brightness-110 transition-all duration-300 ease-out",
+            "border border-b-0 border-[hsl(var(--wa-divider))]",
             "translate-y-[calc(100%-6px)] hover:translate-y-0"
           )}
         >
           <MessageCircle className="h-5 w-5 shrink-0" />
           <span className="font-semibold text-sm">Messaging</span>
           {totalUnreadCount > 0 && (
-            <span className="ml-auto bg-white/20 text-white text-xs font-medium min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center">
+            <span className="ml-auto bg-[hsl(var(--wa-unread)/0.3)] text-[hsl(var(--wa-header-foreground))] text-xs font-medium min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center">
               {totalUnreadCount > 99 ? "99+" : totalUnreadCount}
             </span>
           )}
@@ -843,7 +843,7 @@ const FloatingChat: React.FC = () => {
           <div className="flex items-center justify-between px-4 py-2.5 bg-[hsl(var(--wa-header))] text-[hsl(var(--wa-header-foreground))] shrink-0">
             <div className="flex items-center gap-2.5 min-w-0">
               {isMobile && (view === "chat" || view === "dm" || view === "ai") && (
-                <button onClick={() => setView("contacts")} className="hover:bg-white/10 p-1.5 rounded-full transition-colors">
+                <button onClick={() => setView("contacts")} className="hover:bg-[hsl(var(--wa-header)/0.7)] p-1.5 rounded-full transition-colors">
                   <ChevronLeft className="h-5 w-5" />
                 </button>
               )}
@@ -865,7 +865,7 @@ const FloatingChat: React.FC = () => {
               )}
               {isMobile && view === "chat" && (
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-[hsl(var(--wa-header)/0.5)] flex items-center justify-center">
                     <Hash className="h-4 w-4" />
                   </div>
                   <div>
@@ -878,15 +878,15 @@ const FloatingChat: React.FC = () => {
                   <div className="relative">
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={currentDMUser.avatarUrl || undefined} />
-                      <AvatarFallback className={cn(getAvatarColor(currentDMUser.email || currentDMUser.name), "text-white text-[10px]")}>
+                      <AvatarFallback className={cn(getAvatarColor(currentDMUser.email || currentDMUser.name), "text-primary-foreground text-[10px]")}>
                         {getInitials(currentDMUser.name, currentDMUser.email)}
                       </AvatarFallback>
                     </Avatar>
-                    <span className={cn("absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[hsl(var(--wa-header))]", currentDMUser.isOnline ? "bg-[hsl(var(--wa-accent))]" : "bg-white/40")} />
+                    <span className={cn("absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[hsl(var(--wa-header))]", currentDMUser.isOnline ? "bg-[hsl(var(--wa-accent))]" : "bg-[hsl(var(--wa-meta))]")} />
                   </div>
                   <div>
                     <h3 className="font-semibold text-sm">{currentDMUser.name}</h3>
-                    <span className="text-[11px] text-white/70">
+                    <span className="text-[11px] text-[hsl(var(--wa-header-foreground)/0.7)]">
                       {currentDMUser.isOnline ? "online" : currentDMUser.lastSeen ? `last seen ${formatDistanceToNow(new Date(currentDMUser.lastSeen), { addSuffix: true })}` : "offline"}
                     </span>
                   </div>
@@ -911,7 +911,7 @@ const FloatingChat: React.FC = () => {
                     <button onClick={async () => {
                       if (permissionStatus !== 'granted') { const granted = await requestPermission(); toast[granted ? 'success' : 'error'](granted ? "Push notifications enabled" : "Notifications blocked"); }
                       else { toggleNotifications(); toast.info(notificationsEnabled ? "Notifications muted" : "Notifications unmuted"); }
-                    }} className="hover:bg-white/10 p-2 rounded-full transition-colors">
+                    }} className="hover:bg-[hsl(var(--wa-header)/0.7)] p-2 rounded-full transition-colors">
                       {permissionStatus === 'granted' && notificationsEnabled ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4 opacity-60" />}
                     </button>
                   </TooltipTrigger>
@@ -922,7 +922,7 @@ const FloatingChat: React.FC = () => {
               )}
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button onClick={toggleSound} className="hover:bg-white/10 p-2 rounded-full transition-colors">
+                  <button onClick={toggleSound} className="hover:bg-[hsl(var(--wa-header)/0.7)] p-2 rounded-full transition-colors">
                     {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4 opacity-60" />}
                   </button>
                 </TooltipTrigger>
@@ -930,23 +930,23 @@ const FloatingChat: React.FC = () => {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button onClick={() => { setIsOpen(false); setTimeout(() => window.dispatchEvent(new CustomEvent("openOfficeSimulator")), 100); }} className="hover:bg-white/10 p-2 rounded-full transition-colors" aria-label="Office Simulator">
+                  <button onClick={() => { setIsOpen(false); setTimeout(() => window.dispatchEvent(new CustomEvent("openOfficeSimulator")), 100); }} className="hover:bg-[hsl(var(--wa-header)/0.7)] p-2 rounded-full transition-colors" aria-label="Office Simulator">
                     <Gamepad2 className="h-4 w-4" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent>Office Simulator</TooltipContent>
               </Tooltip>
               {(view === "chat" || view === "dm") && (
-                <button onClick={() => setShowSearch(!showSearch)} className={cn("hover:bg-white/10 p-2 rounded-full transition-colors", showSearch && "bg-white/10")}>
+                <button onClick={() => setShowSearch(!showSearch)} className={cn("hover:bg-[hsl(var(--wa-header)/0.7)] p-2 rounded-full transition-colors", showSearch && "bg-[hsl(var(--wa-header)/0.5)]")}>
                   <Search className="h-4 w-4" />
                 </button>
               )}
               {!isMobile && (
-                <button onClick={() => setIsOpen(false)} className="hover:bg-white/10 p-2 rounded-full transition-colors" title="Minimize">
+                <button onClick={() => setIsOpen(false)} className="hover:bg-[hsl(var(--wa-header)/0.7)] p-2 rounded-full transition-colors" title="Minimize">
                   <Minus className="h-4 w-4" />
                 </button>
               )}
-              <button onClick={() => setIsOpen(false)} className="hover:bg-white/10 p-2 rounded-full transition-colors" title="Close">
+              <button onClick={() => setIsOpen(false)} className="hover:bg-[hsl(var(--wa-header)/0.7)] p-2 rounded-full transition-colors" title="Close">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -1015,7 +1015,7 @@ const FloatingChat: React.FC = () => {
                             <div className="relative">
                               <Avatar className="h-8 w-8">
                                 <AvatarImage src={currentDMUser.avatarUrl || undefined} />
-                                <AvatarFallback className={cn(getAvatarColor(currentDMUser.email || currentDMUser.name), "text-white text-[10px]")}>
+                                <AvatarFallback className={cn(getAvatarColor(currentDMUser.email || currentDMUser.name), "text-primary-foreground text-[10px]")}>
                                   {getInitials(currentDMUser.name, currentDMUser.email)}
                                 </AvatarFallback>
                               </Avatar>

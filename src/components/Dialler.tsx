@@ -240,9 +240,9 @@ export const Dialler = () => {
           onClick={() => setOpen(true)}
           className={cn(
             "fixed bottom-0 left-[254px] z-[35] w-[220px] h-11 rounded-t-xl flex items-center gap-3 px-4",
-            "bg-amber-400 text-black",
-            "shadow-xl hover:shadow-2xl hover:bg-amber-300 transition-all duration-300 ease-out",
-            "border border-b-0 border-amber-500",
+            "bg-accent text-accent-foreground",
+            "shadow-xl hover:shadow-2xl hover:brightness-110 transition-all duration-300 ease-out",
+            "border border-b-0 border-border",
             "translate-y-[calc(100%-6px)] hover:translate-y-0"
           )}
           aria-label="Open dialler"
@@ -261,11 +261,11 @@ export const Dialler = () => {
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
           >
-            <div className="w-10 h-1 rounded-full bg-white/30" />
+            <div className="w-10 h-1 rounded-full bg-foreground/30" />
           </div>
         )}
         {/* Quo branded header */}
-        <div className="bg-[hsl(0,0%,7%)] text-white px-4 pt-4 pb-3 space-y-2">
+        <div className="bg-card text-card-foreground px-4 pt-4 pb-3 space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <span className="text-xl font-black tracking-tight">QUO</span>
@@ -285,7 +285,7 @@ export const Dialler = () => {
           {/* Quo line selector */}
           {quoNumbers.length > 0 && (
             <Select value={selectedLineId} onValueChange={setSelectedLineId}>
-              <SelectTrigger className="h-9 text-sm bg-white/10 border-white/20 text-white hover:bg-white/15 [&>svg]:text-white/60">
+              <SelectTrigger className="h-9 text-sm bg-muted border-border text-foreground hover:bg-muted/80 [&>svg]:text-muted-foreground">
                 <SelectValue placeholder="Select Quo line" />
               </SelectTrigger>
               <SelectContent>
@@ -299,7 +299,7 @@ export const Dialler = () => {
             </Select>
           )}
           {loadingLines && (
-            <div className="flex items-center gap-2 text-xs text-white/60 mt-1">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
               <Loader2 className="h-3 w-3 animate-spin" /> Loading Quo lines...
             </div>
           )}

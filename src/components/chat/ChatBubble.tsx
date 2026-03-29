@@ -98,7 +98,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
 
     if (!attachmentUrl) {
       return (
-        <div className="mt-2 flex items-center gap-2 p-2 rounded-lg bg-white/10 text-xs opacity-60">
+        <div className="mt-2 flex items-center gap-2 p-2 rounded-lg bg-[hsl(var(--wa-bubble-in))] text-xs opacity-60">
           <File className="h-4 w-4 shrink-0 animate-pulse" />
           <span className="truncate flex-1">{msg.attachment_name || 'Loading...'}</span>
         </div>
@@ -121,7 +121,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
       );
     }
     return (
-      <a href={attachmentUrl} target="_blank" rel="noopener noreferrer" className="mt-2 flex items-center gap-2 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-xs">
+      <a href={attachmentUrl} target="_blank" rel="noopener noreferrer" className="mt-2 flex items-center gap-2 p-2 rounded-lg bg-[hsl(var(--wa-search-bg))] hover:bg-[hsl(var(--wa-sidebar-hover))] transition-colors text-xs">
         <File className="h-4 w-4 shrink-0" />
         <span className="truncate flex-1">{msg.attachment_name || 'File'}</span>
         {msg.attachment_size && <span className="text-[10px] opacity-70 shrink-0">{formatFileSize(msg.attachment_size)}</span>}
@@ -147,7 +147,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
             <TooltipTrigger asChild>
               <button onClick={() => onReaction(msg.id, emoji, isChannel ? 'channel' : 'direct')}
                 className={cn("text-xs px-1.5 py-0.5 rounded-full border transition-all",
-                  data.hasOwn ? "bg-[hsl(var(--wa-accent)/0.2)] border-[hsl(var(--wa-accent)/0.4)]" : "bg-white/5 border-white/10 hover:bg-white/10"
+                  data.hasOwn ? "bg-[hsl(var(--wa-accent)/0.2)] border-[hsl(var(--wa-accent)/0.4)]" : "bg-[hsl(var(--wa-search-bg))] border-[hsl(var(--wa-divider))] hover:bg-[hsl(var(--wa-sidebar-hover))]"
                 )}
               >{emoji} {data.count}</button>
             </TooltipTrigger>
@@ -179,15 +179,15 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
       {!isOwn && (
         isAIBot ? (
           <div className="shrink-0 self-end mb-1">
-            <div className="h-7 w-7 rounded-full bg-purple-500 flex items-center justify-center">
-              <Bot className="h-4 w-4 text-white" />
+            <div className="h-7 w-7 rounded-full bg-purple-500/80 flex items-center justify-center">
+              <Bot className="h-4 w-4 text-primary-foreground" />
             </div>
           </div>
         ) : (
           <button type="button" onClick={() => onProfileClick(senderId)} className="shrink-0 cursor-pointer hover:opacity-80 transition-opacity self-end mb-1">
             <Avatar className="h-7 w-7">
               <AvatarImage src={profile?.avatar_url || undefined} />
-              <AvatarFallback className={cn(getAvatarColor(email || displayName), "text-white text-[10px]")}>
+              <AvatarFallback className={cn(getAvatarColor(email || displayName), "text-primary-foreground text-[10px]")}>
                 {getInitials(displayName, email)}
               </AvatarFallback>
             </Avatar>
@@ -208,7 +208,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
         )}>
           <Popover>
             <PopoverTrigger asChild>
-              <button className="p-1 hover:bg-white/10 rounded-md transition-colors" title="React">
+              <button className="p-1 hover:bg-[hsl(var(--wa-sidebar-hover))] rounded-md transition-colors" title="React">
                 <Smile className="h-3.5 w-3.5 text-[hsl(var(--wa-meta))]" />
               </button>
             </PopoverTrigger>
@@ -220,13 +220,13 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
               </div>
             </PopoverContent>
           </Popover>
-          <button onClick={() => onSetReplyTo(msg)} className="p-1 hover:bg-white/10 rounded-md transition-colors" title="Reply">
+          <button onClick={() => onSetReplyTo(msg)} className="p-1 hover:bg-[hsl(var(--wa-sidebar-hover))] rounded-md transition-colors" title="Reply">
             <Reply className="h-3.5 w-3.5 text-[hsl(var(--wa-meta))]" />
           </button>
           {isOwn && (
             <>
               <button onClick={() => onSetEditingMessage(msg.id, msg.content)}
-                className="p-1 hover:bg-white/10 rounded-md transition-colors" title="Edit">
+                className="p-1 hover:bg-[hsl(var(--wa-sidebar-hover))] rounded-md transition-colors" title="Edit">
                 <Edit2 className="h-3.5 w-3.5 text-[hsl(var(--wa-meta))]" />
               </button>
               <button onClick={() => onDeleteMessage(msg.id, isChannel)}

@@ -200,9 +200,9 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                             : "bg-[hsl(var(--wa-accent))]"
                         )}>
                           {ch.name.toLowerCase() === "atria-ai" ? (
-                            <Bot className="h-5 w-5 text-white" />
+                            <Bot className="h-5 w-5 text-[hsl(var(--wa-header-foreground))]" />
                           ) : (
-                            <Hash className="h-5 w-5 text-white" />
+                            <Hash className="h-5 w-5 text-[hsl(var(--wa-header-foreground))]" />
                           )}
                         </div>
                         <div className="flex-1 text-left min-w-0">
@@ -220,7 +220,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                           </button>
                         )}
                         {unread > 0 && (
-                          <span className="bg-[hsl(var(--wa-unread))] text-white text-[11px] font-medium min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center">
+                          <span className="bg-[hsl(var(--wa-unread))] text-[hsl(var(--wa-header-foreground))] text-[11px] font-medium min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center">
                             {unread > 99 ? "99+" : unread}
                           </span>
                         )}
@@ -261,7 +261,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                       <div className="relative">
                         <Avatar className="h-10 w-10">
                           <AvatarImage src={u.avatarUrl || undefined} />
-                          <AvatarFallback className={cn(getAvatarColor(u.email || u.name), "text-white text-sm font-medium")}>
+                          <AvatarFallback className={cn(getAvatarColor(u.email || u.name), "text-primary-foreground text-sm font-medium")}>
                             {getInitials(u.name, u.email)}
                           </AvatarFallback>
                         </Avatar>
@@ -285,7 +285,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                         </p>
                       </div>
                       {(u.unreadCount || 0) > 0 && (
-                        <span className="bg-[hsl(var(--wa-unread))] text-white text-[11px] font-medium min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center">
+                        <span className="bg-[hsl(var(--wa-unread))] text-[hsl(var(--wa-header-foreground))] text-[11px] font-medium min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center">
                           {(u.unreadCount || 0) > 99 ? "99+" : u.unreadCount}
                         </span>
                       )}

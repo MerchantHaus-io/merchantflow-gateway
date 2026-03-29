@@ -85,7 +85,7 @@ export const ChatComposer: React.FC<ChatComposerProps> = React.memo(({
             </p>
             <p className="text-xs text-[hsl(var(--wa-meta))] truncate">{replyTo.content}</p>
           </div>
-          <button onClick={onCancelReply} className="p-1 hover:bg-white/10 rounded-full transition-colors">
+          <button onClick={onCancelReply} className="p-1 hover:bg-[hsl(var(--wa-sidebar-hover))] rounded-full transition-colors">
             <X className="h-3.5 w-3.5 text-[hsl(var(--wa-meta))]" />
           </button>
         </div>
@@ -103,7 +103,7 @@ export const ChatComposer: React.FC<ChatComposerProps> = React.memo(({
             <p className="text-xs font-medium text-[hsl(var(--wa-bubble-in-foreground))] truncate">{pendingAttachment.file.name}</p>
             <p className="text-[10px] text-[hsl(var(--wa-meta))]">{formatFileSize(pendingAttachment.file.size)}</p>
           </div>
-          <button onClick={onCancelAttachment} className="p-1 hover:bg-white/10 rounded">
+          <button onClick={onCancelAttachment} className="p-1 hover:bg-[hsl(var(--wa-sidebar-hover))] rounded">
             <X className="h-4 w-4 text-[hsl(var(--wa-meta))]" />
           </button>
         </div>
@@ -120,7 +120,7 @@ export const ChatComposer: React.FC<ChatComposerProps> = React.memo(({
             <button onClick={onCancelRecording} className="p-1.5 hover:bg-red-900/40 rounded-md transition-colors" title="Cancel">
               <X className="h-4 w-4 text-red-400" />
             </button>
-            <button onClick={onStopRecording} className="p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors" title="Stop & Send">
+            <button onClick={onStopRecording} className="p-1.5 bg-red-500 hover:bg-red-600 text-primary-foreground rounded-md transition-colors" title="Stop & Send">
               <Square className="h-3 w-3" />
             </button>
           </div>
@@ -132,7 +132,7 @@ export const ChatComposer: React.FC<ChatComposerProps> = React.memo(({
         {/* Emoji */}
         <Popover>
           <PopoverTrigger asChild>
-            <button className="p-2 hover:bg-white/5 rounded-full transition-colors shrink-0" title="Emoji">
+            <button className="p-2 hover:bg-[hsl(var(--wa-sidebar-hover))] rounded-full transition-colors shrink-0" title="Emoji">
               <Smile className="h-5 w-5 text-[hsl(var(--wa-meta))]" />
             </button>
           </PopoverTrigger>
@@ -143,7 +143,7 @@ export const ChatComposer: React.FC<ChatComposerProps> = React.memo(({
                   <p className="text-xs font-medium text-[hsl(var(--wa-meta))] mb-1 px-1">{cat.label}</p>
                   <div className="flex flex-wrap gap-0.5">
                     {cat.emojis.map(emoji => (
-                      <button key={emoji} onClick={() => setLocalInput(prev => prev + emoji)} className="text-lg hover:scale-125 hover:bg-white/10 transition-all p-1 rounded">{emoji}</button>
+                      <button key={emoji} onClick={() => setLocalInput(prev => prev + emoji)} className="text-lg hover:scale-125 hover:bg-[hsl(var(--wa-sidebar-hover))] transition-all p-1 rounded">{emoji}</button>
                     ))}
                   </div>
                 </div>
@@ -153,7 +153,7 @@ export const ChatComposer: React.FC<ChatComposerProps> = React.memo(({
         </Popover>
 
         {/* Attach */}
-        <button onClick={onFileSelect} className="p-2 hover:bg-white/5 rounded-full transition-colors shrink-0" title="Attach file">
+        <button onClick={onFileSelect} className="p-2 hover:bg-[hsl(var(--wa-sidebar-hover))] rounded-full transition-colors shrink-0" title="Attach file">
           <Paperclip className="h-5 w-5 text-[hsl(var(--wa-meta))] rotate-45" />
         </button>
         <input ref={fileInputRef} type="file" className="hidden" onChange={onFileChange} accept="image/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv" />
@@ -177,17 +177,17 @@ export const ChatComposer: React.FC<ChatComposerProps> = React.memo(({
             className="p-2.5 bg-[hsl(var(--wa-accent))] hover:bg-[hsl(var(--wa-accent)/0.85)] rounded-full transition-colors shrink-0"
             disabled={!localInput.trim() && !pendingAttachment}
           >
-            <Send className="h-5 w-5 text-white" />
+            <Send className="h-5 w-5 text-[hsl(var(--wa-header-foreground))]" />
           </button>
         ) : (
           <button
             onClick={isRecording ? onStopRecording : onStartRecording}
             className={cn(
               "p-2.5 rounded-full transition-colors shrink-0",
-              isRecording ? "bg-red-500 hover:bg-red-600" : "hover:bg-white/5"
+              isRecording ? "bg-red-500 hover:bg-red-600" : "hover:bg-[hsl(var(--wa-sidebar-hover))]"
             )}
           >
-            <Mic className={cn("h-5 w-5", isRecording ? "text-white" : "text-[hsl(var(--wa-meta))]")} />
+            <Mic className={cn("h-5 w-5", isRecording ? "text-primary-foreground" : "text-[hsl(var(--wa-meta))]")} />
           </button>
         )}
       </div>

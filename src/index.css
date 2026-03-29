@@ -161,6 +161,23 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 0 85% 55%;
     --sidebar-border: 0 20% 20%;
     --sidebar-ring: 0 85% 45%;
+
+    /* WhatsApp Chat Tokens — DOOM */
+    --wa-header: 0 60% 25%;
+    --wa-header-foreground: 0 10% 92%;
+    --wa-sidebar-bg: 0 20% 8%;
+    --wa-sidebar-hover: 0 20% 12%;
+    --wa-chat-bg: 0 15% 4%;
+    --wa-bubble-out: 0 50% 18%;
+    --wa-bubble-out-foreground: 0 10% 92%;
+    --wa-bubble-in: 0 15% 14%;
+    --wa-bubble-in-foreground: 0 10% 88%;
+    --wa-composer-bg: 0 20% 8%;
+    --wa-accent: 0 85% 45%;
+    --wa-unread: 0 85% 45%;
+    --wa-search-bg: 0 15% 12%;
+    --wa-meta: 0 10% 50%;
+    --wa-divider: 0 15% 16%;
   }
 
   /* Light theme override — warm white canvas */
@@ -194,6 +211,23 @@ All colors MUST be HSL.
     --border: 220 13% 87%;
     --input: 220 13% 87%;
     --ring: 348 83% 47%;
+
+    /* WhatsApp Chat Tokens — Light */
+    --wa-header: 204 70% 40%;
+    --wa-header-foreground: 0 0% 100%;
+    --wa-sidebar-bg: 220 14% 96%;
+    --wa-sidebar-hover: 220 14% 92%;
+    --wa-chat-bg: 220 14% 94%;
+    --wa-bubble-out: 204 60% 90%;
+    --wa-bubble-out-foreground: 222 25% 12%;
+    --wa-bubble-in: 0 0% 100%;
+    --wa-bubble-in-foreground: 222 25% 12%;
+    --wa-composer-bg: 220 14% 96%;
+    --wa-accent: 204 70% 45%;
+    --wa-unread: 204 70% 45%;
+    --wa-search-bg: 220 14% 92%;
+    --wa-meta: 220 10% 50%;
+    --wa-divider: 220 13% 87%;
 
     --shadow-sm: 0 1px 3px 0 rgba(0,0,0,0.08), 0 1px 2px 0 rgba(0,0,0,0.04);
     --shadow: 0 2px 6px 0 rgba(0,0,0,0.1), 0 1px 3px 0 rgba(0,0,0,0.06);
@@ -284,6 +318,23 @@ All colors MUST be HSL.
     --shadow: 0 2px 6px 0 rgba(0,0,0,0.35), 0 1px 3px 0 rgba(0,0,0,0.25);
     --shadow-md: 0 4px 12px -1px rgba(0,0,0,0.4), 0 2px 6px -1px rgba(0,0,0,0.3);
     --shadow-lg: 0 10px 24px -3px rgba(0,0,0,0.5), 0 4px 10px -2px rgba(0,0,0,0.35);
+
+    /* WhatsApp Chat Tokens — Dark Default */
+    --wa-header: 168 76% 29%;
+    --wa-header-foreground: 0 0% 93%;
+    --wa-sidebar-bg: 200 18% 10%;
+    --wa-sidebar-hover: 200 15% 15%;
+    --wa-chat-bg: 200 20% 5%;
+    --wa-bubble-out: 168 53% 18%;
+    --wa-bubble-out-foreground: 0 0% 93%;
+    --wa-bubble-in: 200 15% 15%;
+    --wa-bubble-in-foreground: 0 0% 90%;
+    --wa-composer-bg: 200 18% 10%;
+    --wa-accent: 168 76% 42%;
+    --wa-unread: 168 76% 42%;
+    --wa-search-bg: 200 15% 14%;
+    --wa-meta: 200 10% 55%;
+    --wa-divider: 200 10% 18%;
   }
 
   /* Dark Midnight - Deep blue tones */
@@ -320,6 +371,23 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 217 91% 70%;
     --sidebar-border: 222 47% 25%;
     --sidebar-ring: 217 91% 60%;
+
+    /* WhatsApp Chat Tokens — Midnight */
+    --wa-header: 222 60% 28%;
+    --wa-header-foreground: 210 40% 98%;
+    --wa-sidebar-bg: 222 47% 8%;
+    --wa-sidebar-hover: 222 47% 12%;
+    --wa-chat-bg: 222 50% 4%;
+    --wa-bubble-out: 217 70% 25%;
+    --wa-bubble-out-foreground: 210 40% 98%;
+    --wa-bubble-in: 222 47% 14%;
+    --wa-bubble-in-foreground: 210 40% 92%;
+    --wa-composer-bg: 222 47% 8%;
+    --wa-accent: 217 91% 60%;
+    --wa-unread: 217 91% 60%;
+    --wa-search-bg: 222 47% 12%;
+    --wa-meta: 215 20% 55%;
+    --wa-divider: 222 47% 18%;
   }
 
   /* Dark Forest - Green accents */
@@ -356,6 +424,23 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 142 71% 55%;
     --sidebar-border: 150 20% 22%;
     --sidebar-ring: 142 71% 45%;
+
+    /* WhatsApp Chat Tokens — Forest */
+    --wa-header: 150 40% 22%;
+    --wa-header-foreground: 120 10% 95%;
+    --wa-sidebar-bg: 150 20% 7%;
+    --wa-sidebar-hover: 150 20% 11%;
+    --wa-chat-bg: 150 20% 4%;
+    --wa-bubble-out: 142 50% 18%;
+    --wa-bubble-out-foreground: 120 10% 95%;
+    --wa-bubble-in: 150 20% 12%;
+    --wa-bubble-in-foreground: 120 10% 90%;
+    --wa-composer-bg: 150 20% 7%;
+    --wa-accent: 142 71% 45%;
+    --wa-unread: 142 71% 45%;
+    --wa-search-bg: 150 20% 10%;
+    --wa-meta: 140 15% 52%;
+    --wa-divider: 150 20% 16%;
   }
 
   /* Dark Charcoal - Warm grey tones */
@@ -392,6 +477,23 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 348 83% 57%;
     --sidebar-border: 30 5% 24%;
     --sidebar-ring: 348 83% 47%;
+
+    /* WhatsApp Chat Tokens — Charcoal */
+    --wa-header: 30 10% 18%;
+    --wa-header-foreground: 30 10% 92%;
+    --wa-sidebar-bg: 30 5% 8%;
+    --wa-sidebar-hover: 30 5% 12%;
+    --wa-chat-bg: 30 5% 4%;
+    --wa-bubble-out: 30 8% 18%;
+    --wa-bubble-out-foreground: 30 10% 92%;
+    --wa-bubble-in: 30 5% 14%;
+    --wa-bubble-in-foreground: 30 10% 88%;
+    --wa-composer-bg: 30 5% 8%;
+    --wa-accent: 348 83% 47%;
+    --wa-unread: 348 83% 47%;
+    --wa-search-bg: 30 5% 12%;
+    --wa-meta: 30 5% 50%;
+    --wa-divider: 30 5% 16%;
   }
 
   /* Dark Mono - Pure black & white, no colors, no background image */
@@ -450,6 +552,23 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 0 0% 85%;
     --sidebar-border: 0 0% 22%;
     --sidebar-ring: 0 0% 50%;
+
+    /* WhatsApp Chat Tokens — Dark Mono */
+    --wa-header: 0 0% 12%;
+    --wa-header-foreground: 0 0% 100%;
+    --wa-sidebar-bg: 0 0% 5%;
+    --wa-sidebar-hover: 0 0% 10%;
+    --wa-chat-bg: 0 0% 3%;
+    --wa-bubble-out: 0 0% 16%;
+    --wa-bubble-out-foreground: 0 0% 100%;
+    --wa-bubble-in: 0 0% 10%;
+    --wa-bubble-in-foreground: 0 0% 92%;
+    --wa-composer-bg: 0 0% 5%;
+    --wa-accent: 0 0% 70%;
+    --wa-unread: 0 0% 70%;
+    --wa-search-bg: 0 0% 8%;
+    --wa-meta: 0 0% 55%;
+    --wa-divider: 0 0% 15%;
   }
 
   /* Light Theme - Enterprise Professional Style (Salesforce/Microsoft 365 inspired) */
@@ -535,6 +654,23 @@ All colors MUST be HSL.
     --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+    /* WhatsApp Chat Tokens — Light (Enterprise) */
+    --wa-header: 204 70% 40%;
+    --wa-header-foreground: 0 0% 100%;
+    --wa-sidebar-bg: 220 14% 96%;
+    --wa-sidebar-hover: 220 14% 92%;
+    --wa-chat-bg: 220 14% 94%;
+    --wa-bubble-out: 204 60% 90%;
+    --wa-bubble-out-foreground: 221 39% 11%;
+    --wa-bubble-in: 0 0% 100%;
+    --wa-bubble-in-foreground: 221 39% 11%;
+    --wa-composer-bg: 220 14% 96%;
+    --wa-accent: 204 70% 45%;
+    --wa-unread: 204 70% 45%;
+    --wa-search-bg: 220 14% 92%;
+    --wa-meta: 215 16% 50%;
+    --wa-divider: 220 13% 84%;
   }
 
   /* Light Ocean - Cool blue tones */
@@ -573,6 +709,23 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 199 89% 48%;
     --sidebar-border: 200 20% 82%;
     --sidebar-ring: 199 89% 48%;
+
+    /* WhatsApp Chat Tokens — Ocean */
+    --wa-header: 199 70% 38%;
+    --wa-header-foreground: 0 0% 100%;
+    --wa-sidebar-bg: 200 20% 96%;
+    --wa-sidebar-hover: 200 20% 92%;
+    --wa-chat-bg: 200 25% 94%;
+    --wa-bubble-out: 199 60% 88%;
+    --wa-bubble-out-foreground: 200 50% 10%;
+    --wa-bubble-in: 0 0% 100%;
+    --wa-bubble-in-foreground: 200 50% 10%;
+    --wa-composer-bg: 200 20% 96%;
+    --wa-accent: 199 89% 48%;
+    --wa-unread: 199 89% 48%;
+    --wa-search-bg: 200 20% 92%;
+    --wa-meta: 200 20% 45%;
+    --wa-divider: 200 20% 82%;
   }
 
   /* Light Warm - Warm sepia tones */
@@ -611,6 +764,23 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 25 95% 53%;
     --sidebar-border: 35 20% 82%;
     --sidebar-ring: 25 95% 53%;
+
+    /* WhatsApp Chat Tokens — Warm */
+    --wa-header: 25 60% 42%;
+    --wa-header-foreground: 0 0% 100%;
+    --wa-sidebar-bg: 40 25% 96%;
+    --wa-sidebar-hover: 40 20% 92%;
+    --wa-chat-bg: 40 25% 94%;
+    --wa-bubble-out: 25 50% 88%;
+    --wa-bubble-out-foreground: 25 30% 12%;
+    --wa-bubble-in: 40 20% 99%;
+    --wa-bubble-in-foreground: 25 30% 12%;
+    --wa-composer-bg: 40 25% 96%;
+    --wa-accent: 25 95% 53%;
+    --wa-unread: 25 95% 53%;
+    --wa-search-bg: 40 20% 92%;
+    --wa-meta: 30 15% 48%;
+    --wa-divider: 35 20% 82%;
   }
 
   /* Light Silver - Cool silver tones */
@@ -649,6 +819,23 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 348 83% 47%;
     --sidebar-border: 220 12% 82%;
     --sidebar-ring: 348 83% 47%;
+
+    /* WhatsApp Chat Tokens — Silver */
+    --wa-header: 220 25% 35%;
+    --wa-header-foreground: 0 0% 100%;
+    --wa-sidebar-bg: 220 15% 96%;
+    --wa-sidebar-hover: 220 12% 92%;
+    --wa-chat-bg: 220 15% 94%;
+    --wa-bubble-out: 220 15% 88%;
+    --wa-bubble-out-foreground: 220 20% 12%;
+    --wa-bubble-in: 0 0% 100%;
+    --wa-bubble-in-foreground: 220 20% 12%;
+    --wa-composer-bg: 220 15% 96%;
+    --wa-accent: 348 83% 47%;
+    --wa-unread: 348 83% 47%;
+    --wa-search-bg: 220 12% 92%;
+    --wa-meta: 220 10% 46%;
+    --wa-divider: 220 12% 82%;
   }
 
   /* Light Mono - Pure white & black, no colors */
@@ -707,6 +894,23 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 0 0% 15%;
     --sidebar-border: 0 0% 82%;
     --sidebar-ring: 0 0% 50%;
+
+    /* WhatsApp Chat Tokens — Light Mono */
+    --wa-header: 0 0% 15%;
+    --wa-header-foreground: 0 0% 100%;
+    --wa-sidebar-bg: 0 0% 97%;
+    --wa-sidebar-hover: 0 0% 93%;
+    --wa-chat-bg: 0 0% 95%;
+    --wa-bubble-out: 0 0% 88%;
+    --wa-bubble-out-foreground: 0 0% 0%;
+    --wa-bubble-in: 0 0% 98%;
+    --wa-bubble-in-foreground: 0 0% 0%;
+    --wa-composer-bg: 0 0% 97%;
+    --wa-accent: 0 0% 20%;
+    --wa-unread: 0 0% 20%;
+    --wa-search-bg: 0 0% 93%;
+    --wa-meta: 0 0% 50%;
+    --wa-divider: 0 0% 82%;
   }
 
   /* ═══ Dark PS1 Classic — Retro PlayStation 1 grey console aesthetic ═══ */
@@ -769,6 +973,23 @@ All colors MUST be HSL.
     --sidebar-ring: 0 0% 55%;
 
     --radius: 0.25rem;
+
+    /* WhatsApp Chat Tokens — PS1 */
+    --wa-header: 0 0% 15%;
+    --wa-header-foreground: 0 0% 88%;
+    --wa-sidebar-bg: 0 0% 6%;
+    --wa-sidebar-hover: 0 0% 10%;
+    --wa-chat-bg: 0 0% 4%;
+    --wa-bubble-out: 0 0% 20%;
+    --wa-bubble-out-foreground: 0 0% 88%;
+    --wa-bubble-in: 0 0% 14%;
+    --wa-bubble-in-foreground: 0 0% 85%;
+    --wa-composer-bg: 0 0% 6%;
+    --wa-accent: 0 0% 62%;
+    --wa-unread: 0 0% 62%;
+    --wa-search-bg: 0 0% 10%;
+    --wa-meta: 0 0% 48%;
+    --wa-divider: 0 0% 18%;
   }
 
   /* ═══ Light Salesforce — Enterprise Cloud CRM ═══ */
@@ -823,6 +1044,23 @@ All colors MUST be HSL.
     --sidebar-ring: 204 98% 50%;
 
     --radius: 0.25rem;
+
+    /* WhatsApp Chat Tokens — Salesforce */
+    --wa-header: 204 80% 35%;
+    --wa-header-foreground: 0 0% 100%;
+    --wa-sidebar-bg: 210 30% 97%;
+    --wa-sidebar-hover: 210 25% 93%;
+    --wa-chat-bg: 210 28% 95%;
+    --wa-bubble-out: 204 60% 88%;
+    --wa-bubble-out-foreground: 210 30% 12%;
+    --wa-bubble-in: 0 0% 100%;
+    --wa-bubble-in-foreground: 210 30% 12%;
+    --wa-composer-bg: 210 30% 97%;
+    --wa-accent: 204 98% 41%;
+    --wa-unread: 204 98% 41%;
+    --wa-search-bg: 210 25% 93%;
+    --wa-meta: 210 15% 46%;
+    --wa-divider: 210 22% 85%;
   }
 
   /* Dark DOOM: hellfire lava background */
@@ -885,6 +1123,23 @@ All colors MUST be HSL.
     --sidebar-ring: 24 84% 58%;
 
     --radius: 0.375rem;
+
+    /* WhatsApp Chat Tokens — Star Admin */
+    --wa-header: 240 21% 18%;
+    --wa-header-foreground: 0 0% 95%;
+    --wa-sidebar-bg: 40 25% 96%;
+    --wa-sidebar-hover: 40 20% 92%;
+    --wa-chat-bg: 40 25% 94%;
+    --wa-bubble-out: 24 50% 88%;
+    --wa-bubble-out-foreground: 240 21% 15%;
+    --wa-bubble-in: 0 0% 100%;
+    --wa-bubble-in-foreground: 240 21% 15%;
+    --wa-composer-bg: 40 25% 96%;
+    --wa-accent: 24 84% 58%;
+    --wa-unread: 24 84% 58%;
+    --wa-search-bg: 40 18% 92%;
+    --wa-meta: 240 10% 46%;
+    --wa-divider: 40 15% 85%;
   }
 
   .merchant-form {
