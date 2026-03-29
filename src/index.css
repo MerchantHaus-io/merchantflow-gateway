@@ -477,6 +477,23 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 348 83% 57%;
     --sidebar-border: 30 5% 24%;
     --sidebar-ring: 348 83% 47%;
+
+    /* WhatsApp Chat Tokens — Charcoal */
+    --wa-header: 30 10% 18%;
+    --wa-header-foreground: 30 10% 92%;
+    --wa-sidebar-bg: 30 5% 8%;
+    --wa-sidebar-hover: 30 5% 12%;
+    --wa-chat-bg: 30 5% 4%;
+    --wa-bubble-out: 30 8% 18%;
+    --wa-bubble-out-foreground: 30 10% 92%;
+    --wa-bubble-in: 30 5% 14%;
+    --wa-bubble-in-foreground: 30 10% 88%;
+    --wa-composer-bg: 30 5% 8%;
+    --wa-accent: 348 83% 47%;
+    --wa-unread: 348 83% 47%;
+    --wa-search-bg: 30 5% 12%;
+    --wa-meta: 30 5% 50%;
+    --wa-divider: 30 5% 16%;
   }
 
   /* Dark Mono - Pure black & white, no colors, no background image */
