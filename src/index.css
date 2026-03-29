@@ -371,6 +371,23 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 217 91% 70%;
     --sidebar-border: 222 47% 25%;
     --sidebar-ring: 217 91% 60%;
+
+    /* WhatsApp Chat Tokens — Midnight */
+    --wa-header: 222 60% 28%;
+    --wa-header-foreground: 210 40% 98%;
+    --wa-sidebar-bg: 222 47% 8%;
+    --wa-sidebar-hover: 222 47% 12%;
+    --wa-chat-bg: 222 50% 4%;
+    --wa-bubble-out: 217 70% 25%;
+    --wa-bubble-out-foreground: 210 40% 98%;
+    --wa-bubble-in: 222 47% 14%;
+    --wa-bubble-in-foreground: 210 40% 92%;
+    --wa-composer-bg: 222 47% 8%;
+    --wa-accent: 217 91% 60%;
+    --wa-unread: 217 91% 60%;
+    --wa-search-bg: 222 47% 12%;
+    --wa-meta: 215 20% 55%;
+    --wa-divider: 222 47% 18%;
   }
 
   /* Dark Forest - Green accents */
