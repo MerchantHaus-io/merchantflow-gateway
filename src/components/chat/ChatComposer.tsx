@@ -132,7 +132,7 @@ export const ChatComposer: React.FC<ChatComposerProps> = React.memo(({
         {/* Emoji */}
         <Popover>
           <PopoverTrigger asChild>
-            <button className="p-2 hover:bg-white/5 rounded-full transition-colors shrink-0" title="Emoji">
+            <button className="p-2 hover:bg-[hsl(var(--wa-sidebar-hover))] rounded-full transition-colors shrink-0" title="Emoji">
               <Smile className="h-5 w-5 text-[hsl(var(--wa-meta))]" />
             </button>
           </PopoverTrigger>
