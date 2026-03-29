@@ -886,7 +886,7 @@ const FloatingChat: React.FC = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-sm">{currentDMUser.name}</h3>
-                    <span className="text-[11px] text-white/70">
+                    <span className="text-[11px] text-[hsl(var(--wa-header-foreground)/0.7)]">
                       {currentDMUser.isOnline ? "online" : currentDMUser.lastSeen ? `last seen ${formatDistanceToNow(new Date(currentDMUser.lastSeen), { addSuffix: true })}` : "offline"}
                     </span>
                   </div>
