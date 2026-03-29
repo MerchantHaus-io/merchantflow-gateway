@@ -574,7 +574,7 @@ function buildRoom(): THREE.Group {
       eye1.position.set(0.74, 0.868, 0.015); cg.add(eye1);
       const eye2 = eye1.clone(); eye2.position.set(0.76, 0.868, 0.015); cg.add(eye2);
     },
-    // Dylan: mini trophy
+    // Wesley: mini trophy
     "sales@merchanthaus.io": (cg) => {
       const base = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.02, 0.05), new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.3 }));
       base.position.set(0.75, 0.79, 0.05); cg.add(base);
