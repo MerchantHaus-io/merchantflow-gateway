@@ -39,8 +39,17 @@ export default function Calendar() {
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
   const [hasGmailScope, setHasGmailScope] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [filterUser, setFilterUser] = useState<string>("all");
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const TEAM_MEMBERS = [
+    { email: "admin@merchanthaus.io", label: "Admin" },
+    { email: "darryn@merchanthaus.io", label: "Darryn" },
+    { email: "support@merchanthaus.io", label: "Support" },
+    { email: "sales@merchanthaus.io", label: "Sales" },
+    { email: "taryn@merchanthaus.io", label: "Taryn" },
+  ];
 
   // Handle OAuth redirect params
   useEffect(() => {
