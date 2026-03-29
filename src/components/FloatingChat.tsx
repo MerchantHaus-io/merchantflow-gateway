@@ -795,16 +795,16 @@ const FloatingChat: React.FC = () => {
           onClick={() => setIsOpen(true)}
           className={cn(
             "fixed bottom-0 right-6 z-[35] w-[220px] h-11 rounded-t-xl flex items-center gap-3 px-4",
-            "bg-emerald-600 text-white",
-            "shadow-xl hover:shadow-2xl hover:bg-emerald-500 transition-all duration-300 ease-out",
-            "border border-b-0 border-emerald-700",
+            "bg-[hsl(var(--wa-header))] text-[hsl(var(--wa-header-foreground))]",
+            "shadow-xl hover:shadow-2xl hover:brightness-110 transition-all duration-300 ease-out",
+            "border border-b-0 border-[hsl(var(--wa-divider))]",
             "translate-y-[calc(100%-6px)] hover:translate-y-0"
           )}
         >
           <MessageCircle className="h-5 w-5 shrink-0" />
           <span className="font-semibold text-sm">Messaging</span>
           {totalUnreadCount > 0 && (
-            <span className="ml-auto bg-white/20 text-white text-xs font-medium min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center">
+            <span className="ml-auto bg-[hsl(var(--wa-unread)/0.3)] text-[hsl(var(--wa-header-foreground))] text-xs font-medium min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center">
               {totalUnreadCount > 99 ? "99+" : totalUnreadCount}
             </span>
           )}
