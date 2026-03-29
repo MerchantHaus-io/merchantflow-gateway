@@ -937,7 +937,7 @@ const FloatingChat: React.FC = () => {
                 <TooltipContent>Office Simulator</TooltipContent>
               </Tooltip>
               {(view === "chat" || view === "dm") && (
-                <button onClick={() => setShowSearch(!showSearch)} className={cn("hover:bg-white/10 p-2 rounded-full transition-colors", showSearch && "bg-white/10")}>
+                <button onClick={() => setShowSearch(!showSearch)} className={cn("hover:bg-[hsl(var(--wa-header)/0.7)] p-2 rounded-full transition-colors", showSearch && "bg-[hsl(var(--wa-header)/0.5)]")}>
                   <Search className="h-4 w-4" />
                 </button>
               )}
