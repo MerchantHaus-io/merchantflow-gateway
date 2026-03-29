@@ -911,7 +911,7 @@ const FloatingChat: React.FC = () => {
                     <button onClick={async () => {
                       if (permissionStatus !== 'granted') { const granted = await requestPermission(); toast[granted ? 'success' : 'error'](granted ? "Push notifications enabled" : "Notifications blocked"); }
                       else { toggleNotifications(); toast.info(notificationsEnabled ? "Notifications muted" : "Notifications unmuted"); }
-                    }} className="hover:bg-white/10 p-2 rounded-full transition-colors">
+                    }} className="hover:bg-[hsl(var(--wa-header)/0.7)] p-2 rounded-full transition-colors">
                       {permissionStatus === 'granted' && notificationsEnabled ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4 opacity-60" />}
                     </button>
                   </TooltipTrigger>
