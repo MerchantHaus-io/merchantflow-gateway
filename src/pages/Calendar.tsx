@@ -348,11 +348,11 @@ export default function Calendar() {
 
             {(viewMode === "week" || viewMode === "day") && (
               <div className="rounded-xl border border-border/60 bg-card/80 p-4">
-                {events.length === 0 ? (
+                {filteredEvents.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">No events for this period.</p>
                 ) : (
                   <div className="space-y-2">
-                    {events.map((ev) => (
+                    {filteredEvents.map((ev) => (
                       <EventCard key={ev.id} event={ev} />
                     ))}
                   </div>
