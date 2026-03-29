@@ -20,7 +20,10 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const redirectUri = `${supabaseUrl}/functions/v1/google-calendar-callback`;
     const state = btoa(JSON.stringify({ email: user_email, user_id }));
-    const scopes = "https://www.googleapis.com/auth/calendar.readonly";
+    const scopes = [
+      "https://www.googleapis.com/auth/calendar.readonly",
+      "https://www.googleapis.com/auth/gmail.readonly",
+    ].join(" ");
 
     const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
     authUrl.searchParams.set("client_id", clientId);
