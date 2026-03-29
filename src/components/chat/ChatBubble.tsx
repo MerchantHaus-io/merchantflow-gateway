@@ -208,7 +208,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
         )}>
           <Popover>
             <PopoverTrigger asChild>
-              <button className="p-1 hover:bg-white/10 rounded-md transition-colors" title="React">
+              <button className="p-1 hover:bg-[hsl(var(--wa-sidebar-hover))] rounded-md transition-colors" title="React">
                 <Smile className="h-3.5 w-3.5 text-[hsl(var(--wa-meta))]" />
               </button>
             </PopoverTrigger>
