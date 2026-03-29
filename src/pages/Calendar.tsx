@@ -337,21 +337,41 @@ export default function Calendar() {
   );
 }
 
+const TEAM_COLORS: Record<string, { border: string; bg: string; dot: string }> = {
+  "admin@merchanthaus.io": { border: "border-l-blue-500", bg: "bg-blue-500/15", dot: "bg-blue-500" },
+  "darryn@merchanthaus.io": { border: "border-l-emerald-500", bg: "bg-emerald-500/15", dot: "bg-emerald-500" },
+  "support@merchanthaus.io": { border: "border-l-amber-500", bg: "bg-amber-500/15", dot: "bg-amber-500" },
+  "sales@merchanthaus.io": { border: "border-l-purple-500", bg: "bg-purple-500/15", dot: "bg-purple-500" },
+  "taryn@merchanthaus.io": { border: "border-l-rose-500", bg: "bg-rose-500/15", dot: "bg-rose-500" },
+  shared: { border: "border-l-primary", bg: "bg-primary/15", dot: "bg-primary" },
+};
+
+function getTeamColor(email: string | null) {
+  if (!email) return TEAM_COLORS.shared;
+  return TEAM_COLORS[email] || TEAM_COLORS.shared;
+}
+
 function EventCard({ event }: { event: CalendarEvent }) {
   const attendeeList = Array.isArray(event.attendees) ? event.attendees : [];
   const internalAttendees = attendeeList.filter((a: any) => a.email?.endsWith("@merchanthaus.io"));
+  const colors = getTeamColor(event.calendar_owner_email);
+  const ownerName = event.calendar_owner_email?.split("@")[0] || "shared";
 
   return (
     <div
       className={cn(
         "rounded-lg border border-border/40 p-3 hover:bg-accent/30 transition-all cursor-pointer",
-        "border-l-4 border-l-primary"
+        "border-l-4",
+        colors.border
       )}
       onClick={() => event.html_link && window.open(event.html_link, "_blank")}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <span className="text-xs font-bold text-foreground">{event.title}</span>
+          <div className="flex items-center gap-1.5">
+            <span className={cn("w-2 h-2 rounded-full shrink-0", colors.dot)} />
+            <span className="text-xs font-bold text-foreground">{event.title}</span>
+          </div>
 
           <div className="flex items-center gap-2 mt-1">
             <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
@@ -360,6 +380,7 @@ function EventCard({ event }: { event: CalendarEvent }) {
                 ? "All Day"
                 : `${format(parseISO(event.start_time), "h:mm a")} – ${format(parseISO(event.end_time), "h:mm a")}`}
             </span>
+            <span className="text-[9px] text-muted-foreground/70 capitalize">{ownerName}</span>
           </div>
 
           {internalAttendees.length > 0 && (
