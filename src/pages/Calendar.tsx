@@ -113,17 +113,27 @@ export default function Calendar() {
       rangeStart = startOfWeek(currentDate, { weekStartsOn: 0 });
       rangeEnd = endOfWeek(currentDate, { weekStartsOn: 0 });
     } else {
+      // For day/team views, compute range in CT so we fetch the correct CT day
+      // CT is UTC-5 (CST) or UTC-6 depending on DST; use date-fns-tz for accuracy
       rangeStart = new Date(currentDate);
       rangeStart.setHours(0, 0, 0, 0);
       rangeEnd = new Date(currentDate);
       rangeEnd.setHours(23, 59, 59, 999);
     }
 
+    // Widen the query range by ±1 day for day/team views to avoid timezone edge-case misses
+    const queryStart = (viewMode === "day" || viewMode === "team")
+      ? new Date(rangeStart.getTime() - 24 * 60 * 60 * 1000)
+      : rangeStart;
+    const queryEnd = (viewMode === "day" || viewMode === "team")
+      ? new Date(rangeEnd.getTime() + 24 * 60 * 60 * 1000)
+      : rangeEnd;
+
     const { data } = await supabase
       .from("calendar_events")
       .select("*")
-      .gte("start_time", rangeStart.toISOString())
-      .lte("start_time", rangeEnd.toISOString())
+      .gte("start_time", queryStart.toISOString())
+      .lte("start_time", queryEnd.toISOString())
       .order("start_time", { ascending: true });
 
     setEvents((data as CalendarEvent[]) || []);
