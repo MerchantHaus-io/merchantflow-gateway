@@ -177,7 +177,7 @@ export const ChatComposer: React.FC<ChatComposerProps> = React.memo(({
             className="p-2.5 bg-[hsl(var(--wa-accent))] hover:bg-[hsl(var(--wa-accent)/0.85)] rounded-full transition-colors shrink-0"
             disabled={!localInput.trim() && !pendingAttachment}
           >
-            <Send className="h-5 w-5 text-white" />
+            <Send className="h-5 w-5 text-[hsl(var(--wa-header-foreground))]" />
           </button>
         ) : (
           <button
