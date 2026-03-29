@@ -239,7 +239,7 @@ serve(async (req) => {
 
         // Find all external emails in this message
         const allEmails = [fromEmail, ...toEmails, ...ccEmails].filter(
-          (e) => e && !isTeamEmail(e)
+          (e) => e && !isTeamEmail(e) && !isNoiseEmail(e)
         );
 
         // Match to CRM entities
