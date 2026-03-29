@@ -897,6 +897,7 @@ const Opportunities = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+      </div>
     </AppLayout>
   );
 };
