@@ -278,6 +278,9 @@ serve(async (req) => {
             .select("id")
             .single();
 
+          if (accErr) {
+            console.error(`Failed to create account for ${leadEmail}:`, accErr.message);
+          }
           if (!accErr && newAccount) {
             // Create contact
             const nameParts = (leadName || "").split(" ");
