@@ -1368,6 +1368,7 @@ const Contacts = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      </div>
     </AppLayout>
   );
 };
