@@ -86,7 +86,8 @@ serve(async (req) => {
       notificationsSent++;
     }
 
-    // 3. Newly synced events that haven't had creation notification (within last 15 min)
+    // 3. Newly synced FUTURE events (not backdated) that haven't had creation notification
+    //    Only notify if the event was created recently on Google (not just synced now from history)
     const fifteenMinAgo = new Date(now.getTime() - 15 * 60 * 1000).toISOString();
     const { data: newEvents } = await supabase
       .from("calendar_events")
@@ -97,6 +98,19 @@ serve(async (req) => {
       .gte("start_time", now.toISOString());
 
     for (const event of newEvents || []) {
+      // Skip events that started more than 1 hour from now — these are backdated/old
+      const eventStart = new Date(event.start_time);
+      const hoursUntilEvent = (eventStart.getTime() - now.getTime()) / (1000 * 60 * 60);
+      
+      // Only notify for events happening within the next 30 days (skip very old synced events)
+      if (hoursUntilEvent > 30 * 24) {
+        await supabase
+          .from("calendar_events")
+          .update({ reminder_created_sent: true })
+          .eq("id", event.id);
+        continue;
+      }
+
       for (const profile of profiles) {
         await supabase.from("notifications").insert({
           user_id: profile.id,

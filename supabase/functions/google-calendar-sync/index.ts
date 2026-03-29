@@ -178,6 +178,9 @@ serve(async (req) => {
         self: a.self || false,
       }));
 
+      // For past events, mark all reminders as already sent to prevent notification spam
+      const isPast = new Date(isAllDay ? `${startTime}T00:00:00Z` : startTime) < now;
+
       const row = {
         google_event_id: googleId,
         title: ev.summary || "Untitled",
@@ -194,6 +197,9 @@ serve(async (req) => {
         html_link: ev.htmlLink || null,
         synced_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        reminder_created_sent: isPast ? true : false,
+        reminder_24h_sent: isPast ? true : false,
+        reminder_1h_sent: isPast ? true : false,
       };
 
       const { error } = await supabase
