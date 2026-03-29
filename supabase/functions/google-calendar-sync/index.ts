@@ -29,27 +29,39 @@ async function refreshAccessToken(refreshToken: string, clientId: string, client
   return await resp.json();
 }
 
-async function fetchCalendarEvents(accessToken: string, calendarId: string, timeMin: string, timeMax: string) {
-  const params = new URLSearchParams({
-    timeMin,
-    timeMax,
-    singleEvents: "true",
-    orderBy: "startTime",
-    maxResults: "100",
-  });
+async function fetchCalendarEvents(accessToken: string, calendarId: string, timeMin?: string, timeMax?: string) {
+  const allItems: any[] = [];
+  let pageToken: string | null = null;
+  let pages = 0;
+  const MAX_PAGES = 50;
 
-  const resp = await fetch(`${GCAL_API}/calendars/${encodeURIComponent(calendarId)}/events?${params}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
+  do {
+    const params = new URLSearchParams({
+      singleEvents: "true",
+      orderBy: "startTime",
+      maxResults: "250",
+    });
+    if (timeMin) params.set("timeMin", timeMin);
+    if (timeMax) params.set("timeMax", timeMax);
+    if (pageToken) params.set("pageToken", pageToken);
 
-  if (!resp.ok) {
-    const errBody = await resp.text();
-    console.error(`Failed to fetch calendar ${calendarId}: ${resp.status} ${errBody}`);
-    return [];
-  }
+    const resp = await fetch(`${GCAL_API}/calendars/${encodeURIComponent(calendarId)}/events?${params}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
 
-  const data = await resp.json();
-  return data.items || [];
+    if (!resp.ok) {
+      const errBody = await resp.text();
+      console.error(`Failed to fetch calendar ${calendarId}: ${resp.status} ${errBody}`);
+      break;
+    }
+
+    const data = await resp.json();
+    allItems.push(...(data.items || []));
+    pageToken = data.nextPageToken || null;
+    pages++;
+  } while (pageToken && pages < MAX_PAGES);
+
+  return allItems;
 }
 
 serve(async (req) => {
@@ -89,8 +101,8 @@ serve(async (req) => {
     }
 
     const now = new Date();
-    const timeMin = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
-    const timeMax = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    // Sync all-time: no timeMin, 1 year forward
+    const timeMax = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString();
 
     const allEvents: any[] = [];
     const sharedCalIds = (Deno.env.get("GOOGLE_CALENDAR_IDS") || "").split(",").map(c => c.trim()).filter(Boolean);
@@ -119,7 +131,7 @@ serve(async (req) => {
 
       // Fetch user's primary calendar
       try {
-        const events = await fetchCalendarEvents(accessToken, "primary", timeMin, timeMax);
+        const events = await fetchCalendarEvents(accessToken, "primary", undefined, timeMax);
         for (const ev of events) {
           allEvents.push({ ...ev, _calendarId: "primary", _ownerEmail: token.user_email });
         }
@@ -131,7 +143,7 @@ serve(async (req) => {
       if (!sharedCalsFetched && sharedCalIds.length > 0) {
         for (const calId of sharedCalIds) {
           try {
-            const events = await fetchCalendarEvents(accessToken, calId, timeMin, timeMax);
+            const events = await fetchCalendarEvents(accessToken, calId, undefined, timeMax);
             for (const ev of events) {
               allEvents.push({ ...ev, _calendarId: calId, _ownerEmail: "shared" });
             }
@@ -201,7 +213,6 @@ serve(async (req) => {
       const { data: existing } = await supabase
         .from("calendar_events")
         .select("id, google_event_id")
-        .gte("start_time", timeMin)
         .lte("start_time", timeMax);
 
       if (existing) {
