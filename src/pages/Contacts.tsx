@@ -612,34 +612,38 @@ const Contacts = () => {
 
   return (
     <AppLayout>
-      <PageHeader
-        icon={Users}
-        title="Contacts"
-        description={`${stats.total} contacts · ${stats.total - stats.assigned} unassigned`}
-        actions={
-          <Button onClick={openNewDialog}>
-            <UserPlus className="h-4 w-4 mr-1" />
-            New Contact
-          </Button>
-        }
-      />
-      <div className="p-4 lg:p-6 space-y-4">
-        {/* Compact toolbar: stats + filters inline */}
-          <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex flex-col h-full overflow-hidden">
+        <PageHeader
+          icon={Users}
+          title="Contacts"
+          actions={
+            <Button onClick={openNewDialog}>
+              <UserPlus className="h-4 w-4 mr-1" />
+              New Contact
+            </Button>
+          }
+        />
+        <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-5">
+          {/* KPI Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 stagger-children">
+            <StatCard label="Total Contacts" value={stats.total} icon={Users} color="primary" />
+            <StatCard label="Assigned" value={stats.assigned} icon={UserCheck} color="success" />
+            <StatCard label="Linked to Deal" value={stats.linked} icon={Link2} color="teal" />
+            <StatCard label="Unassigned" value={stats.total - stats.assigned} icon={UserPlus} color="warning" />
+          </div>
+
+          {/* Filters toolbar */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2">
-              <button onClick={() => setAssignmentFilter('all')} className={cn("text-sm font-semibold transition-colors", assignmentFilter === 'all' ? "text-foreground" : "text-muted-foreground hover:text-foreground")}>
-                {stats.total} Contacts
-              </button>
-              <span className="text-muted-foreground/30">·</span>
-              <button onClick={() => setAssignmentFilter('unassigned')} className={cn("text-xs transition-colors", assignmentFilter === 'unassigned' ? "text-amber-500 font-medium" : "text-muted-foreground hover:text-foreground")}>
-                {stats.total - stats.assigned} unassigned
-              </button>
-              {stats.total - stats.linked > 0 && (
-                <><span className="text-muted-foreground/30">·</span>
-                <span className="text-xs text-muted-foreground">{stats.total - stats.linked} no deal</span></>
+              <span className="text-sm font-semibold">{filteredContacts.length} contacts</span>
+              {(assignmentFilter !== 'all' || accountFilter !== 'all' || searchQuery) && (
+                <button onClick={() => { setAssignmentFilter('all'); setAccountFilter('all'); setSearchQuery(''); }}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  Clear filters ×
+                </button>
               )}
             </div>
-            <div className="flex items-center gap-2 ml-auto flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input placeholder="Search…" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-8 h-8 w-48 text-sm" />
