@@ -143,7 +143,7 @@ export const ChatComposer: React.FC<ChatComposerProps> = React.memo(({
                   <p className="text-xs font-medium text-[hsl(var(--wa-meta))] mb-1 px-1">{cat.label}</p>
                   <div className="flex flex-wrap gap-0.5">
                     {cat.emojis.map(emoji => (
-                      <button key={emoji} onClick={() => setLocalInput(prev => prev + emoji)} className="text-lg hover:scale-125 hover:bg-white/10 transition-all p-1 rounded">{emoji}</button>
+                      <button key={emoji} onClick={() => setLocalInput(prev => prev + emoji)} className="text-lg hover:scale-125 hover:bg-[hsl(var(--wa-sidebar-hover))] transition-all p-1 rounded">{emoji}</button>
                     ))}
                   </div>
                 </div>
