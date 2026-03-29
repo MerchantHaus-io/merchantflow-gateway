@@ -131,7 +131,7 @@ serve(async (req) => {
 
       // Fetch user's primary calendar
       try {
-        const events = await fetchCalendarEvents(accessToken, "primary", timeMin, timeMax);
+        const events = await fetchCalendarEvents(accessToken, "primary", undefined, timeMax);
         for (const ev of events) {
           allEvents.push({ ...ev, _calendarId: "primary", _ownerEmail: token.user_email });
         }
