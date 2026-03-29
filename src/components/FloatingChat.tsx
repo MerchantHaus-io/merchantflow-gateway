@@ -882,7 +882,7 @@ const FloatingChat: React.FC = () => {
                         {getInitials(currentDMUser.name, currentDMUser.email)}
                       </AvatarFallback>
                     </Avatar>
-                    <span className={cn("absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[hsl(var(--wa-header))]", currentDMUser.isOnline ? "bg-[hsl(var(--wa-accent))]" : "bg-white/40")} />
+                    <span className={cn("absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[hsl(var(--wa-header))]", currentDMUser.isOnline ? "bg-[hsl(var(--wa-accent))]" : "bg-[hsl(var(--wa-meta))]")} />
                   </div>
                   <div>
                     <h3 className="font-semibold text-sm">{currentDMUser.name}</h3>
