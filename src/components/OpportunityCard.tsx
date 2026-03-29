@@ -45,12 +45,11 @@ const TEAM_COLORS: Record<string, { border: string; bg: string; text: string }> 
 };
 
 const TEAM_EMAIL_MAP: Record<string, string> = {
-  Wesley: "dylan@merchanthaus.io",
+  Wesley: "sales@merchanthaus.io",
   Jamie:  "admin@merchanthaus.io",
   Darryn: "darryn@merchanthaus.io",
   Taryn:  "taryn@merchanthaus.io",
-  Yaseen: "support@merchanthaus.io",
-  Sales:  "sales@merchanthaus.io",
+  Sheiky: "support@merchanthaus.io",
 };
 
 const formatCurrency = (value: number) =>

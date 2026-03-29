@@ -44,10 +44,10 @@ export default function Calendar() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const TEAM_MEMBERS = [
-    { email: "admin@merchanthaus.io", label: "Admin" },
+    { email: "admin@merchanthaus.io", label: "Jamie" },
     { email: "darryn@merchanthaus.io", label: "Darryn" },
-    { email: "support@merchanthaus.io", label: "Support" },
-    { email: "sales@merchanthaus.io", label: "Sales" },
+    { email: "support@merchanthaus.io", label: "Sheiky" },
+    { email: "sales@merchanthaus.io", label: "Wesley" },
     { email: "taryn@merchanthaus.io", label: "Taryn" },
   ];
 

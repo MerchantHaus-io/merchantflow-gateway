@@ -135,7 +135,7 @@ export const TEAM_MEMBER_COLORS: Record<string, string> = {
 export const EMAIL_TO_USER: Record<string, string> = {
   'admin@merchanthaus.io': 'Jamie',
   'darryn@merchanthaus.io': 'Darryn',
-  'support@merchanthaus.io': 'Yaseen',
+  'support@merchanthaus.io': 'Sheiky',
   'sales@merchanthaus.io': 'Wesley',
   'taryn@merchanthaus.io': 'Taryn',
 };
