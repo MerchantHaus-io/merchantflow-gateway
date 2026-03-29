@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, parseISO } from "date-fns";
-import { ChevronLeft, ChevronRight, CalendarDays, Clock, MapPin, Users, ExternalLink, Link2, CheckCircle2, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, Clock, MapPin, Users, ExternalLink, Link2, CheckCircle2, Loader2, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -36,6 +36,7 @@ export default function Calendar() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
+  const [hasGmailScope, setHasGmailScope] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -64,10 +65,11 @@ export default function Calendar() {
   async function checkConnection() {
     const { data } = await supabase
       .from("google_calendar_tokens")
-      .select("id")
+      .select("id, scopes")
       .eq("user_email", user?.email || "")
       .maybeSingle();
     setIsConnected(!!data);
+    setHasGmailScope(!!data?.scopes?.includes("gmail"));
   }
 
   useEffect(() => {
@@ -127,10 +129,22 @@ export default function Calendar() {
   async function handleSync() {
     setSyncing(true);
     try {
-      // Sync ALL connected team members' calendars (no user_email filter)
-      const { data, error } = await supabase.functions.invoke("google-calendar-sync");
-      if (error) throw error;
-      toast.success(`Synced ${data?.synced || 0} events across all team calendars`);
+      // Sync ALL connected team members' calendars
+      const [calResult, gmailResult] = await Promise.all([
+        supabase.functions.invoke("google-calendar-sync"),
+        supabase.functions.invoke("google-gmail-sync"),
+      ]);
+      if (calResult.error) throw calResult.error;
+      const calSynced = calResult.data?.synced || 0;
+      const emailsSynced = gmailResult.data?.synced || 0;
+      const leadsCreated = gmailResult.data?.leads_created || 0;
+      const activitiesCreated = gmailResult.data?.activities_created || 0;
+      
+      let msg = `Synced ${calSynced} calendar events`;
+      if (emailsSynced > 0) msg += `, ${emailsSynced} emails`;
+      if (leadsCreated > 0) msg += `, ${leadsCreated} new leads`;
+      if (activitiesCreated > 0) msg += `, ${activitiesCreated} activities`;
+      toast.success(msg);
       fetchEvents();
     } catch (err: any) {
       toast.error("Sync failed: " + (err.message || "Unknown error"));
@@ -197,15 +211,21 @@ export default function Calendar() {
             {isConnected === false && (
               <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={handleConnect}>
                 <Link2 className="h-3.5 w-3.5" />
-                Connect Google Calendar
+                Connect Google (Calendar + Gmail)
               </Button>
             )}
             {isConnected === true && (
               <>
                 <Badge variant="secondary" className="gap-1 text-[10px]">
-                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                  <CheckCircle2 className="h-3 w-3 text-emerald-500" />
                   Connected
                 </Badge>
+                {!hasGmailScope && (
+                  <Button variant="outline" size="sm" className="text-xs gap-1 border-amber-500/50 text-amber-600" onClick={handleConnect}>
+                    <Mail className="h-3 w-3" />
+                    Enable Gmail Sync
+                  </Button>
+                )}
                 <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={handleSync} disabled={syncing}>
                   {syncing ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
                   Sync

@@ -1984,6 +1984,91 @@ export type Database = {
         }
         Relationships: []
       }
+      synced_emails: {
+        Row: {
+          activity_created: boolean | null
+          cc_emails: string[] | null
+          created_at: string | null
+          from_email: string | null
+          from_name: string | null
+          gmail_message_id: string
+          gmail_thread_id: string | null
+          id: string
+          lead_created: boolean | null
+          matched_account_id: string | null
+          matched_contact_id: string | null
+          matched_opportunity_id: string | null
+          received_at: string | null
+          snippet: string | null
+          subject: string | null
+          synced_at: string | null
+          to_emails: string[] | null
+          user_email: string
+        }
+        Insert: {
+          activity_created?: boolean | null
+          cc_emails?: string[] | null
+          created_at?: string | null
+          from_email?: string | null
+          from_name?: string | null
+          gmail_message_id: string
+          gmail_thread_id?: string | null
+          id?: string
+          lead_created?: boolean | null
+          matched_account_id?: string | null
+          matched_contact_id?: string | null
+          matched_opportunity_id?: string | null
+          received_at?: string | null
+          snippet?: string | null
+          subject?: string | null
+          synced_at?: string | null
+          to_emails?: string[] | null
+          user_email: string
+        }
+        Update: {
+          activity_created?: boolean | null
+          cc_emails?: string[] | null
+          created_at?: string | null
+          from_email?: string | null
+          from_name?: string | null
+          gmail_message_id?: string
+          gmail_thread_id?: string | null
+          id?: string
+          lead_created?: boolean | null
+          matched_account_id?: string | null
+          matched_contact_id?: string | null
+          matched_opportunity_id?: string | null
+          received_at?: string | null
+          snippet?: string | null
+          subject?: string | null
+          synced_at?: string | null
+          to_emails?: string[] | null
+          user_email?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "synced_emails_matched_account_id_fkey"
+            columns: ["matched_account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "synced_emails_matched_contact_id_fkey"
+            columns: ["matched_contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "synced_emails_matched_opportunity_id_fkey"
+            columns: ["matched_opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           assignee: string | null
