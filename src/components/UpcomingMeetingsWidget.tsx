@@ -185,13 +185,13 @@ export function UpcomingMeetingsWidget() {
                       <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
                         <Clock className="h-2.5 w-2.5" />
                         {event.all_day
-                          ? (isToday(new Date(event.start_time)) ? "All Day Today" : isTomorrow(new Date(event.start_time)) ? "All Day Tomorrow" : format(new Date(event.start_time), "EEE, MMM d"))
-                          : `${format(new Date(event.start_time), "h:mm a")} – ${format(new Date(event.end_time), "h:mm a")}`
+                          ? (isToday(toCT(event.start_time)) ? "All Day Today" : isTomorrow(toCT(event.start_time)) ? "All Day Tomorrow" : format(toCT(event.start_time), "EEE, MMM d"))
+                          : `${format(toCT(event.start_time), "h:mm a")} – ${format(toCT(event.end_time), "h:mm a")} CT`
                         }
                       </span>
-                      {!isToday(new Date(event.start_time)) && (
+                      {!isToday(toCT(event.start_time)) && (
                         <span className="text-[10px] text-muted-foreground">
-                          {formatDistanceToNow(new Date(event.start_time), { addSuffix: true })}
+                          {formatDistanceToNow(toCT(event.start_time), { addSuffix: true })}
                         </span>
                       )}
                     </div>
