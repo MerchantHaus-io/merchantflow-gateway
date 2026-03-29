@@ -654,6 +654,23 @@ All colors MUST be HSL.
     --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+    /* WhatsApp Chat Tokens — Light (Enterprise) */
+    --wa-header: 204 70% 40%;
+    --wa-header-foreground: 0 0% 100%;
+    --wa-sidebar-bg: 220 14% 96%;
+    --wa-sidebar-hover: 220 14% 92%;
+    --wa-chat-bg: 220 14% 94%;
+    --wa-bubble-out: 204 60% 90%;
+    --wa-bubble-out-foreground: 221 39% 11%;
+    --wa-bubble-in: 0 0% 100%;
+    --wa-bubble-in-foreground: 221 39% 11%;
+    --wa-composer-bg: 220 14% 96%;
+    --wa-accent: 204 70% 45%;
+    --wa-unread: 204 70% 45%;
+    --wa-search-bg: 220 14% 92%;
+    --wa-meta: 215 16% 50%;
+    --wa-divider: 220 13% 84%;
   }
 
   /* Light Ocean - Cool blue tones */
