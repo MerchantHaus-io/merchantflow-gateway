@@ -85,7 +85,7 @@ export const ChatComposer: React.FC<ChatComposerProps> = React.memo(({
             </p>
             <p className="text-xs text-[hsl(var(--wa-meta))] truncate">{replyTo.content}</p>
           </div>
-          <button onClick={onCancelReply} className="p-1 hover:bg-white/10 rounded-full transition-colors">
+          <button onClick={onCancelReply} className="p-1 hover:bg-[hsl(var(--wa-sidebar-hover))] rounded-full transition-colors">
             <X className="h-3.5 w-3.5 text-[hsl(var(--wa-meta))]" />
           </button>
         </div>
