@@ -802,6 +802,23 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 348 83% 47%;
     --sidebar-border: 220 12% 82%;
     --sidebar-ring: 348 83% 47%;
+
+    /* WhatsApp Chat Tokens — Silver */
+    --wa-header: 220 25% 35%;
+    --wa-header-foreground: 0 0% 100%;
+    --wa-sidebar-bg: 220 15% 96%;
+    --wa-sidebar-hover: 220 12% 92%;
+    --wa-chat-bg: 220 15% 94%;
+    --wa-bubble-out: 220 15% 88%;
+    --wa-bubble-out-foreground: 220 20% 12%;
+    --wa-bubble-in: 0 0% 100%;
+    --wa-bubble-in-foreground: 220 20% 12%;
+    --wa-composer-bg: 220 15% 96%;
+    --wa-accent: 348 83% 47%;
+    --wa-unread: 348 83% 47%;
+    --wa-search-bg: 220 12% 92%;
+    --wa-meta: 220 10% 46%;
+    --wa-divider: 220 12% 82%;
   }
 
   /* Light Mono - Pure white & black, no colors */
