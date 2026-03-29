@@ -268,7 +268,7 @@ export default function Calendar() {
             )}
 
             <div className="flex items-center rounded-lg border border-border/60 bg-card/40 p-0.5">
-              {(["month", "week", "day"] as ViewMode[]).map((mode) => (
+              {(["month", "week", "day", "team"] as ViewMode[]).map((mode) => (
                 <button
                   key={mode}
                   onClick={() => setViewMode(mode)}
@@ -279,7 +279,7 @@ export default function Calendar() {
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  {mode}
+                  {mode === "team" ? "By User" : mode}
                 </button>
               ))}
             </div>
