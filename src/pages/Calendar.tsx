@@ -127,11 +127,10 @@ export default function Calendar() {
   async function handleSync() {
     setSyncing(true);
     try {
-      const { data, error } = await supabase.functions.invoke("google-calendar-sync", {
-        body: { user_email: user?.email },
-      });
+      // Sync ALL connected team members' calendars (no user_email filter)
+      const { data, error } = await supabase.functions.invoke("google-calendar-sync");
       if (error) throw error;
-      toast.success(`Synced ${data?.synced || 0} events`);
+      toast.success(`Synced ${data?.synced || 0} events across all team calendars`);
       fetchEvents();
     } catch (err: any) {
       toast.error("Sync failed: " + (err.message || "Unknown error"));
