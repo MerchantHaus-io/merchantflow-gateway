@@ -515,6 +515,14 @@ const Opportunities = () => {
                                 onValueChange={async (value) => {
                                    const newStage = value as OpportunityStage;
                                    const oldStage = opp.stage;
+                                   const isGateway = getServiceType(opp) === 'gateway_only';
+                                   
+                                   // Block gateway deals from entering underwriting/processor_approval
+                                   const GATEWAY_BLOCKED: OpportunityStage[] = ['underwriting_review', 'processor_approval'];
+                                   if (isGateway && GATEWAY_BLOCKED.includes(newStage)) {
+                                     toast({ title: "Gateway deals cannot enter Underwriting or Approved stages", variant: "destructive", duration: 4000 });
+                                     return;
+                                   }
                                    
                                    // Underwriting gate check
                                    if (newStage === 'underwriting_review') {
@@ -614,20 +622,60 @@ const Opportunities = () => {
                                 ) : <span className="text-xs text-muted-foreground/40">—</span>;
                               })() : <span className="text-xs text-muted-foreground/40">—</span>}
                             </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1">
-                                {serviceType === 'gateway_only' ? (
-                                  <>
-                                    <Zap className="h-3 w-3 text-amber-500" />
-                                    <span className="text-xs">Gateway</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <CreditCard className="h-3 w-3 text-blue-500" />
-                                    <span className="text-xs">Processing</span>
-                                  </>
-                                )}
-                              </div>
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <Select
+                                value={serviceType}
+                                onValueChange={async (value) => {
+                                  if (value === serviceType) return;
+                                  const newType = value as 'processing' | 'gateway_only';
+                                  const GATEWAY_STAGES = ['discovery', 'qualified', 'gateway_submitted', 'integration_setup', 'testing', 'go_live_ready'];
+                                  const stageReset = (newType === 'gateway_only' && !GATEWAY_STAGES.includes(opp.stage)) ? 'discovery' : undefined;
+                                  
+                                  const updatePayload: Record<string, unknown> = { service_type: newType };
+                                  if (stageReset) updatePayload.stage = stageReset;
+                                  
+                                  const { error } = await supabase
+                                    .from('opportunities')
+                                    .update(updatePayload)
+                                    .eq('id', opp.id);
+                                  if (error) {
+                                    toast({ title: "Failed to switch pipeline", variant: "destructive" });
+                                    return;
+                                  }
+                                  await supabase.from('activities').insert({
+                                    opportunity_id: opp.id,
+                                    type: 'pipeline_change',
+                                    description: `Switched from ${serviceType === 'gateway_only' ? 'Gateway' : 'Processing'} to ${newType === 'gateway_only' ? 'Gateway' : 'Processing'}${stageReset ? ' (stage reset to Discovery)' : ''}`,
+                                    user_id: user?.id,
+                                    user_email: user?.email,
+                                  });
+                                  toast({ title: `Switched to ${newType === 'gateway_only' ? 'Gateway' : 'Processing'} pipeline` });
+                                  fetchOpportunities();
+                                }}
+                              >
+                                <SelectTrigger className="h-7 w-auto min-w-[100px] border-0 bg-transparent hover:bg-muted/50 px-2 text-xs gap-1">
+                                  {serviceType === 'gateway_only' ? (
+                                    <Zap className="h-3 w-3 text-teal-500" />
+                                  ) : (
+                                    <CreditCard className="h-3 w-3 text-indigo-500" />
+                                  )}
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-popover z-50">
+                                  <SelectItem value="processing" className="text-xs">
+                                    <div className="flex items-center gap-2">
+                                      <CreditCard className="h-3 w-3 text-indigo-500" />
+                                      Processing
+                                    </div>
+                                  </SelectItem>
+                                  <SelectItem value="gateway_only" className="text-xs">
+                                    <div className="flex items-center gap-2">
+                                      <Zap className="h-3 w-3 text-teal-500" />
+                                      Gateway
+                                    </div>
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
                             </TableCell>
                             <TableCell onClick={(e) => e.stopPropagation()}>
                               <Select

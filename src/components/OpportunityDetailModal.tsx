@@ -1079,31 +1079,29 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                       }}
                     />
 
-                    {/* Pipeline toggle button */}
+                    {/* Pipeline toggle button — always available for switching service type */}
                     {!opportunity.outcome_status && (
-                      isGatewayCard ? (
-                        onMoveToProcessing && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button variant="outline" size="icon" className="h-8 w-8 text-amber-500 border-amber-500 hover:bg-amber-500/10" onClick={() => setShowMoveDialog(true)} disabled={isConverting}>
-                                <CreditCard className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Move to Processing</TooltipContent>
-                          </Tooltip>
-                        )
-                      ) : (
-                        onConvertToGateway && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button variant="outline" size="icon" className="h-8 w-8 text-amber-500 border-amber-500 hover:bg-amber-500/10" onClick={handleConvertToGateway} disabled={isConverting || hasGatewayOpportunity}>
-                                <Zap className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>{hasGatewayOpportunity ? 'Gateway Added' : 'Add to Gateway'}</TooltipContent>
-                          </Tooltip>
-                        )
-                      )
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className={cn(
+                              "h-8 w-8",
+                              isGatewayCard
+                                ? "text-indigo-500 border-indigo-500 hover:bg-indigo-500/10"
+                                : "text-teal-500 border-teal-500 hover:bg-teal-500/10"
+                            )}
+                            onClick={() => setShowMoveDialog(true)}
+                            disabled={isConverting}
+                          >
+                            {isGatewayCard ? <CreditCard className="h-4 w-4" /> : <Zap className="h-4 w-4" />}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {isGatewayCard ? 'Switch to Processing' : 'Switch to Gateway'}
+                        </TooltipContent>
+                      </Tooltip>
                     )}
 
                     {/* Delete - admin only */}
@@ -1226,7 +1224,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                       updated_at: wizardState.updated_at
                     } : null}
                   />
-                  <BeneficialOwners opportunityId={opportunity.id} />
+                  {!isGatewayCard && <BeneficialOwners opportunityId={opportunity.id} />}
                   <OverviewUnderwritingSummary opportunityId={opportunity.id} onNavigate={() => setActiveSection('underwriting')} />
                 </div>
               )}
@@ -1597,23 +1595,76 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Move to Processing Confirmation */}
+      {/* Pipeline Switch Confirmation */}
       <AlertDialog open={showMoveDialog} onOpenChange={setShowMoveDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-primary" />
-              Move to Processing Pipeline?
+              {isGatewayCard ? (
+                <><CreditCard className="h-5 w-5 text-indigo-500" /> Switch to Processing?</>
+              ) : (
+                <><Zap className="h-5 w-5 text-teal-500" /> Switch to Gateway?</>
+              )}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              This will move the opportunity from the Gateway pipeline to the Processing pipeline.
-              The opportunity will be assigned default processing services (Credit Card).
+              {isGatewayCard ? (
+                <>This will convert <strong>{account?.name}</strong> from Gateway Only to Processing pipeline.</>
+              ) : (
+                <>
+                  This will convert <strong>{account?.name}</strong> from Processing to Gateway Only pipeline.
+                  {!['discovery', 'qualified', 'gateway_submitted', 'integration_setup', 'testing', 'go_live_ready'].includes(opportunity.stage) && (
+                    <span className="block mt-2 text-amber-600 dark:text-amber-400 font-medium">
+                      ⚠ The current stage is not available on the Gateway pipeline — this deal will be reset to Discovery.
+                    </span>
+                  )}
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { handleMoveToProcessing(); setShowMoveDialog(false); }}>
-              Move to Processing
+            <AlertDialogAction onClick={async () => {
+              if (!opportunity) return;
+              setIsConverting(true);
+              const currentType = getServiceType(opportunity);
+              const newType = currentType === 'gateway_only' ? 'processing' : 'gateway_only';
+              const GATEWAY_STAGES = ['discovery', 'qualified', 'gateway_submitted', 'integration_setup', 'testing', 'go_live_ready'];
+              const stageReset = (newType === 'gateway_only' && !GATEWAY_STAGES.includes(opportunity.stage)) ? 'discovery' : undefined;
+
+              const updatePayload: Record<string, unknown> = { service_type: newType };
+              if (stageReset) updatePayload.stage = stageReset;
+
+              const { error } = await supabase
+                .from('opportunities')
+                .update(updatePayload)
+                .eq('id', opportunity.id);
+
+              if (error) {
+                toast.error("Failed to switch pipeline");
+                setIsConverting(false);
+                setShowMoveDialog(false);
+                return;
+              }
+
+              await supabase.from('activities').insert({
+                opportunity_id: opportunity.id,
+                type: 'pipeline_change',
+                description: `Switched from ${currentType === 'gateway_only' ? 'Gateway' : 'Processing'} to ${newType === 'gateway_only' ? 'Gateway' : 'Processing'}${stageReset ? ' (stage reset to Discovery)' : ''}`,
+                user_id: user?.id,
+                user_email: user?.email,
+              });
+
+              onUpdate({
+                ...opportunity,
+                service_type: newType as any,
+                ...(stageReset ? { stage: stageReset as any } : {}),
+              });
+
+              toast.success(`Switched to ${newType === 'gateway_only' ? 'Gateway' : 'Processing'} pipeline`);
+              setIsConverting(false);
+              setShowMoveDialog(false);
+            }}>
+              {isGatewayCard ? 'Switch to Processing' : 'Switch to Gateway'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
