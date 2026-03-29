@@ -29,27 +29,39 @@ async function refreshAccessToken(refreshToken: string, clientId: string, client
   return await resp.json();
 }
 
-async function fetchCalendarEvents(accessToken: string, calendarId: string, timeMin: string, timeMax: string) {
-  const params = new URLSearchParams({
-    timeMin,
-    timeMax,
-    singleEvents: "true",
-    orderBy: "startTime",
-    maxResults: "100",
-  });
+async function fetchCalendarEvents(accessToken: string, calendarId: string, timeMin?: string, timeMax?: string) {
+  const allItems: any[] = [];
+  let pageToken: string | null = null;
+  let pages = 0;
+  const MAX_PAGES = 50;
 
-  const resp = await fetch(`${GCAL_API}/calendars/${encodeURIComponent(calendarId)}/events?${params}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
+  do {
+    const params = new URLSearchParams({
+      singleEvents: "true",
+      orderBy: "startTime",
+      maxResults: "250",
+    });
+    if (timeMin) params.set("timeMin", timeMin);
+    if (timeMax) params.set("timeMax", timeMax);
+    if (pageToken) params.set("pageToken", pageToken);
 
-  if (!resp.ok) {
-    const errBody = await resp.text();
-    console.error(`Failed to fetch calendar ${calendarId}: ${resp.status} ${errBody}`);
-    return [];
-  }
+    const resp = await fetch(`${GCAL_API}/calendars/${encodeURIComponent(calendarId)}/events?${params}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
 
-  const data = await resp.json();
-  return data.items || [];
+    if (!resp.ok) {
+      const errBody = await resp.text();
+      console.error(`Failed to fetch calendar ${calendarId}: ${resp.status} ${errBody}`);
+      break;
+    }
+
+    const data = await resp.json();
+    allItems.push(...(data.items || []));
+    pageToken = data.nextPageToken || null;
+    pages++;
+  } while (pageToken && pages < MAX_PAGES);
+
+  return allItems;
 }
 
 serve(async (req) => {
