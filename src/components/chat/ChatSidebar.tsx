@@ -261,7 +261,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                       <div className="relative">
                         <Avatar className="h-10 w-10">
                           <AvatarImage src={u.avatarUrl || undefined} />
-                          <AvatarFallback className={cn(getAvatarColor(u.email || u.name), "text-white text-sm font-medium")}>
+                          <AvatarFallback className={cn(getAvatarColor(u.email || u.name), "text-primary-foreground text-sm font-medium")}>
                             {getInitials(u.name, u.email)}
                           </AvatarFallback>
                         </Avatar>
