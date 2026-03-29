@@ -318,7 +318,7 @@ export default function Calendar() {
                                 className={cn("text-[9px] leading-tight truncate rounded px-1 py-0.5 font-medium flex items-center gap-1", c.bg, "text-foreground/80")}
                               >
                                 <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", c.dot)} />
-                                {ev.all_day ? "All Day" : format(parseISO(ev.start_time), "h:mm a")} {ev.title}
+                                {ev.all_day ? "All Day" : format(toCT(ev.start_time), "h:mm a")} {ev.title}
                               </div>
                             );
                           })}
