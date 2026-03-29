@@ -153,7 +153,7 @@ export const ChatComposer: React.FC<ChatComposerProps> = React.memo(({
         </Popover>
 
         {/* Attach */}
-        <button onClick={onFileSelect} className="p-2 hover:bg-white/5 rounded-full transition-colors shrink-0" title="Attach file">
+        <button onClick={onFileSelect} className="p-2 hover:bg-[hsl(var(--wa-sidebar-hover))] rounded-full transition-colors shrink-0" title="Attach file">
           <Paperclip className="h-5 w-5 text-[hsl(var(--wa-meta))] rotate-45" />
         </button>
         <input ref={fileInputRef} type="file" className="hidden" onChange={onFileChange} accept="image/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv" />
