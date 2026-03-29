@@ -515,6 +515,14 @@ const Opportunities = () => {
                                 onValueChange={async (value) => {
                                    const newStage = value as OpportunityStage;
                                    const oldStage = opp.stage;
+                                   const isGateway = getServiceType(opp) === 'gateway_only';
+                                   
+                                   // Block gateway deals from entering underwriting/processor_approval
+                                   const GATEWAY_BLOCKED: OpportunityStage[] = ['underwriting_review', 'processor_approval'];
+                                   if (isGateway && GATEWAY_BLOCKED.includes(newStage)) {
+                                     toast({ title: "Gateway deals cannot enter Underwriting or Approved stages", variant: "destructive", duration: 4000 });
+                                     return;
+                                   }
                                    
                                    // Underwriting gate check
                                    if (newStage === 'underwriting_review') {
