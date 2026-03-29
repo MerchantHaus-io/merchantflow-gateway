@@ -217,9 +217,15 @@ export default function Calendar() {
             {isConnected === true && (
               <>
                 <Badge variant="secondary" className="gap-1 text-[10px]">
-                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                  <CheckCircle2 className="h-3 w-3 text-emerald-500" />
                   Connected
                 </Badge>
+                {!hasGmailScope && (
+                  <Button variant="outline" size="sm" className="text-xs gap-1 border-amber-500/50 text-amber-600" onClick={handleConnect}>
+                    <Mail className="h-3 w-3" />
+                    Enable Gmail Sync
+                  </Button>
+                )}
                 <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={handleSync} disabled={syncing}>
                   {syncing ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
                   Sync
