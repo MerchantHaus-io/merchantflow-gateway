@@ -11,7 +11,8 @@ import {
   MessageSquare,
   Zap,
   Skull,
-  ListChecks
+  ListChecks,
+  Mail
 } from "lucide-react";
 import { format, formatDistanceToNow, subDays, subWeeks, subMonths, isAfter } from "date-fns";
 import { STAGE_CONFIG, OpportunityStage, EMAIL_TO_USER } from "@/types/opportunity";
