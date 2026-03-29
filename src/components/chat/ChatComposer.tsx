@@ -184,7 +184,7 @@ export const ChatComposer: React.FC<ChatComposerProps> = React.memo(({
             onClick={isRecording ? onStopRecording : onStartRecording}
             className={cn(
               "p-2.5 rounded-full transition-colors shrink-0",
-              isRecording ? "bg-red-500 hover:bg-red-600" : "hover:bg-white/5"
+              isRecording ? "bg-red-500 hover:bg-red-600" : "hover:bg-[hsl(var(--wa-sidebar-hover))]"
             )}
           >
             <Mic className={cn("h-5 w-5", isRecording ? "text-white" : "text-[hsl(var(--wa-meta))]")} />
