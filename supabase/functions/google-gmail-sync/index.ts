@@ -55,8 +55,32 @@ const TEAM_EMAILS = [
   "taryn@merchanthaus.io",
 ];
 
+// Domains/patterns that should never create leads (newsletters, services, etc.)
+const NOISE_DOMAINS = [
+  "noreply", "no-reply", "newsletter", "notifications", "mailer-daemon",
+  "postmaster", "donotreply", "do-not-reply", "unsubscribe", "bounce",
+  "updates@", "marketing@", "info@google", "feedback@",
+];
+const NOISE_EMAIL_DOMAINS = [
+  "google.com", "googlemail.com", "mercury.com", "read.ai",
+  "linkedin.com", "facebook.com", "twitter.com", "instagram.com",
+  "slack.com", "zoom.us", "calendly.com", "stripe.com", "square.com",
+  "hubspot.com", "mailchimp.com", "sendgrid.net", "amazonses.com",
+  "intuit.com", "quickbooks.com", "docusign.com", "dropbox.com",
+  "github.com", "atlassian.com", "notion.so", "canva.com",
+  "theepochtimes.com", "substack.com",
+];
+
 function isTeamEmail(email: string): boolean {
   return TEAM_EMAILS.includes(email.toLowerCase()) || email.toLowerCase().endsWith("@merchanthaus.io");
+}
+
+function isNoiseEmail(email: string): boolean {
+  const lower = email.toLowerCase();
+  if (NOISE_DOMAINS.some((n) => lower.includes(n))) return true;
+  const domain = lower.split("@")[1] || "";
+  if (NOISE_EMAIL_DOMAINS.includes(domain)) return true;
+  return false;
 }
 
 serve(async (req) => {
@@ -215,7 +239,7 @@ serve(async (req) => {
 
         // Find all external emails in this message
         const allEmails = [fromEmail, ...toEmails, ...ccEmails].filter(
-          (e) => e && !isTeamEmail(e)
+          (e) => e && !isTeamEmail(e) && !isNoiseEmail(e)
         );
 
         // Match to CRM entities
@@ -242,6 +266,7 @@ serve(async (req) => {
         if (!matchedContactId && allEmails.length > 0) {
           const leadEmail = allEmails[0];
           const leadName = fromEmail === leadEmail ? fromName : leadEmail.split("@")[0];
+          console.log(`Creating lead for: ${leadEmail} (${leadName}) from subject: ${subject}`);
 
           // Create account
           const { data: newAccount, error: accErr } = await supabase
@@ -253,6 +278,9 @@ serve(async (req) => {
             .select("id")
             .single();
 
+          if (accErr) {
+            console.error(`Failed to create account for ${leadEmail}:`, accErr.message);
+          }
           if (!accErr && newAccount) {
             // Create contact
             const nameParts = (leadName || "").split(" ");
@@ -274,7 +302,7 @@ serve(async (req) => {
                 .insert({
                   account_id: newAccount.id,
                   contact_id: newContact.id,
-                  stage: "Discovery",
+                  stage: "discovery",
                   referral_source: "Email (Auto-Synced)",
                 })
                 .select("id")
