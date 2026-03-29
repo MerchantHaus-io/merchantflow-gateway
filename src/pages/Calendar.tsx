@@ -2,9 +2,10 @@ import { useState, useEffect, useMemo } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, parseISO } from "date-fns";
-import { ChevronLeft, ChevronRight, CalendarDays, Clock, MapPin, Users, ExternalLink, Link2, CheckCircle2, Loader2, Mail } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, Clock, MapPin, Users, ExternalLink, Link2, CheckCircle2, Loader2, Mail, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
@@ -38,8 +39,17 @@ export default function Calendar() {
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
   const [hasGmailScope, setHasGmailScope] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [filterUser, setFilterUser] = useState<string>("all");
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const TEAM_MEMBERS = [
+    { email: "admin@merchanthaus.io", label: "Admin" },
+    { email: "darryn@merchanthaus.io", label: "Darryn" },
+    { email: "support@merchanthaus.io", label: "Support" },
+    { email: "sales@merchanthaus.io", label: "Sales" },
+    { email: "taryn@merchanthaus.io", label: "Taryn" },
+  ];
 
   // Handle OAuth redirect params
   useEffect(() => {
@@ -162,8 +172,13 @@ export default function Calendar() {
     });
   }, [currentDate]);
 
+  const filteredEvents = useMemo(() => {
+    if (filterUser === "all") return events;
+    return events.filter((e) => e.calendar_owner_email === filterUser);
+  }, [events, filterUser]);
+
   const eventsForDate = (date: Date) =>
-    events.filter((e) => isSameDay(parseISO(e.start_time), date));
+    filteredEvents.filter((e) => isSameDay(parseISO(e.start_time), date));
 
   const selectedEvents = selectedDate ? eventsForDate(selectedDate) : [];
 
@@ -206,7 +221,26 @@ export default function Calendar() {
             </Button>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* User filter */}
+            <Select value={filterUser} onValueChange={setFilterUser}>
+              <SelectTrigger className="h-8 w-[140px] text-xs">
+                <Filter className="h-3 w-3 mr-1 text-muted-foreground" />
+                <SelectValue placeholder="All users" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Users</SelectItem>
+                {TEAM_MEMBERS.map((m) => (
+                  <SelectItem key={m.email} value={m.email}>
+                    <span className="flex items-center gap-1.5">
+                      <span className={cn("w-2 h-2 rounded-full", getTeamColor(m.email).dot)} />
+                      {m.label}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             {/* Connection status + actions */}
             {isConnected === false && (
               <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={handleConnect}>
@@ -314,11 +348,11 @@ export default function Calendar() {
 
             {(viewMode === "week" || viewMode === "day") && (
               <div className="rounded-xl border border-border/60 bg-card/80 p-4">
-                {events.length === 0 ? (
+                {filteredEvents.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">No events for this period.</p>
                 ) : (
                   <div className="space-y-2">
-                    {events.map((ev) => (
+                    {filteredEvents.map((ev) => (
                       <EventCard key={ev.id} event={ev} />
                     ))}
                   </div>
