@@ -212,6 +212,23 @@ All colors MUST be HSL.
     --input: 220 13% 87%;
     --ring: 348 83% 47%;
 
+    /* WhatsApp Chat Tokens — Light */
+    --wa-header: 204 70% 40%;
+    --wa-header-foreground: 0 0% 100%;
+    --wa-sidebar-bg: 220 14% 96%;
+    --wa-sidebar-hover: 220 14% 92%;
+    --wa-chat-bg: 220 14% 94%;
+    --wa-bubble-out: 204 60% 90%;
+    --wa-bubble-out-foreground: 222 25% 12%;
+    --wa-bubble-in: 0 0% 100%;
+    --wa-bubble-in-foreground: 222 25% 12%;
+    --wa-composer-bg: 220 14% 96%;
+    --wa-accent: 204 70% 45%;
+    --wa-unread: 204 70% 45%;
+    --wa-search-bg: 220 14% 92%;
+    --wa-meta: 220 10% 50%;
+    --wa-divider: 220 13% 87%;
+
     --shadow-sm: 0 1px 3px 0 rgba(0,0,0,0.08), 0 1px 2px 0 rgba(0,0,0,0.04);
     --shadow: 0 2px 6px 0 rgba(0,0,0,0.1), 0 1px 3px 0 rgba(0,0,0,0.06);
     --shadow-md: 0 4px 12px -1px rgba(0,0,0,0.12), 0 2px 6px -1px rgba(0,0,0,0.06);
