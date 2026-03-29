@@ -266,6 +266,7 @@ serve(async (req) => {
         if (!matchedContactId && allEmails.length > 0) {
           const leadEmail = allEmails[0];
           const leadName = fromEmail === leadEmail ? fromName : leadEmail.split("@")[0];
+          console.log(`Creating lead for: ${leadEmail} (${leadName}) from subject: ${subject}`);
 
           // Create account
           const { data: newAccount, error: accErr } = await supabase
