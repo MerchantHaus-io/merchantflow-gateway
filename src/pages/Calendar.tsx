@@ -505,10 +505,19 @@ function TeamDayGrid({
   const dayStart = startOfDay(currentDate);
 
   // Separate all-day vs timed events per member
+  // Assign events to members: match by calendar_owner_email, or by attendee email
+  const unassigned: CalendarEvent[] = [];
   const memberData = teamMembers.map((member) => {
-    const memberEvents = events.filter(
-      (e) => e.calendar_owner_email === member.email && isSameDayCT(e.start_time, currentDate)
-    );
+    const memberEvents = events.filter((e) => {
+      if (!isSameDayCT(e.start_time, currentDate)) return false;
+      // Direct ownership match
+      if (e.calendar_owner_email === member.email) return true;
+      // Check attendees for shared calendar events
+      if (e.calendar_owner_email === "shared" && Array.isArray(e.attendees)) {
+        return e.attendees.some((a: any) => a.email === member.email);
+      }
+      return false;
+    });
     const allDay = memberEvents.filter((e) => e.all_day);
     const timed = memberEvents.filter((e) => !e.all_day);
     const colors = getTeamColor(member.email);
