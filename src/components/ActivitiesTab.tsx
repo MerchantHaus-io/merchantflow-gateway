@@ -108,6 +108,7 @@ const ACTIVITY_CONFIG: Record<string, {
     label: "Wizard Progress"
   },
   email_sent: { icon: Mail, color: "text-sky-500", bgColor: "bg-sky-500/10", label: "Email Sent" },
+  email_received: { icon: Mail, color: "text-indigo-500", bgColor: "bg-indigo-500/10", label: "Email Received" },
   email_stage_notification: { icon: Mail, color: "text-sky-500", bgColor: "bg-sky-500/10", label: "Stage Email" },
   email_assignment_notification: { icon: Mail, color: "text-sky-500", bgColor: "bg-sky-500/10", label: "Assignment Email" },
   email_docs_request: { icon: Mail, color: "text-amber-500", bgColor: "bg-amber-500/10", label: "Docs Request Email" },
