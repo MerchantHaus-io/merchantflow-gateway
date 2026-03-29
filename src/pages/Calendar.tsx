@@ -216,7 +216,9 @@ export default function Calendar() {
     } else if (viewMode === "week") {
       setCurrentDate(new Date(currentDate.getTime() + dir * 7 * 24 * 60 * 60 * 1000));
     } else {
-      setCurrentDate(new Date(currentDate.getTime() + dir * 24 * 60 * 60 * 1000));
+      const newDate = new Date(currentDate.getTime() + dir * 24 * 60 * 60 * 1000);
+      setCurrentDate(newDate);
+      setSelectedDate(newDate);
     }
   };
 
