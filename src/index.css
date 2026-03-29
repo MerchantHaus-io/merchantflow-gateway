@@ -1027,6 +1027,23 @@ All colors MUST be HSL.
     --sidebar-ring: 204 98% 50%;
 
     --radius: 0.25rem;
+
+    /* WhatsApp Chat Tokens — Salesforce */
+    --wa-header: 204 80% 35%;
+    --wa-header-foreground: 0 0% 100%;
+    --wa-sidebar-bg: 210 30% 97%;
+    --wa-sidebar-hover: 210 25% 93%;
+    --wa-chat-bg: 210 28% 95%;
+    --wa-bubble-out: 204 60% 88%;
+    --wa-bubble-out-foreground: 210 30% 12%;
+    --wa-bubble-in: 0 0% 100%;
+    --wa-bubble-in-foreground: 210 30% 12%;
+    --wa-composer-bg: 210 30% 97%;
+    --wa-accent: 204 98% 41%;
+    --wa-unread: 204 98% 41%;
+    --wa-search-bg: 210 25% 93%;
+    --wa-meta: 210 15% 46%;
+    --wa-divider: 210 22% 85%;
   }
 
   /* Dark DOOM: hellfire lava background */
