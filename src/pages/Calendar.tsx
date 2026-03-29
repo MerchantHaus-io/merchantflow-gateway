@@ -172,8 +172,13 @@ export default function Calendar() {
     });
   }, [currentDate]);
 
+  const filteredEvents = useMemo(() => {
+    if (filterUser === "all") return events;
+    return events.filter((e) => e.calendar_owner_email === filterUser);
+  }, [events, filterUser]);
+
   const eventsForDate = (date: Date) =>
-    events.filter((e) => isSameDay(parseISO(e.start_time), date));
+    filteredEvents.filter((e) => isSameDay(parseISO(e.start_time), date));
 
   const selectedEvents = selectedDate ? eventsForDate(selectedDate) : [];
 
