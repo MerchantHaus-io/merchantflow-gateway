@@ -9,9 +9,11 @@ const CT_TZ = "America/Chicago";
 const toCT = (iso: string) => toZonedTime(parseISO(iso), CT_TZ);
 /** Check if a CT-converted event falls on a given date */
 const isSameDayCT = (iso: string, date: Date) => isSameDay(toCT(iso), date);
-import { ChevronLeft, ChevronRight, CalendarDays, Clock, MapPin, Users, ExternalLink, Link2, CheckCircle2, Loader2, Mail, Filter } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, Clock, MapPin, Users, ExternalLink, Link2, CheckCircle2, Loader2, Mail, Filter, CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Calendar as CalendarPicker } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -208,13 +210,27 @@ export default function Calendar() {
             <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigate(-1)}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <h2 className="text-lg font-bold text-foreground min-w-[180px] text-center">
-              {viewMode === "day"
-                ? format(currentDate, "EEEE, MMMM d, yyyy")
-                : viewMode === "week"
-                  ? `Week of ${format(startOfWeek(currentDate), "MMM d")}`
-                  : format(currentDate, "MMMM yyyy")}
-            </h2>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" className="text-lg font-bold text-foreground min-w-[180px] text-center hover:bg-accent/50 gap-1.5">
+                  {viewMode === "day" || viewMode === "team"
+                    ? format(currentDate, "EEEE, MMMM d, yyyy")
+                    : viewMode === "week"
+                      ? `Week of ${format(startOfWeek(currentDate), "MMM d")}`
+                      : format(currentDate, "MMMM yyyy")}
+                  <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="center">
+                <CalendarPicker
+                  mode="single"
+                  selected={currentDate}
+                  onSelect={(d) => { if (d) { setCurrentDate(d); setSelectedDate(d); } }}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
             <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigate(1)}>
               <ChevronRight className="h-4 w-4" />
             </Button>
