@@ -213,7 +213,6 @@ serve(async (req) => {
       const { data: existing } = await supabase
         .from("calendar_events")
         .select("id, google_event_id")
-        .gte("start_time", timeMin)
         .lte("start_time", timeMax);
 
       if (existing) {
