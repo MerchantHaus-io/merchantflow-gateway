@@ -31,6 +31,7 @@ import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
 import { SortableTableHead } from "@/components/SortableTableHead";
 import { PageHeader } from "@/components/PageHeader";
+import { StatCard } from "@/components/StatCard";
 import { EmptyState } from "@/components/EmptyState";
 import { Building2 as Building2Icon } from "lucide-react";
 
