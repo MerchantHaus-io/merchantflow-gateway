@@ -120,7 +120,7 @@ export const ChatComposer: React.FC<ChatComposerProps> = React.memo(({
             <button onClick={onCancelRecording} className="p-1.5 hover:bg-red-900/40 rounded-md transition-colors" title="Cancel">
               <X className="h-4 w-4 text-red-400" />
             </button>
-            <button onClick={onStopRecording} className="p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors" title="Stop & Send">
+            <button onClick={onStopRecording} className="p-1.5 bg-red-500 hover:bg-red-600 text-primary-foreground rounded-md transition-colors" title="Stop & Send">
               <Square className="h-3 w-3" />
             </button>
           </div>
