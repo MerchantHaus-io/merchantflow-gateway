@@ -343,7 +343,7 @@ export default function Home() {
   };
 
   const { isFavorite, toggle: toggleFavorite, count: favCount } = useFavorites();
-  const allItems = groups.flatMap((g) => g.items);
+  const allItems = groups.flatMap((g) => g.items).sort((a, b) => a.title.localeCompare(b.title));
   const favoriteItems = allItems.filter((item) => isFavorite(item.url));
   const currentItems = showFavorites ? favoriteItems : showAll ? allItems : groups[activeGroup].items;
   const allGroup: ShortcutGroup = { title: "All", items: allItems };
