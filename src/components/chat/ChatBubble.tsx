@@ -121,7 +121,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
       );
     }
     return (
-      <a href={attachmentUrl} target="_blank" rel="noopener noreferrer" className="mt-2 flex items-center gap-2 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-xs">
+      <a href={attachmentUrl} target="_blank" rel="noopener noreferrer" className="mt-2 flex items-center gap-2 p-2 rounded-lg bg-[hsl(var(--wa-search-bg))] hover:bg-[hsl(var(--wa-sidebar-hover))] transition-colors text-xs">
         <File className="h-4 w-4 shrink-0" />
         <span className="truncate flex-1">{msg.attachment_name || 'File'}</span>
         {msg.attachment_size && <span className="text-[10px] opacity-70 shrink-0">{formatFileSize(msg.attachment_size)}</span>}
