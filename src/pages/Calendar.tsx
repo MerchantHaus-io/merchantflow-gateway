@@ -28,7 +28,7 @@ interface CalendarEvent {
   calendar_owner_email: string | null;
 }
 
-type ViewMode = "month" | "week" | "day";
+type ViewMode = "month" | "week" | "day" | "team";
 
 export default function Calendar() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
