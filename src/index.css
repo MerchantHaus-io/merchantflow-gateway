@@ -161,6 +161,23 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 0 85% 55%;
     --sidebar-border: 0 20% 20%;
     --sidebar-ring: 0 85% 45%;
+
+    /* WhatsApp Chat Tokens — DOOM */
+    --wa-header: 0 60% 25%;
+    --wa-header-foreground: 0 10% 92%;
+    --wa-sidebar-bg: 0 20% 8%;
+    --wa-sidebar-hover: 0 20% 12%;
+    --wa-chat-bg: 0 15% 4%;
+    --wa-bubble-out: 0 50% 18%;
+    --wa-bubble-out-foreground: 0 10% 92%;
+    --wa-bubble-in: 0 15% 14%;
+    --wa-bubble-in-foreground: 0 10% 88%;
+    --wa-composer-bg: 0 20% 8%;
+    --wa-accent: 0 85% 45%;
+    --wa-unread: 0 85% 45%;
+    --wa-search-bg: 0 15% 12%;
+    --wa-meta: 0 10% 50%;
+    --wa-divider: 0 15% 16%;
   }
 
   /* Light theme override — warm white canvas */
