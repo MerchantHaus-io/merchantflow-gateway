@@ -35,7 +35,7 @@ export default function Calendar() {
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
-  const [viewMode, setViewMode] = useState<ViewMode>("month");
+  const [viewMode, setViewMode] = useState<ViewMode>("team");
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
   const [hasGmailScope, setHasGmailScope] = useState(false);
   const [syncing, setSyncing] = useState(false);
