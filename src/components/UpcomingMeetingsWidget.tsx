@@ -2,6 +2,10 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { format, formatDistanceToNow, isToday, isTomorrow, differenceInHours } from "date-fns";
+import { toZonedTime } from "date-fns-tz";
+
+const CT_TZ = "America/Chicago";
+const toCT = (d: string) => toZonedTime(new Date(d), CT_TZ);
 import { CalendarClock, MapPin, Users, ExternalLink, Clock, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
