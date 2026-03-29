@@ -1106,6 +1106,23 @@ All colors MUST be HSL.
     --sidebar-ring: 24 84% 58%;
 
     --radius: 0.375rem;
+
+    /* WhatsApp Chat Tokens — Star Admin */
+    --wa-header: 240 21% 18%;
+    --wa-header-foreground: 0 0% 95%;
+    --wa-sidebar-bg: 40 25% 96%;
+    --wa-sidebar-hover: 40 20% 92%;
+    --wa-chat-bg: 40 25% 94%;
+    --wa-bubble-out: 24 50% 88%;
+    --wa-bubble-out-foreground: 240 21% 15%;
+    --wa-bubble-in: 0 0% 100%;
+    --wa-bubble-in-foreground: 240 21% 15%;
+    --wa-composer-bg: 40 25% 96%;
+    --wa-accent: 24 84% 58%;
+    --wa-unread: 24 84% 58%;
+    --wa-search-bg: 40 18% 92%;
+    --wa-meta: 240 10% 46%;
+    --wa-divider: 40 15% 85%;
   }
 
   .merchant-form {
