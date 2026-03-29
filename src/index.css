@@ -747,6 +747,23 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 25 95% 53%;
     --sidebar-border: 35 20% 82%;
     --sidebar-ring: 25 95% 53%;
+
+    /* WhatsApp Chat Tokens — Warm */
+    --wa-header: 25 60% 42%;
+    --wa-header-foreground: 0 0% 100%;
+    --wa-sidebar-bg: 40 25% 96%;
+    --wa-sidebar-hover: 40 20% 92%;
+    --wa-chat-bg: 40 25% 94%;
+    --wa-bubble-out: 25 50% 88%;
+    --wa-bubble-out-foreground: 25 30% 12%;
+    --wa-bubble-in: 40 20% 99%;
+    --wa-bubble-in-foreground: 25 30% 12%;
+    --wa-composer-bg: 40 25% 96%;
+    --wa-accent: 25 95% 53%;
+    --wa-unread: 25 95% 53%;
+    --wa-search-bg: 40 20% 92%;
+    --wa-meta: 30 15% 48%;
+    --wa-divider: 35 20% 82%;
   }
 
   /* Light Silver - Cool silver tones */
