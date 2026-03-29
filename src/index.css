@@ -692,6 +692,23 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 199 89% 48%;
     --sidebar-border: 200 20% 82%;
     --sidebar-ring: 199 89% 48%;
+
+    /* WhatsApp Chat Tokens — Ocean */
+    --wa-header: 199 70% 38%;
+    --wa-header-foreground: 0 0% 100%;
+    --wa-sidebar-bg: 200 20% 96%;
+    --wa-sidebar-hover: 200 20% 92%;
+    --wa-chat-bg: 200 25% 94%;
+    --wa-bubble-out: 199 60% 88%;
+    --wa-bubble-out-foreground: 200 50% 10%;
+    --wa-bubble-in: 0 0% 100%;
+    --wa-bubble-in-foreground: 200 50% 10%;
+    --wa-composer-bg: 200 20% 96%;
+    --wa-accent: 199 89% 48%;
+    --wa-unread: 199 89% 48%;
+    --wa-search-bg: 200 20% 92%;
+    --wa-meta: 200 20% 45%;
+    --wa-divider: 200 20% 82%;
   }
 
   /* Light Warm - Warm sepia tones */
