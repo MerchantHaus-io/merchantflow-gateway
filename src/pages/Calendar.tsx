@@ -269,14 +269,18 @@ export default function Calendar() {
                           {format(day, "d")}
                         </span>
                         <div className="mt-0.5 space-y-0.5 overflow-hidden">
-                          {dayEvents.slice(0, 3).map((ev) => (
-                            <div
-                              key={ev.id}
-                              className="text-[9px] leading-tight truncate rounded px-1 py-0.5 bg-primary/15 text-primary font-medium"
-                            >
-                              {ev.all_day ? "All Day" : format(parseISO(ev.start_time), "h:mm a")} {ev.title}
-                            </div>
-                          ))}
+                          {dayEvents.slice(0, 3).map((ev) => {
+                            const c = getTeamColor(ev.calendar_owner_email);
+                            return (
+                              <div
+                                key={ev.id}
+                                className={cn("text-[9px] leading-tight truncate rounded px-1 py-0.5 font-medium flex items-center gap-1", c.bg, "text-foreground/80")}
+                              >
+                                <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", c.dot)} />
+                                {ev.all_day ? "All Day" : format(parseISO(ev.start_time), "h:mm a")} {ev.title}
+                              </div>
+                            );
+                          })}
                           {dayEvents.length > 3 && (
                             <span className="text-[9px] text-muted-foreground pl-1">+{dayEvents.length - 3} more</span>
                           )}
