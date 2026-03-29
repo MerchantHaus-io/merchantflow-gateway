@@ -187,7 +187,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
           <button type="button" onClick={() => onProfileClick(senderId)} className="shrink-0 cursor-pointer hover:opacity-80 transition-opacity self-end mb-1">
             <Avatar className="h-7 w-7">
               <AvatarImage src={profile?.avatar_url || undefined} />
-              <AvatarFallback className={cn(getAvatarColor(email || displayName), "text-white text-[10px]")}>
+              <AvatarFallback className={cn(getAvatarColor(email || displayName), "text-primary-foreground text-[10px]")}>
                 {getInitials(displayName, email)}
               </AvatarFallback>
             </Avatar>
