@@ -578,6 +578,7 @@ const Accounts = () => {
               </CardContent>
             </Card>
           </div>
+        </div>
       <Dialog
         open={!!editingAccount}
         onOpenChange={(open) => {
