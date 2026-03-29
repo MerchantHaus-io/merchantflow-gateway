@@ -425,7 +425,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     setIsConverting(false);
   };
 
-  const isGatewayCard = opportunity ? getServiceType(opportunity) === 'gateway_only' : false;
+  // isGatewayCard moved above iconRailItems useMemo
 
   const handleDownloadDetails = useCallback(() => {
     if (!opportunity) return;
