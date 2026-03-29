@@ -198,7 +198,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   const [showRequestDeleteDialog, setShowRequestDeleteDialog] = useState(false);
   const [showDeathSplash, setShowDeathSplash] = useState(false);
   const [reactivateConfirm, setReactivateConfirm] = useState<{ assignee: string } | null>(null);
-  const [activeSection, setActiveSection] = useState<ModalSection>('underwriting');
+  const [activeSection, setActiveSection] = useState<ModalSection>('overview');
   const isMobile = useIsMobile();
   // Keyboard shortcuts for section navigation
   useEffect(() => {
@@ -293,17 +293,18 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     [opportunity?.assigned_to, user?.email],
   );
 
-  // Icon rail items for section navigation
+  const isGatewayCard = opportunity ? getServiceType(opportunity) === 'gateway_only' : false;
   const iconRailItems: IconRailItem[] = useMemo(() => {
-    return [
+    const items: IconRailItem[] = [
       { id: 'overview', icon: <ClipboardList className="h-4 w-4" />, label: 'Overview' },
-      { id: 'underwriting', icon: <Wand2 className="h-4 w-4" />, label: 'UW Review' },
+      ...(!isGatewayCard ? [{ id: 'underwriting' as const, icon: <Wand2 className="h-4 w-4" />, label: 'UW Review' }] : []),
       { id: 'notes', icon: <MessageSquare className="h-4 w-4" />, label: 'Notes' },
       { id: 'documents', icon: <FileText className="h-4 w-4" />, label: 'Docs' },
       { id: 'details', icon: <Building2 className="h-4 w-4" />, label: 'Details' },
       { id: 'activity', icon: <Activity className="h-4 w-4" />, label: 'Activity' },
     ];
-  }, []);
+    return items;
+  }, [isGatewayCard]);
 
   const handleSectionSelect = useCallback((id: string) => {
     setActiveSection(id as ModalSection);
@@ -424,7 +425,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     setIsConverting(false);
   };
 
-  const isGatewayCard = opportunity ? getServiceType(opportunity) === 'gateway_only' : false;
+  // isGatewayCard moved above iconRailItems useMemo
 
   const handleDownloadDetails = useCallback(() => {
     if (!opportunity) return;
@@ -1225,11 +1226,11 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                     } : null}
                   />
                   {!isGatewayCard && <BeneficialOwners opportunityId={opportunity.id} />}
-                  <OverviewUnderwritingSummary opportunityId={opportunity.id} onNavigate={() => setActiveSection('underwriting')} />
+                  {!isGatewayCard && <OverviewUnderwritingSummary opportunityId={opportunity.id} onNavigate={() => setActiveSection('underwriting')} />}
                 </div>
               )}
 
-              {activeSection === 'underwriting' && (
+              {activeSection === 'underwriting' && !isGatewayCard && (
                 <AIValidatePanel opportunityId={opportunity.id} />
               )}
 
