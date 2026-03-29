@@ -220,7 +220,7 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
               </div>
             </PopoverContent>
           </Popover>
-          <button onClick={() => onSetReplyTo(msg)} className="p-1 hover:bg-white/10 rounded-md transition-colors" title="Reply">
+          <button onClick={() => onSetReplyTo(msg)} className="p-1 hover:bg-[hsl(var(--wa-sidebar-hover))] rounded-md transition-colors" title="Reply">
             <Reply className="h-3.5 w-3.5 text-[hsl(var(--wa-meta))]" />
           </button>
           {isOwn && (
