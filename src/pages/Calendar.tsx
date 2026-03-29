@@ -584,8 +584,8 @@ function TeamDayGrid({
 
               {/* Events positioned by time */}
               {timed.map((ev) => {
-                const evStart = parseISO(ev.start_time);
-                const evEnd = parseISO(ev.end_time);
+                const evStart = toCT(ev.start_time);
+                const evEnd = toCT(ev.end_time);
                 const startMin = differenceInMinutes(evStart, addHours(dayStart, 6));
                 const duration = Math.max(differenceInMinutes(evEnd, evStart), 15);
                 const top = Math.max((startMin / 60) * HOUR_HEIGHT, 0);
@@ -601,11 +601,11 @@ function TeamDayGrid({
                     )}
                     style={{ top, height: Math.min(height, HOURS.length * HOUR_HEIGHT - top) }}
                     onClick={() => ev.html_link && window.open(ev.html_link, "_blank")}
-                    title={`${ev.title}\n${format(evStart, "h:mm a")} – ${format(evEnd, "h:mm a")}`}
+                    title={`${ev.title}\n${format(evStart, "h:mm a")} – ${format(evEnd, "h:mm a")} CT`}
                   >
                     <span className="text-[9px] font-bold text-foreground line-clamp-1 leading-tight">{ev.title}</span>
                     <span className="text-[8px] text-muted-foreground leading-none">
-                      {format(evStart, "h:mm")}–{format(evEnd, "h:mm a")}
+                      {format(evStart, "h:mm")}–{format(evEnd, "h:mm a")} CT
                     </span>
                   </div>
                 );
