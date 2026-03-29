@@ -552,6 +552,23 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 0 0% 85%;
     --sidebar-border: 0 0% 22%;
     --sidebar-ring: 0 0% 50%;
+
+    /* WhatsApp Chat Tokens — Dark Mono */
+    --wa-header: 0 0% 12%;
+    --wa-header-foreground: 0 0% 100%;
+    --wa-sidebar-bg: 0 0% 5%;
+    --wa-sidebar-hover: 0 0% 10%;
+    --wa-chat-bg: 0 0% 3%;
+    --wa-bubble-out: 0 0% 16%;
+    --wa-bubble-out-foreground: 0 0% 100%;
+    --wa-bubble-in: 0 0% 10%;
+    --wa-bubble-in-foreground: 0 0% 92%;
+    --wa-composer-bg: 0 0% 5%;
+    --wa-accent: 0 0% 70%;
+    --wa-unread: 0 0% 70%;
+    --wa-search-bg: 0 0% 8%;
+    --wa-meta: 0 0% 55%;
+    --wa-divider: 0 0% 15%;
   }
 
   /* Light Theme - Enterprise Professional Style (Salesforce/Microsoft 365 inspired) */
