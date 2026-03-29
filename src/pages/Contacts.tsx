@@ -720,18 +720,13 @@ const Contacts = () => {
           )}
 
           {/* Results */}
-          <Card>
+          <Card className="border-border/60 overflow-hidden">
             <CardHeader className="pb-2 pt-3 px-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-semibold">{filteredContacts.length} contacts</span>
-                  {totalPages > 1 && <span className="text-xs text-muted-foreground">p.{currentPage}/{totalPages}</span>}
-                  {(assignmentFilter !== 'all' || accountFilter !== 'all' || searchQuery) && (
-                    <button onClick={() => { setAssignmentFilter('all'); setAccountFilter('all'); setSearchQuery(''); }}
-                      className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                      Clear ×
-                    </button>
-                  )}
+                  <span className="text-xs text-muted-foreground">
+                    {totalPages > 1 ? `Page ${currentPage} of ${totalPages}` : `${filteredContacts.length} results`}
+                  </span>
                 </div>
                 <div className="flex items-center gap-1 bg-muted rounded-md p-0.5">
                   <button onClick={() => setViewMode('table')} className={cn("px-2 py-1 text-xs rounded transition-colors", viewMode === 'table' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground")}>Table</button>
