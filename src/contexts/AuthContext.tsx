@@ -152,8 +152,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       provider: 'google',
       options: {
         redirectTo: getRedirectUrl(),
+        scopes: 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/gmail.readonly',
         queryParams: {
-          hd: 'merchanthaus.io', // Restrict to merchanthaus.io domain only
+          hd: 'merchanthaus.io',
+          access_type: 'offline',
+          prompt: 'consent',
         },
       },
     });
