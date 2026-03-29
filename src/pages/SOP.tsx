@@ -1296,7 +1296,7 @@ Sales Support`,
                       </ul>
                       <div className="mt-4 p-3 rounded-none border border-purple-500/20 bg-purple-500/5">
                         <p className="text-xs text-muted-foreground">
-                          <strong className="text-foreground">Example:</strong> "Assign the ABC Corp deal to Wesley" or "Create a high priority task for Yaseen to follow up on documents for XYZ account."
+                          <strong className="text-foreground">Example:</strong> "Assign the ABC Corp deal to Wesley" or "Create a high priority task for Sheiky to follow up on documents for XYZ account."
                         </p>
                       </div>
                     </div>
