@@ -942,7 +942,7 @@ const FloatingChat: React.FC = () => {
                 </button>
               )}
               {!isMobile && (
-                <button onClick={() => setIsOpen(false)} className="hover:bg-white/10 p-2 rounded-full transition-colors" title="Minimize">
+                <button onClick={() => setIsOpen(false)} className="hover:bg-[hsl(var(--wa-header)/0.7)] p-2 rounded-full transition-colors" title="Minimize">
                   <Minus className="h-4 w-4" />
                 </button>
               )}
