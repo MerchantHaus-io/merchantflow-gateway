@@ -179,8 +179,8 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({
       {!isOwn && (
         isAIBot ? (
           <div className="shrink-0 self-end mb-1">
-            <div className="h-7 w-7 rounded-full bg-purple-500 flex items-center justify-center">
-              <Bot className="h-4 w-4 text-white" />
+            <div className="h-7 w-7 rounded-full bg-purple-500/80 flex items-center justify-center">
+              <Bot className="h-4 w-4 text-primary-foreground" />
             </div>
           </div>
         ) : (
