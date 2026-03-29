@@ -65,10 +65,11 @@ export default function Calendar() {
   async function checkConnection() {
     const { data } = await supabase
       .from("google_calendar_tokens")
-      .select("id")
+      .select("id, scopes")
       .eq("user_email", user?.email || "")
       .maybeSingle();
     setIsConnected(!!data);
+    setHasGmailScope(!!data?.scopes?.includes("gmail"));
   }
 
   useEffect(() => {
