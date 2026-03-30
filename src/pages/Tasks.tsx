@@ -1090,7 +1090,7 @@ const Tasks = () => {
                                   <Badge variant="outline" className={cn("text-[10px] gap-0.5 h-5", priorityConf.color)}><PriorityIcon className="h-2.5 w-2.5" />{priorityConf.label}</Badge>
                                   {task.source === 'notice' && <Badge variant="outline" className="text-[10px] gap-0.5 h-5 border-purple-500/30 text-purple-500 bg-purple-500/10">Notice</Badge>}
                                   {task.accountName && <div className="flex items-center gap-1"><Building2 className="h-3 w-3" />{task.accountName}</div>}
-                                  <div className="flex items-center gap-1"><UserRound className="h-3 w-3" />{task.assignee || 'Unassigned'}</div>
+                                  <div className="flex items-center gap-1"><UserRound className="h-3 w-3" />{resolveDisplayName(task.assignee)}</div>
                                   <div className="flex items-center gap-1"><CalendarClock className="h-3 w-3" />{task.createdAt ? format(new Date(task.createdAt), 'MMM d, h:mm a') : '-'}</div>
                                   {task.dueAt && (
                                     <div className={cn("flex items-center gap-1", dueStatus === 'overdue' && "text-red-500 font-medium", dueStatus === 'due-today' && "text-orange-500 font-medium", dueStatus === 'due-tomorrow' && "text-amber-500", dueStatus === 'due-soon' && "text-amber-500/80")}>
