@@ -128,6 +128,7 @@ const TEAM: TeamMember[] = [
       "Formal partner relationship management",
       "Processor liaison & communications",
       "Affiliate program coordination",
+      "Business & services account management (with Jamie) — e.g. banking",
     ],
   },
 ];
