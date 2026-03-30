@@ -1281,7 +1281,7 @@ Sales Support`,
                 {/* ═══ ATRIA AI ASSISTANT SECTION ═══ */}
                 <section id="atria-ai" className="bg-card rounded-none border-2 border-purple-500/30 p-8">
                   <div className="flex items-center justify-between mb-6">
-                    <SectionHeader>3.0 — Atria AI Assistant</SectionHeader>
+                    <SectionHeader sectionId="atria-ai" sectionTitle="Atria AI Assistant">3.0 — Atria AI Assistant</SectionHeader>
                     <span className="bg-purple-500/20 text-purple-400 text-xs font-semibold px-2.5 py-0.5 rounded-none flex items-center gap-1">
                       <Bot className="w-3 h-3" /> AI Teammate
                     </span>
