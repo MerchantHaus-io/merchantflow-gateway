@@ -729,7 +729,7 @@ const FloatingChat: React.FC = () => {
                       {group.date}
                     </span>
                   </div>
-                  <div className="space-y-1 min-w-0 overflow-hidden">
+                  <div className="space-y-1 min-w-0">
                     {group.messages.map((msg) => renderBubble(msg, isCh))}
                   </div>
                 </div>
