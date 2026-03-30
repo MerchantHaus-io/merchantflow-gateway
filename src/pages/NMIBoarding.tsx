@@ -453,7 +453,6 @@ const NMIBoarding = () => {
               {step === "settings" && "Configure gateway username, timezone, and website."}
               {step === "processing" && "Configure processing platform, MCC, payment types, and account rules."}
               {step === "banking" && "Banking information for merchant billing (optional)."}
-              {step === "tearsheet" && "Upload a VAR/Tear Sheet document (optional)."}
               {step === "review" && "Review all details before submitting to NMI."}
             </CardDescription>
           </CardHeader>
