@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { Task } from "@/types/task";
-import { STAGE_CONFIG, OUTCOME_CONFIG, OpportunityStage, OutcomeStatus } from "@/types/opportunity";
+import { STAGE_CONFIG, OUTCOME_CONFIG, OpportunityStage, OutcomeStatus, resolveDisplayName } from "@/types/opportunity";
 
 interface OpportunityData {
   id: string;
