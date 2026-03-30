@@ -964,7 +964,7 @@ const Tasks = () => {
                                 <TableCell>
                                   <div className="flex items-center gap-1.5">
                                     <UserRound className="h-3.5 w-3.5 text-muted-foreground" />
-                                    <span className="text-sm">{task.assignee || 'Unassigned'}</span>
+                                    <span className="text-sm">{resolveDisplayName(task.assignee)}</span>
                                   </div>
                                 </TableCell>
                                 <TableCell onClick={(e) => e.stopPropagation()}>
