@@ -157,7 +157,7 @@ const OpportunityCard = ({
       if (!opportunity.assigned_to) { setAvatarUrl(null); return; }
       const email = TEAM_EMAIL_MAP[opportunity.assigned_to];
       if (!email) { setAvatarUrl(null); return; }
-      const { data } = await supabase.from("profiles").select("avatar_url").eq("email", email).single();
+      const { data } = await supabase.from("profiles").select("avatar_url").eq("email", email).maybeSingle();
       setAvatarUrl(data?.avatar_url || null);
     };
     fetchAvatar();
