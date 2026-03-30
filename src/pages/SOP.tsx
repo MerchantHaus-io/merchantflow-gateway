@@ -1285,7 +1285,33 @@ Sales Support`,
                 <section id="team-organogram" className="bg-card rounded-none border-2 border-border p-8">
                   <div className="flex items-center justify-between">
                     <SectionHeader sectionId="team-organogram" sectionTitle="Team Organogram">7.0 — Team Organogram</SectionHeader>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 print:hidden">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs gap-1 rounded-none"
+                        onClick={() => {
+                          const section = document.getElementById('team-organogram');
+                          if (!section) return;
+                          const printWindow = window.open('', '_blank');
+                          if (!printWindow) return;
+                          printWindow.document.write(`
+                            <html><head><title>MerchantHaus Team Organogram</title>
+                            <style>
+                              * { margin: 0; padding: 0; box-sizing: border-box; }
+                              body { font-family: system-ui, sans-serif; padding: 24px; color: #1a1a2e; }
+                              @media print { body { padding: 12px; } }
+                            </style>
+                            <link rel="stylesheet" href="/src/index.css" />
+                            </head><body>${section.innerHTML}</body></html>
+                          `);
+                          printWindow.document.close();
+                          setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
+                        }}
+                      >
+                        <Download className="h-3 w-3" />
+                        Print
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
