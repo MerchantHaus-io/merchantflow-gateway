@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Opportunity, STAGE_CONFIG, getServiceType, EMAIL_TO_USER, TEAM_MEMBER_COLORS } from "@/types/opportunity";
+import { Opportunity, STAGE_CONFIG, getServiceType, EMAIL_TO_USER, TEAM_MEMBER_COLORS, resolveDisplayName } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
 import { User, Building2, TrendingUp } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
