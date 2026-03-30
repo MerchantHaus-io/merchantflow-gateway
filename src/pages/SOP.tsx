@@ -1285,7 +1285,27 @@ Sales Support`,
                 <section id="team-organogram" className="bg-card rounded-none border-2 border-border p-8">
                   <div className="flex items-center justify-between">
                     <SectionHeader sectionId="team-organogram" sectionTitle="Team Organogram">7.0 — Team Organogram</SectionHeader>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 print:hidden">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs gap-1 rounded-none"
+                        onClick={() => {
+                          const el = document.getElementById('team-organogram');
+                          if (!el) return;
+                          // Expand all collapsibles temporarily
+                          const triggers = el.querySelectorAll('[data-state="closed"]');
+                          triggers.forEach(t => (t as HTMLElement).click());
+                          setTimeout(() => {
+                            el.classList.add('organogram-printing');
+                            window.print();
+                            el.classList.remove('organogram-printing');
+                          }, 300);
+                        }}
+                      >
+                        <Download className="h-3 w-3" />
+                        Print
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
