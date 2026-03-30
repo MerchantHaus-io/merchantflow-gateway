@@ -1285,9 +1285,20 @@ Sales Support`,
                 <section id="team-organogram" className="bg-card rounded-none border-2 border-border p-8">
                   <div className="flex items-center justify-between">
                     <SectionHeader sectionId="team-organogram" sectionTitle="Team Organogram">7.0 — Team Organogram</SectionHeader>
-                    <span className="bg-primary/10 text-primary text-xs font-semibold px-2.5 py-0.5 rounded-none flex items-center gap-1">
-                      <Users className="w-3 h-3" /> Structure
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs gap-1 rounded-none"
+                        onClick={() => window.open('/docs/MerchantHaus_Team_Organogram_v3.pdf', '_blank')}
+                      >
+                        <Download className="h-3 w-3" />
+                        Download PDF
+                      </Button>
+                      <span className="bg-primary/10 text-primary text-xs font-semibold px-2.5 py-0.5 rounded-none flex items-center gap-1">
+                        <Users className="w-3 h-3" /> Structure
+                      </span>
+                    </div>
                   </div>
                   <TeamOrganogram />
                 </section>
