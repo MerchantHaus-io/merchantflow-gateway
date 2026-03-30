@@ -698,7 +698,7 @@ Sales Support`,
                 </div>
                 {/* Document Index */}
                 <section id="index" className="bg-card rounded-none border border-border p-8">
-                  <SectionHeader gold>Document Index</SectionHeader>
+                  <SectionHeader gold sectionId="index" sectionTitle="Document Index">Document Index</SectionHeader>
                   <div className="grid md:grid-cols-2 gap-8 text-sm">
                     <div>
                       <h3 className="font-bold text-foreground mb-3 uppercase tracking-[0.3em] text-[10px]">
