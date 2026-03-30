@@ -91,7 +91,7 @@ export function IncomingMessageToast() {
             .from('profiles')
             .select('full_name, email')
             .eq('id', msg.sender_id)
-            .single();
+            .maybeSingle();
 
           if (profile) {
             senderName = profile.full_name || profile.email?.split('@')[0] || 'Someone';
