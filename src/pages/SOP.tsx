@@ -531,10 +531,15 @@ Sales Support`,
   ];
 
   /* ─── Section header helper ─── */
-  const SectionHeader = ({ children, gold = false }: { children: React.ReactNode; gold?: boolean }) => (
-    <h2 className={`font-['Playfair_Display'] text-2xl font-bold text-foreground border-b-2 ${gold ? 'border-[hsl(var(--gold))]' : 'border-primary'} inline-block mb-6 pb-1`}>
-      {children}
-    </h2>
+  const SectionHeader = ({ children, gold = false, sectionId, sectionTitle }: { children: React.ReactNode; gold?: boolean; sectionId?: string; sectionTitle?: string }) => (
+    <div className="flex items-center justify-between mb-6">
+      <h2 className={`font-['Playfair_Display'] text-2xl font-bold text-foreground border-b-2 ${gold ? 'border-[hsl(var(--gold))]' : 'border-primary'} inline-block pb-1`}>
+        {children}
+      </h2>
+      {sectionId && sectionTitle && (
+        <SuggestEditButton sectionId={sectionId} sectionTitle={sectionTitle} />
+      )}
+    </div>
   );
 
   return (
