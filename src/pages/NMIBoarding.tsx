@@ -166,7 +166,6 @@ const STEPS: { key: Step; label: string; icon: React.ReactNode }[] = [
   { key: "settings", label: "Gateway Settings", icon: <Globe className="h-4 w-4" /> },
   { key: "processing", label: "Processing", icon: <Settings2 className="h-4 w-4" /> },
   { key: "banking", label: "Banking", icon: <CreditCard className="h-4 w-4" /> },
-  { key: "tearsheet", label: "VAR/Tear Sheet", icon: <FileText className="h-4 w-4" /> },
   { key: "review", label: "Review & Submit", icon: <Send className="h-4 w-4" /> },
 ];
 
