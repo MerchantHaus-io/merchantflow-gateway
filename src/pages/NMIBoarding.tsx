@@ -156,23 +156,6 @@ const initialFormData: FormData = {
   req_dl_state: false,
   req_dl_dob: false,
   req_ssn: false,
-  // VAR/Tear Sheet defaults
-  ts_discount_rate: "",
-  ts_per_transaction_fee: "",
-  ts_monthly_minimum: "",
-  ts_statement_fee: "",
-  ts_monthly_gateway_fee: "",
-  ts_batch_fee: "",
-  ts_annual_fee: "",
-  ts_pci_fee: "",
-  ts_chargeback_fee: "",
-  ts_avs_fee: "",
-  ts_voice_auth_fee: "",
-  ts_setup_fee: "",
-  ts_early_termination_fee: "",
-  ts_contract_term: "",
-  ts_equipment: "",
-  ts_notes: "",
 };
 
 type Step = "details" | "address" | "settings" | "processing" | "banking" | "tearsheet" | "review";
