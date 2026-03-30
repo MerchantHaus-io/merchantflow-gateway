@@ -1297,9 +1297,9 @@ Sales Support`,
                           const triggers = el.querySelectorAll('[data-state="closed"]');
                           triggers.forEach(t => (t as HTMLElement).click());
                           setTimeout(() => {
-                            el.classList.add('organogram-printing');
+                            document.body.classList.add('organogram-printing');
                             window.print();
-                            el.classList.remove('organogram-printing');
+                            document.body.classList.remove('organogram-printing');
                           }, 300);
                         }}
                       >
