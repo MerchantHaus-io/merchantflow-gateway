@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Opportunity, STAGE_CONFIG, getServiceType, EMAIL_TO_USER, TEAM_MEMBER_COLORS } from "@/types/opportunity";
+import { Opportunity, STAGE_CONFIG, getServiceType, EMAIL_TO_USER, TEAM_MEMBER_COLORS, resolveDisplayName } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
 import { User, Building2, TrendingUp } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -70,7 +70,7 @@ const PipelineListView = ({ opportunities, onCardClick, selectedId, onSelect }: 
         {activeOpps.map((opp) => {
           const config = STAGE_CONFIG[opp.stage];
           const progress = getStageProgress(opp.stage);
-          const assigneeName = opp.assigned_to ? EMAIL_TO_USER[opp.assigned_to] || opp.assigned_to?.split("@")[0] : null;
+          const assigneeName = resolveDisplayName(opp.assigned_to);
           const contactName = [opp.contact?.first_name, opp.contact?.last_name].filter(Boolean).join(" ") || "No contact";
           const dealValue = getDealValue(opp);
           const serviceType = getServiceType(opp);

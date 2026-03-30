@@ -15,7 +15,7 @@ import { useTasks } from "@/contexts/TasksContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/contexts/AuthContext";
 import { Task, TaskPriority } from "@/types/task";
-import { EMAIL_TO_USER, TEAM_MEMBERS } from "@/types/opportunity";
+import { EMAIL_TO_USER, TEAM_MEMBERS, resolveDisplayName } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -333,7 +333,7 @@ const Tasks = () => {
   // Chart data
   const chartData = useMemo(() => {
     const totals = filteredTasks.reduce<Record<string, number>>((acc, task) => {
-      const name = task.assignee || 'Unassigned';
+      const name = resolveDisplayName(task.assignee);
       acc[name] = (acc[name] || 0) + 1;
       return acc;
     }, {});
@@ -796,7 +796,7 @@ const Tasks = () => {
                                 <TableCell>
                                   <div className="flex items-center gap-1.5">
                                     <UserRound className="h-3.5 w-3.5 text-muted-foreground" />
-                                    <span className="text-sm">{task.assignee || 'Unassigned'}</span>
+                                    <span className="text-sm">{resolveDisplayName(task.assignee)}</span>
                                     {task.source === 'notice' && (
                                       <Badge variant="outline" className="text-[10px] h-4 px-1.5 border-purple-500/30 text-purple-500 bg-purple-500/10">Notice</Badge>
                                     )}
@@ -964,7 +964,7 @@ const Tasks = () => {
                                 <TableCell>
                                   <div className="flex items-center gap-1.5">
                                     <UserRound className="h-3.5 w-3.5 text-muted-foreground" />
-                                    <span className="text-sm">{task.assignee || 'Unassigned'}</span>
+                                    <span className="text-sm">{resolveDisplayName(task.assignee)}</span>
                                   </div>
                                 </TableCell>
                                 <TableCell onClick={(e) => e.stopPropagation()}>
@@ -1090,7 +1090,7 @@ const Tasks = () => {
                                   <Badge variant="outline" className={cn("text-[10px] gap-0.5 h-5", priorityConf.color)}><PriorityIcon className="h-2.5 w-2.5" />{priorityConf.label}</Badge>
                                   {task.source === 'notice' && <Badge variant="outline" className="text-[10px] gap-0.5 h-5 border-purple-500/30 text-purple-500 bg-purple-500/10">Notice</Badge>}
                                   {task.accountName && <div className="flex items-center gap-1"><Building2 className="h-3 w-3" />{task.accountName}</div>}
-                                  <div className="flex items-center gap-1"><UserRound className="h-3 w-3" />{task.assignee || 'Unassigned'}</div>
+                                  <div className="flex items-center gap-1"><UserRound className="h-3 w-3" />{resolveDisplayName(task.assignee)}</div>
                                   <div className="flex items-center gap-1"><CalendarClock className="h-3 w-3" />{task.createdAt ? format(new Date(task.createdAt), 'MMM d, h:mm a') : '-'}</div>
                                   {task.dueAt && (
                                     <div className={cn("flex items-center gap-1", dueStatus === 'overdue' && "text-red-500 font-medium", dueStatus === 'due-today' && "text-orange-500 font-medium", dueStatus === 'due-tomorrow' && "text-amber-500", dueStatus === 'due-soon' && "text-amber-500/80")}>
@@ -1145,7 +1145,7 @@ const Tasks = () => {
                                   <Badge variant="outline" className={cn("text-[10px] gap-0.5 h-5", priorityConf.color)}><PriorityIcon className="h-2.5 w-2.5" />{priorityConf.label}</Badge>
                                   <Badge variant="outline" className="text-[10px] gap-0.5 h-5 border-amber-500/30 text-amber-500"><Zap className="h-2.5 w-2.5" />Auto</Badge>
                                   {task.accountName && <div className="flex items-center gap-1"><Building2 className="h-3 w-3" />{task.accountName}</div>}
-                                  <div className="flex items-center gap-1"><UserRound className="h-3 w-3" />{task.assignee || 'Unassigned'}</div>
+                                  <div className="flex items-center gap-1"><UserRound className="h-3 w-3" />{resolveDisplayName(task.assignee)}</div>
                                   <div className="flex items-center gap-1"><CalendarClock className="h-3 w-3" />{task.createdAt ? format(new Date(task.createdAt), 'MMM d, h:mm a') : '-'}</div>
                                   {task.dueAt && (
                                     <div className={cn("flex items-center gap-1", dueStatus === 'overdue' && "text-red-500 font-medium", dueStatus === 'due-today' && "text-orange-500 font-medium", dueStatus === 'due-tomorrow' && "text-amber-500", dueStatus === 'due-soon' && "text-amber-500/80")}>

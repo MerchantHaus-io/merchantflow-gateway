@@ -153,6 +153,22 @@ export const getTeamMemberFromEmail = (email: string | undefined | null): string
   return EMAIL_TO_USER[email.toLowerCase()] || null;
 };
 
+/**
+ * Resolves any assignee value (email or raw name) to a proper display name.
+ * Use this everywhere an assignee/email is rendered in the UI.
+ */
+export const resolveDisplayName = (value: string | null | undefined): string => {
+  if (!value) return 'Unassigned';
+  // Check direct email mapping
+  const mapped = EMAIL_TO_USER[value.toLowerCase()];
+  if (mapped) return mapped;
+  // Check if it's already a team member name
+  if ((TEAM_MEMBERS as readonly string[]).includes(value)) return value;
+  // Fallback: strip email domain
+  if (value.includes('@')) return value.split('@')[0];
+  return value;
+};
+
 // Helper to check if email is allowed - only specific team members
 export const isEmailAllowed = (email: string | undefined | null): boolean => {
   if (!email) return false;

@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { ChevronDown, Download } from "lucide-react";
 import { UnderwritingChecklist } from "@/components/sop/UnderwritingChecklist";
+import { TeamOrganogram } from "@/components/sop/TeamOrganogram";
 import {
   MessageSquare,
   Shield,
@@ -661,8 +662,11 @@ Sales Support`,
                       <a href="#tech-stack" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 rounded-none transition-colors">
                         6. Systems & Tech Stack
                       </a>
+                      <a href="#team-organogram" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 rounded-none transition-colors">
+                        7. Team Organogram
+                      </a>
                       <a href="#android-build" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 rounded-none transition-colors">
-                        7. Android Build Guide
+                        8. Android Build Guide
                       </a>
                     </div>
                   </CollapsibleContent>
@@ -1255,6 +1259,17 @@ Sales Support`,
                       </ul>
                     </div>
                   </div>
+                </section>
+
+                {/* ═══ TEAM ORGANOGRAM SECTION ═══ */}
+                <section id="team-organogram" className="bg-card rounded-none border-2 border-border p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <SectionHeader>7.0 — Team Organogram</SectionHeader>
+                    <span className="bg-primary/10 text-primary text-xs font-semibold px-2.5 py-0.5 rounded-none flex items-center gap-1">
+                      <Users className="w-3 h-3" /> Structure
+                    </span>
+                  </div>
+                  <TeamOrganogram />
                 </section>
 
                 {/* ═══ ATRIA AI ASSISTANT SECTION ═══ */}

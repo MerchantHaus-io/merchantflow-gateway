@@ -16,6 +16,7 @@ import { useTasks } from "@/contexts/TasksContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Task } from "@/types/task";
 import { cn } from "@/lib/utils";
+import { resolveDisplayName } from "@/types/opportunity";
 import { Loader2, Plus, Trash2, ClipboardList } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
@@ -60,7 +61,7 @@ const teamOptions = ["Unassigned", "Onboarding", "Operations", "Support"];
 const MyTasks = () => {
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
-  const displayName = user?.email?.split("@")[0] || "Me";
+  const displayName = resolveDisplayName(user?.email);
   const { tasks, addTask, updateTaskStatus, deleteTask } = useTasks();
   const [title, setTitle] = useState("");
   const [assignee, setAssignee] = useState<string>(displayName);
@@ -177,7 +178,7 @@ const MyTasks = () => {
                         </div>
                         {task.description && <p className="text-sm text-muted-foreground">{task.description}</p>}
                         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                          <span>Assignee: {task.assignee}</span>
+                          <span>Assignee: {resolveDisplayName(task.assignee)}</span>
                           {task.createdAt && <span>· {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true }).replace('about ', '')}</span>}
                          {task.relatedOpportunityId && <Badge variant="muted">Application: {task.relatedOpportunityId}</Badge>}
                           {task.relatedContactId && <Badge variant="muted">Contact: {task.relatedContactId}</Badge>}
@@ -363,7 +364,7 @@ const MyTasks = () => {
                       </div>
                       {task.comments && <p className="text-sm text-muted-foreground">{task.comments}</p>}
                       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                        <Badge variant="outline">Assignee: {task.assignee}</Badge>
+                        <Badge variant="outline">Assignee: {resolveDisplayName(task.assignee)}</Badge>
                         {task.relatedOpportunityId && <Badge variant="muted">Application {task.relatedOpportunityId}</Badge>}
                         {task.relatedContactId && <Badge variant="muted">Contact {task.relatedContactId}</Badge>}
                         {task.source === "sla" && <Badge variant="warning" withDot>24h SLA</Badge>}
