@@ -327,7 +327,7 @@ export default function PreboardingWizard() {
         contact:contacts(first_name, last_name, email, phone, fax)
       `)
       .eq('id', opportunityId)
-      .single();
+      .maybeSingle();
 
     if (opportunityError && opportunityError.code !== "PGRST116") {
       toast({ title: "Could not load account", description: opportunityError.message, variant: "destructive" });
