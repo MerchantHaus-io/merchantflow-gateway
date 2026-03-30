@@ -95,23 +95,6 @@ interface FormData {
   req_dl_state: boolean;
   req_dl_dob: boolean;
   req_ssn: boolean;
-  // VAR/Tear Sheet fields
-  ts_discount_rate: string;
-  ts_per_transaction_fee: string;
-  ts_monthly_minimum: string;
-  ts_statement_fee: string;
-  ts_monthly_gateway_fee: string;
-  ts_batch_fee: string;
-  ts_annual_fee: string;
-  ts_pci_fee: string;
-  ts_chargeback_fee: string;
-  ts_avs_fee: string;
-  ts_voice_auth_fee: string;
-  ts_setup_fee: string;
-  ts_early_termination_fee: string;
-  ts_contract_term: string;
-  ts_equipment: string;
-  ts_notes: string;
 }
 
 const initialFormData: FormData = {
