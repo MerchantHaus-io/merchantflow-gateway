@@ -1291,22 +1291,16 @@ Sales Support`,
                         size="sm"
                         className="h-7 text-xs gap-1 rounded-none"
                         onClick={() => {
-                          const section = document.getElementById('team-organogram');
-                          if (!section) return;
-                          const printWindow = window.open('', '_blank');
-                          if (!printWindow) return;
-                          printWindow.document.write(`
-                            <html><head><title>MerchantHaus Team Organogram</title>
-                            <style>
-                              * { margin: 0; padding: 0; box-sizing: border-box; }
-                              body { font-family: system-ui, sans-serif; padding: 24px; color: #1a1a2e; }
-                              @media print { body { padding: 12px; } }
-                            </style>
-                            <link rel="stylesheet" href="/src/index.css" />
-                            </head><body>${section.innerHTML}</body></html>
-                          `);
-                          printWindow.document.close();
-                          setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
+                          const el = document.getElementById('team-organogram');
+                          if (!el) return;
+                          // Expand all collapsibles temporarily
+                          const triggers = el.querySelectorAll('[data-state="closed"]');
+                          triggers.forEach(t => (t as HTMLElement).click());
+                          setTimeout(() => {
+                            el.classList.add('organogram-printing');
+                            window.print();
+                            el.classList.remove('organogram-printing');
+                          }, 300);
                         }}
                       >
                         <Download className="h-3 w-3" />
