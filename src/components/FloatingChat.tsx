@@ -710,7 +710,7 @@ const FloatingChat: React.FC = () => {
         {isLoading ? (
           <div className="flex items-center justify-center py-12"><div className="animate-spin h-6 w-6 border-2 border-[hsl(var(--wa-accent))] border-t-transparent rounded-full" /></div>
         ) : (
-          <div className="space-y-1 py-3 min-w-0 overflow-hidden">
+          <div className="space-y-1 py-3 min-w-0">
             {messages.length === 0 ? (
               <div className="text-center py-16">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[hsl(var(--wa-accent)/0.1)] mb-4">
