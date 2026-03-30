@@ -37,6 +37,8 @@ const TEAM: TeamMember[] = [
     ],
     responsibilities: [
       "Overall business operations & SOP compliance",
+      "Meeting agenda management",
+      "Business & services account management (with Taryn) — e.g. banking",
       "Application preparation (with Sheiky)",
       "Submit applications to underwriting",
       "Escalation point for all teams",
@@ -46,8 +48,8 @@ const TEAM: TeamMember[] = [
   {
     name: "Darryn",
     email: "darryn@merchanthaus.io",
-    title: "QA & Complex Sales",
-    role: "Quality Assurance / Sales / Integration",
+    title: "QA & Complex Sales / Tech",
+    role: "Quality Assurance / Sales / Integration / Workspace & CRM",
     icon: <Shield className="h-5 w-5" />,
     color: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
     borderColor: "border-blue-500/40",
@@ -62,6 +64,9 @@ const TEAM: TeamMember[] = [
       "Complex integration support",
       "Quality gate-keeper for pipeline progression",
       "Data quality & compliance auditing",
+      "Google Workspace administration",
+      "Website maintenance & development",
+      "CRM maintenance, innovation & feature development",
     ],
   },
   {
@@ -123,6 +128,7 @@ const TEAM: TeamMember[] = [
       "Formal partner relationship management",
       "Processor liaison & communications",
       "Affiliate program coordination",
+      "Business & services account management (with Jamie) — e.g. banking",
     ],
   },
 ];
