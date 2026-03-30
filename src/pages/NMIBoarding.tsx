@@ -158,7 +158,7 @@ const initialFormData: FormData = {
   req_ssn: false,
 };
 
-type Step = "details" | "address" | "settings" | "processing" | "banking" | "tearsheet" | "review";
+type Step = "details" | "address" | "settings" | "processing" | "banking" | "review";
 
 const STEPS: { key: Step; label: string; icon: React.ReactNode }[] = [
   { key: "details", label: "Business Info", icon: <Building2 className="h-4 w-4" /> },
