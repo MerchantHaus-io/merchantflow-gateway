@@ -204,8 +204,8 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
 
           {/* Assignment Details */}
           <div className="grid gap-3 sm:grid-cols-2">
-            <DetailRow icon={UserRound} label="Assigned to" value={task.assignee || "Unassigned"} />
-            <DetailRow icon={User} label="Created by" value={task.createdBy || "System"} />
+            <DetailRow icon={UserRound} label="Assigned to" value={resolveDisplayName(task.assignee)} />
+            <DetailRow icon={User} label="Created by" value={resolveDisplayName(task.createdBy)} />
             <DetailRow
               icon={CalendarClock}
               label="Created"
