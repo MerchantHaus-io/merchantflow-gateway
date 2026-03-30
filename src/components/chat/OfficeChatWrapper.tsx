@@ -173,7 +173,7 @@ export default function OfficeChatWrapper() {
         .select("id")
         .eq("email", toEmail)
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (!receiverProfile) return;
 

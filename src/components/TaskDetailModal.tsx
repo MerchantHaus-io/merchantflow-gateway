@@ -87,7 +87,7 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
           .from("contacts")
           .select("first_name, last_name, email, phone, fax, account_id")
           .eq("id", task.relatedContactId)
-          .single();
+          .maybeSingle();
 
         if (data) {
           setContact(data);
@@ -97,7 +97,7 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
               .from("accounts")
               .select("name, website, city, state, status")
               .eq("id", data.account_id)
-              .single();
+              .maybeSingle();
             if (acct) setAccount(acct);
           }
         }
@@ -109,7 +109,7 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
           .from("opportunities")
           .select("account_id, contact_id")
           .eq("id", task.relatedOpportunityId)
-          .single();
+          .maybeSingle();
 
         if (opp) {
           if (opp.contact_id) {
@@ -117,7 +117,7 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
               .from("contacts")
               .select("first_name, last_name, email, phone, fax")
               .eq("id", opp.contact_id)
-              .single();
+              .maybeSingle();
             if (contactData) setContact(contactData);
           }
           if (opp.account_id) {
@@ -125,7 +125,7 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
               .from("accounts")
               .select("name, website, city, state, status")
               .eq("id", opp.account_id)
-              .single();
+              .maybeSingle();
             if (acct) setAccount(acct);
           }
         }
