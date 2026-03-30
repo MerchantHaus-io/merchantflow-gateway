@@ -118,7 +118,7 @@ const TEAM: TeamMember[] = [
     name: "Taryn",
     email: "taryn@merchanthaus.io",
     title: "Affiliate & Partner Manager",
-    role: "NMI / Affiliate Relationships",
+    role: "NMI / Affiliate Relationships / Finance",
     icon: <Link2 className="h-5 w-5" />,
     color: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
     borderColor: "border-rose-500/40",
@@ -129,6 +129,9 @@ const TEAM: TeamMember[] = [
       "Processor liaison & communications",
       "Affiliate program coordination",
       "Business & services account management (with Jamie) — e.g. banking",
+      "NMI gateway transaction activity monitoring — flags suspicious activity to team",
+      "Client invoicing",
+      "Reconciliation of accounts",
     ],
   },
 ];
