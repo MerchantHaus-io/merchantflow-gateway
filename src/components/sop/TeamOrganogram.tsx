@@ -64,6 +64,9 @@ const TEAM: TeamMember[] = [
       "Complex integration support",
       "Quality gate-keeper for pipeline progression",
       "Data quality & compliance auditing",
+      "Google Workspace administration",
+      "Website maintenance & development",
+      "CRM maintenance, innovation & feature development",
     ],
   },
   {
