@@ -1591,7 +1591,7 @@ Sales Support`,
 
                 {/* Services Overview */}
                 <section id="services-overview" className="bg-card rounded-none border border-border p-8">
-                  <SectionHeader gold>4. MerchantHaus Services Overview</SectionHeader>
+                  <SectionHeader gold sectionId="services-overview" sectionTitle="Services Overview">4. MerchantHaus Services Overview</SectionHeader>
                   <p className="text-muted-foreground mb-6 italic border-l-4 border-[hsl(var(--gold))] pl-4 bg-[hsl(var(--gold))]/10 py-2 pr-2">
                     Reference guide for core services offered through MerchantHaus. Use this information when discussing solutions with merchants.
                   </p>
