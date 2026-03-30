@@ -109,7 +109,7 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
           .from("opportunities")
           .select("account_id, contact_id")
           .eq("id", task.relatedOpportunityId)
-          .single();
+          .maybeSingle();
 
         if (opp) {
           if (opp.contact_id) {
