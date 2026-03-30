@@ -87,7 +87,7 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
           .from("contacts")
           .select("first_name, last_name, email, phone, fax, account_id")
           .eq("id", task.relatedContactId)
-          .single();
+          .maybeSingle();
 
         if (data) {
           setContact(data);
