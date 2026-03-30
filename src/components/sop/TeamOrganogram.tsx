@@ -37,7 +37,6 @@ const TEAM: TeamMember[] = [
     ],
     responsibilities: [
       "Overall business operations & SOP compliance",
-      "Final decision authority on process & policy",
       "Application preparation (with Sheiky)",
       "Submit applications to underwriting",
       "Escalation point for all teams",
@@ -242,6 +241,21 @@ export const TeamOrganogram = () => {
               <li>• <strong>Outreach campaigns</strong> — Wesley exclusively</li>
               <li>• <strong>NMI & affiliate relationships</strong> — Taryn exclusively</li>
             </ul>
+          </div>
+
+          <div className="mt-4 p-3 rounded-md bg-primary/5 border border-primary/20">
+            <p className="text-xs font-medium mb-1 text-foreground">🗳️ Governance — Process & Policy Decisions</p>
+            <p className="text-xs text-muted-foreground mb-2">
+              All process and policy decisions are made by <strong>majority vote</strong> among the following voting members:
+            </p>
+            <div className="flex flex-wrap gap-1 mb-2">
+              {["Jamie", "Darryn", "Sheiky", "Wesley"].map((name) => (
+                <Badge key={name} variant="secondary" className="text-xs">{name}</Badge>
+              ))}
+            </div>
+            <p className="text-[11px] text-muted-foreground italic">
+              Taryn's role is affiliate & partner-facing and does not carry a vote on internal process/policy decisions.
+            </p>
           </div>
         </CardContent>
       </Card>
