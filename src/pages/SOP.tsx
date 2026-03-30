@@ -1353,7 +1353,7 @@ Sales Support`,
 
                 {/* PS Terminal Usage Guide */}
                 <section id="ps-terminal" className="bg-card rounded-none border border-border p-8">
-                  <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center justify-between">
                     <SectionHeader gold sectionId="ps-terminal" sectionTitle="PS Terminal Usage Guide">3.1 — PS Terminal Usage Guide</SectionHeader>
                     <span className="bg-[hsl(var(--gold))]/20 text-[hsl(var(--gold))] text-xs font-semibold px-2.5 py-0.5 rounded-none flex items-center gap-1">
                       <Settings className="w-3 h-3" /> Internal Tool
