@@ -85,7 +85,7 @@ export function UpcomingMeetingsWidget() {
       .lte("start_time", threeDaysOut)
       .eq("status", "confirmed")
       .order("start_time", { ascending: true })
-      .limit(8);
+      .limit(3);
 
     setEvents((data as CalendarEvent[]) || []);
     setLoading(false);
