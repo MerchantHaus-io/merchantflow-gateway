@@ -15,7 +15,7 @@ import { useTasks } from "@/contexts/TasksContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/contexts/AuthContext";
 import { Task, TaskPriority } from "@/types/task";
-import { EMAIL_TO_USER, TEAM_MEMBERS } from "@/types/opportunity";
+import { EMAIL_TO_USER, TEAM_MEMBERS, resolveDisplayName } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import {
