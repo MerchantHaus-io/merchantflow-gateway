@@ -16,6 +16,7 @@ import { useTasks } from "@/contexts/TasksContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Task } from "@/types/task";
 import { cn } from "@/lib/utils";
+import { resolveDisplayName } from "@/types/opportunity";
 import { Loader2, Plus, Trash2, ClipboardList } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
