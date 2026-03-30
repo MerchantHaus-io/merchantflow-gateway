@@ -42,7 +42,7 @@ export const SuggestEditButton = ({
   const [proposed, setProposed] = useState("");
   const [reason, setReason] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const { user, profile } = useAuth();
+  const { user, teamMemberName } = useAuth();
 
   const handleSubmit = async () => {
     if (!proposed.trim()) { toast.error("Please describe your proposed change"); return; }
@@ -54,7 +54,7 @@ export const SuggestEditButton = ({
       proposed_content: proposed.trim(),
       reason: reason.trim() || null,
       submitted_by: user.email || "",
-      submitted_by_name: profile?.full_name || user.email?.split("@")[0] || "",
+      submitted_by_name: teamMemberName || user.email?.split("@")[0] || "",
     });
     setSubmitting(false);
     if (error) { toast.error("Failed to submit"); return; }
