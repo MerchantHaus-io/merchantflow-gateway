@@ -37,7 +37,6 @@ const TEAM: TeamMember[] = [
     ],
     responsibilities: [
       "Overall business operations & SOP compliance",
-      "Final decision authority on process & policy",
       "Application preparation (with Sheiky)",
       "Submit applications to underwriting",
       "Escalation point for all teams",
