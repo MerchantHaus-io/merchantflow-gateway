@@ -1555,7 +1555,7 @@ Sales Support`,
 
                 {/* Action Items */}
                 <section id="action-items" className="bg-card rounded-none border border-border p-8">
-                  <SectionHeader gold>3.4 — Action Items & Standards</SectionHeader>
+                  <SectionHeader gold sectionId="action-items" sectionTitle="Action Items & Standards">3.4 — Action Items & Standards</SectionHeader>
 
                   <div className="grid md:grid-cols-2 gap-8">
                     <div>
