@@ -134,6 +134,21 @@ const TEAM: TeamMember[] = [
       "Reconciliation of accounts",
     ],
   },
+  {
+    name: "Neil",
+    email: "neil@nmi.com",
+    title: "NMI Support Liaison",
+    role: "NMI Support Escalations",
+    icon: <Shield className="h-5 w-5" />,
+    color: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400",
+    borderColor: "border-cyan-500/40",
+    stages: [],
+    responsibilities: [
+      "NMI support escalation point",
+      "Gateway technical issue resolution",
+      "NMI platform support coordination",
+    ],
+  },
 ];
 
 const PIPELINE_OWNERSHIP: { stage: OpportunityStage; owners: string[] }[] = [
@@ -195,7 +210,7 @@ export const TeamOrganogram = () => {
       </div>
 
       {/* Rest of team */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {TEAM.slice(1).map((member) => (
           <MemberCard
             key={member.name}
