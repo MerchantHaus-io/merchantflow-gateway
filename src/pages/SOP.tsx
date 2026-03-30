@@ -997,7 +997,7 @@ Sales Support`,
                     discovery → qualification → preboarding → underwriting → boarding → live
                 ═══════════════════════════════════════════ */}
                 <section id="pipeline-stages" className="bg-card rounded-none border border-border p-8">
-                  <SectionHeader gold>Pipeline Stage Management Guide</SectionHeader>
+                  <SectionHeader gold sectionId="pipeline-stages" sectionTitle="Pipeline Stage Management">Pipeline Stage Management Guide</SectionHeader>
                   <p className="text-muted-foreground mb-8 italic border-l-4 border-[hsl(var(--gold))] pl-4 bg-[hsl(var(--gold))]/10 py-2 pr-2">
                     Follow these guidelines for managing opportunities through each pipeline stage. 
                     Each stage has specific actions, CTAs, and criteria for advancement.
