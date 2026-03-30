@@ -125,7 +125,7 @@ const Settings = () => {
       .from("profiles")
       .select("avatar_url, full_name, phone")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
     
     if (data) {
       setAvatarUrl(data.avatar_url);

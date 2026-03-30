@@ -115,7 +115,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 .is('logged_out_at', null)
                 .order('logged_in_at', { ascending: false })
                 .limit(1)
-                .single()
+                .maybeSingle()
                 .then(({ data }) => {
                   if (data) {
                     localStorage.setItem('current_session_id', data.id);

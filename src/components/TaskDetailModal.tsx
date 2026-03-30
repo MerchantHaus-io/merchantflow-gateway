@@ -125,7 +125,7 @@ export function TaskDetailModal({ task, open, onOpenChange }: TaskDetailModalPro
               .from("accounts")
               .select("name, website, city, state, status")
               .eq("id", opp.account_id)
-              .single();
+              .maybeSingle();
             if (acct) setAccount(acct);
           }
         }

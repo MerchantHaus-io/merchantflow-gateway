@@ -89,7 +89,7 @@ export function AtriaFAB() {
         .eq("user_email", AI_BOT_EMAIL)
         .order("created_at", { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (latest) {
         setMessages((prev) => [...prev, { role: "assistant", content: latest.content }]);
