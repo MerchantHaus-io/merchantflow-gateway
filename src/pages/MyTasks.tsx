@@ -177,7 +177,7 @@ const MyTasks = () => {
                         </div>
                         {task.description && <p className="text-sm text-muted-foreground">{task.description}</p>}
                         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                          <span>Assignee: {task.assignee}</span>
+                          <span>Assignee: {resolveDisplayName(task.assignee)}</span>
                           {task.createdAt && <span>· {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true }).replace('about ', '')}</span>}
                          {task.relatedOpportunityId && <Badge variant="muted">Application: {task.relatedOpportunityId}</Badge>}
                           {task.relatedContactId && <Badge variant="muted">Contact: {task.relatedContactId}</Badge>}
