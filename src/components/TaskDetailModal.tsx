@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Task, TaskPriority } from "@/types/task";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { resolveDisplayName } from "@/types/opportunity";
 import {
   Building2,
   User,
