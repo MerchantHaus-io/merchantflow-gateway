@@ -662,8 +662,11 @@ Sales Support`,
                       <a href="#tech-stack" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 rounded-none transition-colors">
                         6. Systems & Tech Stack
                       </a>
+                      <a href="#team-organogram" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 rounded-none transition-colors">
+                        7. Team Organogram
+                      </a>
                       <a href="#android-build" className="block px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 rounded-none transition-colors">
-                        7. Android Build Guide
+                        8. Android Build Guide
                       </a>
                     </div>
                   </CollapsibleContent>
