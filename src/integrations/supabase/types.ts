@@ -1984,6 +1984,57 @@ export type Database = {
         }
         Relationships: []
       }
+      sop_change_requests: {
+        Row: {
+          created_at: string
+          id: string
+          original_content: string | null
+          proposed_content: string
+          reason: string | null
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          section_id: string
+          section_title: string
+          status: string
+          submitted_by: string
+          submitted_by_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          original_content?: string | null
+          proposed_content: string
+          reason?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          section_id: string
+          section_title: string
+          status?: string
+          submitted_by: string
+          submitted_by_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          original_content?: string | null
+          proposed_content?: string
+          reason?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          section_id?: string
+          section_title?: string
+          status?: string
+          submitted_by?: string
+          submitted_by_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       synced_emails: {
         Row: {
           activity_created: boolean | null

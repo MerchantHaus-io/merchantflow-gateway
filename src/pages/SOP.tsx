@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { ChevronDown, Download } from "lucide-react";
 import { UnderwritingChecklist } from "@/components/sop/UnderwritingChecklist";
 import { TeamOrganogram } from "@/components/sop/TeamOrganogram";
+import { SuggestEditButton, SOPReviewPanel } from "@/components/sop/SOPChangeRequest";
 import {
   MessageSquare,
   Shield,
@@ -530,10 +531,15 @@ Sales Support`,
   ];
 
   /* ─── Section header helper ─── */
-  const SectionHeader = ({ children, gold = false }: { children: React.ReactNode; gold?: boolean }) => (
-    <h2 className={`font-['Playfair_Display'] text-2xl font-bold text-foreground border-b-2 ${gold ? 'border-[hsl(var(--gold))]' : 'border-primary'} inline-block mb-6 pb-1`}>
-      {children}
-    </h2>
+  const SectionHeader = ({ children, gold = false, sectionId, sectionTitle }: { children: React.ReactNode; gold?: boolean; sectionId?: string; sectionTitle?: string }) => (
+    <div className="flex items-center justify-between mb-6">
+      <h2 className={`font-['Playfair_Display'] text-2xl font-bold text-foreground border-b-2 ${gold ? 'border-[hsl(var(--gold))]' : 'border-primary'} inline-block pb-1`}>
+        {children}
+      </h2>
+      {sectionId && sectionTitle && (
+        <SuggestEditButton sectionId={sectionId} sectionTitle={sectionTitle} />
+      )}
+    </div>
   );
 
   return (
@@ -671,6 +677,19 @@ Sales Support`,
                     </div>
                   </CollapsibleContent>
                 </Collapsible>
+
+                {/* Change Requests Review */}
+                <div className="border-t border-border mt-4 pt-4 px-4">
+                  <Collapsible>
+                    <CollapsibleTrigger className="group flex items-center justify-between w-full pb-2 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em] hover:text-foreground transition-colors">
+                      SOP Change Requests
+                      <ChevronDown className="h-3 w-3 transition-transform group-data-[state=open]:rotate-180" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SOPReviewPanel />
+                    </CollapsibleContent>
+                  </Collapsible>
+                </div>
               </nav>
             </aside>
 
@@ -692,7 +711,7 @@ Sales Support`,
                 </div>
                 {/* Document Index */}
                 <section id="index" className="bg-card rounded-none border border-border p-8">
-                  <SectionHeader gold>Document Index</SectionHeader>
+                  <SectionHeader gold sectionId="index" sectionTitle="Document Index">Document Index</SectionHeader>
                   <div className="grid md:grid-cols-2 gap-8 text-sm">
                     <div>
                       <h3 className="font-bold text-foreground mb-3 uppercase tracking-[0.3em] text-[10px]">
@@ -845,7 +864,7 @@ Sales Support`,
 
                 {/* Foreword */}
                 <section id="principles" className="bg-card rounded-none border border-border p-8">
-                  <SectionHeader>Foreword — The Four Agreements</SectionHeader>
+                  <SectionHeader sectionId="principles" sectionTitle="Foreword — The Four Agreements">Foreword — The Four Agreements</SectionHeader>
                   <p className="text-muted-foreground mb-6 italic border-l-4 border-[hsl(var(--gold))] pl-4 bg-[hsl(var(--gold))]/10 py-2 pr-2">
                     The following principles serve as the foundational mindset and
                     ethical framework that guide all MerchantHaus operations.
@@ -906,6 +925,7 @@ Sales Support`,
                           {step.title}
                         </h2>
                         <div className="flex items-center gap-2">
+                          <SuggestEditButton sectionId={step.id} sectionTitle={step.title} />
                           {hasVariants && (
                             <div className="flex gap-1 mr-1">
                               {Object.entries(variants).map(([key, variant]) => (
@@ -991,7 +1011,7 @@ Sales Support`,
                     discovery → qualification → preboarding → underwriting → boarding → live
                 ═══════════════════════════════════════════ */}
                 <section id="pipeline-stages" className="bg-card rounded-none border border-border p-8">
-                  <SectionHeader gold>Pipeline Stage Management Guide</SectionHeader>
+                  <SectionHeader gold sectionId="pipeline-stages" sectionTitle="Pipeline Stage Management">Pipeline Stage Management Guide</SectionHeader>
                   <p className="text-muted-foreground mb-8 italic border-l-4 border-[hsl(var(--gold))] pl-4 bg-[hsl(var(--gold))]/10 py-2 pr-2">
                     Follow these guidelines for managing opportunities through each pipeline stage. 
                     Each stage has specific actions, CTAs, and criteria for advancement.
@@ -1263,8 +1283,8 @@ Sales Support`,
 
                 {/* ═══ TEAM ORGANOGRAM SECTION ═══ */}
                 <section id="team-organogram" className="bg-card rounded-none border-2 border-border p-8">
-                  <div className="flex items-center justify-between mb-6">
-                    <SectionHeader>7.0 — Team Organogram</SectionHeader>
+                  <div className="flex items-center justify-between">
+                    <SectionHeader sectionId="team-organogram" sectionTitle="Team Organogram">7.0 — Team Organogram</SectionHeader>
                     <span className="bg-primary/10 text-primary text-xs font-semibold px-2.5 py-0.5 rounded-none flex items-center gap-1">
                       <Users className="w-3 h-3" /> Structure
                     </span>
@@ -1274,8 +1294,8 @@ Sales Support`,
 
                 {/* ═══ ATRIA AI ASSISTANT SECTION ═══ */}
                 <section id="atria-ai" className="bg-card rounded-none border-2 border-purple-500/30 p-8">
-                  <div className="flex items-center justify-between mb-6">
-                    <SectionHeader>3.0 — Atria AI Assistant</SectionHeader>
+                  <div className="flex items-center justify-between">
+                    <SectionHeader sectionId="atria-ai" sectionTitle="Atria AI Assistant">3.0 — Atria AI Assistant</SectionHeader>
                     <span className="bg-purple-500/20 text-purple-400 text-xs font-semibold px-2.5 py-0.5 rounded-none flex items-center gap-1">
                       <Bot className="w-3 h-3" /> AI Teammate
                     </span>
@@ -1334,8 +1354,8 @@ Sales Support`,
 
                 {/* PS Terminal Usage Guide */}
                 <section id="ps-terminal" className="bg-card rounded-none border border-border p-8">
-                  <div className="flex items-center justify-between mb-6">
-                    <SectionHeader gold>3.1 — PS Terminal Usage Guide</SectionHeader>
+                  <div className="flex items-center justify-between">
+                    <SectionHeader gold sectionId="ps-terminal" sectionTitle="PS Terminal Usage Guide">3.1 — PS Terminal Usage Guide</SectionHeader>
                     <span className="bg-[hsl(var(--gold))]/20 text-[hsl(var(--gold))] text-xs font-semibold px-2.5 py-0.5 rounded-none flex items-center gap-1">
                       <Settings className="w-3 h-3" /> Internal Tool
                     </span>
@@ -1420,8 +1440,8 @@ Sales Support`,
 
                 {/* NMI Microsite Application Process */}
                 <section id="microsite-application" className="bg-card rounded-none border-2 border-primary/30 p-8">
-                  <div className="flex items-center justify-between mb-6">
-                    <SectionHeader>3.2 — NMI Microsite Application Process</SectionHeader>
+                  <div className="flex items-center justify-between">
+                    <SectionHeader sectionId="microsite-application" sectionTitle="NMI Microsite Application">3.2 — NMI Microsite Application Process</SectionHeader>
                     <span className="bg-destructive/20 text-destructive text-xs font-semibold px-2.5 py-0.5 rounded-none flex items-center gap-1">
                       <Lock className="w-3 h-3" /> Internal Only
                     </span>
@@ -1549,7 +1569,7 @@ Sales Support`,
 
                 {/* Action Items */}
                 <section id="action-items" className="bg-card rounded-none border border-border p-8">
-                  <SectionHeader gold>3.4 — Action Items & Standards</SectionHeader>
+                  <SectionHeader gold sectionId="action-items" sectionTitle="Action Items & Standards">3.4 — Action Items & Standards</SectionHeader>
 
                   <div className="grid md:grid-cols-2 gap-8">
                     <div>
@@ -1585,7 +1605,7 @@ Sales Support`,
 
                 {/* Services Overview */}
                 <section id="services-overview" className="bg-card rounded-none border border-border p-8">
-                  <SectionHeader gold>4. MerchantHaus Services Overview</SectionHeader>
+                  <SectionHeader gold sectionId="services-overview" sectionTitle="Services Overview">4. MerchantHaus Services Overview</SectionHeader>
                   <p className="text-muted-foreground mb-6 italic border-l-4 border-[hsl(var(--gold))] pl-4 bg-[hsl(var(--gold))]/10 py-2 pr-2">
                     Reference guide for core services offered through MerchantHaus. Use this information when discussing solutions with merchants.
                   </p>
