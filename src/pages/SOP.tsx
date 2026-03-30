@@ -1439,7 +1439,7 @@ Sales Support`,
 
                 {/* NMI Microsite Application Process */}
                 <section id="microsite-application" className="bg-card rounded-none border-2 border-primary/30 p-8">
-                  <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center justify-between">
                     <SectionHeader sectionId="microsite-application" sectionTitle="NMI Microsite Application">3.2 — NMI Microsite Application Process</SectionHeader>
                     <span className="bg-destructive/20 text-destructive text-xs font-semibold px-2.5 py-0.5 rounded-none flex items-center gap-1">
                       <Lock className="w-3 h-3" /> Internal Only
