@@ -268,7 +268,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
       .eq("opportunity_id", opportunityId)
       .order("created_at", { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
     if (data) {
       setReport(data as unknown as UnifiedReport);
       setMeta({

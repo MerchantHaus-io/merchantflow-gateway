@@ -337,7 +337,7 @@ export default function PreboardingWizard() {
       .from('opportunities')
       .select('service_type')
       .eq('id', opportunityId)
-      .single();
+      .maybeSingle();
 
     const gatewayOnly = (oppServiceType as any)?.service_type === "gateway_only";
     setIsGatewayOnly(gatewayOnly);
