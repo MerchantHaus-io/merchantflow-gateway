@@ -160,7 +160,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
         .from("profiles")
         .select("avatar_url, full_name")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
 
       if (data) {
         setAvatarUrl(data.avatar_url);

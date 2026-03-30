@@ -50,7 +50,7 @@ export function UserProfileModal({ open, onOpenChange, userId, email }: UserProf
       } else if (email) {
         query = query.eq("email", email);
       }
-      const { data } = await query.single();
+      const { data } = await query.maybeSingle();
       setProfile(data as UserProfile | null);
       setLoading(false);
     };
