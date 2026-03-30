@@ -796,7 +796,7 @@ const Tasks = () => {
                                 <TableCell>
                                   <div className="flex items-center gap-1.5">
                                     <UserRound className="h-3.5 w-3.5 text-muted-foreground" />
-                                    <span className="text-sm">{task.assignee || 'Unassigned'}</span>
+                                    <span className="text-sm">{resolveDisplayName(task.assignee)}</span>
                                     {task.source === 'notice' && (
                                       <Badge variant="outline" className="text-[10px] h-4 px-1.5 border-purple-500/30 text-purple-500 bg-purple-500/10">Notice</Badge>
                                     )}
