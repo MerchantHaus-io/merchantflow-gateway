@@ -82,7 +82,7 @@ const ReportDetailModal = ({
                             {STAGE_CONFIG[opp.stage]?.label || opp.stage}
                           </Badge>
                         </TableCell>
-                        <TableCell>{opp.assigned_to || "Unassigned"}</TableCell>
+                        <TableCell>{resolveDisplayName(opp.assigned_to)}</TableCell>
                         <TableCell className="text-muted-foreground">
                           {format(new Date(opp.created_at), "MMM d, yyyy")}
                         </TableCell>
