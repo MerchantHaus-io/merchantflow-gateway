@@ -1270,7 +1270,7 @@ Sales Support`,
                 {/* ═══ TEAM ORGANOGRAM SECTION ═══ */}
                 <section id="team-organogram" className="bg-card rounded-none border-2 border-border p-8">
                   <div className="flex items-center justify-between mb-6">
-                    <SectionHeader>7.0 — Team Organogram</SectionHeader>
+                    <SectionHeader sectionId="team-organogram" sectionTitle="Team Organogram">7.0 — Team Organogram</SectionHeader>
                     <span className="bg-primary/10 text-primary text-xs font-semibold px-2.5 py-0.5 rounded-none flex items-center gap-1">
                       <Users className="w-3 h-3" /> Structure
                     </span>
