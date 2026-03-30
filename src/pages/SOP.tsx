@@ -851,7 +851,7 @@ Sales Support`,
 
                 {/* Foreword */}
                 <section id="principles" className="bg-card rounded-none border border-border p-8">
-                  <SectionHeader>Foreword — The Four Agreements</SectionHeader>
+                  <SectionHeader sectionId="principles" sectionTitle="Foreword — The Four Agreements">Foreword — The Four Agreements</SectionHeader>
                   <p className="text-muted-foreground mb-6 italic border-l-4 border-[hsl(var(--gold))] pl-4 bg-[hsl(var(--gold))]/10 py-2 pr-2">
                     The following principles serve as the foundational mindset and
                     ethical framework that guide all MerchantHaus operations.
