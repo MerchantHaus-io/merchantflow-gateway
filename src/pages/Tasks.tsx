@@ -333,7 +333,7 @@ const Tasks = () => {
   // Chart data
   const chartData = useMemo(() => {
     const totals = filteredTasks.reduce<Record<string, number>>((acc, task) => {
-      const name = task.assignee || 'Unassigned';
+      const name = resolveDisplayName(task.assignee);
       acc[name] = (acc[name] || 0) + 1;
       return acc;
     }, {});
