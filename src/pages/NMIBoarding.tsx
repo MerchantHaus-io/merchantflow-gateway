@@ -281,15 +281,6 @@ const NMIBoarding = () => {
     toast.success("Opportunity data synced to form");
   };
 
-  const handleTearsheetUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    setTearsheetFiles((prev) => [...prev, ...files]);
-    e.target.value = "";
-  };
-
-  const removeTearsheetFile = (index: number) => {
-    setTearsheetFiles((prev) => prev.filter((_, i) => i !== index));
-  };
 
   const update = (field: keyof FormData, value: string | boolean) =>
     setForm((prev) => ({ ...prev, [field]: value }));
