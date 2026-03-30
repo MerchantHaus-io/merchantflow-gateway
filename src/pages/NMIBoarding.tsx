@@ -196,7 +196,6 @@ const NMIBoarding = () => {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ success: boolean; gateway_id?: string; error?: string } | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
   const [opportunities, setOpportunities] = useState<OpportunityOption[]>([]);
   const [selectedOpportunityId, setSelectedOpportunityId] = useState<string>("");
   const [loadingOpps, setLoadingOpps] = useState(true);
