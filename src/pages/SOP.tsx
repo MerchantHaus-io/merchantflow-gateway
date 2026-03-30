@@ -925,6 +925,7 @@ Sales Support`,
                           {step.title}
                         </h2>
                         <div className="flex items-center gap-2">
+                          <SuggestEditButton sectionId={step.id} sectionTitle={step.title} />
                           {hasVariants && (
                             <div className="flex gap-1 mr-1">
                               {Object.entries(variants).map(([key, variant]) => (
