@@ -2162,10 +2162,26 @@ tbody tr:hover {
 
   /* Clean section styling */
   section {
-    break-inside: avoid;
     border-color: #d1d5db !important;
     background: white !important;
     color: black !important;
+  }
+
+  /* Allow page breaks inside the organogram section */
+  #team-organogram {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  /* When organogram-printing class is set, hide everything except the organogram */
+  .organogram-printing #sop-content > section:not(#team-organogram),
+  .organogram-printing #sop-content > div:not(:has(#team-organogram)) {
+    display: none !important;
+  }
+
+  /* Cards inside organogram should avoid breaking */
+  #team-organogram .grid > div {
+    break-inside: avoid;
     page-break-inside: avoid;
   }
 
