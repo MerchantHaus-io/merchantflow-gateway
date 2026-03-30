@@ -1261,6 +1261,17 @@ Sales Support`,
                   </div>
                 </section>
 
+                {/* ═══ TEAM ORGANOGRAM SECTION ═══ */}
+                <section id="team-organogram" className="bg-card rounded-none border-2 border-border p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <SectionHeader>7.0 — Team Organogram</SectionHeader>
+                    <span className="bg-primary/10 text-primary text-xs font-semibold px-2.5 py-0.5 rounded-none flex items-center gap-1">
+                      <Users className="w-3 h-3" /> Structure
+                    </span>
+                  </div>
+                  <TeamOrganogram />
+                </section>
+
                 {/* ═══ ATRIA AI ASSISTANT SECTION ═══ */}
                 <section id="atria-ai" className="bg-card rounded-none border-2 border-purple-500/30 p-8">
                   <div className="flex items-center justify-between mb-6">
