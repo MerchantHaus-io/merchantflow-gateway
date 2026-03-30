@@ -677,6 +677,19 @@ Sales Support`,
                     </div>
                   </CollapsibleContent>
                 </Collapsible>
+
+                {/* Change Requests Review */}
+                <div className="border-t border-border mt-4 pt-4 px-4">
+                  <Collapsible>
+                    <CollapsibleTrigger className="group flex items-center justify-between w-full pb-2 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em] hover:text-foreground transition-colors">
+                      SOP Change Requests
+                      <ChevronDown className="h-3 w-3 transition-transform group-data-[state=open]:rotate-180" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SOPReviewPanel />
+                    </CollapsibleContent>
+                  </Collapsible>
+                </div>
               </nav>
             </aside>
 
