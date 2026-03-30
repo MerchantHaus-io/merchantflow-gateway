@@ -14,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Building2, User, MapPin, Globe, CreditCard, Send, Loader2, CheckCircle, AlertCircle, ArrowLeft, FileText, Upload, X, FileCheck, LinkIcon, Settings2, Search } from "lucide-react";
+import { Building2, User, MapPin, Globe, CreditCard, Send, Loader2, CheckCircle, AlertCircle, ArrowLeft, X, LinkIcon, Settings2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MCC_CODES, MCC_CATEGORIES, PROCESSING_PLATFORMS } from "@/lib/mcc-codes";
 
@@ -95,23 +95,6 @@ interface FormData {
   req_dl_state: boolean;
   req_dl_dob: boolean;
   req_ssn: boolean;
-  // VAR/Tear Sheet fields
-  ts_discount_rate: string;
-  ts_per_transaction_fee: string;
-  ts_monthly_minimum: string;
-  ts_statement_fee: string;
-  ts_monthly_gateway_fee: string;
-  ts_batch_fee: string;
-  ts_annual_fee: string;
-  ts_pci_fee: string;
-  ts_chargeback_fee: string;
-  ts_avs_fee: string;
-  ts_voice_auth_fee: string;
-  ts_setup_fee: string;
-  ts_early_termination_fee: string;
-  ts_contract_term: string;
-  ts_equipment: string;
-  ts_notes: string;
 }
 
 const initialFormData: FormData = {
@@ -173,26 +156,9 @@ const initialFormData: FormData = {
   req_dl_state: false,
   req_dl_dob: false,
   req_ssn: false,
-  // VAR/Tear Sheet defaults
-  ts_discount_rate: "",
-  ts_per_transaction_fee: "",
-  ts_monthly_minimum: "",
-  ts_statement_fee: "",
-  ts_monthly_gateway_fee: "",
-  ts_batch_fee: "",
-  ts_annual_fee: "",
-  ts_pci_fee: "",
-  ts_chargeback_fee: "",
-  ts_avs_fee: "",
-  ts_voice_auth_fee: "",
-  ts_setup_fee: "",
-  ts_early_termination_fee: "",
-  ts_contract_term: "",
-  ts_equipment: "",
-  ts_notes: "",
 };
 
-type Step = "details" | "address" | "settings" | "processing" | "banking" | "tearsheet" | "review";
+type Step = "details" | "address" | "settings" | "processing" | "banking" | "review";
 
 const STEPS: { key: Step; label: string; icon: React.ReactNode }[] = [
   { key: "details", label: "Business Info", icon: <Building2 className="h-4 w-4" /> },
@@ -200,7 +166,6 @@ const STEPS: { key: Step; label: string; icon: React.ReactNode }[] = [
   { key: "settings", label: "Gateway Settings", icon: <Globe className="h-4 w-4" /> },
   { key: "processing", label: "Processing", icon: <Settings2 className="h-4 w-4" /> },
   { key: "banking", label: "Banking", icon: <CreditCard className="h-4 w-4" /> },
-  { key: "tearsheet", label: "VAR/Tear Sheet", icon: <FileText className="h-4 w-4" /> },
   { key: "review", label: "Review & Submit", icon: <Send className="h-4 w-4" /> },
 ];
 
@@ -230,8 +195,6 @@ const NMIBoarding = () => {
   const [form, setForm] = useState<FormData>(initialFormData);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ success: boolean; gateway_id?: string; error?: string } | null>(null);
-  const [tearsheetFiles, setTearsheetFiles] = useState<File[]>([]);
-  const [uploadingFiles, setUploadingFiles] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [opportunities, setOpportunities] = useState<OpportunityOption[]>([]);
   const [selectedOpportunityId, setSelectedOpportunityId] = useState<string>("");
@@ -318,15 +281,6 @@ const NMIBoarding = () => {
     toast.success("Opportunity data synced to form");
   };
 
-  const handleTearsheetUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    setTearsheetFiles((prev) => [...prev, ...files]);
-    e.target.value = "";
-  };
-
-  const removeTearsheetFile = (index: number) => {
-    setTearsheetFiles((prev) => prev.filter((_, i) => i !== index));
-  };
 
   const update = (field: keyof FormData, value: string | boolean) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -465,7 +419,6 @@ const NMIBoarding = () => {
                     onClick={() => {
                       setForm(initialFormData);
                       setResult(null);
-                      setTearsheetFiles([]);
                       setSelectedOpportunityId("");
                       setStep("details");
                     }}
@@ -491,7 +444,6 @@ const NMIBoarding = () => {
               {step === "settings" && "Configure gateway username, timezone, and website."}
               {step === "processing" && "Configure processing platform, MCC, payment types, and account rules."}
               {step === "banking" && "Banking information for merchant billing (optional)."}
-              {step === "tearsheet" && "Upload a VAR/Tear Sheet document (optional)."}
               {step === "review" && "Review all details before submitting to NMI."}
             </CardDescription>
           </CardHeader>
@@ -927,105 +879,6 @@ const NMIBoarding = () => {
               </div>
             )}
 
-            {step === "tearsheet" && (
-              <div className="space-y-5">
-                <p className="text-xs text-muted-foreground">
-                  Enter VAR/Tear Sheet pricing and terms per NMI. All fields are optional.
-                </p>
-
-                <div>
-                  <p className="text-xs font-semibold text-foreground uppercase tracking-wider mb-3">Rate & Fee Schedule</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    {renderField("Discount Rate (%)", "ts_discount_rate", { placeholder: "2.90" })}
-                    {renderField("Per Transaction Fee ($)", "ts_per_transaction_fee", { placeholder: "0.30" })}
-                    {renderField("Monthly Minimum ($)", "ts_monthly_minimum", { placeholder: "25.00" })}
-                    {renderField("Statement Fee ($)", "ts_statement_fee", { placeholder: "10.00" })}
-                    {renderField("Monthly Gateway Fee ($)", "ts_monthly_gateway_fee", { placeholder: "10.00" })}
-                    {renderField("Batch Fee ($)", "ts_batch_fee", { placeholder: "0.25" })}
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <p className="text-xs font-semibold text-foreground uppercase tracking-wider mb-3">Compliance & Risk Fees</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    {renderField("Annual Fee ($)", "ts_annual_fee", { placeholder: "99.00" })}
-                    {renderField("PCI Compliance Fee ($)", "ts_pci_fee", { placeholder: "99.00" })}
-                    {renderField("Chargeback Fee ($)", "ts_chargeback_fee", { placeholder: "25.00" })}
-                    {renderField("AVS Fee ($)", "ts_avs_fee", { placeholder: "0.05" })}
-                    {renderField("Voice Auth Fee ($)", "ts_voice_auth_fee", { placeholder: "3.00" })}
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <p className="text-xs font-semibold text-foreground uppercase tracking-wider mb-3">Contract Terms</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    {renderField("Setup Fee ($)", "ts_setup_fee", { placeholder: "0.00" })}
-                    {renderField("Early Termination Fee ($)", "ts_early_termination_fee", { placeholder: "295.00" })}
-                    {renderField("Contract Term (months)", "ts_contract_term", { placeholder: "36" })}
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-4">
-                  {renderField("Equipment / Terminal", "ts_equipment", { placeholder: "Dejavoo Z11, PAX A920, Virtual Terminal, etc." })}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-medium text-muted-foreground">Additional Notes</Label>
-                    <textarea
-                      value={form.ts_notes}
-                      onChange={(e) => update("ts_notes", e.target.value)}
-                      placeholder="Special pricing arrangements, volume tiers, interchange pass-through notes…"
-                      rows={3}
-                      className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    />
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <p className="text-xs font-semibold text-foreground uppercase tracking-wider mb-3">Attach Document (optional)</p>
-                  <div className="border-2 border-dashed border-border rounded-lg p-5 text-center hover:border-primary/50 transition-colors">
-                    <input
-                      type="file"
-                      id="tearsheet-upload"
-                      className="hidden"
-                      accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                      multiple
-                      onChange={handleTearsheetUpload}
-                    />
-                    <label htmlFor="tearsheet-upload" className="cursor-pointer flex flex-col items-center gap-2">
-                      <Upload className="h-6 w-6 text-muted-foreground" />
-                      <span className="text-sm font-medium text-foreground">Upload signed tear sheet</span>
-                      <span className="text-xs text-muted-foreground">PDF, JPG, PNG, DOC — max 10MB each</span>
-                    </label>
-                  </div>
-                  {tearsheetFiles.length > 0 && (
-                    <div className="space-y-2 mt-3">
-                      {tearsheetFiles.map((file, i) => (
-                        <div key={i} className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted/30 px-3 py-2">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <FileCheck className="h-4 w-4 text-primary shrink-0" />
-                            <span className="text-sm text-foreground truncate">{file.name}</span>
-                            <span className="text-xs text-muted-foreground shrink-0">
-                              {(file.size / 1024).toFixed(0)} KB
-                            </span>
-                          </div>
-                          <button onClick={() => removeTearsheetFile(i)} className="text-muted-foreground hover:text-destructive transition-colors">
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
             {step === "review" && (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
@@ -1069,37 +922,6 @@ const NMIBoarding = () => {
                   <ReviewField label="CVV Requirement" value={form.req_cvv === "always" ? "Always Required" : form.req_cvv === "first_txn" ? "Required on First Txn" : "Not Required"} />
                 </div>
 
-                {/* Tear Sheet Review */}
-                {(form.ts_discount_rate || form.ts_per_transaction_fee || form.ts_monthly_gateway_fee || form.ts_contract_term || tearsheetFiles.length > 0) && (
-                  <>
-                    <Separator />
-                    <p className="text-xs font-semibold text-foreground uppercase tracking-wider">VAR/Tear Sheet</p>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-sm">
-                      <ReviewField label="Discount Rate" value={form.ts_discount_rate ? `${form.ts_discount_rate}%` : ""} />
-                      <ReviewField label="Per Txn Fee" value={form.ts_per_transaction_fee ? `$${form.ts_per_transaction_fee}` : ""} />
-                      <ReviewField label="Monthly Min" value={form.ts_monthly_minimum ? `$${form.ts_monthly_minimum}` : ""} />
-                      <ReviewField label="Statement Fee" value={form.ts_statement_fee ? `$${form.ts_statement_fee}` : ""} />
-                      <ReviewField label="Gateway Fee" value={form.ts_monthly_gateway_fee ? `$${form.ts_monthly_gateway_fee}` : ""} />
-                      <ReviewField label="Batch Fee" value={form.ts_batch_fee ? `$${form.ts_batch_fee}` : ""} />
-                      <ReviewField label="Annual Fee" value={form.ts_annual_fee ? `$${form.ts_annual_fee}` : ""} />
-                      <ReviewField label="PCI Fee" value={form.ts_pci_fee ? `$${form.ts_pci_fee}` : ""} />
-                      <ReviewField label="Chargeback Fee" value={form.ts_chargeback_fee ? `$${form.ts_chargeback_fee}` : ""} />
-                      <ReviewField label="AVS Fee" value={form.ts_avs_fee ? `$${form.ts_avs_fee}` : ""} />
-                      <ReviewField label="Voice Auth Fee" value={form.ts_voice_auth_fee ? `$${form.ts_voice_auth_fee}` : ""} />
-                      <ReviewField label="Setup Fee" value={form.ts_setup_fee ? `$${form.ts_setup_fee}` : ""} />
-                      <ReviewField label="ETF" value={form.ts_early_termination_fee ? `$${form.ts_early_termination_fee}` : ""} />
-                      <ReviewField label="Contract Term" value={form.ts_contract_term ? `${form.ts_contract_term} months` : ""} />
-                      <ReviewField label="Equipment" value={form.ts_equipment} />
-                    </div>
-                    {form.ts_notes && (
-                      <div>
-                        <span className="text-muted-foreground text-xs">Notes</span>
-                        <p className="text-sm text-foreground whitespace-pre-line">{form.ts_notes}</p>
-                      </div>
-                    )}
-                    <ReviewField label="Document" value={tearsheetFiles.length > 0 ? `${tearsheetFiles.length} file(s) attached` : ""} />
-                  </>
-                )}
               </div>
             )}
 

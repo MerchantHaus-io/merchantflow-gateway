@@ -121,7 +121,7 @@ export function NMIBoardingBroadcast() {
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                    <span>VAR/Tear Sheet upload support (optional)</span>
+                    <span>Processing configuration with MCC lookup and payment type controls</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
