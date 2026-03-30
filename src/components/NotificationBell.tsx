@@ -42,7 +42,7 @@ export const NotificationBell = () => {
         .from('profiles')
         .select('avatar_url')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
       setHasAvatar(!!data?.avatar_url);
     };
     checkAvatar();
