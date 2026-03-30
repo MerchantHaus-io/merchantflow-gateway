@@ -134,6 +134,21 @@ const TEAM: TeamMember[] = [
       "Reconciliation of accounts",
     ],
   },
+  {
+    name: "Neil",
+    email: "neil@nmi.com",
+    title: "NMI Support Liaison",
+    role: "NMI Support Escalations",
+    icon: <Shield className="h-5 w-5" />,
+    color: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400",
+    borderColor: "border-cyan-500/40",
+    stages: [],
+    responsibilities: [
+      "NMI support escalation point",
+      "Gateway technical issue resolution",
+      "NMI platform support coordination",
+    ],
+  },
 ];
 
 const PIPELINE_OWNERSHIP: { stage: OpportunityStage; owners: string[] }[] = [
