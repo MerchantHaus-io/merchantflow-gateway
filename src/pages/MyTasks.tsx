@@ -60,7 +60,7 @@ const teamOptions = ["Unassigned", "Onboarding", "Operations", "Support"];
 const MyTasks = () => {
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
-  const displayName = user?.email?.split("@")[0] || "Me";
+  const displayName = resolveDisplayName(user?.email);
   const { tasks, addTask, updateTaskStatus, deleteTask } = useTasks();
   const [title, setTitle] = useState("");
   const [assignee, setAssignee] = useState<string>(displayName);
