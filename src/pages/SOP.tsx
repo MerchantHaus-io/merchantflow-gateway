@@ -2166,6 +2166,63 @@ Sales Support`,
                             </ul>
                           </div>
 
+                          {/* Submission Confirmation Emails */}
+                          <div className="bg-primary/5 rounded-lg border border-primary/20 p-4">
+                            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                              <Mail className="w-4 h-4 text-primary" /> Submission Confirmation Emails
+                            </h4>
+                            <p className="text-sm text-muted-foreground mb-3">
+                              When a merchant submits an application or contact inquiry, a <strong className="text-foreground">confirmation email is automatically sent</strong> to the applicant acknowledging receipt. This applies to all submission types:
+                            </p>
+                            <ul className="space-y-1.5 text-sm text-muted-foreground mb-3">
+                              <li>• <strong className="text-foreground">Processing Application</strong> — Full application with underwriting documents</li>
+                              <li>• <strong className="text-foreground">Gateway Only Application</strong> — Lighter application for existing processor clients</li>
+                              <li>• <strong className="text-foreground">Document Submission</strong> — Supplementary document uploads</li>
+                              <li>• <strong className="text-foreground">Contact Inquiry</strong> — General business inquiry via the contact form</li>
+                            </ul>
+
+                            <Collapsible>
+                              <CollapsibleTrigger className="flex items-center gap-2 text-xs font-medium text-primary hover:underline cursor-pointer">
+                                <Mail className="w-3 h-3" /> View Application Confirmation Email Template
+                                <ChevronDown className="w-3 h-3" />
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <div className="mt-3 bg-background border border-border rounded-lg p-4 text-xs text-muted-foreground space-y-2">
+                                  <p className="text-foreground font-semibold text-sm">Subject: Application Received — [Company Name]</p>
+                                  <p className="text-[10px] text-muted-foreground">From: onboarding@merchanthaus.io</p>
+                                  <hr className="border-border" />
+                                  <p>Dear [First Name],</p>
+                                  <p>Thank you for submitting your <strong>[Service Type]</strong> application for <strong>[Company Name]</strong> with Merchant Haus. We have successfully received your submission and all accompanying documentation.</p>
+                                  <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded p-2 text-emerald-700 dark:text-emerald-400">
+                                    ✅ Your application is now being reviewed by our team. You can expect to hear from us within <strong>1–2 business days</strong>.
+                                  </div>
+                                  <p>During the review process, a member of our onboarding team may reach out if any additional information is needed. There is no action required from you at this time.</p>
+                                  <hr className="border-border" />
+                                  <p>If you have any questions in the meantime, please don't hesitate to contact us at <strong>onboarding@merchanthaus.io</strong>.</p>
+                                  <p className="text-foreground">Kind regards,<br /><strong>The Merchant Haus Team</strong></p>
+                                </div>
+                              </CollapsibleContent>
+                            </Collapsible>
+
+                            <Collapsible>
+                              <CollapsibleTrigger className="flex items-center gap-2 text-xs font-medium text-primary hover:underline cursor-pointer mt-2">
+                                <Mail className="w-3 h-3" /> View Contact Inquiry Confirmation Email Template
+                                <ChevronDown className="w-3 h-3" />
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <div className="mt-3 bg-background border border-border rounded-lg p-4 text-xs text-muted-foreground space-y-2">
+                                  <p className="text-foreground font-semibold text-sm">Subject: Thank you for contacting Merchant Haus</p>
+                                  <p className="text-[10px] text-muted-foreground">From: sales@merchanthaus.io</p>
+                                  <hr className="border-border" />
+                                  <p>Hi [First Name],</p>
+                                  <p>Thank you for reaching out to Merchant Haus. We've received your inquiry and a member of our sales team will be in touch with you shortly.</p>
+                                  <p>In the meantime, if you have any additional questions, feel free to reply to this email or contact us at <strong>sales@merchanthaus.io</strong>.</p>
+                                  <p className="text-foreground">Kind regards,<br /><strong>The Merchant Haus Team</strong></p>
+                                </div>
+                              </CollapsibleContent>
+                            </Collapsible>
+                          </div>
+
                         </div>
                       </div>
 

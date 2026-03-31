@@ -1,6 +1,115 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+
+// ─── Confirmation Email ───
+
+const buildConfirmationEmailHtml = (firstName: string, serviceType: string, companyName?: string): string => {
+  const serviceLabel = serviceType === "gateway_only"
+    ? "Gateway"
+    : serviceType === "document_submission"
+    ? "Document Submission"
+    : "Processing";
+
+  const companyRef = companyName ? ` for <strong>${companyName}</strong>` : "";
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.7; color: #1a1a1a; margin: 0; padding: 0; background: #f4f4f5; }
+    .wrapper { max-width: 600px; margin: 0 auto; padding: 32px 16px; }
+    .card { background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .header { background: linear-gradient(135deg, #18181b 0%, #27272a 100%); padding: 32px 28px; text-align: center; }
+    .header img { height: 32px; }
+    .body { padding: 32px 28px; }
+    .body p { margin: 0 0 16px; font-size: 15px; color: #3f3f46; }
+    .body p:last-child { margin-bottom: 0; }
+    .body p strong { color: #18181b; }
+    .highlight { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin: 20px 0; }
+    .highlight p { margin: 0; font-size: 14px; color: #166534; }
+    .divider { height: 1px; background: #e4e4e7; margin: 24px 0; }
+    .closing p { font-size: 15px; color: #3f3f46; margin: 0 0 4px; }
+    .footer { text-align: center; padding: 20px 28px; border-top: 1px solid #f4f4f5; }
+    .footer p { margin: 0; font-size: 12px; color: #a1a1aa; }
+    .footer a { color: #71717a; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="card">
+      <div class="header">
+        <img src="https://ops-terminal.lovable.app/images/merchanthaus-logo.png" alt="Merchant Haus" />
+      </div>
+      <div class="body">
+        <p>Dear ${firstName},</p>
+        <p>Thank you for submitting your <strong>${serviceLabel}</strong> application${companyRef} with Merchant Haus. We have successfully received your submission and all accompanying documentation.</p>
+
+        <div class="highlight">
+          <p>✅ Your application is now being reviewed by our team. You can expect to hear from us within <strong>1–2 business days</strong>.</p>
+        </div>
+
+        <p>During the review process, a member of our onboarding team may reach out if any additional information is needed. There is no action required from you at this time.</p>
+
+        <div class="divider"></div>
+
+        <p>If you have any questions in the meantime, please don't hesitate to contact us at <a href="mailto:onboarding@merchanthaus.io" style="color: #18181b; text-decoration: underline;">onboarding@merchanthaus.io</a>.</p>
+
+        <div class="closing">
+          <p>Kind regards,</p>
+          <p><strong>The Merchant Haus Team</strong></p>
+        </div>
+      </div>
+      <div class="footer">
+        <p>Merchant Haus &bull; <a href="https://merchanthaus.io">merchanthaus.io</a></p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+};
+
+async function sendConfirmationEmail(
+  firstName: string,
+  email: string,
+  serviceType: string,
+  companyName?: string,
+): Promise<void> {
+  if (!RESEND_API_KEY) {
+    console.error("RESEND_API_KEY not configured — skipping confirmation email");
+    return;
+  }
+
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "Merchant Haus <onboarding@merchanthaus.io>",
+        to: [email],
+        subject: `Application Received — ${companyName || "Your Submission"}`,
+        html: buildConfirmationEmailHtml(firstName, serviceType, companyName),
+        reply_to: "onboarding@merchanthaus.io",
+      }),
+    });
+
+    const result = await res.json();
+    if (!res.ok) {
+      console.error("Confirmation email error:", result);
+    } else {
+      console.log("Confirmation email sent to", email);
+    }
+  } catch (err) {
+    console.error("Failed to send confirmation email:", err);
+  }
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -236,6 +345,9 @@ Deno.serve(async (req) => {
         fileResult = await uploadFiles(supabase, applicationId, files, clientIp, userAgent);
       }
 
+      // Send confirmation email (non-blocking)
+      await sendConfirmationEmail(parsed.dba_contact_first_name, parsed.dba_contact_email, "document_submission");
+
       return new Response(
         JSON.stringify({ success: true, application_id: applicationId, files: fileResult }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -281,6 +393,9 @@ Deno.serve(async (req) => {
       if (files && files.length > 0) {
         fileResult = await uploadFiles(supabase, applicationId, files, clientIp, userAgent);
       }
+
+      // Send confirmation email (non-blocking)
+      await sendConfirmationEmail(parsed.dba_contact_first_name, parsed.dba_contact_email, "gateway_only", parsed.dba_name);
 
       return new Response(
         JSON.stringify({ success: true, application_id: applicationId, files: fileResult }),
@@ -478,6 +593,9 @@ Deno.serve(async (req) => {
     if (files && files.length > 0) {
       fileResult = await uploadFiles(supabase, applicationId, files, clientIp, userAgent);
     }
+
+    // 8. Send confirmation email (non-blocking)
+    await sendConfirmationEmail(parsed.dba_contact_first_name, parsed.dba_contact_email, "processing", parsed.dba_name);
 
     return new Response(
       JSON.stringify({ success: true, application_id: applicationId, files: fileResult }),
