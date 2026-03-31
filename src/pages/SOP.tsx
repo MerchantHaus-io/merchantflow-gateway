@@ -2042,30 +2042,116 @@ Sales Support`,
                           <h3 className="font-bold text-lg text-foreground">Outcome & Pipeline Rules</h3>
                         </div>
                         <div className="space-y-4">
-                          <div className="bg-accent/30 rounded-lg border border-border p-4">
+
+                          {/* Closed Won */}
+                          <div className="bg-emerald-500/5 rounded-lg border border-emerald-500/20 p-4">
                             <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                              <XCircle className="w-4 h-4 text-destructive" /> Negative Outcomes Remove from Pipeline
+                              <Trophy className="w-4 h-4 text-emerald-500" /> Closed Won
                             </h4>
-                            <p className="text-sm text-muted-foreground mb-3">
-                              When any of the following outcomes are set, the opportunity is <strong className="text-foreground">immediately removed from the active pipeline board</strong> and its status is set to <code className="text-xs bg-background px-1 rounded">dead</code>:
+                            <p className="text-sm text-muted-foreground mb-2">
+                              The only positive outcome. The opportunity remains <code className="text-xs bg-background px-1 rounded">active</code> and appears in the <strong className="text-foreground">Live & Billing</strong> report. Removed from the pipeline board but retains its active status.
                             </p>
-                            <ul className="space-y-1.5 text-sm">
-                              <li className="flex items-center gap-2"><span className="text-destructive font-bold">✗</span> <strong className="text-foreground">Closed Lost</strong> — Competitor selected, pricing, product gap, etc.</li>
-                              <li className="flex items-center gap-2"><span className="text-purple-500 font-bold">🚫</span> <strong className="text-foreground">Disqualified</strong> — Unsupported MCC, geography, volume too small</li>
-                              <li className="flex items-center gap-2"><span className="text-muted-foreground font-bold">💀</span> <strong className="text-foreground">No Decision / Dead</strong> — No response, project paused, budget removed</li>
-                              <li className="flex items-center gap-2"><span className="text-orange-500 font-bold">⛔</span> <strong className="text-foreground">Underwriting Declined</strong> — Risk profile, restricted business type</li>
-                            </ul>
+                            <div className="text-xs text-muted-foreground space-y-1 mb-2">
+                              <p><strong className="text-foreground">Reasons:</strong> Live and billing ready · First transaction processed · Activated by onboarding</p>
+                              <p><strong className="text-foreground">Client email:</strong> <span className="text-emerald-600 dark:text-emerald-400">None — no notification sent</span></p>
+                            </div>
                           </div>
 
-                          <div className="bg-accent/30 rounded-lg border border-border p-4">
+                          {/* Closed Lost */}
+                          <div className="bg-destructive/5 rounded-lg border border-destructive/20 p-4">
                             <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                              <Trophy className="w-4 h-4 text-emerald-500" /> Closed Won Stays Active
+                              <XCircle className="w-4 h-4 text-destructive" /> Closed Lost
                             </h4>
-                            <p className="text-sm text-muted-foreground">
-                              <strong className="text-foreground">Closed Won</strong> is the only positive outcome. The opportunity remains <code className="text-xs bg-background px-1 rounded">active</code> and appears in the <strong className="text-foreground">Live & Billing</strong> report. It is removed from the pipeline board but retains its active status.
+                            <p className="text-sm text-muted-foreground mb-2">
+                              <strong className="text-foreground">Internal status only.</strong> Used when we have lost the deal to a competitor or the merchant chose not to proceed. The opportunity is set to <code className="text-xs bg-background px-1 rounded">dead</code> and removed from the active pipeline.
                             </p>
+                            <div className="text-xs text-muted-foreground space-y-1 mb-2">
+                              <p><strong className="text-foreground">Reasons:</strong> Competitor selected · Went with another provider · Pricing · Product gap · Timeline · Integration complexity · Withdrawn</p>
+                              <p><strong className="text-foreground">Client email:</strong> <span className="text-emerald-600 dark:text-emerald-400">None — this is an internal status, no notification is sent to the client</span></p>
+                            </div>
                           </div>
 
+                          {/* No Decision / Dead */}
+                          <div className="bg-accent/30 rounded-lg border border-border p-4">
+                            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                              <AlertTriangle className="w-4 h-4 text-muted-foreground" /> No Decision / Dead
+                            </h4>
+                            <p className="text-sm text-muted-foreground mb-2">
+                              <strong className="text-foreground">Internal status only.</strong> The client has gone silent, paused the project, or otherwise stopped engaging. The opportunity is set to <code className="text-xs bg-background px-1 rounded">dead</code> and removed from the pipeline.
+                            </p>
+                            <div className="text-xs text-muted-foreground space-y-1 mb-2">
+                              <p><strong className="text-foreground">Reasons:</strong> No response · Project paused · Budget removed · Internal priorities changed · Withdrawn</p>
+                              <p><strong className="text-foreground">Client email:</strong> <span className="text-emerald-600 dark:text-emerald-400">None — this is an internal status, no notification is sent</span></p>
+                            </div>
+                          </div>
+
+                          {/* Disqualified */}
+                          <div className="bg-purple-500/5 rounded-lg border border-purple-500/20 p-4">
+                            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                              <XCircle className="w-4 h-4 text-purple-500" /> Disqualified
+                            </h4>
+                            <p className="text-sm text-muted-foreground mb-2">
+                              The merchant does not meet eligibility criteria (MCC, geography, volume, etc.). Status is set to <code className="text-xs bg-background px-1 rounded">dead</code>. <strong className="text-foreground">A notification email is automatically sent to the client.</strong>
+                            </p>
+                            <div className="text-xs text-muted-foreground space-y-1 mb-2">
+                              <p><strong className="text-foreground">Reasons:</strong> Unsupported MCC · Geography not supported · Volume too small · Not a fit · Duplicate / invalid opportunity · Fraudulent</p>
+                              <p><strong className="text-foreground">Client email:</strong> <span className="text-amber-600 dark:text-amber-400">✉️ Yes — disqualification notification sent</span></p>
+                            </div>
+                            <Collapsible>
+                              <CollapsibleTrigger className="flex items-center gap-2 text-xs font-medium text-primary hover:underline cursor-pointer">
+                                <Mail className="w-3 h-3" /> View Email Template
+                                <ChevronDown className="w-3 h-3" />
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <div className="mt-3 bg-background border border-border rounded-lg p-4 text-xs text-muted-foreground space-y-2">
+                                  <p className="text-foreground font-semibold text-sm">Subject: Application Update — [Account Name]</p>
+                                  <hr className="border-border" />
+                                  <p>Dear [Applicant Name],</p>
+                                  <p>Thank you for your interest in Merchant Haus and for submitting your application for <strong>[Account Name]</strong>.</p>
+                                  <p>After reviewing your application, we have determined that we are unfortunately unable to support your business at this time. This may be due to factors such as the nature of your business, geographic requirements, or other eligibility criteria.</p>
+                                  <p>We appreciate the time you invested in the application process.</p>
+                                  <hr className="border-border" />
+                                  <p>If you believe there has been an error or would like further clarification, please feel free to contact us at <strong>onboarding@merchanthaus.io</strong>.</p>
+                                  <p className="text-foreground">Kind regards,<br /><strong>The Merchant Haus Team</strong></p>
+                                </div>
+                              </CollapsibleContent>
+                            </Collapsible>
+                          </div>
+
+                          {/* Underwriting Declined */}
+                          <div className="bg-orange-500/5 rounded-lg border border-orange-500/20 p-4">
+                            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                              <XCircle className="w-4 h-4 text-orange-500" /> Underwriting Declined
+                            </h4>
+                            <p className="text-sm text-muted-foreground mb-2">
+                              The application has been formally declined by the underwriting team. Status is set to <code className="text-xs bg-background px-1 rounded">dead</code>. <strong className="text-foreground">A notification email is automatically sent to the client.</strong>
+                            </p>
+                            <div className="text-xs text-muted-foreground space-y-1 mb-2">
+                              <p><strong className="text-foreground">Reasons:</strong> Risk profile · Restricted business type · Chargeback concern · Incomplete documentation · Processor decline</p>
+                              <p><strong className="text-foreground">Client email:</strong> <span className="text-amber-600 dark:text-amber-400">✉️ Yes — underwriting decline notification sent</span></p>
+                            </div>
+                            <Collapsible>
+                              <CollapsibleTrigger className="flex items-center gap-2 text-xs font-medium text-primary hover:underline cursor-pointer">
+                                <Mail className="w-3 h-3" /> View Email Template
+                                <ChevronDown className="w-3 h-3" />
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <div className="mt-3 bg-background border border-border rounded-lg p-4 text-xs text-muted-foreground space-y-2">
+                                  <p className="text-foreground font-semibold text-sm">Subject: Application Update — [Account Name]</p>
+                                  <hr className="border-border" />
+                                  <p>Dear [Applicant Name],</p>
+                                  <p>Thank you for your interest in Merchant Haus and for taking the time to submit your application for <strong>[Account Name]</strong>.</p>
+                                  <p>After a thorough review by our underwriting team, we regret to inform you that we are unable to approve your application at this time. This decision was made based on our current underwriting criteria and does not reflect on the quality of your business.</p>
+                                  <p>We understand this may be disappointing, and we appreciate your patience throughout the review process.</p>
+                                  <hr className="border-border" />
+                                  <p>If you have any questions about this decision, or if your circumstances change in the future, please don't hesitate to reach out to us at <strong>onboarding@merchanthaus.io</strong>. We would be happy to revisit your application.</p>
+                                  <p className="text-foreground">Kind regards,<br /><strong>The Merchant Haus Team</strong></p>
+                                </div>
+                              </CollapsibleContent>
+                            </Collapsible>
+                          </div>
+
+                          {/* Outcome Requirements */}
                           <div className="bg-accent/30 rounded-lg border border-border p-4">
                             <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
                               <CheckCircle className="w-4 h-4 text-primary" /> Outcome Requirements
@@ -2076,8 +2162,10 @@ Sales Support`,
                               <li>• System records <strong className="text-foreground">who</strong> set the outcome and <strong className="text-foreground">when</strong></li>
                               <li>• An activity log entry is automatically created</li>
                               <li>• Outcomes are <strong className="text-foreground">permanent</strong> — once set, the dropdown is disabled</li>
+                              <li>• Only <strong className="text-foreground">Underwriting Declined</strong> and <strong className="text-foreground">Disqualified</strong> trigger a client-facing email</li>
                             </ul>
                           </div>
+
                         </div>
                       </div>
 
