@@ -18,7 +18,63 @@ interface DeclineEmailRequest {
   outcomeNotes?: string;
 }
 
-const buildDeclineEmailHtml = (recipientName: string, accountName: string): string => `
+const getEmailContent = (outcomeStatus: string, recipientName: string, accountName: string) => {
+  const accountRef = accountName ? ` for <strong>${accountName}</strong>` : '';
+
+  if (outcomeStatus === 'underwriting_declined') {
+    return {
+      subject: `Application Update — ${accountName || "Your Application"}`,
+      heading: 'Application Update',
+      body: `
+        <p>Dear ${recipientName},</p>
+        <p>Thank you for your interest in Merchant Haus and for taking the time to submit your application${accountRef}.</p>
+        <p>After a thorough review by our underwriting team, we regret to inform you that we are unable to approve your application at this time. This decision was made based on our current underwriting criteria and does not reflect on the quality of your business.</p>
+        <p>We understand this may be disappointing, and we appreciate your patience throughout the review process.</p>
+        <div class="divider"></div>
+        <p>If you have any questions about this decision, or if your circumstances change in the future, please don't hesitate to reach out to us at <a href="mailto:onboarding@merchanthaus.io" style="color: #18181b; text-decoration: underline;">onboarding@merchanthaus.io</a>. We would be happy to revisit your application.</p>
+      `,
+      teamSubject: `⛔ Underwriting Declined — ${accountName || recipientName}`,
+      teamHeading: '⛔ Underwriting Declined — Account Update',
+      teamBody: 'The following application has been declined by underwriting and a notification has been sent to the applicant.',
+    };
+  }
+
+  if (outcomeStatus === 'disqualified') {
+    return {
+      subject: `Application Update — ${accountName || "Your Application"}`,
+      heading: 'Application Update',
+      body: `
+        <p>Dear ${recipientName},</p>
+        <p>Thank you for your interest in Merchant Haus and for submitting your application${accountRef}.</p>
+        <p>After reviewing your application, we have determined that we are unfortunately unable to support your business at this time. This may be due to factors such as the nature of your business, geographic requirements, or other eligibility criteria.</p>
+        <p>We appreciate the time you invested in the application process.</p>
+        <div class="divider"></div>
+        <p>If you believe there has been an error or would like further clarification, please feel free to contact us at <a href="mailto:onboarding@merchanthaus.io" style="color: #18181b; text-decoration: underline;">onboarding@merchanthaus.io</a>.</p>
+      `,
+      teamSubject: `🚫 Disqualified — ${accountName || recipientName}`,
+      teamHeading: '🚫 Disqualified — Account Update',
+      teamBody: 'The following application has been disqualified and a notification has been sent to the applicant.',
+    };
+  }
+
+  // Fallback (should not be reached given frontend filtering)
+  return {
+    subject: `Application Update — ${accountName || "Your Application"}`,
+    heading: 'Application Update',
+    body: `
+      <p>Dear ${recipientName},</p>
+      <p>Thank you for your interest in Merchant Haus and for your application${accountRef}.</p>
+      <p>We wanted to let you know that after review, we are unable to proceed at this time.</p>
+      <div class="divider"></div>
+      <p>For any questions, please contact us at <a href="mailto:onboarding@merchanthaus.io" style="color: #18181b; text-decoration: underline;">onboarding@merchanthaus.io</a>.</p>
+    `,
+    teamSubject: `Application Update — ${accountName || recipientName}`,
+    teamHeading: 'Application Update — Account Notification',
+    teamBody: 'The following application outcome has been set and the applicant has been notified.',
+  };
+};
+
+const buildClientEmailHtml = (body: string): string => `
 <!DOCTYPE html>
 <html>
 <head>
@@ -30,7 +86,6 @@ const buildDeclineEmailHtml = (recipientName: string, accountName: string): stri
     .card { background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
     .header { background: linear-gradient(135deg, #18181b 0%, #27272a 100%); padding: 32px 28px; text-align: center; }
     .header img { height: 28px; margin-bottom: 8px; }
-    .header h1 { margin: 0; font-size: 20px; font-weight: 600; color: #fafafa; letter-spacing: -0.025em; }
     .body { padding: 32px 28px; }
     .body p { margin: 0 0 16px; font-size: 15px; color: #3f3f46; }
     .body p:last-child { margin-bottom: 0; }
@@ -50,18 +105,7 @@ const buildDeclineEmailHtml = (recipientName: string, accountName: string): stri
         <img src="https://ops-terminal.lovable.app/images/merchanthaus-logo.png" alt="Merchant Haus" style="height: 32px;" />
       </div>
       <div class="body">
-        <p>Dear ${recipientName},</p>
-
-        <p>Thank you for your interest in Merchant Haus and for taking the time to submit your application${accountName ? ` for <strong>${accountName}</strong>` : ''}.</p>
-
-        <p>After careful review, we regret to inform you that we are unable to proceed with your application at this time. This decision was made based on our current underwriting criteria and does not reflect on the quality of your business.</p>
-
-        <p>We understand this may not be the outcome you were hoping for, and we appreciate your patience throughout the review process.</p>
-
-        <div class="divider"></div>
-
-        <p>If you have any questions regarding this decision, or if your circumstances change in the future, please don't hesitate to reach out to us at <a href="mailto:onboarding@merchanthaus.io" style="color: #18181b; text-decoration: underline;">onboarding@merchanthaus.io</a>. We would be happy to revisit your application.</p>
-
+        ${body}
         <div class="closing">
           <p>Kind regards,</p>
           <p><strong>The Merchant Haus Team</strong></p>
@@ -76,6 +120,8 @@ const buildDeclineEmailHtml = (recipientName: string, accountName: string): stri
 </html>`;
 
 const buildTeamNotificationHtml = (
+  heading: string,
+  teamBody: string,
   recipientName: string,
   accountName: string,
   outcomeStatus: string,
@@ -108,10 +154,10 @@ const buildTeamNotificationHtml = (
   <div class="wrapper">
     <div class="card">
       <div class="header">
-        <h1>⛔ Application Declined — Account Update</h1>
+        <h1>${heading}</h1>
       </div>
       <div class="body">
-        <p>The following application has been declined and a notification email has been sent to the applicant.</p>
+        <p>${teamBody}</p>
         <div class="detail">
           <div class="detail-row"><span class="detail-label">Account</span><span class="detail-value">${accountName || 'N/A'}</span></div>
           <div class="detail-row"><span class="detail-label">Applicant</span><span class="detail-value">${recipientName}</span></div>
@@ -144,6 +190,16 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Only send client emails for formal declines
+    const allowedOutcomes = ['underwriting_declined', 'disqualified'];
+    if (!allowedOutcomes.includes(outcomeStatus)) {
+      console.log(`Skipping client email — outcome "${outcomeStatus}" does not warrant client notification`);
+      return new Response(
+        JSON.stringify({ success: true, skipped: true, reason: "Outcome does not require client notification" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     if (!RESEND_API_KEY) {
       console.error("RESEND_API_KEY not configured");
       return new Response(
@@ -152,9 +208,11 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log(`Sending application declined email to ${recipientEmail} for ${accountName} (${outcomeStatus}: ${outcomeReason})`);
+    const content = getEmailContent(outcomeStatus, recipientName, accountName);
 
-    // 1. Send decline email to applicant from noreply@
+    console.log(`Sending application notification email to ${recipientEmail} for ${accountName} (${outcomeStatus}: ${outcomeReason})`);
+
+    // 1. Send notification email to applicant
     const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -164,8 +222,8 @@ const handler = async (req: Request): Promise<Response> => {
       body: JSON.stringify({
         from: "Merchant Haus <noreply@merchanthaus.io>",
         to: [recipientEmail],
-        subject: `Application Update — ${accountName || "Your Application"}`,
-        html: buildDeclineEmailHtml(recipientName, accountName),
+        subject: content.subject,
+        html: buildClientEmailHtml(content.body),
         reply_to: "onboarding@merchanthaus.io",
       }),
     });
@@ -174,14 +232,14 @@ const handler = async (req: Request): Promise<Response> => {
     if (!emailResponse.ok) {
       console.error("Resend API error:", result);
       return new Response(
-        JSON.stringify({ error: result.message || "Failed to send decline email" }),
+        JSON.stringify({ error: result.message || "Failed to send notification email" }),
         { status: emailResponse.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log("Decline email sent successfully:", result);
+    console.log("Notification email sent successfully:", result);
 
-    // 2. Send team notification email to all internal users
+    // 2. Send team notification email
     const teamRecipients = [
       "support@merchanthaus.io",
       "admin@merchanthaus.io",
@@ -197,8 +255,10 @@ const handler = async (req: Request): Promise<Response> => {
       body: JSON.stringify({
         from: "Merchant Haus <noreply@merchanthaus.io>",
         to: teamRecipients,
-        subject: `⛔ Application Declined — ${accountName || recipientName}`,
+        subject: content.teamSubject,
         html: buildTeamNotificationHtml(
+          content.teamHeading,
+          content.teamBody,
           recipientName,
           accountName,
           outcomeStatus,
@@ -213,12 +273,11 @@ const handler = async (req: Request): Promise<Response> => {
     const teamResult = await teamEmailResponse.json();
     if (!teamEmailResponse.ok) {
       console.error("Team notification email error:", teamResult);
-      // Don't fail the whole request — applicant email was sent
     } else {
       console.log("Team notification email sent:", teamResult);
     }
 
-    // Log as activity on matching opportunity
+    // Log as activity
     try {
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -230,8 +289,8 @@ const handler = async (req: Request): Promise<Response> => {
           if (opps && opps.length > 0) {
             await sb.from("activities").insert({
               opportunity_id: opps[0].id,
-              type: "email_decline_sent",
-              description: `📧 Application declined email sent to ${recipientName} (${recipientEmail}). Reason: ${outcomeReason}`,
+              type: "email_notification_sent",
+              description: `📧 ${content.teamHeading.replace(/[⛔🚫] /, '')} notification sent to ${recipientName} (${recipientEmail}). Reason: ${outcomeReason}`,
               user_email: "system@ops.internal",
             });
           }
