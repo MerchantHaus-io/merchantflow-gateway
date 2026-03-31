@@ -71,7 +71,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const html = buildHtml(title, postedBy, attachmentName);
     const subjectTitle = deriveSubjectTitle(title);
-    const subject = `NOTICE BOARD: ${subjectTitle}`;
+    const subject = `Notice Board — ${subjectTitle}`.replace(/[\r\n]+/g, " ").trim();
 
     // Send from the creator's name via the tasks domain
     const fromName = postedBy || "Ops Terminal";
