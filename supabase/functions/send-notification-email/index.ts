@@ -47,7 +47,7 @@ const getEmailHtml = (type: string, recipientName: string, data: Record<string, 
           <style>
             body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+            .header { background: linear-gradient(135deg, #18181b 0%, #27272a 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; }
             .content { background: #f9fafb; padding: 20px; border-radius: 0 0 8px 8px; }
             .badge { display: inline-block; padding: 4px 12px; border-radius: 9999px; font-size: 14px; font-weight: 500; }
             .badge-old { background: #fee2e2; color: #dc2626; }
