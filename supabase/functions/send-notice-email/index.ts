@@ -39,9 +39,9 @@ function buildHtml(title: string, postedBy: string, attachmentName?: string | nu
         <p style="margin:0;font-size:15px;color:#111827;white-space:pre-wrap;line-height:1.6;">${title}</p>
         ${attachmentName ? `<p style="margin:12px 0 0;font-size:12px;color:#6b7280;">📎 Attachment: ${attachmentName}</p>` : ""}
       </div>
-      <a href="https://ops-terminal.lovable.app" style="display:inline-block;padding:10px 24px;background:#c9a227;color:#1a1a2e;text-decoration:none;border-radius:8px;font-size:13px;font-weight:600;">Open Ops Terminal</a>
+      <a href="https://ops-terminal.lovable.app" style="display:inline-block;padding:10px 24px;background:#18181b;color:#ffffff;text-decoration:none;border-radius:8px;font-size:13px;font-weight:600;">Open Ops Terminal</a>
       <div style="margin-top:20px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:11px;color:#9ca3af;">
-        Ops Terminal — MerchantHaus
+        Merchant Haus &bull; <a href="https://merchanthaus.io" style="color:#9ca3af;text-decoration:none;">merchanthaus.io</a>
       </div>
     </div>
   </div>

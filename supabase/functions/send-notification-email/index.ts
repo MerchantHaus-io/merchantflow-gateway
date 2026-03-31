@@ -213,7 +213,7 @@ const handler = async (req: Request): Promise<Response> => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Ops Terminal <onboarding@resend.dev>",
+        from: "Merchant Haus <noreply@merchanthaus.io>",
         to: [recipientEmail],
         subject,
         html,
