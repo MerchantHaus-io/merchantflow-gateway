@@ -153,7 +153,7 @@ const getEmailHtml = (type: string, recipientName: string, data: Record<string, 
                 ${data.stage ? `<span class="stage">${data.stage}</span>` : ""}
               </div>
               <div class="footer">
-                <p>This is an automated notification from Ops Terminal.</p>
+                <p>Merchant Haus &bull; <a href="https://merchanthaus.io" style="color: #6b7280; text-decoration: none;">merchanthaus.io</a></p>
               </div>
             </div>
           </div>
