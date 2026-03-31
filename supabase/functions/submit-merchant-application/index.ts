@@ -345,6 +345,9 @@ Deno.serve(async (req) => {
         fileResult = await uploadFiles(supabase, applicationId, files, clientIp, userAgent);
       }
 
+      // Send confirmation email (non-blocking)
+      await sendConfirmationEmail(parsed.dba_contact_first_name, parsed.dba_contact_email, "document_submission");
+
       return new Response(
         JSON.stringify({ success: true, application_id: applicationId, files: fileResult }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
