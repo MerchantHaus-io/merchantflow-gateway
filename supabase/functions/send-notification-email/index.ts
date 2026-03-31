@@ -35,7 +35,7 @@ const getEmailSubject = (type: string, data: Record<string, unknown>): string =>
 };
 
 const getEmailHtml = (type: string, recipientName: string, data: Record<string, unknown>): string => {
-  const greeting = `<p>Hi ${recipientName || "there"},</p>`;
+  const greeting = `<p>Hi ${recipientName || "Team"},</p>`;
   
   switch (type) {
     case "stage_change":
