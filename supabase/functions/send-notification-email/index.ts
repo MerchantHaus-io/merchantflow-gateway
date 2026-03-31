@@ -59,7 +59,7 @@ const getEmailHtml = (type: string, recipientName: string, data: Record<string, 
         <body>
           <div class="container">
             <div class="header">
-              <h1 style="margin: 0; font-size: 20px;">📊 Stage Update</h1>
+              <h1 style="margin: 0; font-size: 20px;">Pipeline Update</h1>
             </div>
             <div class="content">
               ${greeting}
