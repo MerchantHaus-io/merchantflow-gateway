@@ -18,16 +18,19 @@ interface NotificationEmailRequest {
   data: Record<string, unknown>;
 }
 
+// Sanitise subject lines — Resend rejects \r\n in subjects
+const sanitizeSubject = (s: string): string => s.replace(/[\r\n]+/g, " ").trim();
+
 const getEmailSubject = (type: string, data: Record<string, unknown>): string => {
   switch (type) {
     case "stage_change":
-      return `Stage Update: ${data.accountName || "Opportunity"} moved to ${data.newStage}`;
+      return sanitizeSubject(`Pipeline Update — ${data.accountName || "Opportunity"} → ${data.newStage}`);
     case "task_assignment":
-      return `New Task Assigned: ${data.taskTitle}`;
+      return sanitizeSubject(`Task Assigned — ${data.taskTitle}`);
     case "opportunity_assignment":
-      return `Opportunity Assigned: ${data.accountName}`;
+      return sanitizeSubject(`Opportunity Assigned — ${data.accountName}`);
     default:
-      return "Notification from Ops Terminal";
+      return "Merchant Haus — Notification";
   }
 };
 
