@@ -97,7 +97,7 @@ const handler = async (req: Request): Promise<Response> => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Merchant Haus <onboarding@resend.dev>",
+        from: "Merchant Haus <onboarding@merchanthaus.io>",
         to: [contact_email],
         subject: `Action Required: Complete Your Merchant Application — ${account_name}`,
         html: buildDocsRequestHtml(contact_first_name || "there", account_name),
