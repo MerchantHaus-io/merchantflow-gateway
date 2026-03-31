@@ -303,6 +303,7 @@ export const OUTCOME_REASONS: Record<OutcomeStatus, string[]> = {
   ],
   closed_lost: [
     'Competitor selected',
+    'Went with another provider',
     'Pricing',
     'Product gap',
     'Timeline',
