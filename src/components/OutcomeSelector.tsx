@@ -145,11 +145,23 @@ export const OutcomeSelector = ({ currentOutcome, currentReason, onSelect, disab
 
             {/* Warning */}
             {selectedOutcome && (
-              <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 flex items-start gap-2">
-                <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+              <div className={cn(
+                "rounded-lg border p-3 flex items-start gap-2",
+                ['underwriting_declined', 'disqualified'].includes(selectedOutcome)
+                  ? "border-amber-500/30 bg-amber-500/5"
+                  : "border-border bg-muted/30"
+              )}>
+                <AlertTriangle className={cn(
+                  "h-4 w-4 shrink-0 mt-0.5",
+                  ['underwriting_declined', 'disqualified'].includes(selectedOutcome)
+                    ? "text-amber-500"
+                    : "text-muted-foreground"
+                )} />
                 <p className="text-xs text-muted-foreground">
                   This will remove the opportunity from the active pipeline board.
                   {selectedOutcome === 'closed_won' && ' It will appear in the Live & Billing report.'}
+                  {['underwriting_declined', 'disqualified'].includes(selectedOutcome) && ' A notification email will be sent to the client.'}
+                  {['closed_lost', 'no_decision'].includes(selectedOutcome) && ' No email will be sent to the client — this is an internal status.'}
                   {' '}The outcome can still be viewed in reports and search.
                 </p>
               </div>

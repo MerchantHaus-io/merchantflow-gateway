@@ -1046,8 +1046,9 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                           ...(isNegativeOutcome ? { status: 'dead' } : {}),
                         });
                         toast.success(`Outcome set: ${OUTCOME_CONFIG[outcome].label}`);
-                        // Auto-send decline email for negative outcomes EXCEPT closed_lost (internal status only)
-                        if (isNegativeOutcome && outcome !== 'closed_lost' && opportunity.contact?.email) {
+                        // Only send client-facing email for formal declines (underwriting_declined, disqualified)
+                        const EMAIL_WORTHY_OUTCOMES = ['underwriting_declined', 'disqualified'];
+                        if (EMAIL_WORTHY_OUTCOMES.includes(outcome) && opportunity.contact?.email) {
                           const contactName = [opportunity.contact?.first_name, opportunity.contact?.last_name].filter(Boolean).join(' ') || 'Valued Applicant';
                           supabase.functions.invoke('send-application-declined', {
                             body: {
@@ -1066,7 +1067,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                               supabase.from('activities').insert({
                                 opportunity_id: opportunity.id,
                                 type: 'email_sent',
-                                description: `Decline email sent to ${opportunity.contact?.email} (${OUTCOME_CONFIG[outcome].label}: ${reason})`,
+                                description: `Notification email sent to ${opportunity.contact?.email} (${OUTCOME_CONFIG[outcome].label}: ${reason})`,
                                 user_id: user?.id,
                                 user_email: user?.email,
                               }).then(() => {});
