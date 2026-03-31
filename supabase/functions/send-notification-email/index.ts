@@ -18,21 +18,24 @@ interface NotificationEmailRequest {
   data: Record<string, unknown>;
 }
 
+// Sanitise subject lines — Resend rejects \r\n in subjects
+const sanitizeSubject = (s: string): string => s.replace(/[\r\n]+/g, " ").trim();
+
 const getEmailSubject = (type: string, data: Record<string, unknown>): string => {
   switch (type) {
     case "stage_change":
-      return `Stage Update: ${data.accountName || "Opportunity"} moved to ${data.newStage}`;
+      return sanitizeSubject(`Pipeline Update — ${data.accountName || "Opportunity"} → ${data.newStage}`);
     case "task_assignment":
-      return `New Task Assigned: ${data.taskTitle}`;
+      return sanitizeSubject(`Task Assigned — ${data.taskTitle}`);
     case "opportunity_assignment":
-      return `Opportunity Assigned: ${data.accountName}`;
+      return sanitizeSubject(`Opportunity Assigned — ${data.accountName}`);
     default:
-      return "Notification from Ops Terminal";
+      return "Merchant Haus — Notification";
   }
 };
 
 const getEmailHtml = (type: string, recipientName: string, data: Record<string, unknown>): string => {
-  const greeting = `<p>Hi ${recipientName || "there"},</p>`;
+  const greeting = `<p>Hi ${recipientName || "Team"},</p>`;
   
   switch (type) {
     case "stage_change":
@@ -44,7 +47,7 @@ const getEmailHtml = (type: string, recipientName: string, data: Record<string, 
           <style>
             body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+            .header { background: linear-gradient(135deg, #18181b 0%, #27272a 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; }
             .content { background: #f9fafb; padding: 20px; border-radius: 0 0 8px 8px; }
             .badge { display: inline-block; padding: 4px 12px; border-radius: 9999px; font-size: 14px; font-weight: 500; }
             .badge-old { background: #fee2e2; color: #dc2626; }
@@ -56,7 +59,7 @@ const getEmailHtml = (type: string, recipientName: string, data: Record<string, 
         <body>
           <div class="container">
             <div class="header">
-              <h1 style="margin: 0; font-size: 20px;">📊 Stage Update</h1>
+              <h1 style="margin: 0; font-size: 20px;">Pipeline Update</h1>
             </div>
             <div class="content">
               ${greeting}
@@ -69,7 +72,7 @@ const getEmailHtml = (type: string, recipientName: string, data: Record<string, 
               </p>
               ${data.changedBy ? `<p style="font-size: 14px; color: #6b7280;">Changed by: ${data.changedBy}</p>` : ""}
               <div class="footer">
-                <p>This is an automated notification from Ops Terminal.</p>
+                <p>Merchant Haus &bull; <a href="https://merchanthaus.io" style="color: #6b7280; text-decoration: none;">merchanthaus.io</a></p>
               </div>
             </div>
           </div>
@@ -86,7 +89,7 @@ const getEmailHtml = (type: string, recipientName: string, data: Record<string, 
           <style>
             body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+            .header { background: linear-gradient(135deg, #18181b 0%, #27272a 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; }
             .content { background: #f9fafb; padding: 20px; border-radius: 0 0 8px 8px; }
             .task-card { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin: 16px 0; }
             .priority { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
@@ -99,7 +102,7 @@ const getEmailHtml = (type: string, recipientName: string, data: Record<string, 
         <body>
           <div class="container">
             <div class="header">
-              <h1 style="margin: 0; font-size: 20px;">📋 New Task Assigned</h1>
+              <h1 style="margin: 0; font-size: 20px;">Task Assignment</h1>
             </div>
             <div class="content">
               ${greeting}
@@ -112,7 +115,7 @@ const getEmailHtml = (type: string, recipientName: string, data: Record<string, 
               </div>
               ${data.assignedBy ? `<p style="font-size: 14px; color: #6b7280;">Assigned by: ${data.assignedBy}</p>` : ""}
               <div class="footer">
-                <p>This is an automated notification from Ops Terminal.</p>
+                <p>Merchant Haus &bull; <a href="https://merchanthaus.io" style="color: #6b7280; text-decoration: none;">merchanthaus.io</a></p>
               </div>
             </div>
           </div>
@@ -129,7 +132,7 @@ const getEmailHtml = (type: string, recipientName: string, data: Record<string, 
           <style>
             body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
             .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+            .header { background: linear-gradient(135deg, #18181b 0%, #27272a 100%); color: white; padding: 20px; border-radius: 8px 8px 0 0; }
             .content { background: #f9fafb; padding: 20px; border-radius: 0 0 8px 8px; }
             .opp-card { background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin: 16px 0; }
             .stage { display: inline-block; padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 500; background: #dbeafe; color: #2563eb; }
@@ -139,7 +142,7 @@ const getEmailHtml = (type: string, recipientName: string, data: Record<string, 
         <body>
           <div class="container">
             <div class="header">
-              <h1 style="margin: 0; font-size: 20px;">🎯 Opportunity Assigned</h1>
+              <h1 style="margin: 0; font-size: 20px;">Opportunity Assignment</h1>
             </div>
             <div class="content">
               ${greeting}
@@ -150,7 +153,7 @@ const getEmailHtml = (type: string, recipientName: string, data: Record<string, 
                 ${data.stage ? `<span class="stage">${data.stage}</span>` : ""}
               </div>
               <div class="footer">
-                <p>This is an automated notification from Ops Terminal.</p>
+                <p>Merchant Haus &bull; <a href="https://merchanthaus.io" style="color: #6b7280; text-decoration: none;">merchanthaus.io</a></p>
               </div>
             </div>
           </div>
@@ -210,7 +213,7 @@ const handler = async (req: Request): Promise<Response> => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Ops Terminal <onboarding@resend.dev>",
+        from: "Merchant Haus <noreply@merchanthaus.io>",
         to: [recipientEmail],
         subject,
         html,

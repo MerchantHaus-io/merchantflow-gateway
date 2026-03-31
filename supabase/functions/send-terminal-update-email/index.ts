@@ -64,7 +64,7 @@ function buildEmailHtml(updates: Update[], dateLabel: string): string {
       </div>
     </div>
     <div style="text-align:center;padding:16px;font-size:11px;color:#9ca3af;">
-      Ops Terminal — MerchantHaus IT
+      Merchant Haus &bull; <a href="https://merchanthaus.io" style="color:#9ca3af;text-decoration:none;">merchanthaus.io</a>
     </div>
   </div>
 </body>
