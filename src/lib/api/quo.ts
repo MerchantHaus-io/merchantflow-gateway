@@ -124,7 +124,7 @@ export const quoApi = {
   },
 
   async getCallRecordings(callId: string) {
-    return invoke<{ data: { url: string; duration: number; createdAt: string }[] }>('get-call-recordings', { callId });
+    return invoke<{ data: { id: string; url: string | null; duration: number | null; startTime: string | null; status: string | null; type: string | null }[] }>('get-call-recordings', { callId });
   },
 
   async getCallVoicemail(callId: string) {
