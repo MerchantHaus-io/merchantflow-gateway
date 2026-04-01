@@ -1389,6 +1389,82 @@ export type Database = {
           },
         ]
       }
+      message_logs: {
+        Row: {
+          account_id: string | null
+          contact_id: string | null
+          content: string | null
+          created_at: string
+          direction: string
+          from_number: string | null
+          id: string
+          media_urls: string[] | null
+          opportunity_id: string | null
+          phone_number: string | null
+          quo_message_id: string | null
+          quo_phone_number_id: string | null
+          status: string
+          to_numbers: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          contact_id?: string | null
+          content?: string | null
+          created_at?: string
+          direction?: string
+          from_number?: string | null
+          id?: string
+          media_urls?: string[] | null
+          opportunity_id?: string | null
+          phone_number?: string | null
+          quo_message_id?: string | null
+          quo_phone_number_id?: string | null
+          status?: string
+          to_numbers?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          contact_id?: string | null
+          content?: string | null
+          created_at?: string
+          direction?: string
+          from_number?: string | null
+          id?: string
+          media_urls?: string[] | null
+          opportunity_id?: string | null
+          phone_number?: string | null
+          quo_message_id?: string | null
+          quo_phone_number_id?: string | null
+          status?: string
+          to_numbers?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_logs_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_logs_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_logs_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_reactions: {
         Row: {
           created_at: string
