@@ -174,13 +174,13 @@ export const CommunicationLogPanel = ({
     if (entry.kind === 'sms') {
       const msg = entry as MessageEntry;
       if (msg.status === 'received') return <Badge variant="secondary" className="text-xs">Received</Badge>;
-      if (msg.status === 'delivered') return <Badge className="text-xs bg-green-500/20 text-green-600 border-green-500/30">Delivered</Badge>;
+      if (msg.status === 'delivered') return <Badge variant="default" className="text-xs">Delivered</Badge>;
       return <Badge variant="outline" className="text-xs">{msg.status}</Badge>;
     }
     const call = entry as CallEntry;
     switch (call.status) {
       case 'completed': return <Badge variant="secondary" className="text-xs">Completed</Badge>;
-      case 'ringing': return <Badge className="text-xs bg-amber-500/20 text-amber-600 border-amber-500/30">Ringing</Badge>;
+      case 'ringing': return <Badge variant="outline" className="text-xs border-primary text-primary">Ringing</Badge>;
       case 'missed': return <Badge variant="destructive" className="text-xs">Missed</Badge>;
       default: return <Badge variant="outline" className="text-xs">{call.status}</Badge>;
     }
