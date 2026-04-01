@@ -5,6 +5,266 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+// ── Helpers ──────────────────────────────────────────────────────────
+
+function getSupabase() {
+  return createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  );
+}
+
+async function matchContact(supabase: ReturnType<typeof createClient>, phoneNumber: string) {
+  const cleanPhone = phoneNumber.replace(/\D/g, '');
+  const { data: contacts } = await supabase
+    .from('contacts')
+    .select('id, account_id, phone, first_name, last_name')
+    .or(`phone.ilike.%${cleanPhone.slice(-10)}%,phone.ilike.%${phoneNumber}%`)
+    .limit(1);
+
+  if (contacts && contacts.length > 0) {
+    const c = contacts[0];
+    const contactDisplay = `${c.first_name || ''} ${c.last_name || ''}`.trim() || phoneNumber;
+
+    // Find related opportunity
+    const { data: opps } = await supabase
+      .from('opportunities')
+      .select('id')
+      .eq('contact_id', c.id)
+      .limit(1);
+
+    return {
+      contactId: c.id,
+      accountId: c.account_id,
+      opportunityId: opps?.[0]?.id || null,
+      contactDisplay,
+    };
+  }
+  return { contactId: null, accountId: null, opportunityId: null, contactDisplay: phoneNumber };
+}
+
+async function getAllOpportunities(supabase: ReturnType<typeof createClient>, contactId: string) {
+  const { data } = await supabase
+    .from('opportunities')
+    .select('id')
+    .eq('contact_id', contactId);
+  return data || [];
+}
+
+async function notifyAllUsers(
+  supabase: ReturnType<typeof createClient>,
+  title: string,
+  message: string,
+  type: string,
+  link: string
+) {
+  const { data: profiles } = await supabase.from('profiles').select('id, email');
+  if (profiles && profiles.length > 0) {
+    const notifications = profiles.map((p: { id: string; email: string }) => ({
+      user_id: p.id,
+      user_email: p.email || '',
+      title,
+      message,
+      type,
+      link,
+    }));
+    await supabase.from('notifications').insert(notifications);
+  }
+}
+
+// ── Call Handlers ────────────────────────────────────────────────────
+
+async function handleCallEvent(supabase: ReturnType<typeof createClient>, eventType: string, callData: any) {
+  const isIncoming = callData.direction === 'incoming';
+  const externalNumber = isIncoming ? callData.from : callData.to;
+  const participants = [callData.from, callData.to].filter(Boolean);
+
+  console.log('Call direction:', callData.direction, '| External:', externalNumber);
+
+  const { contactId, accountId, opportunityId, contactDisplay } =
+    externalNumber ? await matchContact(supabase, externalNumber) : { contactId: null, accountId: null, opportunityId: null, contactDisplay: 'Unknown' };
+
+  // Map event to status
+  let status = 'unknown';
+  if (eventType === 'call.ringing') status = 'ringing';
+  else if (eventType === 'call.completed') status = 'completed';
+  else if (eventType === 'call.recording.completed') status = 'recorded';
+
+  // Upsert call log
+  const callLog = {
+    quo_call_id: callData.id,
+    direction: callData.direction || 'unknown',
+    status,
+    duration: callData.duration || 0,
+    phone_number: externalNumber || null,
+    participants,
+    quo_phone_number_id: callData.phoneNumberId || null,
+    initiated_by: callData.userId || callData.initiatedBy || null,
+    answered_at: callData.answeredAt || null,
+    completed_at: callData.completedAt || null,
+    contact_id: contactId,
+    opportunity_id: opportunityId,
+    account_id: accountId,
+  };
+
+  const { error } = await supabase.from('call_logs').upsert(callLog, { onConflict: 'quo_call_id' });
+  if (error) console.error('Error upserting call log:', error);
+  else console.log('Call log upserted:', callData.id);
+
+  // Log activity on completed calls
+  if (contactId && eventType === 'call.completed') {
+    const durationMin = Math.round((callData.duration || 0) / 60);
+    const durationLabel = durationMin > 0 ? `${durationMin}m` : `${callData.duration || 0}s`;
+
+    const allOpps = await getAllOpportunities(supabase, contactId);
+    if (allOpps.length > 0) {
+      const activityRows = allOpps.map((opp: { id: string }) => ({
+        opportunity_id: opp.id,
+        type: 'call',
+        description: `${isIncoming ? 'Incoming' : 'Outgoing'} call with ${contactDisplay} (${durationLabel}) — ${externalNumber || 'Unknown'}`,
+      }));
+      await supabase.from('activities').insert(activityRows);
+      console.log(`Logged call activity on ${allOpps.length} opportunity(ies)`);
+    }
+
+    // Log client_interaction
+    if (accountId) {
+      await supabase.from('client_interactions').insert({
+        account_id: accountId,
+        interaction_type: 'call',
+        subject: `${isIncoming ? 'Incoming' : 'Outgoing'} Call — ${contactDisplay}`,
+        notes: `Phone: ${externalNumber || 'N/A'} | Duration: ${durationLabel}`,
+        status: 'resolved',
+        priority: 'medium',
+        contact_name: contactDisplay,
+        contact_phone: externalNumber || null,
+      });
+    }
+  }
+
+  // Incoming call notification
+  if (eventType === 'call.ringing' && isIncoming) {
+    await notifyAllUsers(
+      supabase,
+      'Incoming Call',
+      `Incoming call from ${contactDisplay}`,
+      'call',
+      opportunityId ? `/opportunities/${opportunityId}` : '/contacts'
+    );
+  }
+}
+
+async function handleCallRecording(supabase: ReturnType<typeof createClient>, callData: any) {
+  const recordingMedia = callData.media;
+  if (recordingMedia && Array.isArray(recordingMedia) && recordingMedia.length > 0) {
+    const recordingUrl = recordingMedia[0]?.url || null;
+    if (recordingUrl) {
+      await supabase.from('call_logs').update({ recording_url: recordingUrl }).eq('quo_call_id', callData.id);
+      console.log('Recording URL saved for call:', callData.id);
+    }
+  }
+}
+
+async function handleCallSummary(supabase: ReturnType<typeof createClient>, payload: any) {
+  const summaryData = payload.data?.object;
+  const callId = summaryData?.callId || payload.data?.object?.id;
+  if (callId) {
+    await supabase.from('call_logs').update({
+      summary: summaryData?.summary || [],
+      next_steps: summaryData?.nextSteps || [],
+    }).eq('quo_call_id', callId);
+    console.log('Summary saved for call:', callId);
+  }
+}
+
+async function handleCallTranscript(supabase: ReturnType<typeof createClient>, payload: any) {
+  const transcriptData = payload.data?.object;
+  const callId = transcriptData?.callId || payload.data?.object?.id;
+  if (callId) {
+    await supabase.from('call_logs').update({
+      transcript: transcriptData?.dialogue || [],
+    }).eq('quo_call_id', callId);
+    console.log('Transcript saved for call:', callId);
+  }
+}
+
+// ── Message Handlers ─────────────────────────────────────────────────
+
+async function handleMessageEvent(supabase: ReturnType<typeof createClient>, eventType: string, msgData: any) {
+  const isIncoming = msgData.direction === 'incoming';
+  const externalNumber = isIncoming ? msgData.from : (Array.isArray(msgData.to) ? msgData.to[0] : msgData.to);
+
+  console.log('Message direction:', msgData.direction, '| External:', externalNumber, '| Event:', eventType);
+
+  const { contactId, accountId, opportunityId, contactDisplay } =
+    externalNumber ? await matchContact(supabase, externalNumber) : { contactId: null, accountId: null, opportunityId: null, contactDisplay: 'Unknown' };
+
+  // Map event type to status
+  let status = 'unknown';
+  if (eventType === 'message.received') status = 'received';
+  else if (eventType === 'message.delivered') status = 'delivered';
+
+  // Upsert message log
+  const messageLog = {
+    quo_message_id: msgData.id,
+    direction: msgData.direction || 'unknown',
+    status,
+    phone_number: externalNumber || null,
+    content: msgData.text || null,
+    from_number: msgData.from || null,
+    to_numbers: Array.isArray(msgData.to) ? msgData.to : msgData.to ? [msgData.to] : [],
+    quo_phone_number_id: msgData.phoneNumberId || null,
+    contact_id: contactId,
+    opportunity_id: opportunityId,
+    account_id: accountId,
+    media_urls: msgData.media?.map((m: any) => m.url).filter(Boolean) || [],
+  };
+
+  const { error } = await supabase.from('message_logs').upsert(messageLog, { onConflict: 'quo_message_id' });
+  if (error) console.error('Error upserting message log:', error);
+  else console.log('Message log upserted:', msgData.id);
+
+  // Log activity on received messages only
+  if (contactId && eventType === 'message.received') {
+    const allOpps = await getAllOpportunities(supabase, contactId);
+    if (allOpps.length > 0) {
+      const preview = (msgData.text || '').slice(0, 80);
+      const activityRows = allOpps.map((opp: { id: string }) => ({
+        opportunity_id: opp.id,
+        type: 'sms',
+        description: `Incoming SMS from ${contactDisplay}: "${preview}${(msgData.text || '').length > 80 ? '…' : ''}"`,
+      }));
+      await supabase.from('activities').insert(activityRows);
+      console.log(`Logged SMS activity on ${allOpps.length} opportunity(ies)`);
+    }
+
+    // Log client_interaction
+    if (accountId) {
+      await supabase.from('client_interactions').insert({
+        account_id: accountId,
+        interaction_type: 'sms',
+        subject: `Incoming SMS — ${contactDisplay}`,
+        notes: `Phone: ${externalNumber || 'N/A'} | Message: ${(msgData.text || '').slice(0, 200)}`,
+        status: 'resolved',
+        priority: 'medium',
+        contact_name: contactDisplay,
+        contact_phone: externalNumber || null,
+      });
+    }
+
+    // Notify all users of incoming SMS
+    await notifyAllUsers(
+      supabase,
+      'Incoming SMS',
+      `SMS from ${contactDisplay}: "${(msgData.text || '').slice(0, 80)}"`,
+      'sms',
+      opportunityId ? `/opportunities/${opportunityId}` : '/contacts'
+    );
+  }
+}
+
+// ── Main Handler ─────────────────────────────────────────────────────
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -12,218 +272,46 @@ Deno.serve(async (req) => {
 
   try {
     const payload = await req.json();
-    console.log('Quo webhook received:', JSON.stringify(payload));
+    console.log('Quo webhook received:', JSON.stringify(payload).slice(0, 500));
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    );
-
+    const supabase = getSupabase();
     const eventType = payload.type;
-    const callData = payload.data?.object;
+    const objectData = payload.data?.object;
 
-    if (!callData) {
-      console.log('No call data in payload');
+    if (!objectData) {
+      console.log('No object data in payload');
       return new Response(JSON.stringify({ received: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // OpenPhone sends `from` and `to` — derive the external participant
-    const isIncoming = callData.direction === 'incoming';
-    const externalNumber = isIncoming ? callData.from : callData.to;
-    const participants = [callData.from, callData.to].filter(Boolean);
+    // Route by event type
+    switch (eventType) {
+      case 'call.ringing':
+      case 'call.completed':
+        await handleCallEvent(supabase, eventType, objectData);
+        break;
 
-    console.log('Call direction:', callData.direction, '| External number:', externalNumber, '| From:', callData.from, '| To:', callData.to);
+      case 'call.recording.completed':
+        await handleCallEvent(supabase, eventType, objectData);
+        await handleCallRecording(supabase, objectData);
+        break;
 
-    // Try to match external phone number to a CRM contact
-    let contactId: string | null = null;
-    let opportunityId: string | null = null;
-    let accountId: string | null = null;
+      case 'call.summary.completed':
+        await handleCallSummary(supabase, payload);
+        break;
 
-    if (externalNumber) {
-      const cleanPhone = externalNumber.replace(/\D/g, '');
+      case 'call.transcript.completed':
+        await handleCallTranscript(supabase, payload);
+        break;
 
-      const { data: contacts } = await supabase
-        .from('contacts')
-        .select('id, account_id, phone')
-        .or(`phone.ilike.%${cleanPhone.slice(-10)}%,phone.ilike.%${externalNumber}%`)
-        .limit(1);
+      case 'message.received':
+      case 'message.delivered':
+        await handleMessageEvent(supabase, eventType, objectData);
+        break;
 
-      if (contacts && contacts.length > 0) {
-        contactId = contacts[0].id;
-        accountId = contacts[0].account_id;
-        console.log('Matched contact:', contactId, '| Account:', accountId);
-
-        // Find related opportunity
-        const { data: opportunities } = await supabase
-          .from('opportunities')
-          .select('id')
-          .eq('contact_id', contactId)
-          .limit(1);
-
-        if (opportunities && opportunities.length > 0) {
-          opportunityId = opportunities[0].id;
-        }
-      } else {
-        console.log('No contact match for:', externalNumber);
-      }
-    }
-
-    // Map Quo event to call log status
-    let status = 'unknown';
-    if (eventType === 'call.ringing') status = 'ringing';
-    else if (eventType === 'call.completed') status = 'completed';
-    else if (eventType === 'call.recording.completed') status = 'recorded';
-
-    // Upsert call log
-    const callLog = {
-      quo_call_id: callData.id,
-      direction: callData.direction || 'unknown',
-      status,
-      duration: callData.duration || 0,
-      phone_number: externalNumber || null,
-      participants,
-      quo_phone_number_id: callData.phoneNumberId || null,
-      initiated_by: callData.userId || callData.initiatedBy || null,
-      answered_at: callData.answeredAt || null,
-      completed_at: callData.completedAt || null,
-      contact_id: contactId,
-      opportunity_id: opportunityId,
-      account_id: accountId,
-    };
-
-    console.log('Upserting call log:', JSON.stringify(callLog));
-
-    const { error } = await supabase
-      .from('call_logs')
-      .upsert(callLog, { onConflict: 'quo_call_id' });
-
-    if (error) {
-      console.error('Error upserting call log:', error);
-    } else {
-      console.log('Call log upserted:', callData.id);
-    }
-
-    // Log as activity on ALL matched opportunities for this contact
-    if (contactId && eventType === 'call.completed') {
-      const durationMin = Math.round((callData.duration || 0) / 60);
-      const durationLabel = durationMin > 0 ? `${durationMin}m` : `${callData.duration || 0}s`;
-
-      // Get contact name for richer activity description
-      const { data: contactInfo } = await supabase
-        .from('contacts')
-        .select('first_name, last_name')
-        .eq('id', contactId)
-        .single();
-      const contactDisplay = contactInfo
-        ? `${contactInfo.first_name || ''} ${contactInfo.last_name || ''}`.trim()
-        : externalNumber || 'Unknown';
-
-      // Find ALL opportunities for this contact and log activity on each
-      const { data: allOpps } = await supabase
-        .from('opportunities')
-        .select('id')
-        .eq('contact_id', contactId);
-
-      if (allOpps && allOpps.length > 0) {
-        const activityRows = allOpps.map((opp: { id: string }) => ({
-          opportunity_id: opp.id,
-          type: 'call',
-          description: `${isIncoming ? 'Incoming' : 'Outgoing'} call with ${contactDisplay} (${durationLabel}) — ${externalNumber || 'Unknown'}`,
-        }));
-        const { error: actErr } = await supabase.from('activities').insert(activityRows);
-        if (actErr) console.error('Error inserting call activities:', actErr);
-        else console.log(`Logged call activity on ${allOpps.length} opportunity(ies)`);
-      } else {
-        console.log('Contact matched but no opportunities found for activity logging');
-      }
-
-      // Also log a client_interaction on the account for full history
-      if (accountId) {
-        await supabase.from('client_interactions').insert({
-          account_id: accountId,
-          interaction_type: 'call',
-          subject: `${isIncoming ? 'Incoming' : 'Outgoing'} Call — ${contactDisplay}`,
-          notes: `Phone: ${externalNumber || 'N/A'} | Duration: ${durationLabel}`,
-          status: 'resolved',
-          priority: 'medium',
-          contact_name: contactDisplay,
-          contact_phone: externalNumber || null,
-        });
-        console.log('Client interaction logged for account:', accountId);
-      }
-    }
-
-    // Handle call recordings
-    if (eventType === 'call.recording.completed') {
-      const recordingMedia = callData.media;
-      if (recordingMedia && Array.isArray(recordingMedia) && recordingMedia.length > 0) {
-        const recordingUrl = recordingMedia[0]?.url || null;
-        if (recordingUrl) {
-          await supabase
-            .from('call_logs')
-            .update({ recording_url: recordingUrl })
-            .eq('quo_call_id', callData.id);
-          console.log('Recording URL saved for call:', callData.id);
-        }
-      }
-    }
-
-    // Handle call summaries
-    if (eventType === 'call.summary.completed') {
-      const summaryData = payload.data?.object;
-      const callId = summaryData?.callId || callData?.id;
-      if (callId) {
-        await supabase
-          .from('call_logs')
-          .update({
-            summary: summaryData?.summary || [],
-            next_steps: summaryData?.nextSteps || [],
-          })
-          .eq('quo_call_id', callId);
-        console.log('Summary saved for call:', callId);
-      }
-    }
-
-    // Handle call transcripts
-    if (eventType === 'call.transcript.completed') {
-      const transcriptData = payload.data?.object;
-      const callId = transcriptData?.callId || callData?.id;
-      if (callId) {
-        await supabase
-          .from('call_logs')
-          .update({
-            transcript: transcriptData?.dialogue || [],
-          })
-          .eq('quo_call_id', callId);
-        console.log('Transcript saved for call:', callId);
-      }
-    }
-
-    // If it's a ringing incoming call, create a notification for all users
-    if (eventType === 'call.ringing' && isIncoming) {
-      const contactName = contactId ? 
-        (await supabase.from('contacts').select('first_name, last_name').eq('id', contactId).single())
-          .data : null;
-      
-      const callerDisplay = contactName 
-        ? `${contactName.first_name || ''} ${contactName.last_name || ''}`.trim()
-        : externalNumber || 'Unknown';
-
-      // Notify all users
-      const { data: profiles } = await supabase.from('profiles').select('id, email');
-      if (profiles) {
-        const notifications = profiles.map(p => ({
-          user_id: p.id,
-          user_email: p.email || '',
-          title: '📞 Incoming Call',
-          message: `Incoming call from ${callerDisplay}`,
-          type: 'call',
-          link: opportunityId ? `/opportunities/${opportunityId}` : '/contacts',
-        }));
-        await supabase.from('notifications').insert(notifications);
-      }
+      default:
+        console.log('Unhandled event type:', eventType);
     }
 
     return new Response(JSON.stringify({ received: true }), {
