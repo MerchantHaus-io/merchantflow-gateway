@@ -830,7 +830,7 @@ const OpportunityDetail = () => {
                               size="sm"
                             />
                           </div>
-                          <CallLogPanel opportunityId={opportunity.id} />
+                          <CommunicationLogPanel opportunityId={opportunity.id} />
                         </div>
                       </TabsContent>
 
