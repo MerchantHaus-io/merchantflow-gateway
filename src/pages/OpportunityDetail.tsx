@@ -68,7 +68,7 @@ import { OpportunityTasks } from "@/components/opportunity-detail/OpportunityTas
 import { NotesSection } from "@/components/opportunity-detail/NotesSection";
 import GameSplash from "@/components/GameSplash";
 import { ClickToCall } from "@/components/ClickToCall";
-import { CallLogPanel } from "@/components/CallLogPanel";
+import { CommunicationLogPanel } from "@/components/CommunicationLogPanel";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
 
