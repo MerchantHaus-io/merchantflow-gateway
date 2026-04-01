@@ -161,13 +161,13 @@ export const CommunicationLogPanel = ({
   const getIcon = (entry: CommEntry) => {
     if (entry.kind === 'sms') {
       return entry.direction === 'incoming'
-        ? <MessageCircle className="h-4 w-4 text-green-500" />
-        : <Send className="h-4 w-4 text-blue-500" />;
+        ? <MessageCircle className="h-4 w-4 text-primary" />
+        : <Send className="h-4 w-4 text-accent-foreground" />;
     }
     const call = entry as CallEntry;
     if (call.status === 'missed') return <PhoneMissed className="h-4 w-4 text-destructive" />;
-    if (call.direction === 'incoming') return <PhoneIncoming className="h-4 w-4 text-green-500" />;
-    return <PhoneOutgoing className="h-4 w-4 text-blue-500" />;
+    if (call.direction === 'incoming') return <PhoneIncoming className="h-4 w-4 text-primary" />;
+    return <PhoneOutgoing className="h-4 w-4 text-accent-foreground" />;
   };
 
   const getStatusBadge = (entry: CommEntry) => {
