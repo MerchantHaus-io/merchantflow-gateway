@@ -12,14 +12,21 @@ export interface QuoPhoneNumber {
 export interface QuoCall {
   id: string;
   direction: 'incoming' | 'outgoing';
-  status: string;
+  status: 'queued' | 'initiated' | 'ringing' | 'in-progress' | 'completed' | 'busy' | 'failed' | 'no-answer' | 'canceled' | 'missed' | 'answered' | 'forwarded' | 'abandoned';
   duration: number;
   participants: string[];
   phoneNumberId: string;
   createdAt: string;
-  completedAt?: string;
-  answeredAt?: string;
-  userId?: string;
+  completedAt: string | null;
+  answeredAt: string | null;
+  answeredBy: string | null;
+  initiatedBy: string | null;
+  callRoute: string | null;
+  forwardedFrom: string | null;
+  forwardedTo: string | null;
+  aiHandled: string | null;
+  updatedAt: string | null;
+  userId: string;
   contactIds?: string[];
 }
 
