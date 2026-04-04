@@ -107,6 +107,7 @@ const navMain: NavGroup[] = [
     icon: BarChart3,
     items: [
       { title: "Reports", url: "/reports", icon: BarChart3, description: "Performance & analytics" },
+      { title: "Transactions", url: "/reports/transactions", icon: CreditCard, description: "NMI gateway transactions" },
       { title: "Analytics", url: "/admin/analytics", icon: Activity, description: "Login tracking & broadcasts" },
       { title: "Live & Billing", url: "/live-billing", icon: BadgeDollarSign, description: "Live accounts & billing" },
       { title: "Supported Processors", url: "/supported-processors", icon: Globe, description: "Processor compatibility list" },
