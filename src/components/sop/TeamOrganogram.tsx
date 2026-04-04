@@ -47,7 +47,7 @@ const TEAM: TeamMember[] = [
   },
   {
     name: "Darryn",
-    email: "darryn@merchanthaus.io",
+    email: "it@merchanthaus.io",
     title: "QA & Complex Sales / Tech",
     role: "Quality Assurance / Sales / Integration / Workspace & CRM",
     icon: <Shield className="h-5 w-5" />,

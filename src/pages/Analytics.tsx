@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Users, Clock, LogIn, LogOut as LogOutIcon } from "lucide-react";
 import { format, formatDistanceStrict } from "date-fns";
 
-const ADMIN_EMAILS = ["admin@merchanthaus.io", "darryn@merchanthaus.io"];
+const ADMIN_EMAILS = ["admin@merchanthaus.io", "it@merchanthaus.io"];
 
 interface SessionRow {
   id: string;

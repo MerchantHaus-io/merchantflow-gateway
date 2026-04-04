@@ -125,7 +125,7 @@ Resend (email), Netlify (hosting), GitHub (source control), OpenPhone (telephony
 - User management and channel administration
 - Deletion request approval
 - Database schema exports
-- **Users:** admin@merchanthaus.io, darryn@merchanthaus.io
+- **Users:** admin@merchanthaus.io, it@merchanthaus.io
 
 #### User (app_role: 'user')
 - Pipeline management and task creation
@@ -1829,7 +1829,7 @@ Sales Support`,
                                 <strong className="text-foreground">Admin</strong>
                               </div>
                               <p className="text-muted-foreground text-xs">Full CRUD on all data. Master exports. User management. Channel administration. Deletion request approval.</p>
-                              <p className="text-muted-foreground text-xs mt-1">Users: admin@merchanthaus.io, darryn@merchanthaus.io</p>
+                              <p className="text-muted-foreground text-xs mt-1">Users: admin@merchanthaus.io, it@merchanthaus.io</p>
                             </div>
                             <div className="p-3 rounded-none border border-border bg-background/50">
                               <div className="flex items-center gap-2 mb-1">
