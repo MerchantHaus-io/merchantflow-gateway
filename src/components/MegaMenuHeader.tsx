@@ -25,6 +25,7 @@ import {
   Moon,
   ChevronDown,
   Globe,
+  CreditCard,
   BadgeDollarSign,
   Maximize,
   Minimize,
