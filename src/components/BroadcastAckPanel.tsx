@@ -9,7 +9,7 @@ const BROADCAST_KEY = "eob-update-2026-02-20";
 
 const TEAM_EMAILS = [
   "admin@merchanthaus.io",
-  "darryn@merchanthaus.io",
+  "it@merchanthaus.io",
   "support@merchanthaus.io",
   "sales@merchanthaus.io",
   "taryn@merchanthaus.io",

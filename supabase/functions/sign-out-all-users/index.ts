@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 // Admin emails allowed to perform this action
-const ADMIN_EMAILS = ['admin@merchanthaus.io', 'darryn@merchanthaus.io'];
+const ADMIN_EMAILS = ['admin@merchanthaus.io', 'it@merchanthaus.io'];
 
 Deno.serve(async (req) => {
   // Handle CORS preflight requests

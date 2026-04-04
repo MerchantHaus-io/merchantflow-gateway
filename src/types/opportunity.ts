@@ -132,7 +132,7 @@ export const TEAM_MEMBER_COLORS: Record<string, string> = {
 // Map user emails to display names
 export const EMAIL_TO_USER: Record<string, string> = {
   'admin@merchanthaus.io': 'Jamie',
-  'darryn@merchanthaus.io': 'Darryn',
+  'it@merchanthaus.io': 'Darryn',
   'support@merchanthaus.io': 'Sheiky',
   'sales@merchanthaus.io': 'Wesley',
   'taryn@merchanthaus.io': 'Taryn',
@@ -141,7 +141,7 @@ export const EMAIL_TO_USER: Record<string, string> = {
 // Allowed emails that can access the dashboard
 export const ALLOWED_EMAILS = [
   'admin@merchanthaus.io',
-  'darryn@merchanthaus.io',
+  'it@merchanthaus.io',
   'support@merchanthaus.io',
   'sales@merchanthaus.io',
   'taryn@merchanthaus.io',

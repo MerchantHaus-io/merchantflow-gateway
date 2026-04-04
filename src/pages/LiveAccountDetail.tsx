@@ -46,7 +46,7 @@ import liveBadge from "@/assets/live-badge.webp";
 const TEAM_EMAIL_MAP: Record<string, string> = {
   'Wesley': 'sales@merchanthaus.io',
   'Jamie': 'admin@merchanthaus.io',
-  'Darryn': 'darryn@merchanthaus.io',
+  'Darryn': 'it@merchanthaus.io',
   'Taryn': 'taryn@merchanthaus.io',
   'Sheiky': 'support@merchanthaus.io',
 };
