@@ -49,6 +49,7 @@ import OutreachDetail from "./pages/OutreachDetail";
 import NetlifyHub from "./pages/NetlifyHub";
 import NMIBoarding from "./pages/NMIBoarding";
 import Leads from "./pages/Leads";
+import Transactions from "./pages/Transactions";
 import Calendar from "./pages/Calendar";
 import { IncomingCallToast } from "./components/IncomingCallToast";
 import { IncomingMessageToast } from "./components/IncomingMessageToast";
