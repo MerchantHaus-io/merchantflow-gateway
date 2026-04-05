@@ -49,7 +49,7 @@ function parseEmailList(header: string): string[] {
 // Team emails to exclude from lead creation
 const TEAM_EMAILS = [
   "admin@merchanthaus.io",
-  "it@merchanthaus.io",
+  "onboarding@merchanthaus.io",
   "support@merchanthaus.io",
   "sales@merchanthaus.io",
   "taryn@merchanthaus.io",

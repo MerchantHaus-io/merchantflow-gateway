@@ -34,7 +34,7 @@ serve(async (req) => {
     const token = authHeader.replace("Bearer ", "");
     const { data: { user: caller }, error: authError } = await supabaseAdmin.auth.getUser(token);
     
-    const ADMIN_EMAILS = ['admin@merchanthaus.io', 'it@merchanthaus.io'];
+    const ADMIN_EMAILS = ['admin@merchanthaus.io', 'onboarding@merchanthaus.io'];
     if (authError || !caller || !ADMIN_EMAILS.includes(caller.email || '')) {
       return new Response(JSON.stringify({ error: "Admin access required" }), {
         status: 403,

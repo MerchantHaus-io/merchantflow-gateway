@@ -147,7 +147,7 @@ const handler = async (req: Request): Promise<Response> => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Ops Terminal IT <it@merchanthaus.io>",
+        from: "Ops Terminal IT <onboarding@merchanthaus.io>",
         to: recipientEmails,
         subject,
         html,
