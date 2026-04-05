@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { ClipboardCheck, X, Plus, Trash2, ChevronDown, Paperclip, FileText, Image as ImageIcon, Download, ExternalLink, Bold, Italic, List, ListOrdered } from "lucide-react";
+import { ClipboardCheck, X, Plus, Trash2, ChevronDown, Paperclip, FileText, Image as ImageIcon, Download, ExternalLink, Bold, Italic, List, ListOrdered, Lightbulb } from "lucide-react";
+import { AgendaSubmitDialog } from "@/components/AgendaSubmitDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
@@ -293,9 +294,17 @@ export function ActionItemsWidget() {
                 <ClipboardCheck className="h-4 w-4 text-gold" />
                 <span className="label-caps text-foreground">Notice Board</span>
               </div>
-              <button onClick={() => setIsOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
-                <X className="h-4 w-4" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setIsOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <AgendaSubmitDialog trigger={
+                <button className="flex items-center gap-1.5 text-xs text-amber-500 hover:text-amber-400 transition-colors">
+                  <Lightbulb className="h-3.5 w-3.5" />
+                  Submit Agenda Item
+                </button>
+              } />
             </div>
 
             {/* Add new item */}
