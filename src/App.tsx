@@ -43,7 +43,7 @@ import TermsProcessing from "./pages/TermsProcessing";
 import LiveBilling from "./pages/LiveBilling";
 import LiveAccountDetail from "./pages/LiveAccountDetail";
 import SupportedProcessors from "./pages/SupportedProcessors";
-import Analytics from "./pages/Analytics";
+import Administration from "./pages/Administration";
 import Outreach from "./pages/Outreach";
 import OutreachDetail from "./pages/OutreachDetail";
 import NetlifyHub from "./pages/NetlifyHub";
@@ -125,7 +125,7 @@ const App = () => (
                 <Route path="/admin/data-export" element={<ProtectedRoute><DataExport /></ProtectedRoute>} />
                 
                 <Route path="/admin/web-submissions" element={<ProtectedRoute><WebSubmissions /></ProtectedRoute>} />
-                <Route path="/admin/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+                <Route path="/admin/administration" element={<ProtectedRoute><Administration /></ProtectedRoute>} />
                 
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                 <Route path="/live-billing" element={<ProtectedRoute><LiveBilling /></ProtectedRoute>} />

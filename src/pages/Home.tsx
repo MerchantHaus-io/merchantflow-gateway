@@ -52,7 +52,7 @@ const groups: ShortcutGroup[] = [
     title: "Reports & Billing",
     items: [
       { title: "Reports", description: "Performance analytics", url: "/reports", icon: BarChart3, color: "primary" },
-      { title: "Analytics", description: "Login & broadcast data", url: "/admin/analytics", icon: Activity, color: "teal" },
+      { title: "Administration", description: "Agenda, popups & sessions", url: "/admin/administration", icon: Activity, color: "teal" },
       { title: "Live & Billing", description: "Live accounts & billing", url: "/live-billing", icon: BadgeDollarSign, color: "gold" },
       { title: "Processors", description: "Compatibility list", url: "/supported-processors", icon: Globe, color: "success" },
     ],
