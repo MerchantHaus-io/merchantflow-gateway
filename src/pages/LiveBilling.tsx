@@ -19,7 +19,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 const TEAM_EMAIL_MAP: Record<string, string> = {
   'Wesley': 'sales@merchanthaus.io',
   'Jamie': 'admin@merchanthaus.io',
-  'Darryn': 'it@merchanthaus.io',
+  'Darryn': 'onboarding@merchanthaus.io',
   'Taryn': 'taryn@merchanthaus.io',
   'Sheiky': 'support@merchanthaus.io',
 };

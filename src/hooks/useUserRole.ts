@@ -31,13 +31,13 @@ export const useUserRole = () => {
 
         if (error) {
           // Fallback to email-based check if DB query fails
-          const adminEmails = ['admin@merchanthaus.io', 'it@merchanthaus.io'];
+          const adminEmails = ['admin@merchanthaus.io', 'onboarding@merchanthaus.io'];
           setIsAdmin(adminEmails.includes(user.email || ''));
         } else {
           setIsAdmin(!!data);
         }
       } catch {
-        const adminEmails = ['admin@merchanthaus.io', 'it@merchanthaus.io'];
+        const adminEmails = ['admin@merchanthaus.io', 'onboarding@merchanthaus.io'];
         setIsAdmin(adminEmails.includes(user.email || ''));
       } finally {
         setLoading(false);
