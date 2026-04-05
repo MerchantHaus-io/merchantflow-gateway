@@ -186,7 +186,7 @@ const handler = async (req: Request): Promise<Response> => {
       "support@merchanthaus.io",
       "admin@merchanthaus.io",
       "sales@merchanthaus.io",
-      "it@merchanthaus.io",
+      "onboarding@merchanthaus.io",
       "dylan@merchanthaus.io",
       "taryn@merchanthaus.io",
     ];
