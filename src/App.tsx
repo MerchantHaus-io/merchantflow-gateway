@@ -56,6 +56,7 @@ import { IncomingMessageToast } from "./components/IncomingMessageToast";
 import { Dialler } from "./components/Dialler";
 import { CommandPalette } from "./components/CommandPalette";
 import { KeyboardShortcutsModal } from "./components/KeyboardShortcutsModal";
+import { AdminPopupDisplay } from "./components/AdminPopupDisplay";
 
 const PUBLIC_ROUTES = ['/auth', '/login', '/contact', '/apply', '/merchant-apply', '/forgot-password', '/update-password', '/terms-processing'];
 
@@ -69,6 +70,7 @@ const InternalWidgets = () => {
       <Dialler />
       <CommandPalette />
       <KeyboardShortcutsModal />
+      <AdminPopupDisplay />
     </>
   );
 };
