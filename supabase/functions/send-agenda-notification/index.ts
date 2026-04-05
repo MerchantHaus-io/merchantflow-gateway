@@ -66,7 +66,7 @@ serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: "it@merchanthaus.io",
+          from: "onboarding@merchanthaus.io",
           to: ["admin@merchanthaus.io"],
           subject,
           html,

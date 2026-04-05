@@ -63,7 +63,7 @@ export default function Calendar() {
 
   const TEAM_MEMBERS = [
     { email: "admin@merchanthaus.io", label: "Jamie" },
-    { email: "it@merchanthaus.io", label: "Darryn" },
+    { email: "onboarding@merchanthaus.io", label: "Darryn" },
     { email: "support@merchanthaus.io", label: "Sheiky" },
     { email: "sales@merchanthaus.io", label: "Wesley" },
     { email: "taryn@merchanthaus.io", label: "Taryn" },
@@ -429,7 +429,7 @@ export default function Calendar() {
 
 const TEAM_COLORS: Record<string, { border: string; bg: string; dot: string }> = {
   "admin@merchanthaus.io": { border: "border-l-blue-500", bg: "bg-blue-500/15", dot: "bg-blue-500" },
-  "it@merchanthaus.io": { border: "border-l-emerald-500", bg: "bg-emerald-500/15", dot: "bg-emerald-500" },
+  "onboarding@merchanthaus.io": { border: "border-l-emerald-500", bg: "bg-emerald-500/15", dot: "bg-emerald-500" },
   "support@merchanthaus.io": { border: "border-l-amber-500", bg: "bg-amber-500/15", dot: "bg-amber-500" },
   "sales@merchanthaus.io": { border: "border-l-purple-500", bg: "bg-purple-500/15", dot: "bg-purple-500" },
   "taryn@merchanthaus.io": { border: "border-l-rose-500", bg: "bg-rose-500/15", dot: "bg-rose-500" },

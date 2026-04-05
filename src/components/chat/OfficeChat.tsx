@@ -69,7 +69,7 @@ const USERS: CRMUser[] = [
   { email: "admin@merchanthaus.io", name: "Jamie", title: "Admin", shirtColor: 0x3a7bd5, hairColor: 0xd4b96a, skinColor: 0xffe0bb, stubble: true, stubbleColor: 0xc8aa70, scale: 1.0 },
   { email: "sales@merchanthaus.io", name: "Wesley", title: "Sales", shirtColor: 0x2eaa5e, hairColor: 0x1a3a1a, skinColor: 0xffdbac, prostheticLeg: true, scale: 1.15 },
   { email: "support@merchanthaus.io", name: "Sheiky", title: "Support", shirtColor: 0x9b30d0, hairColor: 0x2a1a40, skinColor: 0xd4a574, beard: true, beardColor: 0x9a9a9a, scale: 1.08 },
-  { email: "it@merchanthaus.io", name: "Darryn", title: "Dev", shirtColor: 0xd03060, hairColor: 0x3a1010, skinColor: 0xffdbac, scale: 1.0 },
+  { email: "onboarding@merchanthaus.io", name: "Darryn", title: "Dev", shirtColor: 0xd03060, hairColor: 0x3a1010, skinColor: 0xffdbac, scale: 1.0 },
   { email: "atria@merchanthaus.io", name: "Atria", title: "AI Assistant", shirtColor: 0x7c3aed, hairColor: 0xc0c0ff, skinColor: 0xe8d8f0, hairstyle: "bob", scale: 0.95, online: true },
 ];
 
@@ -83,7 +83,7 @@ const DESK_POS: Record<string, THREE.Vector3> = {
   "admin@merchanthaus.io":   new THREE.Vector3(-2,  0, -16),
   "sales@merchanthaus.io":   new THREE.Vector3(6,   0, -16),
   "support@merchanthaus.io": new THREE.Vector3(-6,  0, -8),
-  "it@merchanthaus.io":  new THREE.Vector3(2,   0, -8),
+  "onboarding@merchanthaus.io":  new THREE.Vector3(2,   0, -8),
   "atria@merchanthaus.io":   new THREE.Vector3(10,  0, -8),
 };
 // Chair offset: chairs sit at z+0.65 relative to cubicle center
@@ -589,7 +589,7 @@ function buildRoom(): THREE.Group {
       ball.position.set(0.75, 0.81, 0.05); cg.add(ball);
     },
     // Darryn: mini globe
-    "it@merchanthaus.io": (cg) => {
+    "onboarding@merchanthaus.io": (cg) => {
       const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.022, 0.02, 8), new THREE.MeshStandardMaterial({ color: 0x5d4037 }));
       stand.position.set(0.75, 0.79, 0.05); cg.add(stand);
       const axle = new THREE.Mesh(new THREE.CylinderGeometry(0.003, 0.003, 0.07, 4), new THREE.MeshStandardMaterial({ color: 0x9e9e9e, metalness: 0.6 }));
