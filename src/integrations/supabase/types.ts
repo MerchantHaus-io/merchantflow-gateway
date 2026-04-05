@@ -145,6 +145,113 @@ export type Database = {
           },
         ]
       }
+      admin_popup_acknowledgments: {
+        Row: {
+          acknowledged_at: string
+          id: string
+          popup_id: string
+          user_email: string
+          user_id: string
+        }
+        Insert: {
+          acknowledged_at?: string
+          id?: string
+          popup_id: string
+          user_email: string
+          user_id: string
+        }
+        Update: {
+          acknowledged_at?: string
+          id?: string
+          popup_id?: string
+          user_email?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_popup_acknowledgments_popup_id_fkey"
+            columns: ["popup_id"]
+            isOneToOne: false
+            referencedRelation: "admin_popups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      admin_popups: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string
+          created_by_email: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          min_display_seconds: number
+          title: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by: string
+          created_by_email: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          min_display_seconds?: number
+          title: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string
+          created_by_email?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          min_display_seconds?: number
+          title?: string
+        }
+        Relationships: []
+      }
+      agenda_items: {
+        Row: {
+          admin_notes: string | null
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          status: string
+          submitted_by: string
+          submitted_by_email: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          status?: string
+          submitted_by: string
+          submitted_by_email: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          status?: string
+          submitted_by?: string
+          submitted_by_email?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       application_documents: {
         Row: {
           application_id: string

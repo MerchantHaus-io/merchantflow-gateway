@@ -34,7 +34,7 @@ const SEARCH_ITEMS: SearchItem[] = [
   { title: "NMI Boarding", url: "/tools/nmi-boarding", icon: CreditCard, keywords: "gateway merchant board" },
   { title: "Terminal Updates", url: "/tools/terminal-updates", icon: Sparkles, keywords: "changelog features" },
   { title: "Netlify Hub", url: "/tools/netlify", icon: Cloud, keywords: "deployment audit" },
-  { title: "Analytics", url: "/admin/analytics", icon: Activity, keywords: "login tracking" },
+  { title: "Administration", url: "/admin/administration", icon: Activity, keywords: "login tracking admin agenda" },
   { title: "Supported Processors", url: "/supported-processors", icon: Globe, keywords: "compatibility" },
 ];
 
