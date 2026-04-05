@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { BroadcastAckPanel } from "@/components/BroadcastAckPanel";
 import { AgendaManager } from "@/components/admin/AgendaManager";
 import { AdminPopupManager } from "@/components/admin/AdminPopupManager";
+import { UserRoleManager } from "@/components/admin/UserRoleManager";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -87,6 +88,9 @@ const Administration = () => {
 
         {/* Admin Popup Notifications */}
         <AdminPopupManager />
+
+        {/* Team & Roles Management */}
+        <UserRoleManager />
 
         {/* Agenda / Ideation Management */}
         <AgendaManager />
