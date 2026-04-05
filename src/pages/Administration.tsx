@@ -89,6 +89,9 @@ const Administration = () => {
         {/* Admin Popup Notifications */}
         <AdminPopupManager />
 
+        {/* Team & Roles Management */}
+        <UserRoleManager />
+
         {/* Agenda / Ideation Management */}
         <AgendaManager />
 
