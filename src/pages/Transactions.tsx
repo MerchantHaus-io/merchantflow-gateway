@@ -476,7 +476,10 @@ const Transactions = () => {
                             <>
                               <TableRow key={tx.id || idx} className="cursor-pointer hover:bg-muted/30" onClick={() => setExpandedTx(expandedTx === tx.id ? null : tx.id)}>
                                 <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{formatTxDate(tx.date)}</TableCell>
-                                <TableCell className="text-xs font-medium truncate max-w-[120px]">{getMerchantLabel(tx.merchant_id)}</TableCell>
+                                <TableCell className="text-xs max-w-[140px]">
+                                  <p className="font-medium truncate">{getMerchantLabel(tx.merchant_id)}</p>
+                                  <p className="text-[10px] text-muted-foreground font-mono">{tx.merchant_id}</p>
+                                </TableCell>
                                 <TableCell className="text-xs">{tx.customer_name || "—"}</TableCell>
                                 <TableCell>{typeBadge(tx.type)}</TableCell>
                                 <TableCell className="text-xs text-muted-foreground">{tx.card_type}{tx.last_four ? ` ···${tx.last_four}` : ""}</TableCell>
