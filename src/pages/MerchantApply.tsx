@@ -996,10 +996,10 @@ function GatewayBusinessStep({ form, onChange, onBlur, getError }: StepProps) {
         <Field label="City" required error={getError("dba_city")}>
           <Input value={form.dba_city} onChange={e => onChange("dba_city", e.target.value)} onBlur={() => onBlur("dba_city")} hasError={!!getError("dba_city")} />
         </Field>
-        <Field label="State" required error={getError("dba_state")}>
+        <Field label={form.dba_country === "CA" ? "Province" : "State"} required error={getError("dba_state")}>
           <Input value={form.dba_state} onChange={e => onChange("dba_state", e.target.value)} onBlur={() => onBlur("dba_state")} hasError={!!getError("dba_state")} />
         </Field>
-        <Field label="ZIP Code" required error={getError("dba_zip")}>
+        <Field label={form.dba_country === "CA" ? "Postal Code" : "ZIP Code"} required error={getError("dba_zip")}>
           <Input value={form.dba_zip} onChange={e => onChange("dba_zip", e.target.value)} onBlur={() => onBlur("dba_zip")} hasError={!!getError("dba_zip")} />
         </Field>
       </div>
