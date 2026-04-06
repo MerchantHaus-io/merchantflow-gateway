@@ -779,11 +779,11 @@ export default function MerchantApply() {
                 ) : (
                   <>
                     {stepIndex === 0 && <PricingStep form={form} onChange={handleChange} />}
-                    {stepIndex === 1 && <BusinessProfileStep form={form} onChange={handleChange} onBlur={handleBlur} getError={getError} />}
-                    {stepIndex === 2 && <LegalInfoStep form={form} onChange={handleChange} onBlur={handleBlur} getError={getError} />}
+                    {stepIndex === 1 && <BusinessProfileStep form={form} onChange={handleChange} onBlur={handleBlur} getError={getError} isCanadian={isCanadian} />}
+                    {stepIndex === 2 && <LegalInfoStep form={form} onChange={handleChange} onBlur={handleBlur} getError={getError} isCanadian={isCanadian} />}
                     {stepIndex === 3 && <ProcessingStep form={form} onChange={handleChange} onBlur={handleBlur} getError={getError} />}
-                    {stepIndex === 4 && <OwnersBankingStep form={form} onChange={handleChange} onPrincipalChange={handlePrincipalChange} addPrincipal={addPrincipal} removePrincipal={removePrincipal} onBlur={handleBlur} getError={getError} />}
-                    {stepIndex === 5 && <ReviewStep form={form} onSubmit={handleSubmit} isSubmitting={isSubmitting} progress={progress} onChange={handleChange} />}
+                    {stepIndex === 4 && <OwnersBankingStep form={form} onChange={handleChange} onPrincipalChange={handlePrincipalChange} addPrincipal={addPrincipal} removePrincipal={removePrincipal} onBlur={handleBlur} getError={getError} isCanadian={isCanadian} />}
+                    {stepIndex === 5 && <ReviewStep form={form} onSubmit={handleSubmit} isSubmitting={isSubmitting} progress={progress} onChange={handleChange} isCanadian={isCanadian} />}
                   </>
                 )}
               </div>
@@ -961,6 +961,7 @@ interface StepProps {
   onChange: <K extends keyof MerchantForm>(field: K, value: MerchantForm[K]) => void;
   onBlur: (field: string) => void;
   getError: (field: string) => string | null;
+  isCanadian?: boolean;
 }
 
 function GatewayBusinessStep({ form, onChange, onBlur, getError }: StepProps) {
