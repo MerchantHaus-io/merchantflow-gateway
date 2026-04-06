@@ -376,7 +376,8 @@ export default function MerchantApply() {
       ...form.principals.flatMap((_, i) => [
         `principal_first_name_${i}`, `principal_last_name_${i}`,
         `principal_title_${i}`, `ownership_percent_${i}`,
-        `date_of_birth_${i}`, `ssn_full_${i}`,
+        `date_of_birth_${i}`,
+        ...(isCanadian ? [] : [`ssn_full_${i}`]),
       ]),
       "bank_name", "account_holder_name", "routing_number", "account_number",
     ];
