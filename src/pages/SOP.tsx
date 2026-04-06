@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { PanelLeftClose, PanelLeft } from "lucide-react";
 import { ChevronDown, Download } from "lucide-react";
 import { UnderwritingChecklist } from "@/components/sop/UnderwritingChecklist";
 import { TeamOrganogram } from "@/components/sop/TeamOrganogram";
