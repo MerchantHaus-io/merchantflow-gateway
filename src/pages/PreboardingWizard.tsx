@@ -117,6 +117,7 @@ interface PreboardingForm {
   dba_city: string;
   dba_state: string;
   dba_zip: string;
+  dba_country: string;
 
   // legal
   legal_entity_name: string;
@@ -165,6 +166,7 @@ const initialState: PreboardingForm = {
   dba_city: "",
   dba_state: "",
   dba_zip: "",
+  dba_country: "US",
   legal_entity_name: "",
   federal_tax_id: "",
   ownership_type: "",
@@ -241,6 +243,7 @@ const createFormFromOpportunity = (opportunity?: OpportunityWithRelations | null
     dba_city: account?.city || "",
     dba_state: account?.state || "",
     dba_zip: account?.zip || "",
+    dba_country: account?.country || "US",
     website_url: account?.website || "",
     legal_entity_name: account?.name || "",
     legal_address_line1: account?.address1 || "",
