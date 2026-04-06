@@ -547,8 +547,18 @@ Sales Support`,
   return (
     <AppLayout pageTitle="Standard Operating Procedures">
       <div className="flex-1 flex min-h-0">
+            {/* Sidebar toggle (always visible on lg) */}
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="hidden lg:flex fixed top-[4.5rem] z-30 items-center justify-center h-8 w-8 rounded-r-md border border-l-0 border-border bg-card text-muted-foreground hover:text-foreground hover:bg-accent/30 transition-all"
+              style={{ left: sidebarOpen ? '16rem' : '0' }}
+              title={sidebarOpen ? 'Collapse menu' : 'Expand menu'}
+            >
+              {sidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeft className="h-4 w-4" />}
+            </button>
+
             {/* SOP Navigation Sidebar */}
-            <aside className="w-64 border-r border-border bg-card hidden lg:block overflow-y-auto">
+            <aside className={`border-r border-border bg-card hidden lg:block overflow-y-auto transition-all duration-200 ${sidebarOpen ? 'w-64' : 'w-0 overflow-hidden border-r-0'}`}>
               <nav className="p-4 space-y-1">
                 <a
                   href="#index"
