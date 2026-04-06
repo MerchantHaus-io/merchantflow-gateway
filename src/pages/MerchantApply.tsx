@@ -1592,9 +1592,15 @@ function OwnersBankingStep({ form, onChange, onPrincipalChange, addPrincipal, re
             <Field label="Date of Birth" required error={getError(`date_of_birth_${idx}`)}>
               <Input type="date" value={principal.date_of_birth} onChange={e => onPrincipalChange(idx, "date_of_birth", e.target.value)} onBlur={() => onBlur(`date_of_birth_${idx}`)} hasError={!!getError(`date_of_birth_${idx}`)} />
             </Field>
-            <Field label="Full SSN" required hint="🔒 Securely stored and automatically deleted after review. Please double-check for accuracy — if incorrect, we may request a scanned copy of an identity document (Passport or Driver's License)." error={getError(`ssn_full_${idx}`)}>
-              <Input type="password" value={principal.ssn_full} onChange={e => onPrincipalChange(idx, "ssn_full", e.target.value)} onBlur={() => onBlur(`ssn_full_${idx}`)} placeholder="XXX-XX-XXXX" maxLength={11} hasError={!!getError(`ssn_full_${idx}`)} />
-            </Field>
+            {isCanadian ? (
+              <Field label="SIN (optional)" hint="Social Insurance Number — optional for Canadian applicants.">
+                <Input type="password" value={principal.ssn_full} onChange={e => onPrincipalChange(idx, "ssn_full", e.target.value)} placeholder="XXX-XXX-XXX" maxLength={11} />
+              </Field>
+            ) : (
+              <Field label="Full SSN" required hint="🔒 Securely stored and automatically deleted after review. Please double-check for accuracy — if incorrect, we may request a scanned copy of an identity document (Passport or Driver's License)." error={getError(`ssn_full_${idx}`)}>
+                <Input type="password" value={principal.ssn_full} onChange={e => onPrincipalChange(idx, "ssn_full", e.target.value)} onBlur={() => onBlur(`ssn_full_${idx}`)} placeholder="XXX-XX-XXXX" maxLength={11} hasError={!!getError(`ssn_full_${idx}`)} />
+              </Field>
+            )}
             <Field label="Phone"><Input value={principal.principal_phone} onChange={e => onPrincipalChange(idx, "principal_phone", e.target.value)} /></Field>
             <Field label="Email"><Input type="email" value={principal.principal_email} onChange={e => onPrincipalChange(idx, "principal_email", e.target.value)} /></Field>
           </div>
