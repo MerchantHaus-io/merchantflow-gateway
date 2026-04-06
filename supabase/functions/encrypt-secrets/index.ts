@@ -53,7 +53,7 @@ function isValidSSN(str: string): boolean {
 }
 
 function isValidRoutingNumber(str: string): boolean {
-  return /^\d{9}$/.test(str);
+  return /^\d{5,9}$/.test(str); // US: 9 digits, CA: 5+3=8 digits
 }
 
 function isValidAccountNumber(str: string): boolean {
