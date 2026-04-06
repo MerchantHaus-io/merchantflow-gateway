@@ -117,6 +117,7 @@ interface PreboardingForm {
   dba_city: string;
   dba_state: string;
   dba_zip: string;
+  dba_country: string;
 
   // legal
   legal_entity_name: string;
@@ -165,6 +166,7 @@ const initialState: PreboardingForm = {
   dba_city: "",
   dba_state: "",
   dba_zip: "",
+  dba_country: "US",
   legal_entity_name: "",
   federal_tax_id: "",
   ownership_type: "",
@@ -241,6 +243,7 @@ const createFormFromOpportunity = (opportunity?: OpportunityWithRelations | null
     dba_city: account?.city || "",
     dba_state: account?.state || "",
     dba_zip: account?.zip || "",
+    dba_country: account?.country || "US",
     website_url: account?.website || "",
     legal_entity_name: account?.name || "",
     legal_address_line1: account?.address1 || "",
@@ -913,8 +916,8 @@ function LegalInfoStep({ form, onChange }: { form: PreboardingForm; onChange: <K
         <Field label="Legal entity name" required>
           <Input value={form.legal_entity_name} onChange={e => onChange("legal_entity_name", e.target.value)} />
         </Field>
-        <Field label="Federal tax ID (TIN)" required>
-          <Input value={form.federal_tax_id} onChange={e => onChange("federal_tax_id", e.target.value)} />
+        <Field label={form.dba_country === "CA" ? "Business Number (BN)" : "Federal tax ID (TIN)"} required>
+          <Input value={form.federal_tax_id} onChange={e => onChange("federal_tax_id", e.target.value)} placeholder={form.dba_country === "CA" ? "9 digits" : "XX-XXXXXXX"} />
         </Field>
         <Field label="Business / ownership type" required>
           <Input value={form.ownership_type} onChange={e => onChange("ownership_type", e.target.value)} placeholder="e.g. LLC, Sole Prop, Corp" />
@@ -922,7 +925,7 @@ function LegalInfoStep({ form, onChange }: { form: PreboardingForm; onChange: <K
         <Field label="Business formation date" required>
           <Input type="date" value={form.business_formation_date} onChange={e => onChange("business_formation_date", e.target.value)} />
         </Field>
-        <Field label="State incorporated" required>
+        <Field label={form.dba_country === "CA" ? "Province of incorporation" : "State incorporated"} required>
           <Input value={form.state_incorporated} onChange={e => onChange("state_incorporated", e.target.value)} />
         </Field>
       </div>

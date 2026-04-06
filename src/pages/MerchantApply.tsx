@@ -210,7 +210,7 @@ const PROCESSING_REQUIRED: Record<string, string[]> = {
   ],
   owners_banking: [
     "principal_first_name_0", "principal_last_name_0", "principal_title_0",
-    "ownership_percent_0", "date_of_birth_0", "ssn_full_0",
+    "ownership_percent_0", "date_of_birth_0",
     "bank_name", "account_holder_name", "routing_number", "account_number",
   ],
 };
@@ -287,6 +287,7 @@ export default function MerchantApply() {
 
   const isGatewayOnly = serviceType === "gateway_only";
   const isDocSubmission = serviceType === "document_submission";
+  const isCanadian = form.dba_country === "CA";
   const steps = isDocSubmission ? DOCS_STEPS : isGatewayOnly ? GATEWAY_STEPS : PROCESSING_STEPS;
 
   const allRequiredFields = useMemo(() => {
@@ -296,15 +297,16 @@ export default function MerchantApply() {
       ...PROCESSING_REQUIRED.business,
       ...PROCESSING_REQUIRED.legal,
       ...PROCESSING_REQUIRED.processing,
-      // Dynamic principal fields
+      // Dynamic principal fields — SSN not required for Canadian applicants
       ...form.principals.flatMap((_, i) => [
         `principal_first_name_${i}`, `principal_last_name_${i}`,
         `principal_title_${i}`, `ownership_percent_${i}`,
-        `date_of_birth_${i}`, `ssn_full_${i}`,
+        `date_of_birth_${i}`,
+        ...(isCanadian ? [] : [`ssn_full_${i}`]),
       ]),
       "bank_name", "account_holder_name", "routing_number", "account_number",
     ];
-  }, [isGatewayOnly, isDocSubmission, form.principals.length]);
+  }, [isGatewayOnly, isDocSubmission, form.principals.length, isCanadian]);
 
   const getFieldValue = (key: string): string => {
     // Handle principal indexed fields like "principal_first_name_0"
@@ -374,7 +376,8 @@ export default function MerchantApply() {
       ...form.principals.flatMap((_, i) => [
         `principal_first_name_${i}`, `principal_last_name_${i}`,
         `principal_title_${i}`, `ownership_percent_${i}`,
-        `date_of_birth_${i}`, `ssn_full_${i}`,
+        `date_of_birth_${i}`,
+        ...(isCanadian ? [] : [`ssn_full_${i}`]),
       ]),
       "bank_name", "account_holder_name", "routing_number", "account_number",
     ];
@@ -776,11 +779,11 @@ export default function MerchantApply() {
                 ) : (
                   <>
                     {stepIndex === 0 && <PricingStep form={form} onChange={handleChange} />}
-                    {stepIndex === 1 && <BusinessProfileStep form={form} onChange={handleChange} onBlur={handleBlur} getError={getError} />}
-                    {stepIndex === 2 && <LegalInfoStep form={form} onChange={handleChange} onBlur={handleBlur} getError={getError} />}
+                    {stepIndex === 1 && <BusinessProfileStep form={form} onChange={handleChange} onBlur={handleBlur} getError={getError} isCanadian={isCanadian} />}
+                    {stepIndex === 2 && <LegalInfoStep form={form} onChange={handleChange} onBlur={handleBlur} getError={getError} isCanadian={isCanadian} />}
                     {stepIndex === 3 && <ProcessingStep form={form} onChange={handleChange} onBlur={handleBlur} getError={getError} />}
-                    {stepIndex === 4 && <OwnersBankingStep form={form} onChange={handleChange} onPrincipalChange={handlePrincipalChange} addPrincipal={addPrincipal} removePrincipal={removePrincipal} onBlur={handleBlur} getError={getError} />}
-                    {stepIndex === 5 && <ReviewStep form={form} onSubmit={handleSubmit} isSubmitting={isSubmitting} progress={progress} onChange={handleChange} />}
+                    {stepIndex === 4 && <OwnersBankingStep form={form} onChange={handleChange} onPrincipalChange={handlePrincipalChange} addPrincipal={addPrincipal} removePrincipal={removePrincipal} onBlur={handleBlur} getError={getError} isCanadian={isCanadian} />}
+                    {stepIndex === 5 && <ReviewStep form={form} onSubmit={handleSubmit} isSubmitting={isSubmitting} progress={progress} onChange={handleChange} isCanadian={isCanadian} />}
                   </>
                 )}
               </div>
@@ -811,7 +814,7 @@ export default function MerchantApply() {
                       <SectionStatus label="Business Profile" count={PROCESSING_REQUIRED.business.length - (missingBySection.business?.length ?? 0)} total={PROCESSING_REQUIRED.business.length} />
                       <SectionStatus label="Legal Info" count={PROCESSING_REQUIRED.legal.length - (missingBySection.legal?.length ?? 0)} total={PROCESSING_REQUIRED.legal.length} />
                       <SectionStatus label="Processing" count={PROCESSING_REQUIRED.processing.length - (missingBySection.processing?.length ?? 0)} total={PROCESSING_REQUIRED.processing.length} />
-                      <SectionStatus label="Owners & Banking" count={(() => { const obFields = [...form.principals.flatMap((_, i) => [`principal_first_name_${i}`,`principal_last_name_${i}`,`principal_title_${i}`,`ownership_percent_${i}`,`date_of_birth_${i}`,`ssn_full_${i}`]),"bank_name","account_holder_name","routing_number","account_number"]; return obFields.length - (missingBySection.owners_banking?.length ?? obFields.length); })()} total={form.principals.length * 6 + 4} />
+                      <SectionStatus label="Owners & Banking" count={(() => { const obFields = [...form.principals.flatMap((_, i) => [`principal_first_name_${i}`,`principal_last_name_${i}`,`principal_title_${i}`,`ownership_percent_${i}`,`date_of_birth_${i}`,...(isCanadian ? [] : [`ssn_full_${i}`])]),"bank_name","account_holder_name","routing_number","account_number"]; return obFields.length - (missingBySection.owners_banking?.length ?? obFields.length); })()} total={form.principals.length * (isCanadian ? 5 : 6) + 4} />
                     </>
                   )}
                 </div>
@@ -822,7 +825,7 @@ export default function MerchantApply() {
                   <Info className="w-4 h-4 text-info mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-foreground">Security Notice</p>
-                    <p className="text-xs text-muted-foreground mt-1">SSN and bank account numbers are encrypted with AES-256-GCM before storage and automatically purged after underwriting.</p>
+                    <p className="text-xs text-muted-foreground mt-1">{isCanadian ? "Bank account numbers are encrypted with AES-256-GCM before storage and automatically purged after underwriting." : "SSN and bank account numbers are encrypted with AES-256-GCM before storage and automatically purged after underwriting."}</p>
                   </div>
                 </div>
               </div>
@@ -958,6 +961,7 @@ interface StepProps {
   onChange: <K extends keyof MerchantForm>(field: K, value: MerchantForm[K]) => void;
   onBlur: (field: string) => void;
   getError: (field: string) => string | null;
+  isCanadian?: boolean;
 }
 
 function GatewayBusinessStep({ form, onChange, onBlur, getError }: StepProps) {
@@ -992,10 +996,10 @@ function GatewayBusinessStep({ form, onChange, onBlur, getError }: StepProps) {
         <Field label="City" required error={getError("dba_city")}>
           <Input value={form.dba_city} onChange={e => onChange("dba_city", e.target.value)} onBlur={() => onBlur("dba_city")} hasError={!!getError("dba_city")} />
         </Field>
-        <Field label="State" required error={getError("dba_state")}>
+        <Field label={form.dba_country === "CA" ? "Province" : "State"} required error={getError("dba_state")}>
           <Input value={form.dba_state} onChange={e => onChange("dba_state", e.target.value)} onBlur={() => onBlur("dba_state")} hasError={!!getError("dba_state")} />
         </Field>
-        <Field label="ZIP Code" required error={getError("dba_zip")}>
+        <Field label={form.dba_country === "CA" ? "Postal Code" : "ZIP Code"} required error={getError("dba_zip")}>
           <Input value={form.dba_zip} onChange={e => onChange("dba_zip", e.target.value)} onBlur={() => onBlur("dba_zip")} hasError={!!getError("dba_zip")} />
         </Field>
       </div>
@@ -1304,7 +1308,7 @@ function PricingStep({ form, onChange }: { form: MerchantForm; onChange: <K exte
 
 // ─── Business Profile ───
 
-function BusinessProfileStep({ form, onChange, onBlur, getError }: StepProps) {
+function BusinessProfileStep({ form, onChange, onBlur, getError, isCanadian }: StepProps) {
   return (
     <div className="space-y-3 md:space-y-4">
       <Field label="DBA Name (Doing Business As)" required error={getError("dba_name")}>
@@ -1342,14 +1346,17 @@ function BusinessProfileStep({ form, onChange, onBlur, getError }: StepProps) {
         <Field label="City" required error={getError("dba_city")}>
           <Input value={form.dba_city} onChange={e => onChange("dba_city", e.target.value)} onBlur={() => onBlur("dba_city")} hasError={!!getError("dba_city")} />
         </Field>
-        <Field label="State" required error={getError("dba_state")}>
+        <Field label={isCanadian ? "Province" : "State"} required error={getError("dba_state")}>
           <Input value={form.dba_state} onChange={e => onChange("dba_state", e.target.value)} onBlur={() => onBlur("dba_state")} hasError={!!getError("dba_state")} />
         </Field>
-        <Field label="ZIP Code" required error={getError("dba_zip")}>
+        <Field label={isCanadian ? "Postal Code" : "ZIP Code"} required error={getError("dba_zip")}>
           <Input value={form.dba_zip} onChange={e => onChange("dba_zip", e.target.value)} onBlur={() => onBlur("dba_zip")} hasError={!!getError("dba_zip")} />
         </Field>
         <Field label="Country">
-          <Input value={form.dba_country} onChange={e => onChange("dba_country", e.target.value)} placeholder="US" />
+          <SelectInput value={form.dba_country} onChange={e => onChange("dba_country", e.target.value)}>
+            <option value="US">United States</option>
+            <option value="CA">Canada</option>
+          </SelectInput>
         </Field>
       </div>
     </div>
@@ -1358,15 +1365,15 @@ function BusinessProfileStep({ form, onChange, onBlur, getError }: StepProps) {
 
 // ─── Legal Information ───
 
-function LegalInfoStep({ form, onChange, onBlur, getError }: StepProps) {
+function LegalInfoStep({ form, onChange, onBlur, getError, isCanadian }: StepProps) {
   return (
     <div className="space-y-3 md:space-y-4">
       <Field label="Legal Entity Name" required error={getError("legal_entity_name")}>
         <Input value={form.legal_entity_name} onChange={e => onChange("legal_entity_name", e.target.value)} onBlur={() => onBlur("legal_entity_name")} placeholder="As registered with state/IRS" hasError={!!getError("legal_entity_name")} />
       </Field>
       <div className="grid gap-3 md:gap-4 md:grid-cols-2">
-        <Field label="Federal Tax ID (TIN/EIN)" required error={getError("federal_tax_id")}>
-          <Input value={form.federal_tax_id} onChange={e => onChange("federal_tax_id", e.target.value)} onBlur={() => onBlur("federal_tax_id")} placeholder="XX-XXXXXXX" hasError={!!getError("federal_tax_id")} />
+        <Field label={isCanadian ? "Business Number (BN)" : "Federal Tax ID (TIN/EIN)"} required error={getError("federal_tax_id")}>
+          <Input value={form.federal_tax_id} onChange={e => onChange("federal_tax_id", e.target.value)} onBlur={() => onBlur("federal_tax_id")} placeholder={isCanadian ? "9 digits" : "XX-XXXXXXX"} hasError={!!getError("federal_tax_id")} />
         </Field>
         <Field label="Business Ownership Type" required error={getError("ownership_type")}>
           <SelectInput value={form.ownership_type} onChange={e => onChange("ownership_type", e.target.value)} onBlur={() => onBlur("ownership_type")} hasError={!!getError("ownership_type")}>
@@ -1381,7 +1388,7 @@ function LegalInfoStep({ form, onChange, onBlur, getError }: StepProps) {
         <Field label="Business Formation Date" required error={getError("business_formation_date")}>
           <Input type="date" value={form.business_formation_date} onChange={e => onChange("business_formation_date", e.target.value)} onBlur={() => onBlur("business_formation_date")} hasError={!!getError("business_formation_date")} />
         </Field>
-        <Field label="State Incorporated" required error={getError("state_incorporated")}>
+        <Field label={isCanadian ? "Province of Incorporation" : "State Incorporated"} required error={getError("state_incorporated")}>
           <Input value={form.state_incorporated} onChange={e => onChange("state_incorporated", e.target.value)} onBlur={() => onBlur("state_incorporated")} hasError={!!getError("state_incorporated")} />
         </Field>
       </div>
@@ -1398,13 +1405,18 @@ function LegalInfoStep({ form, onChange, onBlur, getError }: StepProps) {
         <Field label="City" required error={getError("legal_city")}>
           <Input value={form.legal_city} onChange={e => onChange("legal_city", e.target.value)} onBlur={() => onBlur("legal_city")} hasError={!!getError("legal_city")} />
         </Field>
-        <Field label="State" required error={getError("legal_state")}>
+        <Field label={isCanadian ? "Province" : "State"} required error={getError("legal_state")}>
           <Input value={form.legal_state} onChange={e => onChange("legal_state", e.target.value)} onBlur={() => onBlur("legal_state")} hasError={!!getError("legal_state")} />
         </Field>
-        <Field label="ZIP Code" required error={getError("legal_zip")}>
+        <Field label={isCanadian ? "Postal Code" : "ZIP Code"} required error={getError("legal_zip")}>
           <Input value={form.legal_zip} onChange={e => onChange("legal_zip", e.target.value)} onBlur={() => onBlur("legal_zip")} hasError={!!getError("legal_zip")} />
         </Field>
-        <Field label="Country"><Input value={form.legal_country} onChange={e => onChange("legal_country", e.target.value)} placeholder="US" /></Field>
+        <Field label="Country">
+          <SelectInput value={form.legal_country} onChange={e => onChange("legal_country", e.target.value)}>
+            <option value="US">United States</option>
+            <option value="CA">Canada</option>
+          </SelectInput>
+        </Field>
       </div>
     </div>
   );
@@ -1505,9 +1517,10 @@ interface OwnersBankingStepProps extends StepProps {
   onPrincipalChange: (index: number, field: keyof PrincipalForm, value: string) => void;
   addPrincipal: () => void;
   removePrincipal: (index: number) => void;
+  isCanadian?: boolean;
 }
 
-function OwnersBankingStep({ form, onChange, onPrincipalChange, addPrincipal, removePrincipal, onBlur, getError }: OwnersBankingStepProps) {
+function OwnersBankingStep({ form, onChange, onPrincipalChange, addPrincipal, removePrincipal, onBlur, getError, isCanadian }: OwnersBankingStepProps) {
   const [sameAsDba, setSameAsDba] = useState<Record<number, boolean>>({});
 
   const handleSameAsDba = (idx: number, checked: boolean) => {
@@ -1579,9 +1592,15 @@ function OwnersBankingStep({ form, onChange, onPrincipalChange, addPrincipal, re
             <Field label="Date of Birth" required error={getError(`date_of_birth_${idx}`)}>
               <Input type="date" value={principal.date_of_birth} onChange={e => onPrincipalChange(idx, "date_of_birth", e.target.value)} onBlur={() => onBlur(`date_of_birth_${idx}`)} hasError={!!getError(`date_of_birth_${idx}`)} />
             </Field>
-            <Field label="Full SSN" required hint="🔒 Securely stored and automatically deleted after review. Please double-check for accuracy — if incorrect, we may request a scanned copy of an identity document (Passport or Driver's License)." error={getError(`ssn_full_${idx}`)}>
-              <Input type="password" value={principal.ssn_full} onChange={e => onPrincipalChange(idx, "ssn_full", e.target.value)} onBlur={() => onBlur(`ssn_full_${idx}`)} placeholder="XXX-XX-XXXX" maxLength={11} hasError={!!getError(`ssn_full_${idx}`)} />
-            </Field>
+            {isCanadian ? (
+              <Field label="SIN (optional)" hint="Social Insurance Number — optional for Canadian applicants.">
+                <Input type="password" value={principal.ssn_full} onChange={e => onPrincipalChange(idx, "ssn_full", e.target.value)} placeholder="XXX-XXX-XXX" maxLength={11} />
+              </Field>
+            ) : (
+              <Field label="Full SSN" required hint="🔒 Securely stored and automatically deleted after review. Please double-check for accuracy — if incorrect, we may request a scanned copy of an identity document (Passport or Driver's License)." error={getError(`ssn_full_${idx}`)}>
+                <Input type="password" value={principal.ssn_full} onChange={e => onPrincipalChange(idx, "ssn_full", e.target.value)} onBlur={() => onBlur(`ssn_full_${idx}`)} placeholder="XXX-XX-XXXX" maxLength={11} hasError={!!getError(`ssn_full_${idx}`)} />
+              </Field>
+            )}
             <Field label="Phone"><Input value={principal.principal_phone} onChange={e => onPrincipalChange(idx, "principal_phone", e.target.value)} /></Field>
             <Field label="Email"><Input type="email" value={principal.principal_email} onChange={e => onPrincipalChange(idx, "principal_email", e.target.value)} /></Field>
           </div>
@@ -1606,8 +1625,8 @@ function OwnersBankingStep({ form, onChange, onPrincipalChange, addPrincipal, re
         <Field label="Name on Account" required error={getError("account_holder_name")}>
           <Input value={form.account_holder_name} onChange={e => onChange("account_holder_name", e.target.value)} onBlur={() => onBlur("account_holder_name")} hasError={!!getError("account_holder_name")} />
         </Field>
-        <Field label="Routing Number" required hint="Encrypted — purged after underwriting" error={getError("routing_number")}>
-          <Input type="password" value={form.routing_number} onChange={e => onChange("routing_number", e.target.value)} onBlur={() => onBlur("routing_number")} placeholder="9 digits" maxLength={9} hasError={!!getError("routing_number")} />
+        <Field label={isCanadian ? "Transit/Institution Number" : "Routing Number"} required hint="Encrypted — purged after underwriting" error={getError("routing_number")}>
+          <Input type="password" value={form.routing_number} onChange={e => onChange("routing_number", e.target.value)} onBlur={() => onBlur("routing_number")} placeholder={isCanadian ? "5 digit transit + 3 digit institution" : "9 digits"} maxLength={isCanadian ? 8 : 9} hasError={!!getError("routing_number")} />
         </Field>
         <Field label="Account Number" required hint="Encrypted — purged after underwriting" error={getError("account_number")}>
           <Input type="password" value={form.account_number} onChange={e => onChange("account_number", e.target.value)} onBlur={() => onBlur("account_number")} placeholder="Account number" hasError={!!getError("account_number")} />
@@ -1619,7 +1638,7 @@ function OwnersBankingStep({ form, onChange, onPrincipalChange, addPrincipal, re
         <div className="text-xs text-muted-foreground leading-relaxed space-y-2 max-h-64 overflow-y-auto">
           <p>To help the government fight financial crime, Federal regulation requires certain financial institutions to obtain, verify, and record information about the beneficial owners of legal entity customers.</p>
           <p>Legal entities can be abused to disguise involvement in terrorist financing, money laundering, tax evasion, corruption, fraud, and other financial crimes. Requiring the disclosure of key individuals who own or control a legal entity (i.e., the beneficial owners) helps law enforcement investigate and prosecute these crimes.</p>
-          <p>By signing below, I attest that I have accurately provided the name, address, date of birth and Social Security Number (SSN) for the following individuals (i.e. the beneficial owners):</p>
+          <p>By signing below, I attest that I have accurately provided the name, address, date of birth{isCanadian ? "" : " and Social Security Number (SSN)"} for the following individuals (i.e. the beneficial owners):</p>
           <p className="pl-4">(i) Each individual, if any, who owns directly or indirectly, 25 percent or more of the equity interests of the legal entity customer (e.g., each natural person that owns 25 percent or more of the shares of a corporation); and</p>
           <p className="pl-4">(ii) An individual with significant responsibility for managing the legal entity customer (e.g., a Chief Executive Officer, Chief Financial Officer, Chief Operating Officer, Managing Member, General Partner, President, Vice President, or Treasurer).</p>
           <p>The number of individuals that satisfy this definition of "beneficial owner" may vary. Under section (i), depending on the factual circumstances, up to four individuals (but as few as zero) may need to be identified. Regardless of the number of individuals identified under section (i), you must provide the identifying information of one individual under section (ii). It is possible that in some circumstances the same individual might be identified under both sections (e.g., the President of Acme, Inc. who also holds a 30% equity interest). Thus, a completed form will contain the identifying information of at least one individual (under section (ii)), and up to five individuals (i.e., one individual under section (ii) and four 25 percent equity holders under section (i)).</p>
@@ -1671,7 +1690,7 @@ function TermsDialog() {
 
 // ─── Review & Submit ───
 
-function ReviewStep({ form, onSubmit, isSubmitting, progress, onChange }: { form: MerchantForm; onSubmit: () => void; isSubmitting: boolean; progress: number; onChange: <K extends keyof MerchantForm>(field: K, value: MerchantForm[K]) => void }) {
+function ReviewStep({ form, onSubmit, isSubmitting, progress, onChange, isCanadian = false }: { form: MerchantForm; onSubmit: () => void; isSubmitting: boolean; progress: number; onChange: <K extends keyof MerchantForm>(field: K, value: MerchantForm[K]) => void; isCanadian?: boolean }) {
   const allComplete = progress === 100;
   return (
     <div className="space-y-6">
@@ -1765,7 +1784,7 @@ function ReviewStep({ form, onSubmit, isSubmitting, progress, onChange }: { form
             <div key={i} className="rounded-lg border border-border bg-card p-3 mb-2 last:mb-0">
               <p className="text-sm font-semibold text-foreground">{p.principal_first_name} {p.principal_last_name}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                {p.principal_title} · {p.ownership_percent}% ownership · SSN: ••••{p.ssn_full.slice(-4)}
+                {p.principal_title} · {p.ownership_percent}% ownership{p.ssn_full ? ` · ${isCanadian ? 'SIN' : 'SSN'}: ••••${p.ssn_full.slice(-4)}` : ''}
               </p>
               {(p.principal_email || p.principal_phone) && (
                 <p className="text-xs text-muted-foreground mt-0.5">
