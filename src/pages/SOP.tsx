@@ -40,6 +40,7 @@ import { AppLayout } from "@/components/AppLayout";
 const SOP = () => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const handleDownloadPdf = useCallback(() => {
     setIsPrinting(true);
