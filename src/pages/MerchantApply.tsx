@@ -1372,8 +1372,8 @@ function LegalInfoStep({ form, onChange, onBlur, getError, isCanadian }: StepPro
         <Input value={form.legal_entity_name} onChange={e => onChange("legal_entity_name", e.target.value)} onBlur={() => onBlur("legal_entity_name")} placeholder="As registered with state/IRS" hasError={!!getError("legal_entity_name")} />
       </Field>
       <div className="grid gap-3 md:gap-4 md:grid-cols-2">
-        <Field label="Federal Tax ID (TIN/EIN)" required error={getError("federal_tax_id")}>
-          <Input value={form.federal_tax_id} onChange={e => onChange("federal_tax_id", e.target.value)} onBlur={() => onBlur("federal_tax_id")} placeholder="XX-XXXXXXX" hasError={!!getError("federal_tax_id")} />
+        <Field label={isCanadian ? "Business Number (BN)" : "Federal Tax ID (TIN/EIN)"} required error={getError("federal_tax_id")}>
+          <Input value={form.federal_tax_id} onChange={e => onChange("federal_tax_id", e.target.value)} onBlur={() => onBlur("federal_tax_id")} placeholder={isCanadian ? "9 digits" : "XX-XXXXXXX"} hasError={!!getError("federal_tax_id")} />
         </Field>
         <Field label="Business Ownership Type" required error={getError("ownership_type")}>
           <SelectInput value={form.ownership_type} onChange={e => onChange("ownership_type", e.target.value)} onBlur={() => onBlur("ownership_type")} hasError={!!getError("ownership_type")}>
@@ -1388,7 +1388,7 @@ function LegalInfoStep({ form, onChange, onBlur, getError, isCanadian }: StepPro
         <Field label="Business Formation Date" required error={getError("business_formation_date")}>
           <Input type="date" value={form.business_formation_date} onChange={e => onChange("business_formation_date", e.target.value)} onBlur={() => onBlur("business_formation_date")} hasError={!!getError("business_formation_date")} />
         </Field>
-        <Field label="State Incorporated" required error={getError("state_incorporated")}>
+        <Field label={isCanadian ? "Province of Incorporation" : "State Incorporated"} required error={getError("state_incorporated")}>
           <Input value={form.state_incorporated} onChange={e => onChange("state_incorporated", e.target.value)} onBlur={() => onBlur("state_incorporated")} hasError={!!getError("state_incorporated")} />
         </Field>
       </div>
@@ -1405,13 +1405,18 @@ function LegalInfoStep({ form, onChange, onBlur, getError, isCanadian }: StepPro
         <Field label="City" required error={getError("legal_city")}>
           <Input value={form.legal_city} onChange={e => onChange("legal_city", e.target.value)} onBlur={() => onBlur("legal_city")} hasError={!!getError("legal_city")} />
         </Field>
-        <Field label="State" required error={getError("legal_state")}>
+        <Field label={isCanadian ? "Province" : "State"} required error={getError("legal_state")}>
           <Input value={form.legal_state} onChange={e => onChange("legal_state", e.target.value)} onBlur={() => onBlur("legal_state")} hasError={!!getError("legal_state")} />
         </Field>
-        <Field label="ZIP Code" required error={getError("legal_zip")}>
+        <Field label={isCanadian ? "Postal Code" : "ZIP Code"} required error={getError("legal_zip")}>
           <Input value={form.legal_zip} onChange={e => onChange("legal_zip", e.target.value)} onBlur={() => onBlur("legal_zip")} hasError={!!getError("legal_zip")} />
         </Field>
-        <Field label="Country"><Input value={form.legal_country} onChange={e => onChange("legal_country", e.target.value)} placeholder="US" /></Field>
+        <Field label="Country">
+          <SelectInput value={form.legal_country} onChange={e => onChange("legal_country", e.target.value)}>
+            <option value="US">United States</option>
+            <option value="CA">Canada</option>
+          </SelectInput>
+        </Field>
       </div>
     </div>
   );
