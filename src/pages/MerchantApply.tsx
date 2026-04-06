@@ -1308,7 +1308,7 @@ function PricingStep({ form, onChange }: { form: MerchantForm; onChange: <K exte
 
 // ─── Business Profile ───
 
-function BusinessProfileStep({ form, onChange, onBlur, getError }: StepProps) {
+function BusinessProfileStep({ form, onChange, onBlur, getError, isCanadian }: StepProps) {
   return (
     <div className="space-y-3 md:space-y-4">
       <Field label="DBA Name (Doing Business As)" required error={getError("dba_name")}>
@@ -1362,7 +1362,7 @@ function BusinessProfileStep({ form, onChange, onBlur, getError }: StepProps) {
 
 // ─── Legal Information ───
 
-function LegalInfoStep({ form, onChange, onBlur, getError }: StepProps) {
+function LegalInfoStep({ form, onChange, onBlur, getError, isCanadian }: StepProps) {
   return (
     <div className="space-y-3 md:space-y-4">
       <Field label="Legal Entity Name" required error={getError("legal_entity_name")}>
@@ -1509,9 +1509,10 @@ interface OwnersBankingStepProps extends StepProps {
   onPrincipalChange: (index: number, field: keyof PrincipalForm, value: string) => void;
   addPrincipal: () => void;
   removePrincipal: (index: number) => void;
+  isCanadian?: boolean;
 }
 
-function OwnersBankingStep({ form, onChange, onPrincipalChange, addPrincipal, removePrincipal, onBlur, getError }: OwnersBankingStepProps) {
+function OwnersBankingStep({ form, onChange, onPrincipalChange, addPrincipal, removePrincipal, onBlur, getError, isCanadian }: OwnersBankingStepProps) {
   const [sameAsDba, setSameAsDba] = useState<Record<number, boolean>>({});
 
   const handleSameAsDba = (idx: number, checked: boolean) => {
@@ -1675,7 +1676,7 @@ function TermsDialog() {
 
 // ─── Review & Submit ───
 
-function ReviewStep({ form, onSubmit, isSubmitting, progress, onChange }: { form: MerchantForm; onSubmit: () => void; isSubmitting: boolean; progress: number; onChange: <K extends keyof MerchantForm>(field: K, value: MerchantForm[K]) => void }) {
+function ReviewStep({ form, onSubmit, isSubmitting, progress, onChange, isCanadian = false }: { form: MerchantForm; onSubmit: () => void; isSubmitting: boolean; progress: number; onChange: <K extends keyof MerchantForm>(field: K, value: MerchantForm[K]) => void; isCanadian?: boolean }) {
   const allComplete = progress === 100;
   return (
     <div className="space-y-6">
