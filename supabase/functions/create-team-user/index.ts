@@ -19,6 +19,24 @@ serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
+    // Verify caller is admin
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user: caller }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    
+    const ADMIN_EMAILS = ['admin@merchanthaus.io', 'onboarding@merchanthaus.io', 'jamie@merchanthaus.io'];
+    if (authError || !caller || !ADMIN_EMAILS.includes(caller.email || '')) {
+      return new Response(JSON.stringify({ error: "Admin access required" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { email, full_name, role } = await req.json();
 
     if (!email) {
@@ -27,7 +45,6 @@ serve(async (req) => {
       });
     }
 
-    // Create user with a temporary password and must_change_password flag
     const tempPassword = crypto.randomUUID().slice(0, 16) + "Aa1!";
     
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
@@ -46,7 +63,6 @@ serve(async (req) => {
       });
     }
 
-    // Grant admin role if requested
     if (role === 'admin' && newUser.user) {
       await supabaseAdmin.from('user_roles').insert({
         user_id: newUser.user.id,
@@ -56,7 +72,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ 
-        message: `User ${email} created successfully.`,
+        message: `User ${email} created. They will be prompted to set a password on first login.`,
         userId: newUser.user?.id,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
