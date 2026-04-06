@@ -1625,8 +1625,8 @@ function OwnersBankingStep({ form, onChange, onPrincipalChange, addPrincipal, re
         <Field label="Name on Account" required error={getError("account_holder_name")}>
           <Input value={form.account_holder_name} onChange={e => onChange("account_holder_name", e.target.value)} onBlur={() => onBlur("account_holder_name")} hasError={!!getError("account_holder_name")} />
         </Field>
-        <Field label="Routing Number" required hint="Encrypted — purged after underwriting" error={getError("routing_number")}>
-          <Input type="password" value={form.routing_number} onChange={e => onChange("routing_number", e.target.value)} onBlur={() => onBlur("routing_number")} placeholder="9 digits" maxLength={9} hasError={!!getError("routing_number")} />
+        <Field label={isCanadian ? "Transit/Institution Number" : "Routing Number"} required hint="Encrypted — purged after underwriting" error={getError("routing_number")}>
+          <Input type="password" value={form.routing_number} onChange={e => onChange("routing_number", e.target.value)} onBlur={() => onBlur("routing_number")} placeholder={isCanadian ? "5 digit transit + 3 digit institution" : "9 digits"} maxLength={isCanadian ? 8 : 9} hasError={!!getError("routing_number")} />
         </Field>
         <Field label="Account Number" required hint="Encrypted — purged after underwriting" error={getError("account_number")}>
           <Input type="password" value={form.account_number} onChange={e => onChange("account_number", e.target.value)} onBlur={() => onBlur("account_number")} placeholder="Account number" hasError={!!getError("account_number")} />
@@ -1784,7 +1784,7 @@ function ReviewStep({ form, onSubmit, isSubmitting, progress, onChange, isCanadi
             <div key={i} className="rounded-lg border border-border bg-card p-3 mb-2 last:mb-0">
               <p className="text-sm font-semibold text-foreground">{p.principal_first_name} {p.principal_last_name}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                {p.principal_title} · {p.ownership_percent}% ownership · SSN: ••••{p.ssn_full.slice(-4)}
+                {p.principal_title} · {p.ownership_percent}% ownership{p.ssn_full ? ` · ${isCanadian ? 'SIN' : 'SSN'}: ••••${p.ssn_full.slice(-4)}` : ''}
               </p>
               {(p.principal_email || p.principal_phone) && (
                 <p className="text-xs text-muted-foreground mt-0.5">
