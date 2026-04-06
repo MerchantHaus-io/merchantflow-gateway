@@ -250,7 +250,7 @@ const Transactions = () => {
     queryFn: async () => {
       const { data } = await supabase
         .from("nmi_boarding_submissions")
-        .select("nmi_gateway_id, company_name, dba_name");
+        .select("nmi_gateway_id, company_name, dba_name, account_id, accounts(name)");
       return data || [];
     },
     staleTime: 10 * 60 * 1000,
@@ -259,12 +259,16 @@ const Transactions = () => {
   const merchantNames = useMemo(() => {
     const map: Record<string, string> = {};
     for (const b of boardingData || []) {
-      if (b.nmi_gateway_id) map[b.nmi_gateway_id] = b.dba_name || b.company_name || b.nmi_gateway_id;
+      if (b.nmi_gateway_id) {
+        // Priority: account name > dba name > company name > gateway id
+        const accountName = (b as any).accounts?.name;
+        map[b.nmi_gateway_id] = accountName || b.dba_name || b.company_name || b.nmi_gateway_id;
+      }
     }
     return map;
   }, [boardingData]);
 
-  const getMerchantLabel = (id: string) => merchantNames[id] || `Merchant ${id}`;
+  const getMerchantLabel = (id: string) => merchantNames[id] || id;
 
   // CSV export
   const exportCSV = useCallback(() => {
@@ -441,7 +445,7 @@ const Transactions = () => {
                               <span>{tx.card_type}{tx.last_four ? ` ···${tx.last_four}` : ""}</span>
                             </div>
                             <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              <span className="font-mono text-[10px]">{getMerchantLabel(tx.merchant_id)}</span>
+                              <span className="text-[10px]">{getMerchantLabel(tx.merchant_id)} <span className="text-muted-foreground/60 font-mono">#{tx.merchant_id}</span></span>
                               <span>{formatTxDate(tx.date)}</span>
                             </div>
                           </CardContent>
@@ -472,7 +476,10 @@ const Transactions = () => {
                             <>
                               <TableRow key={tx.id || idx} className="cursor-pointer hover:bg-muted/30" onClick={() => setExpandedTx(expandedTx === tx.id ? null : tx.id)}>
                                 <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{formatTxDate(tx.date)}</TableCell>
-                                <TableCell className="text-xs font-medium truncate max-w-[120px]">{getMerchantLabel(tx.merchant_id)}</TableCell>
+                                <TableCell className="text-xs max-w-[140px]">
+                                  <p className="font-medium truncate">{getMerchantLabel(tx.merchant_id)}</p>
+                                  <p className="text-[10px] text-muted-foreground font-mono">{tx.merchant_id}</p>
+                                </TableCell>
                                 <TableCell className="text-xs">{tx.customer_name || "—"}</TableCell>
                                 <TableCell>{typeBadge(tx.type)}</TableCell>
                                 <TableCell className="text-xs text-muted-foreground">{tx.card_type}{tx.last_four ? ` ···${tx.last_four}` : ""}</TableCell>
