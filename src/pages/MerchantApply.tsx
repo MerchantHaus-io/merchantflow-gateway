@@ -210,7 +210,7 @@ const PROCESSING_REQUIRED: Record<string, string[]> = {
   ],
   owners_banking: [
     "principal_first_name_0", "principal_last_name_0", "principal_title_0",
-    "ownership_percent_0", "date_of_birth_0", "ssn_full_0",
+    "ownership_percent_0", "date_of_birth_0",
     "bank_name", "account_holder_name", "routing_number", "account_number",
   ],
 };
@@ -287,6 +287,7 @@ export default function MerchantApply() {
 
   const isGatewayOnly = serviceType === "gateway_only";
   const isDocSubmission = serviceType === "document_submission";
+  const isCanadian = form.dba_country === "CA";
   const steps = isDocSubmission ? DOCS_STEPS : isGatewayOnly ? GATEWAY_STEPS : PROCESSING_STEPS;
 
   const allRequiredFields = useMemo(() => {
@@ -296,15 +297,16 @@ export default function MerchantApply() {
       ...PROCESSING_REQUIRED.business,
       ...PROCESSING_REQUIRED.legal,
       ...PROCESSING_REQUIRED.processing,
-      // Dynamic principal fields
+      // Dynamic principal fields — SSN not required for Canadian applicants
       ...form.principals.flatMap((_, i) => [
         `principal_first_name_${i}`, `principal_last_name_${i}`,
         `principal_title_${i}`, `ownership_percent_${i}`,
-        `date_of_birth_${i}`, `ssn_full_${i}`,
+        `date_of_birth_${i}`,
+        ...(isCanadian ? [] : [`ssn_full_${i}`]),
       ]),
       "bank_name", "account_holder_name", "routing_number", "account_number",
     ];
-  }, [isGatewayOnly, isDocSubmission, form.principals.length]);
+  }, [isGatewayOnly, isDocSubmission, form.principals.length, isCanadian]);
 
   const getFieldValue = (key: string): string => {
     // Handle principal indexed fields like "principal_first_name_0"
