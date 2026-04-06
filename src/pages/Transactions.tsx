@@ -445,7 +445,7 @@ const Transactions = () => {
                               <span>{tx.card_type}{tx.last_four ? ` ···${tx.last_four}` : ""}</span>
                             </div>
                             <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              <span className="font-mono text-[10px]">{getMerchantLabel(tx.merchant_id)}</span>
+                              <span className="text-[10px]">{getMerchantLabel(tx.merchant_id)} <span className="text-muted-foreground/60 font-mono">#{tx.merchant_id}</span></span>
                               <span>{formatTxDate(tx.date)}</span>
                             </div>
                           </CardContent>
