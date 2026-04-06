@@ -814,7 +814,7 @@ export default function MerchantApply() {
                       <SectionStatus label="Business Profile" count={PROCESSING_REQUIRED.business.length - (missingBySection.business?.length ?? 0)} total={PROCESSING_REQUIRED.business.length} />
                       <SectionStatus label="Legal Info" count={PROCESSING_REQUIRED.legal.length - (missingBySection.legal?.length ?? 0)} total={PROCESSING_REQUIRED.legal.length} />
                       <SectionStatus label="Processing" count={PROCESSING_REQUIRED.processing.length - (missingBySection.processing?.length ?? 0)} total={PROCESSING_REQUIRED.processing.length} />
-                      <SectionStatus label="Owners & Banking" count={(() => { const obFields = [...form.principals.flatMap((_, i) => [`principal_first_name_${i}`,`principal_last_name_${i}`,`principal_title_${i}`,`ownership_percent_${i}`,`date_of_birth_${i}`,`ssn_full_${i}`]),"bank_name","account_holder_name","routing_number","account_number"]; return obFields.length - (missingBySection.owners_banking?.length ?? obFields.length); })()} total={form.principals.length * 6 + 4} />
+                      <SectionStatus label="Owners & Banking" count={(() => { const obFields = [...form.principals.flatMap((_, i) => [`principal_first_name_${i}`,`principal_last_name_${i}`,`principal_title_${i}`,`ownership_percent_${i}`,`date_of_birth_${i}`,...(isCanadian ? [] : [`ssn_full_${i}`])]),"bank_name","account_holder_name","routing_number","account_number"]; return obFields.length - (missingBySection.owners_banking?.length ?? obFields.length); })()} total={form.principals.length * (isCanadian ? 5 : 6) + 4} />
                     </>
                   )}
                 </div>
@@ -825,7 +825,7 @@ export default function MerchantApply() {
                   <Info className="w-4 h-4 text-info mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-foreground">Security Notice</p>
-                    <p className="text-xs text-muted-foreground mt-1">SSN and bank account numbers are encrypted with AES-256-GCM before storage and automatically purged after underwriting.</p>
+                    <p className="text-xs text-muted-foreground mt-1">{isCanadian ? "Bank account numbers are encrypted with AES-256-GCM before storage and automatically purged after underwriting." : "SSN and bank account numbers are encrypted with AES-256-GCM before storage and automatically purged after underwriting."}</p>
                   </div>
                 </div>
               </div>
