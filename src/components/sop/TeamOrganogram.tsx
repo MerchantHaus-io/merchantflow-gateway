@@ -25,7 +25,7 @@ interface TeamMember {
 const TEAM: TeamMember[] = [
   {
     name: "Jamie",
-    email: "admin@merchanthaus.io",
+    email: "jamie@merchanthaus.io",
     title: "CEO",
     role: "Leadership / Operations / Underwriting",
     icon: <Crown className="h-5 w-5" />,
@@ -47,7 +47,7 @@ const TEAM: TeamMember[] = [
   },
   {
     name: "Darryn",
-    email: "onboarding@merchanthaus.io",
+    email: "admin@merchanthaus.io",
     title: "QA & Complex Sales / Tech",
     role: "Quality Assurance / Sales / Integration / Workspace & CRM",
     icon: <Shield className="h-5 w-5" />,
