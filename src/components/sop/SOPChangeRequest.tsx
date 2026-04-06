@@ -126,7 +126,7 @@ export const SOPReviewPanel = () => {
   const [reviewNote, setReviewNote] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
   const { user } = useAuth();
-  const isAdmin = user?.email === "admin@merchanthaus.io";
+  const isAdmin = user?.email === "admin@merchanthaus.io" || user?.email === "jamie@merchanthaus.io";
 
   const fetchRequests = async () => {
     const { data } = await supabase
