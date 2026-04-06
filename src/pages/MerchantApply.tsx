@@ -1346,14 +1346,17 @@ function BusinessProfileStep({ form, onChange, onBlur, getError, isCanadian }: S
         <Field label="City" required error={getError("dba_city")}>
           <Input value={form.dba_city} onChange={e => onChange("dba_city", e.target.value)} onBlur={() => onBlur("dba_city")} hasError={!!getError("dba_city")} />
         </Field>
-        <Field label="State" required error={getError("dba_state")}>
+        <Field label={isCanadian ? "Province" : "State"} required error={getError("dba_state")}>
           <Input value={form.dba_state} onChange={e => onChange("dba_state", e.target.value)} onBlur={() => onBlur("dba_state")} hasError={!!getError("dba_state")} />
         </Field>
-        <Field label="ZIP Code" required error={getError("dba_zip")}>
+        <Field label={isCanadian ? "Postal Code" : "ZIP Code"} required error={getError("dba_zip")}>
           <Input value={form.dba_zip} onChange={e => onChange("dba_zip", e.target.value)} onBlur={() => onBlur("dba_zip")} hasError={!!getError("dba_zip")} />
         </Field>
         <Field label="Country">
-          <Input value={form.dba_country} onChange={e => onChange("dba_country", e.target.value)} placeholder="US" />
+          <SelectInput value={form.dba_country} onChange={e => onChange("dba_country", e.target.value)}>
+            <option value="US">United States</option>
+            <option value="CA">Canada</option>
+          </SelectInput>
         </Field>
       </div>
     </div>
