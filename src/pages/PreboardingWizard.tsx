@@ -916,8 +916,8 @@ function LegalInfoStep({ form, onChange }: { form: PreboardingForm; onChange: <K
         <Field label="Legal entity name" required>
           <Input value={form.legal_entity_name} onChange={e => onChange("legal_entity_name", e.target.value)} />
         </Field>
-        <Field label="Federal tax ID (TIN)" required>
-          <Input value={form.federal_tax_id} onChange={e => onChange("federal_tax_id", e.target.value)} />
+        <Field label={form.dba_country === "CA" ? "Business Number (BN)" : "Federal tax ID (TIN)"} required>
+          <Input value={form.federal_tax_id} onChange={e => onChange("federal_tax_id", e.target.value)} placeholder={form.dba_country === "CA" ? "9 digits" : "XX-XXXXXXX"} />
         </Field>
         <Field label="Business / ownership type" required>
           <Input value={form.ownership_type} onChange={e => onChange("ownership_type", e.target.value)} placeholder="e.g. LLC, Sole Prop, Corp" />
@@ -925,7 +925,7 @@ function LegalInfoStep({ form, onChange }: { form: PreboardingForm; onChange: <K
         <Field label="Business formation date" required>
           <Input type="date" value={form.business_formation_date} onChange={e => onChange("business_formation_date", e.target.value)} />
         </Field>
-        <Field label="State incorporated" required>
+        <Field label={form.dba_country === "CA" ? "Province of incorporation" : "State incorporated"} required>
           <Input value={form.state_incorporated} onChange={e => onChange("state_incorporated", e.target.value)} />
         </Field>
       </div>
