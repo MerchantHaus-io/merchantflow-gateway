@@ -250,7 +250,7 @@ const Transactions = () => {
     queryFn: async () => {
       const { data } = await supabase
         .from("nmi_boarding_submissions")
-        .select("nmi_gateway_id, company_name, dba_name");
+        .select("nmi_gateway_id, company_name, dba_name, account_id, accounts(name)");
       return data || [];
     },
     staleTime: 10 * 60 * 1000,
@@ -259,12 +259,16 @@ const Transactions = () => {
   const merchantNames = useMemo(() => {
     const map: Record<string, string> = {};
     for (const b of boardingData || []) {
-      if (b.nmi_gateway_id) map[b.nmi_gateway_id] = b.dba_name || b.company_name || b.nmi_gateway_id;
+      if (b.nmi_gateway_id) {
+        // Priority: account name > dba name > company name > gateway id
+        const accountName = (b as any).accounts?.name;
+        map[b.nmi_gateway_id] = accountName || b.dba_name || b.company_name || b.nmi_gateway_id;
+      }
     }
     return map;
   }, [boardingData]);
 
-  const getMerchantLabel = (id: string) => merchantNames[id] || `Merchant ${id}`;
+  const getMerchantLabel = (id: string) => merchantNames[id] || id;
 
   // CSV export
   const exportCSV = useCallback(() => {
