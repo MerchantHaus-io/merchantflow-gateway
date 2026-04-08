@@ -14,11 +14,25 @@ interface QualifiedRequest {
   account_name: string;
   contact_email: string;
   contact_first_name: string;
+  missing_documents?: string[];
 }
 
 const MERCHANT_APPLY_URL = "https://ops-terminal.lovable.app/merchant-apply";
 
-const buildDocsRequestHtml = (firstName: string, accountName: string): string => `
+const buildDocsRequestHtml = (firstName: string, accountName: string, missingDocs?: string[]): string => {
+  const docListHtml = missingDocs && missingDocs.length > 0
+    ? missingDocs.map(d => `<li>${d}</li>`).join("\n")
+    : `<li>3 months of recent bank statements</li>
+        <li>3 months of processing/transaction history (if applicable)</li>
+        <li>Voided check or bank letter</li>
+        <li>Government-issued photo ID (driver's license or passport)</li>
+        <li>Business license or articles of incorporation</li>`;
+
+  const introText = missingDocs && missingDocs.length > 0
+    ? `We're progressing with your merchant application for <strong>${accountName}</strong>. To continue, we still require the following outstanding documents:`
+    : `Great news — we've reviewed your inquiry for <strong>${accountName}</strong> and we'd love to move forward. To proceed with your merchant application, we'll need the following documents:`;
+
+  return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -43,13 +57,9 @@ const buildDocsRequestHtml = (firstName: string, accountName: string): string =>
     </div>
     <div class="content">
       <p>Hi ${firstName},</p>
-      <p>Great news — we've reviewed your inquiry for <strong>${accountName}</strong> and we'd love to move forward. To proceed with your merchant application, we'll need the following documents:</p>
+      <p>${introText}</p>
       <ul class="doc-list">
-        <li>3 months of recent bank statements</li>
-        <li>3 months of processing/transaction history (if applicable)</li>
-        <li>Voided check or bank letter</li>
-        <li>Government-issued photo ID (driver's license or passport)</li>
-        <li>Business license or articles of incorporation</li>
+        ${docListHtml}
       </ul>
       <p>Please complete our secure merchant application form to upload your documents and provide the required business details:</p>
       <p style="text-align: center;">
@@ -64,6 +74,7 @@ const buildDocsRequestHtml = (firstName: string, accountName: string): string =>
   </div>
 </body>
 </html>`;
+};
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -71,7 +82,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { opportunity_id, account_name, contact_email, contact_first_name }: QualifiedRequest = await req.json();
+    const { opportunity_id, account_name, contact_email, contact_first_name, missing_documents }: QualifiedRequest = await req.json();
 
     if (!contact_email || !account_name) {
       return new Response(
@@ -97,10 +108,10 @@ const handler = async (req: Request): Promise<Response> => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Merchant Haus <onboarding@merchanthaus.io>",
+        from: "Merchant Haus <noreply@merchanthaus.io>",
         to: [contact_email],
         subject: `Action Required — Complete Your Merchant Application — ${account_name}`.replace(/[\r\n]+/g, " ").trim(),
-        html: buildDocsRequestHtml(contact_first_name || "there", account_name),
+        html: buildDocsRequestHtml(contact_first_name || "there", account_name, missing_documents),
         reply_to: "sales@merchanthaus.io",
       }),
     });

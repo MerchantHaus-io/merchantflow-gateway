@@ -1,14 +1,19 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useAIAssistant } from "@/hooks/useAIAssistant";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { EMAIL_TO_USER } from "@/types/opportunity";
 import {
-  Wand2, Loader2, CheckCircle2, XCircle, AlertTriangle, ChevronDown, ChevronUp, Eye, Clock, User, Globe, FileText, Tag, BarChart3, Shield, Search, Scale,
+  Wand2, Loader2, CheckCircle2, XCircle, AlertTriangle, ChevronDown, ChevronUp, Eye, Clock, User, Globe, FileText, Tag, BarChart3, Shield, Search, Scale, Pin,
 } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
 
 interface AIValidatePanelProps {
@@ -125,11 +130,74 @@ const MetaLine = ({ meta }: { meta: ReportMeta }) => (
 
 export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
   const { underwritingReview } = useAIAssistant();
+  const { user } = useAuth();
   const [isRunning, setIsRunning] = useState(false);
   const [report, setReport] = useState<UnifiedReport | null>(null);
   const [meta, setMeta] = useState<ReportMeta | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Notice board pin dialog state
+  const [pinDialogOpen, setPinDialogOpen] = useState(false);
+  const [pinActionText, setPinActionText] = useState("");
+  const [pinSelectedUsers, setPinSelectedUsers] = useState<string[]>([]);
+  const [isPinning, setIsPinning] = useState(false);
+  const [profiles, setProfiles] = useState<{ id: string; email: string | null; full_name: string | null }[]>([]);
+
+  useEffect(() => {
+    supabase.from("profiles").select("id, email, full_name").then(({ data }) => {
+      if (data) setProfiles(data);
+    });
+  }, []);
+
+  const handlePinToNoticeBoard = useCallback(async () => {
+    if (!pinActionText.trim() || !user || pinSelectedUsers.length === 0) return;
+    setIsPinning(true);
+    try {
+      const { error } = await supabase.from("action_items").insert({
+        title: pinActionText.trim(),
+        created_by: user.id,
+        created_by_email: user.email || "",
+        assigned_to: pinSelectedUsers,
+      });
+      if (error) throw error;
+
+      // Also create a linked task
+      await supabase.from("tasks").insert({
+        title: pinActionText.trim(),
+        assignee: pinSelectedUsers[0],
+        created_by: user.email || "",
+        source: "notice",
+        status: "open",
+        priority: "medium",
+      });
+
+      // Send email notification to tagged users
+      const taggedEmails = pinSelectedUsers
+        .map((name) => profiles.find((p) => p.full_name === name || p.email === name)?.email)
+        .filter(Boolean) as string[];
+      if (taggedEmails.length > 0) {
+        const posterName = profiles.find((p) => p.id === user.id)?.full_name || user.email || "Someone";
+        supabase.functions.invoke("send-notice-email", {
+          body: {
+            title: pinActionText.trim(),
+            postedBy: posterName,
+            postedByEmail: user.email || "",
+            taggedUsers: taggedEmails,
+          },
+        });
+      }
+
+      toast.success("Action pinned to Notice Board");
+      setPinDialogOpen(false);
+      setPinActionText("");
+      setPinSelectedUsers([]);
+    } catch {
+      toast.error("Failed to pin action");
+    } finally {
+      setIsPinning(false);
+    }
+  }, [pinActionText, pinSelectedUsers, user, profiles]);
 
   // Auto-load the latest report on mount
   const hasFetchedRef = useRef(false);
@@ -532,10 +600,23 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
               {report.recommended_actions && report.recommended_actions.length > 0 && (
                 <div>
                   <p className="text-xs font-medium mb-1">💡 Actions</p>
-                  <ul className="text-xs text-muted-foreground space-y-0.5">
+                  <ul className="text-xs text-muted-foreground space-y-1">
                     {report.recommended_actions.map((a, i) => (
-                      <li key={i} className="flex items-start gap-1.5">
-                        <span className="text-primary mt-0.5 shrink-0">→</span><span className="min-w-0 break-words">{a}</span>
+                      <li key={i} className="flex items-start gap-1.5 group">
+                        <span className="text-primary mt-0.5 shrink-0">→</span>
+                        <span className="min-w-0 break-words flex-1">{a}</span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                          title="Pin to Notice Board"
+                          onClick={() => {
+                            setPinActionText(a);
+                            setPinDialogOpen(true);
+                          }}
+                        >
+                          <Pin className="h-3 w-3" />
+                        </Button>
                       </li>
                     ))}
                   </ul>
@@ -580,6 +661,52 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
           )}
         </div>
       )}
+
+      {/* Pin to Notice Board Dialog */}
+      <Dialog open={pinDialogOpen} onOpenChange={setPinDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-sm">
+              <Pin className="h-4 w-4" /> Pin Action to Notice Board
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="rounded-md bg-muted/50 p-3 text-xs text-foreground">
+              {pinActionText}
+            </div>
+            <div>
+              <p className="text-xs font-medium mb-2">Assign to team member(s):</p>
+              <div className="space-y-2">
+                {profiles.filter(p => p.email && p.full_name).map(p => (
+                  <label key={p.id} className="flex items-center gap-2 cursor-pointer text-sm">
+                    <Checkbox
+                      checked={pinSelectedUsers.includes(p.full_name || p.email || "")}
+                      onCheckedChange={(checked) => {
+                        const name = p.full_name || p.email || "";
+                        setPinSelectedUsers(prev =>
+                          checked ? [...prev, name] : prev.filter(u => u !== name)
+                        );
+                      }}
+                    />
+                    <span>{p.full_name || p.email}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setPinDialogOpen(false)}>Cancel</Button>
+            <Button
+              size="sm"
+              onClick={handlePinToNoticeBoard}
+              disabled={isPinning || pinSelectedUsers.length === 0}
+            >
+              {isPinning ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Pin className="h-3 w-3 mr-1" />}
+              Pin & Assign
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
