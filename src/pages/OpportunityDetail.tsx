@@ -838,6 +838,10 @@ const OpportunityDetail = () => {
                         </div>
                       </TabsContent>
 
+                      <TabsContent value="emails" className="mt-6">
+                        <EmailsSection accountId={opportunity.account_id} />
+                      </TabsContent>
+
                       <TabsContent value="notes" className="mt-6">
                         <NotesSection opportunityId={opportunity.id} />
                       </TabsContent>
