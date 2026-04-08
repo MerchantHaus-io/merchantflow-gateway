@@ -86,13 +86,13 @@ const queryClient = new QueryClient({
 });
 
 const App = () => (
-  <ErrorBoundary>
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <ErrorBoundary>
           <AuthProvider>
             <TasksProvider>
               <InternalWidgets />
@@ -147,11 +147,11 @@ const App = () => (
               </Routes>
             </TasksProvider>
           </AuthProvider>
+          </ErrorBoundary>
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>
   </QueryClientProvider>
-  </ErrorBoundary>
 );
 
 export default App;
