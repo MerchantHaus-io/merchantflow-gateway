@@ -82,7 +82,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { opportunity_id, account_name, contact_email, contact_first_name }: QualifiedRequest = await req.json();
+    const { opportunity_id, account_name, contact_email, contact_first_name, missing_documents }: QualifiedRequest = await req.json();
 
     if (!contact_email || !account_name) {
       return new Response(
@@ -108,10 +108,10 @@ const handler = async (req: Request): Promise<Response> => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Merchant Haus <onboarding@merchanthaus.io>",
+        from: "Merchant Haus <noreply@merchanthaus.io>",
         to: [contact_email],
         subject: `Action Required — Complete Your Merchant Application — ${account_name}`.replace(/[\r\n]+/g, " ").trim(),
-        html: buildDocsRequestHtml(contact_first_name || "there", account_name),
+        html: buildDocsRequestHtml(contact_first_name || "there", account_name, missing_documents),
         reply_to: "sales@merchanthaus.io",
       }),
     });
