@@ -46,6 +46,51 @@ function parseEmailList(header: string): string[] {
   return header.split(",").map((e) => extractEmail(e)).filter(Boolean);
 }
 
+function decodeBase64Url(str: string): string {
+  try {
+    const base64 = str.replace(/-/g, '+').replace(/_/g, '/');
+    const binStr = atob(base64);
+    const bytes = Uint8Array.from(binStr, (c) => c.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  } catch {
+    return "";
+  }
+}
+
+function extractBodyFromPayload(payload: any): string {
+  if (!payload) return "";
+
+  // Single-part message
+  if (payload.body?.data) {
+    return decodeBase64Url(payload.body.data);
+  }
+
+  // Multipart — look for text/plain first, then text/html
+  if (payload.parts) {
+    // Try text/plain
+    for (const part of payload.parts) {
+      if (part.mimeType === "text/plain" && part.body?.data) {
+        return decodeBase64Url(part.body.data);
+      }
+    }
+    // Fallback: text/html stripped to text
+    for (const part of payload.parts) {
+      if (part.mimeType === "text/html" && part.body?.data) {
+        const html = decodeBase64Url(part.body.data);
+        return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+      }
+    }
+    // Nested multipart (e.g. multipart/alternative inside multipart/mixed)
+    for (const part of payload.parts) {
+      if (part.parts) {
+        const nested = extractBodyFromPayload(part);
+        if (nested) return nested;
+      }
+    }
+  }
+  return "";
+}
+
 // Team emails to exclude from lead creation
 const TEAM_EMAILS = [
   "admin@merchanthaus.io",
