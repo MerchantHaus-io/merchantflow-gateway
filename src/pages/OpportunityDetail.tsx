@@ -106,6 +106,7 @@ const EditField = ({
 const EmailsSection = ({ accountId }: { accountId: string }) => {
   const [emails, setEmails] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchEmails = async () => {
@@ -136,24 +137,65 @@ const EmailsSection = ({ accountId }: { accountId: string }) => {
   }
 
   return (
-    <div className="space-y-2 max-h-[400px] overflow-y-auto">
-      {emails.map((e) => (
-        <div key={e.id} className="border rounded-lg p-3 space-y-1 hover:bg-muted/50 transition-colors">
-          <div className="flex items-center gap-2">
-            <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <span className="text-sm font-medium truncate flex-1">{e.subject}</span>
-            <Badge variant={e.outcome === 'sent' || e.outcome === 'delivered' ? 'secondary' : 'outline'} className="text-[10px]">
-              {e.outcome || e.status}
-            </Badge>
+    <div className="space-y-2 max-h-[500px] overflow-y-auto">
+      {emails.map((e) => {
+        const isExpanded = expandedId === e.id;
+        return (
+          <div
+            key={e.id}
+            className={cn(
+              "border rounded-lg transition-colors cursor-pointer",
+              isExpanded ? "bg-muted/50" : "hover:bg-muted/30"
+            )}
+            onClick={() => setExpandedId(isExpanded ? null : e.id)}
+          >
+            <div className="p-3 space-y-1">
+              <div className="flex items-center gap-2">
+                <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span className="text-sm font-medium truncate flex-1">{e.subject}</span>
+                <Badge variant={e.outcome === 'sent' || e.outcome === 'delivered' ? 'secondary' : 'outline'} className="text-[10px]">
+                  {e.outcome || e.status}
+                </Badge>
+              </div>
+              {e.contact_name && <p className="text-xs text-muted-foreground">To: {e.contact_name} {e.contact_email ? `<${e.contact_email}>` : ''}</p>}
+              {!isExpanded && e.notes && <p className="text-xs text-muted-foreground truncate">{e.notes.slice(0, 120)}</p>}
+              <p className="text-[11px] text-muted-foreground">
+                {formatDistanceToNow(new Date(e.created_at), { addSuffix: true })}
+                {e.created_by_email && ` · by ${e.created_by_email.split('@')[0]}`}
+              </p>
+            </div>
+
+            {isExpanded && (
+              <div className="px-3 pb-3 border-t pt-2 space-y-3">
+                {e.contact_email && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-0.5">Recipient</p>
+                    <p className="text-sm">{e.contact_name ? `${e.contact_name} <${e.contact_email}>` : e.contact_email}</p>
+                  </div>
+                )}
+                {e.notes && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-0.5">Content</p>
+                    <p className="text-sm whitespace-pre-wrap">{e.notes}</p>
+                  </div>
+                )}
+                {e.resolution && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-0.5">Resolution</p>
+                    <p className="text-sm whitespace-pre-wrap">{e.resolution}</p>
+                  </div>
+                )}
+                {e.channel && (
+                  <p className="text-[11px] text-muted-foreground">Channel: {e.channel}</p>
+                )}
+                <p className="text-[11px] text-muted-foreground">
+                  {format(new Date(e.created_at), 'PPpp')}
+                </p>
+              </div>
+            )}
           </div>
-          {e.contact_name && <p className="text-xs text-muted-foreground">To: {e.contact_name} {e.contact_email ? `<${e.contact_email}>` : ''}</p>}
-          {e.notes && <p className="text-xs text-muted-foreground truncate">{e.notes.slice(0, 120)}</p>}
-          <p className="text-[11px] text-muted-foreground">
-            {formatDistanceToNow(new Date(e.created_at), { addSuffix: true })}
-            {e.created_by_email && ` · by ${e.created_by_email.split('@')[0]}`}
-          </p>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };
