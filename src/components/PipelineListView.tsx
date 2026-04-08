@@ -47,7 +47,7 @@ const PipelineListView = ({ opportunities, onCardClick, selectedId, onSelect }: 
   if (activeOpps.length === 0) return null;
 
   return (
-    <div className="flex flex-col min-h-0 rounded-xl border border-border/60 bg-card/80 backdrop-blur-md overflow-hidden max-w-3xl">
+    <div className="flex flex-col min-h-0 rounded-xl border border-border/60 bg-card/80 overflow-hidden max-w-3xl">
       {/* Header */}
       <div className="flex-shrink-0 px-4 py-2.5 border-b border-border/50 flex items-center justify-between">
         <div>
@@ -59,7 +59,7 @@ const PipelineListView = ({ opportunities, onCardClick, selectedId, onSelect }: 
       {/* Table */}
       <div className="flex-1 overflow-y-auto min-h-0 pipeline-scrollbar">
         {/* Column headers */}
-        <div className="sticky top-0 z-10 grid grid-cols-[2fr_1.5fr_1fr_120px] gap-2 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border/40 bg-card/95 backdrop-blur-sm">
+        <div className="sticky top-0 z-10 grid grid-cols-[2fr_1.5fr_1fr_120px] gap-2 px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border/40 bg-card/95">
           <span>Merchant</span>
           <span>Account</span>
           <span>Progress</span>

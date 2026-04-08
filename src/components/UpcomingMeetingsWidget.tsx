@@ -93,7 +93,7 @@ export function UpcomingMeetingsWidget() {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-border/60 bg-card/80 backdrop-blur-sm p-4">
+      <div className="rounded-xl border border-border/60 bg-card/80 p-4">
         <div className="flex items-center gap-2 mb-3">
           <CalendarClock className="h-4 w-4 text-primary" />
           <span className="text-sm font-semibold text-foreground">Upcoming Meetings</span>
@@ -109,7 +109,7 @@ export function UpcomingMeetingsWidget() {
 
   if (events.length === 0) {
     return (
-      <div className="rounded-xl border border-border/60 bg-card/80 backdrop-blur-sm p-4">
+      <div className="rounded-xl border border-border/60 bg-card/80 p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <CalendarClock className="h-4 w-4 text-primary" />
@@ -128,7 +128,7 @@ export function UpcomingMeetingsWidget() {
   }
 
   return (
-    <div className="rounded-xl border border-border/60 bg-card/80 backdrop-blur-sm p-4">
+    <div className="rounded-xl border border-border/60 bg-card/80 p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <CalendarClock className="h-4 w-4 text-primary" />

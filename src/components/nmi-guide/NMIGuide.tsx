@@ -786,7 +786,7 @@ const NMIGuide: React.FC = () => {
   ];
 
   return (
-    <div className="flex h-full min-h-0 overflow-hidden backdrop-blur-md bg-background/40 dark:backdrop-blur-none dark:bg-transparent">
+    <div className="flex h-full min-h-0 overflow-hidden bg-background/80 dark:bg-transparent">
       {/* ── SIDEBAR ── */}
       <aside className="w-48 shrink-0 flex flex-col overflow-hidden" style={{
         background: BG, borderRight: '1px solid hsl(var(--border))',
