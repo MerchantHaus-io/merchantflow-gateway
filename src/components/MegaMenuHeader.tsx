@@ -86,7 +86,7 @@ const navMain: NavGroup[] = [
     items: [
       { title: "Pipeline Board", url: "/pipeline", icon: LayoutDashboard, description: "View opportunity pipeline" },
       { title: "Email Outreach", url: "/outreach", icon: Send, description: "Campaign tracker & email sender" },
-      { title: "Leads", url: "/leads", icon: UserPlus, description: "All inbound & outreach leads" },
+      { title: "Leads & Contacts", url: "/leads", icon: UserPlus, description: "All-time contact directory with interaction logs" },
       { title: "Web Submissions", url: "/admin/web-submissions", icon: Globe, description: "Incoming merchant applications" },
       { title: "Tasks", url: "/tasks", icon: ListChecks, description: "Manage your tasks" },
     ],
