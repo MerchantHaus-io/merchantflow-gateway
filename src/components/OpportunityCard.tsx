@@ -322,8 +322,8 @@ const OpportunityCard = ({
             </span>
           )}
 
-          {/* Underwriting score */}
-          {!isGreyed && uwScore !== null && (
+          {/* Underwriting score — always visible on all cards */}
+          {uwScore !== null && (
             <span className={cn(
               "flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-md border",
               uwScore >= 80 ? "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30"
