@@ -91,6 +91,29 @@ function extractBodyFromPayload(payload: any): string {
   return "";
 }
 
+function extractAttachmentInfo(payload: any): { name: string; mimeType: string; attachmentId: string; size: number }[] {
+  const attachments: { name: string; mimeType: string; attachmentId: string; size: number }[] = [];
+  if (!payload) return attachments;
+
+  function walkParts(parts: any[]) {
+    for (const part of parts) {
+      if (part.filename && part.body?.attachmentId) {
+        attachments.push({
+          name: part.filename,
+          mimeType: part.mimeType || "application/octet-stream",
+          attachmentId: part.body.attachmentId,
+          size: part.body.size || 0,
+        });
+      }
+      if (part.parts) walkParts(part.parts);
+    }
+  }
+
+  if (payload.parts) walkParts(payload.parts);
+  return attachments;
+}
+}
+
 // Team emails to exclude from lead creation
 const TEAM_EMAILS = [
   "admin@merchanthaus.io",
