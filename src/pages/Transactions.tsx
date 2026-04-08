@@ -429,15 +429,6 @@ const Transactions = () => {
                       <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                       <Input placeholder="Search name, email, ID, card…" value={search} onChange={e => setSearch(e.target.value)} className="pl-8 h-8 text-xs" />
                     </div>
-                    <Select value={merchantFilter} onValueChange={setMerchantFilter}>
-                      <SelectTrigger className="h-8 text-xs w-[160px]"><SelectValue placeholder="All merchants" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all" className="text-xs">All Merchants</SelectItem>
-                        {(data?.seen_merchant_ids || []).map(id => (
-                          <SelectItem key={id} value={id} className="text-xs">{getMerchantLabel(id)}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
                     <Select value={typeFilter} onValueChange={setTypeFilter}>
                       <SelectTrigger className="h-8 text-xs w-[110px]"><SelectValue placeholder="All types" /></SelectTrigger>
                       <SelectContent>
