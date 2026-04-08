@@ -821,10 +821,10 @@ const Index = () => {
   return (
     <>
 
-      <AppLayout onNewApplication={() => setIsModalOpen(true)}>
+      <AppLayout>
         <div className="flex-1 flex flex-col gap-2 sm:gap-3 p-2 sm:p-3 lg:p-4 min-h-0 overflow-hidden mobile-landscape:gap-2">
         {(
-           <header className="h-12 flex items-center px-4 rounded-lg border shadow-sm backdrop-blur-md gap-2 flex-shrink-0 sticky top-0 z-20 border-border/60 bg-card/90 dark:bg-card/80">
+           <header className="h-12 flex items-center px-4 rounded-lg border shadow-sm gap-2 flex-shrink-0 sticky top-0 z-20 border-border/60 bg-card/90 dark:bg-card/80">
             
             <a
               href="/merchant-apply"
@@ -888,7 +888,7 @@ const Index = () => {
                 />
               </div>
               {listPreviewOpp && (
-                <div className="w-[40%] border-l border-border/60 bg-card/80 backdrop-blur-md overflow-y-auto p-3">
+                <div className="w-[40%] border-l border-border/60 bg-card/80 overflow-y-auto p-3">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-sm font-bold text-foreground truncate">
                       {[listPreviewOpp.contact?.first_name, listPreviewOpp.contact?.last_name].filter(Boolean).join(" ") || "No contact"}
@@ -946,7 +946,6 @@ const Index = () => {
         onComplete={() => setSplashType(null)}
       />
     </AppLayout>
-    </>
   );
 };
 export default Index;
