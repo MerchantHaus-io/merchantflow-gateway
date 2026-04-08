@@ -86,13 +86,13 @@ const queryClient = new QueryClient({
 });
 
 const App = () => (
-  <ErrorBoundary>
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <ErrorBoundary>
           <AuthProvider>
             <TasksProvider>
               <InternalWidgets />
