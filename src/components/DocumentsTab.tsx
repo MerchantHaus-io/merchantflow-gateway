@@ -285,6 +285,18 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
         />
       </div>
 
+      {/* Request Missing Docs Button */}
+      <Button
+        variant="outline"
+        size="sm"
+        className="w-full gap-2"
+        onClick={handleRequestMissingDocs}
+        disabled={isRequestingDocs}
+      >
+        {isRequestingDocs ? <Loader2 className="h-3 w-3 animate-spin" /> : <Mail className="h-3 w-3" />}
+        Request Missing Documents from Client
+      </Button>
+
       {/* Bulk upload review with AI suggestions */}
       {bulkSuggestions && bulkSuggestions.length > 0 && (
         <BulkUploadReview
