@@ -244,14 +244,27 @@ const Transactions = () => {
   const approvalRate = summary && summary.total_count > 0
     ? ((summary.approved_count / summary.total_count) * 100).toFixed(1) : "0";
 
-  // Lookup merchant names from nmi_boarding_submissions
+  // Lookup merchant names from nmi_boarding_submissions + accounts
   const { data: boardingData } = useQuery({
     queryKey: ["nmi-boarding-lookup"],
     queryFn: async () => {
       const { data } = await supabase
         .from("nmi_boarding_submissions")
-        .select("nmi_gateway_id, company_name, dba_name, account_id, accounts(name)");
-      return data || [];
+        .select("nmi_gateway_id, company_name, dba_name, account_id");
+      if (!data) return [];
+      // Fetch account names separately for linked accounts
+      const accountIds = data.map(b => b.account_id).filter(Boolean) as string[];
+      const accountMap: Record<string, string> = {};
+      if (accountIds.length > 0) {
+        const { data: accounts } = await supabase
+          .from("accounts")
+          .select("id, name")
+          .in("id", accountIds);
+        for (const a of accounts || []) {
+          accountMap[a.id] = a.name;
+        }
+      }
+      return data.map(b => ({ ...b, account_name: b.account_id ? accountMap[b.account_id] : null }));
     },
     staleTime: 10 * 60 * 1000,
   });
@@ -260,9 +273,7 @@ const Transactions = () => {
     const map: Record<string, string> = {};
     for (const b of boardingData || []) {
       if (b.nmi_gateway_id) {
-        // Priority: account name > dba name > company name > gateway id
-        const accountName = (b as any).accounts?.name;
-        map[b.nmi_gateway_id] = accountName || b.dba_name || b.company_name || b.nmi_gateway_id;
+        map[b.nmi_gateway_id] = b.account_name || b.dba_name || b.company_name || b.nmi_gateway_id;
       }
     }
     return map;
