@@ -143,9 +143,11 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     let filterEmail: string | null = null;
+    let backfillBodies = false;
     try {
       const body = await req.json();
       filterEmail = body?.user_email || null;
+      backfillBodies = body?.backfill_bodies === true;
     } catch { /* no body */ }
 
     // Fetch tokens
