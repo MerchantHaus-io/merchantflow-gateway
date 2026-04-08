@@ -143,9 +143,11 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     let filterEmail: string | null = null;
+    let backfillBodies = false;
     try {
       const body = await req.json();
       filterEmail = body?.user_email || null;
+      backfillBodies = body?.backfill_bodies === true;
     } catch { /* no body */ }
 
     // Fetch tokens
@@ -210,6 +212,53 @@ serve(async (req) => {
       const scopes = token.scopes || "";
       if (!scopes.includes("gmail")) {
         console.log(`${token.user_email} does not have Gmail scope, skipping`);
+        continue;
+      }
+
+      // === BACKFILL MODE: re-fetch bodies for existing emails ===
+      if (backfillBodies) {
+        // Process max 30 emails per invocation to stay within timeout
+        const MAX_BACKFILL = 30;
+        let backfilled = 0;
+
+        const { data: missing } = await supabase
+          .from("synced_emails")
+          .select("id, gmail_message_id")
+          .eq("user_email", token.user_email)
+          .is("body_text", null)
+          .order("received_at", { ascending: false })
+          .limit(MAX_BACKFILL);
+
+        if (!missing || missing.length === 0) {
+          console.log(`${token.user_email}: no emails need backfill`);
+          continue;
+        }
+
+        console.log(`${token.user_email}: backfilling ${missing.length} emails`);
+
+        for (const row of missing) {
+          try {
+            const msgResp = await fetch(
+              `${GMAIL_API}/users/me/messages/${row.gmail_message_id}?format=full`,
+              { headers: { Authorization: `Bearer ${accessToken}` } }
+            );
+            if (!msgResp.ok) {
+              console.error(`Backfill fetch failed for ${row.gmail_message_id}: ${msgResp.status}`);
+              // Mark with empty string so we don't retry forever
+              await supabase.from("synced_emails").update({ body_text: "" }).eq("id", row.id);
+              continue;
+            }
+            const msg = await msgResp.json();
+            const bodyText = extractBodyFromPayload(msg.payload).slice(0, 10000);
+            await supabase.from("synced_emails").update({ body_text: bodyText || "" }).eq("id", row.id);
+            backfilled++;
+          } catch (e) {
+            console.error(`Backfill error for ${row.gmail_message_id}:`, e);
+          }
+        }
+
+        console.log(`${token.user_email}: backfilled ${backfilled}/${missing.length} email bodies`);
+        totalSynced += backfilled;
         continue;
       }
 
