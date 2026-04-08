@@ -301,7 +301,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
 
       {/* Report */}
       {report && (
-        <div className={cn("border rounded-lg p-4 space-y-3", meta?.no_change ? "bg-muted/30 border-muted-foreground/20" : "bg-card border-border")}>
+        <div className={cn("border rounded-lg p-4 space-y-3 overflow-hidden", meta?.no_change ? "bg-muted/30 border-muted-foreground/20" : "bg-card border-border")}>
           {/* Header row: status + score + recommendation */}
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2 flex-wrap">
@@ -364,7 +364,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
 
           {meta && <MetaLine meta={meta} />}
           {report.summary && !meta?.no_change && (
-            <p className="text-xs text-muted-foreground">{report.summary}</p>
+            <p className="text-xs text-muted-foreground break-words">{report.summary}</p>
           )}
 
           {/* Hard Stops (always visible when present) */}
@@ -374,7 +374,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
                 <XCircle className="h-3.5 w-3.5" /> Hard Stops — Must Resolve
               </p>
               {report.hard_stops.map((h, i) => (
-                <p key={i} className="text-xs text-destructive/90 pl-5">⛔ {h}</p>
+                <p key={i} className="text-xs text-destructive/90 pl-5 break-words">⛔ {h}</p>
               ))}
             </div>
           )}
@@ -385,7 +385,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
               <p className="text-xs font-medium flex items-center gap-1"><BarChart3 className="h-3 w-3" /> Score Breakdown</p>
               <div className="grid gap-1.5">
                 {report.score_breakdown.map((b, i) => (
-                  <div key={i} className="flex items-center gap-2 text-xs">
+                  <div key={i} className="flex items-center gap-2 text-xs flex-wrap min-w-0">
                     <div className="w-[180px] shrink-0 text-muted-foreground truncate">{b.category} (0–{b.max_score})</div>
                     <div className="w-12 shrink-0">
                       <div className="h-1.5 rounded-full bg-muted overflow-hidden">
@@ -396,7 +396,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
                       </div>
                     </div>
                     <span className={cn("font-mono text-[10px] w-8 shrink-0", scoreColor((b.score / b.max_score) * 100))}>{b.score}/{b.max_score}</span>
-                    <span className="text-muted-foreground truncate">{b.note}</span>
+                    <span className="text-muted-foreground break-words min-w-0">{b.note}</span>
                   </div>
                 ))}
               </div>
@@ -407,10 +407,10 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
           {report.recommended_mcc && !meta?.no_change && (
             <div className="flex items-start gap-2 bg-primary/5 rounded-md p-2 border border-primary/20">
               <Tag className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
-              <div className="text-xs">
+              <div className="text-xs min-w-0">
                 <span className="font-semibold text-primary">{report.recommended_mcc.code}</span>
                 <span className="text-foreground"> — {report.recommended_mcc.description}</span>
-                <p className="text-muted-foreground mt-0.5">{report.recommended_mcc.rationale}</p>
+                <p className="text-muted-foreground mt-0.5 break-words">{report.recommended_mcc.rationale}</p>
               </div>
             </div>
           )}
@@ -419,7 +419,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
           {report.ofac_screening && !meta?.no_change && (
             <div className="flex items-start gap-2 text-xs">
               <Shield className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
-              <span className="text-muted-foreground"><span className="font-medium text-foreground">OFAC:</span> {report.ofac_screening}</span>
+              <span className="text-muted-foreground min-w-0 break-words"><span className="font-medium text-foreground">OFAC:</span> {report.ofac_screening}</span>
             </div>
           )}
 
@@ -427,7 +427,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
           {report.transaction_mix_assessment && !meta?.no_change && (
             <div className="flex items-start gap-2 text-xs">
               <BarChart3 className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
-              <span className="text-muted-foreground">{report.transaction_mix_assessment}</span>
+              <span className="text-muted-foreground min-w-0 break-words">{report.transaction_mix_assessment}</span>
             </div>
           )}
 
@@ -446,7 +446,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
                           : d.status === "missing"
                             ? <XCircle className="h-3.5 w-3.5 text-destructive shrink-0 mt-0.5" />
                             : <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />}
-                        <span className={cn(d.status === "missing" && "text-destructive")}>
+                        <span className={cn("min-w-0 break-words", d.status === "missing" && "text-destructive")}>
                           {d.document}{d.note ? ` — ${d.note}` : ""}
                         </span>
                       </div>
@@ -465,7 +465,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
                         {r.met
                           ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />
                           : <XCircle className="h-3.5 w-3.5 text-destructive shrink-0 mt-0.5" />}
-                        <span className={cn(!r.met && "text-destructive")}>
+                        <span className={cn("min-w-0 break-words", !r.met && "text-destructive")}>
                           {r.requirement}{r.detail ? ` — ${r.detail}` : ""}
                         </span>
                       </div>
@@ -482,7 +482,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
                     {report.public_checks_performed.map((c, i) => (
                       <div key={i} className="flex items-start gap-2 text-xs">
                         <Search className="h-3 w-3 text-muted-foreground shrink-0 mt-0.5" />
-                        <span className="text-muted-foreground">
+                        <span className="text-muted-foreground min-w-0 break-words">
                           <span className="font-medium text-foreground">{c.check}</span>
                           {c.tool ? ` (${c.tool})` : ""}: {c.result}
                         </span>
@@ -506,7 +506,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
                         )} />
                         <span>
                           <Badge variant="outline" className="text-[9px] mr-1 py-0 px-1">{f.severity}</Badge>
-                          {f.flag}{f.detail ? ` — ${f.detail}` : ""}
+                          <span className="break-words">{f.flag}{f.detail ? ` — ${f.detail}` : ""}</span>
                         </span>
                       </div>
                     ))}
@@ -521,7 +521,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
                   <ul className="text-xs text-muted-foreground space-y-0.5">
                     {report.data_gaps.map((g, i) => (
                       <li key={i} className="flex items-start gap-1">
-                        <XCircle className="h-3 w-3 text-destructive shrink-0 mt-0.5" />{g}
+                        <XCircle className="h-3 w-3 text-destructive shrink-0 mt-0.5" /><span className="min-w-0 break-words">{g}</span>
                       </li>
                     ))}
                   </ul>
@@ -535,7 +535,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
                   <ul className="text-xs text-muted-foreground space-y-0.5">
                     {report.recommended_actions.map((a, i) => (
                       <li key={i} className="flex items-start gap-1.5">
-                        <span className="text-primary mt-0.5">→</span>{a}
+                        <span className="text-primary mt-0.5 shrink-0">→</span><span className="min-w-0 break-words">{a}</span>
                       </li>
                     ))}
                   </ul>
@@ -548,7 +548,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
                   <p className="text-xs font-medium mb-1">📎 Classification Issues</p>
                   <ul className="text-xs text-muted-foreground space-y-0.5">
                     {report.classification_issues.map((c, i) => (
-                      <li key={i}>{c.file_name}: {c.issue}</li>
+                      <li key={i} className="break-words">{c.file_name}: {c.issue}</li>
                     ))}
                   </ul>
                 </div>
@@ -572,7 +572,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
                     )}
                   </p>
                   {report.validity_justification && (
-                    <p className="text-xs text-muted-foreground mt-1 pl-5">{report.validity_justification}</p>
+                    <p className="text-xs text-muted-foreground mt-1 pl-5 break-words">{report.validity_justification}</p>
                   )}
                 </div>
               )}
