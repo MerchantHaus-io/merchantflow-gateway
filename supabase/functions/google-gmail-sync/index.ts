@@ -112,7 +112,6 @@ function extractAttachmentInfo(payload: any): { name: string; mimeType: string; 
   if (payload.parts) walkParts(payload.parts);
   return attachments;
 }
-}
 
 // Team emails to exclude from lead creation
 const TEAM_EMAILS = [
