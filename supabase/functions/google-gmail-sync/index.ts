@@ -274,6 +274,9 @@ serve(async (req) => {
         const toEmails = parseEmailList(toRaw);
         const ccEmails = parseEmailList(ccRaw);
 
+        // Extract body text
+        const bodyText = extractBodyFromPayload(msg.payload).slice(0, 10000); // cap at 10k chars
+
         // Determine received_at
         let receivedAt: string;
         try {
