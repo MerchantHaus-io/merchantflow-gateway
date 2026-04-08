@@ -1,8 +1,6 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect } from "react";
 import { UpcomingMeetingsWidget } from "@/components/UpcomingMeetingsWidget";
 import { useTheme } from "@/contexts/ThemeContext";
-
-const Starfield = lazy(() => import("@/components/Starfield"));
 
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
