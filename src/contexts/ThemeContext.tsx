@@ -47,9 +47,11 @@ interface ThemeContextType {
   variant: ThemeVariant;
   defaultDarkVariant: ThemeVariant;
   defaultLightVariant: ThemeVariant;
+  transparencyEnabled: boolean;
   toggleTheme: () => void;
   setTheme: (theme: ThemeMode) => void;
   setVariant: (variant: ThemeVariant) => void;
+  setTransparencyEnabled: (enabled: boolean) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -59,9 +61,11 @@ const defaultThemeContext: ThemeContextType = {
   variant: 'light-salesforce',
   defaultDarkVariant: 'dark-default',
   defaultLightVariant: 'light-salesforce',
+  transparencyEnabled: false,
   toggleTheme: () => {},
   setTheme: () => {},
   setVariant: () => {},
+  setTransparencyEnabled: () => {},
 };
 
 export const useTheme = (): ThemeContextType => {
