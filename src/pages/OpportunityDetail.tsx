@@ -20,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
+import { 
   ArrowLeft,
   Building2,
   User,
@@ -38,7 +38,7 @@ import {
   CreditCard,
   Calendar,
   Clock,
-  
+  Mail,
   RotateCcw,
   Phone,
   Download
