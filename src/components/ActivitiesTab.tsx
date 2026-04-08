@@ -118,6 +118,7 @@ const ACTIVITY_CONFIG: Record<string, {
 
 const ActivitiesTab = ({ opportunityId, compact = false }: ActivitiesTabProps) => {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   const [customRange, setCustomRange] = useState<DateRange | undefined>();
@@ -286,56 +287,79 @@ const ActivitiesTab = ({ opportunityId, compact = false }: ActivitiesTabProps) =
         const Icon = config.icon;
         const displayName = getDisplayName(activity.user_email);
 
+        const isEmail = activity.type.startsWith('email_');
+        const isExpanded = expandedId === activity.id;
+
         return (
           <div 
             key={activity.id} 
             className={cn(
-              "flex items-start gap-2 bg-muted/50 rounded-lg",
-              compact ? "p-2" : "p-3"
+              "bg-muted/50 rounded-lg transition-colors",
+              compact ? "" : "",
+              isEmail && "cursor-pointer hover:bg-muted/80"
             )}
+            onClick={isEmail ? () => setExpandedId(isExpanded ? null : activity.id) : undefined}
           >
             <div className={cn(
-              "shrink-0 rounded p-1.5",
-              config.bgColor
+              "flex items-start gap-2",
+              compact ? "p-2" : "p-3"
             )}>
-              <Icon className={cn(
-                config.color,
-                compact ? "h-3 w-3" : "h-4 w-4"
-              )} />
-            </div>
-            
-            <div className="flex-1 min-w-0">
-              <div className={cn("flex items-center gap-2 flex-wrap", compact ? "text-xs" : "text-sm")}>
-                {stageMovement ? (
-                  <>
-                    <span className="font-medium">{getStageLabel(stageMovement.from)}</span>
-                    <ArrowRight className={cn("text-muted-foreground shrink-0", compact ? "h-3 w-3" : "h-4 w-4")} />
-                    <span className="font-medium text-primary">{getStageLabel(stageMovement.to)}</span>
-                  </>
-                ) : (
-                  <span className="line-clamp-1">{activity.description || config.label}</span>
-                )}
+              <div className={cn(
+                "shrink-0 rounded p-1.5",
+                config.bgColor
+              )}>
+                <Icon className={cn(
+                  config.color,
+                  compact ? "h-3 w-3" : "h-4 w-4"
+                )} />
               </div>
               
-              <div className={cn(
-                "flex items-center gap-1.5 text-muted-foreground mt-0.5",
-                compact ? "text-[10px]" : "text-xs"
-              )}>
-                {displayName && (
-                  <>
-                    <span className="font-medium">{displayName}</span>
-                    <span>•</span>
-                  </>
-                )}
-                <Clock className={cn(compact ? "h-2.5 w-2.5" : "h-3 w-3")} />
-                <span>
-                  {compact 
-                    ? formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })
-                    : format(new Date(activity.created_at), 'MMM d, yyyy h:mm a')
-                  }
-                </span>
+              <div className="flex-1 min-w-0">
+                <div className={cn("flex items-center gap-2 flex-wrap", compact ? "text-xs" : "text-sm")}>
+                  {stageMovement ? (
+                    <>
+                      <span className="font-medium">{getStageLabel(stageMovement.from)}</span>
+                      <ArrowRight className={cn("text-muted-foreground shrink-0", compact ? "h-3 w-3" : "h-4 w-4")} />
+                      <span className="font-medium text-primary">{getStageLabel(stageMovement.to)}</span>
+                    </>
+                  ) : (
+                    <span className={isExpanded ? "" : "line-clamp-1"}>{activity.description || config.label}</span>
+                  )}
+                </div>
+                
+                <div className={cn(
+                  "flex items-center gap-1.5 text-muted-foreground mt-0.5",
+                  compact ? "text-[10px]" : "text-xs"
+                )}>
+                  {displayName && (
+                    <>
+                      <span className="font-medium">{displayName}</span>
+                      <span>•</span>
+                    </>
+                  )}
+                  <Clock className={cn(compact ? "h-2.5 w-2.5" : "h-3 w-3")} />
+                  <span>
+                    {compact 
+                      ? formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })
+                      : format(new Date(activity.created_at), 'MMM d, yyyy h:mm a')
+                    }
+                  </span>
+                  {isEmail && !isExpanded && (
+                    <span className="text-[10px] ml-1 text-primary">▸ click to read</span>
+                  )}
+                </div>
               </div>
             </div>
+
+            {isExpanded && isEmail && (
+              <div className="px-3 pb-3 border-t border-border/50 mx-3 pt-2">
+                <p className="text-xs whitespace-pre-wrap text-foreground">{activity.description}</p>
+                <p className="text-[10px] text-muted-foreground mt-2">
+                  {format(new Date(activity.created_at), 'PPpp')}
+                  {activity.user_email && ` · ${activity.user_email}`}
+                </p>
+              </div>
+            )}
           </div>
         );
       })}
