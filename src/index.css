@@ -2207,23 +2207,30 @@ tbody tr:hover {
 /* ===== Transparency Control System ===== */
 /* When transparency is DISABLED (no .transparency-enabled class), force opaque backgrounds */
 html:not(.transparency-enabled) {
-  /* Cards, popovers, dropdowns */
+
+  /* ── Card backgrounds ── */
+  & .bg-card\/30,
+  & .bg-card\/40,
+  & .bg-card\/50,
+  & .bg-card\/60,
   & .bg-card\/80,
   & .bg-card\/90,
-  & .bg-card\/95,
-  & .bg-card\/50,
-  & .bg-card\/70 {
+  & .bg-card\/95 {
     background-color: hsl(var(--card)) !important;
   }
 
+  /* ── Background backgrounds ── */
+  & .bg-background\/40,
+  & .bg-background\/50,
   & .bg-background\/80,
   & .bg-background\/90,
-  & .bg-background\/95,
-  & .bg-background\/50,
-  & .bg-background\/70 {
+  & .bg-background\/95 {
     background-color: hsl(var(--background)) !important;
   }
 
+  /* ── Muted backgrounds ── */
+  & .bg-muted\/10,
+  & .bg-muted\/20,
   & .bg-muted\/30,
   & .bg-muted\/40,
   & .bg-muted\/50,
@@ -2232,28 +2239,149 @@ html:not(.transparency-enabled) {
     background-color: hsl(var(--muted)) !important;
   }
 
+  /* ── Primary tint backgrounds ── */
   & .bg-primary\/5,
   & .bg-primary\/10,
   & .bg-primary\/15,
-  & .bg-primary\/20 {
+  & .bg-primary\/20,
+  & .bg-primary\/30,
+  & .bg-primary\/40,
+  & .bg-primary\/50 {
     background-color: hsl(var(--primary) / 0.15) !important;
   }
 
+  & .bg-primary\/70,
+  & .bg-primary\/80,
+  & .bg-primary\/90 {
+    background-color: hsl(var(--primary)) !important;
+  }
+
+  /* ── Secondary backgrounds ── */
+  & .bg-secondary\/30,
   & .bg-secondary\/50,
   & .bg-secondary\/80 {
     background-color: hsl(var(--secondary)) !important;
   }
 
+  /* ── Popover backgrounds ── */
   & .bg-popover\/90,
   & .bg-popover\/95 {
     background-color: hsl(var(--popover)) !important;
   }
 
-  /* Backdrop blur becomes unnecessary without transparency */
+  /* ── Accent backgrounds ── */
+  & .bg-accent\/30,
+  & .bg-accent\/40,
+  & .bg-accent\/50 {
+    background-color: hsl(var(--accent) / 0.15) !important;
+  }
+
+  /* ── Destructive backgrounds ── */
+  & .bg-destructive\/5,
+  & .bg-destructive\/8,
+  & .bg-destructive\/10,
+  & .bg-destructive\/15,
+  & .bg-destructive\/20 {
+    background-color: hsl(var(--destructive) / 0.15) !important;
+  }
+
+  & .bg-destructive\/60,
+  & .bg-destructive\/80,
+  & .bg-destructive\/90 {
+    background-color: hsl(var(--destructive)) !important;
+  }
+
+  /* ── Success backgrounds ── */
+  & .bg-success\/10,
+  & .bg-success\/15 {
+    background-color: hsl(var(--success) / 0.15) !important;
+  }
+
+  /* ── Warning backgrounds ── */
+  & .bg-warning\/5,
+  & .bg-warning\/10,
+  & .bg-warning\/15 {
+    background-color: hsl(var(--warning) / 0.15) !important;
+  }
+
+  /* ── Teal backgrounds ── */
+  & .bg-teal\/10,
+  & .bg-teal\/15 {
+    background-color: hsl(var(--teal) / 0.15) !important;
+  }
+
+  & .bg-teal\/70,
+  & .bg-teal\/90 {
+    background-color: hsl(var(--teal)) !important;
+  }
+
+  /* ── Gold backgrounds ── */
+  & .bg-gold\/10,
+  & .bg-gold\/15 {
+    background-color: hsl(var(--gold) / 0.15) !important;
+  }
+
+  & .bg-gold\/90 {
+    background-color: hsl(var(--gold)) !important;
+  }
+
+  /* ── Black overlays ── */
+  & .bg-black\/20,
+  & .bg-black\/30,
+  & .bg-black\/40,
+  & .bg-black\/50,
+  & .bg-black\/60,
+  & .bg-black\/70,
+  & .bg-black\/80 {
+    background-color: hsl(var(--background)) !important;
+  }
+
+  /* ── White overlays ── */
+  & .bg-white\/5,
+  & .bg-white\/8,
+  & .bg-white\/10,
+  & .bg-white\/20,
+  & .bg-white\/30 {
+    background-color: hsl(var(--muted)) !important;
+  }
+
+  & .bg-white\/70,
+  & .bg-white\/90 {
+    background-color: hsl(var(--card)) !important;
+  }
+
+  /* ── Foreground tints ── */
+  & .bg-foreground\/30 {
+    background-color: hsl(var(--muted)) !important;
+  }
+
+  /* ── Border tints ── */
+  & .bg-border\/60 {
+    background-color: hsl(var(--border)) !important;
+  }
+
+  /* ── Emerald/status used inline ── */
+  & [class*="bg-emerald-500\/"] {
+    background-color: hsl(var(--success) / 0.15) !important;
+  }
+  & [class*="bg-red-500\/"] {
+    background-color: hsl(var(--destructive) / 0.15) !important;
+  }
+  & [class*="bg-blue-500\/"] {
+    background-color: hsl(var(--primary) / 0.15) !important;
+  }
+  & [class*="bg-amber-500\/"],
+  & [class*="bg-yellow-500\/"],
+  & [class*="bg-orange-500\/"] {
+    background-color: hsl(var(--warning) / 0.15) !important;
+  }
+
+  /* ── Backdrop blur becomes unnecessary without transparency ── */
   & .backdrop-blur-sm,
   & .backdrop-blur-md,
   & .backdrop-blur-lg,
-  & .backdrop-blur-xl {
+  & .backdrop-blur-xl,
+  & .backdrop-blur {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
   }
