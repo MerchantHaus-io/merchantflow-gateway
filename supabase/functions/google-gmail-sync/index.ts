@@ -46,6 +46,51 @@ function parseEmailList(header: string): string[] {
   return header.split(",").map((e) => extractEmail(e)).filter(Boolean);
 }
 
+function decodeBase64Url(str: string): string {
+  try {
+    const base64 = str.replace(/-/g, '+').replace(/_/g, '/');
+    const binStr = atob(base64);
+    const bytes = Uint8Array.from(binStr, (c) => c.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  } catch {
+    return "";
+  }
+}
+
+function extractBodyFromPayload(payload: any): string {
+  if (!payload) return "";
+
+  // Single-part message
+  if (payload.body?.data) {
+    return decodeBase64Url(payload.body.data);
+  }
+
+  // Multipart — look for text/plain first, then text/html
+  if (payload.parts) {
+    // Try text/plain
+    for (const part of payload.parts) {
+      if (part.mimeType === "text/plain" && part.body?.data) {
+        return decodeBase64Url(part.body.data);
+      }
+    }
+    // Fallback: text/html stripped to text
+    for (const part of payload.parts) {
+      if (part.mimeType === "text/html" && part.body?.data) {
+        const html = decodeBase64Url(part.body.data);
+        return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+      }
+    }
+    // Nested multipart (e.g. multipart/alternative inside multipart/mixed)
+    for (const part of payload.parts) {
+      if (part.parts) {
+        const nested = extractBodyFromPayload(part);
+        if (nested) return nested;
+      }
+    }
+  }
+  return "";
+}
+
 // Team emails to exclude from lead creation
 const TEAM_EMAILS = [
   "admin@merchanthaus.io",
@@ -208,9 +253,9 @@ serve(async (req) => {
 
         if (existing) continue;
 
-        // Fetch full message metadata
+        // Fetch full message with body
         const msgResp = await fetch(
-          `${GMAIL_API}/users/me/messages/${msgId}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Cc&metadataHeaders=Subject&metadataHeaders=Date`,
+          `${GMAIL_API}/users/me/messages/${msgId}?format=full`,
           { headers: { Authorization: `Bearer ${accessToken}` } }
         );
 
@@ -228,6 +273,9 @@ serve(async (req) => {
         const fromName = extractName(fromRaw);
         const toEmails = parseEmailList(toRaw);
         const ccEmails = parseEmailList(ccRaw);
+
+        // Extract body text
+        const bodyText = extractBodyFromPayload(msg.payload).slice(0, 10000); // cap at 10k chars
 
         // Determine received_at
         let receivedAt: string;
@@ -354,6 +402,7 @@ serve(async (req) => {
           cc_emails: ccEmails,
           subject: subject || null,
           snippet: msg.snippet || null,
+          body_text: bodyText || null,
           received_at: receivedAt,
           matched_account_id: matchedAccountId,
           matched_contact_id: matchedContactId,
