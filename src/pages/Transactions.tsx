@@ -393,7 +393,27 @@ const Transactions = () => {
                 </CardContent></Card>
               </div>
 
-              {/* ── Tabs: Charts / Merchants / Transactions ── */}
+              {/* ── Global merchant filter + Tabs ── */}
+              <div className="flex flex-wrap items-center gap-3">
+                <Select value={merchantFilter} onValueChange={setMerchantFilter}>
+                  <SelectTrigger className="h-8 text-xs w-[180px]"><Building2 className="h-3 w-3 mr-1" /><SelectValue placeholder="All merchants" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all" className="text-xs">All Merchants</SelectItem>
+                    {(data?.seen_merchant_ids || []).map(id => (
+                      <SelectItem key={id} value={id} className="text-xs">
+                        <span>{getMerchantLabel(id)}</span>
+                        <span className="ml-1 text-muted-foreground font-mono text-[9px]">#{id}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {merchantFilter !== "all" && (
+                  <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setMerchantFilter("all")}>
+                    {getMerchantLabel(merchantFilter)} <span className="text-muted-foreground">×</span>
+                  </Badge>
+                )}
+              </div>
+
               <Tabs defaultValue="transactions" className="space-y-4">
                 <TabsList className="bg-muted/50 p-0.5">
                   <TabsTrigger value="transactions" className="text-xs gap-1.5"><FileText className="h-3 w-3" />Transactions</TabsTrigger>
