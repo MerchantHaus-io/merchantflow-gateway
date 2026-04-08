@@ -11,7 +11,7 @@ import {
   Activity, BadgeDollarSign, Globe, BookOpen, BookMarked, ClipboardList,
   Calculator, Sparkles, FileSpreadsheet, Download, Cloud, Send, ListChecks,
   Settings, LayoutGrid, Box, CircleDot, List, FolderOpen, UserPlus, CalendarDays,
-  Star,
+  Star, CreditCard,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -52,6 +52,7 @@ const groups: ShortcutGroup[] = [
     title: "Reports & Billing",
     items: [
       { title: "Reports", description: "Performance analytics", url: "/reports", icon: BarChart3, color: "primary" },
+      { title: "Transactions", description: "Gateway transaction data", url: "/reports/transactions", icon: CreditCard, color: "success" },
       { title: "Administration", description: "Agenda, popups & sessions", url: "/admin/administration", icon: Activity, color: "teal" },
       { title: "Live & Billing", description: "Live accounts & billing", url: "/live-billing", icon: BadgeDollarSign, color: "gold" },
       { title: "Processors", description: "Compatibility list", url: "/supported-processors", icon: Globe, color: "success" },
