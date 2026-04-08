@@ -772,7 +772,7 @@ const OpportunityDetail = () => {
                 <Card>
                   <CardContent className="pt-6">
                     <Tabs defaultValue="overview">
-                      <TabsList className="grid w-full grid-cols-6">
+                      <TabsList className="grid w-full grid-cols-7">
                         <TabsTrigger value="overview" className="flex items-center gap-1">
                           <ClipboardList className="h-3.5 w-3.5" />
                           <span className="hidden sm:inline">Overview</span>
@@ -784,6 +784,10 @@ const OpportunityDetail = () => {
                         <TabsTrigger value="calls" className="flex items-center gap-1">
                           <Phone className="h-3.5 w-3.5" />
                           <span className="hidden sm:inline">Calls</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="emails" className="flex items-center gap-1">
+                          <Mail className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline">Emails</span>
                         </TabsTrigger>
                         <TabsTrigger value="notes" className="flex items-center gap-1">
                           <MessageSquare className="h-3.5 w-3.5" />
