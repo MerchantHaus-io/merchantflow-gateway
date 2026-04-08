@@ -402,6 +402,7 @@ serve(async (req) => {
           cc_emails: ccEmails,
           subject: subject || null,
           snippet: msg.snippet || null,
+          body_text: bodyText || null,
           received_at: receivedAt,
           matched_account_id: matchedAccountId,
           matched_contact_id: matchedContactId,
