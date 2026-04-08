@@ -15,6 +15,8 @@ interface QualifiedRequest {
   contact_email: string;
   contact_first_name: string;
   missing_documents?: string[];
+  custom_html?: string;
+  custom_subject?: string;
 }
 
 const MERCHANT_APPLY_URL = "https://ops-terminal.lovable.app/merchant-apply";
@@ -82,7 +84,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { opportunity_id, account_name, contact_email, contact_first_name, missing_documents }: QualifiedRequest = await req.json();
+    const { opportunity_id, account_name, contact_email, contact_first_name, missing_documents, custom_html, custom_subject }: QualifiedRequest = await req.json();
 
     if (!contact_email || !account_name) {
       return new Response(
@@ -99,6 +101,9 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    const finalSubject = (custom_subject || `Action Required — Complete Your Merchant Application — ${account_name}`).replace(/[\r\n]+/g, " ").trim();
+    const finalHtml = custom_html || buildDocsRequestHtml(contact_first_name || "there", account_name, missing_documents);
+
     console.log(`Sending docs request email to ${contact_email} for opportunity ${opportunity_id}`);
 
     const emailResponse = await fetch("https://api.resend.com/emails", {
@@ -110,8 +115,8 @@ const handler = async (req: Request): Promise<Response> => {
       body: JSON.stringify({
         from: "Merchant Haus <noreply@merchanthaus.io>",
         to: [contact_email],
-        subject: `Action Required — Complete Your Merchant Application — ${account_name}`.replace(/[\r\n]+/g, " ").trim(),
-        html: buildDocsRequestHtml(contact_first_name || "there", account_name, missing_documents),
+        subject: finalSubject,
+        html: finalHtml,
         reply_to: "sales@merchanthaus.io",
       }),
     });
@@ -133,12 +138,29 @@ const handler = async (req: Request): Promise<Response> => {
       const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       const sb = createClient(supabaseUrl, supabaseServiceKey);
       if (opportunity_id) {
+        // Log on opportunity activities
         await sb.from("activities").insert({
           opportunity_id,
           type: "email_docs_request",
           description: `📧 Document request email sent to ${contact_first_name || ''} (${contact_email}) for ${account_name}`,
           user_email: "system@ops.internal",
         });
+
+        // Also log as client interaction on the account
+        const { data: opp } = await sb.from("opportunities").select("account_id, contact_id").eq("id", opportunity_id).single();
+        if (opp?.account_id) {
+          await sb.from("client_interactions").insert({
+            account_id: opp.account_id,
+            subject: `Document request email sent — ${account_name}`,
+            interaction_type: "email",
+            channel: "email",
+            contact_name: contact_first_name || "",
+            contact_email: contact_email,
+            notes: `Automated document request email sent to ${contact_email}. Subject: ${finalSubject}`,
+            status: "closed",
+            outcome: "sent",
+          });
+        }
       }
     } catch (logErr) {
       console.error("Failed to log email activity:", logErr);
