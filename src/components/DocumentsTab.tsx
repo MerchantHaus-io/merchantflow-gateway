@@ -337,10 +337,9 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
         variant="outline"
         size="sm"
         className="w-full gap-2"
-        onClick={handleRequestMissingDocs}
-        disabled={isRequestingDocs}
+        onClick={handleOpenEmailPreview}
       >
-        {isRequestingDocs ? <Loader2 className="h-3 w-3 animate-spin" /> : <Mail className="h-3 w-3" />}
+        <Mail className="h-3 w-3" />
         Request Missing Documents from Client
       </Button>
 
@@ -432,6 +431,18 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
         open={!!previewDoc}
         onOpenChange={(open) => { if (!open) setPreviewDoc(null); }}
       />
+
+      {emailPreviewData && (
+        <EmailPreviewDialog
+          open={emailPreviewOpen}
+          onOpenChange={setEmailPreviewOpen}
+          subject={emailPreviewData.subject}
+          bodyHtml={emailPreviewData.bodyHtml}
+          recipientEmail={emailPreviewData.recipientEmail}
+          recipientName={emailPreviewData.recipientName}
+          onSend={handleSendEmail}
+        />
+      )}
     </div>
   );
 };
