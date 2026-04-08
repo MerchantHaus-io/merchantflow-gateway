@@ -253,9 +253,9 @@ serve(async (req) => {
 
         if (existing) continue;
 
-        // Fetch full message metadata
+        // Fetch full message with body
         const msgResp = await fetch(
-          `${GMAIL_API}/users/me/messages/${msgId}?format=metadata&metadataHeaders=From&metadataHeaders=To&metadataHeaders=Cc&metadataHeaders=Subject&metadataHeaders=Date`,
+          `${GMAIL_API}/users/me/messages/${msgId}?format=full`,
           { headers: { Authorization: `Bearer ${accessToken}` } }
         );
 
