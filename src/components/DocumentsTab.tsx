@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Upload, Download, Trash2, FileText, Loader2, Eye, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
+import { Upload, Download, Trash2, FileText, Loader2, Eye, CheckCircle2, XCircle, AlertTriangle, Mail } from "lucide-react";
 import { DocumentPreviewDialog } from "@/components/DocumentPreviewDialog";
 import { suggestLabels, SuggestedLabel } from "@/lib/document-label-ai";
 import { BulkUploadReview } from "@/components/BulkUploadReview";
@@ -70,6 +70,20 @@ function formatFileSize(bytes: number | null): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/** Determine which document types are missing */
+function getMissingDocuments(docs: Document[]): string[] {
+  const counts = getLabelCounts(docs);
+  const missing: string[] = [];
+  for (const type of DOCUMENT_TYPE_OPTIONS) {
+    const min = type === "Bank Statement" || type === "Transaction History" ? 3 : 1;
+    const current = counts[type] || 0;
+    if (current < min) {
+      missing.push(type + (min > 1 ? ` (${current}/${min})` : ""));
+    }
+  }
+  return missing;
 }
 
 interface DocumentsTabProps {
