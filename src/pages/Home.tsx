@@ -11,7 +11,7 @@ import {
   Activity, BadgeDollarSign, Globe, BookOpen, BookMarked, ClipboardList,
   Calculator, Sparkles, FileSpreadsheet, Download, Cloud, Send, ListChecks,
   Settings, LayoutGrid, Box, CircleDot, List, FolderOpen, UserPlus, CalendarDays,
-  Star,
+  Star, CreditCard,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
