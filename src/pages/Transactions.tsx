@@ -203,10 +203,16 @@ const Transactions = () => {
     return list;
   }, [txs, merchantFilter, typeFilter, statusFilter, search, sortField, sortDir]);
 
+  // Transactions filtered by merchant (for analytics)
+  const merchantFilteredTxs = useMemo(() => {
+    if (merchantFilter === "all") return txs;
+    return txs.filter(t => t.merchant_id === merchantFilter);
+  }, [txs, merchantFilter]);
+
   // Chart: daily volume
   const dailyVolume = useMemo(() => {
     const map: Record<string, { date: string; volume: number; count: number }> = {};
-    for (const tx of txs) {
+    for (const tx of merchantFilteredTxs) {
       if (!tx.date) continue;
       const day = tx.date.substring(0, 10);
       if (!map[day]) map[day] = { date: day, volume: 0, count: 0 };
@@ -214,27 +220,27 @@ const Transactions = () => {
       map[day].count++;
     }
     return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
-  }, [txs]);
+  }, [merchantFilteredTxs]);
 
   // Chart: type breakdown
   const typeBreakdown = useMemo(() => {
     const map: Record<string, number> = {};
-    for (const tx of txs) {
+    for (const tx of merchantFilteredTxs) {
       const t = (tx.type || "other").toLowerCase();
       map[t] = (map[t] || 0) + 1;
     }
     return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-  }, [txs]);
+  }, [merchantFilteredTxs]);
 
   // Chart: card type breakdown
   const cardBreakdown = useMemo(() => {
     const map: Record<string, number> = {};
-    for (const tx of txs) {
+    for (const tx of merchantFilteredTxs) {
       const ct = tx.card_type || "Other";
       map[ct] = (map[ct] || 0) + 1;
     }
     return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-  }, [txs]);
+  }, [merchantFilteredTxs]);
 
   const toggleSort = (field: "date"|"amount") => {
     if (sortField === field) setSortDir(d => d === "asc" ? "desc" : "asc");
