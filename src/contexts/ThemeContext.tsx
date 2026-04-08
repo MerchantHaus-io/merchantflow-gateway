@@ -47,9 +47,11 @@ interface ThemeContextType {
   variant: ThemeVariant;
   defaultDarkVariant: ThemeVariant;
   defaultLightVariant: ThemeVariant;
+  transparencyEnabled: boolean;
   toggleTheme: () => void;
   setTheme: (theme: ThemeMode) => void;
   setVariant: (variant: ThemeVariant) => void;
+  setTransparencyEnabled: (enabled: boolean) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -59,9 +61,11 @@ const defaultThemeContext: ThemeContextType = {
   variant: 'light-salesforce',
   defaultDarkVariant: 'dark-default',
   defaultLightVariant: 'light-salesforce',
+  transparencyEnabled: false,
   toggleTheme: () => {},
   setTheme: () => {},
   setVariant: () => {},
+  setTransparencyEnabled: () => {},
 };
 
 export const useTheme = (): ThemeContextType => {
@@ -79,6 +83,7 @@ interface ThemeProviderProps {
 
 const STORAGE_KEY = 'merchantflow-theme';
 const VARIANT_STORAGE_KEY = 'merchantflow-theme-variant';
+const TRANSPARENCY_KEY = 'merchantflow-transparency';
 const DEFAULT_DARK_KEY = 'merchantflow-default-dark';
 const DEFAULT_LIGHT_KEY = 'merchantflow-default-light';
 
@@ -167,21 +172,34 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
   const [variant, setVariantState] = useState<ThemeVariant>(getStoredVariant);
   const [defaultDarkVariant, setDefaultDarkVariant] = useState<ThemeVariant>(getStoredDefaultDark);
   const [defaultLightVariant, setDefaultLightVariant] = useState<ThemeVariant>(getStoredDefaultLight);
+  const [transparencyEnabled, setTransparencyEnabledState] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(TRANSPARENCY_KEY) === 'true';
+    } catch { return false; }
+  });
+
+  const setTransparencyEnabled = (enabled: boolean) => {
+    setTransparencyEnabledState(enabled);
+    try { localStorage.setItem(TRANSPARENCY_KEY, String(enabled)); } catch {}
+  };
 
   useEffect(() => {
-    // Apply theme class to document root
     const root = document.documentElement;
     
-    // Remove all theme classes
     root.classList.remove('dark', 'light', 'dark-default', 'dark-midnight', 'dark-forest', 'dark-charcoal', 'dark-mono', 'dark-ps1', 'dark-doom', 'light-default', 'light-ocean', 'light-warm', 'light-silver', 'light-mono', 'light-salesforce', 'light-star');
     
-    // Add base mode and variant
     root.classList.add(theme);
     root.classList.add(variant);
+
+    if (transparencyEnabled) {
+      root.classList.add('transparency-enabled');
+    } else {
+      root.classList.remove('transparency-enabled');
+    }
     
     persistTheme(theme);
     persistVariant(variant);
-  }, [theme, variant]);
+  }, [theme, variant, transparencyEnabled]);
 
   const toggleTheme = () => {
     setThemeState(prev => {
@@ -215,7 +233,7 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, variant, defaultDarkVariant, defaultLightVariant, toggleTheme, setTheme, setVariant }}>
+    <ThemeContext.Provider value={{ theme, variant, defaultDarkVariant, defaultLightVariant, transparencyEnabled, toggleTheme, setTheme, setVariant, setTransparencyEnabled }}>
       {children}
     </ThemeContext.Provider>
   );

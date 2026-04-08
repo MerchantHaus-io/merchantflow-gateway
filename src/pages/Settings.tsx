@@ -38,7 +38,7 @@ const VARIANT_ICONS: Record<ThemeVariant, React.ReactNode> = {
 
 const Settings = () => {
   const { user, teamMemberName } = useAuth();
-  const { variant, setVariant } = useTheme();
+  const { variant, setVariant, transparencyEnabled, setTransparencyEnabled } = useTheme();
   const { isSupported: pushSupported, isSubscribed: pushSubscribed, isLoading: pushLoading, toggleSubscription: togglePush } = usePushNotifications();
   const { isAdmin } = useUserRole();
   const [isResetting, setIsResetting] = useState(false);
@@ -576,6 +576,16 @@ const Settings = () => {
                     <p className="text-xs text-muted-foreground">
                       Choose from multiple dark and light theme variants. You can also toggle between dark/light mode using the button in the sidebar.
                     </p>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div>
+                      <h3 className="font-medium">UI Transparency</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Enable semi-transparent backgrounds on cards, panels and UI elements
+                      </p>
+                    </div>
+                    <Switch checked={transparencyEnabled} onCheckedChange={setTransparencyEnabled} />
                   </div>
                 </CardContent>
               </Card>

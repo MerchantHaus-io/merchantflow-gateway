@@ -2203,3 +2203,58 @@ tbody tr:hover {
     size: A4;
   }
 }
+
+/* ===== Transparency Control System ===== */
+/* When transparency is DISABLED (no .transparency-enabled class), force opaque backgrounds */
+html:not(.transparency-enabled) {
+  /* Cards, popovers, dropdowns */
+  & .bg-card\/80,
+  & .bg-card\/90,
+  & .bg-card\/95,
+  & .bg-card\/50,
+  & .bg-card\/70 {
+    background-color: hsl(var(--card)) !important;
+  }
+
+  & .bg-background\/80,
+  & .bg-background\/90,
+  & .bg-background\/95,
+  & .bg-background\/50,
+  & .bg-background\/70 {
+    background-color: hsl(var(--background)) !important;
+  }
+
+  & .bg-muted\/30,
+  & .bg-muted\/40,
+  & .bg-muted\/50,
+  & .bg-muted\/60,
+  & .bg-muted\/80 {
+    background-color: hsl(var(--muted)) !important;
+  }
+
+  & .bg-primary\/5,
+  & .bg-primary\/10,
+  & .bg-primary\/15,
+  & .bg-primary\/20 {
+    background-color: hsl(var(--primary) / 0.15) !important;
+  }
+
+  & .bg-secondary\/50,
+  & .bg-secondary\/80 {
+    background-color: hsl(var(--secondary)) !important;
+  }
+
+  & .bg-popover\/90,
+  & .bg-popover\/95 {
+    background-color: hsl(var(--popover)) !important;
+  }
+
+  /* Backdrop blur becomes unnecessary without transparency */
+  & .backdrop-blur-sm,
+  & .backdrop-blur-md,
+  & .backdrop-blur-lg,
+  & .backdrop-blur-xl {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
