@@ -548,6 +548,9 @@ const Transactions = () => {
 
                 {/* ── Analytics Tab ── */}
                 <TabsContent value="analytics" className="space-y-4">
+                  {merchantFilter !== "all" && (
+                    <p className="text-xs text-muted-foreground">Showing analytics for <span className="font-semibold text-foreground">{getMerchantLabel(merchantFilter)}</span></p>
+                  )}
                   <div className="grid lg:grid-cols-2 gap-4">
                     {/* Daily Volume */}
                     <Card>
