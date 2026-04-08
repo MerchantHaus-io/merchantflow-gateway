@@ -2221,6 +2221,8 @@ export type Database = {
       synced_emails: {
         Row: {
           activity_created: boolean | null
+          attachment_count: number | null
+          attachment_names: string[] | null
           body_text: string | null
           cc_emails: string[] | null
           created_at: string | null
@@ -2228,6 +2230,7 @@ export type Database = {
           from_name: string | null
           gmail_message_id: string
           gmail_thread_id: string | null
+          has_attachments: boolean | null
           id: string
           lead_created: boolean | null
           matched_account_id: string | null
@@ -2242,6 +2245,8 @@ export type Database = {
         }
         Insert: {
           activity_created?: boolean | null
+          attachment_count?: number | null
+          attachment_names?: string[] | null
           body_text?: string | null
           cc_emails?: string[] | null
           created_at?: string | null
@@ -2249,6 +2254,7 @@ export type Database = {
           from_name?: string | null
           gmail_message_id: string
           gmail_thread_id?: string | null
+          has_attachments?: boolean | null
           id?: string
           lead_created?: boolean | null
           matched_account_id?: string | null
@@ -2263,6 +2269,8 @@ export type Database = {
         }
         Update: {
           activity_created?: boolean | null
+          attachment_count?: number | null
+          attachment_names?: string[] | null
           body_text?: string | null
           cc_emails?: string[] | null
           created_at?: string | null
@@ -2270,6 +2278,7 @@ export type Database = {
           from_name?: string | null
           gmail_message_id?: string
           gmail_thread_id?: string | null
+          has_attachments?: boolean | null
           id?: string
           lead_created?: boolean | null
           matched_account_id?: string | null

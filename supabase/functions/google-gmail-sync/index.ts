@@ -91,6 +91,28 @@ function extractBodyFromPayload(payload: any): string {
   return "";
 }
 
+function extractAttachmentInfo(payload: any): { name: string; mimeType: string; attachmentId: string; size: number }[] {
+  const attachments: { name: string; mimeType: string; attachmentId: string; size: number }[] = [];
+  if (!payload) return attachments;
+
+  function walkParts(parts: any[]) {
+    for (const part of parts) {
+      if (part.filename && part.body?.attachmentId) {
+        attachments.push({
+          name: part.filename,
+          mimeType: part.mimeType || "application/octet-stream",
+          attachmentId: part.body.attachmentId,
+          size: part.body.size || 0,
+        });
+      }
+      if (part.parts) walkParts(part.parts);
+    }
+  }
+
+  if (payload.parts) walkParts(payload.parts);
+  return attachments;
+}
+
 // Team emails to exclude from lead creation
 const TEAM_EMAILS = [
   "admin@merchanthaus.io",
@@ -326,6 +348,11 @@ serve(async (req) => {
         // Extract body text
         const bodyText = extractBodyFromPayload(msg.payload).slice(0, 10000); // cap at 10k chars
 
+        // Detect attachments
+        const attachments = extractAttachmentInfo(msg.payload);
+        const hasAttachments = attachments.length > 0;
+        const attachmentNames = attachments.map(a => a.name);
+
         // Determine received_at
         let receivedAt: string;
         try {
@@ -359,11 +386,27 @@ serve(async (req) => {
           }
         }
 
-        // If no match found and there are external emails, create a lead
+        // If no match found and there are external emails, create a lead + web submission
         if (!matchedContactId && allEmails.length > 0) {
           const leadEmail = allEmails[0];
           const leadName = fromEmail === leadEmail ? fromName : leadEmail.split("@")[0];
           console.log(`Creating lead for: ${leadEmail} (${leadName}) from subject: ${subject}`);
+
+          // Create web submission (application) so it appears in Web Submissions
+          const nameParts = (leadName || "").split(" ");
+          const { data: newApp } = await supabase
+            .from("applications")
+            .insert({
+              full_name: leadName || leadEmail.split("@")[0],
+              email: leadEmail,
+              company_name: leadName || null,
+              message: `Inbound email — ${subject || "(no subject)"}. Auto-created from Gmail sync.`,
+              status: "pending",
+              service_type: "processing",
+              submitted_at: receivedAt,
+            })
+            .select("id")
+            .single();
 
           // Create account
           const { data: newAccount, error: accErr } = await supabase
@@ -380,7 +423,6 @@ serve(async (req) => {
           }
           if (!accErr && newAccount) {
             // Create contact
-            const nameParts = (leadName || "").split(" ");
             const { data: newContact, error: ctErr } = await supabase
               .from("contacts")
               .insert({
@@ -424,14 +466,54 @@ serve(async (req) => {
           }
         }
 
+        // Download and store attachments if we have an opportunity
+        if (hasAttachments && matchedOpportunityId) {
+          for (const att of attachments) {
+            try {
+              const attResp = await fetch(
+                `${GMAIL_API}/users/me/messages/${msgId}/attachments/${att.attachmentId}`,
+                { headers: { Authorization: `Bearer ${accessToken}` } }
+              );
+              if (!attResp.ok) continue;
+              const attData = await attResp.json();
+              const base64 = attData.data.replace(/-/g, '+').replace(/_/g, '/');
+              const binStr = atob(base64);
+              const bytes = new Uint8Array(binStr.length);
+              for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
+
+              const filePath = `${matchedOpportunityId}/${Date.now()}-${att.name}`;
+              const { error: uploadErr } = await supabase.storage
+                .from("opportunity-documents")
+                .upload(filePath, bytes, { contentType: att.mimeType, upsert: false });
+
+              if (!uploadErr) {
+                // Create document record
+                await supabase.from("documents").insert({
+                  opportunity_id: matchedOpportunityId,
+                  file_name: att.name,
+                  file_path: filePath,
+                  file_size: att.size,
+                  content_type: att.mimeType,
+                  document_type: "Email Attachment",
+                  uploaded_by: `gmail-sync (${token.user_email})`,
+                });
+                console.log(`Stored attachment: ${att.name} for opp ${matchedOpportunityId}`);
+              }
+            } catch (e) {
+              console.error(`Failed to store attachment ${att.name}:`, e);
+            }
+          }
+        }
+
         // Create activity
         let activityCreated = false;
         if (matchedOpportunityId) {
           const isInbound = !isTeamEmail(fromEmail);
+          const attachNote = hasAttachments ? ` [📎 ${attachments.length} attachment${attachments.length > 1 ? 's' : ''}: ${attachmentNames.join(', ')}]` : '';
           const { error: actErr } = await supabase.from("activities").insert({
             opportunity_id: matchedOpportunityId,
             type: isInbound ? "email_received" : "email_sent",
-            description: `${isInbound ? "📩" : "📤"} ${subject || "(no subject)"} — ${isInbound ? "from" : "to"} ${isInbound ? fromName || fromEmail : toEmails.join(", ")}`,
+            description: `${isInbound ? "📩" : "📤"} ${subject || "(no subject)"} — ${isInbound ? "from" : "to"} ${isInbound ? fromName || fromEmail : toEmails.join(", ")}${attachNote}`,
             user_email: token.user_email,
           });
           if (!actErr) {
@@ -458,6 +540,9 @@ serve(async (req) => {
           matched_opportunity_id: matchedOpportunityId,
           lead_created: leadCreated,
           activity_created: activityCreated,
+          has_attachments: hasAttachments,
+          attachment_count: attachments.length,
+          attachment_names: attachmentNames,
         });
 
         totalSynced++;
