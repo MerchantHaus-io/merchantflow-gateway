@@ -118,7 +118,7 @@ const ACTIVITY_CONFIG: Record<string, {
 
 const ActivitiesTab = ({ opportunityId, compact = false }: ActivitiesTabProps) => {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   const [customRange, setCustomRange] = useState<DateRange | undefined>();
 
