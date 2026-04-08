@@ -95,9 +95,73 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [isRequestingDocs, setIsRequestingDocs] = useState(false);
   const [bulkSuggestions, setBulkSuggestions] = useState<SuggestedLabel[] | null>(null);
   const [previewDoc, setPreviewDoc] = useState<Document | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleRequestMissingDocs = useCallback(async () => {
+    setIsRequestingDocs(true);
+    try {
+      // Fetch opportunity → account + contact
+      const { data: opp } = await supabase
+        .from("opportunities")
+        .select("account_id, contact_id")
+        .eq("id", opportunityId)
+        .single();
+      if (!opp) throw new Error("Opportunity not found");
+
+      const [{ data: account }, { data: contact }] = await Promise.all([
+        supabase.from("accounts").select("name").eq("id", opp.account_id).single(),
+        supabase.from("contacts").select("email, first_name").eq("id", opp.contact_id).single(),
+      ]);
+
+      if (!contact?.email) {
+        toast.error("No contact email on file — cannot send request");
+        return;
+      }
+
+      const missingDocs = getMissingDocuments(documents);
+
+      // Send the docs request email
+      const { error } = await supabase.functions.invoke("send-qualified-docs-request", {
+        body: {
+          opportunity_id: opportunityId,
+          account_name: account?.name || "Your Account",
+          contact_email: contact.email,
+          contact_first_name: contact.first_name || "",
+          missing_documents: missingDocs,
+        },
+      });
+      if (error) throw error;
+
+      // Notify onboarding & support internally
+      const notifyEmails = ["onboarding@merchanthaus.io", "support@merchanthaus.io"];
+      for (const email of notifyEmails) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("email", email)
+          .maybeSingle();
+        if (profile) {
+          await supabase.from("notifications").insert({
+            user_id: profile.id,
+            user_email: email,
+            title: "Document Request Sent",
+            message: `Missing docs email sent to ${contact.first_name || ""} (${contact.email}) for ${account?.name || "account"}`,
+            type: "info",
+            link: `/opportunities/${opportunityId}`,
+          });
+        }
+      }
+
+      toast.success("Document request email sent to client");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to send document request");
+    } finally {
+      setIsRequestingDocs(false);
+    }
+  }, [opportunityId, documents]);
 
   const fetchDocuments = async () => {
     setIsLoading(true);
