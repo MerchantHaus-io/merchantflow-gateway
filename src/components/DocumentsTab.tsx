@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Upload, Download, Trash2, FileText, Loader2, Eye, CheckCircle2, XCircle, AlertTriangle, Mail } from "lucide-react";
 import { DocumentPreviewDialog } from "@/components/DocumentPreviewDialog";
+import { EmailPreviewDialog } from "@/components/EmailPreviewDialog";
 import { suggestLabels, SuggestedLabel } from "@/lib/document-label-ai";
 import { BulkUploadReview } from "@/components/BulkUploadReview";
 import { autoClassifyDocuments } from "@/hooks/useAutoClassify";
@@ -95,15 +96,42 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
-  const [isRequestingDocs, setIsRequestingDocs] = useState(false);
   const [bulkSuggestions, setBulkSuggestions] = useState<SuggestedLabel[] | null>(null);
   const [previewDoc, setPreviewDoc] = useState<Document | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleRequestMissingDocs = useCallback(async () => {
-    setIsRequestingDocs(true);
+  // Email preview state
+  const [emailPreviewOpen, setEmailPreviewOpen] = useState(false);
+  const [emailPreviewData, setEmailPreviewData] = useState<{
+    subject: string; bodyHtml: string; recipientEmail: string; recipientName: string;
+    accountName: string; missingDocs: string[];
+  } | null>(null);
+
+  /** Build the default email body HTML for preview */
+  const buildPreviewHtml = (firstName: string, accountName: string, missingDocs: string[]) => {
+    const docListHtml = missingDocs.length > 0
+      ? missingDocs.map(d => `<li>${d}</li>`).join("\n")
+      : `<li>3 months of recent bank statements</li>
+          <li>3 months of processing/transaction history (if applicable)</li>
+          <li>Voided check or bank letter</li>
+          <li>Government-issued photo ID (driver's license or passport)</li>
+          <li>Business license or articles of incorporation</li>`;
+
+    const introText = missingDocs.length > 0
+      ? `We're progressing with your merchant application for <strong>${accountName}</strong>. To continue, we still require the following outstanding documents:`
+      : `Great news — we've reviewed your inquiry for <strong>${accountName}</strong> and we'd love to move forward. To proceed with your merchant application, we'll need the following documents:`;
+
+    return `<p>Hi ${firstName},</p>
+<p>${introText}</p>
+<ul>${docListHtml}</ul>
+<p>Please complete our secure merchant application form to upload your documents and provide the required business details:</p>
+<p style="text-align: center;"><a href="https://ops-terminal.lovable.app/merchant-apply" style="display:inline-block;background:#18181b;color:#ffffff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;">Complete Merchant Application</a></p>
+<p>If you have any questions about the required documents or the application process, don't hesitate to reach out to us at <a href="mailto:sales@merchanthaus.io">sales@merchanthaus.io</a>.</p>
+<p style="margin-top: 24px;">Kind regards,<br><strong>The Merchant Haus Team</strong></p>`;
+  };
+
+  const handleOpenEmailPreview = useCallback(async () => {
     try {
-      // Fetch opportunity → account + contact
       const { data: opp } = await supabase
         .from("opportunities")
         .select("account_id, contact_id")
@@ -122,15 +150,35 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
       }
 
       const missingDocs = getMissingDocuments(documents);
+      const firstName = contact.first_name || "there";
+      const accountName = account?.name || "Your Account";
 
-      // Send the docs request email
+      setEmailPreviewData({
+        subject: `Action Required — Complete Your Merchant Application — ${accountName}`,
+        bodyHtml: buildPreviewHtml(firstName, accountName, missingDocs),
+        recipientEmail: contact.email,
+        recipientName: firstName,
+        accountName,
+        missingDocs,
+      });
+      setEmailPreviewOpen(true);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to load email preview");
+    }
+  }, [opportunityId, documents]);
+
+  const handleSendEmail = useCallback(async ({ subject, bodyHtml }: { subject: string; bodyHtml: string }) => {
+    if (!emailPreviewData) return;
+    try {
       const { error } = await supabase.functions.invoke("send-qualified-docs-request", {
         body: {
           opportunity_id: opportunityId,
-          account_name: account?.name || "Your Account",
-          contact_email: contact.email,
-          contact_first_name: contact.first_name || "",
-          missing_documents: missingDocs,
+          account_name: emailPreviewData.accountName,
+          contact_email: emailPreviewData.recipientEmail,
+          contact_first_name: emailPreviewData.recipientName,
+          missing_documents: emailPreviewData.missingDocs,
+          custom_html: bodyHtml,
+          custom_subject: subject,
         },
       });
       if (error) throw error;
@@ -148,7 +196,7 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
             user_id: profile.id,
             user_email: email,
             title: "Document Request Sent",
-            message: `Missing docs email sent to ${contact.first_name || ""} (${contact.email}) for ${account?.name || "account"}`,
+            message: `Missing docs email sent to ${emailPreviewData.recipientName} (${emailPreviewData.recipientEmail}) for ${emailPreviewData.accountName}`,
             type: "info",
             link: `/opportunities/${opportunityId}`,
           });
@@ -158,10 +206,9 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
       toast.success("Document request email sent to client");
     } catch (err: any) {
       toast.error(err?.message || "Failed to send document request");
-    } finally {
-      setIsRequestingDocs(false);
+      throw err;
     }
-  }, [opportunityId, documents]);
+  }, [opportunityId, emailPreviewData]);
 
   const fetchDocuments = async () => {
     setIsLoading(true);
@@ -290,10 +337,9 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
         variant="outline"
         size="sm"
         className="w-full gap-2"
-        onClick={handleRequestMissingDocs}
-        disabled={isRequestingDocs}
+        onClick={handleOpenEmailPreview}
       >
-        {isRequestingDocs ? <Loader2 className="h-3 w-3 animate-spin" /> : <Mail className="h-3 w-3" />}
+        <Mail className="h-3 w-3" />
         Request Missing Documents from Client
       </Button>
 
@@ -385,6 +431,18 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
         open={!!previewDoc}
         onOpenChange={(open) => { if (!open) setPreviewDoc(null); }}
       />
+
+      {emailPreviewData && (
+        <EmailPreviewDialog
+          open={emailPreviewOpen}
+          onOpenChange={setEmailPreviewOpen}
+          subject={emailPreviewData.subject}
+          bodyHtml={emailPreviewData.bodyHtml}
+          recipientEmail={emailPreviewData.recipientEmail}
+          recipientName={emailPreviewData.recipientName}
+          onSend={handleSendEmail}
+        />
+      )}
     </div>
   );
 };

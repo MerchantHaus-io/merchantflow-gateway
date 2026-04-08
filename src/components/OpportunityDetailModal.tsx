@@ -1064,12 +1064,27 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                               console.error('Failed to send decline email:', emailErr);
                             } else {
                               console.log('Decline email sent to', opportunity.contact?.email);
+                              // Log on opportunity activities
                               supabase.from('activities').insert({
                                 opportunity_id: opportunity.id,
                                 type: 'email_sent',
                                 description: `Notification email sent to ${opportunity.contact?.email} (${OUTCOME_CONFIG[outcome].label}: ${reason})`,
                                 user_id: user?.id,
                                 user_email: user?.email,
+                              }).then(() => {});
+                              // Log as client interaction on the account
+                              supabase.from('client_interactions').insert({
+                                account_id: opportunity.account_id,
+                                subject: `Decline email sent — ${opportunity.account?.name || ''}`,
+                                interaction_type: 'email',
+                                channel: 'email',
+                                contact_name: contactName,
+                                contact_email: opportunity.contact?.email || '',
+                                notes: `Application ${OUTCOME_CONFIG[outcome].label}: ${reason}. Decline notification email sent to ${opportunity.contact?.email}.`,
+                                status: 'closed',
+                                outcome: 'sent',
+                                created_by: user?.id,
+                                created_by_email: user?.email,
                               }).then(() => {});
                             }
                           });
