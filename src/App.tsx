@@ -147,11 +147,11 @@ const App = () => (
               </Routes>
             </TasksProvider>
           </AuthProvider>
+          </ErrorBoundary>
         </BrowserRouter>
       </TooltipProvider>
     </ThemeProvider>
   </QueryClientProvider>
-  </ErrorBoundary>
 );
 
 export default App;
