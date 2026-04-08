@@ -359,6 +359,21 @@ const LiveAccountDetail = () => {
                         outcomeReason: reason,
                         closedBy: closerName.charAt(0).toUpperCase() + closerName.slice(1),
                       },
+                    }).then(() => {
+                      // Log as client interaction on the account
+                      supabase.from("client_interactions").insert({
+                        account_id: accountId,
+                        subject: `Account closure email sent — ${account?.name || ""}`,
+                        interaction_type: "email",
+                        channel: "email",
+                        contact_name: contactName,
+                        contact_email: contactEmail,
+                        notes: `Account closed (${outcome}: ${reason}). Closure notification email sent to ${contactEmail}.`,
+                        status: "closed",
+                        outcome: "sent",
+                        created_by: user.id,
+                        created_by_email: user.email,
+                      }).then(() => {});
                     }).catch((err) => console.error("Closure email error:", err));
                   }
 
