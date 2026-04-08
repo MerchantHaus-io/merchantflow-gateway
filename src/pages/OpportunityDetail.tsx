@@ -103,7 +103,7 @@ const EditField = ({
 );
 
 // Emails component - shows client_interactions of type email for the account
-const EmailsSection = ({ accountId }: { accountId: string }) => {
+const EmailsSection = ({ accountId, opportunityId }: { accountId: string; opportunityId?: string }) => {
   const [emails, setEmails] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -111,7 +111,8 @@ const EmailsSection = ({ accountId }: { accountId: string }) => {
   useEffect(() => {
     const fetchEmails = async () => {
       setLoading(true);
-      const { data } = await supabase
+
+      const { data: interactions } = await supabase
         .from('client_interactions')
         .select('*')
         .eq('account_id', accountId)
@@ -119,7 +120,50 @@ const EmailsSection = ({ accountId }: { accountId: string }) => {
         .or('outcome.eq.sent,outcome.eq.received,outcome.eq.delivered,interaction_type.eq.email')
         .order('created_at', { ascending: false })
         .limit(50);
-      setEmails(data || []);
+
+      const { data: syncedEmails } = await supabase
+        .from('synced_emails')
+        .select('*')
+        .eq('matched_account_id', accountId)
+        .order('received_at', { ascending: false })
+        .limit(100);
+
+      const merged: any[] = [];
+
+      for (const i of interactions || []) {
+        merged.push({
+          id: i.id,
+          source: 'interaction',
+          subject: i.subject,
+          from: i.created_by_email || 'Team',
+          to: i.contact_email || '',
+          toName: i.contact_name || '',
+          body: i.notes || '',
+          status: i.outcome || i.status,
+          date: i.created_at,
+          channel: i.channel,
+          resolution: i.resolution,
+        });
+      }
+
+      for (const s of syncedEmails || []) {
+        merged.push({
+          id: `synced-${s.id}`,
+          source: 'gmail',
+          subject: s.subject || '(no subject)',
+          from: s.from_name ? `${s.from_name} <${s.from_email}>` : s.from_email,
+          to: (s.to_emails || []).join(', '),
+          toName: '',
+          body: s.body_text || s.snippet || '',
+          status: s.from_email?.endsWith('@merchanthaus.io') ? 'sent' : 'received',
+          date: s.received_at,
+          channel: 'gmail',
+          resolution: null,
+        });
+      }
+
+      merged.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      setEmails(merged);
       setLoading(false);
     };
     fetchEmails();
@@ -140,6 +184,7 @@ const EmailsSection = ({ accountId }: { accountId: string }) => {
     <div className="space-y-2 max-h-[500px] overflow-y-auto">
       {emails.map((e) => {
         const isExpanded = expandedId === e.id;
+        const isGmail = e.source === 'gmail';
         return (
           <div
             key={e.id}
@@ -153,30 +198,43 @@ const EmailsSection = ({ accountId }: { accountId: string }) => {
               <div className="flex items-center gap-2">
                 <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 <span className="text-sm font-medium truncate flex-1">{e.subject}</span>
-                <Badge variant={e.outcome === 'sent' || e.outcome === 'delivered' ? 'secondary' : 'outline'} className="text-[10px]">
-                  {e.outcome || e.status}
-                </Badge>
+                <div className="flex items-center gap-1">
+                  {isGmail && (
+                    <Badge variant="outline" className="text-[9px] px-1">Gmail</Badge>
+                  )}
+                  <Badge variant={e.status === 'sent' || e.status === 'delivered' ? 'secondary' : 'outline'} className="text-[10px]">
+                    {e.status}
+                  </Badge>
+                </div>
               </div>
-              {e.contact_name && <p className="text-xs text-muted-foreground">To: {e.contact_name} {e.contact_email ? `<${e.contact_email}>` : ''}</p>}
-              {!isExpanded && e.notes && <p className="text-xs text-muted-foreground truncate">{e.notes.slice(0, 120)}</p>}
-              <p className="text-[11px] text-muted-foreground">
-                {formatDistanceToNow(new Date(e.created_at), { addSuffix: true })}
-                {e.created_by_email && ` · by ${e.created_by_email.split('@')[0]}`}
+              <p className="text-xs text-muted-foreground">
+                {e.status === 'sent' || e.status === 'delivered' ? 'To' : 'From'}: {e.toName || e.to || e.from}
               </p>
+              {!isExpanded && e.body && <p className="text-xs text-muted-foreground truncate">{e.body.slice(0, 120)}</p>}
+              <div className="flex items-center gap-1">
+                <p className="text-[11px] text-muted-foreground">
+                  {formatDistanceToNow(new Date(e.date), { addSuffix: true })}
+                </p>
+                {!isExpanded && <span className="text-[10px] text-primary">▸ click to read</span>}
+              </div>
             </div>
 
             {isExpanded && (
               <div className="px-3 pb-3 border-t pt-2 space-y-3">
-                {e.contact_email && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-0.5">From</p>
+                  <p className="text-sm">{e.from}</p>
+                </div>
+                {e.to && (
                   <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-0.5">Recipient</p>
-                    <p className="text-sm">{e.contact_name ? `${e.contact_name} <${e.contact_email}>` : e.contact_email}</p>
+                    <p className="text-xs font-medium text-muted-foreground mb-0.5">To</p>
+                    <p className="text-sm">{e.to}</p>
                   </div>
                 )}
-                {e.notes && (
+                {e.body && (
                   <div>
                     <p className="text-xs font-medium text-muted-foreground mb-0.5">Content</p>
-                    <p className="text-sm whitespace-pre-wrap">{e.notes}</p>
+                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{e.body}</p>
                   </div>
                 )}
                 {e.resolution && (
@@ -189,7 +247,7 @@ const EmailsSection = ({ accountId }: { accountId: string }) => {
                   <p className="text-[11px] text-muted-foreground">Channel: {e.channel}</p>
                 )}
                 <p className="text-[11px] text-muted-foreground">
-                  {format(new Date(e.created_at), 'PPpp')}
+                  {format(new Date(e.date), 'PPpp')}
                 </p>
               </div>
             )}
