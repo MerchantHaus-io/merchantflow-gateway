@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import type { LucideIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -44,7 +44,6 @@ export function Carousel3D({ items }: Carousel3DProps) {
   const navigate = useNavigate();
   const sliderRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number>(0);
-  const [rotation, setRotation] = useState(0);
   const rotationRef = useRef(0);
   const isDragging = useRef(false);
   const startX = useRef(0);
@@ -53,28 +52,29 @@ export function Carousel3D({ items }: Carousel3DProps) {
   const autoRotate = useRef(true);
   const autoResumeTimer = useRef<ReturnType<typeof setTimeout>>();
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  // Only used for snap animation class toggle
+  const [snapping, setSnapping] = useState(false);
 
   const quantity = items.length;
   const increment = 360 / quantity;
-  // Dynamic radius: card width (~150px) needs enough arc spacing
-  // Use circumference formula: C = 2πr, each card needs ~180px of arc
-  // So r = (quantity * cardSpacing) / (2π)
   const cardSpacing = 185;
   const radius = Math.max(220, Math.round((quantity * cardSpacing) / (2 * Math.PI)));
 
-  const updateRotation = useCallback((deg: number) => {
-    rotationRef.current = deg;
-    setRotation(deg);
+  // Apply rotation directly to DOM — no React state updates per frame
+  const applyRotation = useCallback(() => {
+    if (sliderRef.current) {
+      sliderRef.current.style.transform = `perspective(1500px) rotateX(-14deg) rotateY(${rotationRef.current}deg)`;
+    }
   }, []);
 
-  // Auto-rotate loop
+  // Auto-rotate loop — pure DOM, zero state updates
   useEffect(() => {
     let running = true;
     const loop = () => {
       if (!running) return;
       if (autoRotate.current && !isDragging.current) {
         rotationRef.current += 0.04;
-        setRotation(rotationRef.current);
+        applyRotation();
       }
       rafRef.current = requestAnimationFrame(loop);
     };
@@ -83,7 +83,7 @@ export function Carousel3D({ items }: Carousel3DProps) {
       running = false;
       cancelAnimationFrame(rafRef.current);
     };
-  }, []);
+  }, [applyRotation]);
 
   const stopAutoRotate = useCallback(() => {
     autoRotate.current = false;
@@ -97,7 +97,6 @@ export function Carousel3D({ items }: Carousel3DProps) {
     }, delay);
   }, []);
 
-  // Pointer handlers
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
       stopAutoRotate();
@@ -105,6 +104,7 @@ export function Carousel3D({ items }: Carousel3DProps) {
       startX.current = e.clientX;
       startRotation.current = rotationRef.current;
       dragDistance.current = 0;
+      setSnapping(false);
       (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
     },
     [stopAutoRotate]
@@ -114,8 +114,9 @@ export function Carousel3D({ items }: Carousel3DProps) {
     if (!isDragging.current) return;
     const walk = (e.clientX - startX.current) * 0.35;
     dragDistance.current = Math.abs(walk);
-    updateRotation(startRotation.current + walk);
-  }, [updateRotation]);
+    rotationRef.current = startRotation.current + walk;
+    applyRotation();
+  }, [applyRotation]);
 
   const onPointerUp = useCallback(() => {
     if (!isDragging.current) return;
@@ -125,9 +126,8 @@ export function Carousel3D({ items }: Carousel3DProps) {
 
   const handleItemClick = useCallback(
     (item: CarouselItem, index: number) => {
-      if (dragDistance.current > 5) return; // was a drag, not a click
+      if (dragDistance.current > 5) return;
 
-      // Snap to item
       const targetRotation = -(index * increment);
       const currentMod = ((rotationRef.current % 360) + 360) % 360;
       const targetMod = ((targetRotation % 360) + 360) % 360;
@@ -135,10 +135,7 @@ export function Carousel3D({ items }: Carousel3DProps) {
       if (diff > 180) diff -= 360;
       if (diff < -180) diff += 360;
 
-      const snapped = rotationRef.current + diff;
-
       if (Math.abs(diff) < 2) {
-        // Already facing — navigate
         if (item.external) {
           window.open(item.url, "_blank");
         } else {
@@ -147,32 +144,37 @@ export function Carousel3D({ items }: Carousel3DProps) {
         return;
       }
 
-      // Animate snap
+      // Animate snap via CSS transition
       stopAutoRotate();
       setActiveIndex(index);
-      updateRotation(snapped);
+      setSnapping(true);
+      rotationRef.current += diff;
+      applyRotation();
       setTimeout(() => {
         setActiveIndex(null);
+        setSnapping(false);
         resumeAutoRotate(2000);
       }, 800);
     },
-    [increment, navigate, stopAutoRotate, resumeAutoRotate, updateRotation]
+    [increment, navigate, stopAutoRotate, resumeAutoRotate, applyRotation]
   );
 
   return (
     <div className="relative w-full select-none mt-10 overflow-visible" style={{ height: "clamp(320px, 44vh, 440px)" }}>
-      {/* 3D scene */}
       <div
         ref={sliderRef}
-        className="absolute cursor-grab active:cursor-grabbing touch-none"
+        className={cn(
+          "absolute cursor-grab active:cursor-grabbing touch-none",
+          snapping && "transition-transform duration-700 ease-out"
+        )}
         style={{
           width: "160px",
           height: "210px",
           top: "28%",
           left: "calc(50% - 75px)",
           transformStyle: "preserve-3d",
-          transform: `perspective(1500px) rotateX(-14deg) rotateY(${rotation}deg)`,
-          transition: isDragging.current ? "none" : "transform 0.8s cubic-bezier(0.25, 1, 0.5, 1)",
+          transform: `perspective(1500px) rotateX(-14deg) rotateY(0deg)`,
+          willChange: "transform",
         }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -188,12 +190,10 @@ export function Carousel3D({ items }: Carousel3DProps) {
               className="absolute inset-0 group/card"
               style={{
                 transform: `rotateY(${angle}deg) translateZ(${radius}px)`,
-                transition: "transform 0.6s cubic-bezier(0.25, 1, 0.5, 1)",
                 transformStyle: "preserve-3d",
               }}
               onClick={() => handleItemClick(item, i)}
             >
-              {/* Card front face */}
               <div
                 className={cn(
                   "w-full h-full rounded-xl border flex flex-col items-center justify-center gap-2.5 pointer-events-none",
@@ -204,10 +204,8 @@ export function Carousel3D({ items }: Carousel3DProps) {
                 )}
                 style={{
                   boxShadow: "0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.08)",
-                  transition: "transform 0.3s, box-shadow 0.3s",
                 }}
               >
-                {/* Icon orb */}
                 <div
                   className={cn(
                     "w-14 h-14 rounded-full flex items-center justify-center transition-transform duration-300 group-hover/card:scale-125",
@@ -216,19 +214,19 @@ export function Carousel3D({ items }: Carousel3DProps) {
                 >
                   <item.icon className={cn("h-7 w-7 transition-transform duration-300 group-hover/card:scale-110", iconColorMap[item.color])} strokeWidth={1.8} />
                 </div>
-
-                {/* Title */}
                 <span className="text-[11px] font-bold text-foreground font-display text-center leading-tight px-2 drop-shadow-sm transition-transform duration-300 group-hover/card:scale-115">
                   {item.title}
                 </span>
               </div>
 
-              {/* Floating label */}
+              {/* Floating label — use text-shadow instead of backdrop-blur over animated 3D */}
               <div
                 className="absolute -top-7 left-1/2 whitespace-nowrap pointer-events-none"
                 style={{ transform: "translateX(-50%) translateZ(30px)" }}
               >
-                <span className="text-[10px] font-semibold text-foreground/80 dark:text-muted-foreground bg-card backdrop-blur-xl px-2.5 py-1 rounded-full border border-border/50 shadow-sm">
+                <span className="text-[10px] font-semibold text-foreground/80 dark:text-muted-foreground bg-card px-2.5 py-1 rounded-full border border-border/50 shadow-sm"
+                  style={{ textShadow: "0 1px 3px rgba(0,0,0,0.3)" }}
+                >
                   {item.description}
                 </span>
               </div>
@@ -237,7 +235,7 @@ export function Carousel3D({ items }: Carousel3DProps) {
         })}
       </div>
 
-      {/* Reflection / ground shadow */}
+      {/* Ground shadow */}
       <div
         className="absolute bottom-0 left-1/2 -translate-x-1/2 rounded-full opacity-20 dark:opacity-30"
         style={{
@@ -248,7 +246,6 @@ export function Carousel3D({ items }: Carousel3DProps) {
         }}
       />
 
-      {/* Drag hint */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 text-muted-foreground/60 text-[10px] font-medium">
         <span>← drag to explore →</span>
       </div>

@@ -357,12 +357,6 @@ export default function Home() {
   const isDark = theme === 'dark';
 
   return (
-    <>
-    {isDark && (
-      <Suspense fallback={null}>
-        <Starfield />
-      </Suspense>
-    )}
     <AppLayout>
       <div className="max-w-6xl mx-auto px-4 lg:px-8 py-6 lg:py-10">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4 mb-4 items-start">
@@ -511,11 +505,5 @@ export default function Home() {
         )}
       </div>
     </AppLayout>
-    {isDark && (
-      <Suspense fallback={null}>
-        <Starfield />
-      </Suspense>
-    )}
-    </>
   );
 }
