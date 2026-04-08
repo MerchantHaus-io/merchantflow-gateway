@@ -16,15 +16,15 @@ const badgeVariants = cva(
           "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
         outline: "text-foreground",
         success:
-          "bg-[hsl(142_76%_36%/0.15)] text-[hsl(142_76%_55%)] border-[hsl(142_76%_36%/0.3)]",
+          "bg-[hsl(142_76%_36%/0.15)] dark:bg-[hsl(142_76%_20%)] text-[hsl(142_76%_55%)] border-[hsl(142_76%_36%/0.3)] dark:border-[hsl(142_76%_30%)]",
         warning:
-          "bg-[hsl(38_92%_50%/0.15)] text-[hsl(38_92%_60%)] border-[hsl(38_92%_50%/0.3)]",
-        teal: "bg-[hsl(174_72%_46%/0.15)] text-[hsl(174_72%_56%)] border-[hsl(174_72%_46%/0.3)]",
+          "bg-[hsl(38_92%_50%/0.15)] dark:bg-[hsl(38_60%_18%)] text-[hsl(38_92%_60%)] border-[hsl(38_92%_50%/0.3)] dark:border-[hsl(38_70%_30%)]",
+        teal: "bg-[hsl(174_72%_46%/0.15)] dark:bg-[hsl(174_50%_18%)] text-[hsl(174_72%_56%)] border-[hsl(174_72%_46%/0.3)] dark:border-[hsl(174_50%_30%)]",
         muted:
-          "bg-muted/60 text-muted-foreground border-border/40",
-        gold: "bg-[hsl(43_51%_58%/0.15)] text-[hsl(43_51%_68%)] border-[hsl(43_51%_58%/0.3)]",
+          "bg-muted/60 dark:bg-muted text-muted-foreground border-border/40 dark:border-border",
+        gold: "bg-[hsl(43_51%_58%/0.15)] dark:bg-[hsl(43_40%_18%)] text-[hsl(43_51%_68%)] border-[hsl(43_51%_58%/0.3)] dark:border-[hsl(43_40%_30%)]",
         violet:
-          "bg-[hsl(262_83%_58%/0.15)] text-[hsl(262_83%_68%)] border-[hsl(262_83%_58%/0.3)]",
+          "bg-[hsl(262_83%_58%/0.15)] dark:bg-[hsl(262_50%_20%)] text-[hsl(262_83%_68%)] border-[hsl(262_83%_58%/0.3)] dark:border-[hsl(262_50%_30%)]",
       },
       size: {
         sm: "px-2 py-0.5 text-[9px]",
