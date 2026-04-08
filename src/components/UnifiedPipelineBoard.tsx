@@ -159,7 +159,7 @@ const UnifiedPipelineBoard = ({
 
 
   return (
-    <div className="backdrop-blur-md bg-background/40 dark:backdrop-blur-none dark:bg-transparent flex flex-col flex-1 min-h-0 rounded-xl">
+    <div className="bg-background/80 dark:bg-transparent flex flex-col flex-1 min-h-0 rounded-xl">
       {/* Inline toolbar — compact action row */}
       <div className="flex-shrink-0 px-4 py-1.5 flex items-center justify-end gap-1.5 gradient-header rounded-t-xl">
         {totalPipelineValue > 0 && (
