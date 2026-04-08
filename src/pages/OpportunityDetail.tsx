@@ -20,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
+import { 
   ArrowLeft,
   Building2,
   User,
@@ -38,7 +38,7 @@ import {
   CreditCard,
   Calendar,
   Clock,
-  
+  Mail,
   RotateCcw,
   Phone,
   Download
@@ -101,6 +101,62 @@ const EditField = ({
     />
   </div>
 );
+
+// Emails component - shows client_interactions of type email for the account
+const EmailsSection = ({ accountId }: { accountId: string }) => {
+  const [emails, setEmails] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEmails = async () => {
+      setLoading(true);
+      const { data } = await supabase
+        .from('client_interactions')
+        .select('*')
+        .eq('account_id', accountId)
+        .in('interaction_type', ['email', 'note'])
+        .or('outcome.eq.sent,outcome.eq.received,outcome.eq.delivered,interaction_type.eq.email')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      setEmails(data || []);
+      setLoading(false);
+    };
+    fetchEmails();
+  }, [accountId]);
+
+  if (loading) return <div className="space-y-2"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /></div>;
+
+  if (emails.length === 0) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        <Mail className="h-8 w-8 mx-auto mb-2 opacity-50" />
+        <p className="text-sm">No email history yet</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2 max-h-[400px] overflow-y-auto">
+      {emails.map((e) => (
+        <div key={e.id} className="border rounded-lg p-3 space-y-1 hover:bg-muted/50 transition-colors">
+          <div className="flex items-center gap-2">
+            <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <span className="text-sm font-medium truncate flex-1">{e.subject}</span>
+            <Badge variant={e.outcome === 'sent' || e.outcome === 'delivered' ? 'secondary' : 'outline'} className="text-[10px]">
+              {e.outcome || e.status}
+            </Badge>
+          </div>
+          {e.contact_name && <p className="text-xs text-muted-foreground">To: {e.contact_name} {e.contact_email ? `<${e.contact_email}>` : ''}</p>}
+          {e.notes && <p className="text-xs text-muted-foreground truncate">{e.notes.slice(0, 120)}</p>}
+          <p className="text-[11px] text-muted-foreground">
+            {formatDistanceToNow(new Date(e.created_at), { addSuffix: true })}
+            {e.created_by_email && ` · by ${e.created_by_email.split('@')[0]}`}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 // Documents component
 const DocumentsSection = ({ opportunityId }: { opportunityId: string }) => {
@@ -772,7 +828,7 @@ const OpportunityDetail = () => {
                 <Card>
                   <CardContent className="pt-6">
                     <Tabs defaultValue="overview">
-                      <TabsList className="grid w-full grid-cols-6">
+                      <TabsList className="grid w-full grid-cols-7">
                         <TabsTrigger value="overview" className="flex items-center gap-1">
                           <ClipboardList className="h-3.5 w-3.5" />
                           <span className="hidden sm:inline">Overview</span>
@@ -784,6 +840,10 @@ const OpportunityDetail = () => {
                         <TabsTrigger value="calls" className="flex items-center gap-1">
                           <Phone className="h-3.5 w-3.5" />
                           <span className="hidden sm:inline">Calls</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="emails" className="flex items-center gap-1">
+                          <Mail className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline">Emails</span>
                         </TabsTrigger>
                         <TabsTrigger value="notes" className="flex items-center gap-1">
                           <MessageSquare className="h-3.5 w-3.5" />
@@ -832,6 +892,10 @@ const OpportunityDetail = () => {
                           </div>
                           <CommunicationLogPanel opportunityId={opportunity.id} />
                         </div>
+                      </TabsContent>
+
+                      <TabsContent value="emails" className="mt-6">
+                        <EmailsSection accountId={opportunity.account_id} />
                       </TabsContent>
 
                       <TabsContent value="notes" className="mt-6">
