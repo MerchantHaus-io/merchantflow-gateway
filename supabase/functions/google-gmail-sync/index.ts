@@ -215,6 +215,50 @@ serve(async (req) => {
         continue;
       }
 
+      // === BACKFILL MODE: re-fetch bodies for existing emails ===
+      if (backfillBodies) {
+        // Get emails missing body_text for this user, in batches
+        let offset = 0;
+        const BATCH = 50;
+        let backfilled = 0;
+
+        while (true) {
+          const { data: missing } = await supabase
+            .from("synced_emails")
+            .select("id, gmail_message_id")
+            .eq("user_email", token.user_email)
+            .is("body_text", null)
+            .order("received_at", { ascending: false })
+            .range(offset, offset + BATCH - 1);
+
+          if (!missing || missing.length === 0) break;
+
+          for (const row of missing) {
+            const msgResp = await fetch(
+              `${GMAIL_API}/users/me/messages/${row.gmail_message_id}?format=full`,
+              { headers: { Authorization: `Bearer ${accessToken}` } }
+            );
+            if (!msgResp.ok) {
+              console.error(`Backfill fetch failed for ${row.gmail_message_id}: ${msgResp.status}`);
+              continue;
+            }
+            const msg = await msgResp.json();
+            const bodyText = extractBodyFromPayload(msg.payload).slice(0, 10000);
+            if (bodyText) {
+              await supabase.from("synced_emails").update({ body_text: bodyText }).eq("id", row.id);
+              backfilled++;
+            }
+          }
+
+          offset += BATCH;
+          if (missing.length < BATCH) break;
+        }
+
+        console.log(`${token.user_email}: backfilled ${backfilled} email bodies`);
+        totalSynced += backfilled;
+        continue; // skip normal sync for this user in backfill mode
+      }
+
       // Fetch ALL messages (paginated)
       let allMessageIds: string[] = [];
       let pageToken: string | null = null;
