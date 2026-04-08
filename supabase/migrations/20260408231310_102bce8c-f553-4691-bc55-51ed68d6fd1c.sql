@@ -1,0 +1,1 @@
+ALTER TABLE public.synced_emails ADD COLUMN IF NOT EXISTS body_text text;

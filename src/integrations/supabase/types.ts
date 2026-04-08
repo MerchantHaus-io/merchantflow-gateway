@@ -2221,6 +2221,7 @@ export type Database = {
       synced_emails: {
         Row: {
           activity_created: boolean | null
+          body_text: string | null
           cc_emails: string[] | null
           created_at: string | null
           from_email: string | null
@@ -2241,6 +2242,7 @@ export type Database = {
         }
         Insert: {
           activity_created?: boolean | null
+          body_text?: string | null
           cc_emails?: string[] | null
           created_at?: string | null
           from_email?: string | null
@@ -2261,6 +2263,7 @@ export type Database = {
         }
         Update: {
           activity_created?: boolean | null
+          body_text?: string | null
           cc_emails?: string[] | null
           created_at?: string | null
           from_email?: string | null
