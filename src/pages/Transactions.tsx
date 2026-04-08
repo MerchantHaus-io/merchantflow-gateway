@@ -203,10 +203,16 @@ const Transactions = () => {
     return list;
   }, [txs, merchantFilter, typeFilter, statusFilter, search, sortField, sortDir]);
 
+  // Transactions filtered by merchant (for analytics)
+  const merchantFilteredTxs = useMemo(() => {
+    if (merchantFilter === "all") return txs;
+    return txs.filter(t => t.merchant_id === merchantFilter);
+  }, [txs, merchantFilter]);
+
   // Chart: daily volume
   const dailyVolume = useMemo(() => {
     const map: Record<string, { date: string; volume: number; count: number }> = {};
-    for (const tx of txs) {
+    for (const tx of merchantFilteredTxs) {
       if (!tx.date) continue;
       const day = tx.date.substring(0, 10);
       if (!map[day]) map[day] = { date: day, volume: 0, count: 0 };
@@ -214,27 +220,27 @@ const Transactions = () => {
       map[day].count++;
     }
     return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
-  }, [txs]);
+  }, [merchantFilteredTxs]);
 
   // Chart: type breakdown
   const typeBreakdown = useMemo(() => {
     const map: Record<string, number> = {};
-    for (const tx of txs) {
+    for (const tx of merchantFilteredTxs) {
       const t = (tx.type || "other").toLowerCase();
       map[t] = (map[t] || 0) + 1;
     }
     return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-  }, [txs]);
+  }, [merchantFilteredTxs]);
 
   // Chart: card type breakdown
   const cardBreakdown = useMemo(() => {
     const map: Record<string, number> = {};
-    for (const tx of txs) {
+    for (const tx of merchantFilteredTxs) {
       const ct = tx.card_type || "Other";
       map[ct] = (map[ct] || 0) + 1;
     }
     return Object.entries(map).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
-  }, [txs]);
+  }, [merchantFilteredTxs]);
 
   const toggleSort = (field: "date"|"amount") => {
     if (sortField === field) setSortDir(d => d === "asc" ? "desc" : "asc");
@@ -244,14 +250,27 @@ const Transactions = () => {
   const approvalRate = summary && summary.total_count > 0
     ? ((summary.approved_count / summary.total_count) * 100).toFixed(1) : "0";
 
-  // Lookup merchant names from nmi_boarding_submissions
+  // Lookup merchant names from nmi_boarding_submissions + accounts
   const { data: boardingData } = useQuery({
     queryKey: ["nmi-boarding-lookup"],
     queryFn: async () => {
       const { data } = await supabase
         .from("nmi_boarding_submissions")
-        .select("nmi_gateway_id, company_name, dba_name, account_id, accounts(name)");
-      return data || [];
+        .select("nmi_gateway_id, company_name, dba_name, account_id");
+      if (!data) return [];
+      // Fetch account names separately for linked accounts
+      const accountIds = data.map(b => b.account_id).filter(Boolean) as string[];
+      const accountMap: Record<string, string> = {};
+      if (accountIds.length > 0) {
+        const { data: accounts } = await supabase
+          .from("accounts")
+          .select("id, name")
+          .in("id", accountIds);
+        for (const a of accounts || []) {
+          accountMap[a.id] = a.name;
+        }
+      }
+      return data.map(b => ({ ...b, account_name: b.account_id ? accountMap[b.account_id] : null }));
     },
     staleTime: 10 * 60 * 1000,
   });
@@ -260,9 +279,7 @@ const Transactions = () => {
     const map: Record<string, string> = {};
     for (const b of boardingData || []) {
       if (b.nmi_gateway_id) {
-        // Priority: account name > dba name > company name > gateway id
-        const accountName = (b as any).accounts?.name;
-        map[b.nmi_gateway_id] = accountName || b.dba_name || b.company_name || b.nmi_gateway_id;
+        map[b.nmi_gateway_id] = b.account_name || b.dba_name || b.company_name || b.nmi_gateway_id;
       }
     }
     return map;
@@ -376,7 +393,27 @@ const Transactions = () => {
                 </CardContent></Card>
               </div>
 
-              {/* ── Tabs: Charts / Merchants / Transactions ── */}
+              {/* ── Global merchant filter + Tabs ── */}
+              <div className="flex flex-wrap items-center gap-3">
+                <Select value={merchantFilter} onValueChange={setMerchantFilter}>
+                  <SelectTrigger className="h-8 text-xs w-[180px]"><Building2 className="h-3 w-3 mr-1" /><SelectValue placeholder="All merchants" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all" className="text-xs">All Merchants</SelectItem>
+                    {(data?.seen_merchant_ids || []).map(id => (
+                      <SelectItem key={id} value={id} className="text-xs">
+                        <span>{getMerchantLabel(id)}</span>
+                        <span className="ml-1 text-muted-foreground font-mono text-[9px]">#{id}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {merchantFilter !== "all" && (
+                  <Badge variant="secondary" className="text-[10px] gap-1 cursor-pointer" onClick={() => setMerchantFilter("all")}>
+                    {getMerchantLabel(merchantFilter)} <span className="text-muted-foreground">×</span>
+                  </Badge>
+                )}
+              </div>
+
               <Tabs defaultValue="transactions" className="space-y-4">
                 <TabsList className="bg-muted/50 p-0.5">
                   <TabsTrigger value="transactions" className="text-xs gap-1.5"><FileText className="h-3 w-3" />Transactions</TabsTrigger>
@@ -392,15 +429,6 @@ const Transactions = () => {
                       <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                       <Input placeholder="Search name, email, ID, card…" value={search} onChange={e => setSearch(e.target.value)} className="pl-8 h-8 text-xs" />
                     </div>
-                    <Select value={merchantFilter} onValueChange={setMerchantFilter}>
-                      <SelectTrigger className="h-8 text-xs w-[160px]"><SelectValue placeholder="All merchants" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all" className="text-xs">All Merchants</SelectItem>
-                        {(data?.seen_merchant_ids || []).map(id => (
-                          <SelectItem key={id} value={id} className="text-xs">{getMerchantLabel(id)}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
                     <Select value={typeFilter} onValueChange={setTypeFilter}>
                       <SelectTrigger className="h-8 text-xs w-[110px]"><SelectValue placeholder="All types" /></SelectTrigger>
                       <SelectContent>
@@ -520,6 +548,9 @@ const Transactions = () => {
 
                 {/* ── Analytics Tab ── */}
                 <TabsContent value="analytics" className="space-y-4">
+                  {merchantFilter !== "all" && (
+                    <p className="text-xs text-muted-foreground">Showing analytics for <span className="font-semibold text-foreground">{getMerchantLabel(merchantFilter)}</span></p>
+                  )}
                   <div className="grid lg:grid-cols-2 gap-4">
                     {/* Daily Volume */}
                     <Card>
@@ -610,46 +641,130 @@ const Transactions = () => {
                       <p className="text-sm font-medium">No merchant data</p>
                     </CardContent></Card>
                   ) : (
-                    <div className="grid gap-3">
-                      {merchantSummaries.sort((a,b) => b.approved_amount - a.approved_amount).map(ms => {
-                        const rate = ms.total_count > 0 ? ((ms.approved_count / ms.total_count)*100).toFixed(1) : "0";
-                        return (
-                          <Card key={ms.merchant_id} className="border-border/60">
-                            <CardContent className="p-4">
-                              <div className="flex items-start justify-between mb-3">
-                                <div>
-                                  <p className="text-sm font-semibold">{getMerchantLabel(ms.merchant_id)}</p>
-                                  <p className="text-[10px] text-muted-foreground font-mono">ID: {ms.merchant_id}</p>
+                    <>
+                      {/* Merchant comparison charts */}
+                      <div className="grid lg:grid-cols-2 gap-4">
+                        {/* Volume comparison bar chart */}
+                        <Card>
+                          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><BarChart3 className="h-4 w-4" />Volume by Merchant</CardTitle></CardHeader>
+                          <CardContent>
+                            <ResponsiveContainer width="100%" height={220}>
+                              <BarChart data={merchantSummaries.sort((a,b) => b.approved_amount - a.approved_amount).map(ms => ({
+                                name: getMerchantLabel(ms.merchant_id),
+                                volume: ms.approved_amount,
+                                id: ms.merchant_id,
+                              }))}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                <XAxis dataKey="name" tick={{ fontSize: 9 }} angle={-20} textAnchor="end" height={50} />
+                                <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
+                                <Tooltip content={<CustomTooltip />} />
+                                <Bar dataKey="volume" name="Approved Volume" fill="hsl(160,84%,39%)" radius={[4,4,0,0]} />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </CardContent>
+                        </Card>
+
+                        {/* Approval rate comparison */}
+                        <Card>
+                          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="h-4 w-4" />Approval Rate by Merchant</CardTitle></CardHeader>
+                          <CardContent>
+                            <ResponsiveContainer width="100%" height={220}>
+                              <BarChart data={merchantSummaries.map(ms => ({
+                                name: getMerchantLabel(ms.merchant_id),
+                                rate: ms.total_count > 0 ? parseFloat(((ms.approved_count / ms.total_count)*100).toFixed(1)) : 0,
+                              }))}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                <XAxis dataKey="name" tick={{ fontSize: 9 }} angle={-20} textAnchor="end" height={50} />
+                                <YAxis tick={{ fontSize: 10 }} domain={[0, 100]} tickFormatter={v => `${v}%`} />
+                                <Tooltip content={<CustomTooltip />} />
+                                <Bar dataKey="rate" name="Approval Rate %" fill="hsl(var(--primary))" radius={[4,4,0,0]} />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </CardContent>
+                        </Card>
+
+                        {/* Transaction count pie chart */}
+                        <Card>
+                          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Users className="h-4 w-4" />Transaction Share</CardTitle></CardHeader>
+                          <CardContent>
+                            <ResponsiveContainer width="100%" height={220}>
+                              <PieChart>
+                                <Pie
+                                  data={merchantSummaries.map(ms => ({ name: getMerchantLabel(ms.merchant_id), value: ms.transaction_count }))}
+                                  dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}
+                                  label={({ name, percent }) => `${name.length > 12 ? name.substring(0,12)+'…' : name} ${(percent*100).toFixed(0)}%`}
+                                >
+                                  {merchantSummaries.map((_,i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+                                </Pie>
+                                <Tooltip />
+                              </PieChart>
+                            </ResponsiveContainer>
+                          </CardContent>
+                        </Card>
+
+                        {/* Refund comparison */}
+                        <Card>
+                          <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><ArrowDownRight className="h-4 w-4" />Refunds by Merchant</CardTitle></CardHeader>
+                          <CardContent>
+                            <ResponsiveContainer width="100%" height={220}>
+                              <BarChart data={merchantSummaries.filter(ms => ms.refund_count > 0).map(ms => ({
+                                name: getMerchantLabel(ms.merchant_id),
+                                refunds: ms.refund_amount,
+                                count: ms.refund_count,
+                              }))}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                <XAxis dataKey="name" tick={{ fontSize: 9 }} angle={-20} textAnchor="end" height={50} />
+                                <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
+                                <Tooltip content={<CustomTooltip />} />
+                                <Bar dataKey="refunds" name="Refund Volume" fill="hsl(350,89%,60%)" radius={[4,4,0,0]} />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </CardContent>
+                        </Card>
+                      </div>
+
+                      {/* Merchant detail cards */}
+                      <div className="grid gap-3">
+                        {merchantSummaries.sort((a,b) => b.approved_amount - a.approved_amount).map(ms => {
+                          const rate = ms.total_count > 0 ? ((ms.approved_count / ms.total_count)*100).toFixed(1) : "0";
+                          return (
+                            <Card key={ms.merchant_id} className="border-border/60">
+                              <CardContent className="p-4">
+                                <div className="flex items-start justify-between mb-3">
+                                  <div>
+                                    <p className="text-sm font-semibold">{getMerchantLabel(ms.merchant_id)}</p>
+                                    <p className="text-[10px] text-muted-foreground font-mono">Merchant ID: {ms.merchant_id}</p>
+                                  </div>
+                                  <Badge variant="outline" className="text-[10px]">{ms.transaction_count} txns</Badge>
                                 </div>
-                                <Badge variant="outline" className="text-[10px]">{ms.transaction_count} txns</Badge>
-                              </div>
-                              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
-                                <div>
-                                  <p className="text-muted-foreground">Approved Vol.</p>
-                                  <p className="font-bold text-green-600 dark:text-green-400">{formatCurrency(ms.approved_amount)}</p>
+                                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
+                                  <div>
+                                    <p className="text-muted-foreground">Approved Vol.</p>
+                                    <p className="font-bold text-green-600 dark:text-green-400">{formatCurrency(ms.approved_amount)}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-muted-foreground">Approval Rate</p>
+                                    <p className={cn("font-bold", parseFloat(rate) >= 90 ? "text-green-600 dark:text-green-400" : parseFloat(rate) >= 70 ? "text-amber-600 dark:text-amber-400" : "text-destructive")}>{rate}%</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-muted-foreground">Declined</p>
+                                    <p className="font-bold text-destructive">{ms.declined_count}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-muted-foreground">Refunds</p>
+                                    <p className="font-bold">{ms.refund_count} ({formatCurrency(ms.refund_amount)})</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-muted-foreground">Voids</p>
+                                    <p className="font-bold">{ms.void_count}</p>
+                                  </div>
                                 </div>
-                                <div>
-                                  <p className="text-muted-foreground">Approval Rate</p>
-                                  <p className={cn("font-bold", parseFloat(rate) >= 90 ? "text-green-600 dark:text-green-400" : parseFloat(rate) >= 70 ? "text-amber-600 dark:text-amber-400" : "text-destructive")}>{rate}%</p>
-                                </div>
-                                <div>
-                                  <p className="text-muted-foreground">Declined</p>
-                                  <p className="font-bold text-destructive">{ms.declined_count}</p>
-                                </div>
-                                <div>
-                                  <p className="text-muted-foreground">Refunds</p>
-                                  <p className="font-bold">{ms.refund_count} ({formatCurrency(ms.refund_amount)})</p>
-                                </div>
-                                <div>
-                                  <p className="text-muted-foreground">Voids</p>
-                                  <p className="font-bold">{ms.void_count}</p>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        );
-                      })}
-                    </div>
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    </>
                   )}
                 </TabsContent>
               </Tabs>
