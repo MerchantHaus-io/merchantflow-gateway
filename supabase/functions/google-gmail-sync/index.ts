@@ -217,8 +217,8 @@ serve(async (req) => {
 
       // === BACKFILL MODE: re-fetch bodies for existing emails ===
       if (backfillBodies) {
-        // Process max 80 emails per invocation to stay within timeout
-        const MAX_BACKFILL = 80;
+        // Process max 30 emails per invocation to stay within timeout
+        const MAX_BACKFILL = 30;
         let backfilled = 0;
 
         const { data: missing } = await supabase
