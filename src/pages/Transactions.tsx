@@ -480,6 +480,7 @@ const Transactions = () => {
                   <TabsTrigger value="transactions" className="text-xs gap-1.5"><FileText className="h-3 w-3" />Transactions</TabsTrigger>
                   <TabsTrigger value="analytics" className="text-xs gap-1.5"><BarChart3 className="h-3 w-3" />Analytics</TabsTrigger>
                   <TabsTrigger value="merchants" className="text-xs gap-1.5"><Building2 className="h-3 w-3" />Merchants</TabsTrigger>
+                  <TabsTrigger value="commission" className="text-xs gap-1.5"><Coins className="h-3 w-3" />Commission</TabsTrigger>
                 </TabsList>
 
                 {/* ── Transactions Tab ── */}
