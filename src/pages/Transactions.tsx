@@ -193,6 +193,8 @@ const Transactions = () => {
   const [sortField, setSortField] = useState<"date"|"amount">("date");
   const [sortDir, setSortDir] = useState<"asc"|"desc">("desc");
   const [expandedTx, setExpandedTx] = useState<string | null>(null);
+  const [commMonth, setCommMonth] = useState(() => new Date().getMonth() + 1);
+  const [commYear, setCommYear] = useState(() => new Date().getFullYear());
 
   const { startDate, endDate } = getDateRange(datePreset);
 
