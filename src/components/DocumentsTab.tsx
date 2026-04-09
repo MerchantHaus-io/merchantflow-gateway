@@ -34,6 +34,7 @@ export const DOCUMENT_TYPE_OPTIONS = [
   "VAR/Tear Sheet",
   "EIN",
   "SSN",
+  "Supporting Documents",
 ];
 
 /** Maximum number of documents allowed per label. Default is 1. */
@@ -41,8 +42,12 @@ const DOCUMENT_LABEL_LIMITS: Record<string, number> = {
   "Passport/Drivers License": 2,
   "Bank Statement": 3,
   "Transaction History": 3,
+  "Supporting Documents": 99,
 };
 const DEFAULT_LABEL_LIMIT = 1;
+
+/** Document types excluded from wizard/progress completion checks */
+export const NON_MANDATORY_DOC_TYPES = ["Supporting Documents"];
 
 /** Count how many docs already use each label */
 function getLabelCounts(docs: Document[]): Record<string, number> {
@@ -78,6 +83,7 @@ function getMissingDocuments(docs: Document[]): string[] {
   const counts = getLabelCounts(docs);
   const missing: string[] = [];
   for (const type of DOCUMENT_TYPE_OPTIONS) {
+    if (NON_MANDATORY_DOC_TYPES.includes(type)) continue;
     const min = type === "Bank Statement" || type === "Transaction History" ? 3 : 1;
     const current = counts[type] || 0;
     if (current < min) {

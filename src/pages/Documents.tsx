@@ -40,6 +40,7 @@ const DOCUMENT_TYPE_OPTIONS = [
   "VAR/Tear Sheet",
   "EIN",
   "SSN",
+  "Supporting Documents",
   "Unassigned",
 ];
 
