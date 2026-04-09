@@ -79,7 +79,7 @@ const Accounts = () => {
   const [inlineEditId, setInlineEditId] = useState<string | null>(null);
   const [inlineEditField, setInlineEditField] = useState<string | null>(null);
   const [inlineEditValue, setInlineEditValue] = useState<string>('');
-  const [accountOpportunities, setAccountOpportunities] = useState<Record<string, { stage: string; label: string; color: string; assigned_to?: string }>>({});
+  const [accountOpportunities, setAccountOpportunities] = useState<Record<string, Array<{ id: string; stage: string; label: string; color: string; assigned_to?: string; outcome_status?: string | null }>>>({});
 
   const startInlineEdit = (accountId: string, field: string, currentValue: string) => {
     setInlineEditId(accountId);
