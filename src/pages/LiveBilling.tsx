@@ -42,6 +42,8 @@ const LiveBilling = () => {
   const [filterPipeline, setFilterPipeline] = useState<string>("all");
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const { teamMemberName } = useAuth();
+  const { isAdmin } = useUserRole();
 
   const { data: liveOpportunities, isLoading } = useQuery({
     queryKey: ["live-billing-opportunities"],
