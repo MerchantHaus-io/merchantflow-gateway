@@ -15,6 +15,8 @@ import { format } from "date-fns";
 import { getServiceType, TEAM_MEMBERS } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/contexts/AuthContext";
+import { useUserRole } from "@/hooks/useUserRole";
 
 const TEAM_EMAIL_MAP: Record<string, string> = {
   'Wesley': 'sales@merchanthaus.io',
