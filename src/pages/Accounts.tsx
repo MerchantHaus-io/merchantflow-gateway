@@ -381,7 +381,7 @@ const Accounts = () => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 stagger-children">
             <StatCard label="Total Accounts" value={totalAccounts} icon={Building2Icon} color="teal" />
             <StatCard label="With Contacts" value={accountsWithContacts} icon={Users} color="primary" />
-            <StatCard label="Active Deals" value={Object.keys(accountOpportunities).length} icon={TrendingUp} color="success" />
+            <StatCard label="Active Deals" value={Object.values(accountOpportunities).reduce((sum, arr) => sum + arr.length, 0)} icon={TrendingUp} color="success" />
             <StatCard label="Have Website" value={accountsWithWebsites} icon={Globe} color="muted" />
           </div>
 
