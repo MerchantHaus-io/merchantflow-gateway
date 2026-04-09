@@ -428,7 +428,7 @@ const Accounts = () => {
                   </TableHeader>
                   <TableBody>
                     {filteredAccounts.map((account) => {
-                      const activeDeal = accountOpportunities[account.id];
+                      const deals = accountOpportunities[account.id] || [];
                       return (
                       <TableRow key={account.id} className={cn("hover:bg-muted/30 group/row", account.status === 'dead' && "opacity-50")}>
                         <TableCell className="font-medium py-2.5">
@@ -456,23 +456,34 @@ const Accounts = () => {
                               {account.status === 'dead' && (
                                 <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Dead</Badge>
                               )}
+                              {deals.length > 1 && (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0">{deals.length} opps</Badge>
+                              )}
                               <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover/cell:opacity-60 transition-opacity" />
                             </div>
                           )}
                         </TableCell>
-                        {/* Active deal */}
+                        {/* Active deals */}
                         <TableCell className="py-2.5">
-                          {activeDeal ? (
-                            <button
-                              onClick={() => navigate('/opportunities')}
-                              className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
-                            >
-                              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: activeDeal.color }} />
-                              <span className="text-xs font-medium">{activeDeal.label}</span>
-                              {activeDeal.assigned_to && (
-                                <span className="text-xs text-muted-foreground hidden lg:inline">· {activeDeal.assigned_to}</span>
-                              )}
-                            </button>
+                          {deals.length > 0 ? (
+                            <div className="flex flex-col gap-1">
+                              {deals.map((deal) => (
+                                <button
+                                  key={deal.id}
+                                  onClick={() => navigate(`/opportunities/${deal.id}`)}
+                                  className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
+                                >
+                                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: deal.color }} />
+                                  <span className="text-xs font-medium">{deal.label}</span>
+                                  {deal.outcome_status && (
+                                    <Badge variant="outline" className="text-[9px] px-1 py-0">{deal.outcome_status === 'closed_won' ? '🏆' : deal.outcome_status === 'closed_lost' ? '✗' : '⏸'}</Badge>
+                                  )}
+                                  {deal.assigned_to && (
+                                    <span className="text-xs text-muted-foreground hidden lg:inline">· {deal.assigned_to}</span>
+                                  )}
+                                </button>
+                              ))}
+                            </div>
                           ) : (
                             <button
                               onClick={() => navigate('/opportunities?new=true')}
