@@ -199,18 +199,18 @@ const Accounts = () => {
     } else if (data) {
       setAccounts(data as AccountWithContacts[]);
     }
-    // Also fetch latest opportunity per account
+    // Fetch ALL opportunities per account (not just latest)
     const { data: oppData } = await supabase
       .from('opportunities')
-      .select('account_id, stage, assigned_to, status, updated_at')
-      .neq('status', 'dead')
+      .select('id, account_id, stage, assigned_to, status, outcome_status, updated_at')
       .order('updated_at', { ascending: false });
     if (oppData) {
-      const map: Record<string, { stage: string; label: string; color: string; assigned_to?: string }> = {};
+      const map: Record<string, Array<{ id: string; stage: string; label: string; color: string; assigned_to?: string; outcome_status?: string | null }>> = {};
       oppData.forEach((opp: any) => {
-        if (!map[opp.account_id]) {
-          const cfg = STAGE_CONFIG[opp.stage as keyof typeof STAGE_CONFIG];
-          if (cfg) map[opp.account_id] = { stage: opp.stage, label: cfg.label, color: cfg.color, assigned_to: opp.assigned_to };
+        const cfg = STAGE_CONFIG[opp.stage as keyof typeof STAGE_CONFIG];
+        if (cfg) {
+          if (!map[opp.account_id]) map[opp.account_id] = [];
+          map[opp.account_id].push({ id: opp.id, stage: opp.stage, label: cfg.label, color: cfg.color, assigned_to: opp.assigned_to, outcome_status: opp.outcome_status });
         }
       });
       setAccountOpportunities(map);
