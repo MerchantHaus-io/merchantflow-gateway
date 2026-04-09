@@ -829,6 +829,169 @@ const Transactions = () => {
                     </>
                   )}
                 </TabsContent>
+
+                {/* ── Commission Tab ── */}
+                <TabsContent value="commission" className="space-y-4">
+                  {/* Month/Year selector */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Select value={String(commMonth)} onValueChange={v => setCommMonth(Number(v))}>
+                      <SelectTrigger className="h-8 text-xs w-[120px]"><Calendar className="h-3 w-3 mr-1" /><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {["January","February","March","April","May","June","July","August","September","October","November","December"].map((m,i) => (
+                          <SelectItem key={i+1} value={String(i+1)} className="text-xs">{m}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={String(commYear)} onValueChange={v => setCommYear(Number(v))}>
+                      <SelectTrigger className="h-8 text-xs w-[90px]"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {[2023,2024,2025,2026].map(y => (
+                          <SelectItem key={y} value={String(y)} className="text-xs">{y}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button variant="outline" size="sm" className="gap-1.5 h-8" onClick={() => commRefetch()} disabled={commFetching}>
+                      <RefreshCw className={cn("h-3.5 w-3.5", commFetching && "animate-spin")} /> Refresh
+                    </Button>
+                  </div>
+
+                  {commLoading ? (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">{[...Array(4)].map((_,i) => <Skeleton key={i} className="h-20" />)}</div>
+                      <Skeleton className="h-64" />
+                    </div>
+                  ) : commError ? (
+                    <Card><CardContent className="p-8 text-center">
+                      <AlertCircle className="h-8 w-8 mx-auto mb-2 text-destructive/50" />
+                      <p className="text-sm text-muted-foreground">Failed to load commission data</p>
+                      <p className="text-xs text-muted-foreground mt-1">The commission API may require additional partner permissions</p>
+                      <Button variant="outline" size="sm" onClick={() => commRefetch()} className="mt-3">Retry</Button>
+                    </CardContent></Card>
+                  ) : (
+                    <>
+                      {/* Commission KPI Cards */}
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        <Card><CardContent className="p-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="h-7 w-7 rounded-md bg-emerald-500/10 flex items-center justify-center"><Coins className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /></div>
+                          </div>
+                          <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(commSummary?.total_commission ?? 0)}</p>
+                          <p className="text-[10px] text-muted-foreground">Total Commission</p>
+                        </CardContent></Card>
+                        <Card><CardContent className="p-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center"><DollarSign className="h-3.5 w-3.5 text-primary" /></div>
+                          </div>
+                          <p className="text-xl font-bold">{formatCurrency(commSummary?.total_volume ?? 0)}</p>
+                          <p className="text-[10px] text-muted-foreground">Total Volume</p>
+                        </CardContent></Card>
+                        <Card><CardContent className="p-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="h-7 w-7 rounded-md bg-amber-500/10 flex items-center justify-center"><Shield className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" /></div>
+                          </div>
+                          <p className="text-xl font-bold">{formatCurrency(commSummary?.total_fees ?? 0)}</p>
+                          <p className="text-[10px] text-muted-foreground">Total Fees</p>
+                        </CardContent></Card>
+                        <Card><CardContent className="p-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="h-7 w-7 rounded-md bg-violet-500/10 flex items-center justify-center"><Building2 className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" /></div>
+                          </div>
+                          <p className="text-xl font-bold">{commSummary?.merchant_count ?? 0}</p>
+                          <p className="text-[10px] text-muted-foreground">Merchants</p>
+                        </CardContent></Card>
+                      </div>
+
+                      {/* Commission charts */}
+                      {commMerchantSummaries.length > 0 && (
+                        <div className="grid lg:grid-cols-2 gap-4">
+                          <Card>
+                            <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><Coins className="h-4 w-4" />Commission by Merchant</CardTitle></CardHeader>
+                            <CardContent>
+                              <ResponsiveContainer width="100%" height={220}>
+                                <BarChart data={commMerchantSummaries.sort((a,b) => b.total_commission - a.total_commission).map(ms => ({
+                                  name: getMerchantLabel(ms.merchant_id),
+                                  commission: ms.total_commission,
+                                }))}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                  <XAxis dataKey="name" tick={{ fontSize: 9 }} angle={-20} textAnchor="end" height={50} />
+                                  <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
+                                  <Tooltip content={<CustomTooltip />} />
+                                  <Bar dataKey="commission" name="Commission" fill="hsl(160,84%,39%)" radius={[4,4,0,0]} />
+                                </BarChart>
+                              </ResponsiveContainer>
+                            </CardContent>
+                          </Card>
+                          <Card>
+                            <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2"><TrendingUp className="h-4 w-4" />Volume by Merchant</CardTitle></CardHeader>
+                            <CardContent>
+                              <ResponsiveContainer width="100%" height={220}>
+                                <BarChart data={commMerchantSummaries.sort((a,b) => b.total_volume - a.total_volume).map(ms => ({
+                                  name: getMerchantLabel(ms.merchant_id),
+                                  volume: ms.total_volume,
+                                }))}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                  <XAxis dataKey="name" tick={{ fontSize: 9 }} angle={-20} textAnchor="end" height={50} />
+                                  <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
+                                  <Tooltip content={<CustomTooltip />} />
+                                  <Bar dataKey="volume" name="Volume" fill="hsl(var(--primary))" radius={[4,4,0,0]} />
+                                </BarChart>
+                              </ResponsiveContainer>
+                            </CardContent>
+                          </Card>
+                        </div>
+                      )}
+
+                      {/* Commission merchant detail cards */}
+                      {commissions.length === 0 ? (
+                        <Card><CardContent className="p-8 text-center">
+                          <Coins className="h-8 w-8 mx-auto mb-2 text-muted-foreground/30" />
+                          <p className="text-sm font-medium">No commission data for this period</p>
+                          <p className="text-xs text-muted-foreground mt-1">Try selecting a different month</p>
+                        </CardContent></Card>
+                      ) : (
+                        <div className="grid gap-3">
+                          {commMerchantSummaries.sort((a,b) => b.total_commission - a.total_commission).map(ms => (
+                            <Card key={ms.merchant_id} className="border-border/60">
+                              <CardContent className="p-4">
+                                <div className="flex items-start justify-between mb-3">
+                                  <div>
+                                    <p className="text-sm font-semibold">{getMerchantLabel(ms.merchant_id)}</p>
+                                    <p className="text-[10px] text-muted-foreground font-mono">Merchant ID: {ms.merchant_id}</p>
+                                  </div>
+                                  <Badge variant="outline" className="text-[10px] border-emerald-500/50 text-emerald-600 dark:text-emerald-400">
+                                    {formatCurrency(ms.total_commission)}
+                                  </Badge>
+                                </div>
+                                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
+                                  <div>
+                                    <p className="text-muted-foreground">Commission</p>
+                                    <p className="font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(ms.total_commission)}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-muted-foreground">Volume</p>
+                                    <p className="font-bold">{formatCurrency(ms.total_volume)}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-muted-foreground">Transactions</p>
+                                    <p className="font-bold">{ms.total_transactions}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-muted-foreground">Fees</p>
+                                    <p className="font-bold">{formatCurrency(ms.total_fees)}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-muted-foreground">Refunds</p>
+                                    <p className="font-bold">{formatCurrency(ms.total_refunds)}</p>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </TabsContent>
               </Tabs>
             </>
           )}
