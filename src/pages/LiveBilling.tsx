@@ -85,6 +85,9 @@ const LiveBilling = () => {
     const map = new Map<string, GroupedAccount>();
 
     for (const opp of liveOpportunities) {
+      // Non-admin users only see opportunities assigned to them
+      if (!isAdmin && teamMemberName && opp.assigned_to !== teamMemberName) continue;
+
       const accountId = opp.account_id;
       const svcType = getServiceType(opp as any);
 
@@ -112,7 +115,7 @@ const LiveBilling = () => {
     }
 
     return Array.from(map.values());
-  }, [liveOpportunities]);
+  }, [liveOpportunities, isAdmin, teamMemberName]);
 
   const filtered = useMemo(() => {
     return grouped.filter((g) => {
