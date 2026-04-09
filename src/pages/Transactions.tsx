@@ -375,12 +375,12 @@ const Transactions = () => {
   };
 
   return (
-    <AppLayout pageTitle="Transactions">
+    <AppLayout pageTitle="Transactions & Commission">
       <div className="flex flex-col h-full overflow-hidden">
         <PageHeader
           icon={CreditCard}
-          title="Gateway Transactions"
-          description="Partner-wide NMI transaction data · Volume analytics · Commission tracking"
+          title="Transactions & Commission"
+          description="Partner-wide NMI transaction data · Volume analytics · Commission reports"
           actions={
             <div className="flex items-center gap-2 flex-wrap">
               <Select value={datePreset} onValueChange={v => setDatePreset(v as DatePreset)}>
