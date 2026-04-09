@@ -82,6 +82,47 @@ interface AllModeResponse {
   seen_merchant_ids: string[];
 }
 
+interface CommissionEntry {
+  merchant_id: string;
+  merchant_name: string;
+  gateway_id: string;
+  transaction_count: number;
+  gross_volume: number;
+  net_volume: number;
+  commission_amount: number;
+  commission_rate: number;
+  fees: number;
+  refund_amount: number;
+  chargeback_amount: number;
+  status: string;
+  payout_date: string;
+  currency: string;
+}
+
+interface CommissionSummary {
+  total_commission: number;
+  total_volume: number;
+  total_fees: number;
+  total_refunds: number;
+  total_chargebacks: number;
+  total_transactions: number;
+  merchant_count: number;
+}
+
+interface CommissionMerchantSummary extends CommissionSummary {
+  merchant_id: string;
+}
+
+interface CommissionResponse {
+  month: string;
+  year: string;
+  commissions: CommissionEntry[];
+  total_count: number;
+  summary: CommissionSummary;
+  merchant_summaries: CommissionMerchantSummary[];
+  truncated: boolean;
+}
+
 type DatePreset = "7d" | "30d" | "60d" | "90d" | "this_month" | "last_month";
 
 const DATE_PRESETS: { value: DatePreset; label: string }[] = [
