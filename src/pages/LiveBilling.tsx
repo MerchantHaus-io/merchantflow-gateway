@@ -15,6 +15,8 @@ import { format } from "date-fns";
 import { getServiceType, TEAM_MEMBERS } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/contexts/AuthContext";
+import { useUserRole } from "@/hooks/useUserRole";
 
 const TEAM_EMAIL_MAP: Record<string, string> = {
   'Wesley': 'sales@merchanthaus.io',
@@ -40,6 +42,8 @@ const LiveBilling = () => {
   const [filterPipeline, setFilterPipeline] = useState<string>("all");
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const { teamMemberName } = useAuth();
+  const { isAdmin } = useUserRole();
 
   const { data: liveOpportunities, isLoading } = useQuery({
     queryKey: ["live-billing-opportunities"],
@@ -81,6 +85,9 @@ const LiveBilling = () => {
     const map = new Map<string, GroupedAccount>();
 
     for (const opp of liveOpportunities) {
+      // Non-admin users only see opportunities assigned to them
+      if (!isAdmin && teamMemberName && opp.assigned_to !== teamMemberName) continue;
+
       const accountId = opp.account_id;
       const svcType = getServiceType(opp as any);
 
@@ -108,7 +115,7 @@ const LiveBilling = () => {
     }
 
     return Array.from(map.values());
-  }, [liveOpportunities]);
+  }, [liveOpportunities, isAdmin, teamMemberName]);
 
   const filtered = useMemo(() => {
     return grouped.filter((g) => {
