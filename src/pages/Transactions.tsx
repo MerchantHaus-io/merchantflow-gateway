@@ -211,6 +211,24 @@ const Transactions = () => {
     retry: 1,
   });
 
+  // Commission data
+  const { data: commData, isLoading: commLoading, isError: commError, refetch: commRefetch, isFetching: commFetching } = useQuery({
+    queryKey: ["nmi-commissions", commMonth, commYear],
+    queryFn: async () => {
+      const { data: result, error } = await supabase.functions.invoke("nmi-commissions", {
+        body: { month: commMonth, year: commYear },
+      });
+      if (error) throw error;
+      return result as CommissionResponse;
+    },
+    staleTime: 10 * 60 * 1000,
+    retry: 1,
+  });
+
+  const commissions = commData?.commissions || [];
+  const commSummary = commData?.summary;
+  const commMerchantSummaries = commData?.merchant_summaries || [];
+
   const txs = data?.transactions || [];
   const summary = data?.summary;
   const merchantSummaries = data?.merchant_summaries || [];
