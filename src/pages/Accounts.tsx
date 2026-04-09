@@ -79,7 +79,7 @@ const Accounts = () => {
   const [inlineEditId, setInlineEditId] = useState<string | null>(null);
   const [inlineEditField, setInlineEditField] = useState<string | null>(null);
   const [inlineEditValue, setInlineEditValue] = useState<string>('');
-  const [accountOpportunities, setAccountOpportunities] = useState<Record<string, { stage: string; label: string; color: string; assigned_to?: string }>>({});
+  const [accountOpportunities, setAccountOpportunities] = useState<Record<string, Array<{ id: string; stage: string; label: string; color: string; assigned_to?: string; outcome_status?: string | null }>>>({});
 
   const startInlineEdit = (accountId: string, field: string, currentValue: string) => {
     setInlineEditId(accountId);
@@ -199,18 +199,18 @@ const Accounts = () => {
     } else if (data) {
       setAccounts(data as AccountWithContacts[]);
     }
-    // Also fetch latest opportunity per account
+    // Fetch ALL opportunities per account (not just latest)
     const { data: oppData } = await supabase
       .from('opportunities')
-      .select('account_id, stage, assigned_to, status, updated_at')
-      .neq('status', 'dead')
+      .select('id, account_id, stage, assigned_to, status, outcome_status, updated_at')
       .order('updated_at', { ascending: false });
     if (oppData) {
-      const map: Record<string, { stage: string; label: string; color: string; assigned_to?: string }> = {};
+      const map: Record<string, Array<{ id: string; stage: string; label: string; color: string; assigned_to?: string; outcome_status?: string | null }>> = {};
       oppData.forEach((opp: any) => {
-        if (!map[opp.account_id]) {
-          const cfg = STAGE_CONFIG[opp.stage as keyof typeof STAGE_CONFIG];
-          if (cfg) map[opp.account_id] = { stage: opp.stage, label: cfg.label, color: cfg.color, assigned_to: opp.assigned_to };
+        const cfg = STAGE_CONFIG[opp.stage as keyof typeof STAGE_CONFIG];
+        if (cfg) {
+          if (!map[opp.account_id]) map[opp.account_id] = [];
+          map[opp.account_id].push({ id: opp.id, stage: opp.stage, label: cfg.label, color: cfg.color, assigned_to: opp.assigned_to, outcome_status: opp.outcome_status });
         }
       });
       setAccountOpportunities(map);
@@ -381,7 +381,7 @@ const Accounts = () => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 stagger-children">
             <StatCard label="Total Accounts" value={totalAccounts} icon={Building2Icon} color="teal" />
             <StatCard label="With Contacts" value={accountsWithContacts} icon={Users} color="primary" />
-            <StatCard label="Active Deals" value={Object.keys(accountOpportunities).length} icon={TrendingUp} color="success" />
+            <StatCard label="Active Deals" value={Object.values(accountOpportunities).reduce((sum, arr) => sum + arr.length, 0)} icon={TrendingUp} color="success" />
             <StatCard label="Have Website" value={accountsWithWebsites} icon={Globe} color="muted" />
           </div>
 
@@ -418,7 +418,7 @@ const Accounts = () => {
                   <TableHeader>
                     <TableRow>
                       <SortableTableHead field="name" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Account</SortableTableHead>
-                      <TableHead>Active Deal</TableHead>
+                      <TableHead>Opportunities</TableHead>
                       <SortableTableHead field="contacts" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Contacts</SortableTableHead>
                       <TableHead>Location</TableHead>
                       <SortableTableHead field="website" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Website</SortableTableHead>
@@ -428,7 +428,7 @@ const Accounts = () => {
                   </TableHeader>
                   <TableBody>
                     {filteredAccounts.map((account) => {
-                      const activeDeal = accountOpportunities[account.id];
+                      const deals = accountOpportunities[account.id] || [];
                       return (
                       <TableRow key={account.id} className={cn("hover:bg-muted/30 group/row", account.status === 'dead' && "opacity-50")}>
                         <TableCell className="font-medium py-2.5">
@@ -456,23 +456,34 @@ const Accounts = () => {
                               {account.status === 'dead' && (
                                 <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Dead</Badge>
                               )}
+                              {deals.length > 1 && (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0">{deals.length} opps</Badge>
+                              )}
                               <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover/cell:opacity-60 transition-opacity" />
                             </div>
                           )}
                         </TableCell>
-                        {/* Active deal */}
+                        {/* Active deals */}
                         <TableCell className="py-2.5">
-                          {activeDeal ? (
-                            <button
-                              onClick={() => navigate('/opportunities')}
-                              className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
-                            >
-                              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: activeDeal.color }} />
-                              <span className="text-xs font-medium">{activeDeal.label}</span>
-                              {activeDeal.assigned_to && (
-                                <span className="text-xs text-muted-foreground hidden lg:inline">· {activeDeal.assigned_to}</span>
-                              )}
-                            </button>
+                          {deals.length > 0 ? (
+                            <div className="flex flex-col gap-1">
+                              {deals.map((deal) => (
+                                <button
+                                  key={deal.id}
+                                  onClick={() => navigate(`/opportunities/${deal.id}`)}
+                                  className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
+                                >
+                                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: deal.color }} />
+                                  <span className="text-xs font-medium">{deal.label}</span>
+                                  {deal.outcome_status && (
+                                    <Badge variant="outline" className="text-[9px] px-1 py-0">{deal.outcome_status === 'closed_won' ? '🏆' : deal.outcome_status === 'closed_lost' ? '✗' : '⏸'}</Badge>
+                                  )}
+                                  {deal.assigned_to && (
+                                    <span className="text-xs text-muted-foreground hidden lg:inline">· {deal.assigned_to}</span>
+                                  )}
+                                </button>
+                              ))}
+                            </div>
                           ) : (
                             <button
                               onClick={() => navigate('/opportunities?new=true')}
