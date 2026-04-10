@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
       const url = `${NMI_BASE}/merchants?offset=${offset}&maxResults=${pageSize}`;
       const res = await fetch(url, {
         headers: {
-          Authorization: `Basic ${btoa(apiKey + ":")}`,
+          Authorization: apiKey,
           Accept: "application/json",
         },
       });
