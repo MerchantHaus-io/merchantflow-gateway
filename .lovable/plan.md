@@ -1,30 +1,28 @@
 
 
-## User Management Section for Administration Page
+# Pull Live Merchant Names & IDs from NMI API
 
-### Summary
-Add a "Team & Roles" management card to the Administration page where admins can view all team members and toggle their admin role. Also fix the missing admin role for `admin@merchanthaus.io` (Jamie).
+## What This Does
+Creates a new edge function that calls the NMI Partner v4 API to list all merchants under your partner account, returning their names and merchant IDs. Then displays the results directly or cross-references them with your Live & Billing accounts in the CRM.
 
-### Database Fix
-- **Migration**: Insert the missing admin role for Jamie (`admin@merchanthaus.io` / `f1168d85-6037-41c0-a0f7-0d64e9103ba0`) into the `user_roles` table.
-- **RLS Policy**: Add an admin-only INSERT and DELETE policy on `user_roles` so admins can grant/revoke roles from the UI. Currently the table has RLS enabled but the existing policies only allow SELECT via `has_role()`. We need:
-  - `Admins can manage roles` (INSERT, UPDATE, DELETE) gated by `is_admin_email()`.
-  - `Authenticated users can view roles` (SELECT) for all authenticated users.
+## Approach
 
-### New Component: `src/components/admin/UserRoleManager.tsx`
-A self-contained card component that:
-1. Fetches all profiles joined with their roles from `user_roles`.
-2. Displays a table with columns: **Avatar**, **Name**, **Email**, **Role** (badge), **Actions**.
-3. Each non-admin user row shows a "Grant Admin" button; each admin row shows a "Revoke Admin" button (disabled for the current user to prevent self-demotion).
-4. Toggling a role inserts into or deletes from `user_roles`.
-5. Uses `toast` for success/error feedback.
-6. Subscribes to realtime changes on `user_roles` for live updates.
+### 1. Create `nmi-list-merchants` Edge Function
+- Call `GET https://secure.nmi.com/api/v4/merchants` with the existing `NMI_API_KEY`
+- Paginate through all results (the API supports `offset` and `maxResults`)
+- Return a clean list of: merchant ID, company/DBA name, status, gateway ID, and creation date
 
-### Administration Page Update
-- Import and render `<UserRoleManager />` between the Admin Popup Manager and the Agenda Manager sections (logical placement — team management before agenda management).
+### 2. Run It Immediately
+- Invoke the function right after deployment to pull the full merchant roster
+- Display the results showing each merchant's name and ID
 
-### Technical Details
-- The `user_roles` table uses the `app_role` enum (`admin`, `moderator`, `user`). This UI will manage the `admin` role specifically.
-- No new tables or columns needed — just RLS policies and a data fix.
-- The component queries `profiles` for the user list and `user_roles` for role data, joining client-side.
+### 3. Optional: Cross-Reference with CRM
+- Match NMI merchant names against the `accounts` table in your CRM
+- Highlight which NMI merchants are already tracked in Live & Billing vs any that might be missing
+
+## Technical Details
+- Reuses the existing `NMI_API_KEY` secret (Partner-level key)
+- The NMI v4 Merchants API (`/api/v4/merchants`) supports listing all sub-merchants under a partner account
+- No database changes needed — this is a read-only API call
+- Single new file: `supabase/functions/nmi-list-merchants/index.ts`
 
