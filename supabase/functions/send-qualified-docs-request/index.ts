@@ -68,7 +68,7 @@ const buildDocsRequestHtml = (firstName: string, accountName: string, opportunit
       </ul>
       <p>Please complete our secure merchant application form to upload your documents and provide the required business details:</p>
       <p style="text-align: center;">
-        <a href="${MERCHANT_APPLY_URL}" class="cta">Complete Merchant Application</a>
+        <a href="${applyUrl}" class="cta">Complete Merchant Application</a>
       </p>
       <p>If you have any questions about the required documents or the application process, don't hesitate to reach out to us at <a href="mailto:sales@merchanthaus.io">sales@merchanthaus.io</a>.</p>
       <p style="margin-top: 24px;">Kind regards,<br><strong>The Merchant Haus Team</strong></p>
