@@ -7,9 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const NMI_COMMISSION_URL = "https://secure.nmi.com/api/v4/commission_reports/reports";
-const MAX_RESULTS = 1000;
-const MAX_PAGES = 10;
+const NMI_BASE = "https://secure.nmi.com/api/v4";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -29,7 +27,7 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAnon = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Verify user with anon client
+    // Verify user
     const anonClient = createClient(supabaseUrl, supabaseAnon, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -47,76 +45,78 @@ serve(async (req) => {
     const requestMonth = month ? Number(month) : now.getMonth() + 1;
     const requestYear = year ? Number(year) : now.getFullYear();
 
-    console.log(`Fetching commission report for ${requestMonth}/${requestYear}, persist=${!!persist}`);
+    // Build date range for the requested month
+    const startDate = `${requestYear}-${String(requestMonth).padStart(2, "0")}-01`;
+    const lastDay = new Date(requestYear, requestMonth, 0).getDate();
+    const endDate = `${requestYear}-${String(requestMonth).padStart(2, "0")}-${lastDay}`;
 
-    // Fetch from NMI
-    const results: any[] = [];
-    let offset = 0;
-    let hasMore = true;
-    let pageCount = 0;
-    let totalResults = 0;
+    console.log(`Fetching commission report for ${requestMonth}/${requestYear} (${startDate} to ${endDate}), persist=${!!persist}`);
 
-    while (hasMore && pageCount < MAX_PAGES) {
-      const response = await fetch(NMI_COMMISSION_URL, {
-        method: "POST",
-        headers: {
-          Authorization: nmiApiKey,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          month: String(requestMonth),
-          year: String(requestYear),
-          offset: String(offset),
-          maxResults: String(MAX_RESULTS),
-        }),
-      });
+    // Fetch from NMI v4 Commission Report API
+    const response = await fetch(`${NMI_BASE}/reports/commission`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${nmiApiKey}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        start_date: startDate,
+        end_date: endDate,
+        include_details: true,
+        group_by: "merchant",
+      }),
+    });
 
-      const text = await response.text();
-      let parsed: any = null;
-      try { parsed = text ? JSON.parse(text) : null; } catch { parsed = null; }
+    const text = await response.text();
+    let parsed: any = null;
+    try { parsed = text ? JSON.parse(text) : null; } catch { parsed = null; }
 
-      if (!response.ok) {
-        console.error(`NMI Commission API error [${response.status}]:`, text.substring(0, 500));
-        throw new Error(extractError(parsed) || `NMI API returned HTTP ${response.status}`);
+    if (!response.ok) {
+      console.error(`NMI Commission API error [${response.status}]:`, text.substring(0, 500));
+      throw new Error(extractError(parsed) || `NMI API returned HTTP ${response.status}`);
+    }
+
+    // Log response structure for debugging
+    if (parsed) {
+      const topKeys = Object.keys(parsed);
+      console.log("NMI commission response keys:", topKeys);
+      const merchants = parsed.merchants || parsed.results || parsed.data || [];
+      if (merchants.length > 0) {
+        console.log("NMI commission first merchant keys:", Object.keys(merchants[0]));
+        console.log("NMI commission first merchant:", JSON.stringify(merchants[0]).substring(0, 500));
       }
-
-      const pageResults = Array.isArray(parsed?.results) ? parsed.results : [];
-      results.push(...pageResults);
-      totalResults = toNumber(parsed?.totalResults) || results.length;
-      hasMore = Boolean(parsed?.hasMore) && pageResults.length > 0;
-      offset += pageResults.length;
-      pageCount++;
-      if (pageResults.length === 0) break;
     }
 
-    console.log(`Commission report: ${results.length} records for ${requestMonth}/${requestYear}`);
+    // Extract merchants array from response
+    const merchantsRaw = Array.isArray(parsed?.merchants) ? parsed.merchants
+      : Array.isArray(parsed?.results) ? parsed.results
+      : Array.isArray(parsed?.data) ? parsed.data
+      : [];
 
-    const commissions = results.map(mapCommission);
-    const summary = buildSummary(commissions);
+    console.log(`Commission report: ${merchantsRaw.length} merchants for ${requestMonth}/${requestYear}`);
 
-    // Group by merchant
-    const byMerchant: Record<string, typeof commissions> = {};
-    for (const c of commissions) {
-      const key = c.merchant_id || "unknown";
-      if (!byMerchant[key]) byMerchant[key] = [];
-      byMerchant[key].push(c);
-    }
+    // Map merchants to our format
+    const commissions = merchantsRaw.map(mapMerchant);
 
-    const merchantSummaries = Object.entries(byMerchant).map(([merchantId, entries]) => ({
-      merchant_id: merchantId,
-      merchant_name: entries[0]?.merchant_name || "",
-      gateway_id: entries[0]?.gateway_id || "",
-      ...buildSummary(entries),
-    }));
+    // Build totals from response or calculate
+    const apiTotals = parsed?.totals || parsed?.summary || null;
+    const summary = apiTotals ? {
+      total_commission: toNumber(apiTotals.total_commission ?? apiTotals.commission),
+      total_volume: toNumber(apiTotals.transaction_volume ?? apiTotals.volume),
+      total_fees: toNumber(apiTotals.transaction_fees ?? apiTotals.fees),
+      total_transactions: toNumber(apiTotals.transaction_count ?? apiTotals.transactions),
+      total_chargebacks: toNumber(apiTotals.chargeback_fees ?? apiTotals.chargebacks),
+      total_refunds: toNumber(apiTotals.refund_amount ?? apiTotals.refunds),
+      merchant_count: commissions.length,
+    } : buildSummary(commissions);
 
     // Persist to DB if requested
     if (persist) {
       try {
-        const periodStart = new Date(requestYear, requestMonth - 1, 1).toISOString().split("T")[0];
-        const periodEnd = new Date(requestYear, requestMonth, 0).toISOString().split("T")[0];
+        const periodStart = startDate;
+        const periodEnd = endDate;
 
-        // Upsert commission period
         const { data: period, error: periodError } = await sb
           .from("commission_periods")
           .upsert(
@@ -137,7 +137,7 @@ serve(async (req) => {
         if (periodError) {
           console.error("Failed to upsert commission period:", periodError);
         } else if (period) {
-          // Look up accounts by nmi_merchant_id for cross-referencing
+          // Cross-reference with CRM accounts
           const { data: accounts } = await sb
             .from("accounts")
             .select("id, nmi_merchant_id")
@@ -149,27 +149,28 @@ serve(async (req) => {
           }
 
           // Upsert commission records per merchant
-          for (const ms of merchantSummaries) {
-            const accountId = accountMap.get(ms.merchant_id) || null;
+          for (const c of commissions) {
+            if (!c.gateway_id) continue;
+            const accountId = accountMap.get(c.gateway_id) || null;
 
             await sb.from("commission_records").upsert(
               {
                 period_id: period.id,
                 account_id: accountId,
-                nmi_gateway_id: ms.merchant_id,
-                company_name: ms.merchant_name,
-                transaction_count: ms.total_transactions,
-                transaction_volume: ms.total_volume,
-                transaction_fees: ms.total_fees,
-                chargeback_fees: ms.total_chargebacks,
-                residual_amount: ms.total_commission,
-                total_commission: ms.total_commission,
+                nmi_gateway_id: c.gateway_id,
+                company_name: c.company_name,
+                transaction_count: c.transaction_count,
+                transaction_volume: c.gross_volume,
+                transaction_fees: c.fees,
+                chargeback_fees: c.chargeback_amount,
+                residual_amount: c.residual_amount,
+                total_commission: c.total_commission,
               },
               { onConflict: "period_id,nmi_gateway_id" }
             );
           }
 
-          console.log(`Persisted commission data: period ${period.id}, ${merchantSummaries.length} merchants`);
+          console.log(`Persisted commission data: period ${period.id}, ${commissions.length} merchants`);
         }
       } catch (persistErr) {
         console.error("Failed to persist commission data:", persistErr);
@@ -180,10 +181,9 @@ serve(async (req) => {
       month: requestMonth,
       year: requestYear,
       commissions,
-      total_count: totalResults,
+      total_count: commissions.length,
       summary,
-      merchant_summaries: merchantSummaries,
-      truncated: hasMore,
+      truncated: false,
     });
   } catch (err) {
     console.error("NMI commissions error:", err);
@@ -214,49 +214,31 @@ function toNumber(v: unknown) {
   return Number.isFinite(n) ? n : 0;
 }
 
-function mapCommission(entry: any) {
+function mapMerchant(entry: any) {
   return {
-    merchant_id: String(entry?.merchantId ?? entry?.merchant_id ?? ""),
-    merchant_name: String(entry?.merchantName ?? entry?.merchant_name ?? entry?.companyName ?? ""),
-    gateway_id: String(entry?.gatewayId ?? entry?.gateway_id ?? ""),
-    transaction_count: toNumber(entry?.transactionCount ?? entry?.transaction_count ?? entry?.count),
-    gross_volume: toNumber(entry?.grossVolume ?? entry?.gross_volume ?? entry?.volume ?? 0),
-    net_volume: toNumber(entry?.netVolume ?? entry?.net_volume ?? 0),
-    commission_amount: toNumber(entry?.commissionAmount ?? entry?.commission_amount ?? entry?.commission ?? entry?.amount ?? 0),
-    commission_rate: toNumber(entry?.commissionRate ?? entry?.commission_rate ?? entry?.rate ?? 0),
-    fees: toNumber(entry?.fees ?? entry?.totalFees ?? 0),
-    refund_amount: toNumber(entry?.refundAmount ?? entry?.refund_amount ?? 0),
-    chargeback_amount: toNumber(entry?.chargebackAmount ?? entry?.chargeback_amount ?? 0),
-    status: String(entry?.status ?? entry?.paymentStatus ?? ""),
-    payout_date: String(entry?.payoutDate ?? entry?.payout_date ?? ""),
+    gateway_id: String(entry?.gateway_id ?? entry?.gatewayId ?? entry?.merchant_id ?? entry?.merchantId ?? ""),
+    company_name: String(entry?.company_name ?? entry?.companyName ?? entry?.merchant_name ?? entry?.merchantName ?? ""),
+    transaction_count: toNumber(entry?.transaction_count ?? entry?.transactionCount ?? entry?.count ?? 0),
+    gross_volume: toNumber(entry?.transaction_volume ?? entry?.transactionVolume ?? entry?.volume ?? entry?.gross_volume ?? 0),
+    fees: toNumber(entry?.transaction_fees ?? entry?.transactionFees ?? entry?.fees ?? 0),
+    residual_amount: toNumber(entry?.residual_amount ?? entry?.residualAmount ?? 0),
+    total_commission: toNumber(entry?.total_commission ?? entry?.totalCommission ?? entry?.commission ?? entry?.commission_amount ?? 0),
+    chargeback_amount: toNumber(entry?.chargeback_fees ?? entry?.chargebackFees ?? entry?.chargeback_amount ?? 0),
+    status: String(entry?.status ?? ""),
     currency: String(entry?.currency ?? "USD"),
   };
 }
 
-function buildSummary(commissions: ReturnType<typeof mapCommission>[]) {
-  let totalCommission = 0;
-  let totalVolume = 0;
-  let totalFees = 0;
-  let totalRefunds = 0;
-  let totalChargebacks = 0;
-  let totalTransactions = 0;
+function buildSummary(commissions: ReturnType<typeof mapMerchant>[]) {
+  let total_commission = 0, total_volume = 0, total_fees = 0, total_chargebacks = 0, total_transactions = 0;
 
   for (const c of commissions) {
-    totalCommission += c.commission_amount;
-    totalVolume += c.gross_volume;
-    totalFees += c.fees;
-    totalRefunds += c.refund_amount;
-    totalChargebacks += c.chargeback_amount;
-    totalTransactions += c.transaction_count;
+    total_commission += c.total_commission;
+    total_volume += c.gross_volume;
+    total_fees += c.fees;
+    total_chargebacks += c.chargeback_amount;
+    total_transactions += c.transaction_count;
   }
 
-  return {
-    total_commission: totalCommission,
-    total_volume: totalVolume,
-    total_fees: totalFees,
-    total_refunds: totalRefunds,
-    total_chargebacks: totalChargebacks,
-    total_transactions: totalTransactions,
-    merchant_count: commissions.length,
-  };
+  return { total_commission, total_volume, total_fees, total_refunds: 0, total_chargebacks, total_transactions, merchant_count: commissions.length };
 }
