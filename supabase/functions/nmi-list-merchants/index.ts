@@ -1,9 +1,10 @@
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const NMI_BASE = "https://secure.nmi.com/api/v4";
+const NMI_V4_BASE = "https://secure.nmi.com/api/v4";
+const NMI_GATEWAY_BASE = "https://merchanthausio.transactiongateway.com";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -13,67 +14,113 @@ Deno.serve(async (req) => {
   try {
     const apiKey = Deno.env.get("NMI_API_KEY");
     if (!apiKey) {
-      return new Response(JSON.stringify({ error: "NMI_API_KEY not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return json({ error: "NMI_API_KEY not configured" }, 500);
     }
 
-    const allMerchants: any[] = [];
-    let offset = 0;
-    const pageSize = 100;
-    let hasMore = true;
+    // Try v3 Boarding API at white-label URL first (more detailed data)
+    let merchants = await fetchV3Roster(apiKey);
 
-    while (hasMore) {
-      const url = `${NMI_BASE}/merchants?offset=${offset}&maxResults=${pageSize}`;
-      const res = await fetch(url, {
-        headers: {
-          Authorization: apiKey,
-          Accept: "application/json",
-        },
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        console.error("NMI API error:", res.status, text);
-        return new Response(
-          JSON.stringify({ error: "NMI API error", status: res.status, detail: text }),
-          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const data = await res.json();
-
-      // The v4 API may return merchants in different shapes depending on partner config
-      const merchants = Array.isArray(data) ? data : data.merchants ?? data.data ?? [];
-
-      if (merchants.length === 0) {
-        hasMore = false;
-      } else {
-        for (const m of merchants) {
-          allMerchants.push({
-            merchant_id: m.merchant_id ?? m.id ?? null,
-            company_name: m.company_name ?? m.company ?? m.dba_name ?? m.name ?? null,
-            dba_name: m.dba_name ?? null,
-            status: m.status ?? null,
-            gateway_id: m.gateway_id ?? null,
-            created_at: m.created_at ?? m.date_created ?? null,
-          });
-        }
-        offset += merchants.length;
-        if (merchants.length < pageSize) hasMore = false;
-      }
+    // Fall back to v4 Partner API if v3 fails
+    if (!merchants) {
+      console.log("v3 Boarding API unavailable, falling back to v4...");
+      merchants = await fetchV4Roster(apiKey);
     }
 
-    return new Response(
-      JSON.stringify({ merchants: allMerchants, total: allMerchants.length }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    if (!merchants) {
+      return json({ error: "Could not fetch merchant roster from NMI" }, 502);
+    }
+
+    return json({ merchants, total: merchants.length });
   } catch (err) {
     console.error("nmi-list-merchants error:", err);
-    return new Response(
-      JSON.stringify({ error: err.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return json({ error: (err as Error).message }, 500);
   }
 });
+
+// v3 Boarding API — richer data (processors, services, status details)
+async function fetchV3Roster(apiKey: string): Promise<any[] | null> {
+  try {
+    const res = await fetch(`${NMI_GATEWAY_BASE}/api/v3/affiliate/gateways`, {
+      headers: {
+        Authorization: apiKey,
+        Accept: "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.warn(`v3 Boarding API error [${res.status}]:`, text.substring(0, 200));
+      return null;
+    }
+
+    const data = await res.json();
+    const gateways = Array.isArray(data) ? data : data.gateways ?? data.data ?? [];
+
+    return gateways.map((g: any) => ({
+      merchant_id: String(g.id ?? ""),
+      company_name: g.company ?? g.company_name ?? null,
+      dba_name: g.dba_name ?? null,
+      status: g.status ?? null,
+      gateway_id: String(g.id ?? ""),
+      contact_email: g.contact_email ?? null,
+      created_at: g.created_at ?? g.date_created ?? null,
+      // v3-specific fields
+      processors: g.processors ?? null,
+      services: g.services ?? null,
+      url: g.url ?? null,
+    }));
+  } catch (err) {
+    console.warn("v3 Boarding API fetch failed:", err);
+    return null;
+  }
+}
+
+// v4 Partner API — basic roster
+async function fetchV4Roster(apiKey: string): Promise<any[] | null> {
+  const allMerchants: any[] = [];
+  let offset = 0;
+  const pageSize = 100;
+  let hasMore = true;
+
+  while (hasMore) {
+    const url = `${NMI_V4_BASE}/merchants?offset=${offset}&maxResults=${pageSize}`;
+    const res = await fetch(url, {
+      headers: { Authorization: apiKey, Accept: "application/json" },
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error("NMI v4 API error:", res.status, text);
+      return allMerchants.length > 0 ? allMerchants : null;
+    }
+
+    const data = await res.json();
+    const merchants = Array.isArray(data) ? data : data.merchants ?? data.data ?? [];
+
+    if (merchants.length === 0) {
+      hasMore = false;
+    } else {
+      for (const m of merchants) {
+        allMerchants.push({
+          merchant_id: String(m.merchant_id ?? m.id ?? ""),
+          company_name: m.company_name ?? m.company ?? m.dba_name ?? m.name ?? null,
+          dba_name: m.dba_name ?? null,
+          status: m.status ?? null,
+          gateway_id: String(m.gateway_id ?? m.merchant_id ?? m.id ?? ""),
+          created_at: m.created_at ?? m.date_created ?? null,
+        });
+      }
+      offset += merchants.length;
+      if (merchants.length < pageSize) hasMore = false;
+    }
+  }
+
+  return allMerchants;
+}
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
