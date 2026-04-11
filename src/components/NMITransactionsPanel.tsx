@@ -41,6 +41,7 @@ interface GatewayResult {
 interface NMITransactionsPanelProps {
   gatewayIds: string[];
   accountName?: string;
+  merchantId?: string | null;
 }
 
 type DatePreset = "30d" | "7d" | "60d" | "90d" | "this_month" | "last_month";
@@ -81,7 +82,7 @@ function getDateRange(preset: DatePreset): { startDate: string; endDate: string 
   }
 }
 
-export const NMITransactionsPanel = ({ gatewayIds, accountName }: NMITransactionsPanelProps) => {
+export const NMITransactionsPanel = ({ gatewayIds, accountName, merchantId }: NMITransactionsPanelProps) => {
   const isMobile = useIsMobile();
   const [datePreset, setDatePreset] = useState<DatePreset>("30d");
 
@@ -169,15 +170,27 @@ export const NMITransactionsPanel = ({ gatewayIds, accountName }: NMITransaction
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <Activity className="h-4 w-4 text-muted-foreground" />
-          Gateway Transactions
-          {gatewayIds.length > 1 && (
-            <span className="text-xs text-muted-foreground font-normal">
-              ({gatewayIds.length} gateways)
-            </span>
-          )}
-        </h3>
+        <div>
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Activity className="h-4 w-4 text-muted-foreground" />
+            Gateway Transactions
+            {accountName && (
+              <span className="text-xs text-muted-foreground font-normal">
+                — {accountName}
+              </span>
+            )}
+            {merchantId && (
+              <span className="text-xs font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded font-normal">
+                MID: {merchantId}
+              </span>
+            )}
+            {gatewayIds.length > 1 && (
+              <span className="text-xs text-muted-foreground font-normal">
+                ({gatewayIds.length} gateways)
+              </span>
+            )}
+          </h3>
+        </div>
         <div className="flex items-center gap-2">
           {/* Date range picker */}
           <Select value={datePreset} onValueChange={(v) => setDatePreset(v as DatePreset)}>

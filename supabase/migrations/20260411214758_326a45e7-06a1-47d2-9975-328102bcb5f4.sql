@@ -1,0 +1,1 @@
+ALTER TABLE public.accounts ADD COLUMN nmi_merchant_id text DEFAULT NULL;
