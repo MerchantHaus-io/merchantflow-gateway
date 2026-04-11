@@ -178,7 +178,7 @@ export default function Commissions() {
   return (
     <AppLayout>
       <div className="max-w-7xl mx-auto space-y-6">
-        <PageHeader title="Commission Reports" />
+        <PageHeader icon={BarChart3} title="Commission Reports" />
 
         {/* Period selector + actions */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
