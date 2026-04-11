@@ -21,7 +21,10 @@ interface QualifiedRequest {
 
 const MERCHANT_APPLY_BASE = "https://ops-terminal.lovable.app/merchant-apply";
 
-const buildDocsRequestHtml = (firstName: string, accountName: string, missingDocs?: string[]): string => {
+const buildDocsRequestHtml = (firstName: string, accountName: string, opportunityId?: string, missingDocs?: string[]): string => {
+  const applyUrl = opportunityId
+    ? `${MERCHANT_APPLY_BASE}?opp_id=${encodeURIComponent(opportunityId)}&utm_source=email&utm_medium=docs_request&utm_campaign=qualified`
+    : MERCHANT_APPLY_BASE;
   const docListHtml = missingDocs && missingDocs.length > 0
     ? missingDocs.map(d => `<li>${d}</li>`).join("\n")
     : `<li>3 months of recent bank statements</li>
