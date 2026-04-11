@@ -1,4 +1,5 @@
 import { useMemo, useState, useCallback, lazy, Suspense, type InputHTMLAttributes, type ReactNode } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -276,6 +277,8 @@ function validateRequired(value: string, label: string): string | null {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function MerchantApply() {
+  const [searchParams] = useSearchParams();
+  const oppId = searchParams.get("opp_id") || undefined;
   const [serviceType, setServiceType] = useState<ServiceType>(null);
   const [stepIndex, setStepIndex] = useState(0);
   const [form, setForm] = useState<MerchantForm>(initialState);
@@ -605,9 +608,17 @@ export default function MerchantApply() {
         };
       }
 
-      // Add audit metadata
+      // Add audit metadata & attribution
       payload.client_ip = clientIp;
       payload.user_agent = navigator.userAgent;
+      if (oppId) payload.opportunity_id = oppId;
+      // Capture UTM params for attribution
+      const utmSource = searchParams.get("utm_source");
+      const utmMedium = searchParams.get("utm_medium");
+      const utmCampaign = searchParams.get("utm_campaign");
+      if (utmSource || utmMedium || utmCampaign) {
+        payload.utm = { source: utmSource, medium: utmMedium, campaign: utmCampaign };
+      }
 
       // Call server-side validated edge function
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://cuqjaddtmkotgvfsgcol.supabase.co';
