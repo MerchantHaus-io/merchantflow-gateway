@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,26 +25,31 @@ serve(async (req) => {
       return json({ error: "Unauthorized" }, 401);
     }
 
-    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } },
-    );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseAnon = Deno.env.get("SUPABASE_ANON_KEY")!;
 
+    // Verify user with anon client
+    const anonClient = createClient(supabaseUrl, supabaseAnon, {
+      global: { headers: { Authorization: authHeader } },
+    });
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    const { data: { user }, error: userError } = await anonClient.auth.getUser(token);
     if (userError || !user) return json({ error: "Unauthorized" }, 401);
 
+    // Service client for DB writes
+    const sb = createClient(supabaseUrl, supabaseServiceKey);
+
     const body = await req.json().catch(() => ({}));
-    const { month, year } = body ?? {};
+    const { month, year, persist } = body ?? {};
 
     const now = new Date();
-    const requestMonth = month ? String(month) : String(now.getMonth() + 1);
-    const requestYear = year ? String(year) : String(now.getFullYear());
+    const requestMonth = month ? Number(month) : now.getMonth() + 1;
+    const requestYear = year ? Number(year) : now.getFullYear();
 
-    console.log(`Fetching commission report for ${requestMonth}/${requestYear}`);
+    console.log(`Fetching commission report for ${requestMonth}/${requestYear}, persist=${!!persist}`);
 
+    // Fetch from NMI
     const results: any[] = [];
     let offset = 0;
     let hasMore = true;
@@ -59,8 +65,8 @@ serve(async (req) => {
           Accept: "application/json",
         },
         body: JSON.stringify({
-          month: requestMonth,
-          year: requestYear,
+          month: String(requestMonth),
+          year: String(requestYear),
           offset: String(offset),
           maxResults: String(MAX_RESULTS),
         }),
@@ -68,11 +74,7 @@ serve(async (req) => {
 
       const text = await response.text();
       let parsed: any = null;
-      try {
-        parsed = text ? JSON.parse(text) : null;
-      } catch {
-        parsed = null;
-      }
+      try { parsed = text ? JSON.parse(text) : null; } catch { parsed = null; }
 
       if (!response.ok) {
         console.error(`NMI Commission API error [${response.status}]:`, text.substring(0, 500));
@@ -85,16 +87,12 @@ serve(async (req) => {
       hasMore = Boolean(parsed?.hasMore) && pageResults.length > 0;
       offset += pageResults.length;
       pageCount++;
-
       if (pageResults.length === 0) break;
     }
 
     console.log(`Commission report: ${results.length} records for ${requestMonth}/${requestYear}`);
 
-    // Map commission entries
     const commissions = results.map(mapCommission);
-
-    // Build summary
     const summary = buildSummary(commissions);
 
     // Group by merchant
@@ -107,8 +105,76 @@ serve(async (req) => {
 
     const merchantSummaries = Object.entries(byMerchant).map(([merchantId, entries]) => ({
       merchant_id: merchantId,
+      merchant_name: entries[0]?.merchant_name || "",
+      gateway_id: entries[0]?.gateway_id || "",
       ...buildSummary(entries),
     }));
+
+    // Persist to DB if requested
+    if (persist) {
+      try {
+        const periodStart = new Date(requestYear, requestMonth - 1, 1).toISOString().split("T")[0];
+        const periodEnd = new Date(requestYear, requestMonth, 0).toISOString().split("T")[0];
+
+        // Upsert commission period
+        const { data: period, error: periodError } = await sb
+          .from("commission_periods")
+          .upsert(
+            {
+              period_start: periodStart,
+              period_end: periodEnd,
+              status: "complete",
+              total_volume: summary.total_volume,
+              total_transactions: summary.total_transactions,
+              total_commission: summary.total_commission,
+              fetched_at: new Date().toISOString(),
+            },
+            { onConflict: "period_start,period_end" }
+          )
+          .select("id")
+          .single();
+
+        if (periodError) {
+          console.error("Failed to upsert commission period:", periodError);
+        } else if (period) {
+          // Look up accounts by nmi_merchant_id for cross-referencing
+          const { data: accounts } = await sb
+            .from("accounts")
+            .select("id, nmi_merchant_id")
+            .not("nmi_merchant_id", "is", null);
+
+          const accountMap = new Map<string, string>();
+          for (const a of accounts || []) {
+            if (a.nmi_merchant_id) accountMap.set(a.nmi_merchant_id, a.id);
+          }
+
+          // Upsert commission records per merchant
+          for (const ms of merchantSummaries) {
+            const accountId = accountMap.get(ms.merchant_id) || null;
+
+            await sb.from("commission_records").upsert(
+              {
+                period_id: period.id,
+                account_id: accountId,
+                nmi_gateway_id: ms.merchant_id,
+                company_name: ms.merchant_name,
+                transaction_count: ms.total_transactions,
+                transaction_volume: ms.total_volume,
+                transaction_fees: ms.total_fees,
+                chargeback_fees: ms.total_chargebacks,
+                residual_amount: ms.total_commission,
+                total_commission: ms.total_commission,
+              },
+              { onConflict: "period_id,nmi_gateway_id" }
+            );
+          }
+
+          console.log(`Persisted commission data: period ${period.id}, ${merchantSummaries.length} merchants`);
+        }
+      } catch (persistErr) {
+        console.error("Failed to persist commission data:", persistErr);
+      }
+    }
 
     return json({
       month: requestMonth,
@@ -164,8 +230,6 @@ function mapCommission(entry: any) {
     status: String(entry?.status ?? entry?.paymentStatus ?? ""),
     payout_date: String(entry?.payoutDate ?? entry?.payout_date ?? ""),
     currency: String(entry?.currency ?? "USD"),
-    // Keep raw for debugging
-    _raw: entry,
   };
 }
 

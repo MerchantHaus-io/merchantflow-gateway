@@ -1087,6 +1087,117 @@ export type Database = {
           },
         ]
       }
+      commission_periods: {
+        Row: {
+          created_at: string
+          fetched_at: string | null
+          id: string
+          period_end: string
+          period_start: string
+          status: string
+          total_commission: number | null
+          total_transactions: number | null
+          total_volume: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          fetched_at?: string | null
+          id?: string
+          period_end: string
+          period_start: string
+          status?: string
+          total_commission?: number | null
+          total_transactions?: number | null
+          total_volume?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          fetched_at?: string | null
+          id?: string
+          period_end?: string
+          period_start?: string
+          status?: string
+          total_commission?: number | null
+          total_transactions?: number | null
+          total_volume?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      commission_records: {
+        Row: {
+          account_id: string | null
+          chargeback_fees: number | null
+          commission_change_pct: number | null
+          company_name: string | null
+          created_at: string
+          id: string
+          monthly_fees: number | null
+          nmi_gateway_id: string
+          period_id: string
+          residual_amount: number | null
+          residual_rate: number | null
+          total_commission: number | null
+          transaction_count: number | null
+          transaction_fees: number | null
+          transaction_volume: number | null
+          volume_change_pct: number | null
+        }
+        Insert: {
+          account_id?: string | null
+          chargeback_fees?: number | null
+          commission_change_pct?: number | null
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          monthly_fees?: number | null
+          nmi_gateway_id: string
+          period_id: string
+          residual_amount?: number | null
+          residual_rate?: number | null
+          total_commission?: number | null
+          transaction_count?: number | null
+          transaction_fees?: number | null
+          transaction_volume?: number | null
+          volume_change_pct?: number | null
+        }
+        Update: {
+          account_id?: string | null
+          chargeback_fees?: number | null
+          commission_change_pct?: number | null
+          company_name?: string | null
+          created_at?: string
+          id?: string
+          monthly_fees?: number | null
+          nmi_gateway_id?: string
+          period_id?: string
+          residual_amount?: number | null
+          residual_rate?: number | null
+          total_commission?: number | null
+          transaction_count?: number | null
+          transaction_fees?: number | null
+          transaction_volume?: number | null
+          volume_change_pct?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_records_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_records_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "commission_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contacts: {
         Row: {
           account_id: string

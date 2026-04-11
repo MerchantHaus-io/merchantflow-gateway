@@ -51,6 +51,7 @@ import NMIBoarding from "./pages/NMIBoarding";
 import Leads from "./pages/Leads";
 import Transactions from "./pages/Transactions";
 import Calendar from "./pages/Calendar";
+import Commissions from "./pages/Commissions";
 import { IncomingCallToast } from "./components/IncomingCallToast";
 import { IncomingMessageToast } from "./components/IncomingMessageToast";
 import { Dialler } from "./components/Dialler";
@@ -143,6 +144,7 @@ const App = () => (
                 <Route path="/outreach/:id" element={<ProtectedRoute><OutreachDetail /></ProtectedRoute>} />
                 <Route path="/leads" element={<ProtectedRoute><Leads /></ProtectedRoute>} />
                 <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
+                <Route path="/commissions" element={<ProtectedRoute><Commissions /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </TasksProvider>
