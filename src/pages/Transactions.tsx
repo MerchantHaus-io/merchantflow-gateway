@@ -311,42 +311,45 @@ const Transactions = () => {
   const approvalRate = summary && summary.total_count > 0
     ? ((summary.approved_count / summary.total_count) * 100).toFixed(1) : "0";
 
-  // Lookup merchant names from nmi_boarding_submissions + accounts
-  const { data: boardingData } = useQuery({
-    queryKey: ["nmi-boarding-lookup"],
+  // Lookup merchant names from CRM accounts first, then NMI boarding fallbacks
+  const { data: merchantDirectory } = useQuery({
+    queryKey: ["merchant-directory"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("nmi_boarding_submissions")
-        .select("nmi_gateway_id, company_name, dba_name, account_id");
-      if (!data) return [];
-      // Fetch account names separately for linked accounts
-      const accountIds = data.map(b => b.account_id).filter(Boolean) as string[];
-      const accountMap: Record<string, string> = {};
-      if (accountIds.length > 0) {
-        const { data: accounts } = await supabase
+      const [{ data: accounts }, { data: boardings }] = await Promise.all([
+        supabase
           .from("accounts")
-          .select("id, name")
-          .in("id", accountIds);
-        for (const a of accounts || []) {
-          accountMap[a.id] = a.name;
+          .select("nmi_merchant_id, name")
+          .not("nmi_merchant_id", "is", null),
+        supabase
+          .from("nmi_boarding_submissions")
+          .select("nmi_gateway_id, company_name, dba_name"),
+      ]);
+
+      const map: Record<string, string> = {};
+
+      for (const account of accounts || []) {
+        const merchantId = account.nmi_merchant_id?.trim();
+        const merchantName = account.name?.trim();
+        if (merchantId && merchantName) {
+          map[merchantId] = merchantName;
         }
       }
-      return data.map(b => ({ ...b, account_name: b.account_id ? accountMap[b.account_id] : null }));
+
+      for (const boarding of boardings || []) {
+        const merchantId = boarding.nmi_gateway_id?.trim();
+        const merchantName = boarding.dba_name?.trim() || boarding.company_name?.trim() || "";
+        if (merchantId && merchantName && !map[merchantId]) {
+          map[merchantId] = merchantName;
+        }
+      }
+
+      return map;
     },
     staleTime: 10 * 60 * 1000,
   });
 
-  const merchantNames = useMemo(() => {
-    const map: Record<string, string> = {};
-    for (const b of boardingData || []) {
-      if (b.nmi_gateway_id) {
-        map[b.nmi_gateway_id] = b.account_name || b.dba_name || b.company_name || b.nmi_gateway_id;
-      }
-    }
-    return map;
-  }, [boardingData]);
-
-  const getMerchantLabel = (id: string) => merchantNames[id] || id;
+  const merchantNames = merchantDirectory || {};
+  const getMerchantLabel = useCallback((id: string) => merchantNames[id] || id, [merchantNames]);
 
   // CSV export
   const exportCSV = useCallback(() => {
