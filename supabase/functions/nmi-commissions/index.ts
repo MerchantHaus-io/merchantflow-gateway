@@ -81,9 +81,32 @@ serve(async (req) => {
         throw new Error(extractError(parsed) || `NMI API returned HTTP ${response.status}`);
       }
 
-      const pageResults = Array.isArray(parsed?.results) ? parsed.results : [];
+      // Log raw response structure for debugging
+      if (pageCount === 0 && parsed) {
+        const topKeys = Object.keys(parsed);
+        console.log("NMI commission response top-level keys:", topKeys);
+        // Log first result's keys to understand field mapping
+        const firstResult = Array.isArray(parsed?.results) ? parsed.results[0]
+          : Array.isArray(parsed?.data) ? parsed.data[0]
+          : Array.isArray(parsed?.commissions) ? parsed.commissions[0]
+          : Array.isArray(parsed?.records) ? parsed.records[0]
+          : null;
+        if (firstResult) {
+          console.log("NMI commission first record keys:", Object.keys(firstResult));
+          console.log("NMI commission first record sample:", JSON.stringify(firstResult).substring(0, 1000));
+        } else {
+          console.log("NMI commission raw response (first 500 chars):", JSON.stringify(parsed).substring(0, 500));
+        }
+      }
+
+      // Try multiple possible array field names
+      const pageResults = Array.isArray(parsed?.results) ? parsed.results
+        : Array.isArray(parsed?.data) ? parsed.data
+        : Array.isArray(parsed?.commissions) ? parsed.commissions
+        : Array.isArray(parsed?.records) ? parsed.records
+        : [];
       results.push(...pageResults);
-      totalResults = toNumber(parsed?.totalResults) || results.length;
+      totalResults = toNumber(parsed?.totalResults ?? parsed?.total_results ?? parsed?.total) || results.length;
       hasMore = Boolean(parsed?.hasMore) && pageResults.length > 0;
       offset += pageResults.length;
       pageCount++;
