@@ -209,9 +209,11 @@ const LiveAccountDetail = () => {
     enabled: !!accountId,
   });
 
-  const accountGatewayIds = (boardingSubmissions || [])
-    .map((s: any) => s.nmi_gateway_id)
-    .filter(Boolean) as string[];
+  // Combine gateway IDs from boarding submissions AND account-level merchant ID
+  const accountGatewayIds = [
+    ...(boardingSubmissions || []).map((s: any) => s.nmi_gateway_id).filter(Boolean),
+    ...(account?.nmi_merchant_id ? [account.nmi_merchant_id] : []),
+  ].filter((v, i, a) => a.indexOf(v) === i) as string[];
 
   const getInitials = (name: string) =>
     name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -426,6 +428,9 @@ const LiveAccountDetail = () => {
               </CardHeader>
               <CardContent className="pt-0 space-y-1">
                 <InfoRow icon={Building2} label="Business Name" value={account?.name} />
+                {account?.nmi_merchant_id && (
+                  <InfoRow icon={CreditCard} label="NMI Merchant ID" value={account.nmi_merchant_id} />
+                )}
                 <InfoRow icon={Globe} label="Website" value={account?.website} href={account?.website ? (account.website.startsWith("http") ? account.website : `https://${account.website}`) : undefined} />
                 {address && <InfoRow icon={MapPin} label="Address" value={address} />}
                 <Separator className="my-2" />
@@ -653,6 +658,7 @@ const LiveAccountDetail = () => {
               <NMITransactionsPanel
                 gatewayIds={accountGatewayIds}
                 accountName={account?.name}
+                merchantId={account?.nmi_merchant_id}
               />
             </div>
           )}

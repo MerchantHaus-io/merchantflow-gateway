@@ -41,6 +41,7 @@ interface GatewayResult {
 interface NMITransactionsPanelProps {
   gatewayIds: string[];
   accountName?: string;
+  merchantId?: string | null;
 }
 
 type DatePreset = "30d" | "7d" | "60d" | "90d" | "this_month" | "last_month";
