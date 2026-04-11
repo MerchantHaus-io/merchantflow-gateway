@@ -19,7 +19,7 @@ interface QualifiedRequest {
   custom_subject?: string;
 }
 
-const MERCHANT_APPLY_URL = "https://ops-terminal.lovable.app/merchant-apply";
+const MERCHANT_APPLY_BASE = "https://ops-terminal.lovable.app/merchant-apply";
 
 const buildDocsRequestHtml = (firstName: string, accountName: string, missingDocs?: string[]): string => {
   const docListHtml = missingDocs && missingDocs.length > 0
