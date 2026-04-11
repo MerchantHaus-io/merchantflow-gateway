@@ -267,10 +267,15 @@ const LiveBilling = () => {
                   className="border-amber-400/30 dark:border-amber-500/20 bg-gradient-to-br from-amber-50/50 to-background dark:from-amber-950/20 dark:to-background cursor-pointer hover:shadow-md transition-all"
                 >
                   <CardContent className="p-4 space-y-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <h3 className="font-semibold text-sm text-foreground truncate">
-                        {g.account?.name || "Unknown"}
-                      </h3>
+                     <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-sm text-foreground truncate">
+                          {g.account?.name || "Unknown"}
+                        </h3>
+                        {g.account?.nmi_merchant_id && (
+                          <span className="text-[10px] font-mono text-muted-foreground">MID: {g.account.nmi_merchant_id}</span>
+                        )}
+                      </div>
                       <PipelineBadges pipelines={g.pipelines} />
                     </div>
                     <p className="text-xs text-muted-foreground">
