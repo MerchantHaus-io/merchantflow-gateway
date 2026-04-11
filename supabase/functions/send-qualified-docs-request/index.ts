@@ -19,9 +19,12 @@ interface QualifiedRequest {
   custom_subject?: string;
 }
 
-const MERCHANT_APPLY_URL = "https://ops-terminal.lovable.app/merchant-apply";
+const MERCHANT_APPLY_BASE = "https://ops-terminal.lovable.app/merchant-apply";
 
-const buildDocsRequestHtml = (firstName: string, accountName: string, missingDocs?: string[]): string => {
+const buildDocsRequestHtml = (firstName: string, accountName: string, opportunityId?: string, missingDocs?: string[]): string => {
+  const applyUrl = opportunityId
+    ? `${MERCHANT_APPLY_BASE}?opp_id=${encodeURIComponent(opportunityId)}&utm_source=email&utm_medium=docs_request&utm_campaign=qualified`
+    : MERCHANT_APPLY_BASE;
   const docListHtml = missingDocs && missingDocs.length > 0
     ? missingDocs.map(d => `<li>${d}</li>`).join("\n")
     : `<li>3 months of recent bank statements</li>
@@ -65,7 +68,7 @@ const buildDocsRequestHtml = (firstName: string, accountName: string, missingDoc
       </ul>
       <p>Please complete our secure merchant application form to upload your documents and provide the required business details:</p>
       <p style="text-align: center;">
-        <a href="${MERCHANT_APPLY_URL}" class="cta">Complete Merchant Application</a>
+        <a href="${applyUrl}" class="cta">Complete Merchant Application</a>
       </p>
       <p>If you have any questions about the required documents or the application process, don't hesitate to reach out to us at <a href="mailto:sales@merchanthaus.io">sales@merchanthaus.io</a>.</p>
       <p style="margin-top: 24px;">Kind regards,<br><strong>The Merchant Haus Team</strong></p>
@@ -102,7 +105,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const finalSubject = (custom_subject || `Action Required — Complete Your Merchant Application — ${account_name}`).replace(/[\r\n]+/g, " ").trim();
-    const finalHtml = custom_html || buildDocsRequestHtml(contact_first_name || "there", account_name, missing_documents);
+    const finalHtml = custom_html || buildDocsRequestHtml(contact_first_name || "there", account_name, opportunity_id, missing_documents);
 
     console.log(`Sending docs request email to ${contact_email} for opportunity ${opportunity_id}`);
 
