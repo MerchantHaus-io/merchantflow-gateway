@@ -105,7 +105,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const finalSubject = (custom_subject || `Action Required — Complete Your Merchant Application — ${account_name}`).replace(/[\r\n]+/g, " ").trim();
-    const finalHtml = custom_html || buildDocsRequestHtml(contact_first_name || "there", account_name, missing_documents);
+    const finalHtml = custom_html || buildDocsRequestHtml(contact_first_name || "there", account_name, opportunity_id, missing_documents);
 
     console.log(`Sending docs request email to ${contact_email} for opportunity ${opportunity_id}`);
 
