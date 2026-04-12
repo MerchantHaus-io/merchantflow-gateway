@@ -428,6 +428,29 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
 
   // isGatewayCard moved above iconRailItems useMemo
 
+  const [portalAccessLoading, setPortalAccessLoading] = useState(false);
+
+  const handleViewPortalAccount = useCallback(async () => {
+    if (!opportunity?.portal_merchant_id) return;
+    setPortalAccessLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-portal-access", {
+        body: { portal_merchant_id: opportunity.portal_merchant_id },
+      });
+      if (error) throw error;
+      if (data?.access_url) {
+        window.open(data.access_url, "_blank");
+        toast.success("Portal access link opened");
+      } else {
+        toast.error(data?.error || "Failed to generate access link");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to access portal");
+    } finally {
+      setPortalAccessLoading(false);
+    }
+  }, [opportunity?.portal_merchant_id]);
+
   const handleDownloadDetails = useCallback(() => {
     if (!opportunity) return;
 
