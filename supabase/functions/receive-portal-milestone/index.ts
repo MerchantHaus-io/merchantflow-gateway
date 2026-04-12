@@ -28,6 +28,8 @@ Deno.serve(async (req) => {
     switch (payload.event) {
       case "merchant_registered":
         return await handleRegistered(payload, supabase);
+      case "application_progress":
+        return await handleProgress(payload, supabase);
       case "application_submitted":
         return await handleSubmitted(payload, supabase);
       case "documents_complete":
