@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Opportunity, STAGE_CONFIG, Account, Contact, getServiceType, EMAIL_TO_USER, TEAM_MEMBERS, OpportunityStage, PROCESSING_PIPELINE_STAGES, GATEWAY_ONLY_PIPELINE_STAGES, OutcomeStatus, OUTCOME_CONFIG } from "@/types/opportunity";
 import { OutcomeSelector } from "./OutcomeSelector";
-import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, Zap, CreditCard, Maximize2, Minimize2, Loader2, Wand2, RotateCcw, Eye, Check } from "lucide-react";
+import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, Zap, CreditCard, Maximize2, Minimize2, Loader2, Wand2, RotateCcw, Eye, Check, ExternalLink } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -427,6 +427,29 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   };
 
   // isGatewayCard moved above iconRailItems useMemo
+
+  const [portalAccessLoading, setPortalAccessLoading] = useState(false);
+
+  const handleViewPortalAccount = useCallback(async () => {
+    if (!opportunity?.portal_merchant_id) return;
+    setPortalAccessLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-portal-access", {
+        body: { portal_merchant_id: opportunity.portal_merchant_id },
+      });
+      if (error) throw error;
+      if (data?.access_url) {
+        window.open(data.access_url, "_blank");
+        toast.success("Portal access link opened");
+      } else {
+        toast.error(data?.error || "Failed to generate access link");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to access portal");
+    } finally {
+      setPortalAccessLoading(false);
+    }
+  }, [opportunity?.portal_merchant_id]);
 
   const handleDownloadDetails = useCallback(() => {
     if (!opportunity) return;
@@ -1143,6 +1166,24 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                       </Tooltip>
                     )}
                     
+                    {/* View Portal Account — admin only, portal merchants only */}
+                    {isAdmin && opportunity.portal_merchant_id && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={handleViewPortalAccount}
+                            disabled={portalAccessLoading}
+                          >
+                            {portalAccessLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>View Portal Account</TooltipContent>
+                      </Tooltip>
+                    )}
+
                     {/* Download Details */}
                     <Tooltip>
                       <TooltipTrigger asChild>

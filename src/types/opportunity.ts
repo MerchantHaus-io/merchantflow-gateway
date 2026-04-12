@@ -53,6 +53,8 @@ export interface Opportunity {
   stage: OpportunityStage;
   status?: 'active' | 'dead';
   service_type?: ServiceType;
+  source?: string | null;
+  portal_merchant_id?: string | null;
   referral_source?: string;
   username?: string;
   processing_services?: string[];
