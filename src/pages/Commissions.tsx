@@ -204,9 +204,12 @@ export default function Commissions() {
             <Button variant="outline" size="sm" onClick={exportCSV} disabled={!records?.length}>
               <Download className="h-4 w-4 mr-1" /> Export
             </Button>
-            <Button size="sm" onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending}>
+            <Button size="sm" onClick={() => syncMutation.mutate({})} disabled={syncMutation.isPending}>
               <RefreshCw className={`h-4 w-4 mr-1 ${syncMutation.isPending ? "animate-spin" : ""}`} />
-              {syncMutation.isPending ? "Syncing…" : "Sync from NMI"}
+              {syncMutation.isPending ? "Syncing…" : "Sync"}
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => syncMutation.mutate({ forceSync: true })} disabled={syncMutation.isPending}>
+              Force Sync
             </Button>
           </div>
         </div>
