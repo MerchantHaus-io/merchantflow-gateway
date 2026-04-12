@@ -686,15 +686,20 @@ export default function WebSubmissions() {
     <AppLayout pageTitle="Web Submissions">
       <div className="p-6 space-y-6">
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Incoming Applications</CardTitle>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant={sourceFilter === "all" ? "default" : "outline"} onClick={() => setSourceFilter("all")}>All</Button>
+              <Button size="sm" variant={sourceFilter === "web_form" ? "default" : "outline"} onClick={() => setSourceFilter("web_form")}>Web Form</Button>
+              <Button size="sm" variant={sourceFilter === "merchant_portal" ? "default" : "outline"} onClick={() => setSourceFilter("merchant_portal")}>Portal</Button>
+            </div>
           </CardHeader>
           <CardContent>
             {isLoading ? (
               <div className="flex justify-center p-8">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
-            ) : apps.length === 0 ? (
+            ) : filteredApps.length === 0 ? (
               <div className="text-center p-8 text-muted-foreground">
                 No submissions found.
               </div>
@@ -704,6 +709,7 @@ export default function WebSubmissions() {
                    <TableRow>
                       <TableHead>Date</TableHead>
                       <TableHead>Business Name</TableHead>
+                      <TableHead>Source</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead>Contact</TableHead>
                       <TableHead>Volume</TableHead>
