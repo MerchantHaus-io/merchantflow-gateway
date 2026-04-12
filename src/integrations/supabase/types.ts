@@ -376,8 +376,10 @@ export type Database = {
           owner_title: string | null
           owner_zip: string | null
           phone: string | null
+          portal_merchant_id: string | null
           products: string | null
           service_type: string | null
+          source: string | null
           state: string | null
           state_of_incorporation: string | null
           status: string | null
@@ -422,8 +424,10 @@ export type Database = {
           owner_title?: string | null
           owner_zip?: string | null
           phone?: string | null
+          portal_merchant_id?: string | null
           products?: string | null
           service_type?: string | null
+          source?: string | null
           state?: string | null
           state_of_incorporation?: string | null
           status?: string | null
@@ -468,8 +472,10 @@ export type Database = {
           owner_title?: string | null
           owner_zip?: string | null
           phone?: string | null
+          portal_merchant_id?: string | null
           products?: string | null
           service_type?: string | null
+          source?: string | null
           state?: string | null
           state_of_incorporation?: string | null
           status?: string | null
@@ -1966,10 +1972,12 @@ export type Database = {
           outcome_notes: string | null
           outcome_reason: string | null
           outcome_status: string | null
+          portal_merchant_id: string | null
           processing_services: string[] | null
           referral_source: string | null
           service_type: string | null
           sla_status: string | null
+          source: string | null
           stage: string
           stage_entered_at: string | null
           status: string | null
@@ -1991,10 +1999,12 @@ export type Database = {
           outcome_notes?: string | null
           outcome_reason?: string | null
           outcome_status?: string | null
+          portal_merchant_id?: string | null
           processing_services?: string[] | null
           referral_source?: string | null
           service_type?: string | null
           sla_status?: string | null
+          source?: string | null
           stage?: string
           stage_entered_at?: string | null
           status?: string | null
@@ -2016,10 +2026,12 @@ export type Database = {
           outcome_notes?: string | null
           outcome_reason?: string | null
           outcome_status?: string | null
+          portal_merchant_id?: string | null
           processing_services?: string[] | null
           referral_source?: string | null
           service_type?: string | null
           sla_status?: string | null
+          source?: string | null
           stage?: string
           stage_entered_at?: string | null
           status?: string | null
