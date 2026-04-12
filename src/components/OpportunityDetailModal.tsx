@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Opportunity, STAGE_CONFIG, Account, Contact, getServiceType, EMAIL_TO_USER, TEAM_MEMBERS, OpportunityStage, PROCESSING_PIPELINE_STAGES, GATEWAY_ONLY_PIPELINE_STAGES, OutcomeStatus, OUTCOME_CONFIG } from "@/types/opportunity";
 import { OutcomeSelector } from "./OutcomeSelector";
-import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, Zap, CreditCard, Maximize2, Minimize2, Loader2, Wand2, RotateCcw, Eye, Check } from "lucide-react";
+import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, Zap, CreditCard, Maximize2, Minimize2, Loader2, Wand2, RotateCcw, Eye, Check, ExternalLink } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
