@@ -181,7 +181,7 @@ export const DocumentsTab = ({ opportunityId, serviceType }: DocumentsTabProps) 
     } catch (err: any) {
       toast.error(err?.message || "Failed to load email preview");
     }
-  }, [opportunityId, documents]);
+  }, [opportunityId, documents, serviceType]);
 
   const handleSendEmail = useCallback(async ({ subject, bodyHtml }: { subject: string; bodyHtml: string }) => {
     if (!emailPreviewData) return;
