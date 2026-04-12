@@ -126,6 +126,7 @@ export default function WebSubmissions() {
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
   const [isAssigning, setIsAssigning] = useState(false);
   const [isDownloading, setIsDownloading] = useState<string | null>(null);
+  const [sourceFilter, setSourceFilter] = useState<"all" | "web_form" | "merchant_portal">("all");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -657,6 +658,14 @@ export default function WebSubmissions() {
     }
   };
 
+  const getSourceBadge = (app: Application) => {
+    const source = (app as any).source;
+    if (source === "merchant_portal") {
+      return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/40">Portal</Badge>;
+    }
+    return <Badge variant="outline" className="text-muted-foreground">Web Form</Badge>;
+  };
+
   const getTypeBadge = (app: Application) => {
     if (isDocSubmission(app)) {
       return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/40">Docs Only</Badge>;
@@ -667,19 +676,30 @@ export default function WebSubmissions() {
     return <Badge className="bg-primary/20 text-primary border-primary/40">Processing</Badge>;
   };
 
+  const filteredApps = apps.filter((app) => {
+    if (sourceFilter === "all") return true;
+    const source = (app as any).source || "web_form";
+    return source === sourceFilter;
+  });
+
   return (
     <AppLayout pageTitle="Web Submissions">
       <div className="p-6 space-y-6">
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Incoming Applications</CardTitle>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant={sourceFilter === "all" ? "default" : "outline"} onClick={() => setSourceFilter("all")}>All</Button>
+              <Button size="sm" variant={sourceFilter === "web_form" ? "default" : "outline"} onClick={() => setSourceFilter("web_form")}>Web Form</Button>
+              <Button size="sm" variant={sourceFilter === "merchant_portal" ? "default" : "outline"} onClick={() => setSourceFilter("merchant_portal")}>Portal</Button>
+            </div>
           </CardHeader>
           <CardContent>
             {isLoading ? (
               <div className="flex justify-center p-8">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
-            ) : apps.length === 0 ? (
+            ) : filteredApps.length === 0 ? (
               <div className="text-center p-8 text-muted-foreground">
                 No submissions found.
               </div>
@@ -689,6 +709,7 @@ export default function WebSubmissions() {
                    <TableRow>
                       <TableHead>Date</TableHead>
                       <TableHead>Business Name</TableHead>
+                      <TableHead>Source</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead>Contact</TableHead>
                       <TableHead>Volume</TableHead>
@@ -698,13 +719,16 @@ export default function WebSubmissions() {
                    </TableRow>
                  </TableHeader>
                 <TableBody>
-                  {apps.map((app) => (
+                  {filteredApps.map((app) => (
                     <TableRow key={app.id}>
                       <TableCell>
                         {new Date(app.created_at).toLocaleDateString()}
                       </TableCell>
                        <TableCell className="font-medium">
                          {app.company_name || app.dba_name || app.full_name || "Untitled"}
+                       </TableCell>
+                       <TableCell>
+                         {getSourceBadge(app)}
                        </TableCell>
                        <TableCell>
                          {getTypeBadge(app)}
