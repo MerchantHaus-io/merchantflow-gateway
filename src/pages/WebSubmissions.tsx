@@ -719,13 +719,16 @@ export default function WebSubmissions() {
                    </TableRow>
                  </TableHeader>
                 <TableBody>
-                  {apps.map((app) => (
+                  {filteredApps.map((app) => (
                     <TableRow key={app.id}>
                       <TableCell>
                         {new Date(app.created_at).toLocaleDateString()}
                       </TableCell>
                        <TableCell className="font-medium">
                          {app.company_name || app.dba_name || app.full_name || "Untitled"}
+                       </TableCell>
+                       <TableCell>
+                         {getSourceBadge(app)}
                        </TableCell>
                        <TableCell>
                          {getTypeBadge(app)}
