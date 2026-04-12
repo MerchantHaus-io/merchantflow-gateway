@@ -7,7 +7,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const NMI_V4_BASE = "https://secure.nmi.com/api/v4";
 const NMI_GATEWAY_BASE = "https://merchanthausio.transactiongateway.com";
 const MAX_PER_PAGE = 1000;
 
@@ -54,8 +53,8 @@ serve(async (req) => {
 
     console.log(`Commission sync for ${requestMonth}/${requestYear} (${startDate} → ${endDate})`);
 
-    // ── Step 1: Fetch merchant roster from NMI v4 ──
-    const rosterRes = await fetch(`${NMI_V4_BASE}/merchants`, {
+    // ── Step 1: Fetch merchant roster from v3 Boarding API ──
+    const rosterRes = await fetch(`${NMI_GATEWAY_BASE}/api/v3/affiliate/gateways`, {
       headers: { Authorization: nmiApiKey, Accept: "application/json" },
     });
     const rosterText = await rosterRes.text();
@@ -63,42 +62,49 @@ serve(async (req) => {
     try { rosterParsed = JSON.parse(rosterText); } catch { /* ignore */ }
 
     const merchantsRaw = Array.isArray(rosterParsed) ? rosterParsed
-      : rosterParsed?.merchants ?? rosterParsed?.data ?? [];
+      : rosterParsed?.gateways ?? rosterParsed?.data ?? [];
 
-    // Build name map: merchantId → company name
+    // Build name map: gatewayId → company name
     const nameMap = new Map<string, string>();
     for (const m of merchantsRaw) {
-      const mid = String(m.merchant_id ?? m.id ?? "");
-      const name = String(m.company_name ?? m.company ?? m.dba_name ?? m.name ?? "");
+      const mid = String(m.id ?? m.gateway_id ?? m.merchant_id ?? "");
+      const name = String(m.company ?? m.company_name ?? m.dba_name ?? m.name ?? "");
       if (mid) nameMap.set(mid, name);
     }
     console.log(`Merchant roster: ${nameMap.size} merchants loaded`);
 
-    // ── Step 2: Fetch transaction data from v4 reporting API ──
-    const merchantIds = [...nameMap.keys()];
-    const txnPayload: any = {
-      start_date: startDate,
-      end_date: endDate,
-      report_type: "summary",
-      merchant_id: merchantIds,
-    };
+    // ── Step 2: Fetch transaction data ──
+    // The Query API uses merchant-level keys, so we use the v3 affiliate reporting
+    // or fall back to per-merchant queries if we have their keys.
+    // For now, try the affiliate-level transaction query.
+    const allTxns: any[] = [];
 
-    // Try v4 transaction reports for aggregated data
-    const txnRes = await fetch(`${NMI_V4_BASE}/transactions/reports`, {
-      method: "POST",
-      headers: {
-        Authorization: nmiApiKey,
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify(txnPayload),
-    });
+    // Try getting aggregate data from each merchant's gateway via affiliate API
+    for (const [mid] of nameMap) {
+      try {
+        const detailRes = await fetch(`${NMI_GATEWAY_BASE}/api/v3/affiliate/gateways/${mid}`, {
+          headers: { Authorization: nmiApiKey, Accept: "application/json" },
+        });
+        if (detailRes.ok) {
+          const detail = await detailRes.json();
+          // Extract any transaction/volume data from gateway detail
+          if (detail.transaction_count || detail.volume || detail.total_transactions) {
+            allTxns.push({
+              merchant_id: mid,
+              transaction_count: detail.transaction_count || detail.total_transactions || 0,
+              volume: detail.volume || detail.total_volume || 0,
+              fees: detail.fees || detail.total_fees || 0,
+            });
+          }
+        } else {
+          await detailRes.text(); // consume body
+        }
+      } catch {
+        // Skip individual merchant errors
+      }
+    }
 
-    const txnText = await txnRes.text();
-    let txnParsed: any = null;
-    try { txnParsed = JSON.parse(txnText); } catch { /* ignore */ }
-
-    console.log(`Transaction report status: ${txnRes.status}, keys: ${txnParsed ? Object.keys(txnParsed).join(",") : "none"}`);
+    console.log(`Gateway detail data: ${allTxns.length} merchants with data`);
 
     // Parse individual transactions and aggregate per merchant
     const allTxns: any[] = [];
