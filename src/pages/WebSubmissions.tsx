@@ -126,6 +126,7 @@ export default function WebSubmissions() {
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
   const [isAssigning, setIsAssigning] = useState(false);
   const [isDownloading, setIsDownloading] = useState<string | null>(null);
+  const [sourceFilter, setSourceFilter] = useState<"all" | "web_form" | "merchant_portal">("all");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -657,6 +658,14 @@ export default function WebSubmissions() {
     }
   };
 
+  const getSourceBadge = (app: Application) => {
+    const source = (app as any).source;
+    if (source === "merchant_portal") {
+      return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/40">Portal</Badge>;
+    }
+    return <Badge variant="outline" className="text-muted-foreground">Web Form</Badge>;
+  };
+
   const getTypeBadge = (app: Application) => {
     if (isDocSubmission(app)) {
       return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/40">Docs Only</Badge>;
@@ -666,6 +675,12 @@ export default function WebSubmissions() {
     }
     return <Badge className="bg-primary/20 text-primary border-primary/40">Processing</Badge>;
   };
+
+  const filteredApps = apps.filter((app) => {
+    if (sourceFilter === "all") return true;
+    const source = (app as any).source || "web_form";
+    return source === sourceFilter;
+  });
 
   return (
     <AppLayout pageTitle="Web Submissions">
