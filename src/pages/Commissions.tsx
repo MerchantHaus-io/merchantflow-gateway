@@ -125,15 +125,20 @@ export default function Commissions() {
 
   // Sync mutation
   const syncMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (forceSync = false) => {
       const { data, error } = await supabase.functions.invoke("nmi-commissions", {
-        body: { month: selMonth, year: selYear, persist: true },
+        body: { month: selMonth, year: selYear, persist: true, force: forceSync },
       });
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      toast.success(`Commission data synced for ${format(new Date(selYear, selMonth - 1), "MMM yyyy")}`);
+    onSuccess: (data: any) => {
+      const cached = data?.cached;
+      if (cached) {
+        toast.info(`Using cached data from ${new Date(data.last_synced).toLocaleString()}. Use Force Sync to refresh.`);
+      } else {
+        toast.success(`Commission data synced for ${format(new Date(selYear, selMonth - 1), "MMM yyyy")} (${data?.sync_duration_ms ?? 0}ms)`);
+      }
       queryClient.invalidateQueries({ queryKey: ["commission-periods"] });
       queryClient.invalidateQueries({ queryKey: ["commission-records"] });
     },
