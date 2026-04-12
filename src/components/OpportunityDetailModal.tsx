@@ -1255,7 +1255,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
               )}
 
               {activeSection === 'documents' && (
-                <DocumentsTab opportunityId={opportunity.id} />
+                <DocumentsTab opportunityId={opportunity.id} serviceType={opportunity.service_type} />
               )}
 
               {activeSection === 'details' && (

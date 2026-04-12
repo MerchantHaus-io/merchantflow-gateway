@@ -78,13 +78,22 @@ function formatFileSize(bytes: number | null): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+/** Gateway-only required doc types */
+const GATEWAY_DOC_TYPES = [
+  "Voided Check / Bank Confirmation Letter",
+  "VAR/Tear Sheet",
+];
+
 /** Determine which document types are missing */
-function getMissingDocuments(docs: Document[]): string[] {
+function getMissingDocuments(docs: Document[], serviceType?: string): string[] {
   const counts = getLabelCounts(docs);
   const missing: string[] = [];
-  for (const type of DOCUMENT_TYPE_OPTIONS) {
+  const isGateway = serviceType === "gateway_only";
+  const requiredTypes = isGateway ? GATEWAY_DOC_TYPES : DOCUMENT_TYPE_OPTIONS;
+
+  for (const type of requiredTypes) {
     if (NON_MANDATORY_DOC_TYPES.includes(type)) continue;
-    const min = type === "Bank Statement" || type === "Transaction History" ? 3 : 1;
+    const min = !isGateway && (type === "Bank Statement" || type === "Transaction History") ? 3 : 1;
     const current = counts[type] || 0;
     if (current < min) {
       missing.push(type + (min > 1 ? ` (${current}/${min})` : ""));
@@ -95,9 +104,10 @@ function getMissingDocuments(docs: Document[]): string[] {
 
 interface DocumentsTabProps {
   opportunityId: string;
+  serviceType?: string;
 }
 
-export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
+export const DocumentsTab = ({ opportunityId, serviceType }: DocumentsTabProps) => {
   const { user } = useAuth();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -155,7 +165,7 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
         return;
       }
 
-      const missingDocs = getMissingDocuments(documents);
+      const missingDocs = getMissingDocuments(documents, serviceType);
       const firstName = contact.first_name || "there";
       const accountName = account?.name || "Your Account";
 
@@ -171,7 +181,7 @@ export const DocumentsTab = ({ opportunityId }: DocumentsTabProps) => {
     } catch (err: any) {
       toast.error(err?.message || "Failed to load email preview");
     }
-  }, [opportunityId, documents]);
+  }, [opportunityId, documents, serviceType]);
 
   const handleSendEmail = useCallback(async ({ subject, bodyHtml }: { subject: string; bodyHtml: string }) => {
     if (!emailPreviewData) return;
