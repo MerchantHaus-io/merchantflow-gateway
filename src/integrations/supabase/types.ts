@@ -1198,6 +1198,48 @@ export type Database = {
           },
         ]
       }
+      commission_sync_logs: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          merchant_count: number
+          period_month: number
+          period_year: number
+          raw_response: Json | null
+          source_api: string
+          status: string
+          triggered_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          merchant_count?: number
+          period_month: number
+          period_year: number
+          raw_response?: Json | null
+          source_api?: string
+          status?: string
+          triggered_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          merchant_count?: number
+          period_month?: number
+          period_year?: number
+          raw_response?: Json | null
+          source_api?: string
+          status?: string
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
       contacts: {
         Row: {
           account_id: string
