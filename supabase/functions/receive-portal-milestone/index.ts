@@ -75,20 +75,64 @@ async function handleSubmitted(payload: any, supabase: any) {
 
   let applicationId = existing?.id;
 
+  const firstPrincipal = (payload.principals || [])[0] || {};
+
   const appData = {
     source: "merchant_portal",
     portal_merchant_id: payload.portal_merchant_id,
+    status: "submitted",
+    underwriting_status: "pending",
+
+    // Contact
     full_name: `${payload.contact_first} ${payload.contact_last}`,
     email: payload.contact_email,
     phone: payload.contact_phone,
+
+    // Business profile
     company_name: payload.business_name,
     dba_name: payload.trading_name,
     service_type: payload.service_type,
-    status: "submitted",
-    underwriting_status: "pending",
     monthly_volume: payload.monthly_volume_range,
     business_structure: payload.business_type,
     federal_tax_id: payload.tax_id_masked,
+    current_processor: payload.current_processor || null,
+    website: payload.website || null,
+    nature_of_business: payload.business_description || null,
+    avg_ticket: payload.avg_txn_range || null,
+    high_ticket: payload.high_ticket || null,
+    products: payload.product_description || null,
+
+    // Legal
+    legal_name: payload.legal_entity_name || null,
+    state_of_incorporation: payload.state_incorporated || null,
+    date_established: payload.business_formation_date || null,
+
+    // DBA address → primary address
+    address: payload.dba_address_line1 || null,
+    address2: payload.dba_address_line2 || null,
+    city: payload.dba_city || null,
+    state: payload.dba_state || null,
+    zip: payload.dba_zip || null,
+
+    // Processing profile
+    in_person_percent: payload.swiped_pct || null,
+    keyed_percent: payload.keyed_pct || null,
+    ecommerce_percent: payload.ecommerce_pct || null,
+
+    // Owner from first principal
+    owner_name: firstPrincipal.first_name
+      ? `${firstPrincipal.first_name} ${firstPrincipal.last_name}`
+      : null,
+    owner_title: firstPrincipal.title || null,
+    owner_dob: firstPrincipal.dob || null,
+    owner_ssn_last4: firstPrincipal.id_number_masked || null,
+    owner_address: firstPrincipal.address || null,
+
+    // Submission timestamp
+    submitted_at: payload.submitted_at || new Date().toISOString(),
+
+    // Full unabridged payload — never lose data
+    raw_portal_data: payload,
   };
 
   if (!applicationId) {
@@ -188,17 +232,48 @@ async function handleSubmitted(payload: any, supabase: any) {
     .eq("portal_merchant_id", payload.portal_merchant_id)
     .maybeSingle();
 
+  let opportunityId: string | null = existingOpp?.id || null;
+
   if (!existingOpp) {
-    await supabase.from("opportunities").insert({
-      portal_merchant_id: payload.portal_merchant_id,
-      source: "merchant_portal",
-      account_id: accountId,
-      contact_id: contactId,
-      stage: "Application Received",
-      service_type: payload.service_type,
-      sic_mcc_code: payload.mcc_code,
-      assigned_to: null,
-    });
+    const { data: newOpp } = await supabase
+      .from("opportunities")
+      .insert({
+        portal_merchant_id: payload.portal_merchant_id,
+        source: "merchant_portal",
+        account_id: accountId,
+        contact_id: contactId,
+        stage: "Application Received",
+        service_type: payload.service_type,
+        sic_mcc_code: payload.mcc_code,
+        assigned_to: null,
+      })
+      .select("id")
+      .single();
+    opportunityId = newOpp?.id || null;
+  }
+
+  // 5. Insert beneficial owners from principals (idempotent on name + opportunity)
+  if (opportunityId && payload.principals?.length) {
+    for (const p of payload.principals) {
+      const fullName = `${p.first_name} ${p.last_name}`;
+      const { data: existingOwner } = await supabase
+        .from("beneficial_owners")
+        .select("id")
+        .eq("opportunity_id", opportunityId)
+        .eq("full_name", fullName)
+        .maybeSingle();
+
+      if (!existingOwner) {
+        await supabase.from("beneficial_owners").insert({
+          opportunity_id: opportunityId,
+          full_name: fullName,
+          title: p.title || null,
+          ownership_percentage: p.ownership_pct || 0,
+          date_of_birth: p.dob || null,
+          address_line1: p.address || null,
+        });
+      }
+    }
   }
 
   return json({ ok: true, application_id: applicationId });
