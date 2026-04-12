@@ -335,7 +335,7 @@ export default function Commissions() {
             <div className="p-12 text-center">
               <DollarSign className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
               <p className="text-sm text-muted-foreground mb-4">No commission data for {format(new Date(selYear, selMonth - 1), "MMMM yyyy")}</p>
-              <Button size="sm" onClick={() => syncMutation.mutate()} disabled={syncMutation.isPending}>
+              <Button size="sm" onClick={() => syncMutation.mutate({})} disabled={syncMutation.isPending}>
                 <RefreshCw className={`h-4 w-4 mr-1 ${syncMutation.isPending ? "animate-spin" : ""}`} />
                 Sync Now
               </Button>
