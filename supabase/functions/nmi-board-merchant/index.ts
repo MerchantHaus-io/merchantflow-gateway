@@ -196,6 +196,37 @@ serve(async (req) => {
       savedSubmission = data;
     }
 
+    // Portal writeback — if this boarding is linked to a portal merchant, push gateway ID back
+    if (nmiSuccess && gatewayId && account_id) {
+      try {
+        const portalUrl = Deno.env.get("PORTAL_SUPABASE_URL");
+        const portalKey = Deno.env.get("PORTAL_SERVICE_ROLE_KEY");
+        if (portalUrl && portalKey) {
+          const { data: opp } = await supabaseAdmin
+            .from("opportunities")
+            .select("portal_merchant_id")
+            .eq("account_id", account_id)
+            .not("portal_merchant_id", "is", null)
+            .maybeSingle();
+
+          if (opp?.portal_merchant_id) {
+            const { createClient: createPortalClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+            const portalSupabase = createPortalClient(portalUrl, portalKey);
+            await portalSupabase
+              .from("merchants")
+              .update({
+                nmi_gateway_id: gatewayId,
+                mid: `MH-${gatewayId}`,
+              })
+              .eq("id", opp.portal_merchant_id);
+            console.log(`Portal writeback: gateway ${gatewayId} → merchant ${opp.portal_merchant_id}`);
+          }
+        }
+      } catch (portalErr) {
+        console.warn("Portal writeback failed (non-blocking):", portalErr);
+      }
+    }
+
     return new Response(JSON.stringify({
       success: nmiSuccess,
       gateway_id: gatewayId,
