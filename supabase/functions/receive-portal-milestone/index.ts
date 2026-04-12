@@ -66,6 +66,92 @@ async function handleRegistered(payload: any, supabase: any) {
   return json({ ok: true });
 }
 
+// ── PROGRESSIVE SYNC — application_progress ──
+async function handleProgress(payload: any, supabase: any) {
+  const { data: existing } = await supabase
+    .from("applications")
+    .select("id")
+    .eq("portal_merchant_id", payload.portal_merchant_id)
+    .maybeSingle();
+
+  const firstPrincipal = (payload.principals || [])[0] || {};
+
+  // Build update data from whatever fields are present — only set non-undefined
+  const appData: Record<string, unknown> = {
+    source: "merchant_portal",
+    portal_merchant_id: payload.portal_merchant_id,
+    raw_portal_data: payload,
+  };
+
+  // Contact
+  if (payload.contact_first && payload.contact_last) {
+    appData.full_name = `${payload.contact_first} ${payload.contact_last}`;
+  }
+  if (payload.contact_email) appData.email = payload.contact_email;
+  if (payload.contact_phone) appData.phone = payload.contact_phone;
+
+  // Business profile
+  if (payload.business_name) appData.company_name = payload.business_name;
+  if (payload.trading_name) appData.dba_name = payload.trading_name;
+  if (payload.service_type) appData.service_type = payload.service_type;
+  if (payload.monthly_volume_range) appData.monthly_volume = payload.monthly_volume_range;
+  if (payload.business_type) appData.business_structure = payload.business_type;
+  if (payload.tax_id_masked) appData.federal_tax_id = payload.tax_id_masked;
+  if (payload.current_processor) appData.current_processor = payload.current_processor;
+  if (payload.website) appData.website = payload.website;
+  if (payload.business_description) appData.nature_of_business = payload.business_description;
+  if (payload.avg_txn_range) appData.avg_ticket = payload.avg_txn_range;
+  if (payload.high_ticket) appData.high_ticket = payload.high_ticket;
+  if (payload.product_description) appData.products = payload.product_description;
+
+  // Legal
+  if (payload.legal_entity_name) appData.legal_name = payload.legal_entity_name;
+  if (payload.state_incorporated) appData.state_of_incorporation = payload.state_incorporated;
+  if (payload.business_formation_date) appData.date_established = payload.business_formation_date;
+
+  // DBA address
+  if (payload.dba_address_line1) appData.address = payload.dba_address_line1;
+  if (payload.dba_address_line2) appData.address2 = payload.dba_address_line2;
+  if (payload.dba_city) appData.city = payload.dba_city;
+  if (payload.dba_state) appData.state = payload.dba_state;
+  if (payload.dba_zip) appData.zip = payload.dba_zip;
+
+  // Processing profile
+  if (payload.swiped_pct) appData.in_person_percent = payload.swiped_pct;
+  if (payload.keyed_pct) appData.keyed_percent = payload.keyed_pct;
+  if (payload.ecommerce_pct) appData.ecommerce_percent = payload.ecommerce_pct;
+
+  // Owner from first principal
+  if (firstPrincipal.first_name) {
+    appData.owner_name = `${firstPrincipal.first_name} ${firstPrincipal.last_name}`;
+    if (firstPrincipal.title) appData.owner_title = firstPrincipal.title;
+    if (firstPrincipal.dob) appData.owner_dob = firstPrincipal.dob;
+    if (firstPrincipal.id_number_masked) appData.owner_ssn_last4 = firstPrincipal.id_number_masked;
+    if (firstPrincipal.address) appData.owner_address = firstPrincipal.address;
+  }
+
+  if (existing) {
+    // Update — do NOT change status
+    await supabase
+      .from("applications")
+      .update(appData)
+      .eq("id", existing.id);
+  } else {
+    // Create with 'registered' status so partial apps are visible
+    appData.status = "registered";
+    appData.underwriting_status = "pending";
+    // email is required — use contact_email or a placeholder
+    if (!appData.email) appData.email = payload.contact_email || `portal-${payload.portal_merchant_id}@pending`;
+    if (!appData.full_name) appData.full_name = payload.contact_first
+      ? `${payload.contact_first} ${payload.contact_last}`
+      : payload.business_name || "Portal Merchant";
+
+    await supabase.from("applications").insert(appData);
+  }
+
+  return json({ ok: true });
+}
+
 // ── MILESTONE 2 — application_submitted ──
 async function handleSubmitted(payload: any, supabase: any) {
   // 1. Upsert applications row (idempotent on portal_merchant_id)
