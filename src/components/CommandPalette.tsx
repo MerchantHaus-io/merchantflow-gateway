@@ -24,6 +24,7 @@ const SEARCH_ITEMS: SearchItem[] = [
   { title: "Documents", url: "/documents", icon: FileText, keywords: "files uploads" },
   { title: "Reports", url: "/reports", icon: BarChart3, keywords: "analytics performance" },
   { title: "Transactions", url: "/reports/transactions", icon: CreditCard, keywords: "nmi gateway transactions payments volume" },
+  { title: "Commissions", url: "/commissions", icon: BadgeDollarSign, keywords: "commission partner earnings residual" },
   { title: "Settings", url: "/settings", icon: Settings, keywords: "profile preferences theme" },
   { title: "SOP", url: "/sop", icon: BookOpen, keywords: "procedures guide how to" },
   { title: "Revenue Calculator", url: "/tools/revenue-calculator", icon: Calculator, keywords: "money estimate" },
