@@ -1166,6 +1166,24 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                       </Tooltip>
                     )}
                     
+                    {/* View Portal Account — admin only, portal merchants only */}
+                    {isAdmin && opportunity.portal_merchant_id && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={handleViewPortalAccount}
+                            disabled={portalAccessLoading}
+                          >
+                            {portalAccessLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>View Portal Account</TooltipContent>
+                      </Tooltip>
+                    )}
+
                     {/* Download Details */}
                     <Tooltip>
                       <TooltipTrigger asChild>
