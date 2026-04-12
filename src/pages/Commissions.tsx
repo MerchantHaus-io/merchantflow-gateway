@@ -125,7 +125,7 @@ export default function Commissions() {
 
   // Sync mutation
   const syncMutation = useMutation({
-    mutationFn: async (forceSync = false) => {
+    mutationFn: async ({ forceSync = false }: { forceSync?: boolean } = {}) => {
       const { data, error } = await supabase.functions.invoke("nmi-commissions", {
         body: { month: selMonth, year: selYear, persist: true, force: forceSync },
       });
