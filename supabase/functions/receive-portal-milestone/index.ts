@@ -45,22 +45,48 @@ Deno.serve(async (req) => {
 
 // ── MILESTONE 1 — merchant_registered ──
 async function handleRegistered(payload: any, supabase: any) {
-  // Lightweight notification only — do NOT insert into applications table
-  // (notify_on_new_web_submission trigger would fire prematurely)
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("id, email")
-    .not("email", "is", null);
+  // 1. Create minimal applications row so it appears in Web Submissions immediately
+  const { data: existing } = await supabase
+    .from("applications")
+    .select("id")
+    .eq("portal_merchant_id", payload.portal_merchant_id)
+    .maybeSingle();
 
-  for (const p of profiles || []) {
-    await supabase.from("notifications").insert({
-      user_id: p.id,
-      user_email: p.email,
-      title: "New Portal Lead",
-      message: `${payload.contact_first} ${payload.contact_last} from ${payload.business_name} has registered on the merchant portal.`,
-      type: "portal_lead",
-      link: "/web-submissions",
+  if (!existing) {
+    const fullName = payload.contact_first && payload.contact_last
+      ? `${payload.contact_first} ${payload.contact_last}`
+      : payload.business_name || "Portal Merchant";
+
+    await supabase.from("applications").insert({
+      status: "registered",
+      source: "merchant_portal",
+      portal_merchant_id: payload.portal_merchant_id,
+      full_name: fullName,
+      email: payload.contact_email || `portal-${payload.portal_merchant_id}@pending`,
+      phone: payload.contact_phone || null,
+      company_name: payload.business_name || null,
+      service_type: payload.service_type || "processing",
+      raw_portal_data: payload,
     });
+    // NOTE: The INSERT triggers notify_on_new_web_submission automatically,
+    // so we no longer need to manually create notification rows.
+  } else {
+    // Row already exists (e.g. from a prior progress event) — send manual notifications
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, email")
+      .not("email", "is", null);
+
+    for (const p of profiles || []) {
+      await supabase.from("notifications").insert({
+        user_id: p.id,
+        user_email: p.email,
+        title: "New Portal Lead",
+        message: `${payload.contact_first} ${payload.contact_last} from ${payload.business_name} has registered on the merchant portal.`,
+        type: "portal_lead",
+        link: "/web-submissions",
+      });
+    }
   }
 
   return json({ ok: true });

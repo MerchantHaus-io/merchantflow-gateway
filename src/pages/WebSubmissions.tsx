@@ -48,19 +48,30 @@ import JSZip from "jszip";
 type Application = Tables<"applications">;
 type Account = Tables<"accounts">;
 
-function ApplicationDocsBadge({ applicationId }: { applicationId: string }) {
+function ApplicationDocsBadge({ applicationId, source }: { applicationId: string; source?: string | null }) {
   const [count, setCount] = useState(0);
   useEffect(() => {
     const checkDocs = async () => {
       try {
-        const { data } = await supabase.storage.from('opportunity-documents').list(`applications/${applicationId}`);
-        setCount(data?.length ?? 0);
+        let total = 0;
+        // Check CRM storage bucket
+        const { data: storageFiles } = await supabase.storage.from('opportunity-documents').list(`applications/${applicationId}`);
+        total += storageFiles?.length ?? 0;
+        // Check application_documents table (portal docs)
+        if (source === "merchant_portal") {
+          const { count: dbCount } = await supabase
+            .from("application_documents")
+            .select("id", { count: "exact", head: true })
+            .eq("application_id", applicationId);
+          total += dbCount ?? 0;
+        }
+        setCount(total);
       } catch {
         setCount(0);
       }
     };
     checkDocs();
-  }, [applicationId]);
+  }, [applicationId, source]);
   if (count === 0) return <span className="text-xs text-muted-foreground">—</span>;
   return (
     <Badge variant="outline" className="gap-1">
@@ -70,17 +81,35 @@ function ApplicationDocsBadge({ applicationId }: { applicationId: string }) {
   );
 }
 
-function ApplicationDocsDetail({ applicationId }: { applicationId: string }) {
-  const [files, setFiles] = useState<{ name: string }[]>([]);
+function ApplicationDocsDetail({ applicationId, source }: { applicationId: string; source?: string | null }) {
+  const [files, setFiles] = useState<{ name: string; isPortal?: boolean }[]>([]);
   useEffect(() => {
     const load = async () => {
       try {
+        const allFiles: { name: string; isPortal?: boolean }[] = [];
+        // CRM storage files
         const { data } = await supabase.storage.from('opportunity-documents').list(`applications/${applicationId}`);
-        setFiles((data ?? []).map(f => ({ name: f.name })));
+        for (const f of data ?? []) {
+          allFiles.push({ name: f.name });
+        }
+        // Portal docs from application_documents table
+        if (source === "merchant_portal") {
+          const { data: dbDocs } = await supabase
+            .from("application_documents")
+            .select("file_name, document_type")
+            .eq("application_id", applicationId);
+          for (const d of dbDocs ?? []) {
+            // Avoid duplicates (same file may be in both)
+            if (!allFiles.some(f => f.name === d.file_name)) {
+              allFiles.push({ name: `${d.file_name} (${d.document_type})`, isPortal: true });
+            }
+          }
+        }
+        setFiles(allFiles);
       } catch { setFiles([]); }
     };
     load();
-  }, [applicationId]);
+  }, [applicationId, source]);
   if (files.length === 0) return <p className="text-xs text-muted-foreground mt-1">No documents uploaded</p>;
   return (
     <div className="mt-1 space-y-1">
@@ -88,6 +117,7 @@ function ApplicationDocsDetail({ applicationId }: { applicationId: string }) {
         <div key={i} className="flex items-center gap-2 text-sm">
           <FileText className="h-3 w-3 text-primary" />
           <span>{f.name}</span>
+          {f.isPortal && <Badge variant="outline" className="text-[10px] px-1 py-0">Portal</Badge>}
         </div>
       ))}
     </div>
@@ -653,6 +683,10 @@ export default function WebSubmissions() {
         return <Badge variant="destructive">Rejected</Badge>;
       case "reviewed":
         return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/40">Reviewed</Badge>;
+      case "registered":
+        return <Badge className="bg-sky-500/20 text-sky-400 border-sky-500/40">Registered</Badge>;
+      case "submitted":
+        return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/40">Submitted</Badge>;
       default:
         return <Badge variant="outline">Pending</Badge>;
     }
@@ -747,7 +781,7 @@ export default function WebSubmissions() {
                            : "-"}
                        </TableCell>
                        <TableCell>
-                         <ApplicationDocsBadge applicationId={app.id} />
+                         <ApplicationDocsBadge applicationId={app.id} source={(app as any).source} />
                        </TableCell>
                        <TableCell>{getStatusBadge(app.status)}</TableCell>
                       <TableCell className="text-right space-x-2">
@@ -758,7 +792,7 @@ export default function WebSubmissions() {
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        {app.status === "pending" && isDocSubmission(app) && (
+                        {["pending", "registered", "submitted"].includes(app.status ?? "") && isDocSubmission(app) && (
                           <>
                             <Button
                               size="sm"
@@ -804,7 +838,7 @@ export default function WebSubmissions() {
                             </AlertDialog>
                           </>
                         )}
-                        {app.status === "pending" && !isDocSubmission(app) && (
+                        {["pending", "registered", "submitted"].includes(app.status ?? "") && !isDocSubmission(app) && (
                           <>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
@@ -988,11 +1022,11 @@ export default function WebSubmissions() {
                   <Separator />
                   <div>
                     <span className="text-xs text-muted-foreground">Uploaded Documents</span>
-                    <ApplicationDocsDetail applicationId={selectedApp.id} />
+                    <ApplicationDocsDetail applicationId={selectedApp.id} source={(selectedApp as any).source} />
                   </div>
 
                   {/* Actions */}
-                  {selectedApp.status === "pending" && (
+                  {["pending", "registered", "submitted"].includes(selectedApp.status ?? "") && (
                     <div className="flex flex-wrap gap-2 pt-4 border-t">
                       {isDocSubmission(selectedApp) ? (
                         <>
