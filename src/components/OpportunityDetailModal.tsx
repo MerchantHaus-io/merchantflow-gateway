@@ -1769,6 +1769,21 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Portal Activation Dialog */}
+      {opportunity?.portal_merchant_id && (
+        <PortalActivationDialog
+          open={showActivationDialog}
+          onOpenChange={setShowActivationDialog}
+          opportunityId={opportunity.id}
+          portalMerchantId={opportunity.portal_merchant_id}
+          accountName={resolvedAccount?.name}
+          onSuccess={() => {
+            // Refresh opportunity data
+            onUpdate({});
+          }}
+        />
+      )}
     </>
   );
 };
