@@ -46,6 +46,7 @@ import { BeneficialOwners } from "./opportunity-detail/BeneficialOwners";
 import { DocumentsTab } from "./DocumentsTab";
 import GameSplash from "./GameSplash";
 import CommentsTab from "./CommentsTab";
+import { PortalActivationDialog } from "./opportunity-detail/PortalActivationDialog";
 
 import liveBadge from "@/assets/live-badge.webp";
 
@@ -199,6 +200,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   const [showRequestDeleteDialog, setShowRequestDeleteDialog] = useState(false);
   const [showDeathSplash, setShowDeathSplash] = useState(false);
   const [reactivateConfirm, setReactivateConfirm] = useState<{ assignee: string } | null>(null);
+  const [showActivationDialog, setShowActivationDialog] = useState(false);
   const [activeSection, setActiveSection] = useState<ModalSection>('overview');
   const isMobile = useIsMobile();
   // Keyboard shortcuts for section navigation
