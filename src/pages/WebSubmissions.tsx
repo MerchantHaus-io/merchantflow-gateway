@@ -48,30 +48,23 @@ import JSZip from "jszip";
 type Application = Tables<"applications">;
 type Account = Tables<"accounts">;
 
-function ApplicationDocsBadge({ applicationId, source }: { applicationId: string; source?: string | null }) {
+function ApplicationDocsBadge({ applicationId }: { applicationId: string; source?: string | null }) {
   const [count, setCount] = useState(0);
   useEffect(() => {
     const checkDocs = async () => {
       try {
-        let total = 0;
-        // Check CRM storage bucket
-        const { data: storageFiles } = await supabase.storage.from('opportunity-documents').list(`applications/${applicationId}`);
-        total += storageFiles?.length ?? 0;
-        // Check application_documents table (portal docs)
-        if (source === "merchant_portal") {
-          const { count: dbCount } = await supabase
-            .from("application_documents")
-            .select("id", { count: "exact", head: true })
-            .eq("application_id", applicationId);
-          total += dbCount ?? 0;
-        }
-        setCount(total);
+        // Check application_documents table (both portal and web form docs)
+        const { count: dbCount } = await supabase
+          .from("application_documents")
+          .select("id", { count: "exact", head: true })
+          .eq("application_id", applicationId);
+        setCount(dbCount ?? 0);
       } catch {
         setCount(0);
       }
     };
     checkDocs();
-  }, [applicationId, source]);
+  }, [applicationId]);
   if (count === 0) return <span className="text-xs text-muted-foreground">—</span>;
   return (
     <Badge variant="outline" className="gap-1">
@@ -81,35 +74,27 @@ function ApplicationDocsBadge({ applicationId, source }: { applicationId: string
   );
 }
 
-function ApplicationDocsDetail({ applicationId, source }: { applicationId: string; source?: string | null }) {
+function ApplicationDocsDetail({ applicationId }: { applicationId: string; source?: string | null }) {
   const [files, setFiles] = useState<{ name: string; isPortal?: boolean }[]>([]);
   useEffect(() => {
     const load = async () => {
       try {
         const allFiles: { name: string; isPortal?: boolean }[] = [];
-        // CRM storage files
-        const { data } = await supabase.storage.from('opportunity-documents').list(`applications/${applicationId}`);
-        for (const f of data ?? []) {
-          allFiles.push({ name: f.name });
-        }
-        // Portal docs from application_documents table
-        if (source === "merchant_portal") {
+        // All docs from application_documents table
+        {
           const { data: dbDocs } = await supabase
             .from("application_documents")
             .select("file_name, document_type")
             .eq("application_id", applicationId);
           for (const d of dbDocs ?? []) {
-            // Avoid duplicates (same file may be in both)
-            if (!allFiles.some(f => f.name === d.file_name)) {
-              allFiles.push({ name: `${d.file_name} (${d.document_type})`, isPortal: true });
-            }
+            allFiles.push({ name: `${d.file_name} (${d.document_type})`, isPortal: false });
           }
         }
         setFiles(allFiles);
       } catch { setFiles([]); }
     };
     load();
-  }, [applicationId, source]);
+  }, [applicationId]);
   if (files.length === 0) return <p className="text-xs text-muted-foreground mt-1">No documents uploaded</p>;
   return (
     <div className="mt-1 space-y-1">
