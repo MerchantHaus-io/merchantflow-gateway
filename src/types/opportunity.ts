@@ -7,7 +7,8 @@ export type OpportunityStage =
   | 'gateway_submitted'
   | 'integration_setup'
   | 'testing'
-  | 'go_live_ready';
+  | 'go_live_ready'
+  | 'closed_won';
 
 export type OutcomeStatus =
   | 'closed_won'
