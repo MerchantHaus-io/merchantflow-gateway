@@ -4,6 +4,7 @@ import UnifiedPipelineBoard from "@/components/UnifiedPipelineBoard";
 import PipelineListView from "@/components/PipelineListView";
 import { AIValidatePanel } from "@/components/opportunity-detail/AIValidatePanel";
 import OpportunityDetailModal from "@/components/OpportunityDetailModal";
+import { PortalActivationDialog } from "@/components/opportunity-detail/PortalActivationDialog";
 import NewApplicationModal, { ApplicationFormData } from "@/components/NewApplicationModal";
 import { AppLayout } from "@/components/AppLayout";
 import { getServiceType, ServiceType, OnboardingWizardState, Opportunity, OpportunityStage, OutcomeStatus, migrateStage, EMAIL_TO_USER, TEAM_MEMBERS } from "@/types/opportunity";
@@ -188,6 +189,7 @@ const Index = () => {
   const [filterBy, setFilterBy] = useState<'created_at' | 'updated_at'>('created_at');
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
   const [splashType, setSplashType] = useState<"1up" | "level-up" | null>(null);
+  const [portalActivationOpp, setPortalActivationOpp] = useState<Opportunity | null>(null);
   const [listSelectedOpp, setListSelectedOpp] = useState<Opportunity | null>(null);
   const [listPreviewOpp, setListPreviewOpp] = useState<Opportunity | null>(null);
   const [searchParams] = useSearchParams();
