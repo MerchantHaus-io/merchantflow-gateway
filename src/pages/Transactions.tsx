@@ -699,7 +699,35 @@ const Transactions = () => {
 
                 {/* ── Merchants Tab ── */}
                 <TabsContent value="merchants" className="space-y-4">
-                  <p className="text-xs text-muted-foreground">{merchantSummaries.length} merchants with activity in this period</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">{merchantSummaries.length} merchants with activity in this period</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 h-8"
+                      onClick={async () => {
+                        setMerchantSyncing(true);
+                        try {
+                          const { data, error } = await supabase.functions.invoke('nmi-list-merchants');
+                          if (error) throw error;
+                          if (data?.error) throw new Error(data.error);
+                          const count = data?.merchants?.length ?? data?.count ?? 0;
+                          toast.success(`Merchant roster synced — ${count} merchants found`);
+                          // Refresh transactions to pick up any new merchant data
+                          refetch();
+                        } catch (err: any) {
+                          console.error('Merchant sync error:', err);
+                          toast.error(err.message || 'Failed to sync merchants');
+                        } finally {
+                          setMerchantSyncing(false);
+                        }
+                      }}
+                      disabled={merchantSyncing}
+                    >
+                      <RefreshCw className={cn("h-3.5 w-3.5", merchantSyncing && "animate-spin")} />
+                      {merchantSyncing ? 'Syncing…' : 'Sync Merchants'}
+                    </Button>
+                  </div>
                   {merchantSummaries.length === 0 ? (
                     <Card><CardContent className="p-8 text-center">
                       <Building2 className="h-8 w-8 mx-auto mb-2 text-muted-foreground/30" />
