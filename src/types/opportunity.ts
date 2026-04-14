@@ -7,7 +7,8 @@ export type OpportunityStage =
   | 'gateway_submitted'
   | 'integration_setup'
   | 'testing'
-  | 'go_live_ready';
+  | 'go_live_ready'
+  | 'closed_won';
 
 export type OutcomeStatus =
   | 'closed_won'
@@ -255,6 +256,14 @@ export const STAGE_CONFIG: Record<
     color: '#059669',
     icon: '🎯',
   },
+  closed_won: {
+    label: 'Closed Won',
+    colorClass: 'bg-emerald-500',
+    headerClass: 'bg-emerald-500 text-white',
+    badgeClass: 'bg-white/20 text-white border-white/30',
+    color: '#10b981',
+    icon: '🏆',
+  },
 };
 
 // Outcome config for display
@@ -349,6 +358,7 @@ export const ACTIVE_PIPELINE_STAGES: OpportunityStage[] = [
   'integration_setup',
   'testing',
   'go_live_ready',
+  'closed_won',
 ];
 
 // Processing Pipeline stages
@@ -361,6 +371,7 @@ export const PROCESSING_PIPELINE_STAGES: OpportunityStage[] = [
   'integration_setup',
   'testing',
   'go_live_ready',
+  'closed_won',
 ];
 
 // Gateway Only Pipeline stages
@@ -371,6 +382,7 @@ export const GATEWAY_ONLY_PIPELINE_STAGES: OpportunityStage[] = [
   'integration_setup',
   'testing',
   'go_live_ready',
+  'closed_won',
 ];
 
 // Legacy: All stages for backwards compatibility

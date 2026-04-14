@@ -14,6 +14,7 @@ export const SLA_THRESHOLDS: Record<OpportunityStage, { amber: number; red: numb
   integration_setup:   { amber: 72,  red: 120 },  // 3 days → 5 days
   testing:             { amber: 48,  red: 72 },   // 2 days → 3 days
   go_live_ready:       { amber: 24,  red: 48 },   // 1 day  → 2 days
+  closed_won:          { amber: 999, red: 999 },  // No SLA for won deals
 };
 
 /**

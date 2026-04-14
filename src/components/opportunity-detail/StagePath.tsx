@@ -19,7 +19,7 @@ const STAGE_EXIT_REQUIREMENTS: Record<string, string> = {
   integration_setup: "Integration configured",
   gateway_submitted: "Gateway submitted",
   live_activated: "First transaction processed",
-  closed_won: "Contract signed, activated",
+  closed_won: "Contract signed, live and billing",
   closed_lost: "Opportunity closed",
 };
 
