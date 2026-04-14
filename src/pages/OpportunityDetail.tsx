@@ -845,6 +845,23 @@ const OpportunityDetail = () => {
                               <TooltipContent>Delete</TooltipContent>
                             </Tooltip>
                           )}
+
+                          {/* Activate on Portal */}
+                          {isAdmin && opportunity.portal_merchant_id && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  className="text-emerald-600 dark:text-emerald-400 border-emerald-600/30"
+                                  onClick={() => setShowActivationDialog(true)}
+                                >
+                                  <Zap className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Activate on Portal</TooltipContent>
+                            </Tooltip>
+                          )}
                         </>
                       )}
                     </div>
