@@ -966,6 +966,23 @@ const Index = () => {
         }
       />
 
+      {/* Portal Activation Dialog — triggered by stage change to go_live_ready */}
+      {portalActivationOpp?.portal_merchant_id && (
+        <PortalActivationDialog
+          open={!!portalActivationOpp}
+          onOpenChange={(open) => { if (!open) setPortalActivationOpp(null); }}
+          opportunityId={portalActivationOpp.id}
+          portalMerchantId={portalActivationOpp.portal_merchant_id}
+          accountName={portalActivationOpp.account?.name}
+          prefillGatewayId={(portalActivationOpp as any)._prefillGatewayId}
+          onSuccess={() => {
+            setPortalActivationOpp(null);
+            fetchOpportunities();
+          }}
+          onDeferActivation={() => setPortalActivationOpp(null)}
+        />
+      )}
+
       <GameSplash
         type={splashType || "1up"}
         show={splashType !== null}
