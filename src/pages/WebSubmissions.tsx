@@ -48,30 +48,23 @@ import JSZip from "jszip";
 type Application = Tables<"applications">;
 type Account = Tables<"accounts">;
 
-function ApplicationDocsBadge({ applicationId, source }: { applicationId: string; source?: string | null }) {
+function ApplicationDocsBadge({ applicationId }: { applicationId: string; source?: string | null }) {
   const [count, setCount] = useState(0);
   useEffect(() => {
     const checkDocs = async () => {
       try {
-        let total = 0;
-        // Check CRM storage bucket
-        const { data: storageFiles } = await supabase.storage.from('opportunity-documents').list(`applications/${applicationId}`);
-        total += storageFiles?.length ?? 0;
-        // Check application_documents table (portal docs)
-        if (source === "merchant_portal") {
-          const { count: dbCount } = await supabase
-            .from("application_documents")
-            .select("id", { count: "exact", head: true })
-            .eq("application_id", applicationId);
-          total += dbCount ?? 0;
-        }
-        setCount(total);
+        // Check application_documents table (both portal and web form docs)
+        const { count: dbCount } = await supabase
+          .from("application_documents")
+          .select("id", { count: "exact", head: true })
+          .eq("application_id", applicationId);
+        setCount(dbCount ?? 0);
       } catch {
         setCount(0);
       }
     };
     checkDocs();
-  }, [applicationId, source]);
+  }, [applicationId]);
   if (count === 0) return <span className="text-xs text-muted-foreground">—</span>;
   return (
     <Badge variant="outline" className="gap-1">
