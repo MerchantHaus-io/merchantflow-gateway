@@ -347,11 +347,11 @@ const LiveAccountDetail = () => {
                     });
                   }
 
-                  // Send closure email to merchant + team notification
+                  // Send closure email to merchant + team notification — only for non-won outcomes
                   const contactName = [contact?.first_name, contact?.last_name].filter(Boolean).join(" ") || "Merchant";
                   const contactEmail = contact?.email;
 
-                  if (contactEmail) {
+                  if (contactEmail && outcome !== "closed_won") {
                     supabase.functions.invoke("send-account-closed", {
                       body: {
                         recipientEmail: contactEmail,
@@ -362,7 +362,6 @@ const LiveAccountDetail = () => {
                         closedBy: closerName.charAt(0).toUpperCase() + closerName.slice(1),
                       },
                     }).then(() => {
-                      // Log as client interaction on the account
                       supabase.from("client_interactions").insert({
                         account_id: accountId,
                         subject: `Account closure email sent — ${account?.name || ""}`,
