@@ -87,17 +87,14 @@ function ApplicationDocsDetail({ applicationId }: { applicationId: string; sourc
             .select("file_name, document_type")
             .eq("application_id", applicationId);
           for (const d of dbDocs ?? []) {
-            // Avoid duplicates (same file may be in both)
-            if (!allFiles.some(f => f.name === d.file_name)) {
-              allFiles.push({ name: `${d.file_name} (${d.document_type})`, isPortal: true });
-            }
+            allFiles.push({ name: `${d.file_name} (${d.document_type})`, isPortal: false });
           }
         }
         setFiles(allFiles);
       } catch { setFiles([]); }
     };
     load();
-  }, [applicationId, source]);
+  }, [applicationId]);
   if (files.length === 0) return <p className="text-xs text-muted-foreground mt-1">No documents uploaded</p>;
   return (
     <div className="mt-1 space-y-1">
