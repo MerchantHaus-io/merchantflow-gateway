@@ -958,6 +958,11 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                         
                         onUpdate({ ...opportunity, stage: newStage });
                         toast.success(`Stage updated to ${STAGE_CONFIG[newStage].label}`);
+
+                        // Auto-open portal activation dialog when moving to go_live_ready
+                        if (newStage === 'go_live_ready' && opportunity.portal_merchant_id) {
+                          setShowActivationDialog(true);
+                        }
                       }}
                     >
                       <SelectTrigger className="h-6 w-auto border-0 bg-transparent hover:bg-muted/50 px-2 text-sm gap-1 text-foreground">
