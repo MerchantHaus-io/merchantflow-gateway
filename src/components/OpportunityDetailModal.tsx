@@ -985,6 +985,15 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                         Archived
                       </span>
                     )}
+                    {opportunity.portal_merchant_id && opportunity.stage === 'go_live_ready' && opportunity.status !== 'dead' && (
+                      <button
+                        onClick={() => setShowActivationDialog(true)}
+                        className="text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded hover:bg-amber-500/20 transition-colors flex items-center gap-1"
+                      >
+                        <Zap className="h-3 w-3" />
+                        Pending Activation
+                      </button>
+                    )}
                     <span className="text-muted-foreground">•</span>
                     {/* Primary Owner Dropdown */}
                     <Select
