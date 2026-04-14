@@ -74,19 +74,14 @@ function ApplicationDocsBadge({ applicationId }: { applicationId: string; source
   );
 }
 
-function ApplicationDocsDetail({ applicationId, source }: { applicationId: string; source?: string | null }) {
+function ApplicationDocsDetail({ applicationId }: { applicationId: string; source?: string | null }) {
   const [files, setFiles] = useState<{ name: string; isPortal?: boolean }[]>([]);
   useEffect(() => {
     const load = async () => {
       try {
         const allFiles: { name: string; isPortal?: boolean }[] = [];
-        // CRM storage files
-        const { data } = await supabase.storage.from('opportunity-documents').list(`applications/${applicationId}`);
-        for (const f of data ?? []) {
-          allFiles.push({ name: f.name });
-        }
-        // Portal docs from application_documents table
-        if (source === "merchant_portal") {
+        // All docs from application_documents table
+        {
           const { data: dbDocs } = await supabase
             .from("application_documents")
             .select("file_name, document_type")
