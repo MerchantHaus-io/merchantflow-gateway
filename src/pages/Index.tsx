@@ -4,6 +4,7 @@ import UnifiedPipelineBoard from "@/components/UnifiedPipelineBoard";
 import PipelineListView from "@/components/PipelineListView";
 import { AIValidatePanel } from "@/components/opportunity-detail/AIValidatePanel";
 import OpportunityDetailModal from "@/components/OpportunityDetailModal";
+import { PortalActivationDialog } from "@/components/opportunity-detail/PortalActivationDialog";
 import NewApplicationModal, { ApplicationFormData } from "@/components/NewApplicationModal";
 import { AppLayout } from "@/components/AppLayout";
 import { getServiceType, ServiceType, OnboardingWizardState, Opportunity, OpportunityStage, OutcomeStatus, migrateStage, EMAIL_TO_USER, TEAM_MEMBERS } from "@/types/opportunity";
@@ -188,6 +189,7 @@ const Index = () => {
   const [filterBy, setFilterBy] = useState<'created_at' | 'updated_at'>('created_at');
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
   const [splashType, setSplashType] = useState<"1up" | "level-up" | null>(null);
+  const [portalActivationOpp, setPortalActivationOpp] = useState<Opportunity | null>(null);
   const [listSelectedOpp, setListSelectedOpp] = useState<Opportunity | null>(null);
   const [listPreviewOpp, setListPreviewOpp] = useState<Opportunity | null>(null);
   const [searchParams] = useSearchParams();
@@ -752,6 +754,28 @@ const Index = () => {
         });
       }
     }
+
+    // Portal activation trigger when moving to go_live_ready
+    if (updates.stage === 'go_live_ready' && opportunity?.portal_merchant_id) {
+      const { data: boarding } = await supabase
+        .from('nmi_boarding_submissions')
+        .select('nmi_gateway_id')
+        .eq('opportunity_id', id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const { data: acctData } = await supabase
+        .from('accounts')
+        .select('nmi_merchant_id')
+        .eq('id', opportunity.account_id)
+        .maybeSingle();
+
+      const gatewayId = boarding?.nmi_gateway_id ?? acctData?.nmi_merchant_id ?? null;
+
+      setPortalActivationOpp({ ...opportunity, ...updates, _prefillGatewayId: gatewayId } as any);
+    }
+
     setOpportunities(prev => prev.map(o => o.id === id ? {
       ...o,
       ...updates
@@ -941,6 +965,23 @@ const Index = () => {
             : false
         }
       />
+
+      {/* Portal Activation Dialog — triggered by stage change to go_live_ready */}
+      {portalActivationOpp?.portal_merchant_id && (
+        <PortalActivationDialog
+          open={!!portalActivationOpp}
+          onOpenChange={(open) => { if (!open) setPortalActivationOpp(null); }}
+          opportunityId={portalActivationOpp.id}
+          portalMerchantId={portalActivationOpp.portal_merchant_id}
+          accountName={portalActivationOpp.account?.name}
+          prefillGatewayId={(portalActivationOpp as any)._prefillGatewayId}
+          onSuccess={() => {
+            setPortalActivationOpp(null);
+            fetchOpportunities();
+          }}
+          onDeferActivation={() => setPortalActivationOpp(null)}
+        />
+      )}
 
       <GameSplash
         type={splashType || "1up"}

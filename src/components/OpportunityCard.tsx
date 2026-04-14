@@ -392,6 +392,13 @@ const OpportunityCard = ({
                   </span>
                 )}
 
+                {/* Pending Portal Activation badge */}
+                {!isGreyed && opportunity.portal_merchant_id && opportunity.stage === 'go_live_ready' && !isClosedWon && (
+                  <span className="px-1 py-0.5 rounded-md text-[8px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/40 animate-pulse">
+                    ACTIVATE
+                  </span>
+                )}
+
                 <Popover>
                   <PopoverTrigger asChild>
                     <button onClick={(e) => e.stopPropagation()} className="shrink-0">

@@ -958,6 +958,11 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                         
                         onUpdate({ ...opportunity, stage: newStage });
                         toast.success(`Stage updated to ${STAGE_CONFIG[newStage].label}`);
+
+                        // Auto-open portal activation dialog when moving to go_live_ready
+                        if (newStage === 'go_live_ready' && opportunity.portal_merchant_id) {
+                          setShowActivationDialog(true);
+                        }
                       }}
                     >
                       <SelectTrigger className="h-6 w-auto border-0 bg-transparent hover:bg-muted/50 px-2 text-sm gap-1 text-foreground">
@@ -979,6 +984,15 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                       <span className="text-xs text-destructive bg-destructive/10 px-2 py-0.5 rounded">
                         Archived
                       </span>
+                    )}
+                    {opportunity.portal_merchant_id && opportunity.stage === 'go_live_ready' && opportunity.status !== 'dead' && (
+                      <button
+                        onClick={() => setShowActivationDialog(true)}
+                        className="text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded hover:bg-amber-500/20 transition-colors flex items-center gap-1"
+                      >
+                        <Zap className="h-3 w-3" />
+                        Pending Activation
+                      </button>
                     )}
                     <span className="text-muted-foreground">•</span>
                     {/* Primary Owner Dropdown */}

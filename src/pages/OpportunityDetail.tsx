@@ -781,6 +781,15 @@ const OpportunityDetail = () => {
                               )}
                             </div>
                           )}
+                          {opportunity.portal_merchant_id && opportunity.stage === 'go_live_ready' && opportunity.status !== 'dead' && (
+                            <button
+                              onClick={() => setShowActivationDialog(true)}
+                              className="text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded hover:bg-amber-500/20 transition-colors flex items-center gap-1"
+                            >
+                              <Zap className="h-3 w-3" />
+                              Pending Activation
+                            </button>
+                          )}
                           <button
                             onClick={() => setShowPipelineSwitch(true)}
                             className="flex items-center gap-1 text-sm hover:opacity-80 transition-opacity cursor-pointer rounded-md px-2 py-0.5 hover:bg-muted/50"

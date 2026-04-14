@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Zap, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Loader2, Zap, AlertTriangle, CheckCircle2, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -29,7 +29,11 @@ interface PortalActivationDialogProps {
   opportunityId: string;
   portalMerchantId: string;
   accountName?: string;
+  /** Pre-resolved NMI gateway ID (from boarding or account) */
+  prefillGatewayId?: string | null;
   onSuccess?: () => void;
+  /** Called when user clicks "Do This Later" */
+  onDeferActivation?: () => void;
 }
 
 export const PortalActivationDialog = ({
@@ -38,17 +42,20 @@ export const PortalActivationDialog = ({
   opportunityId,
   portalMerchantId,
   accountName,
+  prefillGatewayId,
   onSuccess,
+  onDeferActivation,
 }: PortalActivationDialogProps) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [inlineError, setInlineError] = useState<string | null>(null);
 
   // Form fields
   const [nmiApiKey, setNmiApiKey] = useState("");
   const [nmiPublicKey, setNmiPublicKey] = useState("");
   const [nmiGatewayId, setNmiGatewayId] = useState("");
-  const [pricingModel, setPricingModel] = useState<string>("");
+  const [pricingModel, setPricingModel] = useState<string>("interchange_plus");
 
   // Auto-fill from NMI boarding submission
   useEffect(() => {
@@ -57,11 +64,17 @@ export const PortalActivationDialog = ({
     const fetchBoardingData = async () => {
       setLoading(true);
       try {
+        // If prefill was provided, use it directly
+        if (prefillGatewayId) {
+          setNmiGatewayId(prefillGatewayId);
+          setLoading(false);
+          return;
+        }
+
         const { data } = await supabase
           .from("nmi_boarding_submissions")
           .select("nmi_gateway_id, nmi_status")
           .eq("opportunity_id", opportunityId)
-          .eq("nmi_status", "approved")
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
@@ -77,13 +90,14 @@ export const PortalActivationDialog = ({
     };
 
     fetchBoardingData();
-  }, [open, opportunityId]);
+  }, [open, opportunityId, prefillGatewayId]);
 
   const resetForm = useCallback(() => {
     setNmiApiKey("");
     setNmiPublicKey("");
     setNmiGatewayId("");
-    setPricingModel("");
+    setPricingModel("interchange_plus");
+    setInlineError(null);
   }, []);
 
   const handleClose = useCallback(
@@ -94,12 +108,18 @@ export const PortalActivationDialog = ({
     [onOpenChange, resetForm]
   );
 
+  const handleDoThisLater = useCallback(() => {
+    onDeferActivation?.();
+    handleClose(false);
+  }, [onDeferActivation, handleClose]);
+
   const handleSubmit = async () => {
     if (!nmiApiKey || !nmiPublicKey || !pricingModel) {
-      toast.error("Please fill in all required fields");
+      setInlineError("Please fill in all required fields");
       return;
     }
 
+    setInlineError(null);
     setSubmitting(true);
     try {
       const { data, error } = await supabase.functions.invoke(
@@ -121,24 +141,26 @@ export const PortalActivationDialog = ({
       // Log activity
       await supabase.from("activities").insert({
         opportunity_id: opportunityId,
-        type: "portal_activated",
-        description: `Merchant activated on portal (${pricingModel}) by ${user?.email}`,
+        type: "portal_activation",
+        description: `Portal account activated by ${user?.email}. NMI Gateway ID: ${nmiGatewayId || "N/A"}`,
         user_id: user?.id,
         user_email: user?.email,
       });
 
-      toast.success("Merchant activated on portal successfully");
+      toast.success("Portal account activated — merchant has been notified");
       handleClose(false);
       onSuccess?.();
     } catch (err: any) {
       console.error("Portal activation error:", err);
-      toast.error(err.message || "Failed to activate merchant on portal");
+      setInlineError(
+        err.message || "Activation failed — check API key and try again"
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
-  const isValid = nmiApiKey && nmiPublicKey && pricingModel;
+  const isValid = nmiApiKey.trim().length > 0 && nmiPublicKey.trim().length > 0 && pricingModel;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -146,7 +168,7 @@ export const PortalActivationDialog = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Zap className="h-5 w-5 text-primary" />
-            Activate on Portal
+            Activate Merchant Portal Account
           </DialogTitle>
           <DialogDescription>
             Push NMI credentials to the merchant portal and activate{" "}
@@ -163,48 +185,41 @@ export const PortalActivationDialog = ({
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Portal Merchant ID — read-only */}
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">
-                Portal Merchant ID
-              </Label>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="font-mono text-xs">
-                  {portalMerchantId.slice(0, 8)}…
-                </Badge>
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+            {/* Business name */}
+            <div className="flex items-center justify-between rounded-md border border-border bg-muted/30 p-3">
+              <div>
+                <p className="text-xs text-muted-foreground">Business</p>
+                <p className="text-sm font-medium">{accountName || "Unknown"}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground">NMI Gateway ID</p>
+                <p className="text-sm font-mono font-medium">
+                  {nmiGatewayId || (
+                    <span className="text-amber-500">Not found</span>
+                  )}
+                </p>
               </div>
             </div>
 
-            {/* NMI Gateway ID — auto-filled if available */}
-            <div className="space-y-1.5">
-              <Label htmlFor="nmi-gateway-id" className="text-xs">
-                NMI Gateway ID
-                <span className="text-muted-foreground ml-1">(optional)</span>
-              </Label>
-              <Input
-                id="nmi-gateway-id"
-                value={nmiGatewayId}
-                onChange={(e) => setNmiGatewayId(e.target.value)}
-                placeholder="e.g. 123456789"
-                className="font-mono"
-              />
-              {nmiGatewayId && (
-                <p className="text-[11px] text-emerald-500">
-                  Auto-filled from NMI boarding
-                </p>
-              )}
-            </div>
+            {/* Instructions */}
+            <p className="text-xs text-muted-foreground">
+              Retrieve the following from NMI Control Panel → Admin → Security
+              Keys:
+            </p>
 
             {/* NMI API Key */}
             <div className="space-y-1.5">
               <Label htmlFor="nmi-api-key" className="text-xs">
-                NMI API Key <span className="text-destructive">*</span>
+                NMI API Key (Private Key){" "}
+                <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="nmi-api-key"
                 value={nmiApiKey}
-                onChange={(e) => setNmiApiKey(e.target.value)}
+                onChange={(e) => {
+                  setNmiApiKey(e.target.value);
+                  setInlineError(null);
+                }}
                 placeholder="Merchant's NMI security key"
                 className="font-mono"
               />
@@ -213,12 +228,16 @@ export const PortalActivationDialog = ({
             {/* NMI Public Key */}
             <div className="space-y-1.5">
               <Label htmlFor="nmi-public-key" className="text-xs">
-                NMI Public Key <span className="text-destructive">*</span>
+                NMI Public Key (Tokenization Key){" "}
+                <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="nmi-public-key"
                 value={nmiPublicKey}
-                onChange={(e) => setNmiPublicKey(e.target.value)}
+                onChange={(e) => {
+                  setNmiPublicKey(e.target.value);
+                  setInlineError(null);
+                }}
                 placeholder="Merchant's NMI public key"
                 className="font-mono"
               />
@@ -244,25 +263,40 @@ export const PortalActivationDialog = ({
               </Select>
             </div>
 
-            {/* Warning */}
-            <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-3">
-              <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
-              <p className="text-xs text-muted-foreground">
-                This will immediately activate the merchant on the portal. Their
-                dashboard will switch from pending to active and they'll be able
-                to process transactions.
-              </p>
-            </div>
+            {/* Open NMI Control Panel */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() =>
+                window.open(
+                  "https://merchanthausio.transactiongateway.com",
+                  "_blank"
+                )
+              }
+            >
+              <ExternalLink className="h-3.5 w-3.5 mr-2" />
+              Open NMI Control Panel
+            </Button>
+
+            {/* Inline error */}
+            {inlineError && (
+              <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3">
+                <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+                <p className="text-xs text-destructive">{inlineError}</p>
+              </div>
+            )}
           </div>
         )}
 
-        <DialogFooter>
+        <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button
-            variant="outline"
-            onClick={() => handleClose(false)}
+            variant="ghost"
+            onClick={handleDoThisLater}
             disabled={submitting}
+            className="sm:mr-auto"
           >
-            Cancel
+            Do This Later
           </Button>
           <Button
             onClick={handleSubmit}
@@ -276,7 +310,7 @@ export const PortalActivationDialog = ({
             ) : (
               <>
                 <Zap className="h-4 w-4 mr-2" />
-                Activate Merchant
+                Activate Portal Account
               </>
             )}
           </Button>
