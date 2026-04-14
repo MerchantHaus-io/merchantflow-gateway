@@ -71,6 +71,7 @@ import { ClickToCall } from "@/components/ClickToCall";
 import { CommunicationLogPanel } from "@/components/CommunicationLogPanel";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
+import { PortalActivationDialog } from "@/components/opportunity-detail/PortalActivationDialog";
 
 // Helper components
 const InfoItem = ({ label, value }: { label: string; value?: string | null }) => (
@@ -388,7 +389,7 @@ const OpportunityDetail = () => {
   const [showDeathSplash, setShowDeathSplash] = useState(false);
   const [reactivateConfirm, setReactivateConfirm] = useState<{ assignee: string } | null>(null);
   const [showPipelineSwitch, setShowPipelineSwitch] = useState(false);
-  
+  const [showActivationDialog, setShowActivationDialog] = useState(false);
   // Form state
   const [accountName, setAccountName] = useState("");
   const [website, setWebsite] = useState("");
@@ -844,6 +845,23 @@ const OpportunityDetail = () => {
                               <TooltipContent>Delete</TooltipContent>
                             </Tooltip>
                           )}
+
+                          {/* Activate on Portal */}
+                          {isAdmin && opportunity.portal_merchant_id && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  className="text-emerald-600 dark:text-emerald-400 border-emerald-600/30"
+                                  onClick={() => setShowActivationDialog(true)}
+                                >
+                                  <Zap className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Activate on Portal</TooltipContent>
+                            </Tooltip>
+                          )}
                         </>
                       )}
                     </div>
@@ -1234,6 +1252,17 @@ const OpportunityDetail = () => {
         show={showDeathSplash}
         onComplete={() => setShowDeathSplash(false)}
       />
+      {/* Portal Activation Dialog */}
+      {opportunity?.portal_merchant_id && (
+        <PortalActivationDialog
+          open={showActivationDialog}
+          onOpenChange={setShowActivationDialog}
+          opportunityId={opportunity.id}
+          portalMerchantId={opportunity.portal_merchant_id}
+          accountName={account?.name}
+          onSuccess={() => fetchOpportunity()}
+        />
+      )}
     </AppLayout>
   );
 };

@@ -46,6 +46,7 @@ import { BeneficialOwners } from "./opportunity-detail/BeneficialOwners";
 import { DocumentsTab } from "./DocumentsTab";
 import GameSplash from "./GameSplash";
 import CommentsTab from "./CommentsTab";
+import { PortalActivationDialog } from "./opportunity-detail/PortalActivationDialog";
 
 import liveBadge from "@/assets/live-badge.webp";
 
@@ -199,6 +200,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   const [showRequestDeleteDialog, setShowRequestDeleteDialog] = useState(false);
   const [showDeathSplash, setShowDeathSplash] = useState(false);
   const [reactivateConfirm, setReactivateConfirm] = useState<{ assignee: string } | null>(null);
+  const [showActivationDialog, setShowActivationDialog] = useState(false);
   const [activeSection, setActiveSection] = useState<ModalSection>('overview');
   const isMobile = useIsMobile();
   // Keyboard shortcuts for section navigation
@@ -1184,7 +1186,24 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                       </Tooltip>
                     )}
 
-                    {/* Download Details */}
+                    {/* Activate on Portal — admin only, portal merchants only */}
+                    {isAdmin && opportunity.portal_merchant_id && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-emerald-600 dark:text-emerald-400"
+                            onClick={() => setShowActivationDialog(true)}
+                          >
+                            <Zap className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Activate on Portal</TooltipContent>
+                      </Tooltip>
+                    )}
+
+
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
@@ -1750,6 +1769,21 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Portal Activation Dialog */}
+      {opportunity?.portal_merchant_id && (
+        <PortalActivationDialog
+          open={showActivationDialog}
+          onOpenChange={setShowActivationDialog}
+          opportunityId={opportunity.id}
+          portalMerchantId={opportunity.portal_merchant_id}
+          accountName={resolvedAccount?.name}
+          onSuccess={() => {
+            // Refresh opportunity data
+            onUpdate({});
+          }}
+        />
+      )}
     </>
   );
 };
