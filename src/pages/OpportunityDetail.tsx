@@ -71,6 +71,7 @@ import { ClickToCall } from "@/components/ClickToCall";
 import { CommunicationLogPanel } from "@/components/CommunicationLogPanel";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
+import { PortalActivationDialog } from "@/components/opportunity-detail/PortalActivationDialog";
 
 // Helper components
 const InfoItem = ({ label, value }: { label: string; value?: string | null }) => (
@@ -388,7 +389,7 @@ const OpportunityDetail = () => {
   const [showDeathSplash, setShowDeathSplash] = useState(false);
   const [reactivateConfirm, setReactivateConfirm] = useState<{ assignee: string } | null>(null);
   const [showPipelineSwitch, setShowPipelineSwitch] = useState(false);
-  
+  const [showActivationDialog, setShowActivationDialog] = useState(false);
   // Form state
   const [accountName, setAccountName] = useState("");
   const [website, setWebsite] = useState("");
