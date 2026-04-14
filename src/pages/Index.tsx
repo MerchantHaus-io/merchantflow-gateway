@@ -754,6 +754,31 @@ const Index = () => {
         });
       }
     }
+
+    // Portal activation trigger when moving to go_live_ready
+    if (updates.stage === 'go_live_ready' && opportunity?.portal_merchant_id) {
+      // Pre-fill gateway data
+      const { data: boarding } = await supabase
+        .from('nmi_boarding_submissions')
+        .select('nmi_gateway_id')
+        .eq('opportunity_id', id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const gatewayId = boarding?.nmi_gateway_id
+        ?? opportunity.account?.nmi_merchant_id
+        ?? null;
+
+      // Set state to open activation dialog with pre-filled data
+      setPortalActivationOpp({
+        ...opportunity,
+        ...updates,
+        // Store gateway id temporarily for the dialog
+        account: { ...opportunity.account!, nmi_merchant_id: gatewayId },
+      } as Opportunity);
+    }
+
     setOpportunities(prev => prev.map(o => o.id === id ? {
       ...o,
       ...updates
