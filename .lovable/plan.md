@@ -1,66 +1,40 @@
 
 
-## Make Portal Data Fully Actionable in Web Submissions
+## Add Merchant Activation UI to Opportunity Detail
 
 ### Problem
-1. **`merchant_registered` doesn't create an `applications` row** — only sends notifications, so new portal sign-ups don't appear in Web Submissions until `application_progress` fires
-2. **Action buttons (Convert/Reject) only work for `status === "pending"`** — portal entries use `"registered"` or `"submitted"`, so they're visible but not actionable
-3. **Detail modal actions also gated on `status === "pending"`** — same issue in the slide-out detail view
-4. **Missing fields from portal payload** — the `handleRegistered` handler doesn't map `service_type`, and the `handleProgress` handler is missing several portal-specific fields (e.g. `moto_pct`, `b2b_pct`, `b2c_pct`, `cnp_pct`, `pricing_model`, `bank_name`, `account_holder_name`, legal address fields)
-5. **Portal documents** referenced by `storage_path` point to the ClientTerminal's storage bucket — the `ApplicationDocsBadge` looks in the CRM's `opportunity-documents` bucket, so portal docs won't show via storage listing (they're in `application_documents` table rows instead)
+The `activate-portal-merchant` edge function is deployed but has zero frontend callers. After NMI boarding succeeds, there's no way for an operator to push the NMI credentials back to the portal and activate the merchant.
+
+### Solution
+Add an "Activate on Portal" action to the Opportunity Detail modal's icon rail. It appears only when:
+- The opportunity has a `portal_merchant_id` (came from the portal)
+- The opportunity is in `live` stage OR has an NMI boarding submission with a `gateway_id`
+- The merchant hasn't already been activated (guard against double-activation)
 
 ### Changes
 
-#### 1. Edge Function: `receive-portal-milestone/index.ts`
+#### 1. `src/components/OpportunityDetailModal.tsx`
+- Add an "Activate Portal Merchant" button to the icon rail (next to the existing "View Portal Account" button)
+- Only visible to admins, only for portal-linked opportunities
+- On click, opens a confirmation dialog that:
+  - Auto-fills `portal_merchant_id` from the opportunity
+  - Auto-fills `nmi_gateway_id` from `nmi_boarding_submissions` (lookup by `opportunity_id`)
+  - Asks operator to confirm/enter: `nmi_api_key`, `nmi_public_key`, `pricing_model` (dropdown: interchange_plus / flat_rate)
+  - Shows a summary before submitting
+- Calls `activate-portal-merchant` edge function
+- On success: shows toast, logs activity, refreshes opportunity
 
-**`handleRegistered`** — After sending notifications, insert a minimal `applications` row:
-- `status: 'registered'`, `source: 'merchant_portal'`
-- `portal_merchant_id`, `full_name`, `email`, `company_name`, `service_type`
-- Guard with a check that no row with this `portal_merchant_id` already exists
-- This triggers `notify_on_new_web_submission` which is fine — it's a real new submission
+#### 2. `src/pages/OpportunityDetail.tsx`
+- Mirror the same activation button for the full-page detail view
 
-**`handleProgress`** — Add missing field mappings from the portal payload:
-- `moto_pct` → store in `raw_portal_data` (no column exists; already captured)
-- `pricing_model`, `bank_name`, `account_holder_name` — store in `raw_portal_data`
-- Legal address fields: `legal_address_line1` → could map to existing columns if we add them, or rely on `raw_portal_data`
-
-#### 2. Web Submissions UI: `src/pages/WebSubmissions.tsx`
-
-**Status badges** — Add cases in `getStatusBadge`:
-- `"registered"` → Blue badge "Registered"
-- `"submitted"` → Amber badge "Submitted"
-
-**Action buttons (table rows, lines ~761 and ~807)** — Change:
-```
-app.status === "pending"
-```
-to:
-```
-["pending", "registered", "submitted"].includes(app.status ?? "")
-```
-
-**Detail modal actions (line ~995)** — Same change:
-```
-selectedApp.status === "pending"
-```
-to:
-```
-["pending", "registered", "submitted"].includes(selectedApp.status ?? "")
-```
-
-**Document display** — Update `ApplicationDocsBadge` and `ApplicationDocsDetail` to also check the `application_documents` table (not just storage listing), since portal documents are recorded there with `file_path` references to the portal's storage:
-- Query `application_documents` table for the application ID
-- Show count from both sources (storage files + DB records)
-- For portal docs, use the `generate-portal-doc-url` edge function to get signed URLs
-
-#### 3. Database Migration (if needed)
-
-No schema changes required — all portal fields either map to existing `applications` columns or are preserved in the `raw_portal_data` JSONB column. The conversion function already reads from `raw_portal_data` fallback fields.
+#### 3. Auto-fill from NMI Boarding
+- Query `nmi_boarding_submissions` for the opportunity to pre-populate the gateway ID and merchant credentials
+- If NMI boarding was successful, most fields are already known — operator just confirms and clicks "Activate"
 
 ### Files Modified
-- `supabase/functions/receive-portal-milestone/index.ts` — Add applications row on registration
-- `src/pages/WebSubmissions.tsx` — Unlock actions for registered/submitted statuses, fix doc display for portal entries
+- `src/components/OpportunityDetailModal.tsx` — Add activation dialog + button
+- `src/pages/OpportunityDetail.tsx` — Same activation action on full-page view
 
 ### Result
-Portal registrations appear immediately in Web Submissions with full Convert to Pipeline / Reject actions, matching the same workflow as web form submissions. Service type (gateway vs processing) is preserved from registration through to pipeline conversion.
+After NMI boarding, the operator clicks "Activate on Portal" → confirms NMI credentials → portal merchant goes live instantly, triggering the portal's Realtime update so the merchant sees their dashboard switch from pending to active.
 
