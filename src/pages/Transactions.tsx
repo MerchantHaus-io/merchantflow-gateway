@@ -20,6 +20,7 @@ import {
   Shield, AlertCircle, ArrowDownRight, ArrowUpRight, Minus, ChevronDown, ChevronUp,
   FileText, Download, Coins, Calendar,
 } from "lucide-react";
+import { toast } from "sonner";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, CartesianGrid,
 } from "recharts";
@@ -195,6 +196,7 @@ const Transactions = () => {
   const [expandedTx, setExpandedTx] = useState<string | null>(null);
   const [commMonth, setCommMonth] = useState(() => new Date().getMonth() + 1);
   const [commYear, setCommYear] = useState(() => new Date().getFullYear());
+  const [merchantSyncing, setMerchantSyncing] = useState(false);
 
   const { startDate, endDate } = getDateRange(datePreset);
 
