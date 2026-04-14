@@ -1252,6 +1252,17 @@ const OpportunityDetail = () => {
         show={showDeathSplash}
         onComplete={() => setShowDeathSplash(false)}
       />
+      {/* Portal Activation Dialog */}
+      {opportunity?.portal_merchant_id && (
+        <PortalActivationDialog
+          open={showActivationDialog}
+          onOpenChange={setShowActivationDialog}
+          opportunityId={opportunity.id}
+          portalMerchantId={opportunity.portal_merchant_id}
+          accountName={account?.name}
+          onSuccess={() => fetchOpportunity()}
+        />
+      )}
     </AppLayout>
   );
 };
