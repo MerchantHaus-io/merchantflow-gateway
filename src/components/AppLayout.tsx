@@ -14,8 +14,9 @@ import { OfficeSimulatorOverlay } from "@/components/chat/OfficeSimulatorOverlay
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTheme } from "@/contexts/ThemeContext";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 const Starfield = lazy(() => import("@/components/Starfield"));
 
