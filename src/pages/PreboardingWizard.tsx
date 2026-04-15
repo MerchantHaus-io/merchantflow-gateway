@@ -1200,7 +1200,7 @@ function DocumentsStep({ form, onChange, onDocsChange, opportunityId, onDocCount
             type="button"
             onClick={handleUpload}
             disabled={form.documents.length === 0 || isUploading}
-            className="rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-foreground shadow hover:bg-primary/80 disabled:opacity-50"
+            className="rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow hover:bg-primary/90 disabled:opacity-50"
           >
             {isUploading ? 'Uploading…' : `Upload ${form.documents.length} file(s)`}
           </button>
