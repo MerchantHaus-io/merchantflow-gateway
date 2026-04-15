@@ -559,7 +559,7 @@ export default function PreboardingWizard() {
                     <span>Saving links the wizard to the application card.</span>
                     <button
                       type="button"
-                      className="ml-auto rounded-lg bg-primary px-3 py-1 text-xs font-semibold text-foreground disabled:opacity-60"
+                      className="ml-auto rounded-lg bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground disabled:opacity-60"
                       onClick={saveWizardState}
                       disabled={!selectedOpportunityId || isSaving}
                     >
