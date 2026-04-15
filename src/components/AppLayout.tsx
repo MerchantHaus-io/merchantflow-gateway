@@ -1,5 +1,5 @@
 import { ReactNode, useRef, useCallback, lazy, Suspense } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { MegaMenuHeader } from "@/components/MegaMenuHeader";
 import FloatingChat from "@/components/FloatingChat";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
@@ -14,8 +14,9 @@ import { OfficeSimulatorOverlay } from "@/components/chat/OfficeSimulatorOverlay
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTheme } from "@/contexts/ThemeContext";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 const Starfield = lazy(() => import("@/components/Starfield"));
 
@@ -37,10 +38,20 @@ export function AppLayout({
   const scrollRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const location = useLocation();
+  const navigate = useNavigate();
   const { theme, variant } = useTheme();
   const isDark = theme === "dark";
   const isDoom = variant === "dark-doom";
   const isChatRoute = location.pathname === "/chat";
+  const isTopLevel = location.pathname === "/" || location.pathname === "/dashboard";
+
+  const handleGoBack = useCallback(() => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate("/");
+    }
+  }, [navigate]);
   const handleRefresh = useCallback(async () => {
     window.location.reload();
   }, []);
@@ -78,7 +89,14 @@ export function AppLayout({
           <div className="gradient-header px-4 lg:px-6 py-3">
             <div className="flex items-center justify-between gap-4 flex-wrap">
               {pageTitle && (
-                <h1 className="text-lg font-semibold text-foreground border-l-4 border-primary pl-3">{pageTitle}</h1>
+                <div className="flex items-center gap-2">
+                  {!isTopLevel && (
+                    <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" onClick={handleGoBack}>
+                      <ArrowLeft className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <h1 className="text-lg font-semibold text-foreground border-l-4 border-primary pl-3">{pageTitle}</h1>
+                </div>
               )}
               {headerActions && <div className="flex items-center gap-2 ml-auto flex-wrap">{headerActions}</div>}
             </div>
