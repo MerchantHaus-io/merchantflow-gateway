@@ -305,20 +305,25 @@ A separate "AI Validate" action in the Documents tab triggers Gemini to cross-re
 ## 7. Pipeline & Workflow
 
 ### Service Types
-- **Processing** — Full merchant onboarding with underwriting
-- **Gateway Only** — Simplified gateway configuration flow (lightened requirements: Voided Check + VAR/Tear Sheet only, no AI validation or beneficial ownership gate)
-- **Document Submission** — Compliance document uploads only
+- **Processing** — Full merchant onboarding with underwriting (10 stages)
+- **Gateway Only** — Simplified gateway configuration (7 stages: skips App Prep, Underwriting, Approved)
 
-### Active Pipeline Stages
-\`Discovery\` → \`Qualified\` → \`App Prep\` → \`Underwriting\` → \`Approved\` → \`Gateway Setup\` → \`Integration\` → \`Testing\` → \`Go Live Ready\`
+### Active Pipeline Stages (Processing)
+\`Discovery\` → \`Qualified\` → \`App Prep\` → \`Underwriting\` → \`Approved\` → \`Gateway Setup\` → \`Integration\` → \`Testing\` → \`Go Live Ready\` → \`Closed Won\`
+
+### Active Pipeline Stages (Gateway Only)
+\`Discovery\` → \`Qualified\` → \`Gateway Setup\` → \`Integration\` → \`Testing\` → \`Go Live Ready\` → \`Closed Won\`
 
 ### Terminal Outcomes (Off-Board)
-Selecting an outcome removes the deal from the active board, records a reason/notes/close date/closer, and disables further stage movement:
-- **Closed Won** — automatically tracked in Live & Billing report
-- **Closed Lost** — sets status to 'dead', preserves historical data
-- **Disqualified** — sets status to 'dead'
-- **No Decision / Dead** — sets status to 'dead'
-- **Underwriting Declined** — sets status to 'dead'
+Selecting an outcome removes the deal from the active board, records reason/notes/close date/closer, and disables further stage movement:
+- **Closed Won** (13 reasons) — status set to 'won', tracked in Live & Billing
+- **Closed Lost** (15 reasons) — status set to 'dead', no email, 7 reasons create re-engagement tasks (30–180 days)
+- **Disqualified** (14 reasons) — status set to 'dead', compliance email auto-sent, 6 reasons permanently suppressed
+- **No Decision / Dead** (13 reasons) — status set to 'dead', no email, 5 reasons create re-engagement tasks (14–90 days)
+- **Underwriting Declined** (15 reasons) — status set to 'dead', adverse action email (ECOA/FCRA) auto-sent, 5 remediable reasons create tasks (14–180 days)
+
+### Re-engagement Task Automation
+When an outcome is set, the system auto-creates a dated follow-up task for the assigned rep unless the reason is in the permanent suppression list (OFAC, MATCH/TMF, AML, fraud, prohibited MCC, previously terminated).
 
 ### Underwriting Gate (Processing Deals)
 Before a deal can advance to Underwriting, it must pass document validation:
@@ -330,19 +335,22 @@ Before a deal can advance to Underwriting, it must pass document validation:
 6. ≥ 1 beneficial owner with 25%+ equity recorded
 
 ### Pipeline UX
-- **Hybrid 75/25 layout** — Kanban board (top) + high-density List View (bottom, max-w-3xl)
+- **Hybrid 75/25 layout** — Kanban board (top) + high-density List View (bottom)
 - **Sticky column headers** — fixed during vertical scroll
-- **Focus Mode** (\`?focus=true\`) — filters to active deals and tasks only
-- **SLA velocity alerts** — two-tier system: amber at 12 hours, red at 24 hours (resets on stage movement)
+- **SLA velocity alerts** — two-tier: amber at 12 hours, red at 24 hours (resets on stage movement)
+- **Muted cards** — deals not assigned to current user appear muted
+- **Outcome display** — detail view shows status badge, reason label, email status, and scheduled re-engagement tasks
 
 ### Automation
 - SLA tracking: Automatic 24-hour SLA tasks on stage entry
 - Realtime: Pipeline board, chat, and notifications use WebSocket subscriptions
 - Auto-assignment: Web submissions at 100% completion assigned to support@merchanthaus.io
 - Stage change notifications: Email + in-app + push notifications on assignment and stage transitions
-- System messages: Automated chat posts to #ops-updates for assignments and key events
+- System messages: Automated chat posts to #ops-updates for key events
 - AI validation: On-demand document readiness checks via Gemini
-- Preboarding completion: "Mark Preboarding Complete" persists form state and logs activity but keeps the deal in App Prep for final review
+- Compliance emails: Auto-sent for Disqualified and Underwriting Declined outcomes
+- Re-engagement tasks: Auto-created with cooling-off periods based on outcome reason
+- Gateway auto-creation: Processing approved → auto-creates Gateway card if none exists
 
 
 ---
