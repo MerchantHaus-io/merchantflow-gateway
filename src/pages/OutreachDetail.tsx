@@ -383,7 +383,7 @@ export default function OutreachDetail() {
         <div className="shrink-0 border-b border-border/60 px-6 py-4 bg-background">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div className="flex items-start gap-3 min-w-0">
-              <Button variant="ghost" size="icon" className="shrink-0 mt-0.5" onClick={() => navigate("/outreach")}>
+              <Button variant="ghost" size="icon" className="shrink-0 mt-0.5" onClick={() => window.history.length > 1 ? navigate(-1) : navigate("/outreach")}>
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div className="min-w-0">

@@ -247,9 +247,9 @@ const LiveAccountDetail = () => {
     return (
       <AppLayout>
         <div className="p-4 lg:p-6">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/live-billing")}>
+          <Button variant="ghost" size="sm" onClick={() => window.history.length > 1 ? navigate(-1) : navigate("/live-billing")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Live & Billing
+            Back
           </Button>
           <div className="flex items-center justify-center h-64">
             <p className="text-muted-foreground">Account not found</p>
@@ -276,7 +276,7 @@ const LiveAccountDetail = () => {
           </div>
           <div className="relative z-20 flex items-start justify-between gap-4">
             <div className="flex items-center gap-3 min-w-0">
-              <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate("/live-billing")}>
+              <Button variant="ghost" size="icon" className="shrink-0" onClick={() => window.history.length > 1 ? navigate(-1) : navigate("/live-billing")}>
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div className="min-w-0">

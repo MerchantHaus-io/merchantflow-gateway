@@ -722,7 +722,7 @@ const OpportunityDetail = () => {
     return (
       <AppLayout>
         <div className="p-4">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/opportunities')}>
+          <Button variant="ghost" size="sm" onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/opportunities')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
@@ -737,7 +737,7 @@ const OpportunityDetail = () => {
   return (
     <AppLayout
       headerActions={
-        <Button variant="ghost" size="sm" onClick={() => navigate('/opportunities')}>
+        <Button variant="ghost" size="sm" onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/opportunities')}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
