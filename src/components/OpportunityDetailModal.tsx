@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Opportunity, STAGE_CONFIG, Account, Contact, getServiceType, EMAIL_TO_USER, TEAM_MEMBERS, OpportunityStage, PROCESSING_PIPELINE_STAGES, GATEWAY_ONLY_PIPELINE_STAGES, OutcomeStatus, OUTCOME_CONFIG } from "@/types/opportunity";
 import { OutcomeSelector } from "./OutcomeSelector";
+import { OutcomeDisplaySection } from "./opportunity-detail/OutcomeDisplaySection";
+import { OUTCOME_REASONS, OUTCOME_STATUS_LABELS, EMAIL_TRIGGERING_OUTCOMES, PERMANENT_SUPPRESSION_REASONS, REENGAGEMENT_TASKS } from "@/config/outcomeReasons";
 import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, Zap, CreditCard, Loader2, Wand2, RotateCcw, Eye, Check, ExternalLink, ArrowLeft, MoreHorizontal } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
@@ -904,79 +906,126 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   // Outcome handler
   const handleOutcomeSelect = async (outcome: OutcomeStatus, reason: string, notes: string) => {
     if (!opportunity) return;
-    const isNegativeOutcome = outcome !== 'closed_won';
+
+    // Step 0: Idempotency guard
+    const { data: existing } = await supabase
+      .from('opportunities')
+      .select('outcome_status')
+      .eq('id', opportunity.id)
+      .single();
+    if (existing?.outcome_status) {
+      toast.error("This opportunity already has an outcome recorded. To change it, contact your administrator.");
+      return;
+    }
+
+    // Step 1: Update opportunities table
+    const newStatus = outcome === 'closed_won' ? 'won' : 'dead';
+    const closedAt = new Date().toISOString();
     const { error } = await supabase
       .from('opportunities')
       .update({
         outcome_status: outcome,
         outcome_reason: reason,
-        outcome_notes: notes,
-        outcome_closed_at: new Date().toISOString(),
+        outcome_notes: notes || null,
+        outcome_closed_at: closedAt,
         outcome_closed_by: user?.email,
-        ...(isNegativeOutcome ? { status: 'dead' } : {}),
+        status: newStatus,
+        ...(outcome === 'closed_won' ? { stage: 'closed_won' as OpportunityStage } : {}),
+        updated_at: closedAt,
       })
       .eq('id', opportunity.id);
-    if (error) { toast.error("Failed to set outcome"); return; }
-    await supabase.from('activities').insert({
+
+    if (error) {
+      toast.error("Failed to record outcome. Please try again.");
+      return;
+    }
+
+    // Step 2: Activity log
+    const reasonLabel = OUTCOME_REASONS[outcome]?.find(r => r.value === reason)?.label ?? reason;
+    const statusLabel = OUTCOME_STATUS_LABELS[outcome] ?? outcome;
+    supabase.from('activities').insert({
       opportunity_id: opportunity.id,
       type: 'outcome_set',
-      description: `Outcome: ${OUTCOME_CONFIG[outcome].label} — ${reason}`,
-      user_id: user?.id,
+      description: `Outcome set: ${statusLabel} — ${reasonLabel}`,
       user_email: user?.email,
+      created_at: closedAt,
+    }).then(({ error: actErr }) => {
+      if (actErr) console.error('Activity log failed:', actErr);
     });
-    onUpdate({
-      ...opportunity,
-      outcome_status: outcome,
-      outcome_reason: reason,
-      outcome_notes: notes,
-      outcome_closed_at: new Date().toISOString(),
-      outcome_closed_by: user?.email,
-      ...(isNegativeOutcome ? { status: 'dead' } : {}),
-    });
-    toast.success(`Outcome set: ${OUTCOME_CONFIG[outcome].label}`);
-    const EMAIL_WORTHY_OUTCOMES = ['underwriting_declined', 'disqualified'];
-    if (EMAIL_WORTHY_OUTCOMES.includes(outcome) && opportunity.contact?.email) {
-      const contactName = [opportunity.contact?.first_name, opportunity.contact?.last_name].filter(Boolean).join(' ') || 'Valued Applicant';
-      supabase.functions.invoke('send-application-declined', {
-        body: {
-          recipientEmail: opportunity.contact.email,
-          recipientName: contactName,
-          accountName: opportunity.account?.name || '',
-          outcomeStatus: outcome,
-          outcomeReason: reason,
-          outcomeNotes: notes,
-        },
+
+    // Step 3: Email invocation (fire-and-forget for email-triggering outcomes)
+    if (EMAIL_TRIGGERING_OUTCOMES.includes(outcome)) {
+      supabase.functions.invoke('send-outcome-email', {
+        body: { opportunity_id: opportunity.id, outcome_status: outcome, outcome_reason: reason },
       }).then(({ error: emailErr }) => {
         if (emailErr) {
-          console.error('Failed to send decline email:', emailErr);
-        } else {
-          console.log('Decline email sent to', opportunity.contact?.email);
           supabase.from('activities').insert({
             opportunity_id: opportunity.id,
-            type: 'email_sent',
-            description: `Notification email sent to ${opportunity.contact?.email} (${OUTCOME_CONFIG[outcome].label}: ${reason})`,
-            user_id: user?.id,
-            user_email: user?.email,
+            type: 'email_failed',
+            description: `COMPLIANCE EMAIL FAILED — Outcome: ${outcome} — ${emailErr.message}. Manual follow-up required.`,
+            user_email: 'system',
+            created_at: new Date().toISOString(),
           }).then(() => {});
+        }
+        // Also log to client interactions for audit trail
+        if (!emailErr && opportunity.contact?.email) {
+          const contactName = [opportunity.contact?.first_name, opportunity.contact?.last_name].filter(Boolean).join(' ') || 'Valued Applicant';
           supabase.from('client_interactions').insert({
             account_id: opportunity.account_id,
-            subject: `Decline email sent — ${opportunity.account?.name || ''}`,
+            subject: `Compliance notification sent — ${opportunity.account?.name || ''}`,
             interaction_type: 'email',
             channel: 'email',
             contact_name: contactName,
             contact_email: opportunity.contact?.email || '',
-            notes: `Application ${OUTCOME_CONFIG[outcome].label}: ${reason}. Decline notification email sent to ${opportunity.contact?.email}.`,
+            notes: `${statusLabel}: ${reasonLabel}. Compliance notification email sent to ${opportunity.contact?.email}.`,
             status: 'closed',
             outcome: 'sent',
             created_by: user?.id,
             created_by_email: user?.email,
           }).then(() => {});
         }
+      }).catch((err) => {
+        console.error('send-outcome-email invocation error:', err);
       });
-      setTimeout(() => onClose(), 1500);
-    } else if (isNegativeOutcome) {
-      setTimeout(() => onClose(), 1500);
     }
+
+    // Step 4: Re-engagement task (skip for permanently suppressed reasons)
+    if (!PERMANENT_SUPPRESSION_REASONS.includes(reason)) {
+      const taskConfig = REENGAGEMENT_TASKS[reason];
+      if (taskConfig) {
+        const dueAt = new Date(Date.now() + taskConfig.days * 86400000).toISOString();
+        supabase.from('activities').insert({
+          opportunity_id: opportunity.id,
+          type: 'task_scheduled',
+          description: taskConfig.label,
+          due_at: dueAt,
+          assigned_to: opportunity.assigned_to || user?.email,
+          user_email: 'system',
+          created_at: new Date().toISOString(),
+        }).then(({ error: taskErr }) => {
+          if (taskErr) console.error('Re-engagement task creation failed:', taskErr);
+        });
+      }
+    }
+
+    // Step 5: Update local state and close
+    onUpdate({
+      ...opportunity,
+      outcome_status: outcome,
+      outcome_reason: reason,
+      outcome_notes: notes || null,
+      outcome_closed_at: closedAt,
+      outcome_closed_by: user?.email,
+      status: newStatus as 'active' | 'dead',
+      ...(outcome === 'closed_won' ? { stage: 'closed_won' as OpportunityStage } : {}),
+    });
+
+    const toastMsg = EMAIL_TRIGGERING_OUTCOMES.includes(outcome)
+      ? "Outcome recorded. Compliance notification email queued for delivery."
+      : "Outcome recorded.";
+    toast.success(toastMsg);
+
+    setTimeout(() => onClose(), 1500);
   };
 
   if (!opportunity) return null;
@@ -1301,6 +1350,9 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
 
             {activeSection === 'overview' && (
               <div className="space-y-6">
+                {opportunity.outcome_status && (
+                  <OutcomeDisplaySection opportunity={opportunity} />
+                )}
                 <ApplicationProgress 
                   opportunity={opportunity} 
                   wizardState={wizardState ? {
