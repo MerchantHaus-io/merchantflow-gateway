@@ -569,46 +569,51 @@ export default function PreboardingWizard() {
                 </div>
               </div>
 
-              <ol className="flex flex-wrap gap-2 text-xs font-medium text-muted-foreground">
-                {steps.map((label, index) => (
-                  <li
-                    key={label}
-                    onClick={() => setStepIndex(index)}
-                    className={cn(
-                      "flex items-center gap-2 rounded-full border px-3 py-1 cursor-pointer transition-colors hover:bg-secondary/30",
-                      index === stepIndex
-                        ? "border-primary/70 bg-primary/10 text-foreground"
-                        : index < stepIndex
-                          ? "border-border bg-secondary/20 text-foreground"
-                          : "border-border text-muted-foreground"
-                    )}
-                  >
-                    <span className="h-5 w-5 rounded-full border border-border text-center text-[11px] leading-5">
-                      {index + 1}
-                    </span>
-                    <span>{label}</span>
-                  </li>
-                ))}
-              </ol>
+              <nav className="flex items-center justify-between gap-1 md:gap-2 overflow-x-auto pb-1 md:pb-2">
+                {steps.map((step, index) => {
+                  const StepIcon = step.icon;
+                  const isActive = index === stepIndex;
+                  const isCompleted = index < stepIndex;
+                  return (
+                    <button key={step.label} onClick={() => setStepIndex(index)} className={cn(
+                      "flex items-center gap-1.5 md:gap-3 px-2 py-1.5 md:px-4 md:py-3 rounded-lg flex-1 min-w-0 transition-all border-b-2",
+                      isActive ? "bg-card border-primary shadow-sm" : isCompleted ? "bg-card/50 border-primary/50" : "bg-transparent border-transparent hover:bg-card/50"
+                    )}>
+                      <div className={cn("w-6 h-6 md:w-10 md:h-10 rounded-full flex items-center justify-center flex-shrink-0", isActive ? "bg-primary/10 text-primary" : isCompleted ? "bg-primary/5 text-primary/70" : "bg-secondary text-muted-foreground")}>
+                        <StepIcon className="w-3 h-3 md:w-5 md:h-5" />
+                      </div>
+                      <div className="text-left min-w-0 hidden sm:block">
+                        <p className={cn("text-xs md:text-sm font-medium truncate", isActive ? "text-primary" : isCompleted ? "text-primary/70" : "text-muted-foreground")}>{step.label}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </nav>
 
               <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(280px,1fr)]">
-                <section className="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-xl">
-                  {currentStep === "Business Profile" && (
+                <section className="bg-card rounded-xl md:rounded-2xl border border-border shadow-sm overflow-visible">
+                  <div className="p-4 md:p-6">
+                    <div className="mb-4 md:mb-6">
+                      <h2 className="text-base md:text-xl font-semibold text-foreground">{currentStep.label}</h2>
+                      <p className="text-xs md:text-sm text-muted-foreground mt-0.5">Required fields marked with <span className="text-destructive">*</span></p>
+                    </div>
+
+                  {currentStep.label === "Business Profile" && (
                     <BusinessProfileStep form={form} onChange={handleChange} />
                   )}
-                  {currentStep === "Legal Information" && (
+                  {currentStep.label === "Legal Information" && (
                     <LegalInfoStep form={form} onChange={handleChange} />
                   )}
-                  {currentStep === "Processing Information" && (
+                  {currentStep.label === "Processing Information" && (
                     <ProcessingStep form={form} onChange={handleChange} />
                   )}
-                  {(currentStep === "Documents" || currentStep === "Documents & Submit") && (
+                  {(currentStep.label === "Documents" || currentStep.label === "Documents & Submit") && (
                     <DocumentsStep form={form} onChange={handleChange} onDocsChange={handleDocsChange} opportunityId={selectedOpportunityId} onDocCountChange={setUploadedDocCount} onDocTypeCountsChange={setUploadedDocTypeCounts} />
                   )}
-                  {currentStep === "Review" && (
+                  {currentStep.label === "Review" && (
                     <ReviewStep form={form} missingBySection={missingBySection as any} />
                   )}
-                  {currentStep === "Business Details" && (
+                  {currentStep.label === "Business Details" && (
                     <GatewayBusinessStep form={form} onChange={handleChange} />
                   )}
 
