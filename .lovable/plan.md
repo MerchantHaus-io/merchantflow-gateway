@@ -1,93 +1,35 @@
 
 
-# Full-Screen Opportunity Detail View
+# Universal Back Navigation
 
-## Summary
-Replace the current `<Dialog>`-based `OpportunityDetailModal` with a full-screen overlay using a three-column layout matching the approved mockup. All 1836 lines of business logic, auto-save, stage gates, outcome handling, portal activation, and alert dialogs are preserved — only the layout wrapper and navigation change.
+## Problem
+Detail pages (OpportunityDetail, LiveAccountDetail, OutreachDetail, etc.) hardcode their back destination (e.g., always goes to `/opportunities`). If you arrived from Contacts or Accounts, clicking "Back" takes you to the wrong place.
 
-## Architecture
+## Solution
+Two changes:
 
-```text
-┌──────────────────────────────────────────────────────────┐
-│  STICKY HEADER                                           │
-│  [← Back]  Company Name  ●Type  Stage▾  Owner▾           │
-│  [Edit/Save] [Outcome] [Switch] [Download] [Delete] ...  │
-│  StagePath stepper (horizontal)                          │
-├────────────┬─────────────────────────┬───────────────────┤
-│  LEFT      │  CENTER                 │  RIGHT            │
-│  SIDEBAR   │  PRIMARY                │  CONTEXT          │
-│  (260px)   │  (flex-1, scrollable)   │  (320px, scroll)  │
-│            │                         │                   │
-│  Quick     │  Overview / UW /        │  Activity feed    │
-│  Info      │  Notes / Docs /         │  (always visible) │
-│  Card      │  Details                │                   │
-│            │                         │  Status/Blocker   │
-│  Section   │                         │  (inline)         │
-│  Nav       │                         │                   │
-│  (labeled) │                         │  Comments         │
-│            │                         │  (inline)         │
-│  Wizard    │                         │                   │
-│  Progress  │                         │                   │
-└────────────┴─────────────────────────┴───────────────────┘
+### 1. AppLayout — Add a back button to the page header
+When `pageTitle` is rendered in the gradient-header bar, add a back arrow button before the title that calls `navigate(-1)` (browser history back). This gives every page using `AppLayout` with a `pageTitle` an automatic back button. Exclude the homepage (`/` and `/dashboard`) since there's nowhere to go back to.
 
-MOBILE: single column, header compact, left nav → pills, right panel → tab
-```
+### 2. Detail pages — Replace hardcoded routes with `navigate(-1)`
+Update these pages to use `navigate(-1)` instead of hardcoded paths for their back buttons:
 
-## Files to Create
+| Page | Current target | Change to |
+|------|---------------|-----------|
+| `OpportunityDetail.tsx` | `/opportunities` | `navigate(-1)` |
+| `LiveAccountDetail.tsx` | `/live-billing` | `navigate(-1)` |
+| `OutreachDetail.tsx` | `/outreach` | `navigate(-1)` |
 
-### 1. `src/components/opportunity-detail/DetailSidebar.tsx`
-- **Quick Info card**: Company name, contact name, phone (click-to-call), email, deal value, website link
-- **Section navigation**: Labeled text links with icons and active left-border accent (replaces IconRail's tiny icons)
-- **Wizard progress**: Four mini progress bars (Business, Legal, Processing, Documents) with percentage labels
-- Receives `opportunity`, `resolvedAccount`, `resolvedContact`, `wizardSectionProgress`, `activeSection`, `onSelect` as props
+Error/redirect navigations (e.g., "opportunity not found → go to /opportunities") stay hardcoded — those are fallbacks, not user-initiated back actions.
 
-### 2. `src/components/opportunity-detail/DetailRightPanel.tsx`
-- **Activity feed**: Renders `<ActivitiesTab>` in compact scrollable area (always visible, no tab switch needed)
-- **Status/Blocker**: Renders `<StatusBlockerFloating>` inline instead of as a floating popover
-- **Comments**: Renders `<CommentsTab>` inline below activity
-- Receives `opportunityId`, `opportunity`, `wizardProgress`, `onUpdate`
+### Technical detail
+- Uses browser history stack via React Router's `navigate(-1)`
+- Fallback: if there's no history (direct URL visit), `navigate(-1)` is a no-op in the browser — we'll add a guard that checks `window.history.length > 1` before going back, otherwise navigates to `/`
+- The AppLayout back button only shows on inner pages, not on top-level dashboard
 
-## Files to Modify
-
-### 3. `src/components/OpportunityDetailModal.tsx` — Major restructure
-**What changes:**
-- Remove `<Dialog>` / `<DialogContent>` wrapper → replace with `fixed inset-0 z-50 bg-background` overlay
-- Remove `isMaximized` state (always full-screen now)
-- Remove `<IconRail>` usage → use new `<DetailSidebar>` on desktop
-- Move Activity tab content and Comments to `<DetailRightPanel>` (remove `activity` from `MODAL_SECTIONS`)
-- Move `StatusBlockerFloating` from header area into `<DetailRightPanel>`
-- Extract header into a dedicated sticky section with `← Back` button calling `onClose()`
-- `StagePath` sits permanently below header (not conditional on active section)
-- Live badge overlay repositioned for full-screen context
-- Slide-in animation: `translate-x-full → translate-x-0` on mount
-
-**What stays identical (no logic changes):**
-- All state variables and handlers (stage change, outcome, owner, edit/save, auto-save, portal, delete, mark dead, reactivation, pipeline switch, download, service type change)
-- All `AlertDialog` instances (reactivate, dead, delete, pipeline switch, request deletion)
-- `GameSplash` death animation
-- All sub-panels (`ApplicationProgress`, `BeneficialOwners`, `OverviewUnderwritingSummary`, `AIValidatePanel`, `NotesSection`, `DocumentsTab`)
-- `InfoItem` and `EditField` helper components
-- Keyboard shortcuts (adjusted: sections reduced from 6 to 5 since activity moves to right panel)
-- Wizard field management, resolved account/contact logic, auto-save with cross-sync
-
-**Mobile adaptation:**
-- Three columns collapse to single column with full width
-- Left sidebar becomes horizontal scrollable pills below the header
-- Right panel (Activity/Comments/Status) becomes an additional tab in the pill nav
-- Header actions collapse into an overflow dropdown menu
-- Stage path remains horizontally scrollable with existing touch drag support
-
-### 4. `src/components/opportunity-detail/IconRail.tsx` — Keep file, no longer imported by the modal
-- File remains for potential reuse elsewhere but is replaced by `DetailSidebar` in the opportunity detail view
-
-## No Changes Required
-- `src/pages/Index.tsx`, `src/pages/Opportunities.tsx`, `src/components/UnifiedPipelineBoard.tsx` — same props interface (`opportunity`, `onClose`, `onUpdate`, etc.), no changes needed
-- All sub-panel components remain untouched
-- No database changes
-- No edge function changes
-
-## Animation
-- Mount: `translate-x-full → translate-x-0` with 200ms ease-out
-- Unmount: `translate-x-0 → translate-x-full` with 150ms ease-in
-- Backdrop: fade in/out synchronized
+### Files changed
+- `src/components/AppLayout.tsx` — back button in gradient-header
+- `src/pages/OpportunityDetail.tsx` — replace hardcoded `/opportunities` back buttons with `navigate(-1)`
+- `src/pages/LiveAccountDetail.tsx` — replace hardcoded `/live-billing` back buttons
+- `src/pages/OutreachDetail.tsx` — replace hardcoded `/outreach` back button
 
