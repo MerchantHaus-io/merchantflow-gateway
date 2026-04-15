@@ -255,7 +255,7 @@ const createFormFromOpportunity = (opportunity?: OpportunityWithRelations | null
 };
 
 const wizardStatusClasses = (value: number) => {
-  if (value >= 100) return "bg-emerald-500/10 text-emerald-500 border border-emerald-500/40";
+  if (value >= 100) return "bg-emerald-500/10 text-emerald-400 border border-emerald-500/40";
   if (value >= 10) return "bg-amber-500/10 text-amber-400 border border-amber-500/40";
   return "bg-destructive/10 text-destructive border border-destructive/40";
 };
@@ -520,12 +520,12 @@ export default function PreboardingWizard() {
             <div className="max-w-6xl mx-auto space-y-6">
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">Use this preboarding checklist before the formal application.</p>
+                  <p className="text-sm text-gray-400">Use this preboarding checklist before the formal application.</p>
                   <div className="flex items-center gap-2">
-                    <div className="h-2 w-48 rounded-full bg-secondary overflow-hidden">
-                      <div className="h-full bg-primaryLight transition-all" style={{ width: `${progress}%` }} />
+                    <div className="h-2 w-48 rounded-full bg-merchant-gray overflow-hidden">
+                      <div className="h-full bg-merchant-redLight transition-all" style={{ width: `${progress}%` }} />
                     </div>
-                    <span className="text-sm font-semibold text-foreground">{progress}% complete</span>
+                    <span className="text-sm font-semibold text-white">{progress}% complete</span>
                   </div>
                   {selectedOpportunityId && (
                     <div className={cn("inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs", wizardStatusClasses(progress))}>
@@ -535,15 +535,15 @@ export default function PreboardingWizard() {
                   )}
                 </div>
 
-                <div className="rounded-2xl border border-border bg-card px-4 py-3 shadow-xl w-full md:w-[360px] space-y-2">
-                  <div className="flex items-center justify-between text-sm text-foreground">
+                <div className="rounded-2xl border border-merchant-gray bg-merchant-dark px-4 py-3 shadow-xl w-full md:w-[360px] space-y-2">
+                  <div className="flex items-center justify-between text-sm text-white">
                     <span>Attach to dashboard account</span>
-                    {isLoadingState && <span className="text-xs text-muted-foreground">Loading…</span>}
+                    {isLoadingState && <span className="text-xs text-gray-400">Loading…</span>}
                   </div>
                   <select
                     value={selectedOpportunityId ?? ""}
                     onChange={event => setSelectedOpportunityId(event.target.value || null)}
-                    className="w-full rounded-xl border border-border bg-muted px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="w-full rounded-xl border border-merchant-gray bg-merchant-black px-3 py-2 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-merchant-red"
                   >
                     <option value="">Select an account to sync</option>
                     {opportunityOptions.map(option => (
@@ -552,11 +552,11 @@ export default function PreboardingWizard() {
                       </option>
                     ))}
                   </select>
-                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-400">
                     <span>Saving links the wizard to the application card.</span>
                     <button
                       type="button"
-                      className="ml-auto rounded-lg bg-primary px-3 py-1 text-xs font-semibold text-foreground disabled:opacity-60"
+                      className="ml-auto rounded-lg bg-merchant-red px-3 py-1 text-xs font-semibold text-white disabled:opacity-60"
                       onClick={saveWizardState}
                       disabled={!selectedOpportunityId || isSaving}
                     >
@@ -566,21 +566,21 @@ export default function PreboardingWizard() {
                 </div>
               </div>
 
-              <ol className="flex flex-wrap gap-2 text-xs font-medium text-muted-foreground">
+              <ol className="flex flex-wrap gap-2 text-xs font-medium text-gray-400">
                 {steps.map((label, index) => (
                   <li
                     key={label}
                     onClick={() => setStepIndex(index)}
                     className={cn(
-                      "flex items-center gap-2 rounded-full border px-3 py-1 cursor-pointer transition-colors hover:bg-secondary/30",
+                      "flex items-center gap-2 rounded-full border px-3 py-1 cursor-pointer transition-colors hover:bg-merchant-gray/30",
                       index === stepIndex
-                        ? "border-primary/70 bg-primary/10 text-foreground"
+                        ? "border-merchant-redLight/70 bg-merchant-red/10 text-white"
                         : index < stepIndex
-                          ? "border-border bg-secondary/20 text-foreground"
-                          : "border-border text-muted-foreground"
+                          ? "border-merchant-gray bg-merchant-gray/20 text-white"
+                          : "border-merchant-gray text-gray-400"
                     )}
                   >
-                    <span className="h-5 w-5 rounded-full border border-border text-center text-[11px] leading-5">
+                    <span className="h-5 w-5 rounded-full border border-merchant-gray text-center text-[11px] leading-5">
                       {index + 1}
                     </span>
                     <span>{label}</span>
@@ -589,7 +589,7 @@ export default function PreboardingWizard() {
               </ol>
 
               <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(280px,1fr)]">
-                <section className="space-y-4 rounded-2xl border border-border bg-card p-5 shadow-xl">
+                <section className="space-y-4 rounded-2xl border border-merchant-gray bg-merchant-dark p-5 shadow-xl">
                   {currentStep === "Business Profile" && (
                     <BusinessProfileStep form={form} onChange={handleChange} />
                   )}
@@ -609,10 +609,10 @@ export default function PreboardingWizard() {
                     <GatewayBusinessStep form={form} onChange={handleChange} />
                   )}
 
-                  <div className="mt-6 flex items-center justify-between border-t border-border/60 pt-4">
+                  <div className="mt-6 flex items-center justify-between border-t border-merchant-gray/60 pt-4">
                     <button
                       type="button"
-                      className="rounded-xl border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-secondary/40 disabled:opacity-40"
+                      className="rounded-xl border border-merchant-gray px-4 py-2 text-sm font-medium text-gray-200 hover:bg-merchant-gray/40 disabled:opacity-40"
                       onClick={() => setStepIndex(prev => Math.max(0, prev - 1))}
                       disabled={stepIndex === 0}
                     >
@@ -622,7 +622,7 @@ export default function PreboardingWizard() {
                     {stepIndex < steps.length - 1 ? (
                       <button
                         type="button"
-                        className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-foreground shadow hover:bg-primaryLight"
+                        className="rounded-xl bg-merchant-red px-4 py-2 text-sm font-semibold text-white shadow hover:bg-merchant-redLight"
                         onClick={() => setStepIndex(prev => Math.min(steps.length - 1, prev + 1))}
                       >
                         Next →
@@ -630,7 +630,7 @@ export default function PreboardingWizard() {
                     ) : (
                       <button
                         type="button"
-                        className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-foreground shadow hover:bg-primaryLight disabled:bg-secondary disabled:text-muted-foreground"
+                        className="rounded-xl bg-merchant-red px-4 py-2 text-sm font-semibold text-white shadow hover:bg-merchant-redLight disabled:bg-merchant-gray disabled:text-gray-500"
                         onClick={handleSubmit}
                         disabled={progress < 100}
                       >
@@ -641,12 +641,12 @@ export default function PreboardingWizard() {
                 </section>
 
                 <aside className="space-y-4">
-                  <div className="rounded-2xl border border-border bg-card p-4 shadow-xl">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                      <ShieldCheck className="w-4 h-4 text-primary" />
+                  <div className="rounded-2xl border border-merchant-gray bg-merchant-dark p-4 shadow-xl">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                      <ShieldCheck className="w-4 h-4 text-merchant-redLight" />
                       Status snapshot
                     </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
+                    <p className="mt-1 text-xs text-gray-400">
                       Move to the formal merchant application when this hits 100%.
                     </p>
 
@@ -699,9 +699,9 @@ export default function PreboardingWizard() {
                     <OutstandingSummary progress={progress} missingBySection={missingBySection as any} />
                   </div>
 
-                  <div className="rounded-2xl border border-border bg-card p-4 shadow-xl text-xs text-muted-foreground space-y-2">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                      <FileText className="w-4 h-4 text-primary" />
+                  <div className="rounded-2xl border border-merchant-gray bg-merchant-dark p-4 shadow-xl text-xs text-gray-300 space-y-2">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                      <FileText className="w-4 h-4 text-merchant-redLight" />
                       Quick tips
                     </div>
                     <ul className="list-disc space-y-1 pl-4">
@@ -720,13 +720,13 @@ export default function PreboardingWizard() {
 
 function Field({ label, required, children, hint }: { label: string; required?: boolean; children: ReactNode; hint?: string; }) {
   return (
-    <label className="space-y-1 text-sm text-foreground">
-      <span className="flex items-center gap-1 font-medium text-foreground">
+    <label className="space-y-1 text-sm text-gray-200">
+      <span className="flex items-center gap-1 font-medium text-white">
         {label}
-        {required && <span className="text-primary">*</span>}
+        {required && <span className="text-merchant-redLight">*</span>}
       </span>
       {children}
-      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      {hint && <p className="text-xs text-gray-400">{hint}</p>}
     </label>
   );
 }
@@ -736,7 +736,7 @@ function Input(props: InputHTMLAttributes<HTMLInputElement>) {
     <input
       {...props}
       className={cn(
-        "w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm text-foreground shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20",
+        "w-full rounded-lg border border-merchant-gray bg-merchant-black px-3 py-2 text-sm text-white shadow-sm focus:border-merchant-red focus:outline-none focus:ring-2 focus:ring-merchant-red/40",
         props.className
       )}
     />
@@ -752,14 +752,14 @@ function SectionStatus({ label, done, count, total }: { label: string; done: boo
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between text-xs">
-        <span className="font-medium text-foreground">{label}</span>
-        <span className="text-[11px] text-muted-foreground">
+        <span className="font-medium text-gray-200">{label}</span>
+        <span className="text-[11px] text-gray-400">
           {count}/{total} · {pct}% {done ? "✓" : ""}
         </span>
       </div>
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-border/60">
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-merchant-gray/60">
         <div
-          className={cn("h-full", done ? "bg-primaryLight" : "bg-primary/70")}
+          className={cn("h-full", done ? "bg-merchant-redLight" : "bg-merchant-red/70")}
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -769,19 +769,19 @@ function SectionStatus({ label, done, count, total }: { label: string; done: boo
 
 function OutstandingSummary({ progress, missingBySection }: { progress: number; missingBySection: Record<string, string[]>; }) {
   return (
-    <div className="mt-4 rounded-2xl border border-border bg-muted p-4 text-sm">
-      <div className="mb-2 flex items-center gap-2 font-semibold text-foreground">
-        <BadgeCheck className="w-4 h-4 text-primary" />
+    <div className="mt-4 rounded-2xl border border-merchant-gray bg-merchant-black p-4 text-sm">
+      <div className="mb-2 flex items-center gap-2 font-semibold text-white">
+        <BadgeCheck className="w-4 h-4 text-merchant-redLight" />
         Outstanding items
       </div>
       {progress === 100 ? (
-        <p className="text-emerald-500">All required items are captured. 🎉</p>
+        <p className="text-emerald-400">All required items are captured. 🎉</p>
       ) : (
-        <ul className="list-disc space-y-1 pl-5 text-muted-foreground">
+        <ul className="list-disc space-y-1 pl-5 text-gray-300">
           {Object.entries(missingBySection).map(([section, fields]) =>
             fields.length ? (
               <li key={section}>
-                <span className="font-medium capitalize text-foreground">{section.replace(/_/g, " ")}:</span> {fields.join(", ")}
+                <span className="font-medium capitalize text-white">{section.replace(/_/g, " ")}:</span> {fields.join(", ")}
               </li>
             ) : null
           )}
@@ -794,11 +794,11 @@ function OutstandingSummary({ progress, missingBySection }: { progress: number; 
 function GatewayBusinessStep({ form, onChange }: { form: PreboardingForm; onChange: <K extends keyof PreboardingForm>(field: K, value: PreboardingForm[K]) => void; }) {
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-        <Users className="w-4 h-4 text-primary" />
+      <div className="flex items-center gap-2 text-sm font-semibold text-white">
+        <Users className="w-4 h-4 text-merchant-redLight" />
         Gateway Business Details
       </div>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-xs text-gray-400">
         Simplified form for gateway-only accounts. Provide business and contact details plus your preferred NMI username.
       </p>
       <div className="grid gap-4 md:grid-cols-2">
@@ -853,8 +853,8 @@ function GatewayBusinessStep({ form, onChange }: { form: PreboardingForm; onChan
 function BusinessProfileStep({ form, onChange }: { form: PreboardingForm; onChange: <K extends keyof PreboardingForm>(field: K, value: PreboardingForm[K]) => void; }) {
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-        <Users className="w-4 h-4 text-primary" />
+      <div className="flex items-center gap-2 text-sm font-semibold text-white">
+        <Users className="w-4 h-4 text-merchant-redLight" />
         Business Profile
       </div>
       <div className="grid gap-4 md:grid-cols-2">
@@ -908,8 +908,8 @@ function BusinessProfileStep({ form, onChange }: { form: PreboardingForm; onChan
 function LegalInfoStep({ form, onChange }: { form: PreboardingForm; onChange: <K extends keyof PreboardingForm>(field: K, value: PreboardingForm[K]) => void; }) {
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-        <ShieldCheck className="w-4 h-4 text-primary" />
+      <div className="flex items-center gap-2 text-sm font-semibold text-white">
+        <ShieldCheck className="w-4 h-4 text-merchant-redLight" />
         Legal Information
       </div>
       <div className="grid gap-4 md:grid-cols-2">
@@ -954,8 +954,8 @@ function LegalInfoStep({ form, onChange }: { form: PreboardingForm; onChange: <K
 function ProcessingStep({ form, onChange }: { form: PreboardingForm; onChange: <K extends keyof PreboardingForm>(field: K, value: PreboardingForm[K]) => void; }) {
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-        <CheckCircle2 className="w-4 h-4 text-primary" />
+      <div className="flex items-center gap-2 text-sm font-semibold text-white">
+        <CheckCircle2 className="w-4 h-4 text-merchant-redLight" />
         Processing Information
       </div>
       <div className="grid gap-4 md:grid-cols-3">
@@ -1110,39 +1110,39 @@ function DocumentsStep({ form, onChange, onDocsChange, opportunityId, onDocCount
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-        <Upload className="w-4 h-4 text-primary" />
+      <div className="flex items-center gap-2 text-sm font-semibold text-white">
+        <Upload className="w-4 h-4 text-merchant-redLight" />
         Supporting Documents
       </div>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-xs text-gray-400">
         Upload anything underwriting is likely to ask for: recent bank or processing statements, voided check / bank letter, government ID, etc.
       </p>
 
       {/* Existing uploaded documents */}
       {isLoading ? (
-        <div className="flex items-center gap-2 text-xs text-muted-foreground py-4">
+        <div className="flex items-center gap-2 text-xs text-gray-400 py-4">
           <Loader2 className="w-4 h-4 animate-spin" /> Loading documents…
         </div>
       ) : existingDocs.length > 0 ? (
-        <div className="rounded-xl border border-border bg-muted p-3 text-xs space-y-2">
-          <div className="font-medium text-foreground flex items-center gap-2">
-            <FileText className="w-3.5 h-3.5 text-primary" />
+        <div className="rounded-xl border border-merchant-gray bg-merchant-black p-3 text-xs space-y-2">
+          <div className="font-medium text-white flex items-center gap-2">
+            <FileText className="w-3.5 h-3.5 text-merchant-redLight" />
             Uploaded documents ({existingDocs.length})
           </div>
-          <ul className="divide-y divide-border/40">
+          <ul className="divide-y divide-merchant-gray/40">
             {existingDocs.map((doc) => (
               <li key={doc.id} className="flex items-center justify-between py-2 gap-2">
                 <div className="min-w-0 flex-1">
-                  <p className="text-foreground truncate">{doc.file_name}</p>
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-gray-200 truncate">{doc.file_name}</p>
+                  <p className="text-[10px] text-gray-500">
                     {doc.document_type || 'Unassigned'} • {doc.file_size ? `${Math.round(doc.file_size / 1024)} KB` : '—'}
                   </p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <button type="button" onClick={() => handleDownload(doc)} className="rounded p-1 hover:bg-secondary/40 text-muted-foreground hover:text-foreground" title="Download">
+                  <button type="button" onClick={() => handleDownload(doc)} className="rounded p-1 hover:bg-merchant-gray/40 text-gray-400 hover:text-white" title="Download">
                     <Download className="w-3.5 h-3.5" />
                   </button>
-                  <button type="button" onClick={() => handleDelete(doc)} className="rounded p-1 hover:bg-destructive/20 text-muted-foreground hover:text-destructive" title="Delete">
+                  <button type="button" onClick={() => handleDelete(doc)} className="rounded p-1 hover:bg-destructive/20 text-gray-400 hover:text-destructive" title="Delete">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -1151,21 +1151,21 @@ function DocumentsStep({ form, onChange, onDocsChange, opportunityId, onDocCount
           </ul>
         </div>
       ) : (
-        <div className="rounded-xl border border-dashed border-border bg-muted/50 p-4 text-center text-xs text-muted-foreground">
+        <div className="rounded-xl border border-dashed border-merchant-gray bg-merchant-black/50 p-4 text-center text-xs text-gray-500">
           No documents uploaded yet
         </div>
       )}
 
       {/* Upload new documents */}
       {opportunityId ? (
-        <div className="space-y-3 rounded-xl border border-border bg-muted/50 p-4">
-          <div className="font-medium text-foreground text-xs">Upload new documents</div>
+        <div className="space-y-3 rounded-xl border border-merchant-gray bg-merchant-black/50 p-4">
+          <div className="font-medium text-white text-xs">Upload new documents</div>
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Document type">
               <select
                 value={selectedDocType}
                 onChange={e => setSelectedDocType(e.target.value)}
-                className="w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="w-full rounded-lg border border-merchant-gray bg-merchant-black px-3 py-2 text-sm text-white focus:border-merchant-red focus:outline-none focus:ring-2 focus:ring-merchant-red/40"
               >
                 {DOCUMENT_TYPES.map(dt => <option key={dt} value={dt}>{dt}</option>)}
               </select>
@@ -1176,13 +1176,13 @@ function DocumentsStep({ form, onChange, onDocsChange, opportunityId, onDocCount
                 type="file"
                 multiple
                 onChange={onDocsChange}
-                className="w-full cursor-pointer rounded-lg border border-dashed border-border bg-muted px-3 py-2 text-xs text-muted-foreground"
+                className="w-full cursor-pointer rounded-lg border border-dashed border-merchant-gray bg-merchant-black px-3 py-2 text-xs text-gray-400"
               />
             </Field>
           </div>
 
           {form.documents.length > 0 && (
-            <div className="text-xs text-muted-foreground">
+            <div className="text-xs text-gray-300">
               {form.documents.length} file(s) selected • {form.documents.map(f => f.name).join(', ')}
             </div>
           )}
@@ -1191,20 +1191,20 @@ function DocumentsStep({ form, onChange, onDocsChange, opportunityId, onDocCount
             type="button"
             onClick={handleUpload}
             disabled={form.documents.length === 0 || isUploading}
-            className="rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-foreground shadow hover:bg-primaryLight disabled:opacity-50"
+            className="rounded-xl bg-merchant-red px-4 py-2 text-xs font-semibold text-white shadow hover:bg-merchant-redLight disabled:opacity-50"
           >
             {isUploading ? 'Uploading…' : `Upload ${form.documents.length} file(s)`}
           </button>
         </div>
       ) : (
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-400">
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
           Select an account above to enable document uploads.
         </div>
       )}
 
       <Field label="Internal notes">
         <textarea
-          className="min-h-[90px] w-full rounded-lg border border-border bg-muted px-3 py-2 text-sm text-foreground shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+          className="min-h-[90px] w-full rounded-lg border border-merchant-gray bg-merchant-black px-3 py-2 text-sm text-white shadow-sm focus:border-merchant-red focus:outline-none focus:ring-2 focus:ring-merchant-red/40"
           value={form.notes}
           onChange={e => onChange("notes", e.target.value)}
           placeholder="Anything unusual about the deal? High ticket rationale, pricing nuances, risk notes, etc."
@@ -1217,11 +1217,11 @@ function DocumentsStep({ form, onChange, onDocsChange, opportunityId, onDocCount
 function ReviewStep({ form, missingBySection }: { form: PreboardingForm; missingBySection: Record<SectionKey, string[]>; }) {
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-        <BadgeCheck className="w-4 h-4 text-primary" />
+      <div className="flex items-center gap-2 text-sm font-semibold text-white">
+        <BadgeCheck className="w-4 h-4 text-merchant-redLight" />
         Review & Export
       </div>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-xs text-gray-400">
         Quick snapshot of what you captured. If anything looks off, jump back before moving to the formal portal.
       </p>
 
@@ -1262,7 +1262,7 @@ function ReviewStep({ form, missingBySection }: { form: PreboardingForm; missing
         </SummaryCard>
       </div>
 
-      <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-400">
+      <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
         <div className="font-semibold">Reminder</div>
         <p>
           This wizard is for preboarding only. Once it shows 100% complete and all sections look clean, move into the formal merchant application.
@@ -1270,7 +1270,7 @@ function ReviewStep({ form, missingBySection }: { form: PreboardingForm; missing
       </div>
 
       {Object.values(missingBySection).some(fields => fields.length > 0) && (
-        <div className="text-xs text-amber-400">
+        <div className="text-xs text-amber-300">
           Missing fields remain. Complete each section before exporting.
         </div>
       )}
@@ -1280,8 +1280,8 @@ function ReviewStep({ form, missingBySection }: { form: PreboardingForm; missing
 
 function SummaryCard({ title, children }: { title: string; children: ReactNode; }) {
   return (
-    <div className="space-y-2 rounded-xl border border-border bg-muted p-3 text-xs">
-      <div className="font-semibold text-foreground">{title}</div>
+    <div className="space-y-2 rounded-xl border border-merchant-gray bg-merchant-black p-3 text-xs">
+      <div className="font-semibold text-white">{title}</div>
       <dl className="space-y-1">{children}</dl>
     </div>
   );
@@ -1290,8 +1290,8 @@ function SummaryCard({ title, children }: { title: string; children: ReactNode; 
 function SummaryItem({ label, value }: { label: string; value: string; }) {
   return (
     <div className="flex justify-between gap-3">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="flex-1 text-right text-foreground">{value || "—"}</dd>
+      <dt className="text-gray-400">{label}</dt>
+      <dd className="flex-1 text-right text-white">{value || "—"}</dd>
     </div>
   );
 }
