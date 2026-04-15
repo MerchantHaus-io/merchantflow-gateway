@@ -6,9 +6,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useSearchParams } from "react-router-dom";
 import {
   BadgeCheck,
+  Building2,
   CheckCircle2,
   ClipboardList,
+  CreditCard,
   FileText,
+  Scale,
   ShieldCheck,
   Upload,
   Users,
