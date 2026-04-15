@@ -617,28 +617,29 @@ export default function PreboardingWizard() {
                     <GatewayBusinessStep form={form} onChange={handleChange} />
                   )}
 
-                  <div className="mt-6 flex items-center justify-between border-t border-border/60 pt-4">
+                  </div>
+                  <div className="px-4 py-3 md:px-6 md:py-4 bg-muted border-t border-border flex items-center justify-between">
                     <button
                       type="button"
-                      className="rounded-xl border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-secondary/40 disabled:opacity-40"
+                      className="rounded-lg border border-border bg-card px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-medium text-foreground hover:bg-secondary disabled:opacity-40"
                       onClick={() => setStepIndex(prev => Math.max(0, prev - 1))}
                       disabled={stepIndex === 0}
                     >
-                      ← Back
+                      Back
                     </button>
 
                     {stepIndex < steps.length - 1 ? (
                       <button
                         type="button"
-                        className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-foreground shadow hover:bg-primaryLight"
+                        className="rounded-lg bg-primary px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
                         onClick={() => setStepIndex(prev => Math.min(steps.length - 1, prev + 1))}
                       >
-                        Next →
+                        Next Step
                       </button>
                     ) : (
                       <button
                         type="button"
-                        className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-foreground shadow hover:bg-primaryLight disabled:bg-secondary disabled:text-muted-foreground"
+                        className="rounded-lg bg-primary px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 disabled:bg-secondary disabled:text-muted-foreground"
                         onClick={handleSubmit}
                         disabled={progress < 100}
                       >
