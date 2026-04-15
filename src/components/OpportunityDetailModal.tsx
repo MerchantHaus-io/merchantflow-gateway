@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { IconRail, IconRailItem } from "./opportunity-detail/IconRail";
+import { DetailSidebar } from "./opportunity-detail/DetailSidebar";
+import { DetailRightPanel } from "./opportunity-detail/DetailRightPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Opportunity, STAGE_CONFIG, Account, Contact, getServiceType, EMAIL_TO_USER, TEAM_MEMBERS, OpportunityStage, PROCESSING_PIPELINE_STAGES, GATEWAY_ONLY_PIPELINE_STAGES, OutcomeStatus, OUTCOME_CONFIG } from "@/types/opportunity";
 import { OutcomeSelector } from "./OutcomeSelector";
-import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, Zap, CreditCard, Maximize2, Minimize2, Loader2, Wand2, RotateCcw, Eye, Check, ExternalLink } from "lucide-react";
+import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, Zap, CreditCard, Loader2, Wand2, RotateCcw, Eye, Check, ExternalLink, ArrowLeft, MoreHorizontal } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -34,7 +34,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "./AutoSaveIndicator";
-import { StatusBlockerFloating } from "./opportunity-detail/StatusBlockerFloating";
 import { StagePath } from "./opportunity-detail/StagePath";
 import { ApplicationProgress } from "./opportunity-detail/ApplicationProgress";
 import { NotesSection } from "./opportunity-detail/NotesSection";
@@ -47,6 +46,7 @@ import { DocumentsTab } from "./DocumentsTab";
 import GameSplash from "./GameSplash";
 import CommentsTab from "./CommentsTab";
 import { PortalActivationDialog } from "./opportunity-detail/PortalActivationDialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 import liveBadge from "@/assets/live-badge.webp";
 
@@ -184,8 +184,13 @@ interface OpportunityDetailModalProps {
   hasGatewayOpportunity?: boolean;
 }
 
-const MODAL_SECTIONS = ['overview', 'underwriting', 'notes', 'documents', 'details', 'activity'] as const;
+// Removed 'activity' from sections — it's now always visible in right panel
+const MODAL_SECTIONS = ['overview', 'underwriting', 'notes', 'documents', 'details'] as const;
 type ModalSection = typeof MODAL_SECTIONS[number];
+
+// Mobile-only: add a "context" section for activity/comments on mobile
+const MOBILE_SECTIONS = [...MODAL_SECTIONS, 'context'] as const;
+type MobileSection = typeof MOBILE_SECTIONS[number];
 
 const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, onDelete, onConvertToGateway, onMoveToProcessing, hasGatewayOpportunity }: OpportunityDetailModalProps) => {
   const { isAdmin } = useUserRole();
@@ -193,7 +198,6 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   
   const [isEditing, setIsEditing] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
-  const [isMaximized, setIsMaximized] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showDeadDialog, setShowDeadDialog] = useState(false);
   const [showMoveDialog, setShowMoveDialog] = useState(false);
@@ -202,18 +206,34 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   const [reactivateConfirm, setReactivateConfirm] = useState<{ assignee: string } | null>(null);
   const [showActivationDialog, setShowActivationDialog] = useState(false);
   const [activeSection, setActiveSection] = useState<ModalSection>('overview');
+  const [mounted, setMounted] = useState(false);
   const isMobile = useIsMobile();
+
+  // Slide-in animation
+  useEffect(() => {
+    if (opportunity) {
+      requestAnimationFrame(() => setMounted(true));
+    } else {
+      setMounted(false);
+    }
+  }, [opportunity]);
+
   // Keyboard shortcuts for section navigation
   useEffect(() => {
     if (!opportunity) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger if user is typing in an input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       
+      // Escape to close
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+
       const currentIndex = MODAL_SECTIONS.indexOf(activeSection);
       
-      // Arrow keys or [ ] for section navigation
       if (e.key === 'ArrowLeft' || e.key === '[') {
         e.preventDefault();
         const newIndex = currentIndex > 0 ? currentIndex - 1 : MODAL_SECTIONS.length - 1;
@@ -224,8 +244,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
         setActiveSection(MODAL_SECTIONS[newIndex]);
       }
       
-      // Number keys 1-6 for direct section access
-      if (e.key >= '1' && e.key <= '6') {
+      if (e.key >= '1' && e.key <= '5') {
         e.preventDefault();
         const idx = parseInt(e.key) - 1;
         if (idx < MODAL_SECTIONS.length) {
@@ -236,7 +255,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [opportunity, activeSection]);
+  }, [opportunity, activeSection, onClose]);
   
   // Account fields
   const [accountName, setAccountName] = useState("");
@@ -297,17 +316,6 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   );
 
   const isGatewayCard = opportunity ? getServiceType(opportunity) === 'gateway_only' : false;
-  const iconRailItems: IconRailItem[] = useMemo(() => {
-    const items: IconRailItem[] = [
-      { id: 'overview', icon: <ClipboardList className="h-4 w-4" />, label: 'Overview' },
-      ...(!isGatewayCard ? [{ id: 'underwriting' as const, icon: <Wand2 className="h-4 w-4" />, label: 'UW Review' }] : []),
-      { id: 'notes', icon: <MessageSquare className="h-4 w-4" />, label: 'Notes' },
-      { id: 'documents', icon: <FileText className="h-4 w-4" />, label: 'Docs' },
-      { id: 'details', icon: <Building2 className="h-4 w-4" />, label: 'Details' },
-      { id: 'activity', icon: <Activity className="h-4 w-4" />, label: 'Activity' },
-    ];
-    return items;
-  }, [isGatewayCard]);
 
   const handleSectionSelect = useCallback((id: string) => {
     setActiveSection(id as ModalSection);
@@ -342,7 +350,6 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   }, [contact, wizardFormState]);
 
   const startEditing = () => {
-    // Populate form with resolved (synced) values
     setAccountName(resolvedAccount?.name || "");
     setWebsite(resolvedAccount?.website || "");
     setAddress1(resolvedAccount?.address1 || "");
@@ -358,12 +365,11 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     setPhone(resolvedContact?.phone || "");
     setFax(resolvedContact?.fax || "");
     
-    setUsername(opportunity.username || "");
-    setReferralSource(opportunity.referral_source || "");
-    setTimezone(opportunity.timezone || "");
-    setLanguage(opportunity.language || "");
+    setUsername(opportunity!.username || "");
+    setReferralSource(opportunity!.referral_source || "");
+    setTimezone(opportunity!.timezone || "");
+    setLanguage(opportunity!.language || "");
 
-    // Populate wizard fields from resolved data
     const wf: Record<string, string> = {};
     const wizardKeys = [
       'dba_name', 'product_description', 'nature_of_business',
@@ -390,7 +396,6 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   };
 
   const handleManualSave = async () => {
-    // Cancel any pending auto-save to avoid race conditions
     cancelAutoSave();
     try {
       await handleAutoSave(formData);
@@ -427,8 +432,6 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     }
     setIsConverting(false);
   };
-
-  // isGatewayCard moved above iconRailItems useMemo
 
   const [portalAccessLoading, setPortalAccessLoading] = useState(false);
 
@@ -551,7 +554,6 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   const handleAutoSave = useCallback(async (data: typeof formData) => {
     if (!opportunity) return;
     
-    // Update account
     if (account) {
       const { error: accountError } = await supabase
         .from('accounts')
@@ -570,7 +572,6 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
       if (accountError) throw accountError;
     }
 
-    // Update contact
     if (contact) {
       const { error: contactError } = await supabase
         .from('contacts')
@@ -586,7 +587,6 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
       if (contactError) throw contactError;
     }
 
-    // Update opportunity
     const { error: oppError } = await supabase
       .from('opportunities')
       .update({
@@ -599,24 +599,20 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     
     if (oppError) throw oppError;
 
-    // Update wizard state — cross-sync account/contact fields into wizard form_state
     const crossSyncFields: Record<string, string> = {
       ...(data.wizardFields || {}),
-      // Sync account fields → wizard fields
       dba_name: data.accountName || data.wizardFields?.dba_name || '',
       dba_address_line1: data.address1 || data.wizardFields?.dba_address_line1 || '',
       dba_city: data.city || data.wizardFields?.dba_city || '',
       dba_state: data.state || data.wizardFields?.dba_state || '',
       dba_zip: data.zip || data.wizardFields?.dba_zip || '',
       website_url: data.website || data.wizardFields?.website_url || '',
-      // Sync contact fields → wizard fields
       dba_contact_first_name: data.firstName || data.wizardFields?.dba_contact_first_name || '',
       dba_contact_last_name: data.lastName || data.wizardFields?.dba_contact_last_name || '',
       dba_contact_email: data.email || data.wizardFields?.dba_contact_email || '',
       dba_contact_phone: data.phone || data.wizardFields?.dba_contact_phone || '',
     };
 
-    // Remove empty strings so we don't overwrite existing values with blanks
     const cleanedSync: Record<string, string> = {};
     for (const [k, v] of Object.entries(crossSyncFields)) {
       if (v) cleanedSync[k] = v;
@@ -688,7 +684,6 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     enabled: isEditing && !!opportunity,
   });
 
-  // Reset auto-save state when entering edit mode
   useEffect(() => {
     if (isEditing) {
       resetInitialData();
@@ -717,7 +712,6 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
       return;
     }
 
-    // Log activity
     await supabase.from('activities').insert({
       opportunity_id: opportunity.id,
       type: isReactivation ? 'reactivated' : 'assignment_change',
@@ -728,7 +722,6 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
       user_email: user?.email,
     });
 
-    // Send email notification for opportunity assignment
     if (newAssignee) {
       sendOpportunityAssignmentEmail(
         newAssignee,
@@ -758,6 +751,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   };
 
   const handleMarkAsDead = async () => {
+    if (!opportunity) return;
     try {
       const { error } = await supabase
         .from('opportunities')
@@ -765,7 +759,6 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
         .eq('id', opportunity.id);
 
       if (!error) {
-        // Also mark the account as dead
         await supabase
           .from('accounts')
           .update({ status: 'dead' })
@@ -774,7 +767,6 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
 
       if (error) throw error;
 
-      // Log activity
       await supabase.from('activities').insert({
         opportunity_id: opportunity.id,
         type: 'status_change',
@@ -786,7 +778,6 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
       setShowDeadDialog(false);
       setShowDeathSplash(true);
       
-      // Show splash for 2 seconds then close
       setTimeout(() => {
         setShowDeathSplash(false);
         onMarkAsDead?.(opportunity.id);
@@ -800,6 +791,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   };
 
   const handleDelete = async () => {
+    if (!opportunity) return;
     try {
       const { error } = await supabase
         .from('opportunities')
@@ -819,6 +811,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   };
 
   const handleRequestDeletion = async () => {
+    if (!opportunity) return;
     try {
       const { error } = await supabase.from('deletion_requests').insert({
         requester_id: user?.id,
@@ -838,781 +831,769 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     }
   };
 
+  // Stage change handler extracted for reuse
+  const handleStageChange = async (newStage: OpportunityStage) => {
+    if (!opportunity) return;
+    const oldStage = opportunity.stage;
+    
+    const GATEWAY_BLOCKED_STAGES: OpportunityStage[] = ['underwriting_review', 'processor_approval'];
+    if (isGatewayCard && GATEWAY_BLOCKED_STAGES.includes(newStage)) {
+      toast.error("Gateway-only deals cannot enter Underwriting or Approved stages", { duration: 4000 });
+      return;
+    }
+    
+    if (newStage === 'underwriting_review') {
+      const gate = await checkUnderwritingGate(opportunity.id, opportunity.service_type);
+      if (!gate.allowed) {
+        toast.error(gate.reason, { duration: 6000 });
+        return;
+      }
+    }
+    
+    if (newStage !== 'discovery' && opportunity.stage === 'discovery') {
+      const dupWarning = await checkDuplicateMerchant(opportunity.id);
+      if (dupWarning) {
+        toast.error(dupWarning, { duration: 8000 });
+      }
+    }
+    
+    const { error } = await supabase
+      .from('opportunities')
+      .update({ stage: newStage })
+      .eq('id', opportunity.id);
+    
+    if (error) {
+      toast.error("Failed to update stage");
+      return;
+    }
+    
+    await supabase.from('activities').insert({
+      opportunity_id: opportunity.id,
+      type: 'stage_change',
+      description: `Moved from ${STAGE_CONFIG[oldStage].label} to ${STAGE_CONFIG[newStage].label}`,
+      user_id: user?.id,
+      user_email: user?.email,
+    });
+    
+    if (opportunity.assigned_to) {
+      sendStageChangeEmail(
+        opportunity.assigned_to,
+        account?.name || 'Unknown Account',
+        oldStage,
+        newStage,
+        user?.email
+      ).catch(err => console.error("Failed to send stage change email:", err));
+    }
+    
+    if (newStage === 'qualified') {
+      sendQualifiedDocsRequest(
+        opportunity.id,
+        opportunity.account_id,
+        opportunity.contact_id
+      ).catch(err => console.error("Failed to send qualified docs email:", err));
+    }
+    
+    onUpdate({ ...opportunity, stage: newStage });
+    toast.success(`Stage updated to ${STAGE_CONFIG[newStage].label}`);
+
+    if (newStage === 'go_live_ready' && opportunity.portal_merchant_id) {
+      setShowActivationDialog(true);
+    }
+  };
+
+  // Outcome handler
+  const handleOutcomeSelect = async (outcome: OutcomeStatus, reason: string, notes: string) => {
+    if (!opportunity) return;
+    const isNegativeOutcome = outcome !== 'closed_won';
+    const { error } = await supabase
+      .from('opportunities')
+      .update({
+        outcome_status: outcome,
+        outcome_reason: reason,
+        outcome_notes: notes,
+        outcome_closed_at: new Date().toISOString(),
+        outcome_closed_by: user?.email,
+        ...(isNegativeOutcome ? { status: 'dead' } : {}),
+      })
+      .eq('id', opportunity.id);
+    if (error) { toast.error("Failed to set outcome"); return; }
+    await supabase.from('activities').insert({
+      opportunity_id: opportunity.id,
+      type: 'outcome_set',
+      description: `Outcome: ${OUTCOME_CONFIG[outcome].label} — ${reason}`,
+      user_id: user?.id,
+      user_email: user?.email,
+    });
+    onUpdate({
+      ...opportunity,
+      outcome_status: outcome,
+      outcome_reason: reason,
+      outcome_notes: notes,
+      outcome_closed_at: new Date().toISOString(),
+      outcome_closed_by: user?.email,
+      ...(isNegativeOutcome ? { status: 'dead' } : {}),
+    });
+    toast.success(`Outcome set: ${OUTCOME_CONFIG[outcome].label}`);
+    const EMAIL_WORTHY_OUTCOMES = ['underwriting_declined', 'disqualified'];
+    if (EMAIL_WORTHY_OUTCOMES.includes(outcome) && opportunity.contact?.email) {
+      const contactName = [opportunity.contact?.first_name, opportunity.contact?.last_name].filter(Boolean).join(' ') || 'Valued Applicant';
+      supabase.functions.invoke('send-application-declined', {
+        body: {
+          recipientEmail: opportunity.contact.email,
+          recipientName: contactName,
+          accountName: opportunity.account?.name || '',
+          outcomeStatus: outcome,
+          outcomeReason: reason,
+          outcomeNotes: notes,
+        },
+      }).then(({ error: emailErr }) => {
+        if (emailErr) {
+          console.error('Failed to send decline email:', emailErr);
+        } else {
+          console.log('Decline email sent to', opportunity.contact?.email);
+          supabase.from('activities').insert({
+            opportunity_id: opportunity.id,
+            type: 'email_sent',
+            description: `Notification email sent to ${opportunity.contact?.email} (${OUTCOME_CONFIG[outcome].label}: ${reason})`,
+            user_id: user?.id,
+            user_email: user?.email,
+          }).then(() => {});
+          supabase.from('client_interactions').insert({
+            account_id: opportunity.account_id,
+            subject: `Decline email sent — ${opportunity.account?.name || ''}`,
+            interaction_type: 'email',
+            channel: 'email',
+            contact_name: contactName,
+            contact_email: opportunity.contact?.email || '',
+            notes: `Application ${OUTCOME_CONFIG[outcome].label}: ${reason}. Decline notification email sent to ${opportunity.contact?.email}.`,
+            status: 'closed',
+            outcome: 'sent',
+            created_by: user?.id,
+            created_by_email: user?.email,
+          }).then(() => {});
+        }
+      });
+      setTimeout(() => onClose(), 1500);
+    } else if (isNegativeOutcome) {
+      setTimeout(() => onClose(), 1500);
+    }
+  };
+
   if (!opportunity) return null;
+
+  // Mobile section pill nav items
+  const mobileSections = [
+    { id: 'overview', label: 'Overview' },
+    ...(!isGatewayCard ? [{ id: 'underwriting', label: 'UW Review' }] : []),
+    { id: 'notes', label: 'Notes' },
+    { id: 'documents', label: 'Docs' },
+    { id: 'details', label: 'Details' },
+    { id: 'context', label: 'Activity' },
+  ];
 
   return (
     <>
-      <Dialog open={!!opportunity} onOpenChange={onClose}>
-        <DialogContent
-          className={cn(
-            "flex flex-col transition-all duration-200",
-            isMaximized
-              ? "sm:max-w-[95vw] max-h-[95vh]"
-              : "sm:max-w-2xl max-h-[90vh]"
-          )}
-          aria-describedby={undefined}
-        >
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={cn(
-                  "p-2 rounded",
-                  opportunity.outcome_status === 'closed_won'
-                    ? "bg-emerald-500/10 text-emerald-600"
-                    : "bg-primary/10 text-primary"
-                )}>
-                  <Building2 className="h-5 w-5" />
+      {/* Full-screen overlay */}
+      <div
+        className={cn(
+          "fixed inset-0 z-50 bg-background flex flex-col transition-transform duration-200 ease-out",
+          mounted ? "translate-x-0" : "translate-x-full"
+        )}
+      >
+        {/* ═══════ STICKY HEADER ═══════ */}
+        <div className="flex-shrink-0 border-b border-border bg-background/95 backdrop-blur-sm">
+          <div className="flex items-center justify-between px-4 py-2.5 gap-3">
+            {/* Left: Back + Company Info */}
+            <div className="flex items-center gap-3 min-w-0">
+              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={onClose}>
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h1 className="text-base font-semibold truncate">{account?.name || 'Unknown Business'}</h1>
+                  <span className={cn(
+                    "flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0",
+                    isGatewayCard
+                      ? "bg-teal/10 text-teal" 
+                      : "bg-primary/10 text-primary"
+                  )}>
+                    {isGatewayCard ? <><Zap className="h-2.5 w-2.5" /> Gateway</> : <><CreditCard className="h-2.5 w-2.5" /> Processing</>}
+                  </span>
+                  {opportunity.status === 'dead' && (
+                    <span className="text-[10px] text-destructive bg-destructive/10 px-1.5 py-0.5 rounded shrink-0">Archived</span>
+                  )}
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <DialogTitle>{account?.name || 'Unknown Business'}</DialogTitle>
-                    <span className={cn(
-                      "flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full",
-                      getServiceType(opportunity) === 'gateway_only' 
-                        ? "bg-teal/10 text-teal" 
-                        : "bg-primary/10 text-primary"
-                    )}>
-                      {getServiceType(opportunity) === 'gateway_only' ? (
-                        <>
-                          <Zap className="h-3 w-3" />
-                          Gateway
-                        </>
-                      ) : (
-                        <>
-                          <CreditCard className="h-3 w-3" />
-                          Processing
-                        </>
-                      )}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    {/* Editable Stage Dropdown */}
-                    <Select
-                      value={opportunity.stage}
-                      onValueChange={async (value) => {
-                        const newStage = value as OpportunityStage;
-                        const oldStage = opportunity.stage;
-                        
-                        // Block gateway deals from Underwriting and Approved
-                        const GATEWAY_BLOCKED_STAGES: OpportunityStage[] = ['underwriting_review', 'processor_approval'];
-                        if (isGatewayCard && GATEWAY_BLOCKED_STAGES.includes(newStage)) {
-                          toast.error("Gateway-only deals cannot enter Underwriting or Approved stages", { duration: 4000 });
-                          return;
-                        }
-                        
-                        // Underwriting gate check
-                        if (newStage === 'underwriting_review') {
-                          const gate = await checkUnderwritingGate(opportunity.id, opportunity.service_type);
-                          if (!gate.allowed) {
-                            toast.error(gate.reason, { duration: 6000 });
-                            return;
-                          }
-                        }
-                        
-                        // Duplicate check when moving past discovery
-                        if (newStage !== 'discovery' && opportunity.stage === 'discovery') {
-                          const dupWarning = await checkDuplicateMerchant(opportunity.id);
-                          if (dupWarning) {
-                            toast.error(dupWarning, { duration: 8000 });
-                          }
-                        }
-                        
-                        const { error } = await supabase
-                          .from('opportunities')
-                          .update({ stage: newStage })
-                          .eq('id', opportunity.id);
-                        
-                        if (error) {
-                          toast.error("Failed to update stage");
-                          return;
-                        }
-                        
-                        // Log activity
-                        await supabase.from('activities').insert({
-                          opportunity_id: opportunity.id,
-                          type: 'stage_change',
-                          description: `Moved from ${STAGE_CONFIG[oldStage].label} to ${STAGE_CONFIG[newStage].label}`,
-                          user_id: user?.id,
-                          user_email: user?.email,
-                        });
-                        
-                        // Send email notification
-                        if (opportunity.assigned_to) {
-                          sendStageChangeEmail(
-                            opportunity.assigned_to,
-                            account?.name || 'Unknown Account',
-                            oldStage,
-                            newStage,
-                            user?.email
-                          ).catch(err => console.error("Failed to send stage change email:", err));
-                        }
-                        
-                        // Trigger qualified docs request email
-                        if (newStage === 'qualified') {
-                          sendQualifiedDocsRequest(
-                            opportunity.id,
-                            opportunity.account_id,
-                            opportunity.contact_id
-                          ).catch(err => console.error("Failed to send qualified docs email:", err));
-                        }
-                        
-                        onUpdate({ ...opportunity, stage: newStage });
-                        toast.success(`Stage updated to ${STAGE_CONFIG[newStage].label}`);
+                <div className="flex items-center gap-2 mt-0.5">
+                  {/* Stage Dropdown */}
+                  <Select value={opportunity.stage} onValueChange={(v) => handleStageChange(v as OpportunityStage)}>
+                    <SelectTrigger className="h-5 w-auto border-0 bg-transparent hover:bg-muted/50 px-1 text-xs gap-1 text-foreground">
+                      <div className={`w-2 h-2 rounded-full ${stageConfig.colorClass}`} />
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-[60]">
+                      {(isGatewayCard ? GATEWAY_ONLY_PIPELINE_STAGES : PROCESSING_PIPELINE_STAGES).map((stage) => (
+                        <SelectItem key={stage} value={stage} className="text-xs">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${STAGE_CONFIG[stage].colorClass}`} />
+                            {STAGE_CONFIG[stage].label}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-                        // Auto-open portal activation dialog when moving to go_live_ready
-                        if (newStage === 'go_live_ready' && opportunity.portal_merchant_id) {
-                          setShowActivationDialog(true);
-                        }
-                      }}
+                  {opportunity.portal_merchant_id && opportunity.stage === 'go_live_ready' && opportunity.status !== 'dead' && (
+                    <button
+                      onClick={() => setShowActivationDialog(true)}
+                      className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 rounded hover:bg-amber-500/20 transition-colors flex items-center gap-1"
                     >
-                      <SelectTrigger className="h-6 w-auto border-0 bg-transparent hover:bg-muted/50 px-2 text-sm gap-1 text-foreground">
-                        <div className={`w-2 h-2 rounded-full ${stageConfig.colorClass}`} />
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover z-50">
-                        {(isGatewayCard ? GATEWAY_ONLY_PIPELINE_STAGES : PROCESSING_PIPELINE_STAGES).map((stage) => (
-                          <SelectItem key={stage} value={stage} className="text-xs">
-                            <div className="flex items-center gap-2">
-                              <div className={`w-2 h-2 rounded-full ${STAGE_CONFIG[stage].colorClass}`} />
-                              {STAGE_CONFIG[stage].label}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {opportunity.status === 'dead' && (
-                      <span className="text-xs text-destructive bg-destructive/10 px-2 py-0.5 rounded">
-                        Archived
-                      </span>
-                    )}
-                    {opportunity.portal_merchant_id && opportunity.stage === 'go_live_ready' && opportunity.status !== 'dead' && (
-                      <button
-                        onClick={() => setShowActivationDialog(true)}
-                        className="text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded hover:bg-amber-500/20 transition-colors flex items-center gap-1"
-                      >
-                        <Zap className="h-3 w-3" />
-                        Pending Activation
-                      </button>
-                    )}
-                    <span className="text-muted-foreground">•</span>
-                    {/* Primary Owner Dropdown */}
-                    <Select
-                      value={opportunity.assigned_to || "unassigned"}
-                      onValueChange={(value) => {
-                        const newAssignee = value === "unassigned" ? null : value;
+                      <Zap className="h-2.5 w-2.5" /> Pending Activation
+                    </button>
+                  )}
 
-                        if (opportunity.status === 'dead' && newAssignee) {
-                          setReactivateConfirm({ assignee: value });
-                          return;
-                        }
+                  <span className="text-muted-foreground text-xs">•</span>
 
-                        performOwnerUpdate(value, false);
-                      }}
-                    >
-                      <SelectTrigger className="h-6 w-auto border-0 bg-transparent hover:bg-muted/50 px-2 text-xs font-medium">
-                        <User className="h-3 w-3 mr-1" />
-                        <SelectValue placeholder="Assign owner" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover z-50">
-                        <SelectItem value="unassigned" className="text-xs">Unassigned</SelectItem>
-                        {TEAM_MEMBERS.map((member) => (
-                          <SelectItem key={member} value={member} className="text-xs">
-                            {member}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {/* Owner Dropdown */}
+                  <Select
+                    value={opportunity.assigned_to || "unassigned"}
+                    onValueChange={(value) => {
+                      const newAssignee = value === "unassigned" ? null : value;
+                      if (opportunity.status === 'dead' && newAssignee) {
+                        setReactivateConfirm({ assignee: value });
+                        return;
+                      }
+                      performOwnerUpdate(value, false);
+                    }}
+                  >
+                    <SelectTrigger className="h-5 w-auto border-0 bg-transparent hover:bg-muted/50 px-1 text-[11px] font-medium">
+                      <User className="h-3 w-3 mr-0.5" />
+                      <SelectValue placeholder="Assign owner" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-[60]">
+                      <SelectItem value="unassigned" className="text-xs">Unassigned</SelectItem>
+                      {TEAM_MEMBERS.map((member) => (
+                        <SelectItem key={member} value={member} className="text-xs">{member}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              </div>
-              <div className="flex items-center gap-1">
-                {isEditing ? (
-                  <>
-                    <AutoSaveIndicator status={saveStatus} />
-                    <Button variant="default" size="sm" onClick={handleManualSave}>
-                      <Check className="h-4 w-4 mr-1" />
-                      Save
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={cancelEditing}>
-                      <X className="h-4 w-4 mr-1" />
-                      Cancel
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={startEditing}>
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Edit</TooltipContent>
-                    </Tooltip>
-                    
-                    {/* Outcome Selector */}
-                    <OutcomeSelector
-                      currentOutcome={opportunity.outcome_status as OutcomeStatus | null}
-                      currentReason={opportunity.outcome_reason}
-                      disabled={!!opportunity.outcome_status}
-                      onSelect={async (outcome, reason, notes) => {
-                        const isNegativeOutcome = outcome !== 'closed_won';
-                        const { error } = await supabase
-                          .from('opportunities')
-                          .update({
-                            outcome_status: outcome,
-                            outcome_reason: reason,
-                            outcome_notes: notes,
-                            outcome_closed_at: new Date().toISOString(),
-                            outcome_closed_by: user?.email,
-                            // Negative outcomes mark the opportunity as dead so it's excluded from the active pipeline
-                            ...(isNegativeOutcome ? { status: 'dead' } : {}),
-                          })
-                          .eq('id', opportunity.id);
-                        if (error) { toast.error("Failed to set outcome"); return; }
-                        await supabase.from('activities').insert({
-                          opportunity_id: opportunity.id,
-                          type: 'outcome_set',
-                          description: `Outcome: ${OUTCOME_CONFIG[outcome].label} — ${reason}`,
-                          user_id: user?.id,
-                          user_email: user?.email,
-                        });
-                        onUpdate({
-                          ...opportunity,
-                          outcome_status: outcome,
-                          outcome_reason: reason,
-                          outcome_notes: notes,
-                          outcome_closed_at: new Date().toISOString(),
-                          outcome_closed_by: user?.email,
-                          ...(isNegativeOutcome ? { status: 'dead' } : {}),
-                        });
-                        toast.success(`Outcome set: ${OUTCOME_CONFIG[outcome].label}`);
-                        // Only send client-facing email for formal declines (underwriting_declined, disqualified)
-                        const EMAIL_WORTHY_OUTCOMES = ['underwriting_declined', 'disqualified'];
-                        if (EMAIL_WORTHY_OUTCOMES.includes(outcome) && opportunity.contact?.email) {
-                          const contactName = [opportunity.contact?.first_name, opportunity.contact?.last_name].filter(Boolean).join(' ') || 'Valued Applicant';
-                          supabase.functions.invoke('send-application-declined', {
-                            body: {
-                              recipientEmail: opportunity.contact.email,
-                              recipientName: contactName,
-                              accountName: opportunity.account?.name || '',
-                              outcomeStatus: outcome,
-                              outcomeReason: reason,
-                              outcomeNotes: notes,
-                            },
-                          }).then(({ error: emailErr }) => {
-                            if (emailErr) {
-                              console.error('Failed to send decline email:', emailErr);
-                            } else {
-                              console.log('Decline email sent to', opportunity.contact?.email);
-                              // Log on opportunity activities
-                              supabase.from('activities').insert({
-                                opportunity_id: opportunity.id,
-                                type: 'email_sent',
-                                description: `Notification email sent to ${opportunity.contact?.email} (${OUTCOME_CONFIG[outcome].label}: ${reason})`,
-                                user_id: user?.id,
-                                user_email: user?.email,
-                              }).then(() => {});
-                              // Log as client interaction on the account
-                              supabase.from('client_interactions').insert({
-                                account_id: opportunity.account_id,
-                                subject: `Decline email sent — ${opportunity.account?.name || ''}`,
-                                interaction_type: 'email',
-                                channel: 'email',
-                                contact_name: contactName,
-                                contact_email: opportunity.contact?.email || '',
-                                notes: `Application ${OUTCOME_CONFIG[outcome].label}: ${reason}. Decline notification email sent to ${opportunity.contact?.email}.`,
-                                status: 'closed',
-                                outcome: 'sent',
-                                created_by: user?.id,
-                                created_by_email: user?.email,
-                              }).then(() => {});
-                            }
-                          });
-                          setTimeout(() => onClose(), 1500);
-                        } else if (isNegativeOutcome) {
-                          setTimeout(() => onClose(), 1500);
-                        }
-                      }}
-                    />
-
-                    {/* Pipeline toggle button — always available for switching service type */}
-                    {!opportunity.outcome_status && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className={cn(
-                              "h-8 w-8",
-                              isGatewayCard
-                                ? "text-indigo-500 border-indigo-500 hover:bg-indigo-500/10"
-                                : "text-teal-500 border-teal-500 hover:bg-teal-500/10"
-                            )}
-                            onClick={() => setShowMoveDialog(true)}
-                            disabled={isConverting}
-                          >
-                            {isGatewayCard ? <CreditCard className="h-4 w-4" /> : <Zap className="h-4 w-4" />}
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {isGatewayCard ? 'Switch to Processing' : 'Switch to Gateway'}
-                        </TooltipContent>
-                      </Tooltip>
-                    )}
-
-                    {/* Delete - admin only */}
-                    {isAdmin && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => setShowDeleteDialog(true)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Delete Permanently</TooltipContent>
-                      </Tooltip>
-                    )}
-                    {!isAdmin && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="outline" size="icon" className="h-8 w-8 text-destructive border-destructive hover:bg-destructive/10" onClick={() => setShowRequestDeleteDialog(true)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Request Deletion</TooltipContent>
-                      </Tooltip>
-                    )}
-                    
-                    {/* View Portal Account — admin only, portal merchants only */}
-                    {isAdmin && opportunity.portal_merchant_id && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={handleViewPortalAccount}
-                            disabled={portalAccessLoading}
-                          >
-                            {portalAccessLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>View Portal Account</TooltipContent>
-                      </Tooltip>
-                    )}
-
-                    {/* Activate on Portal — admin only, portal merchants only */}
-                    {isAdmin && opportunity.portal_merchant_id && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-emerald-600 dark:text-emerald-400"
-                            onClick={() => setShowActivationDialog(true)}
-                          >
-                            <Zap className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Activate on Portal</TooltipContent>
-                      </Tooltip>
-                    )}
-
-
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={handleDownloadDetails}
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Download Details</TooltipContent>
-                    </Tooltip>
-
-                    {/* Maximize/Minimize */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => setIsMaximized(!isMaximized)}
-                        >
-                          {isMaximized ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>{isMaximized ? 'Minimize' : 'Maximize'}</TooltipContent>
-                    </Tooltip>
-                  </>
-                )}
               </div>
             </div>
-          </DialogHeader>
 
-          {/* Live badge overlay - medallion in header area, ribbons drape over next section */}
+            {/* Right: Action buttons */}
+            <div className="flex items-center gap-1 shrink-0">
+              {isEditing ? (
+                <>
+                  <AutoSaveIndicator status={saveStatus} />
+                  <Button variant="default" size="sm" onClick={handleManualSave}>
+                    <Check className="h-4 w-4 mr-1" /> Save
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={cancelEditing}>
+                    <X className="h-4 w-4 mr-1" /> Cancel
+                  </Button>
+                </>
+              ) : (
+                <>
+                  {!isMobile && (
+                    <>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="outline" size="icon" className="h-8 w-8" onClick={startEditing}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Edit</TooltipContent>
+                      </Tooltip>
+
+                      <OutcomeSelector
+                        currentOutcome={opportunity.outcome_status as OutcomeStatus | null}
+                        currentReason={opportunity.outcome_reason}
+                        disabled={!!opportunity.outcome_status}
+                        onSelect={handleOutcomeSelect}
+                      />
+
+                      {!opportunity.outcome_status && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className={cn(
+                                "h-8 w-8",
+                                isGatewayCard
+                                  ? "text-indigo-500 border-indigo-500 hover:bg-indigo-500/10"
+                                  : "text-teal-500 border-teal-500 hover:bg-teal-500/10"
+                              )}
+                              onClick={() => setShowMoveDialog(true)}
+                              disabled={isConverting}
+                            >
+                              {isGatewayCard ? <CreditCard className="h-4 w-4" /> : <Zap className="h-4 w-4" />}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>{isGatewayCard ? 'Switch to Processing' : 'Switch to Gateway'}</TooltipContent>
+                        </Tooltip>
+                      )}
+
+                      {isAdmin && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => setShowDeleteDialog(true)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Delete Permanently</TooltipContent>
+                        </Tooltip>
+                      )}
+                      {!isAdmin && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button variant="outline" size="icon" className="h-8 w-8 text-destructive border-destructive hover:bg-destructive/10" onClick={() => setShowRequestDeleteDialog(true)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Request Deletion</TooltipContent>
+                        </Tooltip>
+                      )}
+
+                      {isAdmin && opportunity.portal_merchant_id && (
+                        <>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleViewPortalAccount} disabled={portalAccessLoading}>
+                                {portalAccessLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>View Portal Account</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600 dark:text-emerald-400" onClick={() => setShowActivationDialog(true)}>
+                                <Zap className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Activate on Portal</TooltipContent>
+                          </Tooltip>
+                        </>
+                      )}
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleDownloadDetails}>
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Download Details</TooltipContent>
+                      </Tooltip>
+                    </>
+                  )}
+
+                  {/* Mobile: overflow menu */}
+                  {isMobile && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="z-[60]">
+                        <DropdownMenuItem onClick={startEditing}>
+                          <Pencil className="h-4 w-4 mr-2" /> Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={handleDownloadDetails}>
+                          <Download className="h-4 w-4 mr-2" /> Download
+                        </DropdownMenuItem>
+                        {!opportunity.outcome_status && (
+                          <DropdownMenuItem onClick={() => setShowMoveDialog(true)}>
+                            {isGatewayCard ? <CreditCard className="h-4 w-4 mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
+                            {isGatewayCard ? 'Switch to Processing' : 'Switch to Gateway'}
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator />
+                        {isAdmin ? (
+                          <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-destructive">
+                            <Trash2 className="h-4 w-4 mr-2" /> Delete
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem onClick={() => setShowRequestDeleteDialog(true)} className="text-destructive">
+                            <Trash2 className="h-4 w-4 mr-2" /> Request Deletion
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Live badge overlay */}
           {opportunity.outcome_status === 'closed_won' && (
-            <div className="relative flex justify-center -mt-14 pointer-events-none z-10" style={{ marginBottom: '-3.5rem' }}>
+            <div className="relative flex justify-center -mt-8 pointer-events-none z-10" style={{ marginBottom: '-2rem' }}>
               <img 
                 src={liveBadge} 
                 alt="Live Account" 
-                className="h-40 w-auto drop-shadow-2xl animate-ribbon-drop" 
+                className="h-28 w-auto drop-shadow-2xl animate-ribbon-drop" 
                 style={{ filter: 'drop-shadow(0 8px 16px rgba(180, 130, 20, 0.35))' }}
               />
             </div>
           )}
 
-          {/* Compact status strip */}
-          <div className="mt-2 space-y-2 flex-shrink-0">
+          {/* Stage Path — always visible */}
+          <div className="px-4 pb-2">
             {opportunity.outcome_status === 'closed_won' ? (
-              <div className="rounded-lg bg-gradient-to-b from-emerald-50/60 via-emerald-100/30 to-transparent dark:from-emerald-500/10 dark:via-emerald-500/5 dark:to-transparent border border-emerald-200/40 dark:border-emerald-500/20 py-4 px-4">
+              <div className="rounded-lg bg-gradient-to-b from-emerald-50/60 via-emerald-100/30 to-transparent dark:from-emerald-500/10 dark:via-emerald-500/5 dark:to-transparent border border-emerald-200/40 dark:border-emerald-500/20 py-3 px-4">
                 <h3 className="text-emerald-600 dark:text-emerald-400 font-bold tracking-widest uppercase text-sm text-center">
                   Closed Won — Live &amp; Billing
                 </h3>
               </div>
             ) : (
-              <>
-                {activeSection === 'overview' && <StagePath opportunity={opportunity} />}
-              </>
+              <StagePath opportunity={opportunity} />
             )}
           </div>
 
-          {/* Floating Status/Blocker Popover */}
-          {opportunity.outcome_status !== 'closed_won' && (
-            <StatusBlockerFloating
+          {/* Mobile: horizontal section pills */}
+          {isMobile && (
+            <div className="flex items-center gap-1.5 overflow-x-auto px-4 pb-2 scrollbar-hide">
+              {mobileSections.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => setActiveSection(s.id as ModalSection)}
+                  className={cn(
+                    "px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0",
+                    activeSection === s.id
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  )}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ═══════ THREE-COLUMN BODY ═══════ */}
+        <div className="flex-1 min-h-0 flex">
+          {/* LEFT: Detail Sidebar (desktop only) */}
+          {!isMobile && (
+            <DetailSidebar
+              opportunity={opportunity}
+              resolvedAccount={resolvedAccount}
+              resolvedContact={resolvedContact}
+              wizardSectionProgress={wizardSectionProgress}
+              activeSection={activeSection}
+              onSelect={handleSectionSelect}
+              isGatewayCard={isGatewayCard}
+            />
+          )}
+
+          {/* CENTER: Primary Panel */}
+          <div className="flex-1 min-h-0 min-w-0 overflow-y-auto px-4 md:px-6 py-4">
+            {/* Mobile context tab: show activity/comments/status */}
+            {isMobile && activeSection === ('context' as any) && (
+              <DetailRightPanel
+                opportunityId={opportunity.id}
+                opportunity={opportunity}
+                wizardProgress={wizardState?.progress ?? 0}
+                onUpdate={onUpdate}
+              />
+            )}
+
+            {activeSection === 'overview' && (
+              <div className="space-y-6">
+                <ApplicationProgress 
+                  opportunity={opportunity} 
+                  wizardState={wizardState ? {
+                    progress: wizardState.progress,
+                    step_index: wizardState.step_index,
+                    form_state: wizardState.form_state as Record<string, unknown>,
+                    updated_at: wizardState.updated_at
+                  } : null}
+                />
+                {!isGatewayCard && <BeneficialOwners opportunityId={opportunity.id} />}
+                {!isGatewayCard && <OverviewUnderwritingSummary opportunityId={opportunity.id} onNavigate={() => setActiveSection('underwriting')} />}
+              </div>
+            )}
+
+            {activeSection === 'underwriting' && !isGatewayCard && (
+              <AIValidatePanel opportunityId={opportunity.id} />
+            )}
+
+            {activeSection === 'notes' && (
+              <NotesSection opportunityId={opportunity.id} />
+            )}
+
+            {activeSection === 'documents' && (
+              <DocumentsTab opportunityId={opportunity.id} serviceType={opportunity.service_type} />
+            )}
+
+            {activeSection === 'details' && (
+              <div className="space-y-6">
+                {/* Account */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                    <Building2 className="h-4 w-4" /> Account
+                  </h3>
+                  {isEditing ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <EditField label="Company Name" value={accountName} onChange={setAccountName} />
+                      <EditField label="Website" value={website} onChange={setWebsite} />
+                      <EditField label="Address" value={address1} onChange={setAddress1} />
+                      <EditField label="Address 2" value={address2} onChange={setAddress2} />
+                      <EditField label="City" value={city} onChange={setCity} />
+                      <EditField label="State" value={state} onChange={setState} />
+                      <EditField label="Zip" value={zip} onChange={setZip} />
+                      <EditField label="Country" value={country} onChange={setCountry} />
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <InfoItem label="Company Name" value={resolvedAccount?.name} />
+                      <InfoItem label="Website" value={resolvedAccount?.website} />
+                      <InfoItem label="Address" value={resolvedAccount?.address1} />
+                      <InfoItem label="Address 2" value={resolvedAccount?.address2} />
+                      <InfoItem label="City" value={resolvedAccount?.city} />
+                      <InfoItem label="State" value={resolvedAccount?.state} />
+                      <InfoItem label="Zip" value={resolvedAccount?.zip} />
+                      <InfoItem label="Country" value={resolvedAccount?.country} />
+                    </div>
+                  )}
+                </div>
+
+                {/* Contact */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                    <User className="h-4 w-4" /> Contact
+                  </h3>
+                  {isEditing ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <EditField label="First Name" value={firstName} onChange={setFirstName} />
+                      <EditField label="Last Name" value={lastName} onChange={setLastName} />
+                      <EditField label="Email" value={email} onChange={setEmail} type="email" />
+                      <EditField label="Phone" value={phone} onChange={setPhone} type="tel" />
+                      <EditField label="Fax" value={fax} onChange={setFax} />
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <InfoItem label="First Name" value={resolvedContact?.first_name} />
+                      <InfoItem label="Last Name" value={resolvedContact?.last_name} />
+                      <InfoItem label="Email" value={resolvedContact?.email} />
+                      <InfoItem label="Phone" value={resolvedContact?.phone} />
+                      <InfoItem label="Fax" value={resolvedContact?.fax} />
+                    </div>
+                  )}
+                </div>
+
+                {/* Opportunity */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                    <Briefcase className="h-4 w-4" /> Opportunity
+                  </h3>
+                  {isEditing ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <InfoItem label="Stage" value={stageConfig.label} />
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground uppercase tracking-wide">Service Type</Label>
+                        <Select
+                          value={opportunity.service_type || 'processing'}
+                          onValueChange={async (value) => {
+                            const newType = value as 'processing' | 'gateway_only';
+                            const GATEWAY_BLOCKED_STAGES: OpportunityStage[] = ['underwriting_review', 'processor_approval'];
+                            if (newType === 'gateway_only' && GATEWAY_BLOCKED_STAGES.includes(opportunity.stage)) {
+                              toast.error("Move out of Underwriting/Approved before switching to Gateway");
+                              return;
+                            }
+                            const { error } = await supabase
+                              .from('opportunities')
+                              .update({ service_type: newType })
+                              .eq('id', opportunity.id);
+                            if (error) { toast.error("Failed to update service type"); return; }
+                            await supabase.from('activities').insert({
+                              opportunity_id: opportunity.id,
+                              type: 'service_type_change',
+                              description: `Service type changed to ${newType === 'gateway_only' ? 'Gateway Only' : 'Processing'}`,
+                              user_id: user?.id,
+                              user_email: user?.email,
+                            });
+                            onUpdate({ ...opportunity, service_type: newType });
+                            toast.success(`Switched to ${newType === 'gateway_only' ? 'Gateway Only' : 'Processing'}`);
+                          }}
+                        >
+                          <SelectTrigger className="h-9">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-popover z-[60]">
+                            <SelectItem value="processing">Processing</SelectItem>
+                            <SelectItem value="gateway_only">Gateway Only</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <EditField label="Username" value={username} onChange={setUsername} />
+                      <EditField label="Referral Source" value={referralSource} onChange={setReferralSource} />
+                      <EditField label="Timezone" value={timezone} onChange={setTimezone} />
+                      <EditField label="Language" value={language} onChange={setLanguage} />
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <InfoItem label="Stage" value={stageConfig.label} />
+                      <InfoItem label="Service Type" value={isGatewayCard ? 'Gateway Only' : 'Processing'} />
+                      <InfoItem label="Username" value={opportunity.username} />
+                      <InfoItem label="Referral Source" value={opportunity.referral_source} />
+                      <InfoItem label="Timezone" value={opportunity.timezone} />
+                      <InfoItem label="Language" value={opportunity.language} />
+                    </div>
+                  )}
+                </div>
+
+                {/* Wizard: Business Profile */}
+                <div className="border-t border-border pt-4 space-y-4">
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                    <CreditCard className="h-4 w-4" />
+                    Business Profile <span className="text-xs font-normal">(Wizard)</span>
+                  </h3>
+                  {isEditing ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <EditField label="DBA Name" value={wizardFields.dba_name || ""} onChange={v => setWizardField("dba_name", v)} />
+                      <EditField label="Products / Services" value={wizardFields.product_description || ""} onChange={v => setWizardField("product_description", v)} />
+                      <EditField label="Nature of Business" value={wizardFields.nature_of_business || ""} onChange={v => setWizardField("nature_of_business", v)} />
+                      <EditField label="Contact First Name" value={wizardFields.dba_contact_first_name || ""} onChange={v => setWizardField("dba_contact_first_name", v)} />
+                      <EditField label="Contact Last Name" value={wizardFields.dba_contact_last_name || ""} onChange={v => setWizardField("dba_contact_last_name", v)} />
+                      <EditField label="Contact Phone" value={wizardFields.dba_contact_phone || ""} onChange={v => setWizardField("dba_contact_phone", v)} type="tel" />
+                      <EditField label="Contact Email" value={wizardFields.dba_contact_email || ""} onChange={v => setWizardField("dba_contact_email", v)} type="email" />
+                      <EditField label="DBA Address" value={wizardFields.dba_address_line1 || ""} onChange={v => setWizardField("dba_address_line1", v)} />
+                      <EditField label="DBA City" value={wizardFields.dba_city || ""} onChange={v => setWizardField("dba_city", v)} />
+                      <EditField label="DBA State" value={wizardFields.dba_state || ""} onChange={v => setWizardField("dba_state", v)} />
+                      <EditField label="DBA Zip" value={wizardFields.dba_zip || ""} onChange={v => setWizardField("dba_zip", v)} />
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <InfoItem label="DBA Name" value={wizardFormState.dba_name as string} />
+                      <InfoItem label="Products / Services" value={wizardFormState.product_description as string} />
+                      <InfoItem label="Nature of Business" value={wizardFormState.nature_of_business as string} />
+                      <InfoItem label="Contact First Name" value={wizardFormState.dba_contact_first_name as string} />
+                      <InfoItem label="Contact Last Name" value={wizardFormState.dba_contact_last_name as string} />
+                      <InfoItem label="Contact Phone" value={wizardFormState.dba_contact_phone as string} />
+                      <InfoItem label="Contact Email" value={wizardFormState.dba_contact_email as string} />
+                      <InfoItem label="DBA Address" value={wizardFormState.dba_address_line1 as string} />
+                      <InfoItem label="DBA City" value={wizardFormState.dba_city as string} />
+                      <InfoItem label="DBA State" value={wizardFormState.dba_state as string} />
+                      <InfoItem label="DBA Zip" value={wizardFormState.dba_zip as string} />
+                    </div>
+                  )}
+                </div>
+
+                {/* Wizard: Legal Info - Processing only */}
+                {!isGatewayCard && (
+                <div className="border-t border-border pt-4 space-y-4">
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                    <ClipboardList className="h-4 w-4" />
+                    Legal Info <span className="text-xs font-normal">(Wizard)</span>
+                  </h3>
+                  {isEditing ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <EditField label="Legal Entity Name" value={wizardFields.legal_entity_name || ""} onChange={v => setWizardField("legal_entity_name", v)} />
+                      <EditField label="Federal Tax ID" value={wizardFields.federal_tax_id || ""} onChange={v => setWizardField("federal_tax_id", v)} />
+                      <EditField label="Ownership Type" value={wizardFields.ownership_type || ""} onChange={v => setWizardField("ownership_type", v)} />
+                      <EditField label="Formation Date" value={wizardFields.business_formation_date || ""} onChange={v => setWizardField("business_formation_date", v)} />
+                      <EditField label="State Incorporated" value={wizardFields.state_incorporated || ""} onChange={v => setWizardField("state_incorporated", v)} />
+                      <EditField label="Legal Address" value={wizardFields.legal_address_line1 || ""} onChange={v => setWizardField("legal_address_line1", v)} />
+                      <EditField label="Legal City" value={wizardFields.legal_city || ""} onChange={v => setWizardField("legal_city", v)} />
+                      <EditField label="Legal State" value={wizardFields.legal_state || ""} onChange={v => setWizardField("legal_state", v)} />
+                      <EditField label="Legal Zip" value={wizardFields.legal_zip || ""} onChange={v => setWizardField("legal_zip", v)} />
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <InfoItem label="Legal Entity Name" value={wizardFormState.legal_entity_name as string} />
+                      <InfoItem label="Federal Tax ID" value={wizardFormState.federal_tax_id as string} />
+                      <InfoItem label="Ownership Type" value={wizardFormState.ownership_type as string} />
+                      <InfoItem label="Formation Date" value={wizardFormState.business_formation_date as string} />
+                      <InfoItem label="State Incorporated" value={wizardFormState.state_incorporated as string} />
+                      <InfoItem label="Legal Address" value={wizardFormState.legal_address_line1 as string} />
+                      <InfoItem label="Legal City" value={wizardFormState.legal_city as string} />
+                      <InfoItem label="Legal State" value={wizardFormState.legal_state as string} />
+                      <InfoItem label="Legal Zip" value={wizardFormState.legal_zip as string} />
+                    </div>
+                  )}
+                </div>
+                )}
+
+                {/* Wizard: Processing - Processing only */}
+                {!isGatewayCard && (
+                <div className="border-t border-border pt-4 space-y-4">
+                  <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                    <Zap className="h-4 w-4" />
+                    Processing <span className="text-xs font-normal">(Wizard)</span>
+                  </h3>
+                  {isEditing ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <EditField label="Monthly Volume" value={wizardFields.monthly_volume || ""} onChange={v => setWizardField("monthly_volume", v)} />
+                      <EditField label="Avg Transaction" value={wizardFields.average_transaction || ""} onChange={v => setWizardField("average_transaction", v)} />
+                      <EditField label="High Ticket" value={wizardFields.high_ticket || ""} onChange={v => setWizardField("high_ticket", v)} />
+                      <EditField label="% Swiped" value={wizardFields.percent_swiped || ""} onChange={v => setWizardField("percent_swiped", v)} />
+                      <EditField label="% Keyed" value={wizardFields.percent_keyed || ""} onChange={v => setWizardField("percent_keyed", v)} />
+                      <EditField label="% MOTO" value={wizardFields.percent_moto || ""} onChange={v => setWizardField("percent_moto", v)} />
+                      <EditField label="% eCommerce" value={wizardFields.percent_ecommerce || ""} onChange={v => setWizardField("percent_ecommerce", v)} />
+                      <EditField label="% B2C" value={wizardFields.percent_b2c || ""} onChange={v => setWizardField("percent_b2c", v)} />
+                      <EditField label="% B2B" value={wizardFields.percent_b2b || ""} onChange={v => setWizardField("percent_b2b", v)} />
+                      <EditField label="Website" value={wizardFields.website_url || ""} onChange={v => setWizardField("website_url", v)} />
+                      <EditField label="SIC / MCC Code" value={wizardFields.sic_mcc_code || ""} onChange={v => setWizardField("sic_mcc_code", v)} />
+                      <EditField label="Current Processor" value={wizardFields.current_processor || ""} onChange={v => setWizardField("current_processor", v)} />
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <InfoItem label="Monthly Volume" value={wizardFormState.monthly_volume as string} />
+                      <InfoItem label="Avg Transaction" value={wizardFormState.average_transaction as string} />
+                      <InfoItem label="High Ticket" value={wizardFormState.high_ticket as string} />
+                      <InfoItem label="% Swiped" value={wizardFormState.percent_swiped as string} />
+                      <InfoItem label="% Keyed" value={wizardFormState.percent_keyed as string} />
+                      <InfoItem label="% MOTO" value={wizardFormState.percent_moto as string} />
+                      <InfoItem label="% eCommerce" value={wizardFormState.percent_ecommerce as string} />
+                      <InfoItem label="% B2C" value={wizardFormState.percent_b2c as string} />
+                      <InfoItem label="% B2B" value={wizardFormState.percent_b2b as string} />
+                      <InfoItem label="Website" value={wizardFormState.website_url as string} />
+                      <InfoItem label="SIC / MCC Code" value={wizardFormState.sic_mcc_code as string} />
+                      <InfoItem label="Current Processor" value={wizardFormState.current_processor as string} />
+                    </div>
+                  )}
+                </div>
+                )}
+
+                {/* Wizard: Gateway Only fields */}
+                {isGatewayCard && (
+                  <div className="border-t border-border pt-4 space-y-4">
+                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+                      <Zap className="h-4 w-4" />
+                      Gateway Details <span className="text-xs font-normal">(Wizard)</span>
+                    </h3>
+                    {isEditing ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <EditField label="Username" value={wizardFields.username || ""} onChange={v => setWizardField("username", v)} />
+                        <EditField label="Current Processor" value={wizardFields.current_processor || ""} onChange={v => setWizardField("current_processor", v)} />
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <InfoItem label="Username" value={wizardFormState.username as string} />
+                        <InfoItem label="Current Processor" value={wizardFormState.current_processor as string} />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* RIGHT: Context Panel (desktop only) */}
+          {!isMobile && (
+            <DetailRightPanel
+              opportunityId={opportunity.id}
               opportunity={opportunity}
               wizardProgress={wizardState?.progress ?? 0}
               onUpdate={onUpdate}
             />
           )}
+        </div>
+      </div>
 
-          {/* Icon Rail + Dynamic Panel Layout */}
-          <div className={cn(
-            "flex-1 min-h-0 flex mt-2",
-            isMobile ? "flex-col" : "flex-row"
-          )}>
-            {/* Desktop: vertical icon rail on left */}
-            {!isMobile && (
-              <IconRail
-                items={iconRailItems}
-                activeId={activeSection}
-                onSelect={handleSectionSelect}
-              />
-            )}
-
-            {/* Primary Panel - takes full remaining space */}
-            <div className="flex-1 min-h-0 min-w-0 overflow-y-auto px-3 py-2">
-              {activeSection === 'overview' && (
-                <div className="space-y-6">
-                  <ApplicationProgress 
-                    opportunity={opportunity} 
-                    wizardState={wizardState ? {
-                      progress: wizardState.progress,
-                      step_index: wizardState.step_index,
-                      form_state: wizardState.form_state as Record<string, unknown>,
-                      updated_at: wizardState.updated_at
-                    } : null}
-                  />
-                  {!isGatewayCard && <BeneficialOwners opportunityId={opportunity.id} />}
-                  {!isGatewayCard && <OverviewUnderwritingSummary opportunityId={opportunity.id} onNavigate={() => setActiveSection('underwriting')} />}
-                </div>
-              )}
-
-              {activeSection === 'underwriting' && !isGatewayCard && (
-                <AIValidatePanel opportunityId={opportunity.id} />
-              )}
-
-              {activeSection === 'notes' && (
-                <NotesSection opportunityId={opportunity.id} />
-              )}
-
-              {activeSection === 'documents' && (
-                <DocumentsTab opportunityId={opportunity.id} serviceType={opportunity.service_type} />
-              )}
-
-              {activeSection === 'details' && (
-                <div className="space-y-6">
-                  {/* Account */}
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                      <Building2 className="h-4 w-4" />
-                      Account
-                    </h3>
-                    {isEditing ? (
-                      <div className="grid grid-cols-2 gap-4">
-                        <EditField label="Company Name" value={accountName} onChange={setAccountName} />
-                        <EditField label="Website" value={website} onChange={setWebsite} />
-                        <EditField label="Address" value={address1} onChange={setAddress1} />
-                        <EditField label="Address 2" value={address2} onChange={setAddress2} />
-                        <EditField label="City" value={city} onChange={setCity} />
-                        <EditField label="State" value={state} onChange={setState} />
-                        <EditField label="Zip" value={zip} onChange={setZip} />
-                        <EditField label="Country" value={country} onChange={setCountry} />
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-4">
-                        <InfoItem label="Company Name" value={resolvedAccount?.name} />
-                        <InfoItem label="Website" value={resolvedAccount?.website} />
-                        <InfoItem label="Address" value={resolvedAccount?.address1} />
-                        <InfoItem label="Address 2" value={resolvedAccount?.address2} />
-                        <InfoItem label="City" value={resolvedAccount?.city} />
-                        <InfoItem label="State" value={resolvedAccount?.state} />
-                        <InfoItem label="Zip" value={resolvedAccount?.zip} />
-                        <InfoItem label="Country" value={resolvedAccount?.country} />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Contact */}
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      Contact
-                    </h3>
-                    {isEditing ? (
-                      <div className="grid grid-cols-2 gap-4">
-                        <EditField label="First Name" value={firstName} onChange={setFirstName} />
-                        <EditField label="Last Name" value={lastName} onChange={setLastName} />
-                        <EditField label="Email" value={email} onChange={setEmail} type="email" />
-                        <EditField label="Phone" value={phone} onChange={setPhone} type="tel" />
-                        <EditField label="Fax" value={fax} onChange={setFax} />
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-4">
-                        <InfoItem label="First Name" value={resolvedContact?.first_name} />
-                        <InfoItem label="Last Name" value={resolvedContact?.last_name} />
-                        <InfoItem label="Email" value={resolvedContact?.email} />
-                        <InfoItem label="Phone" value={resolvedContact?.phone} />
-                        <InfoItem label="Fax" value={resolvedContact?.fax} />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Opportunity */}
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                      <Briefcase className="h-4 w-4" />
-                      Opportunity
-                    </h3>
-                    {isEditing ? (
-                      <div className="grid grid-cols-2 gap-4">
-                        <InfoItem label="Stage" value={stageConfig.label} />
-                        <div className="space-y-1">
-                          <Label className="text-xs text-muted-foreground uppercase tracking-wide">Service Type</Label>
-                          <Select
-                            value={opportunity.service_type || 'processing'}
-                            onValueChange={async (value) => {
-                              const newType = value as 'processing' | 'gateway_only';
-                              // If switching to gateway, ensure stage is valid
-                              const GATEWAY_BLOCKED_STAGES: OpportunityStage[] = ['underwriting_review', 'processor_approval'];
-                              if (newType === 'gateway_only' && GATEWAY_BLOCKED_STAGES.includes(opportunity.stage)) {
-                                toast.error("Move out of Underwriting/Approved before switching to Gateway");
-                                return;
-                              }
-                              const { error } = await supabase
-                                .from('opportunities')
-                                .update({ service_type: newType })
-                                .eq('id', opportunity.id);
-                              if (error) { toast.error("Failed to update service type"); return; }
-                              await supabase.from('activities').insert({
-                                opportunity_id: opportunity.id,
-                                type: 'service_type_change',
-                                description: `Service type changed to ${newType === 'gateway_only' ? 'Gateway Only' : 'Processing'}`,
-                                user_id: user?.id,
-                                user_email: user?.email,
-                              });
-                              onUpdate({ ...opportunity, service_type: newType });
-                              toast.success(`Switched to ${newType === 'gateway_only' ? 'Gateway Only' : 'Processing'}`);
-                            }}
-                          >
-                            <SelectTrigger className="h-9">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent className="bg-popover z-50">
-                              <SelectItem value="processing">Processing</SelectItem>
-                              <SelectItem value="gateway_only">Gateway Only</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <EditField label="Username" value={username} onChange={setUsername} />
-                        <EditField label="Referral Source" value={referralSource} onChange={setReferralSource} />
-                        <EditField label="Timezone" value={timezone} onChange={setTimezone} />
-                        <EditField label="Language" value={language} onChange={setLanguage} />
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-4">
-                        <InfoItem label="Stage" value={stageConfig.label} />
-                        <InfoItem label="Service Type" value={isGatewayCard ? 'Gateway Only' : 'Processing'} />
-                        <InfoItem label="Username" value={opportunity.username} />
-                        <InfoItem label="Referral Source" value={opportunity.referral_source} />
-                        <InfoItem label="Timezone" value={opportunity.timezone} />
-                        <InfoItem label="Language" value={opportunity.language} />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Wizard: Business Profile */}
-                  <div className="border-t border-border pt-4 space-y-4">
-                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                      <CreditCard className="h-4 w-4" />
-                      Business Profile <span className="text-xs font-normal">(Wizard)</span>
-                    </h3>
-                    {isEditing ? (
-                      <div className="grid grid-cols-2 gap-4">
-                        <EditField label="DBA Name" value={wizardFields.dba_name || ""} onChange={v => setWizardField("dba_name", v)} />
-                        <EditField label="Products / Services" value={wizardFields.product_description || ""} onChange={v => setWizardField("product_description", v)} />
-                        <EditField label="Nature of Business" value={wizardFields.nature_of_business || ""} onChange={v => setWizardField("nature_of_business", v)} />
-                        <EditField label="Contact First Name" value={wizardFields.dba_contact_first_name || ""} onChange={v => setWizardField("dba_contact_first_name", v)} />
-                        <EditField label="Contact Last Name" value={wizardFields.dba_contact_last_name || ""} onChange={v => setWizardField("dba_contact_last_name", v)} />
-                        <EditField label="Contact Phone" value={wizardFields.dba_contact_phone || ""} onChange={v => setWizardField("dba_contact_phone", v)} type="tel" />
-                        <EditField label="Contact Email" value={wizardFields.dba_contact_email || ""} onChange={v => setWizardField("dba_contact_email", v)} type="email" />
-                        <EditField label="DBA Address" value={wizardFields.dba_address_line1 || ""} onChange={v => setWizardField("dba_address_line1", v)} />
-                        <EditField label="DBA City" value={wizardFields.dba_city || ""} onChange={v => setWizardField("dba_city", v)} />
-                        <EditField label="DBA State" value={wizardFields.dba_state || ""} onChange={v => setWizardField("dba_state", v)} />
-                        <EditField label="DBA Zip" value={wizardFields.dba_zip || ""} onChange={v => setWizardField("dba_zip", v)} />
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-4">
-                        <InfoItem label="DBA Name" value={wizardFormState.dba_name as string} />
-                        <InfoItem label="Products / Services" value={wizardFormState.product_description as string} />
-                        <InfoItem label="Nature of Business" value={wizardFormState.nature_of_business as string} />
-                        <InfoItem label="Contact First Name" value={wizardFormState.dba_contact_first_name as string} />
-                        <InfoItem label="Contact Last Name" value={wizardFormState.dba_contact_last_name as string} />
-                        <InfoItem label="Contact Phone" value={wizardFormState.dba_contact_phone as string} />
-                        <InfoItem label="Contact Email" value={wizardFormState.dba_contact_email as string} />
-                        <InfoItem label="DBA Address" value={wizardFormState.dba_address_line1 as string} />
-                        <InfoItem label="DBA City" value={wizardFormState.dba_city as string} />
-                        <InfoItem label="DBA State" value={wizardFormState.dba_state as string} />
-                        <InfoItem label="DBA Zip" value={wizardFormState.dba_zip as string} />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Wizard: Legal Info - Processing only */}
-                  {!isGatewayCard && (
-                  <div className="border-t border-border pt-4 space-y-4">
-                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                      <ClipboardList className="h-4 w-4" />
-                      Legal Info <span className="text-xs font-normal">(Wizard)</span>
-                    </h3>
-                    {isEditing ? (
-                      <div className="grid grid-cols-2 gap-4">
-                        <EditField label="Legal Entity Name" value={wizardFields.legal_entity_name || ""} onChange={v => setWizardField("legal_entity_name", v)} />
-                        <EditField label="Federal Tax ID" value={wizardFields.federal_tax_id || ""} onChange={v => setWizardField("federal_tax_id", v)} />
-                        <EditField label="Ownership Type" value={wizardFields.ownership_type || ""} onChange={v => setWizardField("ownership_type", v)} />
-                        <EditField label="Formation Date" value={wizardFields.business_formation_date || ""} onChange={v => setWizardField("business_formation_date", v)} />
-                        <EditField label="State Incorporated" value={wizardFields.state_incorporated || ""} onChange={v => setWizardField("state_incorporated", v)} />
-                        <EditField label="Legal Address" value={wizardFields.legal_address_line1 || ""} onChange={v => setWizardField("legal_address_line1", v)} />
-                        <EditField label="Legal City" value={wizardFields.legal_city || ""} onChange={v => setWizardField("legal_city", v)} />
-                        <EditField label="Legal State" value={wizardFields.legal_state || ""} onChange={v => setWizardField("legal_state", v)} />
-                        <EditField label="Legal Zip" value={wizardFields.legal_zip || ""} onChange={v => setWizardField("legal_zip", v)} />
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-4">
-                        <InfoItem label="Legal Entity Name" value={wizardFormState.legal_entity_name as string} />
-                        <InfoItem label="Federal Tax ID" value={wizardFormState.federal_tax_id as string} />
-                        <InfoItem label="Ownership Type" value={wizardFormState.ownership_type as string} />
-                        <InfoItem label="Formation Date" value={wizardFormState.business_formation_date as string} />
-                        <InfoItem label="State Incorporated" value={wizardFormState.state_incorporated as string} />
-                        <InfoItem label="Legal Address" value={wizardFormState.legal_address_line1 as string} />
-                        <InfoItem label="Legal City" value={wizardFormState.legal_city as string} />
-                        <InfoItem label="Legal State" value={wizardFormState.legal_state as string} />
-                        <InfoItem label="Legal Zip" value={wizardFormState.legal_zip as string} />
-                      </div>
-                    )}
-                  </div>
-                  )}
-
-                  {/* Wizard: Processing - Processing only */}
-                  {!isGatewayCard && (
-                  <div className="border-t border-border pt-4 space-y-4">
-                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                      <Zap className="h-4 w-4" />
-                      Processing <span className="text-xs font-normal">(Wizard)</span>
-                    </h3>
-                    {isEditing ? (
-                      <div className="grid grid-cols-2 gap-4">
-                        <EditField label="Monthly Volume" value={wizardFields.monthly_volume || ""} onChange={v => setWizardField("monthly_volume", v)} />
-                        <EditField label="Avg Transaction" value={wizardFields.average_transaction || ""} onChange={v => setWizardField("average_transaction", v)} />
-                        <EditField label="High Ticket" value={wizardFields.high_ticket || ""} onChange={v => setWizardField("high_ticket", v)} />
-                        <EditField label="% Swiped" value={wizardFields.percent_swiped || ""} onChange={v => setWizardField("percent_swiped", v)} />
-                        <EditField label="% Keyed" value={wizardFields.percent_keyed || ""} onChange={v => setWizardField("percent_keyed", v)} />
-                        <EditField label="% MOTO" value={wizardFields.percent_moto || ""} onChange={v => setWizardField("percent_moto", v)} />
-                        <EditField label="% eCommerce" value={wizardFields.percent_ecommerce || ""} onChange={v => setWizardField("percent_ecommerce", v)} />
-                        <EditField label="% B2C" value={wizardFields.percent_b2c || ""} onChange={v => setWizardField("percent_b2c", v)} />
-                        <EditField label="% B2B" value={wizardFields.percent_b2b || ""} onChange={v => setWizardField("percent_b2b", v)} />
-                        <EditField label="Website" value={wizardFields.website_url || ""} onChange={v => setWizardField("website_url", v)} />
-                        <EditField label="SIC / MCC Code" value={wizardFields.sic_mcc_code || ""} onChange={v => setWizardField("sic_mcc_code", v)} />
-                        <EditField label="Current Processor" value={wizardFields.current_processor || ""} onChange={v => setWizardField("current_processor", v)} />
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-4">
-                        <InfoItem label="Monthly Volume" value={wizardFormState.monthly_volume as string} />
-                        <InfoItem label="Avg Transaction" value={wizardFormState.average_transaction as string} />
-                        <InfoItem label="High Ticket" value={wizardFormState.high_ticket as string} />
-                        <InfoItem label="% Swiped" value={wizardFormState.percent_swiped as string} />
-                        <InfoItem label="% Keyed" value={wizardFormState.percent_keyed as string} />
-                        <InfoItem label="% MOTO" value={wizardFormState.percent_moto as string} />
-                        <InfoItem label="% eCommerce" value={wizardFormState.percent_ecommerce as string} />
-                        <InfoItem label="% B2C" value={wizardFormState.percent_b2c as string} />
-                        <InfoItem label="% B2B" value={wizardFormState.percent_b2b as string} />
-                        <InfoItem label="Website" value={wizardFormState.website_url as string} />
-                        <InfoItem label="SIC / MCC Code" value={wizardFormState.sic_mcc_code as string} />
-                        <InfoItem label="Current Processor" value={wizardFormState.current_processor as string} />
-                      </div>
-                    )}
-                  </div>
-                  )}
-
-                  {/* Wizard: Gateway Only fields */}
-                  {isGatewayCard && (
-                    <div className="border-t border-border pt-4 space-y-4">
-                      <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-                        <Zap className="h-4 w-4" />
-                        Gateway Details <span className="text-xs font-normal">(Wizard)</span>
-                      </h3>
-                      {isEditing ? (
-                        <div className="grid grid-cols-2 gap-4">
-                          <EditField label="Username" value={wizardFields.username || ""} onChange={v => setWizardField("username", v)} />
-                          <EditField label="Current Processor" value={wizardFields.current_processor || ""} onChange={v => setWizardField("current_processor", v)} />
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-2 gap-4">
-                          <InfoItem label="Username" value={wizardFormState.username as string} />
-                          <InfoItem label="Current Processor" value={wizardFormState.current_processor as string} />
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {activeSection === 'activity' && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Activity className="h-4 w-4 text-muted-foreground" />
-                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                      Activity Feed
-                    </h3>
-                  </div>
-                  <ActivitiesTab opportunityId={opportunity.id} />
-                </div>
-              )}
-            </div>
-
-            {/* Mobile: horizontal icon rail at bottom */}
-            {isMobile && (
-              <IconRail
-                items={iconRailItems}
-                activeId={activeSection}
-                onSelect={handleSectionSelect}
-              />
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* ═══════ ALL ALERT DIALOGS (outside overlay for correct z-index) ═══════ */}
 
       {/* Reactivation Confirmation */}
       <AlertDialog open={!!reactivateConfirm} onOpenChange={(open) => !open && setReactivateConfirm(null)}>
@@ -1793,7 +1774,6 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
           portalMerchantId={opportunity.portal_merchant_id}
           accountName={resolvedAccount?.name}
           onSuccess={() => {
-            // Refresh opportunity data
             onUpdate({});
           }}
         />
@@ -1830,7 +1810,5 @@ const EditField = ({
     />
   </div>
 );
-
-
 
 export default OpportunityDetailModal;
