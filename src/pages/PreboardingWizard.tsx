@@ -45,16 +45,16 @@ const DOCUMENT_TYPES = [
 ] as const;
 
 const PROCESSING_STEPS = [
-  "Business Profile",
-  "Legal Information",
-  "Processing Information",
-  "Documents",
-  "Review"
+  { label: "Business Profile", icon: Building2 },
+  { label: "Legal Information", icon: Scale },
+  { label: "Processing Information", icon: CreditCard },
+  { label: "Documents", icon: FileText },
+  { label: "Review", icon: CheckCircle2 },
 ] as const;
 
 const GATEWAY_STEPS = [
-  "Business Details",
-  "Documents & Submit"
+  { label: "Business Details", icon: Building2 },
+  { label: "Documents & Submit", icon: FileText },
 ] as const;
 
 type SectionKey = "business" | "legal" | "processing" | "documents" | "gateway_business";
