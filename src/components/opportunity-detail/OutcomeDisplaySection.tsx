@@ -31,42 +31,32 @@ export const OutcomeDisplaySection = ({ opportunity }: OutcomeDisplaySectionProp
   useEffect(() => {
     const fetchActivities = async () => {
       setLoading(true);
-      const promises: Promise<void>[] = [];
 
       // Fetch email status for email-triggering outcomes
       if (isEmailTriggering) {
-        promises.push(
-          supabase
-            .from('activities')
-            .select('type, created_at')
-            .eq('opportunity_id', opportunity.id)
-            .in('type', ['email_sent', 'email_failed'])
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .then(({ data }) => {
-              if (data && data.length > 0) {
-                setEmailActivity(data[0]);
-              }
-            })
-        );
+        const { data: emailData } = await supabase
+          .from('activities')
+          .select('type, created_at')
+          .eq('opportunity_id', opportunity.id)
+          .in('type', ['email_sent', 'email_failed'])
+          .order('created_at', { ascending: false })
+          .limit(1);
+        if (emailData && emailData.length > 0) {
+          setEmailActivity(emailData[0]);
+        }
       }
 
       // Fetch re-engagement task
-      promises.push(
-        supabase
-          .from('activities')
-          .select('description, due_at, assigned_to')
-          .eq('opportunity_id', opportunity.id)
-          .eq('type', 'task_scheduled')
-          .limit(1)
-          .then(({ data }) => {
-            if (data && data.length > 0) {
-              setTaskActivity(data[0] as any);
-            }
-          })
-      );
+      const { data: taskData } = await supabase
+        .from('activities')
+        .select('description, due_at, assigned_to')
+        .eq('opportunity_id', opportunity.id)
+        .eq('type', 'task_scheduled')
+        .limit(1);
+      if (taskData && taskData.length > 0) {
+        setTaskActivity(taskData[0] as any);
+      }
 
-      await Promise.all(promises);
       setLoading(false);
     };
 

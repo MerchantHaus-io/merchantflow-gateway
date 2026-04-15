@@ -77,3 +77,6 @@ verify_jwt = false
 
 [functions.nmi-list-merchants]
 verify_jwt = false
+
+[functions.send-outcome-email]
+verify_jwt = false
