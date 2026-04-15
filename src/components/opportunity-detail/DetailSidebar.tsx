@@ -64,7 +64,7 @@ export const DetailSidebar = ({
           {resolvedContact?.phone && (
             <div className="flex items-center gap-2 text-xs">
               <Phone className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              <ClickToCall phone={resolvedContact.phone} className="text-xs text-primary hover:underline truncate" />
+              <ClickToCall phoneNumber={resolvedContact.phone} size="sm" variant="ghost" className="h-auto p-0 text-xs text-primary hover:underline" />
             </div>
           )}
           {resolvedContact?.email && (
