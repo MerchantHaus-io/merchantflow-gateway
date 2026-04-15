@@ -1032,31 +1032,39 @@ Sales Support`,
                   {/* Stage flow visualisation */}
                   <div className="flex flex-wrap items-center gap-2 mb-8 text-xs font-bold">
                     {[
-                      { label: "Discovery", color: "bg-blue-500" },
-                      { label: "Qualification", color: "bg-indigo-500" },
-                      { label: "Preboarding", color: "bg-teal-500" },
-                      { label: "Underwriting", color: "bg-purple-500" },
-                      { label: "Boarding", color: "bg-orange-500" },
-                      { label: "Live", color: "bg-green-500" },
+                      { label: "Discovery", color: "bg-zinc-600" },
+                      { label: "Qualified", color: "bg-zinc-700" },
+                      { label: "App Prep", color: "bg-slate-600" },
+                      { label: "Underwriting", color: "bg-slate-700" },
+                      { label: "Approved", color: "bg-slate-800" },
+                      { label: "Gateway Setup", color: "bg-gray-700" },
+                      { label: "Integration", color: "bg-gray-800" },
+                      { label: "Testing", color: "bg-indigo-700" },
+                      { label: "Go Live Ready", color: "bg-emerald-600" },
+                      { label: "Closed Won", color: "bg-emerald-500" },
                     ].map((s, i) => (
                       <div key={s.label} className="flex items-center gap-2">
                         <span className={`${s.color} text-white px-3 py-1.5 rounded-none`}>{s.label}</span>
-                        {i < 5 && <ArrowRight className="w-4 h-4 text-muted-foreground" />}
+                        {i < 9 && <ArrowRight className="w-4 h-4 text-muted-foreground" />}
                       </div>
                     ))}
                   </div>
 
+                  <div className="mb-4 p-3 rounded-none bg-primary/5 border border-primary/20 text-sm text-muted-foreground">
+                    <strong className="text-foreground">Two pipelines:</strong> Processing deals follow all 10 stages. Gateway Only deals skip App Prep, Underwriting, and Approved — going directly from Qualified → Gateway Setup.
+                  </div>
+
                   {/* Stage 1: Discovery */}
                   <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
-                    <div className="bg-blue-500/20 px-6 py-4 border-b border-border flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-none bg-blue-500 flex items-center justify-center">
+                    <div className="bg-zinc-600/20 px-6 py-4 border-b border-border flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-none bg-zinc-600 flex items-center justify-center">
                         <Search className="w-5 h-5 text-white" />
                       </div>
                       <div>
                         <h3 className="font-bold text-foreground text-lg">Stage 1: Discovery</h3>
                         <p className="text-sm text-muted-foreground">Initial contact and information gathering</p>
                       </div>
-                      <span className="ml-auto bg-blue-500/30 text-blue-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
+                      <span className="ml-auto bg-zinc-500/30 text-zinc-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
                         <Clock className="w-3 h-3" /> SLA: 24 hours
                       </span>
                     </div>
@@ -1066,28 +1074,243 @@ Sales Support`,
                           <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
                         </h4>
                         <ul className="space-y-2 text-sm text-muted-foreground">
-                          <li className="flex gap-2 items-start"><span className="text-blue-500">•</span><span>Send <strong className="text-foreground">Step 1 — Intro & Discovery</strong> email template</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-blue-500">•</span><span>Document business type, monthly volume, current processor</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-blue-500">•</span><span>Identify processing needs: Gateway only vs Full Processing</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-blue-500">•</span><span>Schedule a discovery call if needed (Step 1.2)</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Send <strong className="text-foreground">Step 1 — Intro & Discovery</strong> email template</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Document business type, monthly volume, current processor</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Identify processing needs: Gateway Only vs Full Processing</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Schedule a discovery call if needed (Step 1.2)</span></li>
                         </ul>
                       </div>
                       <div className="bg-muted/50 rounded-none p-3 text-sm">
-                        <strong className="text-foreground">Advance to Qualification when:</strong>
+                        <strong className="text-foreground">Advance to Qualified when:</strong>
                         <span className="text-muted-foreground"> Business model understood, solution fit confirmed, merchant interested in proceeding.</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Stage 2: Qualification */}
+                  {/* Stage 2: Qualified */}
                   <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
-                    <div className="bg-indigo-500/20 px-6 py-4 border-b border-border flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-none bg-indigo-500 flex items-center justify-center">
+                    <div className="bg-zinc-700/20 px-6 py-4 border-b border-border flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-none bg-zinc-700 flex items-center justify-center">
                         <CheckCircle className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-foreground text-lg">Stage 2: Qualification</h3>
-                        <p className="text-sm text-muted-foreground">Merchant confirmed as viable opportunity</p>
+                        <h3 className="font-bold text-foreground text-lg">Stage 2: Qualified</h3>
+                        <p className="text-sm text-muted-foreground">Merchant confirmed as viable — Darryn's QA gate</p>
+                      </div>
+                      <span className="ml-auto bg-zinc-500/30 text-zinc-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> SLA: 24 hours
+                      </span>
+                    </div>
+                    <div className="p-6 space-y-4">
+                      <div>
+                        <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                          <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
+                        </h4>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Confirm merchant interest and commitment to proceed</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Set appropriate pipeline: <strong className="text-foreground">Processing</strong> or <strong className="text-foreground">Gateway Only</strong></span></li>
+                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Send <strong className="text-foreground">Step 2 — Request for Documents</strong> email</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Create tasks for document follow-up</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Darryn QA gate: Initial underwriting data review</span></li>
+                        </ul>
+                      </div>
+                      <div className="bg-muted/50 rounded-none p-3 text-sm">
+                        <strong className="text-foreground">Advance to App Prep when:</strong>
+                        <span className="text-muted-foreground"> Document request sent and acknowledged. <strong>Gateway Only</strong> deals skip to Gateway Setup.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stage 3: App Prep */}
+                  <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
+                    <div className="bg-slate-600/20 px-6 py-4 border-b border-border flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-none bg-slate-600 flex items-center justify-center">
+                        <FileText className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-foreground text-lg">Stage 3: App Prep</h3>
+                        <p className="text-sm text-muted-foreground">Document collection and preboarding wizard</p>
+                      </div>
+                      <span className="ml-auto bg-slate-500/30 text-slate-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> SLA: 72 hours
+                      </span>
+                      <span className="bg-blue-500/20 text-blue-400 text-xs px-2 py-0.5 rounded-none">Processing Only</span>
+                    </div>
+                    <div className="p-6 space-y-4">
+                      <div>
+                        <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                          <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
+                        </h4>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Collect all required documents (see Pre-Underwriting Checklist)</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Complete the <strong className="text-foreground">Preboarding Wizard</strong> (auto-saves progress)</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Verify document completeness and quality</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Send <strong className="text-foreground">Step 3 — Application in Process</strong> when ready</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Record beneficial owners (≥ 25% equity required)</span></li>
+                        </ul>
+                      </div>
+                      <div className="bg-[hsl(var(--gold))]/10 border border-[hsl(var(--gold))]/30 rounded-none p-3 text-sm">
+                        <strong className="text-[hsl(var(--gold))] flex items-center gap-1">
+                          <AlertTriangle className="w-4 h-4" /> Underwriting Gate (must pass before advancing):
+                        </strong>
+                        <ul className="mt-2 text-muted-foreground grid md:grid-cols-2 gap-1">
+                          <li>✓ ≥ 3 Bank Statements / Transaction History</li>
+                          <li>✓ Articles of Organization</li>
+                          <li>✓ Tax Document (EIN)</li>
+                          <li>✓ Voided Check / Bank Confirmation</li>
+                          <li>✓ Passport or Driver's License (KYC)</li>
+                          <li>✓ ≥ 1 beneficial owner with 25%+ equity</li>
+                        </ul>
+                      </div>
+                      <div className="bg-muted/50 rounded-none p-3 text-sm">
+                        <strong className="text-foreground">Advance to Underwriting when:</strong>
+                        <span className="text-muted-foreground"> All documents collected, wizard completed, underwriting gate passed, and application submitted.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stage 4: Underwriting Review */}
+                  <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
+                    <div className="bg-slate-700/20 px-6 py-4 border-b border-border flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-none bg-slate-700 flex items-center justify-center">
+                        <ClipboardCheck className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-foreground text-lg">Stage 4: Underwriting Review</h3>
+                        <p className="text-sm text-muted-foreground">Application under review by processor</p>
+                      </div>
+                      <span className="ml-auto bg-slate-500/30 text-slate-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> SLA: 3–5 days
+                      </span>
+                      <span className="bg-blue-500/20 text-blue-400 text-xs px-2 py-0.5 rounded-none">Processing Only</span>
+                    </div>
+                    <div className="p-6 space-y-4">
+                      <div>
+                        <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                          <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
+                        </h4>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Monitor underwriting status daily</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Respond promptly to any stipulation requests</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Keep merchant informed of progress</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Run <strong className="text-foreground">AI Validate</strong> to generate readiness report</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Pin to Notice Board for underwriting-specific items</span></li>
+                        </ul>
+                      </div>
+                      <div className="bg-muted/50 rounded-none p-3 text-sm">
+                        <strong className="text-foreground">Advance to Approved when:</strong>
+                        <span className="text-muted-foreground"> Processor confirms approval and MID assigned.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stage 5: Processor Approval */}
+                  <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
+                    <div className="bg-slate-800/20 px-6 py-4 border-b border-border flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-none bg-slate-800 flex items-center justify-center">
+                        <CheckCircle className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-foreground text-lg">Stage 5: Approved</h3>
+                        <p className="text-sm text-muted-foreground">Processor has approved — ready for gateway setup</p>
+                      </div>
+                      <span className="ml-auto bg-slate-500/30 text-slate-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> SLA: 48 hours
+                      </span>
+                      <span className="bg-blue-500/20 text-blue-400 text-xs px-2 py-0.5 rounded-none">Processing Only</span>
+                    </div>
+                    <div className="p-6 space-y-4">
+                      <div>
+                        <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                          <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
+                        </h4>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Confirm MID assignment and rate structure</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Notify merchant of approval with timeline for activation</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Auto-creates Gateway opportunity if none exists</span></li>
+                        </ul>
+                      </div>
+                      <div className="bg-muted/50 rounded-none p-3 text-sm">
+                        <strong className="text-foreground">Advance to Gateway Setup when:</strong>
+                        <span className="text-muted-foreground"> Gateway application submitted to NMI.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stage 6: Gateway Setup */}
+                  <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
+                    <div className="bg-gray-700/20 px-6 py-4 border-b border-border flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-none bg-gray-700 flex items-center justify-center">
+                        <Rocket className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-foreground text-lg">Stage 6: Gateway Setup</h3>
+                        <p className="text-sm text-muted-foreground">NMI gateway configuration</p>
+                      </div>
+                      <span className="ml-auto bg-gray-500/30 text-gray-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> SLA: 48 hours
+                      </span>
+                    </div>
+                    <div className="p-6 space-y-4">
+                      <div>
+                        <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                          <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
+                        </h4>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          <li className="flex gap-2 items-start"><span className="text-gray-500">•</span><span>Apply for NMI Gateway (Flat Rate or Interchange+)</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-gray-500">•</span><span>Configure gateway credentials, API keys, webhooks</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-gray-500">•</span><span>Configure fraud filters and risk settings</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-gray-500">•</span><span>For <strong className="text-foreground">Gateway Only</strong> deals: Voided Check + VAR/Tear Sheet are the only required documents</span></li>
+                        </ul>
+                      </div>
+                      <div className="bg-muted/50 rounded-none p-3 text-sm">
+                        <strong className="text-foreground">Advance to Integration when:</strong>
+                        <span className="text-muted-foreground"> Gateway credentials issued and configuration complete.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stage 7: Integration Setup */}
+                  <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
+                    <div className="bg-gray-800/20 px-6 py-4 border-b border-border flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-none bg-gray-800 flex items-center justify-center">
+                        <Settings className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-foreground text-lg">Stage 7: Integration</h3>
+                        <p className="text-sm text-muted-foreground">Merchant integrating with gateway</p>
+                      </div>
+                      <span className="ml-auto bg-gray-500/30 text-gray-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> SLA: 48 hours
+                      </span>
+                    </div>
+                    <div className="p-6 space-y-4">
+                      <div>
+                        <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                          <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
+                        </h4>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          <li className="flex gap-2 items-start"><span className="text-gray-500">•</span><span>Support merchant with API integration or plugin setup</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-gray-500">•</span><span>Provide sandbox credentials for testing</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-gray-500">•</span><span>Complex integrations escalated to Darryn</span></li>
+                        </ul>
+                      </div>
+                      <div className="bg-muted/50 rounded-none p-3 text-sm">
+                        <strong className="text-foreground">Advance to Testing when:</strong>
+                        <span className="text-muted-foreground"> Integration complete, ready for test transactions.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stage 8: Testing */}
+                  <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
+                    <div className="bg-indigo-700/20 px-6 py-4 border-b border-border flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-none bg-indigo-700 flex items-center justify-center">
+                        <Zap className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-foreground text-lg">Stage 8: Testing</h3>
+                        <p className="text-sm text-muted-foreground">Test transactions and validation</p>
                       </div>
                       <span className="ml-auto bg-indigo-500/30 text-indigo-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
                         <Clock className="w-3 h-3" /> SLA: 24 hours
@@ -1099,144 +1322,62 @@ Sales Support`,
                           <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
                         </h4>
                         <ul className="space-y-2 text-sm text-muted-foreground">
-                          <li className="flex gap-2 items-start"><span className="text-indigo-500">•</span><span>Confirm merchant interest and commitment to proceed</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-indigo-500">•</span><span>Set appropriate pipeline: Processing or Gateway Only</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-indigo-500">•</span><span>Send <strong className="text-foreground">Step 2 — Request for Documents</strong> email</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-indigo-500">•</span><span>Create tasks for document follow-up</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-indigo-500">•</span><span>Run test transactions to verify connectivity</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-indigo-500">•</span><span>Verify settlement and reporting</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-indigo-500">•</span><span>Confirm fraud filter operation</span></li>
                         </ul>
                       </div>
                       <div className="bg-muted/50 rounded-none p-3 text-sm">
-                        <strong className="text-foreground">Advance to Preboarding when:</strong>
-                        <span className="text-muted-foreground"> Document request sent and acknowledged by merchant.</span>
+                        <strong className="text-foreground">Advance to Go Live Ready when:</strong>
+                        <span className="text-muted-foreground"> All test transactions successful, merchant confirms readiness.</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Stage 3: Preboarding */}
+                  {/* Stage 9: Go Live Ready */}
                   <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
-                    <div className="bg-teal-500/20 px-6 py-4 border-b border-border flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-none bg-teal-500 flex items-center justify-center">
-                        <ClipboardCheck className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-foreground text-lg">Stage 3: Preboarding</h3>
-                        <p className="text-sm text-muted-foreground">Collecting documents and completing the preboarding wizard</p>
-                      </div>
-                      <span className="ml-auto bg-teal-500/30 text-teal-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> SLA: 72 hours
-                      </span>
-                    </div>
-                    <div className="p-6 space-y-4">
-                      <div>
-                        <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                          <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
-                        </h4>
-                        <ul className="space-y-2 text-sm text-muted-foreground">
-                          <li className="flex gap-2 items-start"><span className="text-teal-500">•</span><span>Collect all required documents (see Document Checklist)</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-teal-500">•</span><span>Verify document completeness and quality</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-teal-500">•</span><span>Complete the Preboarding Wizard (auto-saves progress)</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-teal-500">•</span><span>Send <strong className="text-foreground">Step 3 — Application in Process</strong> when ready</span></li>
-                        </ul>
-                      </div>
-                      <div className="bg-[hsl(var(--gold))]/10 border border-[hsl(var(--gold))]/30 rounded-none p-3 text-sm">
-                        <strong className="text-[hsl(var(--gold))] flex items-center gap-1">
-                          <AlertTriangle className="w-4 h-4" /> Document Checklist:
-                        </strong>
-                        <ul className="mt-2 text-muted-foreground grid md:grid-cols-2 gap-1">
-                          <li>✓ 3 months bank statements</li>
-                          <li>✓ 3 months processing statements</li>
-                          <li>✓ Voided check / bank letter</li>
-                          <li>✓ Articles of Organization</li>
-                          <li>✓ Owner ID (DL/Passport)</li>
-                          <li>✓ SSN for principal owner</li>
-                        </ul>
-                      </div>
-                      <div className="bg-muted/50 rounded-none p-3 text-sm">
-                        <strong className="text-foreground">Advance to Underwriting when:</strong>
-                        <span className="text-muted-foreground"> All documents collected, wizard completed, and application submitted via NMI microsite.</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Stage 4: Underwriting */}
-                  <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
-                    <div className="bg-purple-500/20 px-6 py-4 border-b border-border flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-none bg-purple-500 flex items-center justify-center">
-                        <Shield className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-foreground text-lg">Stage 4: Underwriting</h3>
-                        <p className="text-sm text-muted-foreground">Application under review by processor</p>
-                      </div>
-                      <span className="ml-auto bg-purple-500/30 text-purple-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> SLA: 3–5 days
-                      </span>
-                    </div>
-                    <div className="p-6 space-y-4">
-                      <div>
-                        <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                          <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
-                        </h4>
-                        <ul className="space-y-2 text-sm text-muted-foreground">
-                          <li className="flex gap-2 items-start"><span className="text-purple-500">•</span><span>Monitor underwriting status daily</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-purple-500">•</span><span>Respond promptly to any stipulation requests</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-purple-500">•</span><span>Keep merchant informed of progress</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-purple-500">•</span><span>Run AI Validate to generate readiness report</span></li>
-                        </ul>
-                      </div>
-                      <div className="bg-muted/50 rounded-none p-3 text-sm">
-                        <strong className="text-foreground">Advance to Boarding when:</strong>
-                        <span className="text-muted-foreground"> Processor confirms approval and MID assigned.</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Stage 5: Boarding */}
-                  <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
-                    <div className="bg-orange-500/20 px-6 py-4 border-b border-border flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-none bg-orange-500 flex items-center justify-center">
-                        <Settings className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-foreground text-lg">Stage 5: Boarding</h3>
-                        <p className="text-sm text-muted-foreground">Gateway setup, integration, and test transactions</p>
-                      </div>
-                      <span className="ml-auto bg-orange-500/30 text-orange-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> SLA: 48 hours
-                      </span>
-                    </div>
-                    <div className="p-6 space-y-4">
-                      <div>
-                        <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                          <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
-                        </h4>
-                        <ul className="space-y-2 text-sm text-muted-foreground">
-                          <li className="flex gap-2 items-start"><span className="text-orange-500">•</span><span>Confirm MID assignment and rate structure</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-orange-500">•</span><span>Apply for NMI Gateway (Flat Rate or Interchange+)</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-orange-500">•</span><span>Configure gateway credentials, API keys, webhooks</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-orange-500">•</span><span>Configure fraud filters and risk settings</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-orange-500">•</span><span>Run test transactions to verify connectivity</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-orange-500">•</span><span>Notify merchant of approval with timeline for activation</span></li>
-                        </ul>
-                      </div>
-                      <div className="bg-muted/50 rounded-none p-3 text-sm">
-                        <strong className="text-foreground">Advance to Live when:</strong>
-                        <span className="text-muted-foreground"> Test transactions successful, gateway configured, and merchant ready to process.</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Stage 6: Live */}
-                  <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
-                    <div className="bg-green-500/20 px-6 py-4 border-b border-border flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-none bg-green-500 flex items-center justify-center">
+                    <div className="bg-emerald-600/20 px-6 py-4 border-b border-border flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-none bg-emerald-600 flex items-center justify-center">
                         <Rocket className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-foreground text-lg">Stage 6: Live</h3>
-                        <p className="text-sm text-muted-foreground">Merchant processing live transactions</p>
+                        <h3 className="font-bold text-foreground text-lg">Stage 9: Go Live Ready</h3>
+                        <p className="text-sm text-muted-foreground">Final checks before live processing</p>
                       </div>
-                      <span className="ml-auto bg-green-500/30 text-green-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
+                      <span className="ml-auto bg-emerald-500/30 text-emerald-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> SLA: 24 hours
+                      </span>
+                    </div>
+                    <div className="p-6 space-y-4">
+                      <div>
+                        <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                          <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
+                        </h4>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          <li className="flex gap-2 items-start"><span className="text-emerald-500">•</span><span>Confirm first live transaction processed successfully</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-emerald-500">•</span><span>Provide merchant with support contacts and resources</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-emerald-500">•</span><span>Initiate PCI compliance workflow (SAQ)</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-emerald-500">•</span><span>Schedule 30-day check-in for ongoing support</span></li>
+                        </ul>
+                      </div>
+                      <div className="bg-muted/50 rounded-none p-3 text-sm">
+                        <strong className="text-foreground">Set outcome to Closed Won when:</strong>
+                        <span className="text-muted-foreground"> Merchant is live and billing. Hand off to support team (Sheiky).</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stage 10: Closed Won */}
+                  <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
+                    <div className="bg-emerald-500/20 px-6 py-4 border-b border-border flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-none bg-emerald-500 flex items-center justify-center">
+                        <Trophy className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-foreground text-lg">Stage 10: Closed Won</h3>
+                        <p className="text-sm text-muted-foreground">Live merchant — tracked in Live & Billing</p>
+                      </div>
+                      <span className="ml-auto bg-emerald-500/30 text-emerald-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
                         <CheckCircle className="w-3 h-3" /> Active
                       </span>
                     </div>
@@ -1246,49 +1387,49 @@ Sales Support`,
                           <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
                         </h4>
                         <ul className="space-y-2 text-sm text-muted-foreground">
-                          <li className="flex gap-2 items-start"><span className="text-green-500">•</span><span>Confirm first live transaction processed successfully</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-green-500">•</span><span>Provide merchant with support contacts and resources</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-green-500">•</span><span>Initiate PCI compliance workflow (SAQ)</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-green-500">•</span><span>Schedule 30-day check-in for ongoing support</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-green-500">•</span><span>Update account status to Active and hand off to support team</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-emerald-500">•</span><span>Update account status to Active</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-emerald-500">•</span><span>Appears in <strong className="text-foreground">Live & Billing</strong> report</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-emerald-500">•</span><span>Post-go-live support owned exclusively by Sheiky</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-emerald-500">•</span><span>Transaction monitoring via NMI dashboard (Taryn)</span></li>
                         </ul>
                       </div>
                     </div>
                   </div>
 
-                  {/* Status States */}
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="bg-destructive/10 rounded-none border border-destructive/30 p-5">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-8 h-8 rounded-none bg-destructive flex items-center justify-center">
-                          <XCircle className="w-4 h-4 text-white" />
-                        </div>
-                        <h3 className="font-bold text-foreground">Status: Dead</h3>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        Opportunity did not proceed. Can be set at any stage.
-                      </p>
-                      <ul className="text-sm text-muted-foreground space-y-1">
-                        <li>• Record loss reason in notes</li>
-                        <li>• Set opportunity status to "dead"</li>
-                        <li>• Consider re-engagement timeline</li>
-                      </ul>
+                  {/* Terminal Outcomes */}
+                  <div className="mt-8 mb-4">
+                    <h3 className="font-bold text-foreground text-lg flex items-center gap-2 mb-2">
+                      <XCircle className="w-5 h-5 text-destructive" /> Terminal Outcomes (Off-Board)
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Setting an outcome removes the deal from the active pipeline board, records reason/notes/close date/closer, and disables further stage movement.
+                      Full outcome details, reason codes, and re-engagement task rules are documented in the <a href="#outcome-rules" className="text-primary underline">Outcome & Pipeline Rules</a> section below.
+                    </p>
+                  </div>
+                  <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-destructive/5 rounded-none border border-destructive/20 p-4">
+                      <h4 className="font-semibold text-foreground mb-1 flex items-center gap-2 text-sm">
+                        <XCircle className="w-4 h-4 text-destructive" /> Closed Lost
+                      </h4>
+                      <p className="text-xs text-muted-foreground">Lost to competitor or merchant withdrew. Status → dead. No email sent.</p>
                     </div>
-                    <div className="bg-destructive/10 rounded-none border border-destructive/30 p-5">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-8 h-8 rounded-none bg-destructive flex items-center justify-center">
-                          <XCircle className="w-4 h-4 text-white" />
-                        </div>
-                        <h3 className="font-bold text-foreground">Status: Closed-Lost</h3>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        Underwriting declined or merchant withdrew.
-                      </p>
-                      <ul className="text-sm text-muted-foreground space-y-1">
-                        <li>• Document decline reason and underwriting feedback</li>
-                        <li>• Set opportunity status to "closed-lost"</li>
-                        <li>• Assess if re-application is viable</li>
-                      </ul>
+                    <div className="bg-purple-500/5 rounded-none border border-purple-500/20 p-4">
+                      <h4 className="font-semibold text-foreground mb-1 flex items-center gap-2 text-sm">
+                        <XCircle className="w-4 h-4 text-purple-500" /> Disqualified
+                      </h4>
+                      <p className="text-xs text-muted-foreground">Does not meet eligibility. Status → dead. <strong className="text-amber-500">Email sent.</strong></p>
+                    </div>
+                    <div className="bg-accent/30 rounded-none border border-border p-4">
+                      <h4 className="font-semibold text-foreground mb-1 flex items-center gap-2 text-sm">
+                        <AlertTriangle className="w-4 h-4 text-muted-foreground" /> No Decision / Dead
+                      </h4>
+                      <p className="text-xs text-muted-foreground">Gone silent or paused. Status → dead. No email sent.</p>
+                    </div>
+                    <div className="bg-orange-500/5 rounded-none border border-orange-500/20 p-4">
+                      <h4 className="font-semibold text-foreground mb-1 flex items-center gap-2 text-sm">
+                        <XCircle className="w-4 h-4 text-orange-500" /> UW Declined
+                      </h4>
+                      <p className="text-xs text-muted-foreground">Declined by underwriting. Status → dead. <strong className="text-amber-500">Adverse action email sent.</strong></p>
                     </div>
                   </div>
                 </section>
