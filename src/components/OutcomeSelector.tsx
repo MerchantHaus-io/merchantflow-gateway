@@ -5,7 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { OutcomeStatus, OUTCOME_CONFIG, OUTCOME_REASONS } from "@/types/opportunity";
+import { OutcomeStatus, OUTCOME_CONFIG } from "@/types/opportunity";
+import { OUTCOME_REASONS, OUTCOME_STATUS_LABELS, EMAIL_TRIGGERING_OUTCOMES } from "@/config/outcomeReasons";
 import { cn } from "@/lib/utils";
 import { AlertTriangle, Trophy, XCircle, Ban, ShieldX, ChevronDown } from "lucide-react";
 
@@ -47,6 +48,7 @@ export const OutcomeSelector = ({ currentOutcome, currentReason, onSelect, disab
 
   if (currentOutcome) {
     const cfg = OUTCOME_CONFIG[currentOutcome];
+    const reasonLabel = OUTCOME_REASONS[currentOutcome]?.find(r => r.value === currentReason)?.label ?? currentReason;
     return (
       <div className="flex flex-col gap-0.5">
         <Badge variant="outline" className={cn("gap-1.5 text-xs font-semibold border", cfg.bgClass, cfg.textClass)}>
@@ -54,11 +56,13 @@ export const OutcomeSelector = ({ currentOutcome, currentReason, onSelect, disab
           {cfg.label}
         </Badge>
         {currentReason && (
-          <span className="text-[10px] text-muted-foreground pl-0.5">{currentReason}</span>
+          <span className="text-[10px] text-muted-foreground pl-0.5">{reasonLabel}</span>
         )}
       </div>
     );
   }
+
+  const isEmailTriggering = selectedOutcome && EMAIL_TRIGGERING_OUTCOMES.includes(selectedOutcome);
 
   return (
     <>
@@ -123,7 +127,7 @@ export const OutcomeSelector = ({ currentOutcome, currentReason, onSelect, disab
                   </SelectTrigger>
                   <SelectContent>
                     {OUTCOME_REASONS[selectedOutcome].map((r) => (
-                      <SelectItem key={r} value={r}>{r}</SelectItem>
+                      <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -147,22 +151,26 @@ export const OutcomeSelector = ({ currentOutcome, currentReason, onSelect, disab
             {selectedOutcome && (
               <div className={cn(
                 "rounded-lg border p-3 flex items-start gap-2",
-                ['underwriting_declined', 'disqualified'].includes(selectedOutcome)
+                isEmailTriggering
                   ? "border-amber-500/30 bg-amber-500/5"
                   : "border-border bg-muted/30"
               )}>
                 <AlertTriangle className={cn(
                   "h-4 w-4 shrink-0 mt-0.5",
-                  ['underwriting_declined', 'disqualified'].includes(selectedOutcome)
+                  isEmailTriggering
                     ? "text-amber-500"
                     : "text-muted-foreground"
                 )} />
                 <p className="text-xs text-muted-foreground">
-                  This will remove the opportunity from the active pipeline board.
-                  {selectedOutcome === 'closed_won' && ' It will appear in the Live & Billing report.'}
-                  {['underwriting_declined', 'disqualified'].includes(selectedOutcome) && ' A notification email will be sent to the client.'}
-                  {['closed_lost', 'no_decision'].includes(selectedOutcome) && ' No email will be sent to the client — this is an internal status.'}
-                  {' '}The outcome can still be viewed in reports and search.
+                  {isEmailTriggering
+                    ? "This will remove the opportunity from the active pipeline board. A compliance notification email will be automatically sent to the merchant contact. The outcome will be recorded in reports and search."
+                    : <>
+                        This will remove the opportunity from the active pipeline board.
+                        {selectedOutcome === 'closed_won' && ' It will appear in the Live & Billing report.'}
+                        {['closed_lost', 'no_decision'].includes(selectedOutcome) && ' No email will be sent to the client — this is an internal status.'}
+                        {' '}The outcome can still be viewed in reports and search.
+                      </>
+                  }
                 </p>
               </div>
             )}
@@ -173,9 +181,8 @@ export const OutcomeSelector = ({ currentOutcome, currentReason, onSelect, disab
             <Button
               onClick={handleSubmit}
               disabled={!selectedOutcome || !reason || submitting}
-              loading={submitting}
             >
-              Confirm Outcome
+              {submitting ? 'Recording...' : 'Confirm Outcome'}
             </Button>
           </DialogFooter>
         </DialogContent>

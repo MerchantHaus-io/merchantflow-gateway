@@ -83,3 +83,52 @@ export const OUTCOME_REASONS: Record<
     { value: 'third_party_processing', label: 'Third-party processing / aggregation discovered' },
   ],
 };
+
+export const OUTCOME_STATUS_LABELS: Record<string, string> = {
+  closed_won:            'Closed Won',
+  closed_lost:           'Closed Lost',
+  disqualified:          'Disqualified',
+  no_decision:           'No Decision / Dead',
+  underwriting_declined: 'Underwriting Declined',
+};
+
+export const EMAIL_TRIGGERING_OUTCOMES: string[] = [
+  'disqualified',
+  'underwriting_declined',
+];
+
+export const PERMANENT_SUPPRESSION_REASONS: string[] = [
+  'ofac_sanctions_match',
+  'match_fraud',
+  'match_excessive_chargebacks',
+  'match_other',
+  'match_tmf_hit_prescreen',
+  'aml_red_flags',
+  'fraudulent_application',
+  'prohibited_mcc',
+  'previously_terminated',
+];
+
+// Re-engagement task lookup: outcome_reason → { days, label }
+export const REENGAGEMENT_TASKS: Record<string, { days: number; label: string }> = {
+  // Closed Lost
+  lost_flat_rate_competitor: { days: 90, label: 'Win-back: Compare flat-rate vs IC+ savings' },
+  lost_iso_price: { days: 90, label: 'Win-back: Rate review — are they still satisfied?' },
+  locked_in_etf: { days: 90, label: 'Win-back: Check if ETF window is opening' },
+  satisfied_with_incumbent: { days: 180, label: 'Win-back: Incumbent processor check-in' },
+  gateway_integration_incompatibility: { days: 60, label: 'Win-back: New integration may be available' },
+  lost_contract_terms: { days: 120, label: 'Win-back: Terms re-offer' },
+  decision_maker_change: { days: 60, label: 'Win-back: Connect with new decision-maker' },
+  // No Decision / Dead
+  non_responsive: { days: 30, label: 'Re-engage: Non-responsive merchant check-in' },
+  timing_not_right: { days: 90, label: 'Re-engage: Timing follow-up' },
+  analysis_paralysis: { days: 60, label: 'Re-engage: Decision follow-up' },
+  stalled_document_collection: { days: 14, label: 'Re-engage: Missing documents reminder' },
+  stalled_pci: { days: 45, label: 'Re-engage: PCI compliance check-in' },
+  // Underwriting Declined (remediable only)
+  principal_credit_below_threshold: { days: 180, label: 'Re-application: Credit remediation check-in' },
+  excessive_chargeback_ratio_current: { days: 180, label: 'Re-application: Chargeback ratio — review progress' },
+  website_marketing_noncompliance: { days: 30, label: 'Re-application: Website compliance — ready to resubmit?' },
+  incomplete_docs_uw_timeout: { days: 14, label: 'Re-application: Documents ready to resubmit?' },
+  reserve_requirement_rejected: { days: 90, label: 'Re-application: Reserve terms — willing to reconsider?' },
+};

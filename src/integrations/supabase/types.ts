@@ -112,8 +112,10 @@ export type Database = {
       }
       activities: {
         Row: {
+          assigned_to: string | null
           created_at: string
           description: string | null
+          due_at: string | null
           id: string
           opportunity_id: string
           type: string
@@ -121,8 +123,10 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          assigned_to?: string | null
           created_at?: string
           description?: string | null
+          due_at?: string | null
           id?: string
           opportunity_id: string
           type: string
@@ -130,8 +134,10 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          assigned_to?: string | null
           created_at?: string
           description?: string | null
+          due_at?: string | null
           id?: string
           opportunity_id?: string
           type?: string
