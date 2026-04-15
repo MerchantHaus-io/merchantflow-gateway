@@ -1,0 +1,3 @@
+ALTER TABLE public.activities
+  ADD COLUMN IF NOT EXISTS due_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS assigned_to TEXT;
