@@ -305,20 +305,25 @@ A separate "AI Validate" action in the Documents tab triggers Gemini to cross-re
 ## 7. Pipeline & Workflow
 
 ### Service Types
-- **Processing** — Full merchant onboarding with underwriting
-- **Gateway Only** — Simplified gateway configuration flow (lightened requirements: Voided Check + VAR/Tear Sheet only, no AI validation or beneficial ownership gate)
-- **Document Submission** — Compliance document uploads only
+- **Processing** — Full merchant onboarding with underwriting (10 stages)
+- **Gateway Only** — Simplified gateway configuration (7 stages: skips App Prep, Underwriting, Approved)
 
-### Active Pipeline Stages
-\`Discovery\` → \`Qualified\` → \`App Prep\` → \`Underwriting\` → \`Approved\` → \`Gateway Setup\` → \`Integration\` → \`Testing\` → \`Go Live Ready\`
+### Active Pipeline Stages (Processing)
+\`Discovery\` → \`Qualified\` → \`App Prep\` → \`Underwriting\` → \`Approved\` → \`Gateway Setup\` → \`Integration\` → \`Testing\` → \`Go Live Ready\` → \`Closed Won\`
+
+### Active Pipeline Stages (Gateway Only)
+\`Discovery\` → \`Qualified\` → \`Gateway Setup\` → \`Integration\` → \`Testing\` → \`Go Live Ready\` → \`Closed Won\`
 
 ### Terminal Outcomes (Off-Board)
-Selecting an outcome removes the deal from the active board, records a reason/notes/close date/closer, and disables further stage movement:
-- **Closed Won** — automatically tracked in Live & Billing report
-- **Closed Lost** — sets status to 'dead', preserves historical data
-- **Disqualified** — sets status to 'dead'
-- **No Decision / Dead** — sets status to 'dead'
-- **Underwriting Declined** — sets status to 'dead'
+Selecting an outcome removes the deal from the active board, records reason/notes/close date/closer, and disables further stage movement:
+- **Closed Won** (13 reasons) — status set to 'won', tracked in Live & Billing
+- **Closed Lost** (15 reasons) — status set to 'dead', no email, 7 reasons create re-engagement tasks (30–180 days)
+- **Disqualified** (14 reasons) — status set to 'dead', compliance email auto-sent, 6 reasons permanently suppressed
+- **No Decision / Dead** (13 reasons) — status set to 'dead', no email, 5 reasons create re-engagement tasks (14–90 days)
+- **Underwriting Declined** (15 reasons) — status set to 'dead', adverse action email (ECOA/FCRA) auto-sent, 5 remediable reasons create tasks (14–180 days)
+
+### Re-engagement Task Automation
+When an outcome is set, the system auto-creates a dated follow-up task for the assigned rep unless the reason is in the permanent suppression list (OFAC, MATCH/TMF, AML, fraud, prohibited MCC, previously terminated).
 
 ### Underwriting Gate (Processing Deals)
 Before a deal can advance to Underwriting, it must pass document validation:
@@ -330,19 +335,22 @@ Before a deal can advance to Underwriting, it must pass document validation:
 6. ≥ 1 beneficial owner with 25%+ equity recorded
 
 ### Pipeline UX
-- **Hybrid 75/25 layout** — Kanban board (top) + high-density List View (bottom, max-w-3xl)
+- **Hybrid 75/25 layout** — Kanban board (top) + high-density List View (bottom)
 - **Sticky column headers** — fixed during vertical scroll
-- **Focus Mode** (\`?focus=true\`) — filters to active deals and tasks only
-- **SLA velocity alerts** — two-tier system: amber at 12 hours, red at 24 hours (resets on stage movement)
+- **SLA velocity alerts** — two-tier: amber at 12 hours, red at 24 hours (resets on stage movement)
+- **Muted cards** — deals not assigned to current user appear muted
+- **Outcome display** — detail view shows status badge, reason label, email status, and scheduled re-engagement tasks
 
 ### Automation
 - SLA tracking: Automatic 24-hour SLA tasks on stage entry
 - Realtime: Pipeline board, chat, and notifications use WebSocket subscriptions
 - Auto-assignment: Web submissions at 100% completion assigned to support@merchanthaus.io
 - Stage change notifications: Email + in-app + push notifications on assignment and stage transitions
-- System messages: Automated chat posts to #ops-updates for assignments and key events
+- System messages: Automated chat posts to #ops-updates for key events
 - AI validation: On-demand document readiness checks via Gemini
-- Preboarding completion: "Mark Preboarding Complete" persists form state and logs activity but keeps the deal in App Prep for final review
+- Compliance emails: Auto-sent for Disqualified and Underwriting Declined outcomes
+- Re-engagement tasks: Auto-created with cooling-off periods based on outcome reason
+- Gateway auto-creation: Processing approved → auto-creates Gateway card if none exists
 
 
 ---
@@ -1032,31 +1040,39 @@ Sales Support`,
                   {/* Stage flow visualisation */}
                   <div className="flex flex-wrap items-center gap-2 mb-8 text-xs font-bold">
                     {[
-                      { label: "Discovery", color: "bg-blue-500" },
-                      { label: "Qualification", color: "bg-indigo-500" },
-                      { label: "Preboarding", color: "bg-teal-500" },
-                      { label: "Underwriting", color: "bg-purple-500" },
-                      { label: "Boarding", color: "bg-orange-500" },
-                      { label: "Live", color: "bg-green-500" },
+                      { label: "Discovery", color: "bg-zinc-600" },
+                      { label: "Qualified", color: "bg-zinc-700" },
+                      { label: "App Prep", color: "bg-slate-600" },
+                      { label: "Underwriting", color: "bg-slate-700" },
+                      { label: "Approved", color: "bg-slate-800" },
+                      { label: "Gateway Setup", color: "bg-gray-700" },
+                      { label: "Integration", color: "bg-gray-800" },
+                      { label: "Testing", color: "bg-indigo-700" },
+                      { label: "Go Live Ready", color: "bg-emerald-600" },
+                      { label: "Closed Won", color: "bg-emerald-500" },
                     ].map((s, i) => (
                       <div key={s.label} className="flex items-center gap-2">
                         <span className={`${s.color} text-white px-3 py-1.5 rounded-none`}>{s.label}</span>
-                        {i < 5 && <ArrowRight className="w-4 h-4 text-muted-foreground" />}
+                        {i < 9 && <ArrowRight className="w-4 h-4 text-muted-foreground" />}
                       </div>
                     ))}
                   </div>
 
+                  <div className="mb-4 p-3 rounded-none bg-primary/5 border border-primary/20 text-sm text-muted-foreground">
+                    <strong className="text-foreground">Two pipelines:</strong> Processing deals follow all 10 stages. Gateway Only deals skip App Prep, Underwriting, and Approved — going directly from Qualified → Gateway Setup.
+                  </div>
+
                   {/* Stage 1: Discovery */}
                   <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
-                    <div className="bg-blue-500/20 px-6 py-4 border-b border-border flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-none bg-blue-500 flex items-center justify-center">
+                    <div className="bg-zinc-600/20 px-6 py-4 border-b border-border flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-none bg-zinc-600 flex items-center justify-center">
                         <Search className="w-5 h-5 text-white" />
                       </div>
                       <div>
                         <h3 className="font-bold text-foreground text-lg">Stage 1: Discovery</h3>
                         <p className="text-sm text-muted-foreground">Initial contact and information gathering</p>
                       </div>
-                      <span className="ml-auto bg-blue-500/30 text-blue-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
+                      <span className="ml-auto bg-zinc-500/30 text-zinc-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
                         <Clock className="w-3 h-3" /> SLA: 24 hours
                       </span>
                     </div>
@@ -1066,28 +1082,243 @@ Sales Support`,
                           <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
                         </h4>
                         <ul className="space-y-2 text-sm text-muted-foreground">
-                          <li className="flex gap-2 items-start"><span className="text-blue-500">•</span><span>Send <strong className="text-foreground">Step 1 — Intro & Discovery</strong> email template</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-blue-500">•</span><span>Document business type, monthly volume, current processor</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-blue-500">•</span><span>Identify processing needs: Gateway only vs Full Processing</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-blue-500">•</span><span>Schedule a discovery call if needed (Step 1.2)</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Send <strong className="text-foreground">Step 1 — Intro & Discovery</strong> email template</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Document business type, monthly volume, current processor</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Identify processing needs: Gateway Only vs Full Processing</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Schedule a discovery call if needed (Step 1.2)</span></li>
                         </ul>
                       </div>
                       <div className="bg-muted/50 rounded-none p-3 text-sm">
-                        <strong className="text-foreground">Advance to Qualification when:</strong>
+                        <strong className="text-foreground">Advance to Qualified when:</strong>
                         <span className="text-muted-foreground"> Business model understood, solution fit confirmed, merchant interested in proceeding.</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Stage 2: Qualification */}
+                  {/* Stage 2: Qualified */}
                   <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
-                    <div className="bg-indigo-500/20 px-6 py-4 border-b border-border flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-none bg-indigo-500 flex items-center justify-center">
+                    <div className="bg-zinc-700/20 px-6 py-4 border-b border-border flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-none bg-zinc-700 flex items-center justify-center">
                         <CheckCircle className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-foreground text-lg">Stage 2: Qualification</h3>
-                        <p className="text-sm text-muted-foreground">Merchant confirmed as viable opportunity</p>
+                        <h3 className="font-bold text-foreground text-lg">Stage 2: Qualified</h3>
+                        <p className="text-sm text-muted-foreground">Merchant confirmed as viable — Darryn's QA gate</p>
+                      </div>
+                      <span className="ml-auto bg-zinc-500/30 text-zinc-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> SLA: 24 hours
+                      </span>
+                    </div>
+                    <div className="p-6 space-y-4">
+                      <div>
+                        <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                          <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
+                        </h4>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Confirm merchant interest and commitment to proceed</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Set appropriate pipeline: <strong className="text-foreground">Processing</strong> or <strong className="text-foreground">Gateway Only</strong></span></li>
+                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Send <strong className="text-foreground">Step 2 — Request for Documents</strong> email</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Create tasks for document follow-up</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Darryn QA gate: Initial underwriting data review</span></li>
+                        </ul>
+                      </div>
+                      <div className="bg-muted/50 rounded-none p-3 text-sm">
+                        <strong className="text-foreground">Advance to App Prep when:</strong>
+                        <span className="text-muted-foreground"> Document request sent and acknowledged. <strong>Gateway Only</strong> deals skip to Gateway Setup.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stage 3: App Prep */}
+                  <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
+                    <div className="bg-slate-600/20 px-6 py-4 border-b border-border flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-none bg-slate-600 flex items-center justify-center">
+                        <FileText className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-foreground text-lg">Stage 3: App Prep</h3>
+                        <p className="text-sm text-muted-foreground">Document collection and preboarding wizard</p>
+                      </div>
+                      <span className="ml-auto bg-slate-500/30 text-slate-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> SLA: 72 hours
+                      </span>
+                      <span className="bg-blue-500/20 text-blue-400 text-xs px-2 py-0.5 rounded-none">Processing Only</span>
+                    </div>
+                    <div className="p-6 space-y-4">
+                      <div>
+                        <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                          <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
+                        </h4>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Collect all required documents (see Pre-Underwriting Checklist)</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Complete the <strong className="text-foreground">Preboarding Wizard</strong> (auto-saves progress)</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Verify document completeness and quality</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Send <strong className="text-foreground">Step 3 — Application in Process</strong> when ready</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Record beneficial owners (≥ 25% equity required)</span></li>
+                        </ul>
+                      </div>
+                      <div className="bg-[hsl(var(--gold))]/10 border border-[hsl(var(--gold))]/30 rounded-none p-3 text-sm">
+                        <strong className="text-[hsl(var(--gold))] flex items-center gap-1">
+                          <AlertTriangle className="w-4 h-4" /> Underwriting Gate (must pass before advancing):
+                        </strong>
+                        <ul className="mt-2 text-muted-foreground grid md:grid-cols-2 gap-1">
+                          <li>✓ ≥ 3 Bank Statements / Transaction History</li>
+                          <li>✓ Articles of Organization</li>
+                          <li>✓ Tax Document (EIN)</li>
+                          <li>✓ Voided Check / Bank Confirmation</li>
+                          <li>✓ Passport or Driver's License (KYC)</li>
+                          <li>✓ ≥ 1 beneficial owner with 25%+ equity</li>
+                        </ul>
+                      </div>
+                      <div className="bg-muted/50 rounded-none p-3 text-sm">
+                        <strong className="text-foreground">Advance to Underwriting when:</strong>
+                        <span className="text-muted-foreground"> All documents collected, wizard completed, underwriting gate passed, and application submitted.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stage 4: Underwriting Review */}
+                  <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
+                    <div className="bg-slate-700/20 px-6 py-4 border-b border-border flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-none bg-slate-700 flex items-center justify-center">
+                        <ClipboardCheck className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-foreground text-lg">Stage 4: Underwriting Review</h3>
+                        <p className="text-sm text-muted-foreground">Application under review by processor</p>
+                      </div>
+                      <span className="ml-auto bg-slate-500/30 text-slate-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> SLA: 3–5 days
+                      </span>
+                      <span className="bg-blue-500/20 text-blue-400 text-xs px-2 py-0.5 rounded-none">Processing Only</span>
+                    </div>
+                    <div className="p-6 space-y-4">
+                      <div>
+                        <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                          <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
+                        </h4>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Monitor underwriting status daily</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Respond promptly to any stipulation requests</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Keep merchant informed of progress</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Run <strong className="text-foreground">AI Validate</strong> to generate readiness report</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Pin to Notice Board for underwriting-specific items</span></li>
+                        </ul>
+                      </div>
+                      <div className="bg-muted/50 rounded-none p-3 text-sm">
+                        <strong className="text-foreground">Advance to Approved when:</strong>
+                        <span className="text-muted-foreground"> Processor confirms approval and MID assigned.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stage 5: Processor Approval */}
+                  <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
+                    <div className="bg-slate-800/20 px-6 py-4 border-b border-border flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-none bg-slate-800 flex items-center justify-center">
+                        <CheckCircle className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-foreground text-lg">Stage 5: Approved</h3>
+                        <p className="text-sm text-muted-foreground">Processor has approved — ready for gateway setup</p>
+                      </div>
+                      <span className="ml-auto bg-slate-500/30 text-slate-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> SLA: 48 hours
+                      </span>
+                      <span className="bg-blue-500/20 text-blue-400 text-xs px-2 py-0.5 rounded-none">Processing Only</span>
+                    </div>
+                    <div className="p-6 space-y-4">
+                      <div>
+                        <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                          <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
+                        </h4>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Confirm MID assignment and rate structure</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Notify merchant of approval with timeline for activation</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Auto-creates Gateway opportunity if none exists</span></li>
+                        </ul>
+                      </div>
+                      <div className="bg-muted/50 rounded-none p-3 text-sm">
+                        <strong className="text-foreground">Advance to Gateway Setup when:</strong>
+                        <span className="text-muted-foreground"> Gateway application submitted to NMI.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stage 6: Gateway Setup */}
+                  <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
+                    <div className="bg-gray-700/20 px-6 py-4 border-b border-border flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-none bg-gray-700 flex items-center justify-center">
+                        <Rocket className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-foreground text-lg">Stage 6: Gateway Setup</h3>
+                        <p className="text-sm text-muted-foreground">NMI gateway configuration</p>
+                      </div>
+                      <span className="ml-auto bg-gray-500/30 text-gray-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> SLA: 48 hours
+                      </span>
+                    </div>
+                    <div className="p-6 space-y-4">
+                      <div>
+                        <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                          <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
+                        </h4>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          <li className="flex gap-2 items-start"><span className="text-gray-500">•</span><span>Apply for NMI Gateway (Flat Rate or Interchange+)</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-gray-500">•</span><span>Configure gateway credentials, API keys, webhooks</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-gray-500">•</span><span>Configure fraud filters and risk settings</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-gray-500">•</span><span>For <strong className="text-foreground">Gateway Only</strong> deals: Voided Check + VAR/Tear Sheet are the only required documents</span></li>
+                        </ul>
+                      </div>
+                      <div className="bg-muted/50 rounded-none p-3 text-sm">
+                        <strong className="text-foreground">Advance to Integration when:</strong>
+                        <span className="text-muted-foreground"> Gateway credentials issued and configuration complete.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stage 7: Integration Setup */}
+                  <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
+                    <div className="bg-gray-800/20 px-6 py-4 border-b border-border flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-none bg-gray-800 flex items-center justify-center">
+                        <Settings className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-foreground text-lg">Stage 7: Integration</h3>
+                        <p className="text-sm text-muted-foreground">Merchant integrating with gateway</p>
+                      </div>
+                      <span className="ml-auto bg-gray-500/30 text-gray-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> SLA: 48 hours
+                      </span>
+                    </div>
+                    <div className="p-6 space-y-4">
+                      <div>
+                        <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                          <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
+                        </h4>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          <li className="flex gap-2 items-start"><span className="text-gray-500">•</span><span>Support merchant with API integration or plugin setup</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-gray-500">•</span><span>Provide sandbox credentials for testing</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-gray-500">•</span><span>Complex integrations escalated to Darryn</span></li>
+                        </ul>
+                      </div>
+                      <div className="bg-muted/50 rounded-none p-3 text-sm">
+                        <strong className="text-foreground">Advance to Testing when:</strong>
+                        <span className="text-muted-foreground"> Integration complete, ready for test transactions.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stage 8: Testing */}
+                  <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
+                    <div className="bg-indigo-700/20 px-6 py-4 border-b border-border flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-none bg-indigo-700 flex items-center justify-center">
+                        <Zap className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-foreground text-lg">Stage 8: Testing</h3>
+                        <p className="text-sm text-muted-foreground">Test transactions and validation</p>
                       </div>
                       <span className="ml-auto bg-indigo-500/30 text-indigo-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
                         <Clock className="w-3 h-3" /> SLA: 24 hours
@@ -1099,144 +1330,62 @@ Sales Support`,
                           <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
                         </h4>
                         <ul className="space-y-2 text-sm text-muted-foreground">
-                          <li className="flex gap-2 items-start"><span className="text-indigo-500">•</span><span>Confirm merchant interest and commitment to proceed</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-indigo-500">•</span><span>Set appropriate pipeline: Processing or Gateway Only</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-indigo-500">•</span><span>Send <strong className="text-foreground">Step 2 — Request for Documents</strong> email</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-indigo-500">•</span><span>Create tasks for document follow-up</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-indigo-500">•</span><span>Run test transactions to verify connectivity</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-indigo-500">•</span><span>Verify settlement and reporting</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-indigo-500">•</span><span>Confirm fraud filter operation</span></li>
                         </ul>
                       </div>
                       <div className="bg-muted/50 rounded-none p-3 text-sm">
-                        <strong className="text-foreground">Advance to Preboarding when:</strong>
-                        <span className="text-muted-foreground"> Document request sent and acknowledged by merchant.</span>
+                        <strong className="text-foreground">Advance to Go Live Ready when:</strong>
+                        <span className="text-muted-foreground"> All test transactions successful, merchant confirms readiness.</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Stage 3: Preboarding */}
+                  {/* Stage 9: Go Live Ready */}
                   <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
-                    <div className="bg-teal-500/20 px-6 py-4 border-b border-border flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-none bg-teal-500 flex items-center justify-center">
-                        <ClipboardCheck className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-foreground text-lg">Stage 3: Preboarding</h3>
-                        <p className="text-sm text-muted-foreground">Collecting documents and completing the preboarding wizard</p>
-                      </div>
-                      <span className="ml-auto bg-teal-500/30 text-teal-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> SLA: 72 hours
-                      </span>
-                    </div>
-                    <div className="p-6 space-y-4">
-                      <div>
-                        <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                          <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
-                        </h4>
-                        <ul className="space-y-2 text-sm text-muted-foreground">
-                          <li className="flex gap-2 items-start"><span className="text-teal-500">•</span><span>Collect all required documents (see Document Checklist)</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-teal-500">•</span><span>Verify document completeness and quality</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-teal-500">•</span><span>Complete the Preboarding Wizard (auto-saves progress)</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-teal-500">•</span><span>Send <strong className="text-foreground">Step 3 — Application in Process</strong> when ready</span></li>
-                        </ul>
-                      </div>
-                      <div className="bg-[hsl(var(--gold))]/10 border border-[hsl(var(--gold))]/30 rounded-none p-3 text-sm">
-                        <strong className="text-[hsl(var(--gold))] flex items-center gap-1">
-                          <AlertTriangle className="w-4 h-4" /> Document Checklist:
-                        </strong>
-                        <ul className="mt-2 text-muted-foreground grid md:grid-cols-2 gap-1">
-                          <li>✓ 3 months bank statements</li>
-                          <li>✓ 3 months processing statements</li>
-                          <li>✓ Voided check / bank letter</li>
-                          <li>✓ Articles of Organization</li>
-                          <li>✓ Owner ID (DL/Passport)</li>
-                          <li>✓ SSN for principal owner</li>
-                        </ul>
-                      </div>
-                      <div className="bg-muted/50 rounded-none p-3 text-sm">
-                        <strong className="text-foreground">Advance to Underwriting when:</strong>
-                        <span className="text-muted-foreground"> All documents collected, wizard completed, and application submitted via NMI microsite.</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Stage 4: Underwriting */}
-                  <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
-                    <div className="bg-purple-500/20 px-6 py-4 border-b border-border flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-none bg-purple-500 flex items-center justify-center">
-                        <Shield className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-foreground text-lg">Stage 4: Underwriting</h3>
-                        <p className="text-sm text-muted-foreground">Application under review by processor</p>
-                      </div>
-                      <span className="ml-auto bg-purple-500/30 text-purple-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> SLA: 3–5 days
-                      </span>
-                    </div>
-                    <div className="p-6 space-y-4">
-                      <div>
-                        <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                          <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
-                        </h4>
-                        <ul className="space-y-2 text-sm text-muted-foreground">
-                          <li className="flex gap-2 items-start"><span className="text-purple-500">•</span><span>Monitor underwriting status daily</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-purple-500">•</span><span>Respond promptly to any stipulation requests</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-purple-500">•</span><span>Keep merchant informed of progress</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-purple-500">•</span><span>Run AI Validate to generate readiness report</span></li>
-                        </ul>
-                      </div>
-                      <div className="bg-muted/50 rounded-none p-3 text-sm">
-                        <strong className="text-foreground">Advance to Boarding when:</strong>
-                        <span className="text-muted-foreground"> Processor confirms approval and MID assigned.</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Stage 5: Boarding */}
-                  <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
-                    <div className="bg-orange-500/20 px-6 py-4 border-b border-border flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-none bg-orange-500 flex items-center justify-center">
-                        <Settings className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-foreground text-lg">Stage 5: Boarding</h3>
-                        <p className="text-sm text-muted-foreground">Gateway setup, integration, and test transactions</p>
-                      </div>
-                      <span className="ml-auto bg-orange-500/30 text-orange-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> SLA: 48 hours
-                      </span>
-                    </div>
-                    <div className="p-6 space-y-4">
-                      <div>
-                        <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                          <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
-                        </h4>
-                        <ul className="space-y-2 text-sm text-muted-foreground">
-                          <li className="flex gap-2 items-start"><span className="text-orange-500">•</span><span>Confirm MID assignment and rate structure</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-orange-500">•</span><span>Apply for NMI Gateway (Flat Rate or Interchange+)</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-orange-500">•</span><span>Configure gateway credentials, API keys, webhooks</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-orange-500">•</span><span>Configure fraud filters and risk settings</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-orange-500">•</span><span>Run test transactions to verify connectivity</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-orange-500">•</span><span>Notify merchant of approval with timeline for activation</span></li>
-                        </ul>
-                      </div>
-                      <div className="bg-muted/50 rounded-none p-3 text-sm">
-                        <strong className="text-foreground">Advance to Live when:</strong>
-                        <span className="text-muted-foreground"> Test transactions successful, gateway configured, and merchant ready to process.</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Stage 6: Live */}
-                  <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
-                    <div className="bg-green-500/20 px-6 py-4 border-b border-border flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-none bg-green-500 flex items-center justify-center">
+                    <div className="bg-emerald-600/20 px-6 py-4 border-b border-border flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-none bg-emerald-600 flex items-center justify-center">
                         <Rocket className="w-5 h-5 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-foreground text-lg">Stage 6: Live</h3>
-                        <p className="text-sm text-muted-foreground">Merchant processing live transactions</p>
+                        <h3 className="font-bold text-foreground text-lg">Stage 9: Go Live Ready</h3>
+                        <p className="text-sm text-muted-foreground">Final checks before live processing</p>
                       </div>
-                      <span className="ml-auto bg-green-500/30 text-green-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
+                      <span className="ml-auto bg-emerald-500/30 text-emerald-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> SLA: 24 hours
+                      </span>
+                    </div>
+                    <div className="p-6 space-y-4">
+                      <div>
+                        <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                          <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
+                        </h4>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          <li className="flex gap-2 items-start"><span className="text-emerald-500">•</span><span>Confirm first live transaction processed successfully</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-emerald-500">•</span><span>Provide merchant with support contacts and resources</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-emerald-500">•</span><span>Initiate PCI compliance workflow (SAQ)</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-emerald-500">•</span><span>Schedule 30-day check-in for ongoing support</span></li>
+                        </ul>
+                      </div>
+                      <div className="bg-muted/50 rounded-none p-3 text-sm">
+                        <strong className="text-foreground">Set outcome to Closed Won when:</strong>
+                        <span className="text-muted-foreground"> Merchant is live and billing. Hand off to support team (Sheiky).</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stage 10: Closed Won */}
+                  <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
+                    <div className="bg-emerald-500/20 px-6 py-4 border-b border-border flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-none bg-emerald-500 flex items-center justify-center">
+                        <Trophy className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-foreground text-lg">Stage 10: Closed Won</h3>
+                        <p className="text-sm text-muted-foreground">Live merchant — tracked in Live & Billing</p>
+                      </div>
+                      <span className="ml-auto bg-emerald-500/30 text-emerald-400 text-xs font-semibold px-2.5 py-1 rounded-none flex items-center gap-1">
                         <CheckCircle className="w-3 h-3" /> Active
                       </span>
                     </div>
@@ -1246,49 +1395,49 @@ Sales Support`,
                           <CheckSquare className="w-4 h-4 text-[hsl(var(--gold))]" /> Required Actions
                         </h4>
                         <ul className="space-y-2 text-sm text-muted-foreground">
-                          <li className="flex gap-2 items-start"><span className="text-green-500">•</span><span>Confirm first live transaction processed successfully</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-green-500">•</span><span>Provide merchant with support contacts and resources</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-green-500">•</span><span>Initiate PCI compliance workflow (SAQ)</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-green-500">•</span><span>Schedule 30-day check-in for ongoing support</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-green-500">•</span><span>Update account status to Active and hand off to support team</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-emerald-500">•</span><span>Update account status to Active</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-emerald-500">•</span><span>Appears in <strong className="text-foreground">Live & Billing</strong> report</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-emerald-500">•</span><span>Post-go-live support owned exclusively by Sheiky</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-emerald-500">•</span><span>Transaction monitoring via NMI dashboard (Taryn)</span></li>
                         </ul>
                       </div>
                     </div>
                   </div>
 
-                  {/* Status States */}
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="bg-destructive/10 rounded-none border border-destructive/30 p-5">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-8 h-8 rounded-none bg-destructive flex items-center justify-center">
-                          <XCircle className="w-4 h-4 text-white" />
-                        </div>
-                        <h3 className="font-bold text-foreground">Status: Dead</h3>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        Opportunity did not proceed. Can be set at any stage.
-                      </p>
-                      <ul className="text-sm text-muted-foreground space-y-1">
-                        <li>• Record loss reason in notes</li>
-                        <li>• Set opportunity status to "dead"</li>
-                        <li>• Consider re-engagement timeline</li>
-                      </ul>
+                  {/* Terminal Outcomes */}
+                  <div className="mt-8 mb-4">
+                    <h3 className="font-bold text-foreground text-lg flex items-center gap-2 mb-2">
+                      <XCircle className="w-5 h-5 text-destructive" /> Terminal Outcomes (Off-Board)
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Setting an outcome removes the deal from the active pipeline board, records reason/notes/close date/closer, and disables further stage movement.
+                      Full outcome details, reason codes, and re-engagement task rules are documented in the <a href="#outcome-rules" className="text-primary underline">Outcome & Pipeline Rules</a> section below.
+                    </p>
+                  </div>
+                  <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-destructive/5 rounded-none border border-destructive/20 p-4">
+                      <h4 className="font-semibold text-foreground mb-1 flex items-center gap-2 text-sm">
+                        <XCircle className="w-4 h-4 text-destructive" /> Closed Lost
+                      </h4>
+                      <p className="text-xs text-muted-foreground">Lost to competitor or merchant withdrew. Status → dead. No email sent.</p>
                     </div>
-                    <div className="bg-destructive/10 rounded-none border border-destructive/30 p-5">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-8 h-8 rounded-none bg-destructive flex items-center justify-center">
-                          <XCircle className="w-4 h-4 text-white" />
-                        </div>
-                        <h3 className="font-bold text-foreground">Status: Closed-Lost</h3>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        Underwriting declined or merchant withdrew.
-                      </p>
-                      <ul className="text-sm text-muted-foreground space-y-1">
-                        <li>• Document decline reason and underwriting feedback</li>
-                        <li>• Set opportunity status to "closed-lost"</li>
-                        <li>• Assess if re-application is viable</li>
-                      </ul>
+                    <div className="bg-purple-500/5 rounded-none border border-purple-500/20 p-4">
+                      <h4 className="font-semibold text-foreground mb-1 flex items-center gap-2 text-sm">
+                        <XCircle className="w-4 h-4 text-purple-500" /> Disqualified
+                      </h4>
+                      <p className="text-xs text-muted-foreground">Does not meet eligibility. Status → dead. <strong className="text-amber-500">Email sent.</strong></p>
+                    </div>
+                    <div className="bg-accent/30 rounded-none border border-border p-4">
+                      <h4 className="font-semibold text-foreground mb-1 flex items-center gap-2 text-sm">
+                        <AlertTriangle className="w-4 h-4 text-muted-foreground" /> No Decision / Dead
+                      </h4>
+                      <p className="text-xs text-muted-foreground">Gone silent or paused. Status → dead. No email sent.</p>
+                    </div>
+                    <div className="bg-orange-500/5 rounded-none border border-orange-500/20 p-4">
+                      <h4 className="font-semibold text-foreground mb-1 flex items-center gap-2 text-sm">
+                        <XCircle className="w-4 h-4 text-orange-500" /> UW Declined
+                      </h4>
+                      <p className="text-xs text-muted-foreground">Declined by underwriting. Status → dead. <strong className="text-amber-500">Adverse action email sent.</strong></p>
                     </div>
                   </div>
                 </section>
@@ -2058,109 +2207,216 @@ Sales Support`,
                           {/* Closed Won */}
                           <div className="bg-emerald-500/5 rounded-lg border border-emerald-500/20 p-4">
                             <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                              <Trophy className="w-4 h-4 text-emerald-500" /> Closed Won
+                              <Trophy className="w-4 h-4 text-emerald-500" /> Closed Won <span className="text-xs text-emerald-500 ml-2">13 reasons</span>
                             </h4>
                             <p className="text-sm text-muted-foreground mb-2">
-                              The only positive outcome. The opportunity remains <code className="text-xs bg-background px-1 rounded">active</code> and appears in the <strong className="text-foreground">Live & Billing</strong> report. Removed from the pipeline board but retains its active status.
+                              The only positive outcome. Status is set to <code className="text-xs bg-background px-1 rounded">won</code> and the opportunity appears in <strong className="text-foreground">Live & Billing</strong>. Removed from the pipeline board.
                             </p>
-                            <div className="text-xs text-muted-foreground space-y-1 mb-2">
-                              <p><strong className="text-foreground">Reasons:</strong> Live and billing ready · First transaction processed · Activated by onboarding</p>
-                              <p><strong className="text-foreground">Client email:</strong> <span className="text-emerald-600 dark:text-emerald-400">None — no notification sent</span></p>
+                            <Collapsible>
+                              <CollapsibleTrigger className="flex items-center gap-2 text-xs font-medium text-primary hover:underline cursor-pointer">
+                                <ChevronDown className="w-3 h-3" /> View all 13 reason codes
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <ul className="mt-2 text-xs text-muted-foreground space-y-0.5 columns-2">
+                                  <li>• Competitive pricing win (IC+)</li>
+                                  <li>• Gateway feature fit (NMI)</li>
+                                  <li>• Faster underwriting / approval</li>
+                                  <li>• POS / eCommerce integration match</li>
+                                  <li>• Omnichannel solution (CP + CNP)</li>
+                                  <li>• High-risk vertical acceptance</li>
+                                  <li>• Chargeback / fraud tool suite</li>
+                                  <li>• Relationship / referral win</li>
+                                  <li>• Contract buyout / ETF coverage</li>
+                                  <li>• White-label / branding alignment</li>
+                                  <li>• Interchange optimization</li>
+                                  <li>• Superior onboarding experience</li>
+                                  <li>• Value-added services bundle</li>
+                                </ul>
+                              </CollapsibleContent>
+                            </Collapsible>
+                            <div className="text-xs text-muted-foreground mt-2">
+                              <strong className="text-foreground">Client email:</strong> <span className="text-emerald-600 dark:text-emerald-400">None — no notification sent</span>
                             </div>
                           </div>
 
                           {/* Closed Lost */}
                           <div className="bg-destructive/5 rounded-lg border border-destructive/20 p-4">
                             <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                              <XCircle className="w-4 h-4 text-destructive" /> Closed Lost
+                              <XCircle className="w-4 h-4 text-destructive" /> Closed Lost <span className="text-xs text-destructive ml-2">15 reasons</span>
                             </h4>
                             <p className="text-sm text-muted-foreground mb-2">
-                              <strong className="text-foreground">Internal status only.</strong> Used when we have lost the deal to a competitor or the merchant chose not to proceed. The opportunity is set to <code className="text-xs bg-background px-1 rounded">dead</code> and removed from the active pipeline.
+                              <strong className="text-foreground">Internal status only.</strong> Lost to competitor or merchant withdrew. Status → <code className="text-xs bg-background px-1 rounded">dead</code>.
                             </p>
-                            <div className="text-xs text-muted-foreground space-y-1 mb-2">
-                              <p><strong className="text-foreground">Reasons:</strong> Competitor selected · Went with another provider · Pricing · Product gap · Timeline · Integration complexity · Withdrawn</p>
-                              <p><strong className="text-foreground">Client email:</strong> <span className="text-emerald-600 dark:text-emerald-400">None — this is an internal status, no notification is sent to the client</span></p>
+                            <Collapsible>
+                              <CollapsibleTrigger className="flex items-center gap-2 text-xs font-medium text-primary hover:underline cursor-pointer">
+                                <ChevronDown className="w-3 h-3" /> View all 15 reason codes
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <ul className="mt-2 text-xs text-muted-foreground space-y-0.5 columns-2">
+                                  <li>• Lost to flat-rate competitor</li>
+                                  <li>• Lost to another ISO on price</li>
+                                  <li>• Lost to bank-direct acquiring</li>
+                                  <li>• Chose embedded PayFac / software</li>
+                                  <li>• Locked into current processor (ETF)</li>
+                                  <li>• Pricing model mismatch</li>
+                                  <li>• Gateway / integration incompatibility</li>
+                                  <li>• Hardware limitations</li>
+                                  <li>• Funding / settlement timing</li>
+                                  <li>• Satisfied with incumbent</li>
+                                  <li>• Lost on fraud / chargeback tools</li>
+                                  <li>• Volume too low for IC+ benefit</li>
+                                  <li>• Switching risk aversion</li>
+                                  <li>• Lost on contract terms</li>
+                                  <li>• Decision-maker change</li>
+                                </ul>
+                              </CollapsibleContent>
+                            </Collapsible>
+                            <div className="text-xs text-muted-foreground mt-2">
+                              <strong className="text-foreground">Client email:</strong> <span className="text-emerald-600 dark:text-emerald-400">None — internal status</span>
+                              <br />
+                              <strong className="text-foreground">Re-engagement tasks:</strong> <span>7 of 15 reasons auto-create follow-up tasks (30–180 days)</span>
                             </div>
                           </div>
 
                           {/* No Decision / Dead */}
                           <div className="bg-accent/30 rounded-lg border border-border p-4">
                             <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                              <AlertTriangle className="w-4 h-4 text-muted-foreground" /> No Decision / Dead
+                              <AlertTriangle className="w-4 h-4 text-muted-foreground" /> No Decision / Dead <span className="text-xs text-muted-foreground ml-2">13 reasons</span>
                             </h4>
                             <p className="text-sm text-muted-foreground mb-2">
-                              <strong className="text-foreground">Internal status only.</strong> The client has gone silent, paused the project, or otherwise stopped engaging. The opportunity is set to <code className="text-xs bg-background px-1 rounded">dead</code> and removed from the pipeline.
+                              <strong className="text-foreground">Internal status only.</strong> Client went silent, paused, or stopped engaging. Status → <code className="text-xs bg-background px-1 rounded">dead</code>.
                             </p>
-                            <div className="text-xs text-muted-foreground space-y-1 mb-2">
-                              <p><strong className="text-foreground">Reasons:</strong> No response · Project paused · Budget removed · Internal priorities changed · Withdrawn</p>
-                              <p><strong className="text-foreground">Client email:</strong> <span className="text-emerald-600 dark:text-emerald-400">None — this is an internal status, no notification is sent</span></p>
+                            <Collapsible>
+                              <CollapsibleTrigger className="flex items-center gap-2 text-xs font-medium text-primary hover:underline cursor-pointer">
+                                <ChevronDown className="w-3 h-3" /> View all 13 reason codes
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <ul className="mt-2 text-xs text-muted-foreground space-y-0.5 columns-2">
+                                  <li>• Merchant went non-responsive</li>
+                                  <li>• Stalled at document collection</li>
+                                  <li>• Internal priority shift</li>
+                                  <li>• Timing not right (seasonal)</li>
+                                  <li>• Decision-maker unavailable</li>
+                                  <li>• Analysis paralysis</li>
+                                  <li>• Business closure / pre-closure</li>
+                                  <li>• Abandoned during integration</li>
+                                  <li>• Ownership / management change</li>
+                                  <li>• Stalled at PCI compliance</li>
+                                  <li>• Lost contact information</li>
+                                  <li>• Duplicate opportunity</li>
+                                  <li>• External disruption</li>
+                                </ul>
+                              </CollapsibleContent>
+                            </Collapsible>
+                            <div className="text-xs text-muted-foreground mt-2">
+                              <strong className="text-foreground">Client email:</strong> <span className="text-emerald-600 dark:text-emerald-400">None — internal status</span>
+                              <br />
+                              <strong className="text-foreground">Re-engagement tasks:</strong> <span>5 of 13 reasons auto-create follow-up tasks (14–90 days). 8 reasons intentionally produce no task (no actionable re-engagement path).</span>
                             </div>
                           </div>
 
                           {/* Disqualified */}
                           <div className="bg-purple-500/5 rounded-lg border border-purple-500/20 p-4">
                             <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                              <XCircle className="w-4 h-4 text-purple-500" /> Disqualified
+                              <XCircle className="w-4 h-4 text-purple-500" /> Disqualified <span className="text-xs text-purple-500 ml-2">14 reasons</span>
                             </h4>
                             <p className="text-sm text-muted-foreground mb-2">
-                              The merchant does not meet eligibility criteria (MCC, geography, volume, etc.). Status is set to <code className="text-xs bg-background px-1 rounded">dead</code>. <strong className="text-foreground">A notification email is automatically sent to the client.</strong>
+                              Does not meet eligibility criteria. Status → <code className="text-xs bg-background px-1 rounded">dead</code>. <strong className="text-foreground">A compliance notification email is automatically sent.</strong>
                             </p>
-                            <div className="text-xs text-muted-foreground space-y-1 mb-2">
-                              <p><strong className="text-foreground">Reasons:</strong> Unsupported MCC · Geography not supported · Volume too small · Not a fit · Duplicate / invalid opportunity · Fraudulent</p>
-                              <p><strong className="text-foreground">Client email:</strong> <span className="text-amber-600 dark:text-amber-400">✉️ Yes — disqualification notification sent</span></p>
-                            </div>
                             <Collapsible>
                               <CollapsibleTrigger className="flex items-center gap-2 text-xs font-medium text-primary hover:underline cursor-pointer">
-                                <Mail className="w-3 h-3" /> View Email Template
-                                <ChevronDown className="w-3 h-3" />
+                                <ChevronDown className="w-3 h-3" /> View all 14 reason codes
                               </CollapsibleTrigger>
                               <CollapsibleContent>
-                                <div className="mt-3 bg-background border border-border rounded-lg p-4 text-xs text-muted-foreground space-y-2">
-                                  <p className="text-foreground font-semibold text-sm">Subject: Application Update — [Account Name]</p>
-                                  <hr className="border-border" />
-                                  <p>Dear [Applicant Name],</p>
-                                  <p>Thank you for your interest in Merchant Haus and for submitting your application for <strong>[Account Name]</strong>.</p>
-                                  <p>After reviewing your application, we have determined that we are unfortunately unable to support your business at this time. This may be due to factors such as the nature of your business, geographic requirements, or other eligibility criteria.</p>
-                                  <p>We appreciate the time you invested in the application process.</p>
-                                  <hr className="border-border" />
-                                  <p>If you believe there has been an error or would like further clarification, please feel free to contact us at <strong>onboarding@merchanthaus.io</strong>.</p>
-                                  <p className="text-foreground">Kind regards,<br /><strong>The Merchant Haus Team</strong></p>
-                                </div>
+                                <ul className="mt-2 text-xs text-muted-foreground space-y-0.5 columns-2">
+                                  <li>• Prohibited MCC / product category</li>
+                                  <li>• Industry monitoring database hit</li>
+                                  <li>• Government watchlist match</li>
+                                  <li>• Insufficient business history / no EIN</li>
+                                  <li>• Unacceptable business structure</li>
+                                  <li>• Processing volume below minimum</li>
+                                  <li>• Non-U.S. domiciled business</li>
+                                  <li>• Excessive chargeback history</li>
+                                  <li>• Previously terminated by processor</li>
+                                  <li>• PCI non-compliance (unwilling)</li>
+                                  <li>• Unsupported business model</li>
+                                  <li>• Principal credit disqualification</li>
+                                  <li>• Fraudulent / misrepresented application</li>
+                                  <li>• High-risk MCC outside program scope</li>
+                                </ul>
                               </CollapsibleContent>
                             </Collapsible>
+                            <div className="text-xs text-muted-foreground mt-2">
+                              <strong className="text-foreground">Client email:</strong> <span className="text-amber-600 dark:text-amber-400">✉️ Yes — disqualification notification sent automatically</span>
+                              <br />
+                              <strong className="text-foreground">Permanent suppression:</strong> <span>6 of 14 reasons are permanently suppressed — no re-engagement task will ever be created (OFAC, MATCH/TMF, AML, fraud, prohibited MCC, previously terminated).</span>
+                            </div>
                           </div>
 
                           {/* Underwriting Declined */}
                           <div className="bg-orange-500/5 rounded-lg border border-orange-500/20 p-4">
                             <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                              <XCircle className="w-4 h-4 text-orange-500" /> Underwriting Declined
+                              <XCircle className="w-4 h-4 text-orange-500" /> Underwriting Declined <span className="text-xs text-orange-500 ml-2">15 reasons</span>
                             </h4>
                             <p className="text-sm text-muted-foreground mb-2">
-                              The application has been formally declined by the underwriting team. Status is set to <code className="text-xs bg-background px-1 rounded">dead</code>. <strong className="text-foreground">A notification email is automatically sent to the client.</strong>
+                              Formally declined by underwriting. Status → <code className="text-xs bg-background px-1 rounded">dead</code>. <strong className="text-foreground">An adverse action notice email (ECOA/FCRA compliant) is automatically sent.</strong>
                             </p>
-                            <div className="text-xs text-muted-foreground space-y-1 mb-2">
-                              <p><strong className="text-foreground">Reasons:</strong> Risk profile · Restricted business type · Chargeback concern · Incomplete documentation · Processor decline</p>
-                              <p><strong className="text-foreground">Client email:</strong> <span className="text-amber-600 dark:text-amber-400">✉️ Yes — underwriting decline notification sent</span></p>
-                            </div>
                             <Collapsible>
                               <CollapsibleTrigger className="flex items-center gap-2 text-xs font-medium text-primary hover:underline cursor-pointer">
-                                <Mail className="w-3 h-3" /> View Email Template
-                                <ChevronDown className="w-3 h-3" />
+                                <ChevronDown className="w-3 h-3" /> View all 15 reason codes
                               </CollapsibleTrigger>
                               <CollapsibleContent>
-                                <div className="mt-3 bg-background border border-border rounded-lg p-4 text-xs text-muted-foreground space-y-2">
-                                  <p className="text-foreground font-semibold text-sm">Subject: Application Update — [Account Name]</p>
-                                  <hr className="border-border" />
-                                  <p>Dear [Applicant Name],</p>
-                                  <p>Thank you for your interest in Merchant Haus and for taking the time to submit your application for <strong>[Account Name]</strong>.</p>
-                                  <p>After a thorough review by our underwriting team, we regret to inform you that we are unable to approve your application at this time. This decision was made based on our current underwriting criteria and does not reflect on the quality of your business.</p>
-                                  <p>We understand this may be disappointing, and we appreciate your patience throughout the review process.</p>
-                                  <hr className="border-border" />
-                                  <p>If you have any questions about this decision, or if your circumstances change in the future, please don't hesitate to reach out to us at <strong>onboarding@merchanthaus.io</strong>. We would be happy to revisit your application.</p>
-                                  <p className="text-foreground">Kind regards,<br /><strong>The Merchant Haus Team</strong></p>
-                                </div>
+                                <ul className="mt-2 text-xs text-muted-foreground space-y-0.5 columns-2">
+                                  <li>• Industry database — excessive chargebacks</li>
+                                  <li>• Industry database — fraud history</li>
+                                  <li>• Industry database — other listing</li>
+                                  <li>• Principal credit below threshold</li>
+                                  <li>• Excessive chargeback ratio (current)</li>
+                                  <li>• Unverifiable business / KYC failure</li>
+                                  <li>• AML / compliance screening</li>
+                                  <li>• Financial instability / bankruptcy</li>
+                                  <li>• MCC reclassification (higher risk)</li>
+                                  <li>• Website / marketing non-compliance</li>
+                                  <li>• Volume / avg ticket inconsistency</li>
+                                  <li>• Incomplete docs / UW timeout</li>
+                                  <li>• Prohibited product discovered in UW</li>
+                                  <li>• Reserve requirement rejected</li>
+                                  <li>• Third-party processing discovered</li>
+                                </ul>
                               </CollapsibleContent>
                             </Collapsible>
+                            <div className="text-xs text-muted-foreground mt-2">
+                              <strong className="text-foreground">Client email:</strong> <span className="text-amber-600 dark:text-amber-400">✉️ Yes — adverse action notice (ECOA + FCRA) sent automatically</span>
+                              <br />
+                              <strong className="text-foreground">Re-engagement tasks:</strong> <span>5 of 15 reasons auto-create follow-up tasks (14–180 days). Remaining reasons are permanently suppressed or have no remediation path.</span>
+                            </div>
+                          </div>
+
+                          {/* Re-engagement Task Automation */}
+                          <div className="bg-primary/5 rounded-lg border border-primary/20 p-4">
+                            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                              <Clock className="w-4 h-4 text-primary" /> Re-engagement Task Automation
+                            </h4>
+                            <p className="text-sm text-muted-foreground mb-3">
+                              When an outcome is confirmed, the system automatically creates a dated follow-up task for the assigned rep — <strong className="text-foreground">unless</strong> the reason is permanently suppressed. Tasks appear in the Opportunity Detail view and My Tasks.
+                            </p>
+                            <div className="grid md:grid-cols-3 gap-3 text-xs text-muted-foreground">
+                              <div className="bg-background/50 rounded p-2 border border-border">
+                                <strong className="text-foreground block mb-1">Closed Lost (7 tasks)</strong>
+                                <p>30–180 day "Win-back" tasks for competitive losses, ETF lockouts, and decision-maker changes.</p>
+                              </div>
+                              <div className="bg-background/50 rounded p-2 border border-border">
+                                <strong className="text-foreground block mb-1">No Decision (5 tasks)</strong>
+                                <p>14–90 day "Re-engage" tasks for non-responsive, stalled docs, timing, and PCI holds.</p>
+                              </div>
+                              <div className="bg-background/50 rounded p-2 border border-border">
+                                <strong className="text-foreground block mb-1">UW Declined (5 tasks)</strong>
+                                <p>14–180 day "Re-application" tasks for remediable reasons (credit, chargebacks, docs, website, reserves).</p>
+                              </div>
+                            </div>
+                            <div className="mt-3 p-2 rounded bg-destructive/5 border border-destructive/20 text-xs text-muted-foreground">
+                              <strong className="text-foreground">Permanent Suppression:</strong> 9 reason codes are permanently blocked from creating re-engagement tasks: OFAC/sanctions matches, MATCH/TMF database hits, AML flags, fraudulent applications, prohibited MCC, and previously terminated merchants.
+                            </div>
                           </div>
 
                           {/* Outcome Requirements */}
@@ -2169,12 +2425,15 @@ Sales Support`,
                               <CheckCircle className="w-4 h-4 text-primary" /> Outcome Requirements
                             </h4>
                             <ul className="space-y-1.5 text-sm text-muted-foreground">
-                              <li>• Every outcome requires a <strong className="text-foreground">reason</strong> (selected from predefined list)</li>
+                              <li>• Every outcome requires a <strong className="text-foreground">reason</strong> (selected from the granular reason codes above)</li>
                               <li>• Optional <strong className="text-foreground">notes</strong> for additional context</li>
                               <li>• System records <strong className="text-foreground">who</strong> set the outcome and <strong className="text-foreground">when</strong></li>
-                              <li>• An activity log entry is automatically created</li>
-                              <li>• Outcomes are <strong className="text-foreground">permanent</strong> — once set, the dropdown is disabled</li>
+                              <li>• An activity log entry is automatically created with human-readable labels</li>
+                              <li>• Outcomes are <strong className="text-foreground">permanent</strong> — once set, the outcome cannot be changed (contact admin)</li>
                               <li>• Only <strong className="text-foreground">Underwriting Declined</strong> and <strong className="text-foreground">Disqualified</strong> trigger a client-facing email</li>
+                              <li>• Reason dropdown populates dynamically based on selected outcome status</li>
+                              <li>• Confirm button disabled until both status AND reason are selected</li>
+                              <li>• Email-triggering outcomes show an <strong className="text-amber-500">amber warning</strong> in the modal footer</li>
                             </ul>
                           </div>
 
