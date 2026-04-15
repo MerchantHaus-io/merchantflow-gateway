@@ -526,7 +526,7 @@ export default function PreboardingWizard() {
                   <p className="text-sm text-muted-foreground">Use this preboarding checklist before the formal application.</p>
                   <div className="flex items-center gap-2">
                     <div className="h-2 w-48 rounded-full bg-secondary overflow-hidden">
-                      <div className="h-full bg-primaryLight transition-all" style={{ width: `${progress}%` }} />
+                      <div className="h-full bg-primary transition-all" style={{ width: `${progress}%` }} />
                     </div>
                     <span className="text-sm font-semibold text-foreground">{progress}% complete</span>
                   </div>
