@@ -2199,109 +2199,216 @@ Sales Support`,
                           {/* Closed Won */}
                           <div className="bg-emerald-500/5 rounded-lg border border-emerald-500/20 p-4">
                             <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                              <Trophy className="w-4 h-4 text-emerald-500" /> Closed Won
+                              <Trophy className="w-4 h-4 text-emerald-500" /> Closed Won <span className="text-xs text-emerald-500 ml-2">13 reasons</span>
                             </h4>
                             <p className="text-sm text-muted-foreground mb-2">
-                              The only positive outcome. The opportunity remains <code className="text-xs bg-background px-1 rounded">active</code> and appears in the <strong className="text-foreground">Live & Billing</strong> report. Removed from the pipeline board but retains its active status.
+                              The only positive outcome. Status is set to <code className="text-xs bg-background px-1 rounded">won</code> and the opportunity appears in <strong className="text-foreground">Live & Billing</strong>. Removed from the pipeline board.
                             </p>
-                            <div className="text-xs text-muted-foreground space-y-1 mb-2">
-                              <p><strong className="text-foreground">Reasons:</strong> Live and billing ready · First transaction processed · Activated by onboarding</p>
-                              <p><strong className="text-foreground">Client email:</strong> <span className="text-emerald-600 dark:text-emerald-400">None — no notification sent</span></p>
+                            <Collapsible>
+                              <CollapsibleTrigger className="flex items-center gap-2 text-xs font-medium text-primary hover:underline cursor-pointer">
+                                <ChevronDown className="w-3 h-3" /> View all 13 reason codes
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <ul className="mt-2 text-xs text-muted-foreground space-y-0.5 columns-2">
+                                  <li>• Competitive pricing win (IC+)</li>
+                                  <li>• Gateway feature fit (NMI)</li>
+                                  <li>• Faster underwriting / approval</li>
+                                  <li>• POS / eCommerce integration match</li>
+                                  <li>• Omnichannel solution (CP + CNP)</li>
+                                  <li>• High-risk vertical acceptance</li>
+                                  <li>• Chargeback / fraud tool suite</li>
+                                  <li>• Relationship / referral win</li>
+                                  <li>• Contract buyout / ETF coverage</li>
+                                  <li>• White-label / branding alignment</li>
+                                  <li>• Interchange optimization</li>
+                                  <li>• Superior onboarding experience</li>
+                                  <li>• Value-added services bundle</li>
+                                </ul>
+                              </CollapsibleContent>
+                            </Collapsible>
+                            <div className="text-xs text-muted-foreground mt-2">
+                              <strong className="text-foreground">Client email:</strong> <span className="text-emerald-600 dark:text-emerald-400">None — no notification sent</span>
                             </div>
                           </div>
 
                           {/* Closed Lost */}
                           <div className="bg-destructive/5 rounded-lg border border-destructive/20 p-4">
                             <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                              <XCircle className="w-4 h-4 text-destructive" /> Closed Lost
+                              <XCircle className="w-4 h-4 text-destructive" /> Closed Lost <span className="text-xs text-destructive ml-2">15 reasons</span>
                             </h4>
                             <p className="text-sm text-muted-foreground mb-2">
-                              <strong className="text-foreground">Internal status only.</strong> Used when we have lost the deal to a competitor or the merchant chose not to proceed. The opportunity is set to <code className="text-xs bg-background px-1 rounded">dead</code> and removed from the active pipeline.
+                              <strong className="text-foreground">Internal status only.</strong> Lost to competitor or merchant withdrew. Status → <code className="text-xs bg-background px-1 rounded">dead</code>.
                             </p>
-                            <div className="text-xs text-muted-foreground space-y-1 mb-2">
-                              <p><strong className="text-foreground">Reasons:</strong> Competitor selected · Went with another provider · Pricing · Product gap · Timeline · Integration complexity · Withdrawn</p>
-                              <p><strong className="text-foreground">Client email:</strong> <span className="text-emerald-600 dark:text-emerald-400">None — this is an internal status, no notification is sent to the client</span></p>
+                            <Collapsible>
+                              <CollapsibleTrigger className="flex items-center gap-2 text-xs font-medium text-primary hover:underline cursor-pointer">
+                                <ChevronDown className="w-3 h-3" /> View all 15 reason codes
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <ul className="mt-2 text-xs text-muted-foreground space-y-0.5 columns-2">
+                                  <li>• Lost to flat-rate competitor</li>
+                                  <li>• Lost to another ISO on price</li>
+                                  <li>• Lost to bank-direct acquiring</li>
+                                  <li>• Chose embedded PayFac / software</li>
+                                  <li>• Locked into current processor (ETF)</li>
+                                  <li>• Pricing model mismatch</li>
+                                  <li>• Gateway / integration incompatibility</li>
+                                  <li>• Hardware limitations</li>
+                                  <li>• Funding / settlement timing</li>
+                                  <li>• Satisfied with incumbent</li>
+                                  <li>• Lost on fraud / chargeback tools</li>
+                                  <li>• Volume too low for IC+ benefit</li>
+                                  <li>• Switching risk aversion</li>
+                                  <li>• Lost on contract terms</li>
+                                  <li>• Decision-maker change</li>
+                                </ul>
+                              </CollapsibleContent>
+                            </Collapsible>
+                            <div className="text-xs text-muted-foreground mt-2">
+                              <strong className="text-foreground">Client email:</strong> <span className="text-emerald-600 dark:text-emerald-400">None — internal status</span>
+                              <br />
+                              <strong className="text-foreground">Re-engagement tasks:</strong> <span>7 of 15 reasons auto-create follow-up tasks (30–180 days)</span>
                             </div>
                           </div>
 
                           {/* No Decision / Dead */}
                           <div className="bg-accent/30 rounded-lg border border-border p-4">
                             <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                              <AlertTriangle className="w-4 h-4 text-muted-foreground" /> No Decision / Dead
+                              <AlertTriangle className="w-4 h-4 text-muted-foreground" /> No Decision / Dead <span className="text-xs text-muted-foreground ml-2">13 reasons</span>
                             </h4>
                             <p className="text-sm text-muted-foreground mb-2">
-                              <strong className="text-foreground">Internal status only.</strong> The client has gone silent, paused the project, or otherwise stopped engaging. The opportunity is set to <code className="text-xs bg-background px-1 rounded">dead</code> and removed from the pipeline.
+                              <strong className="text-foreground">Internal status only.</strong> Client went silent, paused, or stopped engaging. Status → <code className="text-xs bg-background px-1 rounded">dead</code>.
                             </p>
-                            <div className="text-xs text-muted-foreground space-y-1 mb-2">
-                              <p><strong className="text-foreground">Reasons:</strong> No response · Project paused · Budget removed · Internal priorities changed · Withdrawn</p>
-                              <p><strong className="text-foreground">Client email:</strong> <span className="text-emerald-600 dark:text-emerald-400">None — this is an internal status, no notification is sent</span></p>
+                            <Collapsible>
+                              <CollapsibleTrigger className="flex items-center gap-2 text-xs font-medium text-primary hover:underline cursor-pointer">
+                                <ChevronDown className="w-3 h-3" /> View all 13 reason codes
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <ul className="mt-2 text-xs text-muted-foreground space-y-0.5 columns-2">
+                                  <li>• Merchant went non-responsive</li>
+                                  <li>• Stalled at document collection</li>
+                                  <li>• Internal priority shift</li>
+                                  <li>• Timing not right (seasonal)</li>
+                                  <li>• Decision-maker unavailable</li>
+                                  <li>• Analysis paralysis</li>
+                                  <li>• Business closure / pre-closure</li>
+                                  <li>• Abandoned during integration</li>
+                                  <li>• Ownership / management change</li>
+                                  <li>• Stalled at PCI compliance</li>
+                                  <li>• Lost contact information</li>
+                                  <li>• Duplicate opportunity</li>
+                                  <li>• External disruption</li>
+                                </ul>
+                              </CollapsibleContent>
+                            </Collapsible>
+                            <div className="text-xs text-muted-foreground mt-2">
+                              <strong className="text-foreground">Client email:</strong> <span className="text-emerald-600 dark:text-emerald-400">None — internal status</span>
+                              <br />
+                              <strong className="text-foreground">Re-engagement tasks:</strong> <span>5 of 13 reasons auto-create follow-up tasks (14–90 days). 8 reasons intentionally produce no task (no actionable re-engagement path).</span>
                             </div>
                           </div>
 
                           {/* Disqualified */}
                           <div className="bg-purple-500/5 rounded-lg border border-purple-500/20 p-4">
                             <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                              <XCircle className="w-4 h-4 text-purple-500" /> Disqualified
+                              <XCircle className="w-4 h-4 text-purple-500" /> Disqualified <span className="text-xs text-purple-500 ml-2">14 reasons</span>
                             </h4>
                             <p className="text-sm text-muted-foreground mb-2">
-                              The merchant does not meet eligibility criteria (MCC, geography, volume, etc.). Status is set to <code className="text-xs bg-background px-1 rounded">dead</code>. <strong className="text-foreground">A notification email is automatically sent to the client.</strong>
+                              Does not meet eligibility criteria. Status → <code className="text-xs bg-background px-1 rounded">dead</code>. <strong className="text-foreground">A compliance notification email is automatically sent.</strong>
                             </p>
-                            <div className="text-xs text-muted-foreground space-y-1 mb-2">
-                              <p><strong className="text-foreground">Reasons:</strong> Unsupported MCC · Geography not supported · Volume too small · Not a fit · Duplicate / invalid opportunity · Fraudulent</p>
-                              <p><strong className="text-foreground">Client email:</strong> <span className="text-amber-600 dark:text-amber-400">✉️ Yes — disqualification notification sent</span></p>
-                            </div>
                             <Collapsible>
                               <CollapsibleTrigger className="flex items-center gap-2 text-xs font-medium text-primary hover:underline cursor-pointer">
-                                <Mail className="w-3 h-3" /> View Email Template
-                                <ChevronDown className="w-3 h-3" />
+                                <ChevronDown className="w-3 h-3" /> View all 14 reason codes
                               </CollapsibleTrigger>
                               <CollapsibleContent>
-                                <div className="mt-3 bg-background border border-border rounded-lg p-4 text-xs text-muted-foreground space-y-2">
-                                  <p className="text-foreground font-semibold text-sm">Subject: Application Update — [Account Name]</p>
-                                  <hr className="border-border" />
-                                  <p>Dear [Applicant Name],</p>
-                                  <p>Thank you for your interest in Merchant Haus and for submitting your application for <strong>[Account Name]</strong>.</p>
-                                  <p>After reviewing your application, we have determined that we are unfortunately unable to support your business at this time. This may be due to factors such as the nature of your business, geographic requirements, or other eligibility criteria.</p>
-                                  <p>We appreciate the time you invested in the application process.</p>
-                                  <hr className="border-border" />
-                                  <p>If you believe there has been an error or would like further clarification, please feel free to contact us at <strong>onboarding@merchanthaus.io</strong>.</p>
-                                  <p className="text-foreground">Kind regards,<br /><strong>The Merchant Haus Team</strong></p>
-                                </div>
+                                <ul className="mt-2 text-xs text-muted-foreground space-y-0.5 columns-2">
+                                  <li>• Prohibited MCC / product category</li>
+                                  <li>• Industry monitoring database hit</li>
+                                  <li>• Government watchlist match</li>
+                                  <li>• Insufficient business history / no EIN</li>
+                                  <li>• Unacceptable business structure</li>
+                                  <li>• Processing volume below minimum</li>
+                                  <li>• Non-U.S. domiciled business</li>
+                                  <li>• Excessive chargeback history</li>
+                                  <li>• Previously terminated by processor</li>
+                                  <li>• PCI non-compliance (unwilling)</li>
+                                  <li>• Unsupported business model</li>
+                                  <li>• Principal credit disqualification</li>
+                                  <li>• Fraudulent / misrepresented application</li>
+                                  <li>• High-risk MCC outside program scope</li>
+                                </ul>
                               </CollapsibleContent>
                             </Collapsible>
+                            <div className="text-xs text-muted-foreground mt-2">
+                              <strong className="text-foreground">Client email:</strong> <span className="text-amber-600 dark:text-amber-400">✉️ Yes — disqualification notification sent automatically</span>
+                              <br />
+                              <strong className="text-foreground">Permanent suppression:</strong> <span>6 of 14 reasons are permanently suppressed — no re-engagement task will ever be created (OFAC, MATCH/TMF, AML, fraud, prohibited MCC, previously terminated).</span>
+                            </div>
                           </div>
 
                           {/* Underwriting Declined */}
                           <div className="bg-orange-500/5 rounded-lg border border-orange-500/20 p-4">
                             <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                              <XCircle className="w-4 h-4 text-orange-500" /> Underwriting Declined
+                              <XCircle className="w-4 h-4 text-orange-500" /> Underwriting Declined <span className="text-xs text-orange-500 ml-2">15 reasons</span>
                             </h4>
                             <p className="text-sm text-muted-foreground mb-2">
-                              The application has been formally declined by the underwriting team. Status is set to <code className="text-xs bg-background px-1 rounded">dead</code>. <strong className="text-foreground">A notification email is automatically sent to the client.</strong>
+                              Formally declined by underwriting. Status → <code className="text-xs bg-background px-1 rounded">dead</code>. <strong className="text-foreground">An adverse action notice email (ECOA/FCRA compliant) is automatically sent.</strong>
                             </p>
-                            <div className="text-xs text-muted-foreground space-y-1 mb-2">
-                              <p><strong className="text-foreground">Reasons:</strong> Risk profile · Restricted business type · Chargeback concern · Incomplete documentation · Processor decline</p>
-                              <p><strong className="text-foreground">Client email:</strong> <span className="text-amber-600 dark:text-amber-400">✉️ Yes — underwriting decline notification sent</span></p>
-                            </div>
                             <Collapsible>
                               <CollapsibleTrigger className="flex items-center gap-2 text-xs font-medium text-primary hover:underline cursor-pointer">
-                                <Mail className="w-3 h-3" /> View Email Template
-                                <ChevronDown className="w-3 h-3" />
+                                <ChevronDown className="w-3 h-3" /> View all 15 reason codes
                               </CollapsibleTrigger>
                               <CollapsibleContent>
-                                <div className="mt-3 bg-background border border-border rounded-lg p-4 text-xs text-muted-foreground space-y-2">
-                                  <p className="text-foreground font-semibold text-sm">Subject: Application Update — [Account Name]</p>
-                                  <hr className="border-border" />
-                                  <p>Dear [Applicant Name],</p>
-                                  <p>Thank you for your interest in Merchant Haus and for taking the time to submit your application for <strong>[Account Name]</strong>.</p>
-                                  <p>After a thorough review by our underwriting team, we regret to inform you that we are unable to approve your application at this time. This decision was made based on our current underwriting criteria and does not reflect on the quality of your business.</p>
-                                  <p>We understand this may be disappointing, and we appreciate your patience throughout the review process.</p>
-                                  <hr className="border-border" />
-                                  <p>If you have any questions about this decision, or if your circumstances change in the future, please don't hesitate to reach out to us at <strong>onboarding@merchanthaus.io</strong>. We would be happy to revisit your application.</p>
-                                  <p className="text-foreground">Kind regards,<br /><strong>The Merchant Haus Team</strong></p>
-                                </div>
+                                <ul className="mt-2 text-xs text-muted-foreground space-y-0.5 columns-2">
+                                  <li>• Industry database — excessive chargebacks</li>
+                                  <li>• Industry database — fraud history</li>
+                                  <li>• Industry database — other listing</li>
+                                  <li>• Principal credit below threshold</li>
+                                  <li>• Excessive chargeback ratio (current)</li>
+                                  <li>• Unverifiable business / KYC failure</li>
+                                  <li>• AML / compliance screening</li>
+                                  <li>• Financial instability / bankruptcy</li>
+                                  <li>• MCC reclassification (higher risk)</li>
+                                  <li>• Website / marketing non-compliance</li>
+                                  <li>• Volume / avg ticket inconsistency</li>
+                                  <li>• Incomplete docs / UW timeout</li>
+                                  <li>• Prohibited product discovered in UW</li>
+                                  <li>• Reserve requirement rejected</li>
+                                  <li>• Third-party processing discovered</li>
+                                </ul>
                               </CollapsibleContent>
                             </Collapsible>
+                            <div className="text-xs text-muted-foreground mt-2">
+                              <strong className="text-foreground">Client email:</strong> <span className="text-amber-600 dark:text-amber-400">✉️ Yes — adverse action notice (ECOA + FCRA) sent automatically</span>
+                              <br />
+                              <strong className="text-foreground">Re-engagement tasks:</strong> <span>5 of 15 reasons auto-create follow-up tasks (14–180 days). Remaining reasons are permanently suppressed or have no remediation path.</span>
+                            </div>
+                          </div>
+
+                          {/* Re-engagement Task Automation */}
+                          <div className="bg-primary/5 rounded-lg border border-primary/20 p-4">
+                            <h4 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                              <Clock className="w-4 h-4 text-primary" /> Re-engagement Task Automation
+                            </h4>
+                            <p className="text-sm text-muted-foreground mb-3">
+                              When an outcome is confirmed, the system automatically creates a dated follow-up task for the assigned rep — <strong className="text-foreground">unless</strong> the reason is permanently suppressed. Tasks appear in the Opportunity Detail view and My Tasks.
+                            </p>
+                            <div className="grid md:grid-cols-3 gap-3 text-xs text-muted-foreground">
+                              <div className="bg-background/50 rounded p-2 border border-border">
+                                <strong className="text-foreground block mb-1">Closed Lost (7 tasks)</strong>
+                                <p>30–180 day "Win-back" tasks for competitive losses, ETF lockouts, and decision-maker changes.</p>
+                              </div>
+                              <div className="bg-background/50 rounded p-2 border border-border">
+                                <strong className="text-foreground block mb-1">No Decision (5 tasks)</strong>
+                                <p>14–90 day "Re-engage" tasks for non-responsive, stalled docs, timing, and PCI holds.</p>
+                              </div>
+                              <div className="bg-background/50 rounded p-2 border border-border">
+                                <strong className="text-foreground block mb-1">UW Declined (5 tasks)</strong>
+                                <p>14–180 day "Re-application" tasks for remediable reasons (credit, chargebacks, docs, website, reserves).</p>
+                              </div>
+                            </div>
+                            <div className="mt-3 p-2 rounded bg-destructive/5 border border-destructive/20 text-xs text-muted-foreground">
+                              <strong className="text-foreground">Permanent Suppression:</strong> 9 reason codes are permanently blocked from creating re-engagement tasks: OFAC/sanctions matches, MATCH/TMF database hits, AML flags, fraudulent applications, prohibited MCC, and previously terminated merchants.
+                            </div>
                           </div>
 
                           {/* Outcome Requirements */}
@@ -2310,12 +2417,15 @@ Sales Support`,
                               <CheckCircle className="w-4 h-4 text-primary" /> Outcome Requirements
                             </h4>
                             <ul className="space-y-1.5 text-sm text-muted-foreground">
-                              <li>• Every outcome requires a <strong className="text-foreground">reason</strong> (selected from predefined list)</li>
+                              <li>• Every outcome requires a <strong className="text-foreground">reason</strong> (selected from the granular reason codes above)</li>
                               <li>• Optional <strong className="text-foreground">notes</strong> for additional context</li>
                               <li>• System records <strong className="text-foreground">who</strong> set the outcome and <strong className="text-foreground">when</strong></li>
-                              <li>• An activity log entry is automatically created</li>
-                              <li>• Outcomes are <strong className="text-foreground">permanent</strong> — once set, the dropdown is disabled</li>
+                              <li>• An activity log entry is automatically created with human-readable labels</li>
+                              <li>• Outcomes are <strong className="text-foreground">permanent</strong> — once set, the outcome cannot be changed (contact admin)</li>
                               <li>• Only <strong className="text-foreground">Underwriting Declined</strong> and <strong className="text-foreground">Disqualified</strong> trigger a client-facing email</li>
+                              <li>• Reason dropdown populates dynamically based on selected outcome status</li>
+                              <li>• Confirm button disabled until both status AND reason are selected</li>
+                              <li>• Email-triggering outcomes show an <strong className="text-amber-500">amber warning</strong> in the modal footer</li>
                             </ul>
                           </div>
 
