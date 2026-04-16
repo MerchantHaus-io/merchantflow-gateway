@@ -1547,11 +1547,13 @@ export default function OfficeChat({
       const jy = joystickRef.current.y;
       const isPlayerMoving = state.keys.has("w") || state.keys.has("s") || state.keys.has("a") || state.keys.has("d") || joystickRef.current.active;
 
+      // Cancel click-to-move if player uses keyboard/joystick
+      if (isPlayerMoving) clickMoveTarget = null;
+
       if (isPlayerMoving && showTerminalRef.current) {
         showTerminalRef.current = false;
         setShowTerminal(false);
       }
-      // Stand up if sitting and moving
       if (isPlayerMoving) {
         setIsSitting(false);
         setShowWhiteboard(false);
@@ -1565,6 +1567,23 @@ export default function OfficeChat({
         if (joystickRef.current.active) {
           state.playerPos.addScaledVector(fwd, -jy * spd);
           state.playerPos.addScaledVector(rgt, jx * spd);
+        }
+
+        // Click-to-move autopilot
+        if (clickMoveTarget) {
+          const dx = clickMoveTarget.x - state.playerPos.x;
+          const dz = clickMoveTarget.z - state.playerPos.z;
+          const dist = Math.sqrt(dx * dx + dz * dz);
+          if (dist < 0.5) {
+            clickMoveTarget = null;
+            moveMarker.visible = false;
+          } else {
+            const ms = spd * 0.8;
+            state.playerPos.x += (dx / dist) * ms;
+            state.playerPos.z += (dz / dist) * ms;
+            // Face toward target
+            state.yaw = Math.atan2(dx, dz);
+          }
         }
       }
 
@@ -2021,6 +2040,29 @@ export default function OfficeChat({
           }
         }
       }
+
+      // ── Plumbob animation ──
+      plumbob.position.set(state.playerPos.x, 2.6 + Math.sin(t * 2) * 0.08, state.playerPos.z);
+      plumbob.rotation.y = t * 1.5;
+
+      // ── Move marker fade ──
+      if (moveMarker.visible) {
+        moveMarkerLife -= dt;
+        moveMarker.rotation.z += dt * 2;
+        moveMarkerMat.opacity = Math.max(0, moveMarkerLife / 3) * 0.7;
+        if (moveMarkerLife <= 0 && !clickMoveTarget) moveMarker.visible = false;
+      }
+
+      // ── Zone detection ──
+      const px = state.playerPos.x, pz = state.playerPos.z;
+      let zoneName = "Office";
+      if (px < -8 && pz > 1 && pz < 11) zoneName = "Break Room";
+      else if (px > 11 && pz > 3 && pz < 13) zoneName = "Meeting Room";
+      else if (pz > 12) zoneName = "Reception";
+      else if (pz < -5) zoneName = "Cubicles";
+      else if (px > -8 && px < 8 && pz > -2 && pz < 6) zoneName = "Lobby";
+      // Store for UI
+      (state as any)._zoneName = zoneName;
 
       renderer.render(scene, camera);
     };
