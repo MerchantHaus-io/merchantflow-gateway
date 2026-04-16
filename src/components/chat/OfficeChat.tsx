@@ -1338,17 +1338,71 @@ export default function OfficeChat({
     renderer.shadowMap.enabled = true;
     mountRef.current.appendChild(renderer.domElement);
 
-    // Lighting
-    scene.add(new THREE.AmbientLight(0xffffff, 0.45));
-    const sun = new THREE.DirectionalLight(0xfff8f0, 0.65);
+    // Lighting — warmer, more atmospheric
+    scene.add(new THREE.AmbientLight(0xfff5e8, 0.35));
+    const sun = new THREE.DirectionalLight(0xfff0d0, 0.55);
     sun.position.set(8, 15, 8); sun.castShadow = true;
-    sun.shadow.mapSize.setScalar(1024);
+    sun.shadow.mapSize.setScalar(2048);
     sun.shadow.camera.left = -ROOM; sun.shadow.camera.right = ROOM;
     sun.shadow.camera.top = ROOM; sun.shadow.camera.bottom = -ROOM;
     scene.add(sun);
-    // Fill light
-    const fill = new THREE.DirectionalLight(0x8888ff, 0.15);
+    // Fill light (cool complement)
+    const fill = new THREE.DirectionalLight(0x8899cc, 0.12);
     fill.position.set(-10, 8, -5); scene.add(fill);
+    // Warm rim light from south (reception area glow)
+    const rim = new THREE.DirectionalLight(0xffddaa, 0.15);
+    rim.position.set(0, 6, 20); scene.add(rim);
+    // Hemisphere light for natural sky/ground bounce
+    const hemi = new THREE.HemisphereLight(0xddeeff, 0x443322, 0.2);
+    scene.add(hemi);
+
+    // ── Plumbob (classic Sims diamond above player) ──
+    const plumbobGeo = new THREE.OctahedronGeometry(0.15, 0);
+    const plumbobMat = new THREE.MeshStandardMaterial({
+      color: 0x22cc44, emissive: 0x22cc44, emissiveIntensity: 0.6,
+      transparent: true, opacity: 0.8, metalness: 0.3, roughness: 0.2
+    });
+    const plumbob = new THREE.Mesh(plumbobGeo, plumbobMat);
+    plumbob.scale.set(1, 1.6, 1);
+    scene.add(plumbob);
+
+    // ── Click-to-move marker ──
+    const moveMarkerGeo = new THREE.RingGeometry(0.2, 0.35, 4);
+    const moveMarkerMat = new THREE.MeshBasicMaterial({ color: 0x22cc44, transparent: true, opacity: 0.7, side: THREE.DoubleSide });
+    const moveMarker = new THREE.Mesh(moveMarkerGeo, moveMarkerMat);
+    moveMarker.rotation.x = -Math.PI / 2;
+    moveMarker.rotation.z = Math.PI / 4;
+    moveMarker.visible = false;
+    scene.add(moveMarker);
+    let clickMoveTarget: THREE.Vector3 | null = null;
+    let moveMarkerLife = 0;
+
+    // Raycaster for click-to-move
+    const raycaster = new THREE.Raycaster();
+    const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const clickHandler = (e: MouseEvent) => {
+      if (state.locked || activeChat) return; // only in unlocked free-cam mode
+      if (e.button !== 2) return; // right-click to move
+      e.preventDefault();
+      const rect = renderer.domElement.getBoundingClientRect();
+      const mouse = new THREE.Vector2(
+        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        -((e.clientY - rect.top) / rect.height) * 2 + 1
+      );
+      raycaster.setFromCamera(mouse, camera);
+      const hit = new THREE.Vector3();
+      if (raycaster.ray.intersectPlane(floorPlane, hit)) {
+        // Clamp to room bounds
+        hit.x = Math.max(-ROOM + 1, Math.min(ROOM - 1, hit.x));
+        hit.z = Math.max(-ROOM + 1, Math.min(ROOM - 1, hit.z));
+        clickMoveTarget = hit;
+        moveMarker.position.set(hit.x, 0.05, hit.z);
+        moveMarker.visible = true;
+        moveMarkerLife = 3; // seconds
+      }
+    };
+    renderer.domElement.addEventListener("contextmenu", (e) => e.preventDefault());
+    renderer.domElement.addEventListener("mousedown", clickHandler);
 
     scene.add(buildRoom());
 
