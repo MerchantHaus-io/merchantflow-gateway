@@ -2798,8 +2798,11 @@ export default function OfficeChat({
             </div>
           )}
 
-          <div className="absolute top-3 left-3 pointer-events-none z-20">
-            <Badge variant="outline" className="bg-black/60 text-white/60 border-white/10 text-[10px]">
+          <div className="absolute top-3 left-3 pointer-events-none z-20 flex flex-col gap-1">
+            <div className="px-2.5 py-1 rounded-lg bg-black/70 backdrop-blur-sm border border-white/10 w-fit">
+              <span className="text-[10px] font-semibold text-emerald-400 tracking-wide">📍 {currentZone}</span>
+            </div>
+            <Badge variant="outline" className="bg-black/60 text-white/50 border-white/10 text-[9px] w-fit">
               Drag to look · Joystick to move
             </Badge>
           </div>
