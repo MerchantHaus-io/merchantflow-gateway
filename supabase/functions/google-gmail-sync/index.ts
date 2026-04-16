@@ -386,85 +386,10 @@ serve(async (req) => {
           }
         }
 
-        // If no match found and there are external emails, create a lead + web submission
-        if (!matchedContactId && allEmails.length > 0) {
-          const leadEmail = allEmails[0];
-          const leadName = fromEmail === leadEmail ? fromName : leadEmail.split("@")[0];
-          console.log(`Creating lead for: ${leadEmail} (${leadName}) from subject: ${subject}`);
-
-          // Create web submission (application) so it appears in Web Submissions
-          const nameParts = (leadName || "").split(" ");
-          const { data: newApp } = await supabase
-            .from("applications")
-            .insert({
-              full_name: leadName || leadEmail.split("@")[0],
-              email: leadEmail,
-              company_name: leadName || null,
-              message: `Inbound email — ${subject || "(no subject)"}. Auto-created from Gmail sync.`,
-              status: "pending",
-              service_type: "processing",
-              submitted_at: receivedAt,
-            })
-            .select("id")
-            .single();
-
-          // Create account
-          const { data: newAccount, error: accErr } = await supabase
-            .from("accounts")
-            .insert({
-              name: leadName || leadEmail.split("@")[0],
-              status: "lead",
-            })
-            .select("id")
-            .single();
-
-          if (accErr) {
-            console.error(`Failed to create account for ${leadEmail}:`, accErr.message);
-          }
-          if (!accErr && newAccount) {
-            // Create contact
-            const { data: newContact, error: ctErr } = await supabase
-              .from("contacts")
-              .insert({
-                account_id: newAccount.id,
-                email: leadEmail,
-                first_name: nameParts[0] || leadEmail.split("@")[0],
-                last_name: nameParts.slice(1).join(" ") || null,
-              })
-              .select("id")
-              .single();
-
-            if (!ctErr && newContact) {
-              // Create opportunity as lead
-              const { data: newOpp } = await supabase
-                .from("opportunities")
-                .insert({
-                  account_id: newAccount.id,
-                  contact_id: newContact.id,
-                  stage: "discovery",
-                  referral_source: "Email (Auto-Synced)",
-                })
-                .select("id")
-                .single();
-
-              matchedAccountId = newAccount.id;
-              matchedContactId = newContact.id;
-              matchedOpportunityId = newOpp?.id || null;
-              leadCreated = true;
-              leadsCreated++;
-
-              // Add to local cache
-              contactsByEmail.set(leadEmail, {
-                id: newContact.id,
-                email: leadEmail,
-                account_id: newAccount.id,
-              });
-              if (newOpp) {
-                oppsByContact.set(newContact.id, newOpp);
-              }
-            }
-          }
-        }
+        // Lead auto-creation from Gmail disabled — emails from unknown senders
+        // are still synced and matched to existing contacts, but no new
+        // applications / accounts / contacts / opportunities are created.
+        // To re-enable, restore the lead-creation block that was here.
 
         // Download and store attachments if we have an opportunity
         if (hasAttachments && matchedOpportunityId) {
