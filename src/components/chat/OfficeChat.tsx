@@ -1295,6 +1295,7 @@ export default function OfficeChat({
   const [isSitting, setIsSitting] = useState(false);
   const [showWhiteboard, setShowWhiteboard] = useState(false);
   const [coffeeEmote, setCoffeeEmote] = useState(false);
+  const [currentZone, setCurrentZone] = useState("Office");
   const [selectedStickyIndex, setSelectedStickyIndex] = useState<number | null>(null);
   const showTerminalRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
