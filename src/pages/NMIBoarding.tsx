@@ -39,6 +39,11 @@ interface FormData {
   timezone: string;
   language: string;
   username: string;
+  // Banking (NMI-required accountInfo)
+  check_aba: string;
+  check_account: string;
+  account_holder_type: string;
+  account_type: string;
 }
 
 const initialFormData: FormData = {
@@ -59,6 +64,10 @@ const initialFormData: FormData = {
   timezone: "America/New_York",
   language: "en_US",
   username: "",
+  check_aba: "",
+  check_account: "",
+  account_holder_type: "business",
+  account_type: "checking",
 };
 
 type Step = "details" | "documents" | "review";
