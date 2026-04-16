@@ -1164,12 +1164,27 @@ function buildRoom(): THREE.Group {
     addCollider(px, pz, 0.3, 0.3);
   });
 
-  // ── Water cooler ──
-  const coolerBody = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.9, 8), new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.3 }));
-  coolerBody.position.set(-6, 0.55, 0); g.add(coolerBody);
-  const coolerJug = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.18, 0.4, 8), new THREE.MeshStandardMaterial({ color: 0x88bbdd, transparent: true, opacity: 0.4 }));
-  coolerJug.position.set(-6, 1.2, 0); g.add(coolerJug);
+  // ── Water cooler (enhanced) ──
+  const coolerBase = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.08, 0.45), new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.4 }));
+  coolerBase.position.set(-6, 0.04, 0); g.add(coolerBase);
+  const coolerBody = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.2, 0.85, 12), new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.3 }));
+  coolerBody.position.set(-6, 0.505, 0); g.add(coolerBody);
+  const coolerJug = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.17, 0.38, 12), new THREE.MeshStandardMaterial({ color: 0x88ccee, transparent: true, opacity: 0.35 }));
+  coolerJug.position.set(-6, 1.15, 0); g.add(coolerJug);
+  // Water level inside jug
+  const waterLevel = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.16, 0.25, 12), new THREE.MeshStandardMaterial({ color: 0x4488cc, transparent: true, opacity: 0.2 }));
+  waterLevel.position.set(-6, 1.08, 0); g.add(waterLevel);
+  // Spout
+  const spout = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.12), new THREE.MeshStandardMaterial({ color: 0xaaaaaa, metalness: 0.5, roughness: 0.3 }));
+  spout.position.set(-6, 0.6, 0.18); g.add(spout);
   addCollider(-6, 0, 0.3, 0.3);
+
+  // ── Area rug — lobby center ──
+  const lobbyRug = new THREE.Mesh(new THREE.PlaneGeometry(8, 5), new THREE.MeshStandardMaterial({ color: 0x4a3a5a, roughness: 0.98 }));
+  lobbyRug.rotation.x = -Math.PI / 2; lobbyRug.position.set(0, 0.015, 14); g.add(lobbyRug);
+  // Rug border
+  const rugBorder = new THREE.Mesh(new THREE.PlaneGeometry(8.4, 5.4), new THREE.MeshStandardMaterial({ color: 0x3a2a4a, roughness: 0.98 }));
+  rugBorder.rotation.x = -Math.PI / 2; rugBorder.position.set(0, 0.012, 14); g.add(rugBorder);
 
   // ── Ceiling spotlights (warm downlighters) ──
   const lightPositions: [number, number][] = [
