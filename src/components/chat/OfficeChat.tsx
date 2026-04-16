@@ -1438,30 +1438,114 @@ export default function OfficeChat({
         const isAtria = email === "atria@merchanthaus.io";
 
         if (isAtria) {
-          // ── ATRIA: fully autonomous AI wander ──
+          // ── ATRIA: autonomous AI with intent-driven behavior ──
           const ws = state.npcWander.get(email);
           if (!ws) return;
           const deskPos = DESK_POS[email] || new THREE.Vector3(0, 0, 0);
-        if (ws.state === "at_desk") {
+
+          // Update speech bubble position / fade
+          updateSpeechBubble(ws, mesh, dt, state.scene);
+
+          // Check intent queue if idle
+          if (!ws.intentState && (ws.state === "at_desk" || ws.state === "idle_at_waypoint" || ws.state === "walking")) {
+            const nextIntent = popAtriaIntent();
+            if (nextIntent) {
+              ws.intentState = nextIntent;
+              ws.currentTarget = nextIntent.targetPos.clone();
+              ws.state = nextIntent.reason === "chat" ? "walking_to_user"
+                : nextIntent.reason === "thinking" ? "walking" // walk to whiteboard
+                : nextIntent.reason === "coffee" ? "getting_coffee"
+                : nextIntent.reason === "visit" ? "visiting"
+                : "walking";
+            }
+          }
+
+          // Idle timeout → queue coffee or visit
+          if (!ws.intentState && ws.state === "at_desk") {
+            const idleSec = (now - (ws.lastIdleStart ?? now)) / 1000;
+            if (idleSec > 60 && Math.random() < 0.002) {
+              // Visit a random team desk
+              const otherEmails = Object.keys(DESK_POS).filter(e => e !== email);
+              const pick = otherEmails[Math.floor(Math.random() * otherEmails.length)];
+              queueAtriaIntent({
+                priority: 4,
+                targetPos: DESK_POS[pick].clone().add(new THREE.Vector3(1, 0, 1)),
+                reason: "visit",
+                targetEmail: pick,
+                duration: 4,
+                elapsed: 0,
+              });
+            } else if (idleSec > 30 && Math.random() < 0.003) {
+              // Get coffee
+              const coffeePt = INTERACT_POINTS.find(p => p.action === "coffee");
+              if (coffeePt) {
+                queueAtriaIntent({
+                  priority: 3,
+                  targetPos: coffeePt.pos.clone(),
+                  reason: "coffee",
+                  duration: 4,
+                  elapsed: 0,
+                });
+              }
+            }
+          }
+
+          // State machine
+          if (ws.state === "at_desk") {
             const cp = chairPos(email);
             mesh.position.x = cp.x;
             mesh.position.z = cp.z;
-            mesh.rotation.y = Math.PI; // face toward monitor
+            mesh.rotation.y = Math.PI;
             animateCharacter(mesh, t, false, true);
             ws.deskTimer -= dt;
             if (ws.deskTimer <= 0) {
               ws.state = "walking";
               ws.currentTarget = randomWanderTarget();
               ws.wanderTimer = Math.random() * 15 + 8;
+              ws.lastIdleStart = now;
             }
-          } else if (ws.state === "idle_at_waypoint") {
+          } else if (ws.state === "idle_at_waypoint" || ws.state === "at_whiteboard") {
             animateCharacter(mesh, t, false, false);
-            ws.idleTimer -= dt;
-            if (ws.idleTimer <= 0) {
-              ws.state = "walking";
-              ws.currentTarget = randomWanderTarget();
+            if (ws.intentState) {
+              ws.intentState.elapsed += dt;
+              if (ws.intentState.elapsed >= ws.intentState.duration) {
+                // Show response snippet if chat
+                if (ws.intentState.reason === "chat" && ws.intentState.message) {
+                  showSpeechBubble(mesh, ws, ws.intentState.message, state.scene);
+                }
+                ws.intentState = null;
+                ws.state = "walking";
+                ws.currentTarget = chairPos(email);
+              }
+            } else {
+              ws.idleTimer -= dt;
+              if (ws.idleTimer <= 0) {
+                ws.state = "walking";
+                ws.currentTarget = randomWanderTarget();
+              }
+            }
+          } else if (ws.state === "getting_coffee" || ws.state === "walking_to_user" || ws.state === "visiting") {
+            // Walking toward an intent target
+            const wdx = ws.currentTarget.x - mesh.position.x;
+            const wdz = ws.currentTarget.z - mesh.position.z;
+            const dist = Math.sqrt(wdx * wdx + wdz * wdz);
+            if (dist < 0.5) {
+              // Arrived at intent destination
+              if (ws.state === "walking_to_user") {
+                showSpeechBubble(mesh, ws, "...", state.scene);
+              }
+              ws.state = ws.state === "getting_coffee" ? "idle_at_waypoint" : ws.state === "walking_to_user" ? "idle_at_waypoint" : "idle_at_waypoint";
+            } else {
+              const moveSpeed = ws.speed * dt;
+              mesh.position.x += (wdx / dist) * moveSpeed;
+              mesh.position.z += (wdz / dist) * moveSpeed;
+              const npcResolved = resolveCollision(mesh.position, 0.3);
+              mesh.position.copy(npcResolved);
+              mesh.rotation.y = Math.atan2(wdx / dist, wdz / dist);
+              animateCharacter(mesh, t, true, false);
             }
           } else {
+            // Default walking state
             const wdx = ws.currentTarget.x - mesh.position.x;
             const wdz = ws.currentTarget.z - mesh.position.z;
             const dist = Math.sqrt(wdx * wdx + wdz * wdz);
@@ -1470,6 +1554,7 @@ export default function OfficeChat({
               if (ws.wanderTimer <= 0) {
                 ws.state = "at_desk";
                 ws.deskTimer = Math.random() * 20 + 10;
+                ws.lastIdleStart = now;
               } else {
                 ws.state = "idle_at_waypoint";
                 ws.idleTimer = Math.random() * 3 + 1;
