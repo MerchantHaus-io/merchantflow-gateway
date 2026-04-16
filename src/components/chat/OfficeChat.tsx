@@ -2113,6 +2113,7 @@ export default function OfficeChat({
       document.removeEventListener("keyup", onUp);
       window.removeEventListener("resize", onResize);
       window.removeEventListener("atriaIntent", handleAtriaIntent);
+      renderer.domElement.removeEventListener("mousedown", clickHandler);
       renderer.dispose();
       if (mountRef.current) mountRef.current.innerHTML = "";
       stateRef.current = null;
@@ -2660,32 +2661,75 @@ export default function OfficeChat({
         }} />
       </div>
 
-      {/* Controls hint */}
+      {/* Sims-style HUD — zone name + controls */}
       {!isMobile && (
-        <div className="absolute top-3 left-3 pointer-events-none">
-          <Badge variant="outline" className="bg-black/60 text-white/60 border-white/10 text-xs">
-            WASD move · Mouse look · E interact · ESC release
+        <div className="absolute top-3 left-3 pointer-events-none flex flex-col gap-1.5">
+          {/* Zone indicator */}
+          <div className="flex items-center gap-2">
+            <div className="px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur-sm border border-white/10">
+              <span className="text-xs font-semibold text-emerald-400 tracking-wide">📍 {currentZone}</span>
+            </div>
+          </div>
+          <Badge variant="outline" className="bg-black/60 text-white/50 border-white/10 text-[10px] w-fit">
+            WASD move · R-click walk · Mouse look · E interact · ESC release
           </Badge>
         </div>
       )}
 
-      {/* Minimap */}
+      {/* Enhanced Minimap with NPC dots */}
       {!isMobile && locked && (
         <div className="absolute top-3 right-3 z-10">
-          <div className="w-32 h-32 rounded-lg bg-black/70 border border-white/10 overflow-hidden relative">
-            <span className="absolute top-0.5 left-1 text-[7px] text-white/30 uppercase tracking-wider">Map</span>
-            {/* Player dot */}
-            <div className="absolute w-2 h-2 rounded-full bg-yellow-400 shadow-sm shadow-yellow-400/50" style={{
+          <div className="w-40 h-40 rounded-xl bg-black/80 backdrop-blur-sm border border-white/15 overflow-hidden relative shadow-lg">
+            <div className="absolute top-1 left-2 right-2 flex items-center justify-between">
+              <span className="text-[8px] text-white/40 uppercase tracking-widest font-semibold">Floor Plan</span>
+              <span className="text-[7px] text-emerald-400/60">{currentZone}</span>
+            </div>
+            {/* Room zones */}
+            <div className="absolute border border-white/8" style={{ left: "2%", top: "2%", width: "96%", height: "96%" }} />
+            {/* Cubicle area */}
+            <div className="absolute border border-white/6 bg-white/3" style={{ left: "15%", top: "5%", width: "70%", height: "25%" }}>
+              <span className="text-[5px] text-white/15 absolute top-0.5 left-0.5">Cubicles</span>
+            </div>
+            {/* Break room */}
+            <div className="absolute border border-white/6 bg-emerald-500/5" style={{ left: "3%", top: "34%", width: "30%", height: "28%" }}>
+              <span className="text-[5px] text-white/15 absolute top-0.5 left-0.5">Break</span>
+            </div>
+            {/* Meeting room */}
+            <div className="absolute border border-white/6 bg-blue-500/5" style={{ left: "67%", top: "34%", width: "30%", height: "28%" }}>
+              <span className="text-[5px] text-white/15 absolute top-0.5 left-0.5">Meeting</span>
+            </div>
+            {/* Reception */}
+            <div className="absolute border border-white/6 bg-amber-500/5" style={{ left: "20%", top: "72%", width: "60%", height: "22%" }}>
+              <span className="text-[5px] text-white/15 absolute top-0.5 left-0.5">Reception</span>
+            </div>
+            {/* Player dot (diamond / plumbob shape) */}
+            <div className="absolute w-3 h-3" style={{
               left: `${((stateRef.current?.playerPos.x ?? 0) / ROOM + 1) * 50}%`,
               top: `${(1 - (stateRef.current?.playerPos.z ?? 0) / ROOM) * 50}%`,
-              transform: "translate(-50%, -50%)",
-            }} />
-            {/* Room outlines */}
-            <div className="absolute border border-white/10" style={{ left: "2%", top: "2%", width: "96%", height: "96%" }} />
-            {/* Break room */}
-            <div className="absolute border border-white/8 bg-white/5" style={{ left: "4%", top: "36%", width: "30%", height: "30%" }} />
-            {/* Meeting room */}
-            <div className="absolute border border-white/8 bg-white/5" style={{ left: "66%", top: "36%", width: "30%", height: "30%" }} />
+              transform: "translate(-50%, -50%) rotate(45deg)",
+            }}>
+              <div className="w-full h-full bg-emerald-400 shadow-sm shadow-emerald-400/60 animate-pulse" style={{ clipPath: "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)" }} />
+            </div>
+            {/* NPC dots */}
+            {USERS.filter(u => u.email !== currentUserEmail).map(u => {
+              const npcMesh = stateRef.current?.npcMeshes.get(u.email);
+              if (!npcMesh) return null;
+              const isOnline = u.email === "atria@merchanthaus.io" || (presence[u.email] ?? false);
+              return (
+                <div
+                  key={u.email}
+                  className="absolute w-1.5 h-1.5 rounded-full"
+                  style={{
+                    left: `${((npcMesh.position.x) / ROOM + 1) * 50}%`,
+                    top: `${(1 - (npcMesh.position.z) / ROOM) * 50}%`,
+                    transform: "translate(-50%, -50%)",
+                    backgroundColor: isOnline ? `#${u.shirtColor.toString(16).padStart(6, '0')}` : '#555555',
+                    boxShadow: isOnline ? `0 0 4px #${u.shirtColor.toString(16).padStart(6, '0')}40` : 'none',
+                  }}
+                  title={u.name}
+                />
+              );
+            })}
           </div>
         </div>
       )}
