@@ -607,8 +607,16 @@ function buildRoom(): THREE.Group {
   const carpetMat = new THREE.MeshStandardMaterial({ color: 0x3a5a3a, roughness: 0.95 });
   const tileMat1 = new THREE.MeshStandardMaterial({ color: 0xf2ece4 });
   const tileMat2 = new THREE.MeshStandardMaterial({ color: 0xe4ddd4 });
+  // New premium materials
+  const accentWallWest = new THREE.MeshStandardMaterial({ color: 0x2a3040, roughness: 0.75 });
+  const accentWallEast = new THREE.MeshStandardMaterial({ color: 0x3a2a28, roughness: 0.75 });
+  const baseBoardMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.4 });
+  const artFrameMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.3 });
+  const bookMat1 = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.7 });
+  const bookMat2 = new THREE.MeshStandardMaterial({ color: 0x2c3e50, roughness: 0.7 });
+  const bookMat3 = new THREE.MeshStandardMaterial({ color: 0x7f1d1d, roughness: 0.7 });
+  const bookMat4 = new THREE.MeshStandardMaterial({ color: 0x1e3a3a, roughness: 0.7 });
 
-  // Clear colliders for fresh build
   COLLIDERS.length = 0;
 
   const FS = ROOM * 2;
@@ -618,33 +626,57 @@ function buildRoom(): THREE.Group {
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(FS, FS), floorMat);
   floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; g.add(floor);
 
-  // Floor tiles
+  // Floor tiles — herringbone pattern in lobby
   for (let x = -ROOM; x < ROOM; x += 2) for (let z = -ROOM; z < ROOM; z += 2) {
     const tile = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), ((x + z) / 2) % 2 === 0 ? tileMat1 : tileMat2);
     tile.position.set(x + 1, 0.01, z + 1); tile.rotation.x = -Math.PI / 2; g.add(tile);
   }
 
-  // ── Outer walls ──
-  const addWall = (w: number, h: number, x: number, y: number, z: number, ry: number) => {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), wallMat);
+  // ── Outer walls with accent colors ──
+  const addWall = (w: number, h: number, x: number, y: number, z: number, ry: number, mat?: THREE.Material) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat || wallMat);
     m.position.set(x, y, z); m.rotation.y = ry; m.receiveShadow = true; g.add(m);
   };
-  addWall(FS, 5, 0, 2.5, -wOff, 0);        // North
-  addWall(FS, 5, -wOff, 2.5, 0, Math.PI / 2);  // West
-  addWall(FS, 5, wOff, 2.5, 0, -Math.PI / 2);  // East
-  addWall(FS, 5, 0, 2.5, wOff, Math.PI);    // South
+  addWall(FS, 5, 0, 2.5, -wOff, 0);                              // North
+  addWall(FS, 5, -wOff, 2.5, 0, Math.PI / 2, accentWallWest);   // West (accent)
+  addWall(FS, 5, wOff, 2.5, 0, -Math.PI / 2, accentWallEast);   // East (accent)
+  addWall(FS, 5, 0, 2.5, wOff, Math.PI);                          // South
 
-  // Wall colliders (thin)
-  addCollider(0, -wOff, wOff, 0.3);   // North
-  addCollider(0, wOff, wOff, 0.3);    // South
-  addCollider(-wOff, 0, 0.3, wOff);   // West
-  addCollider(wOff, 0, 0.3, wOff);    // East
+  // Wall colliders
+  addCollider(0, -wOff, wOff, 0.3);
+  addCollider(0, wOff, wOff, 0.3);
+  addCollider(-wOff, 0, 0.3, wOff);
+  addCollider(wOff, 0, 0.3, wOff);
+
+  // ── Baseboards (all 4 walls) ──
+  const bbH = 0.15, bbD = 0.04;
+  const bbNorth = new THREE.Mesh(new THREE.BoxGeometry(FS, bbH, bbD), baseBoardMat);
+  bbNorth.position.set(0, bbH / 2, -wOff + bbD / 2); g.add(bbNorth);
+  const bbSouth = new THREE.Mesh(new THREE.BoxGeometry(FS, bbH, bbD), baseBoardMat);
+  bbSouth.position.set(0, bbH / 2, wOff - bbD / 2); g.add(bbSouth);
+  const bbWest = new THREE.Mesh(new THREE.BoxGeometry(bbD, bbH, FS), baseBoardMat);
+  bbWest.position.set(-wOff + bbD / 2, bbH / 2, 0); g.add(bbWest);
+  const bbEast = new THREE.Mesh(new THREE.BoxGeometry(bbD, bbH, FS), baseBoardMat);
+  bbEast.position.set(wOff - bbD / 2, bbH / 2, 0); g.add(bbEast);
+
+  // ── Ceiling panels ──
+  const ceilingMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.95 });
+  const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(FS, FS), ceilingMat);
+  ceiling.rotation.x = Math.PI / 2; ceiling.position.y = 5; g.add(ceiling);
+  // Ceiling grid lines (acoustic tile effect)
+  for (let cx = -ROOM; cx <= ROOM; cx += 4) {
+    const gridLine = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.02, FS), new THREE.MeshStandardMaterial({ color: 0x1a1a1a }));
+    gridLine.position.set(cx, 4.99, 0); g.add(gridLine);
+  }
+  for (let cz = -ROOM; cz <= ROOM; cz += 4) {
+    const gridLine = new THREE.Mesh(new THREE.BoxGeometry(FS, 0.02, 0.04), new THREE.MeshStandardMaterial({ color: 0x1a1a1a }));
+    gridLine.position.set(0, 4.99, cz); g.add(gridLine);
+  }
 
   // ── Windows (north wall) ──
   ([-6, 0, 6] as number[]).forEach(x => {
     const win = new THREE.Mesh(new THREE.PlaneGeometry(2.5, 1.6), winG);
     win.position.set(x, 3, -(wOff - 0.05)); g.add(win);
-    // Frame
     ([-0.85, 0.85] as number[]).forEach(oy => {
       const b = new THREE.Mesh(new THREE.BoxGeometry(2.65, 0.06, 0.05), frameMat);
       b.position.set(x, 3 + oy, -(wOff - 0.08)); g.add(b);
@@ -653,14 +685,68 @@ function buildRoom(): THREE.Group {
       const b = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.7, 0.05), frameMat);
       b.position.set(x + ox, 3, -(wOff - 0.08)); g.add(b);
     });
+    // Window sill
+    const sill = new THREE.Mesh(new THREE.BoxGeometry(2.7, 0.06, 0.15), new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.4 }));
+    sill.position.set(x, 2.1, -(wOff - 0.1)); g.add(sill);
+    // Daylight glow behind window
+    const wLight = new THREE.PointLight(0xddeeff, 0.3, 8);
+    wLight.position.set(x, 3, -(wOff - 0.5)); g.add(wLight);
   });
+
+  // ── Wall Art (west wall — 3 abstract pieces) ──
+  const artColors = [0x3b82f6, 0xef4444, 0x22c55e];
+  ([-12, 0, 12] as number[]).forEach((az, i) => {
+    // Frame
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(0.06, 2.0, 2.8), artFrameMat);
+    frame.position.set(-wOff + 0.08, 2.8, az); g.add(frame);
+    // Canvas
+    const canvas = new THREE.Mesh(
+      new THREE.BoxGeometry(0.04, 1.7, 2.4),
+      new THREE.MeshStandardMaterial({ color: artColors[i], roughness: 0.6, emissive: artColors[i], emissiveIntensity: 0.05 })
+    );
+    canvas.position.set(-wOff + 0.12, 2.8, az); g.add(canvas);
+    // Accent light
+    const artLight = new THREE.SpotLight(0xfff8f0, 0.3, 4, Math.PI / 8, 0.8, 2);
+    artLight.position.set(-wOff + 0.5, 4.5, az);
+    artLight.target.position.set(-wOff + 0.1, 2.8, az);
+    g.add(artLight); g.add(artLight.target);
+  });
+
+  // ── Bookshelf (meeting room east wall) ──
+  const shelfX = wOff - 0.5, shelfZ = 4;
+  const shelfFrame = new THREE.Mesh(new THREE.BoxGeometry(0.5, 2.4, 2.0), new THREE.MeshStandardMaterial({ color: 0x5a4a3a, roughness: 0.6 }));
+  shelfFrame.position.set(shelfX, 1.3, shelfZ); g.add(shelfFrame);
+  addCollider(shelfX, shelfZ, 0.3, 1);
+  // Shelves
+  for (let sy = 0.5; sy <= 2.3; sy += 0.6) {
+    const shelf = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.04, 2.02), wood);
+    shelf.position.set(shelfX, sy, shelfZ); g.add(shelf);
+  }
+  // Books on shelves
+  const bookMats = [bookMat1, bookMat2, bookMat3, bookMat4];
+  for (let sy = 0.55; sy <= 2.0; sy += 0.6) {
+    for (let bz = shelfZ - 0.8; bz < shelfZ + 0.8; bz += 0.14 + Math.random() * 0.06) {
+      const bh = 0.3 + Math.random() * 0.18;
+      const book = new THREE.Mesh(
+        new THREE.BoxGeometry(0.3, bh, 0.1),
+        bookMats[Math.floor(Math.random() * bookMats.length)]
+      );
+      book.position.set(shelfX, sy + bh / 2, bz);
+      g.add(book);
+    }
+  }
 
   // ── Whiteboard (north wall center) ──
   const wb = new THREE.Mesh(new THREE.BoxGeometry(3.5, 1.8, 0.08), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 }));
   wb.position.set(0, 2.2, -(wOff - 0.1)); g.add(wb);
-  // Whiteboard tray
   const wbTray = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.05, 0.12), metalM);
   wbTray.position.set(0, 1.28, -(wOff - 0.08)); g.add(wbTray);
+  // Whiteboard marker dots
+  ([0xef4444, 0x3b82f6, 0x22c55e, 0x111111] as number[]).forEach((mc, i) => {
+    const marker = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.1, 6), new THREE.MeshStandardMaterial({ color: mc }));
+    marker.rotation.z = Math.PI / 2;
+    marker.position.set(-1.2 + i * 0.15, 1.3, -(wOff - 0.05)); g.add(marker);
+  });
 
   // ── DESK TOY DEFINITIONS (per-user personalisation) ──
   type DeskToyBuilder = (cg: THREE.Group) => void;
@@ -1078,12 +1164,27 @@ function buildRoom(): THREE.Group {
     addCollider(px, pz, 0.3, 0.3);
   });
 
-  // ── Water cooler ──
-  const coolerBody = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.9, 8), new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.3 }));
-  coolerBody.position.set(-6, 0.55, 0); g.add(coolerBody);
-  const coolerJug = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.18, 0.4, 8), new THREE.MeshStandardMaterial({ color: 0x88bbdd, transparent: true, opacity: 0.4 }));
-  coolerJug.position.set(-6, 1.2, 0); g.add(coolerJug);
+  // ── Water cooler (enhanced) ──
+  const coolerBase = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.08, 0.45), new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.4 }));
+  coolerBase.position.set(-6, 0.04, 0); g.add(coolerBase);
+  const coolerBody = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.2, 0.85, 12), new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.3 }));
+  coolerBody.position.set(-6, 0.505, 0); g.add(coolerBody);
+  const coolerJug = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.17, 0.38, 12), new THREE.MeshStandardMaterial({ color: 0x88ccee, transparent: true, opacity: 0.35 }));
+  coolerJug.position.set(-6, 1.15, 0); g.add(coolerJug);
+  // Water level inside jug
+  const waterLevel = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.16, 0.25, 12), new THREE.MeshStandardMaterial({ color: 0x4488cc, transparent: true, opacity: 0.2 }));
+  waterLevel.position.set(-6, 1.08, 0); g.add(waterLevel);
+  // Spout
+  const spout = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.12), new THREE.MeshStandardMaterial({ color: 0xaaaaaa, metalness: 0.5, roughness: 0.3 }));
+  spout.position.set(-6, 0.6, 0.18); g.add(spout);
   addCollider(-6, 0, 0.3, 0.3);
+
+  // ── Area rug — lobby center ──
+  const lobbyRug = new THREE.Mesh(new THREE.PlaneGeometry(8, 5), new THREE.MeshStandardMaterial({ color: 0x4a3a5a, roughness: 0.98 }));
+  lobbyRug.rotation.x = -Math.PI / 2; lobbyRug.position.set(0, 0.015, 14); g.add(lobbyRug);
+  // Rug border
+  const rugBorder = new THREE.Mesh(new THREE.PlaneGeometry(8.4, 5.4), new THREE.MeshStandardMaterial({ color: 0x3a2a4a, roughness: 0.98 }));
+  rugBorder.rotation.x = -Math.PI / 2; rugBorder.position.set(0, 0.012, 14); g.add(rugBorder);
 
   // ── Ceiling spotlights (warm downlighters) ──
   const lightPositions: [number, number][] = [
@@ -1194,6 +1295,7 @@ export default function OfficeChat({
   const [isSitting, setIsSitting] = useState(false);
   const [showWhiteboard, setShowWhiteboard] = useState(false);
   const [coffeeEmote, setCoffeeEmote] = useState(false);
+  const [currentZone, setCurrentZone] = useState("Office");
   const [selectedStickyIndex, setSelectedStickyIndex] = useState<number | null>(null);
   const showTerminalRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -1237,17 +1339,71 @@ export default function OfficeChat({
     renderer.shadowMap.enabled = true;
     mountRef.current.appendChild(renderer.domElement);
 
-    // Lighting
-    scene.add(new THREE.AmbientLight(0xffffff, 0.45));
-    const sun = new THREE.DirectionalLight(0xfff8f0, 0.65);
+    // Lighting — warmer, more atmospheric
+    scene.add(new THREE.AmbientLight(0xfff5e8, 0.35));
+    const sun = new THREE.DirectionalLight(0xfff0d0, 0.55);
     sun.position.set(8, 15, 8); sun.castShadow = true;
-    sun.shadow.mapSize.setScalar(1024);
+    sun.shadow.mapSize.setScalar(2048);
     sun.shadow.camera.left = -ROOM; sun.shadow.camera.right = ROOM;
     sun.shadow.camera.top = ROOM; sun.shadow.camera.bottom = -ROOM;
     scene.add(sun);
-    // Fill light
-    const fill = new THREE.DirectionalLight(0x8888ff, 0.15);
+    // Fill light (cool complement)
+    const fill = new THREE.DirectionalLight(0x8899cc, 0.12);
     fill.position.set(-10, 8, -5); scene.add(fill);
+    // Warm rim light from south (reception area glow)
+    const rim = new THREE.DirectionalLight(0xffddaa, 0.15);
+    rim.position.set(0, 6, 20); scene.add(rim);
+    // Hemisphere light for natural sky/ground bounce
+    const hemi = new THREE.HemisphereLight(0xddeeff, 0x443322, 0.2);
+    scene.add(hemi);
+
+    // ── Plumbob (classic Sims diamond above player) ──
+    const plumbobGeo = new THREE.OctahedronGeometry(0.15, 0);
+    const plumbobMat = new THREE.MeshStandardMaterial({
+      color: 0x22cc44, emissive: 0x22cc44, emissiveIntensity: 0.6,
+      transparent: true, opacity: 0.8, metalness: 0.3, roughness: 0.2
+    });
+    const plumbob = new THREE.Mesh(plumbobGeo, plumbobMat);
+    plumbob.scale.set(1, 1.6, 1);
+    scene.add(plumbob);
+
+    // ── Click-to-move marker ──
+    const moveMarkerGeo = new THREE.RingGeometry(0.2, 0.35, 4);
+    const moveMarkerMat = new THREE.MeshBasicMaterial({ color: 0x22cc44, transparent: true, opacity: 0.7, side: THREE.DoubleSide });
+    const moveMarker = new THREE.Mesh(moveMarkerGeo, moveMarkerMat);
+    moveMarker.rotation.x = -Math.PI / 2;
+    moveMarker.rotation.z = Math.PI / 4;
+    moveMarker.visible = false;
+    scene.add(moveMarker);
+    let clickMoveTarget: THREE.Vector3 | null = null;
+    let moveMarkerLife = 0;
+
+    // Raycaster for click-to-move
+    const raycaster = new THREE.Raycaster();
+    const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const clickHandler = (e: MouseEvent) => {
+      if (state.locked || activeChat) return; // only in unlocked free-cam mode
+      if (e.button !== 2) return; // right-click to move
+      e.preventDefault();
+      const rect = renderer.domElement.getBoundingClientRect();
+      const mouse = new THREE.Vector2(
+        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        -((e.clientY - rect.top) / rect.height) * 2 + 1
+      );
+      raycaster.setFromCamera(mouse, camera);
+      const hit = new THREE.Vector3();
+      if (raycaster.ray.intersectPlane(floorPlane, hit)) {
+        // Clamp to room bounds
+        hit.x = Math.max(-ROOM + 1, Math.min(ROOM - 1, hit.x));
+        hit.z = Math.max(-ROOM + 1, Math.min(ROOM - 1, hit.z));
+        clickMoveTarget = hit;
+        moveMarker.position.set(hit.x, 0.05, hit.z);
+        moveMarker.visible = true;
+        moveMarkerLife = 3; // seconds
+      }
+    };
+    renderer.domElement.addEventListener("contextmenu", (e) => e.preventDefault());
+    renderer.domElement.addEventListener("mousedown", clickHandler);
 
     scene.add(buildRoom());
 
@@ -1341,10 +1497,10 @@ export default function OfficeChat({
     document.addEventListener("keyup", onUp);
 
     // Raycaster for clicking NPCs
-    const raycaster = new THREE.Raycaster();
+    const npcRaycaster = new THREE.Raycaster();
     const center = new THREE.Vector2(0, 0);
     renderer.domElement.addEventListener("click", () => {
-      raycaster.setFromCamera(center, camera);
+      npcRaycaster.setFromCamera(center, camera);
       const hits = raycaster.intersectObjects(Array.from(npcMeshes.values()), true);
       if (hits.length) {
         npcMeshes.forEach((mesh, email) => {
@@ -1392,11 +1548,13 @@ export default function OfficeChat({
       const jy = joystickRef.current.y;
       const isPlayerMoving = state.keys.has("w") || state.keys.has("s") || state.keys.has("a") || state.keys.has("d") || joystickRef.current.active;
 
+      // Cancel click-to-move if player uses keyboard/joystick
+      if (isPlayerMoving) clickMoveTarget = null;
+
       if (isPlayerMoving && showTerminalRef.current) {
         showTerminalRef.current = false;
         setShowTerminal(false);
       }
-      // Stand up if sitting and moving
       if (isPlayerMoving) {
         setIsSitting(false);
         setShowWhiteboard(false);
@@ -1410,6 +1568,23 @@ export default function OfficeChat({
         if (joystickRef.current.active) {
           state.playerPos.addScaledVector(fwd, -jy * spd);
           state.playerPos.addScaledVector(rgt, jx * spd);
+        }
+
+        // Click-to-move autopilot
+        if (clickMoveTarget) {
+          const dx = clickMoveTarget.x - state.playerPos.x;
+          const dz = clickMoveTarget.z - state.playerPos.z;
+          const dist = Math.sqrt(dx * dx + dz * dz);
+          if (dist < 0.5) {
+            clickMoveTarget = null;
+            moveMarker.visible = false;
+          } else {
+            const ms = spd * 0.8;
+            state.playerPos.x += (dx / dist) * ms;
+            state.playerPos.z += (dz / dist) * ms;
+            // Face toward target
+            state.yaw = Math.atan2(dx, dz);
+          }
         }
       }
 
@@ -1867,6 +2042,32 @@ export default function OfficeChat({
         }
       }
 
+      // ── Plumbob animation ──
+      plumbob.position.set(state.playerPos.x, 2.6 + Math.sin(t * 2) * 0.08, state.playerPos.z);
+      plumbob.rotation.y = t * 1.5;
+
+      // ── Move marker fade ──
+      if (moveMarker.visible) {
+        moveMarkerLife -= dt;
+        moveMarker.rotation.z += dt * 2;
+        moveMarkerMat.opacity = Math.max(0, moveMarkerLife / 3) * 0.7;
+        if (moveMarkerLife <= 0 && !clickMoveTarget) moveMarker.visible = false;
+      }
+
+      // ── Zone detection ──
+      const px = state.playerPos.x, pz = state.playerPos.z;
+      let zoneName = "Office";
+      if (px < -8 && pz > 1 && pz < 11) zoneName = "Break Room";
+      else if (px > 11 && pz > 3 && pz < 13) zoneName = "Meeting Room";
+      else if (pz > 12) zoneName = "Reception";
+      else if (pz < -5) zoneName = "Cubicles";
+      else if (px > -8 && px < 8 && pz > -2 && pz < 6) zoneName = "Lobby";
+      // Store for UI — debounced to avoid re-renders every frame
+      if ((state as any)._lastZone !== zoneName) {
+        (state as any)._lastZone = zoneName;
+        setCurrentZone(zoneName);
+      }
+
       renderer.render(scene, camera);
     };
     state.raf = requestAnimationFrame(loop);
@@ -1912,6 +2113,7 @@ export default function OfficeChat({
       document.removeEventListener("keyup", onUp);
       window.removeEventListener("resize", onResize);
       window.removeEventListener("atriaIntent", handleAtriaIntent);
+      renderer.domElement.removeEventListener("mousedown", clickHandler);
       renderer.dispose();
       if (mountRef.current) mountRef.current.innerHTML = "";
       stateRef.current = null;
@@ -2459,32 +2661,75 @@ export default function OfficeChat({
         }} />
       </div>
 
-      {/* Controls hint */}
+      {/* Sims-style HUD — zone name + controls */}
       {!isMobile && (
-        <div className="absolute top-3 left-3 pointer-events-none">
-          <Badge variant="outline" className="bg-black/60 text-white/60 border-white/10 text-xs">
-            WASD move · Mouse look · E interact · ESC release
+        <div className="absolute top-3 left-3 pointer-events-none flex flex-col gap-1.5">
+          {/* Zone indicator */}
+          <div className="flex items-center gap-2">
+            <div className="px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur-sm border border-white/10">
+              <span className="text-xs font-semibold text-emerald-400 tracking-wide">📍 {currentZone}</span>
+            </div>
+          </div>
+          <Badge variant="outline" className="bg-black/60 text-white/50 border-white/10 text-[10px] w-fit">
+            WASD move · R-click walk · Mouse look · E interact · ESC release
           </Badge>
         </div>
       )}
 
-      {/* Minimap */}
+      {/* Enhanced Minimap with NPC dots */}
       {!isMobile && locked && (
         <div className="absolute top-3 right-3 z-10">
-          <div className="w-32 h-32 rounded-lg bg-black/70 border border-white/10 overflow-hidden relative">
-            <span className="absolute top-0.5 left-1 text-[7px] text-white/30 uppercase tracking-wider">Map</span>
-            {/* Player dot */}
-            <div className="absolute w-2 h-2 rounded-full bg-yellow-400 shadow-sm shadow-yellow-400/50" style={{
+          <div className="w-40 h-40 rounded-xl bg-black/80 backdrop-blur-sm border border-white/15 overflow-hidden relative shadow-lg">
+            <div className="absolute top-1 left-2 right-2 flex items-center justify-between">
+              <span className="text-[8px] text-white/40 uppercase tracking-widest font-semibold">Floor Plan</span>
+              <span className="text-[7px] text-emerald-400/60">{currentZone}</span>
+            </div>
+            {/* Room zones */}
+            <div className="absolute border border-white/8" style={{ left: "2%", top: "2%", width: "96%", height: "96%" }} />
+            {/* Cubicle area */}
+            <div className="absolute border border-white/6 bg-white/3" style={{ left: "15%", top: "5%", width: "70%", height: "25%" }}>
+              <span className="text-[5px] text-white/15 absolute top-0.5 left-0.5">Cubicles</span>
+            </div>
+            {/* Break room */}
+            <div className="absolute border border-white/6 bg-emerald-500/5" style={{ left: "3%", top: "34%", width: "30%", height: "28%" }}>
+              <span className="text-[5px] text-white/15 absolute top-0.5 left-0.5">Break</span>
+            </div>
+            {/* Meeting room */}
+            <div className="absolute border border-white/6 bg-blue-500/5" style={{ left: "67%", top: "34%", width: "30%", height: "28%" }}>
+              <span className="text-[5px] text-white/15 absolute top-0.5 left-0.5">Meeting</span>
+            </div>
+            {/* Reception */}
+            <div className="absolute border border-white/6 bg-amber-500/5" style={{ left: "20%", top: "72%", width: "60%", height: "22%" }}>
+              <span className="text-[5px] text-white/15 absolute top-0.5 left-0.5">Reception</span>
+            </div>
+            {/* Player dot (diamond / plumbob shape) */}
+            <div className="absolute w-3 h-3" style={{
               left: `${((stateRef.current?.playerPos.x ?? 0) / ROOM + 1) * 50}%`,
               top: `${(1 - (stateRef.current?.playerPos.z ?? 0) / ROOM) * 50}%`,
-              transform: "translate(-50%, -50%)",
-            }} />
-            {/* Room outlines */}
-            <div className="absolute border border-white/10" style={{ left: "2%", top: "2%", width: "96%", height: "96%" }} />
-            {/* Break room */}
-            <div className="absolute border border-white/8 bg-white/5" style={{ left: "4%", top: "36%", width: "30%", height: "30%" }} />
-            {/* Meeting room */}
-            <div className="absolute border border-white/8 bg-white/5" style={{ left: "66%", top: "36%", width: "30%", height: "30%" }} />
+              transform: "translate(-50%, -50%) rotate(45deg)",
+            }}>
+              <div className="w-full h-full bg-emerald-400 shadow-sm shadow-emerald-400/60 animate-pulse" style={{ clipPath: "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)" }} />
+            </div>
+            {/* NPC dots */}
+            {USERS.filter(u => u.email !== currentUserEmail).map(u => {
+              const npcMesh = stateRef.current?.npcMeshes.get(u.email);
+              if (!npcMesh) return null;
+              const isOnline = u.email === "atria@merchanthaus.io" || (presence[u.email] ?? false);
+              return (
+                <div
+                  key={u.email}
+                  className="absolute w-1.5 h-1.5 rounded-full"
+                  style={{
+                    left: `${((npcMesh.position.x) / ROOM + 1) * 50}%`,
+                    top: `${(1 - (npcMesh.position.z) / ROOM) * 50}%`,
+                    transform: "translate(-50%, -50%)",
+                    backgroundColor: isOnline ? `#${u.shirtColor.toString(16).padStart(6, '0')}` : '#555555',
+                    boxShadow: isOnline ? `0 0 4px #${u.shirtColor.toString(16).padStart(6, '0')}40` : 'none',
+                  }}
+                  title={u.name}
+                />
+              );
+            })}
           </div>
         </div>
       )}
@@ -2511,8 +2756,19 @@ export default function OfficeChat({
             }}
             onTouchEnd={() => { joystickRef.current = { x: 0, y: 0, active: false }; }}
           >
-            <div className="w-full h-full rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
-              <div className="w-12 h-12 rounded-full bg-white/30 border border-white/40" />
+            <div className="w-full h-full rounded-full bg-black/40 backdrop-blur-sm border-2 border-white/20 flex items-center justify-center shadow-lg shadow-black/30">
+              {/* Outer ring markers */}
+              <div className="absolute top-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[4px] border-r-[4px] border-b-[6px] border-l-transparent border-r-transparent border-b-white/30" />
+              <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[4px] border-r-[4px] border-t-[6px] border-l-transparent border-r-transparent border-t-white/30" />
+              <div className="absolute left-1 top-1/2 -translate-y-1/2 w-0 h-0 border-t-[4px] border-b-[4px] border-r-[6px] border-t-transparent border-b-transparent border-r-white/30" />
+              <div className="absolute right-1 top-1/2 -translate-y-1/2 w-0 h-0 border-t-[4px] border-b-[4px] border-l-[6px] border-t-transparent border-b-transparent border-l-white/30" />
+              {/* Thumb */}
+              <div
+                className="w-12 h-12 rounded-full bg-white/40 border-2 border-white/50 shadow-md transition-transform"
+                style={{
+                  transform: `translate(${joystickRef.current.x * 28}px, ${joystickRef.current.y * 28}px)`,
+                }}
+              />
             </div>
           </div>
 
@@ -2542,8 +2798,11 @@ export default function OfficeChat({
             </div>
           )}
 
-          <div className="absolute top-3 left-3 pointer-events-none z-20">
-            <Badge variant="outline" className="bg-black/60 text-white/60 border-white/10 text-[10px]">
+          <div className="absolute top-3 left-3 pointer-events-none z-20 flex flex-col gap-1">
+            <div className="px-2.5 py-1 rounded-lg bg-black/70 backdrop-blur-sm border border-white/10 w-fit">
+              <span className="text-[10px] font-semibold text-emerald-400 tracking-wide">📍 {currentZone}</span>
+            </div>
+            <Badge variant="outline" className="bg-black/60 text-white/50 border-white/10 text-[9px] w-fit">
               Drag to look · Joystick to move
             </Badge>
           </div>
