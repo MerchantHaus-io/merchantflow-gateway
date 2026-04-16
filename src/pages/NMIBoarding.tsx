@@ -366,10 +366,6 @@ const NMIBoarding = () => {
   return (
     <AppLayout pageTitle="NMI Merchant Boarding">
       <div className="p-4 lg:p-6 max-w-3xl mx-auto space-y-6">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="gap-1.5 -ml-2">
-          <ArrowLeft className="h-4 w-4" /> Back
-        </Button>
-
         {/* Step indicator */}
         <div className="flex items-center gap-1 overflow-x-auto pb-2">
           {STEPS.map((s, i) => (
