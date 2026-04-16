@@ -390,7 +390,6 @@ serve(async (req) => {
         // are still synced and matched to existing contacts, but no new
         // applications / accounts / contacts / opportunities are created.
         // To re-enable, restore the lead-creation block that was here.
-        }
 
         // Download and store attachments if we have an opportunity
         if (hasAttachments && matchedOpportunityId) {
