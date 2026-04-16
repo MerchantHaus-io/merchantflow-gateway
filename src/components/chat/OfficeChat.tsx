@@ -148,16 +148,29 @@ interface NPCWanderState {
   wanderTimer: number;
   speed: number;
   idleTimer: number;
-  state: "walking" | "idle_at_waypoint" | "at_desk";
+  state: "walking" | "idle_at_waypoint" | "at_desk" | "walking_to_user" | "at_whiteboard" | "getting_coffee" | "visiting";
+  intentState?: AtriaIntent | null;
+  lastIdleStart?: number;
+  speechBubble?: THREE.Sprite | null;
+  speechTimer?: number;
+}
+
+interface AtriaIntent {
+  priority: number;
+  targetPos: THREE.Vector3;
+  reason: "chat" | "thinking" | "coffee" | "visit" | "wander";
+  targetEmail?: string;
+  message?: string;
+  duration: number; // seconds to stay at destination
+  elapsed: number;
 }
 
 function randomWanderTarget(): THREE.Vector3 {
-  // Wander in common areas (lobby / break room / meeting room corridors)
   const zones = [
-    { cx: 0, cz: 2, hw: 8, hd: 4 },      // Lobby
-    { cx: -14, cz: 6, hw: 5, hd: 5 },     // Break room
-    { cx: 14, cz: 6, hw: 4, hd: 4 },      // Meeting room corridor
-    { cx: 0, cz: 14, hw: 6, hd: 4 },      // Reception
+    { cx: 0, cz: 2, hw: 8, hd: 4 },
+    { cx: -14, cz: 6, hw: 5, hd: 5 },
+    { cx: 14, cz: 6, hw: 4, hd: 4 },
+    { cx: 0, cz: 14, hw: 6, hd: 4 },
   ];
   const zone = zones[Math.floor(Math.random() * zones.length)];
   return new THREE.Vector3(
@@ -176,7 +189,112 @@ function createWanderState(): NPCWanderState {
     speed: 1.2 + Math.random() * 0.8,
     idleTimer: 0,
     state: "walking",
+    intentState: null,
+    lastIdleStart: Date.now(),
+    speechBubble: null,
+    speechTimer: 0,
   };
+}
+
+// ── ATRIA INTENT QUEUE ────────────────────────────────────────────────────────
+
+const atriaIntentQueue: AtriaIntent[] = [];
+
+function queueAtriaIntent(intent: AtriaIntent) {
+  // Remove lower-priority intents of same reason
+  const idx = atriaIntentQueue.findIndex(i => i.reason === intent.reason);
+  if (idx >= 0) atriaIntentQueue.splice(idx, 1);
+  atriaIntentQueue.push(intent);
+  atriaIntentQueue.sort((a, b) => a.priority - b.priority);
+}
+
+function popAtriaIntent(): AtriaIntent | null {
+  return atriaIntentQueue.shift() ?? null;
+}
+
+// ── SPEECH BUBBLE ─────────────────────────────────────────────────────────────
+
+function createSpeechBubbleTexture(text: string): THREE.Texture {
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 128;
+  const ctx = canvas.getContext("2d")!;
+
+  // Rounded rect background
+  const pad = 16;
+  const r = 20;
+  ctx.fillStyle = "rgba(255,255,255,0.95)";
+  ctx.beginPath();
+  ctx.moveTo(pad + r, pad);
+  ctx.lineTo(canvas.width - pad - r, pad);
+  ctx.quadraticCurveTo(canvas.width - pad, pad, canvas.width - pad, pad + r);
+  ctx.lineTo(canvas.width - pad, canvas.height - pad - r);
+  ctx.quadraticCurveTo(canvas.width - pad, canvas.height - pad, canvas.width - pad - r, canvas.height - pad);
+  ctx.lineTo(pad + r, canvas.height - pad);
+  ctx.quadraticCurveTo(pad, canvas.height - pad, pad, canvas.height - pad - r);
+  ctx.lineTo(pad, pad + r);
+  ctx.quadraticCurveTo(pad, pad, pad + r, pad);
+  ctx.closePath();
+  ctx.fill();
+
+  // Border
+  ctx.strokeStyle = "rgba(124,58,237,0.3)";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Text
+  ctx.fillStyle = "#1a1a2e";
+  ctx.font = "bold 28px sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  const displayText = text.length > 30 ? text.slice(0, 28) + "…" : text;
+  ctx.fillText(displayText, canvas.width / 2, canvas.height / 2);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function showSpeechBubble(mesh: THREE.Group, ws: NPCWanderState, text: string, scene: THREE.Scene) {
+  // Remove existing
+  if (ws.speechBubble) {
+    scene.remove(ws.speechBubble);
+    ws.speechBubble.material.dispose();
+    (ws.speechBubble.material as THREE.SpriteMaterial).map?.dispose();
+    ws.speechBubble = null;
+  }
+
+  const mat = new THREE.SpriteMaterial({
+    map: createSpeechBubbleTexture(text),
+    transparent: true,
+    depthTest: false,
+  });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(3, 0.75, 1);
+  sprite.position.copy(mesh.position);
+  sprite.position.y = 2.4;
+  scene.add(sprite);
+  ws.speechBubble = sprite;
+  ws.speechTimer = 4; // seconds to display
+}
+
+function updateSpeechBubble(ws: NPCWanderState, mesh: THREE.Group, dt: number, scene: THREE.Scene) {
+  if (!ws.speechBubble) return;
+  ws.speechTimer = (ws.speechTimer ?? 0) - dt;
+  ws.speechBubble.position.x = mesh.position.x;
+  ws.speechBubble.position.z = mesh.position.z;
+  ws.speechBubble.position.y = 2.4;
+  if (ws.speechTimer! <= 0) {
+    // Fade out
+    const mat = ws.speechBubble.material as THREE.SpriteMaterial;
+    mat.opacity -= dt * 2;
+    if (mat.opacity <= 0) {
+      scene.remove(ws.speechBubble);
+      mat.dispose();
+      mat.map?.dispose();
+      ws.speechBubble = null;
+    }
+  }
 }
 
 // ── INTERACTION POINTS ────────────────────────────────────────────────────────
