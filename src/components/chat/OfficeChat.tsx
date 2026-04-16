@@ -2756,8 +2756,19 @@ export default function OfficeChat({
             }}
             onTouchEnd={() => { joystickRef.current = { x: 0, y: 0, active: false }; }}
           >
-            <div className="w-full h-full rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
-              <div className="w-12 h-12 rounded-full bg-white/30 border border-white/40" />
+            <div className="w-full h-full rounded-full bg-black/40 backdrop-blur-sm border-2 border-white/20 flex items-center justify-center shadow-lg shadow-black/30">
+              {/* Outer ring markers */}
+              <div className="absolute top-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[4px] border-r-[4px] border-b-[6px] border-l-transparent border-r-transparent border-b-white/30" />
+              <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[4px] border-r-[4px] border-t-[6px] border-l-transparent border-r-transparent border-t-white/30" />
+              <div className="absolute left-1 top-1/2 -translate-y-1/2 w-0 h-0 border-t-[4px] border-b-[4px] border-r-[6px] border-t-transparent border-b-transparent border-r-white/30" />
+              <div className="absolute right-1 top-1/2 -translate-y-1/2 w-0 h-0 border-t-[4px] border-b-[4px] border-l-[6px] border-t-transparent border-b-transparent border-l-white/30" />
+              {/* Thumb */}
+              <div
+                className="w-12 h-12 rounded-full bg-white/40 border-2 border-white/50 shadow-md transition-transform"
+                style={{
+                  transform: `translate(${joystickRef.current.x * 28}px, ${joystickRef.current.y * 28}px)`,
+                }}
+              />
             </div>
           </div>
 
