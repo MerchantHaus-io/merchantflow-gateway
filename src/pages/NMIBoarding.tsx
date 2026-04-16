@@ -608,6 +608,9 @@ const NMIBoarding = () => {
                   <ReviewField label="Country" value={form.country} />
                   <ReviewField label="Website" value={form.url} />
                   <ReviewField label="Username" value={form.username} />
+                  <ReviewField label="Routing" value={form.check_aba ? `···${form.check_aba.slice(-4)}` : ""} />
+                  <ReviewField label="Account" value={form.check_account ? `···${form.check_account.slice(-4)}` : ""} />
+                  <ReviewField label="Account Type" value={`${form.account_holder_type} / ${form.account_type}`} />
                 </div>
 
                 <Separator />
