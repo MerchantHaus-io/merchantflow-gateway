@@ -98,6 +98,14 @@ export function AtriaFAB() {
 
       if (latest) {
         setMessages((prev) => [...prev, { role: "assistant", content: latest.content }]);
+        // Signal Atria avatar to walk to the user's desk with response snippet
+        window.dispatchEvent(new CustomEvent("atriaIntent", {
+          detail: {
+            targetEmail: user.email,
+            reason: "chat",
+            message: latest.content.slice(0, 30),
+          },
+        }));
       }
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", content: "Sorry, I couldn't respond right now. Try again in a moment." }]);
