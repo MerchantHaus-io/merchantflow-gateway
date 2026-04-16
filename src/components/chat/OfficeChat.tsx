@@ -148,16 +148,29 @@ interface NPCWanderState {
   wanderTimer: number;
   speed: number;
   idleTimer: number;
-  state: "walking" | "idle_at_waypoint" | "at_desk";
+  state: "walking" | "idle_at_waypoint" | "at_desk" | "walking_to_user" | "at_whiteboard" | "getting_coffee" | "visiting";
+  intentState?: AtriaIntent | null;
+  lastIdleStart?: number;
+  speechBubble?: THREE.Sprite | null;
+  speechTimer?: number;
+}
+
+interface AtriaIntent {
+  priority: number;
+  targetPos: THREE.Vector3;
+  reason: "chat" | "thinking" | "coffee" | "visit" | "wander";
+  targetEmail?: string;
+  message?: string;
+  duration: number; // seconds to stay at destination
+  elapsed: number;
 }
 
 function randomWanderTarget(): THREE.Vector3 {
-  // Wander in common areas (lobby / break room / meeting room corridors)
   const zones = [
-    { cx: 0, cz: 2, hw: 8, hd: 4 },      // Lobby
-    { cx: -14, cz: 6, hw: 5, hd: 5 },     // Break room
-    { cx: 14, cz: 6, hw: 4, hd: 4 },      // Meeting room corridor
-    { cx: 0, cz: 14, hw: 6, hd: 4 },      // Reception
+    { cx: 0, cz: 2, hw: 8, hd: 4 },
+    { cx: -14, cz: 6, hw: 5, hd: 5 },
+    { cx: 14, cz: 6, hw: 4, hd: 4 },
+    { cx: 0, cz: 14, hw: 6, hd: 4 },
   ];
   const zone = zones[Math.floor(Math.random() * zones.length)];
   return new THREE.Vector3(
@@ -176,7 +189,112 @@ function createWanderState(): NPCWanderState {
     speed: 1.2 + Math.random() * 0.8,
     idleTimer: 0,
     state: "walking",
+    intentState: null,
+    lastIdleStart: Date.now(),
+    speechBubble: null,
+    speechTimer: 0,
   };
+}
+
+// ── ATRIA INTENT QUEUE ────────────────────────────────────────────────────────
+
+const atriaIntentQueue: AtriaIntent[] = [];
+
+function queueAtriaIntent(intent: AtriaIntent) {
+  // Remove lower-priority intents of same reason
+  const idx = atriaIntentQueue.findIndex(i => i.reason === intent.reason);
+  if (idx >= 0) atriaIntentQueue.splice(idx, 1);
+  atriaIntentQueue.push(intent);
+  atriaIntentQueue.sort((a, b) => a.priority - b.priority);
+}
+
+function popAtriaIntent(): AtriaIntent | null {
+  return atriaIntentQueue.shift() ?? null;
+}
+
+// ── SPEECH BUBBLE ─────────────────────────────────────────────────────────────
+
+function createSpeechBubbleTexture(text: string): THREE.Texture {
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 128;
+  const ctx = canvas.getContext("2d")!;
+
+  // Rounded rect background
+  const pad = 16;
+  const r = 20;
+  ctx.fillStyle = "rgba(255,255,255,0.95)";
+  ctx.beginPath();
+  ctx.moveTo(pad + r, pad);
+  ctx.lineTo(canvas.width - pad - r, pad);
+  ctx.quadraticCurveTo(canvas.width - pad, pad, canvas.width - pad, pad + r);
+  ctx.lineTo(canvas.width - pad, canvas.height - pad - r);
+  ctx.quadraticCurveTo(canvas.width - pad, canvas.height - pad, canvas.width - pad - r, canvas.height - pad);
+  ctx.lineTo(pad + r, canvas.height - pad);
+  ctx.quadraticCurveTo(pad, canvas.height - pad, pad, canvas.height - pad - r);
+  ctx.lineTo(pad, pad + r);
+  ctx.quadraticCurveTo(pad, pad, pad + r, pad);
+  ctx.closePath();
+  ctx.fill();
+
+  // Border
+  ctx.strokeStyle = "rgba(124,58,237,0.3)";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Text
+  ctx.fillStyle = "#1a1a2e";
+  ctx.font = "bold 28px sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  const displayText = text.length > 30 ? text.slice(0, 28) + "…" : text;
+  ctx.fillText(displayText, canvas.width / 2, canvas.height / 2);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function showSpeechBubble(mesh: THREE.Group, ws: NPCWanderState, text: string, scene: THREE.Scene) {
+  // Remove existing
+  if (ws.speechBubble) {
+    scene.remove(ws.speechBubble);
+    ws.speechBubble.material.dispose();
+    (ws.speechBubble.material as THREE.SpriteMaterial).map?.dispose();
+    ws.speechBubble = null;
+  }
+
+  const mat = new THREE.SpriteMaterial({
+    map: createSpeechBubbleTexture(text),
+    transparent: true,
+    depthTest: false,
+  });
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(3, 0.75, 1);
+  sprite.position.copy(mesh.position);
+  sprite.position.y = 2.4;
+  scene.add(sprite);
+  ws.speechBubble = sprite;
+  ws.speechTimer = 4; // seconds to display
+}
+
+function updateSpeechBubble(ws: NPCWanderState, mesh: THREE.Group, dt: number, scene: THREE.Scene) {
+  if (!ws.speechBubble) return;
+  ws.speechTimer = (ws.speechTimer ?? 0) - dt;
+  ws.speechBubble.position.x = mesh.position.x;
+  ws.speechBubble.position.z = mesh.position.z;
+  ws.speechBubble.position.y = 2.4;
+  if (ws.speechTimer! <= 0) {
+    // Fade out
+    const mat = ws.speechBubble.material as THREE.SpriteMaterial;
+    mat.opacity -= dt * 2;
+    if (mat.opacity <= 0) {
+      scene.remove(ws.speechBubble);
+      mat.dispose();
+      mat.map?.dispose();
+      ws.speechBubble = null;
+    }
+  }
 }
 
 // ── INTERACTION POINTS ────────────────────────────────────────────────────────
@@ -1320,30 +1438,114 @@ export default function OfficeChat({
         const isAtria = email === "atria@merchanthaus.io";
 
         if (isAtria) {
-          // ── ATRIA: fully autonomous AI wander ──
+          // ── ATRIA: autonomous AI with intent-driven behavior ──
           const ws = state.npcWander.get(email);
           if (!ws) return;
           const deskPos = DESK_POS[email] || new THREE.Vector3(0, 0, 0);
-        if (ws.state === "at_desk") {
+
+          // Update speech bubble position / fade
+          updateSpeechBubble(ws, mesh, dt, state.scene);
+
+          // Check intent queue if idle
+          if (!ws.intentState && (ws.state === "at_desk" || ws.state === "idle_at_waypoint" || ws.state === "walking")) {
+            const nextIntent = popAtriaIntent();
+            if (nextIntent) {
+              ws.intentState = nextIntent;
+              ws.currentTarget = nextIntent.targetPos.clone();
+              ws.state = nextIntent.reason === "chat" ? "walking_to_user"
+                : nextIntent.reason === "thinking" ? "walking" // walk to whiteboard
+                : nextIntent.reason === "coffee" ? "getting_coffee"
+                : nextIntent.reason === "visit" ? "visiting"
+                : "walking";
+            }
+          }
+
+          // Idle timeout → queue coffee or visit
+          if (!ws.intentState && ws.state === "at_desk") {
+            const idleSec = (now - (ws.lastIdleStart ?? now)) / 1000;
+            if (idleSec > 60 && Math.random() < 0.002) {
+              // Visit a random team desk
+              const otherEmails = Object.keys(DESK_POS).filter(e => e !== email);
+              const pick = otherEmails[Math.floor(Math.random() * otherEmails.length)];
+              queueAtriaIntent({
+                priority: 4,
+                targetPos: DESK_POS[pick].clone().add(new THREE.Vector3(1, 0, 1)),
+                reason: "visit",
+                targetEmail: pick,
+                duration: 4,
+                elapsed: 0,
+              });
+            } else if (idleSec > 30 && Math.random() < 0.003) {
+              // Get coffee
+              const coffeePt = INTERACT_POINTS.find(p => p.action === "coffee");
+              if (coffeePt) {
+                queueAtriaIntent({
+                  priority: 3,
+                  targetPos: coffeePt.pos.clone(),
+                  reason: "coffee",
+                  duration: 4,
+                  elapsed: 0,
+                });
+              }
+            }
+          }
+
+          // State machine
+          if (ws.state === "at_desk") {
             const cp = chairPos(email);
             mesh.position.x = cp.x;
             mesh.position.z = cp.z;
-            mesh.rotation.y = Math.PI; // face toward monitor
+            mesh.rotation.y = Math.PI;
             animateCharacter(mesh, t, false, true);
             ws.deskTimer -= dt;
             if (ws.deskTimer <= 0) {
               ws.state = "walking";
               ws.currentTarget = randomWanderTarget();
               ws.wanderTimer = Math.random() * 15 + 8;
+              ws.lastIdleStart = now;
             }
-          } else if (ws.state === "idle_at_waypoint") {
+          } else if (ws.state === "idle_at_waypoint" || ws.state === "at_whiteboard") {
             animateCharacter(mesh, t, false, false);
-            ws.idleTimer -= dt;
-            if (ws.idleTimer <= 0) {
-              ws.state = "walking";
-              ws.currentTarget = randomWanderTarget();
+            if (ws.intentState) {
+              ws.intentState.elapsed += dt;
+              if (ws.intentState.elapsed >= ws.intentState.duration) {
+                // Show response snippet if chat
+                if (ws.intentState.reason === "chat" && ws.intentState.message) {
+                  showSpeechBubble(mesh, ws, ws.intentState.message, state.scene);
+                }
+                ws.intentState = null;
+                ws.state = "walking";
+                ws.currentTarget = chairPos(email);
+              }
+            } else {
+              ws.idleTimer -= dt;
+              if (ws.idleTimer <= 0) {
+                ws.state = "walking";
+                ws.currentTarget = randomWanderTarget();
+              }
+            }
+          } else if (ws.state === "getting_coffee" || ws.state === "walking_to_user" || ws.state === "visiting") {
+            // Walking toward an intent target
+            const wdx = ws.currentTarget.x - mesh.position.x;
+            const wdz = ws.currentTarget.z - mesh.position.z;
+            const dist = Math.sqrt(wdx * wdx + wdz * wdz);
+            if (dist < 0.5) {
+              // Arrived at intent destination
+              if (ws.state === "walking_to_user") {
+                showSpeechBubble(mesh, ws, "...", state.scene);
+              }
+              ws.state = ws.state === "getting_coffee" ? "idle_at_waypoint" : ws.state === "walking_to_user" ? "idle_at_waypoint" : "idle_at_waypoint";
+            } else {
+              const moveSpeed = ws.speed * dt;
+              mesh.position.x += (wdx / dist) * moveSpeed;
+              mesh.position.z += (wdz / dist) * moveSpeed;
+              const npcResolved = resolveCollision(mesh.position, 0.3);
+              mesh.position.copy(npcResolved);
+              mesh.rotation.y = Math.atan2(wdx / dist, wdz / dist);
+              animateCharacter(mesh, t, true, false);
             }
           } else {
+            // Default walking state
             const wdx = ws.currentTarget.x - mesh.position.x;
             const wdz = ws.currentTarget.z - mesh.position.z;
             const dist = Math.sqrt(wdx * wdx + wdz * wdz);
@@ -1352,6 +1554,7 @@ export default function OfficeChat({
               if (ws.wanderTimer <= 0) {
                 ws.state = "at_desk";
                 ws.deskTimer = Math.random() * 20 + 10;
+                ws.lastIdleStart = now;
               } else {
                 ws.state = "idle_at_waypoint";
                 ws.idleTimer = Math.random() * 3 + 1;
@@ -1668,11 +1871,47 @@ export default function OfficeChat({
     };
     state.raf = requestAnimationFrame(loop);
 
+    // Listen for atriaIntent events from AtriaFAB
+    const handleAtriaIntent = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail) return;
+      const { targetEmail, reason, message } = detail;
+
+      if (reason === "chat" && targetEmail) {
+        // Walk to the sender's desk
+        const deskTarget = DESK_POS[targetEmail] || DESK_POS[currentUserEmail];
+        if (deskTarget) {
+          queueAtriaIntent({
+            priority: 1,
+            targetPos: deskTarget.clone().add(new THREE.Vector3(1.5, 0, 0.5)),
+            reason: "chat",
+            targetEmail,
+            message,
+            duration: 5,
+            elapsed: 0,
+          });
+        }
+      } else if (reason === "thinking") {
+        const wb = INTERACT_POINTS.find(p => p.action === "whiteboard");
+        if (wb) {
+          queueAtriaIntent({
+            priority: 2,
+            targetPos: wb.pos.clone().add(new THREE.Vector3(0, 0, 1.5)),
+            reason: "thinking",
+            duration: 8,
+            elapsed: 0,
+          });
+        }
+      }
+    };
+    window.addEventListener("atriaIntent", handleAtriaIntent);
+
     return () => {
       cancelAnimationFrame(state.raf);
       document.removeEventListener("keydown", onDown);
       document.removeEventListener("keyup", onUp);
       window.removeEventListener("resize", onResize);
+      window.removeEventListener("atriaIntent", handleAtriaIntent);
       renderer.dispose();
       if (mountRef.current) mountRef.current.innerHTML = "";
       stateRef.current = null;

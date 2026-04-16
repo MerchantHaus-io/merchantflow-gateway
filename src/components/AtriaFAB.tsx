@@ -66,6 +66,11 @@ export function AtriaFAB() {
     setMessages((prev) => [...prev, { role: "user", content: userMsg }]);
     setIsThinking(true);
 
+    // Signal Atria avatar to think (walk to whiteboard)
+    window.dispatchEvent(new CustomEvent("atriaIntent", {
+      detail: { reason: "thinking" },
+    }));
+
     try {
       // Post user message to channel
       await supabase.from("chat_messages").insert({
@@ -93,6 +98,14 @@ export function AtriaFAB() {
 
       if (latest) {
         setMessages((prev) => [...prev, { role: "assistant", content: latest.content }]);
+        // Signal Atria avatar to walk to the user's desk with response snippet
+        window.dispatchEvent(new CustomEvent("atriaIntent", {
+          detail: {
+            targetEmail: user.email,
+            reason: "chat",
+            message: latest.content.slice(0, 30),
+          },
+        }));
       }
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", content: "Sorry, I couldn't respond right now. Try again in a moment." }]);
