@@ -14,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Building2, User, MapPin, Globe, CreditCard, Send, Loader2, CheckCircle, AlertCircle, ArrowLeft, X, LinkIcon, Settings2, Search } from "lucide-react";
+import { Building2, User, MapPin, Globe, CreditCard, Send, Loader2, CheckCircle, AlertCircle, X, LinkIcon, Settings2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MCC_CODES, MCC_CATEGORIES, PROCESSING_PLATFORMS } from "@/lib/mcc-codes";
 
@@ -366,10 +366,6 @@ const NMIBoarding = () => {
   return (
     <AppLayout pageTitle="NMI Merchant Boarding">
       <div className="p-4 lg:p-6 max-w-3xl mx-auto space-y-6">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="gap-1.5 -ml-2">
-          <ArrowLeft className="h-4 w-4" /> Back
-        </Button>
-
         {/* Step indicator */}
         <div className="flex items-center gap-1 overflow-x-auto pb-2">
           {STEPS.map((s, i) => (
