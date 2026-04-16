@@ -65,11 +65,10 @@ interface OfficeChatProps {
 // ── USERS ─────────────────────────────────────────────────────────────────────
 
 const USERS: CRMUser[] = [
-  { email: "taryn@merchanthaus.io", name: "Taryn", title: "Operations", shirtColor: 0xe05a2b, hairColor: 0x3a1a08, skinColor: 0xffcba8, hairstyle: "bob", scale: 1.0 },
-  { email: "admin@merchanthaus.io", name: "Jamie", title: "Admin", shirtColor: 0x3a7bd5, hairColor: 0xd4b96a, skinColor: 0xffe0bb, stubble: true, stubbleColor: 0xc8aa70, scale: 1.0 },
-  { email: "sales@merchanthaus.io", name: "Wesley", title: "Sales", shirtColor: 0x2eaa5e, hairColor: 0x1a3a1a, skinColor: 0xffdbac, prostheticLeg: true, scale: 1.15 },
+  { email: "taryn@merchanthaus.io", name: "Taryn", title: "NMI / Finance", shirtColor: 0xe05a2b, hairColor: 0x3a1a08, skinColor: 0xffcba8, hairstyle: "bob", scale: 1.0 },
+  { email: "admin@merchanthaus.io", name: "Darryn", title: "QA & Complex Sales", shirtColor: 0xd03060, hairColor: 0x3a1010, skinColor: 0xffdbac, scale: 1.0 },
+  { email: "jamie@merchanthaus.io", name: "Jamie", title: "CEO / Admin", shirtColor: 0x3a7bd5, hairColor: 0xd4b96a, skinColor: 0xffe0bb, stubble: true, stubbleColor: 0xc8aa70, scale: 1.0 },
   { email: "support@merchanthaus.io", name: "Sheiky", title: "Support", shirtColor: 0x9b30d0, hairColor: 0x2a1a40, skinColor: 0xd4a574, beard: true, beardColor: 0x9a9a9a, scale: 1.08 },
-  { email: "onboarding@merchanthaus.io", name: "Darryn", title: "Dev", shirtColor: 0xd03060, hairColor: 0x3a1010, skinColor: 0xffdbac, scale: 1.0 },
   { email: "atria@merchanthaus.io", name: "Atria", title: "AI Assistant", shirtColor: 0x7c3aed, hairColor: 0xc0c0ff, skinColor: 0xe8d8f0, hairstyle: "bob", scale: 0.95, online: true },
 ];
 
@@ -81,9 +80,8 @@ const ROOM = 22; // half-extent of world
 const DESK_POS: Record<string, THREE.Vector3> = {
   "taryn@merchanthaus.io":   new THREE.Vector3(-10, 0, -16),
   "admin@merchanthaus.io":   new THREE.Vector3(-2,  0, -16),
-  "sales@merchanthaus.io":   new THREE.Vector3(6,   0, -16),
+  "jamie@merchanthaus.io":   new THREE.Vector3(6,   0, -16),
   "support@merchanthaus.io": new THREE.Vector3(-6,  0, -8),
-  "onboarding@merchanthaus.io":  new THREE.Vector3(2,   0, -8),
   "atria@merchanthaus.io":   new THREE.Vector3(10,  0, -8),
 };
 // Chair offset: chairs sit at z+0.65 relative to cubicle center
@@ -766,7 +764,7 @@ function buildRoom(): THREE.Group {
       });
     },
     // Jamie: small rubber duck
-    "admin@merchanthaus.io": (cg) => {
+    "jamie@merchanthaus.io": (cg) => {
       const body = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), new THREE.MeshStandardMaterial({ color: 0xfdd835 }));
       body.scale.set(1, 0.85, 1.1);
       body.position.set(0.75, 0.81, 0.05); cg.add(body);
@@ -778,22 +776,13 @@ function buildRoom(): THREE.Group {
       eye1.position.set(0.74, 0.868, 0.015); cg.add(eye1);
       const eye2 = eye1.clone(); eye2.position.set(0.76, 0.868, 0.015); cg.add(eye2);
     },
-    // Wesley: mini trophy
-    "sales@merchanthaus.io": (cg) => {
-      const base = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.02, 0.05), new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.3 }));
-      base.position.set(0.75, 0.79, 0.05); cg.add(base);
-      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.012, 0.05, 6), new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.8, roughness: 0.2 }));
-      stem.position.set(0.75, 0.82, 0.05); cg.add(stem);
-      const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.015, 0.03, 8), new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.8, roughness: 0.2 }));
-      cup.position.set(0.75, 0.86, 0.05); cg.add(cup);
-    },
     // Sheiky: stress ball
     "support@merchanthaus.io": (cg) => {
       const ball = new THREE.Mesh(new THREE.SphereGeometry(0.03, 10, 8), new THREE.MeshStandardMaterial({ color: 0xe53935, roughness: 0.9 }));
       ball.position.set(0.75, 0.81, 0.05); cg.add(ball);
     },
     // Darryn: mini globe
-    "onboarding@merchanthaus.io": (cg) => {
+    "admin@merchanthaus.io": (cg) => {
       const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.022, 0.02, 8), new THREE.MeshStandardMaterial({ color: 0x5d4037 }));
       stand.position.set(0.75, 0.79, 0.05); cg.add(stand);
       const axle = new THREE.Mesh(new THREE.CylinderGeometry(0.003, 0.003, 0.07, 4), new THREE.MeshStandardMaterial({ color: 0x9e9e9e, metalness: 0.6 }));
