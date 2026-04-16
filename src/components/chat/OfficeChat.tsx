@@ -1871,11 +1871,47 @@ export default function OfficeChat({
     };
     state.raf = requestAnimationFrame(loop);
 
+    // Listen for atriaIntent events from AtriaFAB
+    const handleAtriaIntent = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail) return;
+      const { targetEmail, reason, message } = detail;
+
+      if (reason === "chat" && targetEmail) {
+        // Walk to the sender's desk
+        const deskTarget = DESK_POS[targetEmail] || DESK_POS[currentUserEmail];
+        if (deskTarget) {
+          queueAtriaIntent({
+            priority: 1,
+            targetPos: deskTarget.clone().add(new THREE.Vector3(1.5, 0, 0.5)),
+            reason: "chat",
+            targetEmail,
+            message,
+            duration: 5,
+            elapsed: 0,
+          });
+        }
+      } else if (reason === "thinking") {
+        const wb = INTERACT_POINTS.find(p => p.action === "whiteboard");
+        if (wb) {
+          queueAtriaIntent({
+            priority: 2,
+            targetPos: wb.pos.clone().add(new THREE.Vector3(0, 0, 1.5)),
+            reason: "thinking",
+            duration: 8,
+            elapsed: 0,
+          });
+        }
+      }
+    };
+    window.addEventListener("atriaIntent", handleAtriaIntent);
+
     return () => {
       cancelAnimationFrame(state.raf);
       document.removeEventListener("keydown", onDown);
       document.removeEventListener("keyup", onUp);
       window.removeEventListener("resize", onResize);
+      window.removeEventListener("atriaIntent", handleAtriaIntent);
       renderer.dispose();
       if (mountRef.current) mountRef.current.innerHTML = "";
       stateRef.current = null;
