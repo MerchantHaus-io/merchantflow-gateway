@@ -1496,7 +1496,7 @@ export default function OfficeChat({
     document.addEventListener("keyup", onUp);
 
     // Raycaster for clicking NPCs
-    const raycaster = new THREE.Raycaster();
+    const npcRaycaster = new THREE.Raycaster();
     const center = new THREE.Vector2(0, 0);
     renderer.domElement.addEventListener("click", () => {
       raycaster.setFromCamera(center, camera);
