@@ -1499,7 +1499,7 @@ export default function OfficeChat({
     const npcRaycaster = new THREE.Raycaster();
     const center = new THREE.Vector2(0, 0);
     renderer.domElement.addEventListener("click", () => {
-      raycaster.setFromCamera(center, camera);
+      npcRaycaster.setFromCamera(center, camera);
       const hits = raycaster.intersectObjects(Array.from(npcMeshes.values()), true);
       if (hits.length) {
         npcMeshes.forEach((mesh, email) => {
