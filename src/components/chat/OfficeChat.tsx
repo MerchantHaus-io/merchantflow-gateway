@@ -2062,8 +2062,11 @@ export default function OfficeChat({
       else if (pz > 12) zoneName = "Reception";
       else if (pz < -5) zoneName = "Cubicles";
       else if (px > -8 && px < 8 && pz > -2 && pz < 6) zoneName = "Lobby";
-      // Store for UI
-      (state as any)._zoneName = zoneName;
+      // Store for UI — debounced to avoid re-renders every frame
+      if ((state as any)._lastZone !== zoneName) {
+        (state as any)._lastZone = zoneName;
+        setCurrentZone(zoneName);
+      }
 
       renderer.render(scene, camera);
     };
