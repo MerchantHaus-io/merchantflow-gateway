@@ -607,8 +607,16 @@ function buildRoom(): THREE.Group {
   const carpetMat = new THREE.MeshStandardMaterial({ color: 0x3a5a3a, roughness: 0.95 });
   const tileMat1 = new THREE.MeshStandardMaterial({ color: 0xf2ece4 });
   const tileMat2 = new THREE.MeshStandardMaterial({ color: 0xe4ddd4 });
+  // New premium materials
+  const accentWallWest = new THREE.MeshStandardMaterial({ color: 0x2a3040, roughness: 0.75 });
+  const accentWallEast = new THREE.MeshStandardMaterial({ color: 0x3a2a28, roughness: 0.75 });
+  const baseBoardMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.4 });
+  const artFrameMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.3 });
+  const bookMat1 = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.7 });
+  const bookMat2 = new THREE.MeshStandardMaterial({ color: 0x2c3e50, roughness: 0.7 });
+  const bookMat3 = new THREE.MeshStandardMaterial({ color: 0x7f1d1d, roughness: 0.7 });
+  const bookMat4 = new THREE.MeshStandardMaterial({ color: 0x1e3a3a, roughness: 0.7 });
 
-  // Clear colliders for fresh build
   COLLIDERS.length = 0;
 
   const FS = ROOM * 2;
@@ -618,33 +626,57 @@ function buildRoom(): THREE.Group {
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(FS, FS), floorMat);
   floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; g.add(floor);
 
-  // Floor tiles
+  // Floor tiles — herringbone pattern in lobby
   for (let x = -ROOM; x < ROOM; x += 2) for (let z = -ROOM; z < ROOM; z += 2) {
     const tile = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), ((x + z) / 2) % 2 === 0 ? tileMat1 : tileMat2);
     tile.position.set(x + 1, 0.01, z + 1); tile.rotation.x = -Math.PI / 2; g.add(tile);
   }
 
-  // ── Outer walls ──
-  const addWall = (w: number, h: number, x: number, y: number, z: number, ry: number) => {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), wallMat);
+  // ── Outer walls with accent colors ──
+  const addWall = (w: number, h: number, x: number, y: number, z: number, ry: number, mat?: THREE.Material) => {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat || wallMat);
     m.position.set(x, y, z); m.rotation.y = ry; m.receiveShadow = true; g.add(m);
   };
-  addWall(FS, 5, 0, 2.5, -wOff, 0);        // North
-  addWall(FS, 5, -wOff, 2.5, 0, Math.PI / 2);  // West
-  addWall(FS, 5, wOff, 2.5, 0, -Math.PI / 2);  // East
-  addWall(FS, 5, 0, 2.5, wOff, Math.PI);    // South
+  addWall(FS, 5, 0, 2.5, -wOff, 0);                              // North
+  addWall(FS, 5, -wOff, 2.5, 0, Math.PI / 2, accentWallWest);   // West (accent)
+  addWall(FS, 5, wOff, 2.5, 0, -Math.PI / 2, accentWallEast);   // East (accent)
+  addWall(FS, 5, 0, 2.5, wOff, Math.PI);                          // South
 
-  // Wall colliders (thin)
-  addCollider(0, -wOff, wOff, 0.3);   // North
-  addCollider(0, wOff, wOff, 0.3);    // South
-  addCollider(-wOff, 0, 0.3, wOff);   // West
-  addCollider(wOff, 0, 0.3, wOff);    // East
+  // Wall colliders
+  addCollider(0, -wOff, wOff, 0.3);
+  addCollider(0, wOff, wOff, 0.3);
+  addCollider(-wOff, 0, 0.3, wOff);
+  addCollider(wOff, 0, 0.3, wOff);
+
+  // ── Baseboards (all 4 walls) ──
+  const bbH = 0.15, bbD = 0.04;
+  const bbNorth = new THREE.Mesh(new THREE.BoxGeometry(FS, bbH, bbD), baseBoardMat);
+  bbNorth.position.set(0, bbH / 2, -wOff + bbD / 2); g.add(bbNorth);
+  const bbSouth = new THREE.Mesh(new THREE.BoxGeometry(FS, bbH, bbD), baseBoardMat);
+  bbSouth.position.set(0, bbH / 2, wOff - bbD / 2); g.add(bbSouth);
+  const bbWest = new THREE.Mesh(new THREE.BoxGeometry(bbD, bbH, FS), baseBoardMat);
+  bbWest.position.set(-wOff + bbD / 2, bbH / 2, 0); g.add(bbWest);
+  const bbEast = new THREE.Mesh(new THREE.BoxGeometry(bbD, bbH, FS), baseBoardMat);
+  bbEast.position.set(wOff - bbD / 2, bbH / 2, 0); g.add(bbEast);
+
+  // ── Ceiling panels ──
+  const ceilingMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.95 });
+  const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(FS, FS), ceilingMat);
+  ceiling.rotation.x = Math.PI / 2; ceiling.position.y = 5; g.add(ceiling);
+  // Ceiling grid lines (acoustic tile effect)
+  for (let cx = -ROOM; cx <= ROOM; cx += 4) {
+    const gridLine = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.02, FS), new THREE.MeshStandardMaterial({ color: 0x1a1a1a }));
+    gridLine.position.set(cx, 4.99, 0); g.add(gridLine);
+  }
+  for (let cz = -ROOM; cz <= ROOM; cz += 4) {
+    const gridLine = new THREE.Mesh(new THREE.BoxGeometry(FS, 0.02, 0.04), new THREE.MeshStandardMaterial({ color: 0x1a1a1a }));
+    gridLine.position.set(0, 4.99, cz); g.add(gridLine);
+  }
 
   // ── Windows (north wall) ──
   ([-6, 0, 6] as number[]).forEach(x => {
     const win = new THREE.Mesh(new THREE.PlaneGeometry(2.5, 1.6), winG);
     win.position.set(x, 3, -(wOff - 0.05)); g.add(win);
-    // Frame
     ([-0.85, 0.85] as number[]).forEach(oy => {
       const b = new THREE.Mesh(new THREE.BoxGeometry(2.65, 0.06, 0.05), frameMat);
       b.position.set(x, 3 + oy, -(wOff - 0.08)); g.add(b);
@@ -653,14 +685,68 @@ function buildRoom(): THREE.Group {
       const b = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.7, 0.05), frameMat);
       b.position.set(x + ox, 3, -(wOff - 0.08)); g.add(b);
     });
+    // Window sill
+    const sill = new THREE.Mesh(new THREE.BoxGeometry(2.7, 0.06, 0.15), new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.4 }));
+    sill.position.set(x, 2.1, -(wOff - 0.1)); g.add(sill);
+    // Daylight glow behind window
+    const wLight = new THREE.PointLight(0xddeeff, 0.3, 8);
+    wLight.position.set(x, 3, -(wOff - 0.5)); g.add(wLight);
   });
+
+  // ── Wall Art (west wall — 3 abstract pieces) ──
+  const artColors = [0x3b82f6, 0xef4444, 0x22c55e];
+  ([-12, 0, 12] as number[]).forEach((az, i) => {
+    // Frame
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(0.06, 2.0, 2.8), artFrameMat);
+    frame.position.set(-wOff + 0.08, 2.8, az); g.add(frame);
+    // Canvas
+    const canvas = new THREE.Mesh(
+      new THREE.BoxGeometry(0.04, 1.7, 2.4),
+      new THREE.MeshStandardMaterial({ color: artColors[i], roughness: 0.6, emissive: artColors[i], emissiveIntensity: 0.05 })
+    );
+    canvas.position.set(-wOff + 0.12, 2.8, az); g.add(canvas);
+    // Accent light
+    const artLight = new THREE.SpotLight(0xfff8f0, 0.3, 4, Math.PI / 8, 0.8, 2);
+    artLight.position.set(-wOff + 0.5, 4.5, az);
+    artLight.target.position.set(-wOff + 0.1, 2.8, az);
+    g.add(artLight); g.add(artLight.target);
+  });
+
+  // ── Bookshelf (meeting room east wall) ──
+  const shelfX = wOff - 0.5, shelfZ = 4;
+  const shelfFrame = new THREE.Mesh(new THREE.BoxGeometry(0.5, 2.4, 2.0), new THREE.MeshStandardMaterial({ color: 0x5a4a3a, roughness: 0.6 }));
+  shelfFrame.position.set(shelfX, 1.3, shelfZ); g.add(shelfFrame);
+  addCollider(shelfX, shelfZ, 0.3, 1);
+  // Shelves
+  for (let sy = 0.5; sy <= 2.3; sy += 0.6) {
+    const shelf = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.04, 2.02), wood);
+    shelf.position.set(shelfX, sy, shelfZ); g.add(shelf);
+  }
+  // Books on shelves
+  const bookMats = [bookMat1, bookMat2, bookMat3, bookMat4];
+  for (let sy = 0.55; sy <= 2.0; sy += 0.6) {
+    for (let bz = shelfZ - 0.8; bz < shelfZ + 0.8; bz += 0.14 + Math.random() * 0.06) {
+      const bh = 0.3 + Math.random() * 0.18;
+      const book = new THREE.Mesh(
+        new THREE.BoxGeometry(0.3, bh, 0.1),
+        bookMats[Math.floor(Math.random() * bookMats.length)]
+      );
+      book.position.set(shelfX, sy + bh / 2, bz);
+      g.add(book);
+    }
+  }
 
   // ── Whiteboard (north wall center) ──
   const wb = new THREE.Mesh(new THREE.BoxGeometry(3.5, 1.8, 0.08), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 }));
   wb.position.set(0, 2.2, -(wOff - 0.1)); g.add(wb);
-  // Whiteboard tray
   const wbTray = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.05, 0.12), metalM);
   wbTray.position.set(0, 1.28, -(wOff - 0.08)); g.add(wbTray);
+  // Whiteboard marker dots
+  ([0xef4444, 0x3b82f6, 0x22c55e, 0x111111] as number[]).forEach((mc, i) => {
+    const marker = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.1, 6), new THREE.MeshStandardMaterial({ color: mc }));
+    marker.rotation.z = Math.PI / 2;
+    marker.position.set(-1.2 + i * 0.15, 1.3, -(wOff - 0.05)); g.add(marker);
+  });
 
   // ── DESK TOY DEFINITIONS (per-user personalisation) ──
   type DeskToyBuilder = (cg: THREE.Group) => void;
