@@ -158,8 +158,8 @@ serve(async (req) => {
     console.log('NMI response:', { status: nmiResponse.status, gatewayId, success: nmiSuccess });
 
     // Store last 4 digits only for banking
-    const routingLast4 = routing_number ? routing_number.slice(-4) : null;
-    const accountLast4 = account_number ? account_number.slice(-4) : null;
+    const routingLast4 = resolvedAba ? resolvedAba.slice(-4) : (routing_number ? routing_number.slice(-4) : null);
+    const accountLast4 = resolvedAccount ? resolvedAccount.slice(-4) : (account_number ? account_number.slice(-4) : null);
 
     // Save or update submission record
     const submissionData = {
