@@ -39,6 +39,11 @@ interface FormData {
   timezone: string;
   language: string;
   username: string;
+  // Banking (NMI-required accountInfo)
+  check_aba: string;
+  check_account: string;
+  account_holder_type: string;
+  account_type: string;
 }
 
 const initialFormData: FormData = {
@@ -59,6 +64,10 @@ const initialFormData: FormData = {
   timezone: "America/New_York",
   language: "en_US",
   username: "",
+  check_aba: "",
+  check_account: "",
+  account_holder_type: "business",
+  account_type: "checking",
 };
 
 type Step = "details" | "documents" | "review";
@@ -183,7 +192,7 @@ const NMIBoarding = () => {
   const canNext = () => {
     switch (step) {
       case "details":
-        return !!(form.company && form.first_name && form.last_name && form.email && form.phone && form.address1 && form.city && form.state && form.zip && form.username);
+        return !!(form.company && form.first_name && form.last_name && form.email && form.phone && form.address1 && form.city && form.state && form.zip && form.username && form.check_aba && form.check_account);
       default:
         return true;
     }
@@ -520,6 +529,44 @@ const NMIBoarding = () => {
                 {/* Gateway Username */}
                 <p className="text-xs font-semibold text-foreground uppercase tracking-wider">Gateway Access</p>
                 {renderField("Gateway Username", "username", { required: true, placeholder: "merchant_username" })}
+
+                <Separator />
+
+                {/* Banking — NMI required */}
+                <p className="text-xs font-semibold text-foreground uppercase tracking-wider">Banking Information</p>
+                <p className="text-[10px] text-muted-foreground">Required by the gateway for merchant billing.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {renderField("Routing / ABA Number", "check_aba", { required: true, placeholder: "9 digits" })}
+                  {renderField("Account Number", "check_account", { required: true, placeholder: "Account number" })}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-muted-foreground">
+                      Account Holder Type <span className="text-destructive">*</span>
+                    </Label>
+                    <Select value={form.account_holder_type} onValueChange={(v) => update("account_holder_type", v)}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="business">Business</SelectItem>
+                        <SelectItem value="personal">Personal</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium text-muted-foreground">
+                      Account Type <span className="text-destructive">*</span>
+                    </Label>
+                    <Select value={form.account_type} onValueChange={(v) => update("account_type", v)}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="checking">Checking</SelectItem>
+                        <SelectItem value="savings">Savings</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </>
             )}
 
@@ -561,6 +608,9 @@ const NMIBoarding = () => {
                   <ReviewField label="Country" value={form.country} />
                   <ReviewField label="Website" value={form.url} />
                   <ReviewField label="Username" value={form.username} />
+                  <ReviewField label="Routing" value={form.check_aba ? `···${form.check_aba.slice(-4)}` : ""} />
+                  <ReviewField label="Account" value={form.check_account ? `···${form.check_account.slice(-4)}` : ""} />
+                  <ReviewField label="Account Type" value={`${form.account_holder_type} / ${form.account_type}`} />
                 </div>
 
                 <Separator />

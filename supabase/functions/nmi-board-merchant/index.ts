@@ -73,11 +73,15 @@ serve(async (req) => {
       timezone = 'America/New_York',
       language = 'en_US',
       username,
-      // Banking info (stored locally only, not sent to NMI)
+      // Banking info (NMI-required accountInfo)
+      check_aba,
+      check_account,
+      account_holder_type = 'business',
+      account_type = 'checking',
+      // Legacy fields (kept for backwards compat)
       bank_name,
       routing_number,
       account_number,
-      account_type = 'checking',
     } = body;
 
     // Validate required fields
@@ -98,7 +102,11 @@ serve(async (req) => {
     const validLanguages = ['en_US', 'es_ES', 'es_CR', 'es_PA', 'fr_CA'];
     const resolvedLanguage = validLanguages.includes(language) ? language : 'en_US';
 
-    // Build NMI request payload (no accountInfo — NMI v4 doesn't accept it here)
+    // Resolve banking fields (prefer new fields, fall back to legacy)
+    const resolvedAba = check_aba || routing_number || '';
+    const resolvedAccount = check_account || account_number || '';
+
+    // Build NMI request payload
     const nmiPayload: Record<string, any> = {
       type: resolvedType,
       company,
@@ -115,6 +123,16 @@ serve(async (req) => {
       language: resolvedLanguage,
       username,
     };
+
+    // accountInfo is required by NMI v4
+    if (resolvedAba && resolvedAccount) {
+      nmiPayload.accountInfo = {
+        checkAba: resolvedAba,
+        checkAccount: resolvedAccount,
+        accountHolderType: account_holder_type,
+        accountType: account_type,
+      };
+    }
 
     if (address2) nmiPayload.address2 = address2;
     if (websiteUrl) nmiPayload.url = websiteUrl;
@@ -140,8 +158,8 @@ serve(async (req) => {
     console.log('NMI response:', { status: nmiResponse.status, gatewayId, success: nmiSuccess });
 
     // Store last 4 digits only for banking
-    const routingLast4 = routing_number ? routing_number.slice(-4) : null;
-    const accountLast4 = account_number ? account_number.slice(-4) : null;
+    const routingLast4 = resolvedAba ? resolvedAba.slice(-4) : (routing_number ? routing_number.slice(-4) : null);
+    const accountLast4 = resolvedAccount ? resolvedAccount.slice(-4) : (account_number ? account_number.slice(-4) : null);
 
     // Save or update submission record
     const submissionData = {
