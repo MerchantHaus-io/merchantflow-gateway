@@ -1,35 +1,54 @@
 
 
-# Universal Back Navigation
+# Give Atria Autonomous Avatar Control
 
-## Problem
-Detail pages (OpportunityDetail, LiveAccountDetail, OutreachDetail, etc.) hardcode their back destination (e.g., always goes to `/opportunities`). If you arrived from Contacts or Accounts, clicking "Back" takes you to the wrong place.
+## What changes
+Atria's avatar in the Office Simulator currently wanders randomly between zones and her desk. This upgrade makes her behavior **context-aware and reactive** — she responds to chat activity, visits users who message her, uses interaction points purposefully, and exhibits personality.
 
-## Solution
-Two changes:
+## Behavior model
 
-### 1. AppLayout — Add a back button to the page header
-When `pageTitle` is rendered in the gradient-header bar, add a back arrow button before the title that calls `navigate(-1)` (browser history back). This gives every page using `AppLayout` with a `pageTitle` an automatic back button. Exclude the homepage (`/` and `/dashboard`) since there's nowhere to go back to.
+Atria will have a priority-based behavior queue:
 
-### 2. Detail pages — Replace hardcoded routes with `navigate(-1)`
-Update these pages to use `navigate(-1)` instead of hardcoded paths for their back buttons:
+| Priority | Trigger | Behavior |
+|----------|---------|----------|
+| 1 (highest) | User sends message in `atria-ai` channel | Walk to that user's desk, face them, idle for a few seconds, then resume |
+| 2 | AI is "thinking" (response pending) | Walk to the whiteboard, face it, play typing animation |
+| 3 | Idle > 30s | Get coffee (walk to coffee machine, pause 4s, return) |
+| 4 | Idle > 60s | Visit a random team member's desk and idle briefly |
+| 5 (default) | No triggers | Current wander behavior (walk between zones, sit at desk) |
 
-| Page | Current target | Change to |
-|------|---------------|-----------|
-| `OpportunityDetail.tsx` | `/opportunities` | `navigate(-1)` |
-| `LiveAccountDetail.tsx` | `/live-billing` | `navigate(-1)` |
-| `OutreachDetail.tsx` | `/outreach` | `navigate(-1)` |
+When Atria arrives at a user's desk after a chat message, a small speech bubble will briefly appear above her head with "..." or a truncated snippet of her response.
 
-Error/redirect navigations (e.g., "opportunity not found → go to /opportunities") stay hardcoded — those are fallbacks, not user-initiated back actions.
+## Technical approach
 
-### Technical detail
-- Uses browser history stack via React Router's `navigate(-1)`
-- Fallback: if there's no history (direct URL visit), `navigate(-1)` is a no-op in the browser — we'll add a guard that checks `window.history.length > 1` before going back, otherwise navigates to `/`
-- The AppLayout back button only shows on inner pages, not on top-level dashboard
+### File: `src/components/chat/OfficeChat.tsx`
 
-### Files changed
-- `src/components/AppLayout.tsx` — back button in gradient-header
-- `src/pages/OpportunityDetail.tsx` — replace hardcoded `/opportunities` back buttons with `navigate(-1)`
-- `src/pages/LiveAccountDetail.tsx` — replace hardcoded `/live-billing` back buttons
-- `src/pages/OutreachDetail.tsx` — replace hardcoded `/outreach` back button
+1. **Extend `NPCWanderState`** with new states: `"walking_to_user"`, `"at_whiteboard"`, `"getting_coffee"`, `"visiting"`
+2. **Add `AtriaIntent` interface** tracking: target email, reason, and callback
+3. **Add intent queue** (`atriaIntentQueue`) to the state ref — the animation loop checks this each frame
+4. **New function `queueAtriaIntent()`** — pushes behavior onto the queue with priority sorting
+5. **Modify the Atria block** in the NPC movement section (lines ~1322-1370) to check the intent queue before falling back to random wander
+6. **Speech bubble**: Add a small canvas-rendered text sprite above Atria's head that fades in/out when she arrives at a destination
+
+### File: `src/components/AtriaFAB.tsx`
+
+7. **Dispatch custom event** `"atriaIntent"` when the user sends a message, carrying `{ targetEmail: user.email, reason: "chat" }` — the OfficeChat listens for this and queues Atria walking to the sender's desk
+
+### Interaction point usage
+
+- **Whiteboard**: Atria walks there when "thinking" — plays a subtle arm-raise animation
+- **Coffee machine**: Atria visits during long idle periods — pauses 4s, then picks a new target
+- **Team desks**: Atria occasionally visits a random online team member's desk and idles
+
+### Speech bubble implementation
+
+A `THREE.Sprite` with a dynamically generated canvas texture:
+- White rounded rect background, dark text
+- Shows "..." while thinking, then first ~30 chars of response
+- Fades out after 3 seconds
+- Positioned at `y: 2.2` above Atria's mesh
+
+## Files modified
+- `src/components/chat/OfficeChat.tsx` — Enhanced Atria NPC logic, speech bubble sprite, intent queue
+- `src/components/AtriaFAB.tsx` — Dispatch `atriaIntent` event on message send
 
