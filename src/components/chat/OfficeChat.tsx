@@ -764,7 +764,7 @@ function buildRoom(): THREE.Group {
       });
     },
     // Jamie: small rubber duck
-    "admin@merchanthaus.io": (cg) => {
+    "jamie@merchanthaus.io": (cg) => {
       const body = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), new THREE.MeshStandardMaterial({ color: 0xfdd835 }));
       body.scale.set(1, 0.85, 1.1);
       body.position.set(0.75, 0.81, 0.05); cg.add(body);
@@ -775,15 +775,6 @@ function buildRoom(): THREE.Group {
       const eye1 = new THREE.Mesh(new THREE.SphereGeometry(0.003, 4, 4), new THREE.MeshStandardMaterial({ color: 0x111111 }));
       eye1.position.set(0.74, 0.868, 0.015); cg.add(eye1);
       const eye2 = eye1.clone(); eye2.position.set(0.76, 0.868, 0.015); cg.add(eye2);
-    },
-    // Wesley: mini trophy
-    "sales@merchanthaus.io": (cg) => {
-      const base = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.02, 0.05), new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.3 }));
-      base.position.set(0.75, 0.79, 0.05); cg.add(base);
-      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.012, 0.05, 6), new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.8, roughness: 0.2 }));
-      stem.position.set(0.75, 0.82, 0.05); cg.add(stem);
-      const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.015, 0.03, 8), new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.8, roughness: 0.2 }));
-      cup.position.set(0.75, 0.86, 0.05); cg.add(cup);
     },
     // Sheiky: stress ball
     "support@merchanthaus.io": (cg) => {
