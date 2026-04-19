@@ -14,7 +14,7 @@ import { OfficeSimulatorOverlay } from "@/components/chat/OfficeSimulatorOverlay
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTheme } from "@/contexts/ThemeContext";
-import { RefreshCw, ArrowLeft, ExternalLink } from "lucide-react";
+import { RefreshCw, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -126,22 +126,6 @@ export function AppLayout({
           <PageTransition key={location.pathname}>
             {children}
           </PageTransition>
-
-          {/* Application Form Link — always visible */}
-          <div className="w-full border-t border-border bg-muted/30 px-4 py-3 mt-6">
-            <div className="max-w-5xl mx-auto flex items-center justify-between gap-3 flex-wrap">
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Application Form</span>
-              <a
-                href="https://ops-terminal.merchant.haus/merchant-apply"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:text-primary/80 hover:underline transition-colors"
-              >
-                ops-terminal.merchant.haus/merchant-apply
-                <ExternalLink className="h-3 w-3" />
-              </a>
-            </div>
-          </div>
         </div>
       </main>
       <MobileBottomNav />

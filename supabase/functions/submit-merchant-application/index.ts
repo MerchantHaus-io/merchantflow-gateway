@@ -110,6 +110,197 @@ async function sendConfirmationEmail(
   }
 }
 
+// ─── Website Compliance Checklist Email ───
+
+const buildComplianceChecklistEmailHtml = (firstName: string, businessName: string): string => {
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; margin: 0; padding: 0; background: #f4f4f5; }
+    .wrapper { max-width: 640px; margin: 0 auto; padding: 32px 16px; }
+    .card { background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .header { background: linear-gradient(135deg, #18181b 0%, #27272a 100%); padding: 32px 28px; text-align: center; }
+    .header img { height: 32px; }
+    .preheader { display: none; max-height: 0; overflow: hidden; }
+    .body { padding: 32px 28px; }
+    .body p { margin: 0 0 16px; font-size: 15px; color: #3f3f46; }
+    .body p strong { color: #18181b; }
+    .body h2 { font-size: 17px; color: #18181b; margin: 28px 0 12px; font-weight: 600; }
+    .body h3 { font-size: 14px; color: #18181b; margin: 18px 0 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+    .body ul { margin: 0 0 16px; padding: 0; list-style: none; }
+    .body ul li { position: relative; padding: 6px 0 6px 24px; font-size: 14.5px; color: #3f3f46; }
+    .body ul li::before { content: ""; position: absolute; left: 0; top: 11px; width: 14px; height: 14px; border: 1.5px solid #a1a1aa; border-radius: 3px; background: #ffffff; }
+    .body ul.plain li::before { display: none; }
+    .body ul.plain li { padding-left: 16px; }
+    .body ul.plain li::marker { content: "•"; }
+    .callout { background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 4px; padding: 14px 16px; margin: 20px 0; }
+    .callout p { margin: 0; font-size: 14px; color: #78350f; }
+    .highlight { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin: 20px 0; }
+    .highlight p { margin: 0; font-size: 14px; color: #166534; }
+    .divider { height: 1px; background: #e4e4e7; margin: 24px 0; }
+    .closing p { font-size: 15px; color: #3f3f46; margin: 0 0 4px; }
+    .footer { text-align: center; padding: 20px 28px; border-top: 1px solid #f4f4f5; }
+    .footer p { margin: 0; font-size: 12px; color: #a1a1aa; }
+    .footer a { color: #71717a; text-decoration: none; }
+    a.link { color: #18181b; text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <span class="preheader">A short checklist to run through before our underwriting team reviews your website — most issues are easy fixes.</span>
+  <div class="wrapper">
+    <div class="card">
+      <div class="header">
+        <img src="https://ops-terminal.lovable.app/images/merchanthaus-logo.png" alt="Merchant Haus" />
+      </div>
+      <div class="body">
+        <p>Hi ${firstName},</p>
+        <p>Your application for <strong>${businessName}</strong> is in — thank you. Our underwriting team will begin their review shortly, and one of the things they'll look at is your website.</p>
+        <p>Before they do, we want to give you a heads-up on what they check and where most merchants get tripped up. The card brands (Visa, Mastercard, Amex, Discover) require specific disclosures on every e-commerce site, and missing any of them is the single most common reason we come back asking for changes — which slows down your approval.</p>
+        <p>Most of this is quick to fix. Run through the checklist below in the next day or two and your approval will move a lot faster.</p>
+
+        <div class="divider"></div>
+
+        <h2>The card brands require these on your website</h2>
+        <p style="font-size: 14px; color: #52525b;">Every item below is a hard requirement from Visa / Mastercard / Amex / Discover for e-commerce merchants. Missing items will be flagged by underwriting.</p>
+
+        <h3>Business identity</h3>
+        <ul>
+          <li>Your <strong>business name (DBA)</strong> displayed clearly, matching the name on your application</li>
+          <li>Your <strong>physical business address</strong>, including country (P.O. boxes alone won't pass)</li>
+          <li><strong>Customer service contact</strong> — a working email address <em>and</em> a working phone number</li>
+          <li><strong>Card brand logos</strong> (Visa / Mastercard / Amex / Discover) shown at checkout in full color</li>
+        </ul>
+
+        <h3>Product &amp; transaction clarity</h3>
+        <ul>
+          <li>A <strong>clear description</strong> of what you're selling — product pages must describe the goods or services, not just a name and a price</li>
+          <li><strong>Transaction currency</strong> stated explicitly (e.g. "Prices in USD")</li>
+          <li><strong>Total cost shown before payment</strong> — subtotal, taxes, shipping, any fees. No surprise charges after the "Pay" button</li>
+          <li><strong>Age-restriction gating</strong> if you sell anything age-restricted (alcohol, tobacco, supplements, financial services, etc.)</li>
+        </ul>
+
+        <h3>Policies — all must be live and linked from checkout</h3>
+        <ul>
+          <li><strong>Refund / Return policy</strong> — even if you don't offer refunds, you must say so explicitly. This is the #1 item underwriters flag.</li>
+          <li><strong>Shipping / Delivery policy</strong> — timelines, carriers, what happens if delivery is delayed</li>
+          <li><strong>Privacy policy</strong> — how you collect, use, store, and share customer data. CCPA-aligned if you have California customers.</li>
+          <li><strong>Terms &amp; Conditions</strong> — the rules of engagement for buyers</li>
+          <li><strong>Secure checkout statement</strong> — a short note on how you protect payment data</li>
+        </ul>
+
+        <h3>Security</h3>
+        <ul>
+          <li><strong>HTTPS on every page</strong> — not just checkout. The padlock icon must show throughout the site.</li>
+          <li>No card data captured on pages that aren't on your payment processor's hosted form</li>
+        </ul>
+
+        <div class="divider"></div>
+
+        <h2>Refund policy — get this one right</h2>
+        <p>This is the item that causes the most delays, so it's worth its own section. Your refund policy needs to:</p>
+        <ul class="plain" style="list-style: disc; padding-left: 20px;">
+          <li>Be <strong>visible before checkout</strong> — a link in the footer alone is not enough. It should appear on your checkout page, near the "Pay" button, ideally with a checkbox or acknowledgment.</li>
+          <li>State your <strong>timeframe</strong> — e.g. "refunds available within 30 days of purchase"</li>
+          <li>State <strong>conditions</strong> — unused, original packaging, restocking fee, digital-goods exceptions</li>
+          <li>State <strong>how refunds are issued</strong> — back to original payment method, store credit, etc.</li>
+          <li>State <strong>how to request one</strong> — email, phone, portal, turnaround time</li>
+        </ul>
+        <div class="callout">
+          <p>If your business genuinely does not offer refunds, that's allowed — but you must say so clearly and prominently. "All sales final" with no further context will not pass review.</p>
+        </div>
+
+        <div class="divider"></div>
+
+        <h2>If you sell subscriptions, free trials, or anything recurring — read this carefully</h2>
+        <p>Visa and Mastercard have strict rules here, and underwriting scrutiny is high. You must:</p>
+        <ul>
+          <li>Get <strong>express consent</strong> at enrollment — a pre-ticked box doesn't count</li>
+          <li><strong>Immediately email</strong> the customer a confirmation showing the trial length, when billing starts, the amount, and the billing frequency</li>
+          <li>Send a <strong>reminder at least 7 days before</strong> a free trial converts to paid, or before a price changes</li>
+          <li>Provide a <strong>one-click online cancellation</strong> — regardless of how they signed up. A phone-only cancel path is not compliant.</li>
+          <li>Use a <strong>descriptor like "TRIAL"</strong> on the first real charge after a free trial so it's recognizable on the cardholder's statement</li>
+          <li>Display <strong>trial length, start date, recurring amount, and recurring date</strong> at the point of sale and on the receipt</li>
+        </ul>
+        <p style="font-size: 14px; color: #52525b;">If your model is subscription-heavy, underwriters will review your cancellation flow end-to-end. Make sure it works.</p>
+
+        <div class="divider"></div>
+
+        <h2>Things underwriters will flag — avoid these</h2>
+        <ul class="plain" style="list-style: disc; padding-left: 20px;">
+          <li><strong>Broken or empty pages.</strong> If a nav link goes to a 404 or a "Coming Soon" page, that's an automatic concern.</li>
+          <li><strong>Mismatched names.</strong> If your website says "Acme Store" but your application says "Acme Holdings LLC," explain the relationship somewhere (About page, footer line).</li>
+          <li><strong>Stock-photo-only product pages.</strong> Unique, accurate product imagery and descriptions look legitimate. Thin or generic pages don't.</li>
+          <li><strong>Unrealistic claims.</strong> "Guaranteed results," "miracle," "cures," "get rich quick" — these raise fraud and chargeback risk flags.</li>
+          <li><strong>No company information anywhere.</strong> No About page, no team, no address, no phone — underwriters treat this as a red flag.</li>
+          <li><strong>Prices in multiple currencies without a clear primary.</strong> Pick one, state it clearly.</li>
+          <li><strong>Checkout on a different domain</strong> from your main site without clear branding continuity.</li>
+          <li><strong>Asking for more information than you need</strong> at checkout (ID scans, full SSN for non-credit purchases, etc.)</li>
+        </ul>
+
+        <div class="divider"></div>
+
+        <h2>What happens next</h2>
+        <p>Once our team begins their review, if they need any changes to your site, you'll receive a specific request through your portal — you'll see the request on your dashboard in real time and can update as you go.</p>
+        <div class="highlight">
+          <p>✅ Most merchants who work through this checklist in advance sail through review in <strong>3–5 business days</strong>.</p>
+        </div>
+        <p>If you have questions on any item, reply to this email and our onboarding team will walk you through it.</p>
+        <p>Welcome to Merchant Haus.</p>
+
+        <div class="closing" style="margin-top: 24px;">
+          <p><strong>The Merchant Haus Team</strong></p>
+          <p><a class="link" href="mailto:onboarding@merchanthaus.io">onboarding@merchanthaus.io</a></p>
+        </div>
+      </div>
+      <div class="footer">
+        <p>Merchant Haus &bull; <a href="https://merchanthaus.io">merchanthaus.io</a></p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+};
+
+async function sendComplianceChecklistEmail(
+  firstName: string,
+  email: string,
+  businessName: string,
+): Promise<void> {
+  if (!RESEND_API_KEY) {
+    console.error("RESEND_API_KEY not configured — skipping compliance checklist email");
+    return;
+  }
+
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "Merchant Haus <onboarding@merchanthaus.io>",
+        to: [email],
+        subject: "Your application is in. Here's what underwriting will look at on your website.",
+        html: buildComplianceChecklistEmailHtml(firstName, businessName),
+        reply_to: "onboarding@merchanthaus.io",
+      }),
+    });
+
+    const result = await res.json();
+    if (!res.ok) {
+      console.error("Compliance checklist email error:", result);
+    } else {
+      console.log("Compliance checklist email sent to", email);
+    }
+  } catch (err) {
+    console.error("Failed to send compliance checklist email:", err);
+  }
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -397,6 +588,9 @@ Deno.serve(async (req) => {
       // Send confirmation email (non-blocking)
       await sendConfirmationEmail(parsed.dba_contact_first_name, parsed.dba_contact_email, "gateway_only", parsed.dba_name);
 
+      // Send website compliance checklist (M2 Wizard Submitted automation)
+      await sendComplianceChecklistEmail(parsed.dba_contact_first_name, parsed.dba_contact_email, parsed.dba_name);
+
       return new Response(
         JSON.stringify({ success: true, application_id: applicationId, files: fileResult }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -596,6 +790,9 @@ Deno.serve(async (req) => {
 
     // 8. Send confirmation email (non-blocking)
     await sendConfirmationEmail(parsed.dba_contact_first_name, parsed.dba_contact_email, "processing", parsed.dba_name);
+
+    // 9. Send website compliance checklist (M2 Wizard Submitted automation)
+    await sendComplianceChecklistEmail(parsed.dba_contact_first_name, parsed.dba_contact_email, parsed.dba_name);
 
     return new Response(
       JSON.stringify({ success: true, application_id: applicationId, files: fileResult }),
