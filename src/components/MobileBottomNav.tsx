@@ -26,43 +26,60 @@ const PRIMARY: NavItem[] = [
   { title: "Pipeline", url: "/", icon: LayoutDashboard },
   { title: "Deals", url: "/opportunities", icon: Briefcase },
   { title: "Tasks", url: "/tasks", icon: ListChecks },
-  { title: "Accounts", url: "/accounts", icon: Building2 },
+  { title: "Leads", url: "/leads", icon: UserPlus },
 ];
 
 // Secondary — appear in the launcher sheet, grouped
 const GROUPS: { label: string; items: NavItem[] }[] = [
   {
+    label: "Pipeline",
+    items: [
+      { title: "Outreach", url: "/outreach", icon: Send },
+      { title: "Web Submissions", url: "/admin/web-submissions", icon: Globe },
+    ],
+  },
+  {
     label: "CRM",
     items: [
       { title: "Contacts", url: "/contacts", icon: Users },
       { title: "Documents", url: "/documents", icon: FileText },
-      { title: "Reports", url: "/reports", icon: BarChart3 },
+    ],
+  },
+  {
+    label: "Merchants",
+    items: [
+      { title: "Live & Billing", url: "/live-billing", icon: BadgeDollarSign },
       { title: "Transactions", url: "/reports/transactions", icon: CreditCard },
       { title: "Commissions", url: "/commissions", icon: BadgeDollarSign },
-      { title: "Live & Billing", url: "/live-billing", icon: BadgeDollarSign },
-      { title: "Outreach", url: "/outreach", icon: Send },
-      { title: "Leads", url: "/leads", icon: UserPlus },
-      { title: "Web Submissions", url: "/admin/web-submissions", icon: Globe },
+      { title: "Processors", url: "/supported-processors", icon: CreditCard },
+    ],
+  },
+  {
+    label: "Reports",
+    items: [
+      { title: "Analytics", url: "/reports", icon: BarChart3 },
+      { title: "NMI Status", url: "https://statusgator.com/services/nmi", icon: Activity, external: true },
     ],
   },
   {
     label: "Tools",
     items: [
-      { title: "SOP", url: "/sop", icon: BookOpen },
+      { title: "Board Merchant", url: "/tools/nmi-boarding", icon: BadgeDollarSign },
       { title: "Preboarding", url: "/tools/preboarding-wizard", icon: ClipboardList },
       { title: "Revenue Calc", url: "/tools/revenue-calculator", icon: Calculator },
       { title: "CSV Import", url: "/tools/csv-import", icon: FileSpreadsheet },
-      { title: "Data Export", url: "/admin/data-export", icon: Download },
-      { title: "Netlify", url: "/tools/netlify", icon: Cloud },
     ],
   },
   {
-    label: "Gateway",
+    label: "Admin",
     items: [
+      { title: "SOP", url: "/sop", icon: BookOpen },
+      { title: "CRM Updates", url: "/tools/terminal-updates", icon: Activity },
+      { title: "Administration", url: "/admin/administration", icon: Activity },
+      { title: "Data Export", url: "/admin/data-export", icon: Download },
       { title: "Partner Guide", url: "/tools/gateway-guide", icon: CreditCard },
       { title: "NMI Payments", url: "/tools/nmi-payments", icon: CreditCard },
-      { title: "Processors", url: "/supported-processors", icon: CreditCard },
-      { title: "NMI Status", url: "https://statusgator.com/services/nmi", icon: Activity, external: true },
+      { title: "Netlify", url: "/tools/netlify", icon: Cloud },
     ],
   },
   {

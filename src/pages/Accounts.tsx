@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Search, Users, Trash, Mail, Phone, ExternalLink, Check, X, Plus, TrendingUp, Globe, MapPin } from "lucide-react";
+import { Pencil, Search, Users, Trash, Mail, Phone, ExternalLink, Check, X, Plus, TrendingUp, Globe, MapPin, UserPlus } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -73,6 +73,8 @@ const Accounts = () => {
   });
   // Search query for filtering accounts
   const [searchQuery, setSearchQuery] = useState('');
+  // Status filter: defaults to 'lead' so the renamed Leads page shows new prospects first
+  const [statusFilter, setStatusFilter] = useState<'all' | 'lead' | 'active' | 'dead'>('lead');
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   // Inline editing state
@@ -289,9 +291,14 @@ const Accounts = () => {
   }, [editingAccount, resetInitialData]);
 
 
-  // Filter and sort accounts based on search query and sort settings
+  // Filter and sort accounts based on search query, status, and sort settings
   const filteredAccounts = useMemo(() => {
     let result = accounts.filter((account) => {
+      // Treat null status as 'lead' so newly-created records show in the default view
+      const effectiveStatus = account.status ?? 'lead';
+      const matchesStatus = statusFilter === 'all' || effectiveStatus === statusFilter;
+      if (!matchesStatus) return false;
+
       const query = searchQuery.toLowerCase();
       return (
         account.name.toLowerCase().includes(query) ||
@@ -341,11 +348,11 @@ const Accounts = () => {
   if (loading) {
     return (
       <AppLayout>
-        <PageHeader icon={Building2Icon} title="Accounts" color="teal" />
+        <PageHeader icon={UserPlus} title="Leads" color="teal" />
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
             <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm text-muted-foreground">Loading accounts…</p>
+            <p className="text-sm text-muted-foreground">Loading leads…</p>
           </div>
         </div>
       </AppLayout>
@@ -355,7 +362,7 @@ const Accounts = () => {
   if (fetchError) {
     return (
       <AppLayout>
-        <PageHeader icon={Building2Icon} title="Accounts" color="teal" />
+        <PageHeader icon={UserPlus} title="Leads" color="teal" />
         <div className="p-6">
           <QueryErrorCard message={fetchError} onRetry={() => { setLoading(true); fetchAccounts(); }} />
         </div>
@@ -367,28 +374,58 @@ const Accounts = () => {
     <AppLayout>
       <div className="flex flex-col h-full overflow-hidden">
         <PageHeader
-          icon={Building2Icon}
-          title="Accounts"
+          icon={UserPlus}
+          title="Leads"
           color="teal"
           actions={
-            <Button size="sm" onClick={() => toast.info('Use New Application on the Pipeline to create accounts')}>
-              <Plus className="h-4 w-4 mr-1" /> Add Account
+            <Button size="sm" onClick={() => toast.info('Use New Application on the Pipeline to create leads')}>
+              <Plus className="h-4 w-4 mr-1" /> Add Lead
             </Button>
           }
         />
         <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-5">
           {/* KPI Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 stagger-children">
-            <StatCard label="Total Accounts" value={totalAccounts} icon={Building2Icon} color="teal" />
+            <StatCard label="Total" value={totalAccounts} icon={Building2Icon} color="teal" />
             <StatCard label="With Contacts" value={accountsWithContacts} icon={Users} color="primary" />
             <StatCard label="Active Deals" value={Object.values(accountOpportunities).reduce((sum, arr) => sum + arr.length, 0)} icon={TrendingUp} color="success" />
             <StatCard label="Have Website" value={accountsWithWebsites} icon={Globe} color="muted" />
           </div>
 
+          {/* Status tabs */}
+          <div className="flex items-center gap-1 border-b border-border/60 overflow-x-auto">
+            {([
+              { key: 'lead', label: 'New Leads' },
+              { key: 'active', label: 'Active' },
+              { key: 'dead', label: 'Dead' },
+              { key: 'all', label: 'All' },
+            ] as const).map((tab) => {
+              const isTabActive = statusFilter === tab.key;
+              const count = tab.key === 'all'
+                ? accounts.length
+                : accounts.filter((a) => (a.status ?? 'lead') === tab.key).length;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setStatusFilter(tab.key)}
+                  className={cn(
+                    "px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap",
+                    isTabActive
+                      ? "text-foreground border-[hsl(var(--teal))]"
+                      : "text-muted-foreground border-transparent hover:text-foreground"
+                  )}
+                >
+                  {tab.label}
+                  <span className="ml-1.5 text-xs text-muted-foreground">({count})</span>
+                </button>
+              );
+            })}
+          </div>
+
           {/* Filters toolbar */}
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold">{filteredAccounts.length} accounts</span>
+              <span className="text-sm font-semibold">{filteredAccounts.length} {statusFilter === 'all' ? 'records' : statusFilter === 'lead' ? 'leads' : statusFilter}</span>
               {searchQuery && (
                 <button onClick={() => setSearchQuery('')} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
                   Clear ×
@@ -398,7 +435,7 @@ const Accounts = () => {
             <div className="relative w-64">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
-                placeholder="Search accounts…"
+                placeholder="Search leads…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-8 h-8 text-sm"
@@ -576,9 +613,9 @@ const Accounts = () => {
                       <TableRow>
                         <TableCell colSpan={7}>
                           <EmptyState
-                            icon={Building2Icon}
-                            title="No accounts found"
-                            description="Try adjusting your search or create a new application."
+                            icon={UserPlus}
+                            title="No leads found"
+                            description="Try adjusting your filter, search, or create a new application."
                             size="sm"
                           />
                         </TableCell>

@@ -86,19 +86,30 @@ const navMain: NavGroup[] = [
     items: [
       { title: "Pipeline Board", url: "/pipeline", icon: LayoutDashboard, description: "Opportunity kanban board" },
       { title: "All Opportunities", url: "/opportunities", icon: Briefcase, description: "Browse & search all opportunities" },
-      { title: "Web Submissions", url: "/admin/web-submissions", icon: Globe, description: "Incoming merchant applications" },
-      { title: "Email Outreach", url: "/outreach", icon: Send, description: "Campaign tracker & email sender" },
       { title: "Tasks", url: "/tasks", icon: ListChecks, description: "Manage your tasks" },
+      { title: "Email Outreach", url: "/outreach", icon: Send, description: "Campaign tracker & email sender" },
+      { title: "Web Submissions", url: "/admin/web-submissions", icon: Globe, description: "Incoming merchant applications" },
     ],
   },
   {
     title: "CRM",
-    url: "/accounts",
-    icon: Briefcase,
+    url: "/leads",
+    icon: UserPlus,
     items: [
-      { title: "Accounts", url: "/accounts", icon: Building2, description: "Manage business accounts" },
+      { title: "Leads", url: "/leads", icon: UserPlus, description: "New prospects & account list" },
       { title: "Contacts", url: "/contacts", icon: Users, description: "Manage contacts" },
       { title: "Documents", url: "/documents", icon: FileText, description: "View uploaded documents" },
+    ],
+  },
+  {
+    title: "Merchants",
+    url: "/live-billing",
+    icon: Building2,
+    items: [
+      { title: "Live & Billing", url: "/live-billing", icon: BadgeDollarSign, description: "Live accounts & billing" },
+      { title: "Transactions", url: "/reports/transactions", icon: CreditCard, description: "NMI gateway transactions" },
+      { title: "Commissions", url: "/commissions", icon: BadgeDollarSign, description: "Partner commission reports" },
+      { title: "Supported Processors", url: "/supported-processors", icon: Globe, description: "Processor compatibility reference" },
     ],
   },
   {
@@ -107,9 +118,6 @@ const navMain: NavGroup[] = [
     icon: BarChart3,
     items: [
       { title: "Analytics", url: "/reports", icon: BarChart3, description: "Performance & pipeline analytics" },
-      { title: "Transactions", url: "/reports/transactions", icon: CreditCard, description: "NMI gateway transactions" },
-      { title: "Commissions", url: "/commissions", icon: BadgeDollarSign, description: "Partner commission reports" },
-      { title: "Live & Billing", url: "/live-billing", icon: BadgeDollarSign, description: "Live accounts & billing" },
       { title: "System Status", url: "https://statusgator.com/services/nmi", icon: Activity, description: "Live NMI & platform status", external: true },
     ],
   },
@@ -121,13 +129,19 @@ const navMain: NavGroup[] = [
       { title: "Board Merchant", url: "/tools/nmi-boarding", icon: BadgeDollarSign, description: "Board merchants via NMI gateway" },
       { title: "Pre-Qualification Wizard", url: "/tools/preboarding-wizard", icon: ClipboardList, description: "Application readiness form" },
       { title: "Revenue Calculator", url: "/tools/revenue-calculator", icon: Calculator, description: "Estimate processing revenue" },
+      { title: "CSV Import", url: "/tools/csv-import", icon: FileSpreadsheet, description: "Bulk import data" },
+    ],
+  },
+  {
+    title: "Admin",
+    url: "/sop",
+    icon: BookOpen,
+    items: [
       { title: "SOP", url: "/sop", icon: BookOpen, description: "Standard operating procedures" },
-      { title: "Merchant Portal Guide", url: "/tools/gateway-guide", icon: BookMarked, description: "Interactive portal walkthrough" },
       { title: "CRM Updates", url: "/tools/terminal-updates", icon: Sparkles, description: "Latest changes & features" },
       { title: "Administration", url: "/admin/administration", icon: Activity, description: "Agenda, popups & session tracking" },
-      { title: "Supported Processors", url: "/supported-processors", icon: Globe, description: "Processor compatibility reference" },
-      { title: "CSV Import", url: "/tools/csv-import", icon: FileSpreadsheet, description: "Bulk import data" },
       { title: "Data Export", url: "/admin/data-export", icon: Download, description: "Export opportunity data" },
+      { title: "Merchant Portal Guide", url: "/tools/gateway-guide", icon: BookMarked, description: "Interactive portal walkthrough" },
       { title: "Deployment", url: "/tools/netlify", icon: Cloud, description: "Deployment audit & fix prompts" },
     ],
   },
@@ -203,7 +217,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
         break;
       case "account":
         if (onNewAccount) onNewAccount();
-        else navigate("/accounts?new=true");
+        else navigate("/leads?new=true");
         break;
       case "contact":
         if (onNewContact) onNewContact();
@@ -384,8 +398,8 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                 New Opportunity
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleNewClick("account")}>
-                <Building2 className="h-4 w-4 mr-2 text-muted-foreground" />
-                New Account
+                <UserPlus className="h-4 w-4 mr-2 text-muted-foreground" />
+                New Lead
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleNewClick("contact")}>
                 <Users className="h-4 w-4 mr-2 text-muted-foreground" />
