@@ -176,12 +176,6 @@ const Login = () => {
                 Sign up
               </Link>
             </p>
-            <p className="text-sm text-muted-foreground font-medium">
-              Want to apply for services?{' '}
-              <Link to="/apply" className="text-primary font-bold hover:underline">
-                Apply here
-              </Link>
-            </p>
           </div>
         </div>
       </div>

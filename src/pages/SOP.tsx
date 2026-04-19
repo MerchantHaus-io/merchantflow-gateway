@@ -762,6 +762,9 @@ Sales Support`,
                         <li>
                           <a href="#underwriting-checklist" className="hover:text-primary transition-colors cursor-pointer"><strong>2.5</strong> — Pre-Underwriting Checklist</a>
                         </li>
+                        <li>
+                          <a href="#automated-emails" className="hover:text-primary transition-colors cursor-pointer"><strong>2.6</strong> — Automated Emails (When They Fire & What They Say)</a>
+                        </li>
                       </ul>
                     </div>
                     <div>
@@ -817,6 +820,16 @@ Sales Support`,
                         Section 6 — External Artifacts
                       </h3>
                       <ul className="space-y-2 text-[hsl(var(--gold))] pl-2 border-l-2 border-[hsl(var(--gold))]">
+                        <li>
+                          <a
+                            href="/merchant-apply"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:underline flex items-center gap-1"
+                          >
+                            <ExternalLink className="w-3 h-3" /> Merchant Application Form
+                          </a>
+                        </li>
                         <li>
                           <a
                             href="https://docs.google.com/spreadsheets/d/1OuQwgzkEGHYemHRv3fuyte1jracU2nJGgVVAb5HlQ3A/edit?gid=0#gid=0"
@@ -1024,6 +1037,172 @@ Sales Support`,
 
                 {/* Pre-Underwriting Checklist */}
                 <UnderwritingChecklist />
+
+                {/* ═══════════════════════════════════════════
+                    AUTOMATED EMAILS — Staff reference for what
+                    the system sends on its own (no one clicks send)
+                ═══════════════════════════════════════════ */}
+                <section id="automated-emails" className="bg-card rounded-none border border-border p-8">
+                  <SectionHeader gold sectionId="automated-emails" sectionTitle="Automated Emails — When They Fire & What They Say">
+                    2.6 — Automated Emails (When They Fire & What They Say)
+                  </SectionHeader>
+                  <p className="text-muted-foreground mb-6 italic border-l-4 border-[hsl(var(--gold))] pl-4 bg-[hsl(var(--gold))]/10 py-2 pr-2">
+                    Some emails go out <strong>automatically</strong> — no one on our team clicks send. They fire when a specific thing happens in the terminal (a merchant finishes applying, a deal moves stages, a task gets assigned, etc.). Use this table so you know what your prospects and teammates are actually receiving in their inbox.
+                  </p>
+
+                  {/* Merchant-facing */}
+                  <h3 className="font-bold text-foreground mt-2 mb-3 uppercase tracking-[0.2em] text-[11px] flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-[hsl(var(--gold))]" /> Sent to the Merchant / Prospect
+                  </h3>
+                  <div className="space-y-3 mb-8">
+                    <div className="bg-secondary/50 p-4 border border-border">
+                      <div className="flex items-start justify-between gap-4 flex-wrap">
+                        <strong className="text-foreground text-sm">1. Application Received</strong>
+                        <span className="text-[11px] uppercase tracking-wider text-muted-foreground bg-background px-2 py-0.5 border border-border">Fires: merchant finishes the apply wizard</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-2"><strong className="text-foreground">What it says:</strong> Short thank-you confirming we received their application. Tells them we'll be in touch within 1–2 business days and gives them an email to reach us. Nothing action-required.</p>
+                    </div>
+                    <div className="bg-secondary/50 p-4 border border-border">
+                      <div className="flex items-start justify-between gap-4 flex-wrap">
+                        <strong className="text-foreground text-sm">2. Website Compliance Checklist</strong>
+                        <span className="text-[11px] uppercase tracking-wider text-muted-foreground bg-background px-2 py-0.5 border border-border">Fires: merchant finishes the apply wizard (Processing or Gateway only)</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-2"><strong className="text-foreground">What it says:</strong> A long, friendly checklist of what underwriting will look for on their website (refund policy, privacy policy, card brand logos, HTTPS, subscription rules, etc.) so they can fix issues <em>before</em> we ask — cuts down review time. See the full example below.</p>
+                    </div>
+                    <div className="bg-secondary/50 p-4 border border-border">
+                      <div className="flex items-start justify-between gap-4 flex-wrap">
+                        <strong className="text-foreground text-sm">3. Qualified Docs Request</strong>
+                        <span className="text-[11px] uppercase tracking-wider text-muted-foreground bg-background px-2 py-0.5 border border-border">Fires: rep clicks "Request Documents" on a deal's Documents tab</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-2"><strong className="text-foreground">What it says:</strong> Asks the merchant for the specific documents we need to move forward (bank statements, processing statements, etc.). Rep can customize subject and body before sending.</p>
+                    </div>
+                    <div className="bg-secondary/50 p-4 border border-border">
+                      <div className="flex items-start justify-between gap-4 flex-wrap">
+                        <strong className="text-foreground text-sm">4. Outcome Email (Declined / Disqualified)</strong>
+                        <span className="text-[11px] uppercase tracking-wider text-muted-foreground bg-background px-2 py-0.5 border border-border">Fires: rep sets an outcome on a deal in the Opportunity Detail modal</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-2"><strong className="text-foreground">What it says:</strong> Tells the merchant their application was declined or disqualified. Tone and wording are set per outcome type.</p>
+                    </div>
+                    <div className="bg-secondary/50 p-4 border border-border">
+                      <div className="flex items-start justify-between gap-4 flex-wrap">
+                        <strong className="text-foreground text-sm">5. Account Closed</strong>
+                        <span className="text-[11px] uppercase tracking-wider text-muted-foreground bg-background px-2 py-0.5 border border-border">Fires: a closure outcome is saved on a Live Account</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-2"><strong className="text-foreground">What it says:</strong> Confirms to the merchant their account is closed and notes the reason/next steps.</p>
+                    </div>
+                    <div className="bg-secondary/50 p-4 border border-border">
+                      <div className="flex items-start justify-between gap-4 flex-wrap">
+                        <strong className="text-foreground text-sm">6. Contact Form Confirmation</strong>
+                        <span className="text-[11px] uppercase tracking-wider text-muted-foreground bg-background px-2 py-0.5 border border-border">Fires: someone submits the public /contact form on our website</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-2"><strong className="text-foreground">What it says:</strong> A brief confirmation that their inquiry was received and someone will follow up.</p>
+                    </div>
+                    <div className="bg-secondary/50 p-4 border border-border">
+                      <div className="flex items-start justify-between gap-4 flex-wrap">
+                        <strong className="text-foreground text-sm">7. Outreach Campaign (Bulk Cadence)</strong>
+                        <span className="text-[11px] uppercase tracking-wider text-muted-foreground bg-background px-2 py-0.5 border border-border">Fires: rep launches a campaign from Outreach Detail</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-2"><strong className="text-foreground">What it says:</strong> Whatever the rep composed in the campaign — sent to outreach contacts on the chosen schedule (Day 1, Day 3, Day 7, etc.).</p>
+                    </div>
+                  </div>
+
+                  {/* Internal-facing */}
+                  <h3 className="font-bold text-foreground mt-2 mb-3 uppercase tracking-[0.2em] text-[11px] flex items-center gap-2">
+                    <Users className="w-4 h-4 text-[hsl(var(--gold))]" /> Sent to Us (Internal Team)
+                  </h3>
+                  <div className="space-y-3 mb-8">
+                    <div className="bg-secondary/50 p-4 border border-border">
+                      <div className="flex items-start justify-between gap-4 flex-wrap">
+                        <strong className="text-foreground text-sm">8. Pipeline Stage Change</strong>
+                        <span className="text-[11px] uppercase tracking-wider text-muted-foreground bg-background px-2 py-0.5 border border-border">Fires: any deal's stage changes</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-2"><strong className="text-foreground">What it says:</strong> Which deal moved, where it went, who moved it. Keeps the team silently aware of pipeline movement.</p>
+                    </div>
+                    <div className="bg-secondary/50 p-4 border border-border">
+                      <div className="flex items-start justify-between gap-4 flex-wrap">
+                        <strong className="text-foreground text-sm">9. Task Assignment</strong>
+                        <span className="text-[11px] uppercase tracking-wider text-muted-foreground bg-background px-2 py-0.5 border border-border">Fires: a task is created and assigned to someone</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-2"><strong className="text-foreground">What it says:</strong> Tells the assignee they have a new task, with a short summary and a link into the deal.</p>
+                    </div>
+                    <div className="bg-secondary/50 p-4 border border-border">
+                      <div className="flex items-start justify-between gap-4 flex-wrap">
+                        <strong className="text-foreground text-sm">10. Opportunity Assignment</strong>
+                        <span className="text-[11px] uppercase tracking-wider text-muted-foreground bg-background px-2 py-0.5 border border-border">Fires: a deal's "assigned to" field changes</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-2"><strong className="text-foreground">What it says:</strong> Lets the newly-assigned rep know a deal was handed to them.</p>
+                    </div>
+                    <div className="bg-secondary/50 p-4 border border-border">
+                      <div className="flex items-start justify-between gap-4 flex-wrap">
+                        <strong className="text-foreground text-sm">11. Terminal Update Digest</strong>
+                        <span className="text-[11px] uppercase tracking-wider text-muted-foreground bg-background px-2 py-0.5 border border-border">Fires: a new Terminal Update is posted</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-2"><strong className="text-foreground">What it says:</strong> Blasts the new product update / announcement out to every user in the team.</p>
+                    </div>
+                    <div className="bg-secondary/50 p-4 border border-border">
+                      <div className="flex items-start justify-between gap-4 flex-wrap">
+                        <strong className="text-foreground text-sm">12. Contact Form Notification (to sales@)</strong>
+                        <span className="text-[11px] uppercase tracking-wider text-muted-foreground bg-background px-2 py-0.5 border border-border">Fires: someone submits the public /contact form</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-2"><strong className="text-foreground">What it says:</strong> Pings <strong>sales@merchanthaus.io</strong> with the inquirer's name, email, and message so we can follow up.</p>
+                    </div>
+                    <div className="bg-secondary/50 p-4 border border-border">
+                      <div className="flex items-start justify-between gap-4 flex-wrap">
+                        <strong className="text-foreground text-sm">13. Agenda Submission</strong>
+                        <span className="text-[11px] uppercase tracking-wider text-muted-foreground bg-background px-2 py-0.5 border border-border">Fires: an item is submitted via the Agenda dialog</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-2"><strong className="text-foreground">What it says:</strong> Pings <strong>admin@merchanthaus.io</strong> with the new agenda item for the next meeting.</p>
+                    </div>
+                    <div className="bg-secondary/50 p-4 border border-border">
+                      <div className="flex items-start justify-between gap-4 flex-wrap">
+                        <strong className="text-foreground text-sm">14. Notice Board Tag</strong>
+                        <span className="text-[11px] uppercase tracking-wider text-muted-foreground bg-background px-2 py-0.5 border border-border">Fires: a user is tagged in a notice (AI Validate panel or Action Items widget)</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-2"><strong className="text-foreground">What it says:</strong> Lets the tagged user know they were mentioned and gives them a direct link to the notice.</p>
+                    </div>
+                  </div>
+
+                  {/* Example callout */}
+                  <div className="bg-[hsl(var(--gold))]/5 border-2 border-[hsl(var(--gold))]/40 p-6 mt-4">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Mail className="w-5 h-5 text-[hsl(var(--gold))]" />
+                      <h3 className="font-bold text-foreground uppercase tracking-[0.15em] text-xs">Example — #2 Website Compliance Checklist</h3>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-3"><strong className="text-foreground">Subject:</strong> Your application is in. Here's what underwriting will look at on your website.</p>
+                    <div className="bg-background border border-border p-5 text-sm text-foreground/90 leading-relaxed">
+                      <p className="mb-3">Hi <span className="text-muted-foreground">[first name]</span>,</p>
+                      <p className="mb-3">Your application for <span className="text-muted-foreground">[business name]</span> is in — thank you. Our underwriting team will begin their review shortly, and one of the things they'll look at is your website.</p>
+                      <p className="mb-3">Before they do, we want to give you a heads-up on what they check and where most merchants get tripped up. The card brands (Visa, Mastercard, Amex, Discover) require specific disclosures on every e-commerce site, and missing any of them is the single most common reason we come back asking for changes — which slows down your approval.</p>
+                      <p className="mb-3 font-bold">The card brands require these on your website:</p>
+                      <ul className="list-disc pl-5 space-y-1 text-muted-foreground mb-3">
+                        <li>Business name (DBA), physical address, working customer service email + phone</li>
+                        <li>Card brand logos shown at checkout in full colour</li>
+                        <li>Clear product/service descriptions, currency, and total cost shown before payment</li>
+                        <li>Refund, Shipping, Privacy, and Terms policies — live and linked from checkout</li>
+                        <li>HTTPS on every page; no card data captured outside the hosted payment form</li>
+                      </ul>
+                      <p className="mb-3"><strong>Refund policy is the #1 item underwriters flag</strong> — must be visible at checkout, state timeframe, conditions, how refunds are issued, and how to request one. "All sales final" alone won't pass.</p>
+                      <p className="mb-3"><strong>If you sell subscriptions or free trials</strong>, strict rules apply: express consent (no pre-ticked boxes), confirmation email at enrollment, 7-day-before-conversion reminder, one-click online cancel, and trial-length / billing frequency shown at point of sale.</p>
+                      <p className="mb-3 font-bold">Things underwriters flag — avoid these:</p>
+                      <ul className="list-disc pl-5 space-y-1 text-muted-foreground mb-3">
+                        <li>Broken or "Coming Soon" pages, stock-photo-only product pages</li>
+                        <li>Mismatched DBA/legal names with no explanation</li>
+                        <li>Unrealistic claims ("miracle", "guaranteed", "cures")</li>
+                        <li>No About page, team, address, or phone</li>
+                      </ul>
+                      <p className="mb-3">Most merchants who work through this checklist in advance sail through review in 3–5 business days. If you have questions on any item, reply to this email and our onboarding team will walk you through it.</p>
+                      <p className="mb-1">Welcome to Merchant Haus.</p>
+                      <p className="mt-3"><strong>The Merchant Haus Team</strong></p>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-3 italic">This is a condensed preview. The merchant receives the full HTML version with checkboxes and Merchant Haus branding.</p>
+                  </div>
+
+                  <div className="mt-6 p-4 bg-muted/50 border border-border">
+                    <p className="text-xs text-muted-foreground">
+                      <strong className="text-foreground">Rule of thumb:</strong> if you didn't click send and the merchant says "I got an email from you," check this list first. If the email isn't in the list, it was sent by a teammate manually — find out who.
+                    </p>
+                  </div>
+                </section>
 
                 {/* ═══════════════════════════════════════════
                     PIPELINE STAGE MANAGEMENT GUIDE
