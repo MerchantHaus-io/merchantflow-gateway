@@ -42,6 +42,8 @@ import { NMITransactionsPanel } from "@/components/NMITransactionsPanel";
 import logoDark from "@/assets/logo-dark.png";
 import logoLight from "@/assets/logo-light.png";
 import liveBadge from "@/assets/live-badge.webp";
+import { EmailPreviewDialog } from "@/components/EmailPreviewDialog";
+import { buildAccountClosureTemplate } from "@/lib/emailTemplates";
 
 const TEAM_EMAIL_MAP: Record<string, string> = {
   'Wesley': 'sales@merchanthaus.io',
@@ -79,6 +81,17 @@ const LiveAccountDetail = () => {
   const queryClient = useQueryClient();
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<any>(null);
+  const [closurePreview, setClosurePreview] = useState<{
+    open: boolean;
+    subject: string;
+    html: string;
+    recipientEmail: string;
+    recipientName: string;
+    accountName: string;
+    outcomeStatus: string;
+    outcomeReason: string;
+    closedBy: string;
+  } | null>(null);
 
   // Fetch ALL live opportunities for this account
   const { data: opportunities, isLoading } = useQuery({
@@ -347,41 +360,38 @@ const LiveAccountDetail = () => {
                     });
                   }
 
-                  // Send closure email to merchant + team notification — only for non-won outcomes
+                  // Open email preview for rep review before sending — only for non-won outcomes
                   const contactName = [contact?.first_name, contact?.last_name].filter(Boolean).join(" ") || "Merchant";
                   const contactEmail = contact?.email;
+                  const displayCloser = closerName.charAt(0).toUpperCase() + closerName.slice(1);
 
                   if (contactEmail && outcome !== "closed_won") {
-                    supabase.functions.invoke("send-account-closed", {
-                      body: {
-                        recipientEmail: contactEmail,
-                        recipientName: contactName,
-                        accountName: account?.name || "",
-                        outcomeStatus: outcome,
-                        outcomeReason: reason,
-                        closedBy: closerName.charAt(0).toUpperCase() + closerName.slice(1),
-                      },
-                    }).then(() => {
-                      supabase.from("client_interactions").insert({
-                        account_id: accountId,
-                        subject: `Account closure email sent — ${account?.name || ""}`,
-                        interaction_type: "email",
-                        channel: "email",
-                        contact_name: contactName,
-                        contact_email: contactEmail,
-                        notes: `Account closed (${outcome}: ${reason}). Closure notification email sent to ${contactEmail}.`,
-                        status: "closed",
-                        outcome: "sent",
-                        created_by: user.id,
-                        created_by_email: user.email,
-                      }).then(() => {});
-                    }).catch((err) => console.error("Closure email error:", err));
+                    const template = buildAccountClosureTemplate({
+                      recipientName: contactName,
+                      recipientEmail: contactEmail,
+                      accountName: account?.name || "",
+                      outcomeStatus: outcome,
+                      outcomeReason: reason,
+                      closedBy: displayCloser,
+                    });
+                    setClosurePreview({
+                      open: true,
+                      subject: template.subject,
+                      html: template.html,
+                      recipientEmail: contactEmail,
+                      recipientName: contactName,
+                      accountName: account?.name || "",
+                      outcomeStatus: outcome,
+                      outcomeReason: reason,
+                      closedBy: displayCloser,
+                    });
+                    toast.success("Account closed. Review the notification email before it goes out.");
+                  } else {
+                    toast.success("Account closed.");
+                    queryClient.invalidateQueries({ queryKey: ["live-account-detail", accountId] });
+                    queryClient.invalidateQueries({ queryKey: ["live-billing-opportunities"] });
+                    navigate("/live-billing");
                   }
-
-                  toast.success("Account closed and merchant notified");
-                  queryClient.invalidateQueries({ queryKey: ["live-account-detail", accountId] });
-                  queryClient.invalidateQueries({ queryKey: ["live-billing-opportunities"] });
-                  navigate("/live-billing");
                 }}
               />
               <Button
@@ -692,6 +702,70 @@ const LiveAccountDetail = () => {
       open={!!previewDoc}
       onOpenChange={(open) => { if (!open) setPreviewDoc(null); }}
     />
+
+    {closurePreview && (
+      <EmailPreviewDialog
+        open={closurePreview.open}
+        onOpenChange={async (nextOpen) => {
+          if (nextOpen) return;
+          // Rep cancelled — log and move on
+          if (opportunities?.[0]) {
+            await supabase.from("activities").insert({
+              opportunity_id: opportunities[0].id,
+              type: "email_cancelled",
+              description: `Account closure email cancelled by rep — ${closurePreview.accountName}. No email sent.`,
+              user_email: user?.email || "system",
+            });
+          }
+          setClosurePreview(null);
+          queryClient.invalidateQueries({ queryKey: ["live-account-detail", accountId] });
+          queryClient.invalidateQueries({ queryKey: ["live-billing-opportunities"] });
+          navigate("/live-billing");
+        }}
+        subject={closurePreview.subject}
+        bodyHtml={closurePreview.html}
+        recipientEmail={closurePreview.recipientEmail}
+        recipientName={closurePreview.recipientName}
+        onSend={async ({ subject, bodyHtml }) => {
+          const { error: emailErr } = await supabase.functions.invoke("send-account-closed", {
+            body: {
+              recipientEmail: closurePreview.recipientEmail,
+              recipientName: closurePreview.recipientName,
+              accountName: closurePreview.accountName,
+              outcomeStatus: closurePreview.outcomeStatus,
+              outcomeReason: closurePreview.outcomeReason,
+              closedBy: closurePreview.closedBy,
+              custom_subject: subject,
+              custom_html: bodyHtml,
+            },
+          });
+          if (emailErr) {
+            toast.error(`Email failed to send: ${emailErr.message}`);
+            return;
+          }
+          toast.success("Closure notification sent to merchant.");
+          if (opportunities?.[0]) {
+            await supabase.from("client_interactions").insert({
+              account_id: accountId,
+              subject: `Account closure email sent — ${closurePreview.accountName}`,
+              interaction_type: "email",
+              channel: "email",
+              contact_name: closurePreview.recipientName,
+              contact_email: closurePreview.recipientEmail,
+              notes: `Account closed (${closurePreview.outcomeStatus}: ${closurePreview.outcomeReason}). Closure notification email sent to ${closurePreview.recipientEmail}.`,
+              status: "closed",
+              outcome: "sent",
+              created_by: user?.id,
+              created_by_email: user?.email,
+            });
+          }
+          setClosurePreview(null);
+          queryClient.invalidateQueries({ queryKey: ["live-account-detail", accountId] });
+          queryClient.invalidateQueries({ queryKey: ["live-billing-opportunities"] });
+          navigate("/live-billing");
+        }}
+      />
+    )}
     </>
   );
 };

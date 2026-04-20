@@ -16,6 +16,9 @@ interface AccountClosedRequest {
   outcomeStatus: string;
   outcomeReason: string;
   closedBy: string;
+  /** Optional rep-edited overrides from EmailPreviewDialog. */
+  custom_subject?: string;
+  custom_html?: string;
 }
 
 const buildMerchantClosureHtml = (recipientName: string, accountName: string): string => `
@@ -135,7 +138,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { recipientEmail, recipientName, accountName, outcomeStatus, outcomeReason, closedBy }: AccountClosedRequest = await req.json();
+    const { recipientEmail, recipientName, accountName, outcomeStatus, outcomeReason, closedBy, custom_subject, custom_html }: AccountClosedRequest = await req.json();
 
     if (!recipientEmail || !recipientName) {
       return new Response(
@@ -164,8 +167,12 @@ const handler = async (req: Request): Promise<Response> => {
       body: JSON.stringify({
         from: "Merchant Haus <noreply@merchanthaus.io>",
         to: [recipientEmail],
-        subject: `Account Closure Confirmation — ${accountName || "Your Account"}`,
-        html: buildMerchantClosureHtml(recipientName, accountName),
+        subject: (typeof custom_subject === "string" && custom_subject.trim())
+          ? custom_subject
+          : `Account Closure Confirmation — ${accountName || "Your Account"}`,
+        html: (typeof custom_html === "string" && custom_html.trim())
+          ? custom_html
+          : buildMerchantClosureHtml(recipientName, accountName),
         reply_to: "onboarding@merchanthaus.io",
       }),
     });

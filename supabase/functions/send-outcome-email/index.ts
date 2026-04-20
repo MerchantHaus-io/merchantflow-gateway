@@ -104,7 +104,7 @@ serve(async (req) => {
       }
     }
 
-    const { opportunity_id, outcome_status, outcome_reason } = await req.json();
+    const { opportunity_id, outcome_status, outcome_reason, custom_subject, custom_html } = await req.json();
 
     if (!opportunity_id || !outcome_status || !outcome_reason) {
       return new Response(JSON.stringify({ error: 'missing_fields' }), {
@@ -171,13 +171,24 @@ serve(async (req) => {
       });
     }
 
-    // Build email
+    // Build email — start from the server template, then apply rep overrides where allowed.
+    // Safety rule: for underwriting_declined the body is an ECOA Adverse Action Notice and is
+    // ALWAYS the server template regardless of what the client sent. Only the subject is
+    // overridable. This prevents bypassing the client-side body lock in EmailPreviewDialog.
     let emailContent: { subject: string; html: string };
     try {
       if (outcome_status === 'disqualified') {
-        emailContent = buildDisqualifiedEmail(contact, account, outcome_reason);
+        const defaults = buildDisqualifiedEmail(contact, account, outcome_reason);
+        emailContent = {
+          subject: (typeof custom_subject === 'string' && custom_subject.trim()) ? custom_subject : defaults.subject,
+          html: (typeof custom_html === 'string' && custom_html.trim()) ? custom_html : defaults.html,
+        };
       } else if (outcome_status === 'underwriting_declined') {
-        emailContent = buildUwDeclinedEmail(contact, account, outcome_reason);
+        const defaults = buildUwDeclinedEmail(contact, account, outcome_reason);
+        emailContent = {
+          subject: (typeof custom_subject === 'string' && custom_subject.trim()) ? custom_subject : defaults.subject,
+          html: defaults.html, // LOCKED — compliance
+        };
       } else {
         return new Response(JSON.stringify({ error: 'invalid_outcome_for_email' }), {
           status: 400,

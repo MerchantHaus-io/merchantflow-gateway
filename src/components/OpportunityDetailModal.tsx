@@ -49,6 +49,8 @@ import GameSplash from "./GameSplash";
 import CommentsTab from "./CommentsTab";
 import { PortalActivationDialog } from "./opportunity-detail/PortalActivationDialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { EmailPreviewDialog } from "./EmailPreviewDialog";
+import { buildDisqualifiedEmailTemplate, buildUwDeclinedEmailTemplate, isOutcomeBodyLocked } from "@/lib/emailTemplates";
 
 import liveBadge from "@/assets/live-badge.webp";
 
@@ -209,6 +211,17 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   const [showActivationDialog, setShowActivationDialog] = useState(false);
   const [activeSection, setActiveSection] = useState<ModalSection>('overview');
   const [mounted, setMounted] = useState(false);
+  // Outcome email preview dialog — pops between outcome selection and send
+  const [outcomeEmailPreview, setOutcomeEmailPreview] = useState<{
+    open: boolean;
+    subject: string;
+    html: string;
+    recipientEmail: string;
+    recipientName: string;
+    outcome: OutcomeStatus;
+    reason: string;
+    bodyLocked: boolean;
+  } | null>(null);
   const isMobile = useIsMobile();
 
   // Slide-in animation
@@ -953,39 +966,23 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
       if (actErr) console.error('Activity log failed:', actErr);
     });
 
-    // Step 3: Email invocation (fire-and-forget for email-triggering outcomes)
-    if (EMAIL_TRIGGERING_OUTCOMES.includes(outcome)) {
-      supabase.functions.invoke('send-outcome-email', {
-        body: { opportunity_id: opportunity.id, outcome_status: outcome, outcome_reason: reason },
-      }).then(({ error: emailErr }) => {
-        if (emailErr) {
-          supabase.from('activities').insert({
-            opportunity_id: opportunity.id,
-            type: 'email_failed',
-            description: `COMPLIANCE EMAIL FAILED — Outcome: ${outcome} — ${emailErr.message}. Manual follow-up required.`,
-            user_email: 'system',
-            created_at: new Date().toISOString(),
-          }).then(() => {});
-        }
-        // Also log to client interactions for audit trail
-        if (!emailErr && opportunity.contact?.email) {
-          const contactName = [opportunity.contact?.first_name, opportunity.contact?.last_name].filter(Boolean).join(' ') || 'Valued Applicant';
-          supabase.from('client_interactions').insert({
-            account_id: opportunity.account_id,
-            subject: `Compliance notification sent — ${opportunity.account?.name || ''}`,
-            interaction_type: 'email',
-            channel: 'email',
-            contact_name: contactName,
-            contact_email: opportunity.contact?.email || '',
-            notes: `${statusLabel}: ${reasonLabel}. Compliance notification email sent to ${opportunity.contact?.email}.`,
-            status: 'closed',
-            outcome: 'sent',
-            created_by: user?.id,
-            created_by_email: user?.email,
-          }).then(() => {});
-        }
-      }).catch((err) => {
-        console.error('send-outcome-email invocation error:', err);
+    // Step 3: Email preview (rep reviews & optionally edits before sending)
+    if (EMAIL_TRIGGERING_OUTCOMES.includes(outcome) && opportunity.contact?.email) {
+      const firstName = opportunity.contact?.first_name || '';
+      const lastName = opportunity.contact?.last_name || '';
+      const contactName = [firstName, lastName].filter(Boolean).join(' ') || 'Valued Applicant';
+      const template = outcome === 'underwriting_declined'
+        ? buildUwDeclinedEmailTemplate({ contactFirstName: firstName, contactEmail: opportunity.contact.email, outcomeReason: reason })
+        : buildDisqualifiedEmailTemplate({ contactFirstName: firstName, contactEmail: opportunity.contact.email, outcomeReason: reason });
+      setOutcomeEmailPreview({
+        open: true,
+        subject: template.subject,
+        html: template.html,
+        recipientEmail: opportunity.contact.email,
+        recipientName: contactName,
+        outcome,
+        reason,
+        bodyLocked: isOutcomeBodyLocked(outcome),
       });
     }
 
@@ -1021,11 +1018,73 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     });
 
     const toastMsg = EMAIL_TRIGGERING_OUTCOMES.includes(outcome)
-      ? "Outcome recorded. Compliance notification email queued for delivery."
+      ? "Outcome recorded. Review the notification email before it goes out."
       : "Outcome recorded.";
     toast.success(toastMsg);
 
-    setTimeout(() => onClose(), 1500);
+    // Close on a slight delay unless the email-preview dialog is about to open
+    if (!EMAIL_TRIGGERING_OUTCOMES.includes(outcome)) {
+      setTimeout(() => onClose(), 1500);
+    }
+  };
+
+  // Send the outcome notification email from the preview dialog
+  const handleSendOutcomeEmail = async ({ subject, bodyHtml }: { subject: string; bodyHtml: string }) => {
+    if (!outcomeEmailPreview || !opportunity) return;
+    const { outcome, reason } = outcomeEmailPreview;
+    const { error: emailErr } = await supabase.functions.invoke('send-outcome-email', {
+      body: {
+        opportunity_id: opportunity.id,
+        outcome_status: outcome,
+        outcome_reason: reason,
+        custom_subject: subject,
+        custom_html: bodyHtml,
+      },
+    });
+    if (emailErr) {
+      toast.error(`Email failed to send: ${emailErr.message}. Manual follow-up required.`);
+      await supabase.from('activities').insert({
+        opportunity_id: opportunity.id,
+        type: 'email_failed',
+        description: `COMPLIANCE EMAIL FAILED — Outcome: ${outcome} — ${emailErr.message}. Manual follow-up required.`,
+        user_email: 'system',
+        created_at: new Date().toISOString(),
+      });
+      return;
+    }
+    toast.success("Email sent.");
+    if (opportunity.contact?.email) {
+      const contactName = [opportunity.contact?.first_name, opportunity.contact?.last_name].filter(Boolean).join(' ') || 'Valued Applicant';
+      await supabase.from('client_interactions').insert({
+        account_id: opportunity.account_id,
+        subject: `Compliance notification sent — ${opportunity.account?.name || ''}`,
+        interaction_type: 'email',
+        channel: 'email',
+        contact_name: contactName,
+        contact_email: opportunity.contact?.email || '',
+        notes: `Compliance notification email sent to ${opportunity.contact?.email}.`,
+        status: 'closed',
+        outcome: 'sent',
+        created_by: user?.id,
+        created_by_email: user?.email,
+      });
+    }
+    setTimeout(() => onClose(), 800);
+  };
+
+  // Rep cancelled the preview — log it so we have an audit trail of non-sent compliance emails
+  const handleCancelOutcomeEmail = async (nextOpen: boolean) => {
+    if (nextOpen) return; // dialog is just opening
+    if (outcomeEmailPreview && opportunity) {
+      await supabase.from('activities').insert({
+        opportunity_id: opportunity.id,
+        type: 'email_cancelled',
+        description: `Outcome notification email was cancelled by rep — Outcome: ${outcomeEmailPreview.outcome}. No email sent.`,
+        user_email: user?.email || 'system',
+        created_at: new Date().toISOString(),
+      });
+    }
+    setOutcomeEmailPreview(null);
   };
 
   if (!opportunity) return null;
@@ -1828,6 +1887,21 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
           onSuccess={() => {
             onUpdate({});
           }}
+        />
+      )}
+
+      {/* Outcome Email Preview — rep reviews/edits before send */}
+      {outcomeEmailPreview && (
+        <EmailPreviewDialog
+          open={outcomeEmailPreview.open}
+          onOpenChange={handleCancelOutcomeEmail}
+          subject={outcomeEmailPreview.subject}
+          bodyHtml={outcomeEmailPreview.html}
+          recipientEmail={outcomeEmailPreview.recipientEmail}
+          recipientName={outcomeEmailPreview.recipientName}
+          bodyLocked={outcomeEmailPreview.bodyLocked}
+          lockedReason="This email is an Adverse Action Notice with federally-required disclosures (ECOA). The body cannot be edited — only the subject line."
+          onSend={handleSendOutcomeEmail}
         />
       )}
     </>

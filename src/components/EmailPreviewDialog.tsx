@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GmailEditor } from "@/components/GmailEditor";
-import { Loader2, Send } from "lucide-react";
+import { Loader2, Send, Lock } from "lucide-react";
 
 interface EmailPreviewDialogProps {
   open: boolean;
@@ -16,11 +16,15 @@ interface EmailPreviewDialogProps {
   recipientEmail: string;
   recipientName?: string;
   onSend: (data: { subject: string; bodyHtml: string }) => Promise<void>;
+  /** When true, the body is rendered read-only (e.g. for legally-required templates). */
+  bodyLocked?: boolean;
+  /** Optional explanation shown at the top of the dialog (e.g. compliance warning). */
+  lockedReason?: string;
 }
 
 export function EmailPreviewDialog({
   open, onOpenChange, subject: initialSubject, bodyHtml: initialBody,
-  recipientEmail, recipientName, onSend,
+  recipientEmail, recipientName, onSend, bodyLocked, lockedReason,
 }: EmailPreviewDialogProps) {
   const [subject, setSubject] = useState(initialSubject);
   const [body, setBody] = useState(initialBody);
@@ -37,7 +41,8 @@ export function EmailPreviewDialog({
   const handleSend = async () => {
     setSending(true);
     try {
-      await onSend({ subject, bodyHtml: body });
+      // When the body is locked, always send the original template — ignore any local edits
+      await onSend({ subject, bodyHtml: bodyLocked ? initialBody : body });
       onOpenChange(false);
     } finally {
       setSending(false);
@@ -54,6 +59,16 @@ export function EmailPreviewDialog({
           </DialogDescription>
         </DialogHeader>
 
+        {bodyLocked && (
+          <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
+            <Lock className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            <div>
+              <strong>Body locked — compliance template.</strong>{" "}
+              {lockedReason || "This email contains legally-required disclosures and cannot be edited. Subject line is editable."}
+            </div>
+          </div>
+        )}
+
         <div className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="email-subject" className="text-xs font-medium">Subject</Label>
@@ -67,13 +82,21 @@ export function EmailPreviewDialog({
 
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">Email Body</Label>
-            <GmailEditor
-              value={body}
-              onChange={setBody}
-              placeholder="Edit email content…"
-              minHeight="220px"
-              mergeTags={["{{first_name}}", "{{company}}"]}
-            />
+            {bodyLocked ? (
+              <div
+                className="border border-border rounded-md p-4 bg-muted/30 text-sm overflow-auto max-h-[320px]"
+                style={{ minHeight: "220px" }}
+                dangerouslySetInnerHTML={{ __html: initialBody }}
+              />
+            ) : (
+              <GmailEditor
+                value={body}
+                onChange={setBody}
+                placeholder="Edit email content…"
+                minHeight="220px"
+                mergeTags={["{{first_name}}", "{{company}}"]}
+              />
+            )}
           </div>
         </div>
 
