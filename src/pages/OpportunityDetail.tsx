@@ -463,7 +463,6 @@ const OpportunityDetail = () => {
           filter: `id=eq.${id}`,
         },
         (payload) => {
-          console.log('Realtime opportunity update:', payload);
           setOpportunity(prev => {
             if (!prev) return prev;
             return {

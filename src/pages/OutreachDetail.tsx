@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import { format, formatDistanceToNow, addDays } from "date-fns";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, pluralize } from "@/lib/utils";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const LEAD_STATUSES = ["all", "pending", "sent", "bounced", "replied", "converted", "opted_out"] as const;
@@ -253,7 +253,7 @@ export default function OutreachDetail() {
     queryClient.invalidateQueries({ queryKey: ["outreach-contacts", id] });
     queryClient.invalidateQueries({ queryKey: ["outreach-campaign", id] });
     queryClient.invalidateQueries({ queryKey: ["outreach-campaigns"] });
-    toast.success(`${rows.length} leads imported to list`);
+    toast.success(`${pluralize(rows.length, 'lead')} imported to list`);
     if (fileRef.current) fileRef.current.value = "";
   };
 
@@ -594,7 +594,7 @@ export default function OutreachDetail() {
                       </Table>
                     </div>
                     <div className="px-4 py-2 border-t border-border/40 flex items-center justify-between">
-                      <p className="text-xs text-muted-foreground">{filteredContacts.length} leads shown</p>
+                      <p className="text-xs text-muted-foreground">{pluralize(filteredContacts.length, 'lead')} shown</p>
                       <Button variant="ghost" size="sm" className="h-6 text-xs gap-1" onClick={() => {
                         const csv = ["Last Name,First Name,Email,Company,Status,Step,Sent At",
                           ...filteredContacts.map(c =>

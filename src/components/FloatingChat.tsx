@@ -942,11 +942,11 @@ const FloatingChat: React.FC = () => {
                 </button>
               )}
               {!isMobile && (
-                <button onClick={() => setIsOpen(false)} className="hover:bg-[hsl(var(--wa-header)/0.7)] p-2 rounded-full transition-colors" title="Minimize">
+                <button onClick={() => setIsOpen(false)} className="hover:bg-[hsl(var(--wa-header)/0.7)] p-2 rounded-full transition-colors" aria-label="Minimize chat">
                   <Minus className="h-4 w-4" />
                 </button>
               )}
-              <button onClick={() => setIsOpen(false)} className="hover:bg-[hsl(var(--wa-header)/0.7)] p-2 rounded-full transition-colors" title="Close">
+              <button onClick={() => setIsOpen(false)} className="hover:bg-[hsl(var(--wa-header)/0.7)] p-2 rounded-full transition-colors" aria-label="Close chat">
                 <X className="h-4 w-4" />
               </button>
             </div>

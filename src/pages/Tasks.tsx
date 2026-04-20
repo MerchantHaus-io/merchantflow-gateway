@@ -16,7 +16,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/contexts/AuthContext";
 import { Task, TaskPriority } from "@/types/task";
 import { EMAIL_TO_USER, TEAM_MEMBERS, resolveDisplayName } from "@/types/opportunity";
-import { cn } from "@/lib/utils";
+import { cn, pluralize } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Search,
@@ -707,7 +707,7 @@ const Tasks = () => {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base">
-                    {filteredTasks.length} Tasks
+                    {pluralize(filteredTasks.length, 'Task')}
                   </CardTitle>
                   <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'table' | 'cards')}>
                     <TabsList className="h-8">

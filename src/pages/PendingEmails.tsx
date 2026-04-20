@@ -19,7 +19,7 @@ import { Inbox, Mail, Send, Trash2, CheckCircle, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, pluralize } from "@/lib/utils";
 
 interface PendingEmail {
   id: string;
@@ -181,7 +181,7 @@ const PendingEmails = () => {
           <Card className="border-border/60 overflow-hidden">
             <CardHeader className="pb-0 pt-3 px-4">
               <span className="text-xs text-muted-foreground">
-                {filtered.length} {statusFilter} email{filtered.length === 1 ? "" : "s"}
+                {pluralize(filtered.length, `${statusFilter} email`)}
               </span>
             </CardHeader>
             <CardContent className="p-0">

@@ -26,8 +26,8 @@ const playNotificationSound = () => {
     
     oscillator.start(audioContext.currentTime);
     oscillator.stop(audioContext.currentTime + 0.3);
-  } catch (e) {
-    console.log('Could not play notification sound');
+  } catch {
+    // Audio context unavailable (permissions or browser support) — silently skip
   }
 };
 

@@ -8,7 +8,7 @@ import { PortalActivationDialog } from "@/components/opportunity-detail/PortalAc
 import NewApplicationModal, { ApplicationFormData } from "@/components/NewApplicationModal";
 import { AppLayout } from "@/components/AppLayout";
 import { getServiceType, ServiceType, OnboardingWizardState, Opportunity, OpportunityStage, OutcomeStatus, migrateStage, EMAIL_TO_USER, TEAM_MEMBERS } from "@/types/opportunity";
-import { cn } from "@/lib/utils";
+import { cn, pluralize } from "@/lib/utils";
 import { SLA_AUTO_TASKS_ENABLED } from "@/lib/sla-config";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -864,7 +864,7 @@ const Index = () => {
               <span className="hidden sm:inline">Merchant Application</span>
             </a>
             <span className="hidden sm:inline-flex items-center text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full ml-2">
-              {filteredOpportunities.length} deals
+              {pluralize(filteredOpportunities.length, 'deal')}
             </span>
             <div className="ml-auto flex items-center gap-2">
               <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>

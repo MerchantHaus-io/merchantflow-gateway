@@ -91,7 +91,7 @@ export function AppLayout({
               {pageTitle && (
                 <div className="flex items-center gap-2">
                   {!isTopLevel && (
-                    <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" onClick={handleGoBack}>
+                    <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" onClick={handleGoBack} aria-label="Go back">
                       <ArrowLeft className="h-4 w-4" />
                     </Button>
                   )}

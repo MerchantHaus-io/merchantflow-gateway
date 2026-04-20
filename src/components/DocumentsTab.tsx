@@ -414,7 +414,7 @@ export const DocumentsTab = ({ opportunityId, serviceType }: DocumentsTabProps) 
               <div className="flex items-center gap-1 shrink-0">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setPreviewDoc(doc)}>
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setPreviewDoc(doc)} aria-label="Preview document">
                       <Eye className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -422,7 +422,7 @@ export const DocumentsTab = ({ opportunityId, serviceType }: DocumentsTabProps) 
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleDownload(doc)}>
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleDownload(doc)} aria-label="Download document">
                       <Download className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>
@@ -430,7 +430,7 @@ export const DocumentsTab = ({ opportunityId, serviceType }: DocumentsTabProps) 
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => handleDelete(doc)}>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => handleDelete(doc)} aria-label="Delete document">
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </TooltipTrigger>

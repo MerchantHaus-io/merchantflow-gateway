@@ -254,8 +254,7 @@ const Contacts = () => {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'contacts' },
-        (payload) => {
-          console.log('Real-time contact update:', payload);
+        () => {
           fetchContacts();
         }
       )
@@ -1205,7 +1204,7 @@ const Contacts = () => {
                 Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredContacts.length)} of {filteredContacts.length}
               </p>
               <div className="flex items-center gap-1.5">
-                <Button variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
+                <Button variant="outline" size="sm" className="h-9 gap-1 text-xs px-3" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
                   <ChevronLeft className="h-3.5 w-3.5" />Prev
                 </Button>
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -1219,14 +1218,16 @@ const Contacts = () => {
                       key={pageNum}
                       variant={currentPage === pageNum ? "default" : "ghost"}
                       size="sm"
-                      className="h-7 w-7 p-0 text-xs"
+                      className="h-9 w-9 p-0 text-xs"
                       onClick={() => setCurrentPage(pageNum)}
+                      aria-label={`Go to page ${pageNum}`}
+                      aria-current={currentPage === pageNum ? "page" : undefined}
                     >
                       {pageNum}
                     </Button>
                   );
                 })}
-                <Button variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
+                <Button variant="outline" size="sm" className="h-9 gap-1 text-xs px-3" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
                   Next<ChevronRight className="h-3.5 w-3.5" />
                 </Button>
               </div>

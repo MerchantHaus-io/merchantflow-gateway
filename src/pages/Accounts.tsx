@@ -25,7 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Pencil, Search, Users, Trash, Mail, Phone, ExternalLink, Check, X, Plus, TrendingUp, Globe, MapPin, UserPlus } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+import { cn, pluralize } from "@/lib/utils";
 import { toast } from "sonner";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
@@ -425,7 +425,15 @@ const Accounts = () => {
           {/* Filters toolbar */}
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold">{filteredAccounts.length} {statusFilter === 'all' ? 'records' : statusFilter === 'lead' ? 'leads' : statusFilter}</span>
+              <span className="text-sm font-semibold">
+                {statusFilter === 'all'
+                  ? pluralize(filteredAccounts.length, 'record')
+                  : statusFilter === 'lead'
+                    ? pluralize(filteredAccounts.length, 'lead')
+                    : statusFilter === 'active'
+                      ? `${filteredAccounts.length} active`
+                      : `${filteredAccounts.length} dead`}
+              </span>
               {searchQuery && (
                 <button onClick={() => setSearchQuery('')} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
                   Clear ×

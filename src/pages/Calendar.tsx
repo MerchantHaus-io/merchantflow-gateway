@@ -266,6 +266,9 @@ export default function Calendar() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground" title="All times shown in Central Time">
+              Times in CT
+            </Badge>
             {/* User filter */}
             <Select value={filterUser} onValueChange={setFilterUser}>
               <SelectTrigger className="h-8 w-[140px] text-xs">

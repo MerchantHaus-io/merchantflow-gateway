@@ -16,8 +16,6 @@ export const sendEmailNotification = async ({
   data,
 }: EmailNotificationData): Promise<boolean> => {
   try {
-    console.log(`Sending ${type} email notification to ${recipientEmail}`);
-
     const { error } = await supabase.functions.invoke("send-notification-email", {
       body: {
         type,
@@ -32,7 +30,6 @@ export const sendEmailNotification = async ({
       return false;
     }
 
-    console.log("Email notification sent successfully");
     return true;
   } catch (error) {
     console.error("Error sending email notification:", error);
@@ -60,10 +57,7 @@ export const sendStageChangeEmail = async (
   changedBy?: string
 ): Promise<boolean> => {
   const recipientEmail = getTeamMemberEmail(assignedTo);
-  if (!recipientEmail) {
-    console.log(`No email found for team member: ${assignedTo}`);
-    return false;
-  }
+  if (!recipientEmail) return false;
 
   return sendEmailNotification({
     type: "stage_change",
@@ -88,10 +82,7 @@ export const sendTaskAssignmentEmail = async (
   assignedBy?: string
 ): Promise<boolean> => {
   const recipientEmail = getTeamMemberEmail(assignee);
-  if (!recipientEmail) {
-    console.log(`No email found for team member: ${assignee}`);
-    return false;
-  }
+  if (!recipientEmail) return false;
 
   return sendEmailNotification({
     type: "task_assignment",
@@ -115,10 +106,7 @@ export const sendOpportunityAssignmentEmail = async (
   stage?: string
 ): Promise<boolean> => {
   const recipientEmail = getTeamMemberEmail(assignedTo);
-  if (!recipientEmail) {
-    console.log(`No email found for team member: ${assignedTo}`);
-    return false;
-  }
+  if (!recipientEmail) return false;
 
   return sendEmailNotification({
     type: "opportunity_assignment",

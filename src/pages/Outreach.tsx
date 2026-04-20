@@ -25,7 +25,7 @@ import {
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, pluralize } from "@/lib/utils";
 
 const STATUS_CFG: Record<string, { label: string; pill: string; dot: string }> = {
   draft:     { label: "Draft",     pill: "bg-muted text-muted-foreground border-transparent",                           dot: "bg-muted-foreground" },
@@ -189,7 +189,7 @@ export default function Outreach() {
     }).filter(r => r.email && r.email.includes("@"));
     if (rows.length === 0) { toast.error("No valid email addresses found"); return; }
     setCsvLeads(rows);
-    toast.success(`${rows.length} leads parsed from CSV`);
+    toast.success(`${pluralize(rows.length, 'lead')} parsed from CSV`);
   };
 
   const { data: campaigns = [], isLoading } = useQuery({
@@ -256,7 +256,7 @@ export default function Outreach() {
       setOpen(false); setName(""); setSchedDate(undefined);
       setSteps(Array.from({ length: 10 }, (_, i) => ({ subject: "", bodyHtml: "", delayDays: DEFAULT_DELAYS[i] })));
       setSignature(""); setActiveStep(0); setCsvLeads([]); setCsvFileName("");
-      toast.success(`Cadence created${csvLeads.length > 0 ? ` with ${csvLeads.length} leads` : ""}!`);
+      toast.success(`Cadence created${csvLeads.length > 0 ? ` with ${pluralize(csvLeads.length, 'lead')}` : ""}!`);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -510,7 +510,7 @@ export default function Outreach() {
                          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Target List (Optional)</p>
                          {csvLeads.length > 0 && (
                            <span className="text-xs font-medium text-primary flex items-center gap-1">
-                             <CheckCircle2 className="h-3 w-3" />{csvLeads.length} leads loaded
+                             <CheckCircle2 className="h-3 w-3" />{pluralize(csvLeads.length, 'lead')} loaded
                            </span>
                          )}
                        </div>
