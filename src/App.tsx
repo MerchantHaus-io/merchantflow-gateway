@@ -51,6 +51,7 @@ import NMIBoarding from "./pages/NMIBoarding";
 import Transactions from "./pages/Transactions";
 import Calendar from "./pages/Calendar";
 import Commissions from "./pages/Commissions";
+import PendingEmails from "./pages/PendingEmails";
 import { IncomingCallToast } from "./components/IncomingCallToast";
 import { IncomingMessageToast } from "./components/IncomingMessageToast";
 import { Dialler } from "./components/Dialler";
@@ -145,6 +146,7 @@ const App = () => (
                 <Route path="/leads" element={<ProtectedRoute><Accounts /></ProtectedRoute>} />
                 <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
                 <Route path="/commissions" element={<ProtectedRoute><Commissions /></ProtectedRoute>} />
+                <Route path="/admin/pending-emails" element={<ProtectedRoute><PendingEmails /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </TasksProvider>

@@ -33,6 +33,7 @@ import {
   Send,
   Search,
   UserPlus,
+  Mail,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -138,6 +139,7 @@ const navMain: NavGroup[] = [
     icon: BookOpen,
     items: [
       { title: "SOP", url: "/sop", icon: BookOpen, description: "Standard operating procedures" },
+      { title: "Pending Emails", url: "/admin/pending-emails", icon: Mail, description: "Review & approve queued automated emails" },
       { title: "CRM Updates", url: "/tools/terminal-updates", icon: Sparkles, description: "Latest changes & features" },
       { title: "Administration", url: "/admin/administration", icon: Activity, description: "Agenda, popups & session tracking" },
       { title: "Data Export", url: "/admin/data-export", icon: Download, description: "Export opportunity data" },
@@ -252,12 +254,23 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
           <img src={sidebarIcon} alt="Ops Terminal" className="h-7 w-7 object-contain" />
         </Link>
 
-        {/* Desktop Navigation */}
-        <NavigationMenu className="hidden lg:flex flex-1">
+        {/* Desktop Navigation
+            delayDuration={120} — small open delay so quick mouse passes don't trigger
+            skipDelayDuration={600} — wide window where re-opening is instant; also
+            extends the effective hover-out grace period before the menu closes. */}
+        <NavigationMenu className="hidden lg:flex flex-1" delayDuration={120} skipDelayDuration={600}>
           <NavigationMenuList className="gap-0">
             {navMain.map((item) => {
               if (item.items) {
-                const isTools = item.title === "Tools";
+                // Adapt dropdown width/columns to item count so menus with few
+                // items don't render in an awkwardly wide grid.
+                const itemCount = item.items.length;
+                const layoutCls =
+                  itemCount <= 2
+                    ? "grid w-[280px]"
+                    : itemCount >= 6
+                      ? "grid w-[500px] md:grid-cols-2"
+                      : "grid w-[340px] md:w-[420px] md:grid-cols-2";
                 return (
                   <NavigationMenuItem key={item.title}>
                     <NavigationMenuTrigger
@@ -273,10 +286,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                     </NavigationMenuTrigger>
                     <NavigationMenuContent>
                       <ul
-                        className={cn(
-                          "gap-1 p-2 glass-card",
-                          isTools ? "grid w-[500px] md:grid-cols-2" : "grid w-[340px] md:w-[420px] md:grid-cols-2"
-                        )}
+                        className={cn("gap-1 p-2 glass-card", layoutCls)}
                       >
                         {item.items.map((subItem) => (
                           <li key={subItem.title}>

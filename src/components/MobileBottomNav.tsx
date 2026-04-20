@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Briefcase, ListChecks, Building2, Users, FileText,
   BarChart3, Settings, BookOpen, ClipboardList, Calculator, FileSpreadsheet,
   Download, CreditCard, Activity, Trash2, LogOut, BadgeDollarSign, Cloud,
-  Send, Globe, Search, X, ChevronRight, UserPlus, type LucideIcon,
+  Send, Globe, Search, X, ChevronRight, UserPlus, Mail, type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -74,6 +74,7 @@ const GROUPS: { label: string; items: NavItem[] }[] = [
     label: "Admin",
     items: [
       { title: "SOP", url: "/sop", icon: BookOpen },
+      { title: "Pending Emails", url: "/admin/pending-emails", icon: Mail },
       { title: "CRM Updates", url: "/tools/terminal-updates", icon: Activity },
       { title: "Administration", url: "/admin/administration", icon: Activity },
       { title: "Data Export", url: "/admin/data-export", icon: Download },

@@ -264,40 +264,35 @@ const buildComplianceChecklistEmailHtml = (firstName: string, businessName: stri
 </html>`;
 };
 
-async function sendComplianceChecklistEmail(
+/**
+ * Queue the website compliance checklist for staff review instead of sending
+ * directly. Staff approve / edit / discard from /admin/pending-emails before
+ * the email actually goes out to the merchant. See pending_emails table.
+ */
+async function queueComplianceChecklistEmail(
+  supabase: any,
+  applicationId: string,
   firstName: string,
   email: string,
   businessName: string,
 ): Promise<void> {
-  if (!RESEND_API_KEY) {
-    console.error("RESEND_API_KEY not configured — skipping compliance checklist email");
-    return;
-  }
-
   try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: "Merchant Haus <onboarding@merchanthaus.io>",
-        to: [email],
-        subject: "Your application is in. Here's what underwriting will look at on your website.",
-        html: buildComplianceChecklistEmailHtml(firstName, businessName),
-        reply_to: "onboarding@merchanthaus.io",
-      }),
+    const { error } = await supabase.from("pending_emails").insert({
+      email_type: "website_compliance_checklist",
+      application_id: applicationId,
+      recipient_email: email,
+      recipient_name: firstName,
+      subject: "Your application is in. Here's what underwriting will look at on your website.",
+      body_html: buildComplianceChecklistEmailHtml(firstName, businessName),
+      status: "pending",
     });
-
-    const result = await res.json();
-    if (!res.ok) {
-      console.error("Compliance checklist email error:", result);
+    if (error) {
+      console.error("Failed to queue compliance checklist email:", error);
     } else {
-      console.log("Compliance checklist email sent to", email);
+      console.log("Compliance checklist email queued for review:", email);
     }
   } catch (err) {
-    console.error("Failed to send compliance checklist email:", err);
+    console.error("Compliance checklist queue insert threw:", err);
   }
 }
 
@@ -588,8 +583,8 @@ Deno.serve(async (req) => {
       // Send confirmation email (non-blocking)
       await sendConfirmationEmail(parsed.dba_contact_first_name, parsed.dba_contact_email, "gateway_only", parsed.dba_name);
 
-      // Send website compliance checklist (M2 Wizard Submitted automation)
-      await sendComplianceChecklistEmail(parsed.dba_contact_first_name, parsed.dba_contact_email, parsed.dba_name);
+      // Queue website compliance checklist for staff review (b2 hold-for-review)
+      await queueComplianceChecklistEmail(supabase, applicationId, parsed.dba_contact_first_name, parsed.dba_contact_email, parsed.dba_name);
 
       return new Response(
         JSON.stringify({ success: true, application_id: applicationId, files: fileResult }),
@@ -791,8 +786,8 @@ Deno.serve(async (req) => {
     // 8. Send confirmation email (non-blocking)
     await sendConfirmationEmail(parsed.dba_contact_first_name, parsed.dba_contact_email, "processing", parsed.dba_name);
 
-    // 9. Send website compliance checklist (M2 Wizard Submitted automation)
-    await sendComplianceChecklistEmail(parsed.dba_contact_first_name, parsed.dba_contact_email, parsed.dba_name);
+    // 9. Queue website compliance checklist for staff review (b2 hold-for-review)
+    await queueComplianceChecklistEmail(supabase, applicationId, parsed.dba_contact_first_name, parsed.dba_contact_email, parsed.dba_name);
 
     return new Response(
       JSON.stringify({ success: true, application_id: applicationId, files: fileResult }),
