@@ -9,6 +9,7 @@ import NewApplicationModal, { ApplicationFormData } from "@/components/NewApplic
 import { AppLayout } from "@/components/AppLayout";
 import { getServiceType, ServiceType, OnboardingWizardState, Opportunity, OpportunityStage, OutcomeStatus, migrateStage, EMAIL_TO_USER, TEAM_MEMBERS } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
+import { SLA_AUTO_TASKS_ENABLED } from "@/lib/sla-config";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -512,6 +513,7 @@ const Index = () => {
   };
 
   useEffect(() => {
+    if (!SLA_AUTO_TASKS_ENABLED) return; // paused — see src/lib/sla-config.ts
     const now = Date.now();
     opportunities.forEach(opportunity => {
       if (opportunity.stage === 'discovery') {

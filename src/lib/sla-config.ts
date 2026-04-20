@@ -1,6 +1,18 @@
 import { OpportunityStage } from "@/types/opportunity";
 
 /**
+ * Master switch for the auto-creation of SLA tasks (e.g. the "24h follow-up"
+ * task created from the Pipeline page when an opportunity sits in discovery).
+ *
+ * Set to `false` to pause all SLA-driven task creation. Manually-created
+ * tasks are unaffected. Flip back to `true` to resume.
+ *
+ * Note: this only gates the auto-creation. The SLA *display* (amber/red dots
+ * on opportunities) still works regardless — it's read-only and useful.
+ */
+export const SLA_AUTO_TASKS_ENABLED = false;
+
+/**
  * SLA thresholds per pipeline stage (in hours).
  * amber = at risk, red = overdue / breached.
  */
