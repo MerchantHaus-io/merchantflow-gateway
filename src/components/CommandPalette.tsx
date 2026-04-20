@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Search, LayoutDashboard, Briefcase, ListChecks, Building2, Users,
   FileText, BarChart3, Settings, BookOpen, Calculator, Send, Globe,
-  BadgeDollarSign, Cloud, CreditCard, Activity, Sparkles,
+  BadgeDollarSign, Cloud, CreditCard, Activity, Sparkles, UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -19,7 +19,7 @@ const SEARCH_ITEMS: SearchItem[] = [
   { title: "Pipeline Board", url: "/", icon: LayoutDashboard, keywords: "dashboard home board kanban" },
   { title: "All Opportunities", url: "/opportunities", icon: Briefcase, keywords: "deals pipeline list" },
   { title: "Tasks", url: "/tasks", icon: ListChecks, keywords: "todo checklist" },
-  { title: "Accounts", url: "/accounts", icon: Building2, keywords: "companies businesses" },
+  { title: "Leads", url: "/leads", icon: UserPlus, keywords: "accounts companies businesses prospects" },
   { title: "Contacts", url: "/contacts", icon: Users, keywords: "people clients" },
   { title: "Documents", url: "/documents", icon: FileText, keywords: "files uploads" },
   { title: "Reports", url: "/reports", icon: BarChart3, keywords: "analytics performance" },

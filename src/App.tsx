@@ -48,7 +48,6 @@ import Outreach from "./pages/Outreach";
 import OutreachDetail from "./pages/OutreachDetail";
 import NetlifyHub from "./pages/NetlifyHub";
 import NMIBoarding from "./pages/NMIBoarding";
-import Leads from "./pages/Leads";
 import Transactions from "./pages/Transactions";
 import Calendar from "./pages/Calendar";
 import Commissions from "./pages/Commissions";
@@ -142,7 +141,8 @@ const App = () => (
                 <Route path="/supported-processors" element={<ProtectedRoute><SupportedProcessors /></ProtectedRoute>} />
                 <Route path="/outreach" element={<ProtectedRoute><Outreach /></ProtectedRoute>} />
                 <Route path="/outreach/:id" element={<ProtectedRoute><OutreachDetail /></ProtectedRoute>} />
-                <Route path="/leads" element={<ProtectedRoute><Leads /></ProtectedRoute>} />
+                {/* /leads is the renamed home for Accounts — /accounts stays as an alias for bookmarks */}
+                <Route path="/leads" element={<ProtectedRoute><Accounts /></ProtectedRoute>} />
                 <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
                 <Route path="/commissions" element={<ProtectedRoute><Commissions /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />

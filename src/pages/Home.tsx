@@ -40,7 +40,7 @@ const groups: ShortcutGroup[] = [
   {
     title: "CRM",
     items: [
-      { title: "Accounts", description: "Business accounts", url: "/accounts", icon: Building2, color: "teal" },
+      { title: "Leads", description: "New prospects & account list", url: "/leads", icon: UserPlus, color: "teal" },
       { title: "Contacts", description: "People & relationships", url: "/contacts", icon: Users, color: "teal" },
       { title: "Documents", description: "Uploaded files", url: "/documents", icon: FileText, color: "gold" },
     ],
