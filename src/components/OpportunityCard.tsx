@@ -28,9 +28,6 @@ interface OpportunityCardProps {
   onAssignmentChange?: (opportunityId: string, assignedTo: string | null) => void;
   onSlaStatusChange?: (opportunityId: string, slaStatus: string | null) => void;
   onMarkAsDead?: (id: string) => void;
-  onTouchDragStart?: (e: React.TouchEvent, opportunity: Opportunity, element: HTMLElement) => void;
-  onTouchDragMove?: (e: React.TouchEvent) => void;
-  onTouchDragEnd?: (e: React.TouchEvent) => void;
   currentUser?: string;
   isAdmin?: boolean;
 }
@@ -62,9 +59,6 @@ const OpportunityCard = ({
   onAssignmentChange,
   onSlaStatusChange,
   onMarkAsDead,
-  onTouchDragStart,
-  onTouchDragMove,
-  onTouchDragEnd,
   currentUser,
   isAdmin,
 }: OpportunityCardProps) => {
@@ -229,11 +223,6 @@ const OpportunityCard = ({
           onDragEnd?.();
           setTimeout(() => { isDraggingRef.current = false; }, 100);
         }}
-        onTouchStart={(e) => {
-          if (onTouchDragStart && cardRef.current) onTouchDragStart(e, opportunity, cardRef.current);
-        }}
-        onTouchMove={onTouchDragMove}
-        onTouchEnd={onTouchDragEnd}
         onClick={() => { if (!isDraggingRef.current) onClick(); }}
         className={cn(
           "cursor-grab active:cursor-grabbing group touch-manipulation relative",

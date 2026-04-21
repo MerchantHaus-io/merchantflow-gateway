@@ -20,9 +20,6 @@ interface PipelineColumnProps {
   hideHeader?: boolean;
   isCompact?: boolean;
   currentUser?: string;
-  onTouchDragStart?: (e: React.TouchEvent, opportunity: Opportunity, element: HTMLElement) => void;
-  onTouchDragMove?: (e: React.TouchEvent) => void;
-  onTouchDragEnd?: (e: React.TouchEvent) => void;
   isAdmin?: boolean;
 }
 
@@ -44,9 +41,6 @@ const PipelineColumn = ({
   hideHeader = false,
   isCompact = false,
   currentUser,
-  onTouchDragStart,
-  onTouchDragMove,
-  onTouchDragEnd,
   isAdmin,
 }: PipelineColumnProps) => {
   const [isDragOver, setIsDragOver] = useState(false);
@@ -178,9 +172,6 @@ const PipelineColumn = ({
               onAssignmentChange={onAssignmentChange}
               onSlaStatusChange={onSlaStatusChange}
               onMarkAsDead={onMarkAsDead}
-              onTouchDragStart={onTouchDragStart}
-              onTouchDragMove={onTouchDragMove}
-              onTouchDragEnd={onTouchDragEnd}
               currentUser={currentUser}
               isAdmin={isAdmin}
             />
