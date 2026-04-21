@@ -114,16 +114,13 @@ const UnifiedPipelineBoard = ({
   }, []);
 
   // ─── Click-drag to pan (desktop only; touch uses browser-native scroll) ───
-  // Uses MouseEvent (not PointerEvent) so touch devices are guaranteed
-  // unaffected — mobile scroll continues to work via touchAction: pan-x pan-y.
-  // Cards, buttons, and other interactive elements are excluded so their own
-  // handlers still fire and HTML5 card drag-and-drop keeps working.
-  const panActiveRef = useRef(false);
-  const panStartXRef = useRef(0);
-  const panStartYRef = useRef(0);
-  const panStartScrollLeftRef = useRef(0);
-  const panStartScrollTopRef = useRef(0);
-
+  // Uses MouseEvent (not PointerEvent) so touch devices are guaranteed unaffected.
+  // On mousedown anywhere inside the scroll container that isn't a card,
+  // button, or other interactive element, we attach window-level mousemove
+  // and mouseup listeners — that way the drag keeps tracking even if the
+  // cursor leaves the container, and intermediate children can't swallow
+  // the events. Pan only *activates* after 3px of movement so normal
+  // clicks pass through to cards / buttons untouched.
   const handlePanMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
     const container = scrollRef.current;
@@ -132,32 +129,36 @@ const UnifiedPipelineBoard = ({
     if (target.closest('[draggable="true"], button, a, input, textarea, select, [role="button"], [contenteditable="true"], [data-no-pan]')) {
       return;
     }
-    panActiveRef.current = true;
-    panStartXRef.current = e.clientX;
-    panStartYRef.current = e.clientY;
-    panStartScrollLeftRef.current = container.scrollLeft;
-    panStartScrollTopRef.current = container.scrollTop;
-    container.style.cursor = "grabbing";
-    container.style.userSelect = "none";
-  }, []);
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startScrollLeft = container.scrollLeft;
+    const startScrollTop = container.scrollTop;
+    let activated = false;
 
-  const handlePanMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!panActiveRef.current) return;
-    const container = scrollRef.current;
-    if (!container) return;
-    const dx = e.clientX - panStartXRef.current;
-    const dy = e.clientY - panStartYRef.current;
-    container.scrollLeft = panStartScrollLeftRef.current - dx;
-    container.scrollTop = panStartScrollTopRef.current - dy;
-  }, []);
+    const handleMove = (ev: MouseEvent) => {
+      const dx = ev.clientX - startX;
+      const dy = ev.clientY - startY;
+      if (!activated && Math.abs(dx) + Math.abs(dy) > 3) {
+        activated = true;
+        container.style.cursor = "grabbing";
+        document.body.style.userSelect = "none";
+      }
+      if (activated) {
+        container.scrollLeft = startScrollLeft - dx;
+        container.scrollTop = startScrollTop - dy;
+        ev.preventDefault();
+      }
+    };
 
-  const endPan = useCallback(() => {
-    if (!panActiveRef.current) return;
-    panActiveRef.current = false;
-    const container = scrollRef.current;
-    if (!container) return;
-    container.style.cursor = "";
-    container.style.userSelect = "";
+    const handleUp = () => {
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleUp);
+      container.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleUp);
   }, []);
 
   // Track scroll position for mobile dots
@@ -256,15 +257,12 @@ const UnifiedPipelineBoard = ({
       </div>
 
       {/* Kanban board — horizontal scroll only, column cards scroll vertically inside columns.
-          Empty-space click-drag pans horizontally on desktop (mouse only).
+          Click-drag anywhere in empty space pans the board on desktop (mouse only).
           Touch devices use the browser's native horizontal scrolling, untouched. */}
       <div
         ref={scrollRef}
         onWheel={handleHorizontalWheel}
         onMouseDown={handlePanMouseDown}
-        onMouseMove={handlePanMouseMove}
-        onMouseUp={endPan}
-        onMouseLeave={endPan}
         className={cn(
           "flex-1 overflow-x-auto overflow-y-hidden min-h-0 pipeline-scrollbar",
           !isMobile && "cursor-grab",
