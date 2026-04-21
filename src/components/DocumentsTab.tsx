@@ -245,25 +245,43 @@ export const DocumentsTab = ({ opportunityId, serviceType }: DocumentsTabProps) 
 
   /**
    * Fallback: look up wizard-uploaded docs (application_documents) for any
-   * application whose email matches this opportunity's contact, and which
-   * haven't already been linked into the opportunity's documents table.
-   * These display read-only so reps can still preview/download them even
-   * if the "Assign Documents" convert step in Web Submissions was skipped.
+   * application belonging to this opportunity's merchant. Matches on any
+   * of: contact email (case-insensitive), account name, or dba/company
+   * name — merchants frequently change one while keeping the other, so
+   * strict email-only matching missed records. Docs that are already in
+   * the opportunity's documents table are filtered out by file name.
    */
   const fetchOrphanWizardDocs = async (linkedDocs: Document[]) => {
     try {
       const { data: opp } = await supabase
         .from("opportunities")
-        .select("contact:contacts(email)")
+        .select("account_id, contact:contacts(email), account:accounts(name)")
         .eq("id", opportunityId)
         .maybeSingle();
-      const contactEmail = (opp as any)?.contact?.email as string | undefined;
-      if (!contactEmail) { setOrphanWizardDocs([]); return; }
 
-      const { data: apps } = await supabase
+      const contactEmail = ((opp as any)?.contact?.email as string | undefined)?.trim();
+      const accountName = ((opp as any)?.account?.name as string | undefined)?.trim();
+
+      // Build an OR clause matching applications by email OR by the account's
+      // business name (company_name or dba_name). Case-insensitive throughout.
+      const orParts: string[] = [];
+      if (contactEmail) orParts.push(`email.ilike.${contactEmail}`);
+      if (accountName) {
+        orParts.push(`company_name.ilike.${accountName}`);
+        orParts.push(`dba_name.ilike.${accountName}`);
+      }
+      if (orParts.length === 0) { setOrphanWizardDocs([]); return; }
+
+      const { data: apps, error: appsErr } = await supabase
         .from("applications")
         .select("id")
-        .eq("email", contactEmail);
+        .or(orParts.join(","));
+      if (appsErr) {
+        console.warn("Orphan wizard docs: app lookup failed", appsErr);
+        setOrphanWizardDocs([]);
+        return;
+      }
+
       const appIds = (apps || []).map((a: any) => a.id);
       if (appIds.length === 0) { setOrphanWizardDocs([]); return; }
 
