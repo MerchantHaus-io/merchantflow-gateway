@@ -104,7 +104,7 @@ export default function Integrations() {
       <div className="flex-1 overflow-y-auto">
         <PageHeader
           title="Integrations"
-          subtitle="Connected services that power email, calendar and document sync"
+          description="Connected services that power email, calendar and document sync"
           icon={Plug}
         />
 
@@ -221,7 +221,7 @@ export default function Integrations() {
                             </Badge>
                           )}
                           {status === "expiring" && (
-                            <Badge variant="outline" className="gap-1 text-xs border-yellow-500 text-yellow-600">
+                            <Badge variant="outline" className="gap-1 text-xs border-warning text-warning">
                               <AlertTriangle className="h-3 w-3" />
                               Expiring soon
                             </Badge>
