@@ -142,15 +142,21 @@ const PipelineColumn = ({
       )}
 
       {/* Scrollable Cards Area.
-          touchAction: pan-x pan-y lets horizontal swipes from inside the
-          column bubble up to the outer pipeline container for horizontal
-          scroll, while vertical swipes still scroll this column. */}
+          touchAction: pan-y tells the browser: only this element handles
+          vertical panning; horizontal swipes skip this element and bubble
+          to the outer pipeline container. Previously used 'pan-x pan-y'
+          which caused jitter because the browser would attempt to start
+          horizontal pan on this element despite it having no horizontal
+          overflow, fighting the outer container.
+
+          overscroll-contain was dropped so a swipe past the top/bottom
+          of the list doesn't feel stuck — it chains up naturally. */}
       <div
         className={cn(
-          "flex-1 overflow-y-auto overscroll-contain min-h-0 no-scrollbar animate-stagger",
+          "flex-1 overflow-y-auto min-h-0 no-scrollbar animate-stagger",
           isCompact ? "p-1 space-y-1" : "p-1.5 space-y-1.5"
         )}
-        style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-x pan-y" }}
+        style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
       >
         {opportunities.length === 0 ? (
           <div
