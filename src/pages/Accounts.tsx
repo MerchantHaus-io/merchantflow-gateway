@@ -73,8 +73,11 @@ const Accounts = () => {
   });
   // Search query for filtering accounts
   const [searchQuery, setSearchQuery] = useState('');
-  // Status filter: defaults to 'lead' so the renamed Leads page shows new prospects first
-  const [statusFilter, setStatusFilter] = useState<'all' | 'lead' | 'active' | 'dead'>('lead');
+  // Status filter. Default = 'all' so existing accounts (which were backfilled
+  // to 'active' or 'dead' based on their opportunity state) remain visible
+  // on first load. Users can click "New Leads" / "Active" / "Dead" tabs to
+  // narrow down.
+  const [statusFilter, setStatusFilter] = useState<'all' | 'lead' | 'active' | 'dead'>('all');
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   // Inline editing state
