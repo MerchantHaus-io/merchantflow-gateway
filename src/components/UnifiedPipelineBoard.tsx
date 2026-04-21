@@ -113,23 +113,22 @@ const UnifiedPipelineBoard = ({
     }
   }, []);
 
-  // ─── Click-drag to pan (desktop only; touch already pans natively) ───
-  // Activates only when the drag starts on empty space — cards, buttons,
-  // and interactive controls are excluded so card drag-and-drop keeps working.
+  // ─── Click-drag to pan (desktop only; touch uses browser-native scroll) ───
+  // Uses MouseEvent (not PointerEvent) so touch devices are guaranteed
+  // unaffected — mobile scroll continues to work via touchAction: pan-x pan-y.
+  // Cards, buttons, and other interactive elements are excluded so their own
+  // handlers still fire and HTML5 card drag-and-drop keeps working.
   const panActiveRef = useRef(false);
   const panStartXRef = useRef(0);
   const panStartYRef = useRef(0);
   const panStartScrollLeftRef = useRef(0);
   const panStartScrollTopRef = useRef(0);
 
-  const handlePanPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    // Mouse only — leave touch/pen to the browser's native pan-x scroll
-    if (e.pointerType !== "mouse") return;
+  const handlePanMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
     const container = scrollRef.current;
     if (!container) return;
     const target = e.target as HTMLElement;
-    // Don't hijack interactions on cards, buttons, links, form fields, etc.
     if (target.closest('[draggable="true"], button, a, input, textarea, select, [role="button"], [contenteditable="true"], [data-no-pan]')) {
       return;
     }
@@ -138,12 +137,11 @@ const UnifiedPipelineBoard = ({
     panStartYRef.current = e.clientY;
     panStartScrollLeftRef.current = container.scrollLeft;
     panStartScrollTopRef.current = container.scrollTop;
-    container.setPointerCapture(e.pointerId);
     container.style.cursor = "grabbing";
     container.style.userSelect = "none";
   }, []);
 
-  const handlePanPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+  const handlePanMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!panActiveRef.current) return;
     const container = scrollRef.current;
     if (!container) return;
@@ -153,12 +151,11 @@ const UnifiedPipelineBoard = ({
     container.scrollTop = panStartScrollTopRef.current - dy;
   }, []);
 
-  const endPan = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+  const endPan = useCallback(() => {
     if (!panActiveRef.current) return;
     panActiveRef.current = false;
     const container = scrollRef.current;
     if (!container) return;
-    try { container.releasePointerCapture(e.pointerId); } catch { /* already released */ }
     container.style.cursor = "";
     container.style.userSelect = "";
   }, []);
@@ -259,16 +256,19 @@ const UnifiedPipelineBoard = ({
       </div>
 
       {/* Kanban board — horizontal scroll only, column cards scroll vertically inside columns.
-          Empty-space click-drag pans horizontally on desktop. Touch pans natively. */}
+          Empty-space click-drag pans horizontally on desktop (mouse only).
+          Touch devices use the browser's native horizontal scrolling, untouched. */}
       <div
         ref={scrollRef}
         onWheel={handleHorizontalWheel}
-        onPointerDown={handlePanPointerDown}
-        onPointerMove={handlePanPointerMove}
-        onPointerUp={endPan}
-        onPointerCancel={endPan}
-        onPointerLeave={endPan}
-        className="flex-1 overflow-x-auto overflow-y-hidden min-h-0 pipeline-scrollbar cursor-grab"
+        onMouseDown={handlePanMouseDown}
+        onMouseMove={handlePanMouseMove}
+        onMouseUp={endPan}
+        onMouseLeave={endPan}
+        className={cn(
+          "flex-1 overflow-x-auto overflow-y-hidden min-h-0 pipeline-scrollbar",
+          !isMobile && "cursor-grab",
+        )}
         style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-x pan-y" }}
         data-scroll-container
       >
