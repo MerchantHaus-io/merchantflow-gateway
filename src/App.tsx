@@ -48,6 +48,7 @@ import Outreach from "./pages/Outreach";
 import OutreachDetail from "./pages/OutreachDetail";
 import NetlifyHub from "./pages/NetlifyHub";
 import NMIBoarding from "./pages/NMIBoarding";
+import Integrations from "./pages/Integrations";
 import Transactions from "./pages/Transactions";
 import Calendar from "./pages/Calendar";
 import Commissions from "./pages/Commissions";
@@ -130,6 +131,7 @@ const App = () => (
                 <Route path="/admin/administration" element={<ProtectedRoute><Administration /></ProtectedRoute>} />
                 
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                <Route path="/integrations" element={<ProtectedRoute><Integrations /></ProtectedRoute>} />
                 <Route path="/live-billing" element={<ProtectedRoute><LiveBilling /></ProtectedRoute>} />
                 <Route path="/live-billing/:id" element={<ProtectedRoute><LiveAccountDetail /></ProtectedRoute>} />
                 <Route path="/chat" element={<ProtectedRoute><Home /></ProtectedRoute>} />
