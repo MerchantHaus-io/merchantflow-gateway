@@ -110,6 +110,10 @@ interface DocumentsTabProps {
 export const DocumentsTab = ({ opportunityId, serviceType }: DocumentsTabProps) => {
   const { user } = useAuth();
   const [documents, setDocuments] = useState<Document[]>([]);
+  // Wizard-uploaded docs that belong to an application for this opportunity's
+  // contact but were never linked to the opportunity's `documents` table.
+  // Shown as read-only fallback so ops can still preview/download them.
+  const [orphanWizardDocs, setOrphanWizardDocs] = useState<Document[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [bulkSuggestions, setBulkSuggestions] = useState<SuggestedLabel[] | null>(null);
@@ -226,19 +230,80 @@ export const DocumentsTab = ({ opportunityId, serviceType }: DocumentsTabProps) 
     }
   }, [opportunityId, emailPreviewData]);
 
-  const fetchDocuments = async () => {
+  const fetchDocuments = async (): Promise<Document[]> => {
     setIsLoading(true);
     const { data, error } = await supabase
       .from("documents")
       .select("*")
       .eq("opportunity_id", opportunityId)
       .order("created_at", { ascending: false });
-    if (!error) setDocuments((data as Document[]) || []);
+    const docs = !error ? ((data as Document[]) || []) : [];
+    setDocuments(docs);
     setIsLoading(false);
+    return docs;
+  };
+
+  /**
+   * Fallback: look up wizard-uploaded docs (application_documents) for any
+   * application whose email matches this opportunity's contact, and which
+   * haven't already been linked into the opportunity's documents table.
+   * These display read-only so reps can still preview/download them even
+   * if the "Assign Documents" convert step in Web Submissions was skipped.
+   */
+  const fetchOrphanWizardDocs = async (linkedDocs: Document[]) => {
+    try {
+      const { data: opp } = await supabase
+        .from("opportunities")
+        .select("contact:contacts(email)")
+        .eq("id", opportunityId)
+        .maybeSingle();
+      const contactEmail = (opp as any)?.contact?.email as string | undefined;
+      if (!contactEmail) { setOrphanWizardDocs([]); return; }
+
+      const { data: apps } = await supabase
+        .from("applications")
+        .select("id")
+        .eq("email", contactEmail);
+      const appIds = (apps || []).map((a: any) => a.id);
+      if (appIds.length === 0) { setOrphanWizardDocs([]); return; }
+
+      const { data: appDocs } = await supabase
+        .from("application_documents")
+        .select("id, application_id, file_name, file_path, file_size, content_type, document_type, created_at")
+        .in("application_id", appIds)
+        .order("created_at", { ascending: false });
+
+      // Dedupe against linked docs by file_name (case-insensitive) so we don't
+      // show the same file twice if it has been converted already.
+      const linkedNames = new Set(linkedDocs.map((d) => d.file_name.toLowerCase()));
+      const orphans: Document[] = (appDocs || [])
+        .filter((d: any) => !linkedNames.has((d.file_name as string).toLowerCase()))
+        .map((d: any) => ({
+          id: `wizard:${d.id}`,
+          opportunity_id: opportunityId,
+          file_name: d.file_name,
+          file_path: d.file_path,
+          file_size: d.file_size,
+          content_type: d.content_type,
+          uploaded_by: null,
+          created_at: d.created_at,
+          document_type: d.document_type,
+        }));
+      setOrphanWizardDocs(orphans);
+    } catch (err) {
+      // Non-fatal — linked docs still render
+      console.error("Failed to load wizard documents fallback:", err);
+      setOrphanWizardDocs([]);
+    }
   };
 
   // Fetch on mount
-  useState(() => { fetchDocuments(); });
+  useState(() => {
+    (async () => {
+      const linkedDocs = await fetchDocuments();
+      await fetchOrphanWizardDocs(linkedDocs);
+    })();
+  });
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -373,12 +438,12 @@ export const DocumentsTab = ({ opportunityId, serviceType }: DocumentsTabProps) 
       )}
 
       {/* Document list */}
-      {documents.length === 0 ? (
+      {documents.length === 0 && orphanWizardDocs.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground text-sm">
           <FileText className="h-8 w-8 mx-auto mb-2 opacity-40" />
           No documents uploaded yet
         </div>
-      ) : (
+      ) : documents.length === 0 ? null : (
         <div className="space-y-2">
           {documents.map(doc => (
             <div
@@ -435,6 +500,56 @@ export const DocumentsTab = ({ opportunityId, serviceType }: DocumentsTabProps) 
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>Delete</TooltipContent>
+                </Tooltip>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Orphan wizard docs fallback — read-only. Shows docs the merchant
+          uploaded via the application wizard that haven't been linked
+          into this opportunity's documents table yet. */}
+      {orphanWizardDocs.length > 0 && (
+        <div className="space-y-2 mt-4 pt-4 border-t border-border">
+          <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
+            <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            <div>
+              <strong>{orphanWizardDocs.length} wizard-uploaded document{orphanWizardDocs.length === 1 ? '' : 's'} not yet linked.</strong>{' '}
+              Uploaded via the merchant's application form. Preview/download here, or run <em>Assign Documents</em> in Web Submissions to link them permanently.
+            </div>
+          </div>
+          {orphanWizardDocs.map(doc => (
+            <div
+              key={doc.id}
+              className="flex items-center gap-3 p-3 rounded-lg border border-dashed border-border bg-muted/20"
+            >
+              <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{doc.file_name}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-xs text-muted-foreground">{formatFileSize(doc.file_size)}</span>
+                  <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 font-normal">
+                    From wizard · {doc.document_type || 'Unassigned'}
+                  </Badge>
+                </div>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setPreviewDoc(doc)} aria-label="Preview wizard document">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Preview</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleDownload(doc)} aria-label="Download wizard document">
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Download</TooltipContent>
                 </Tooltip>
               </div>
             </div>
