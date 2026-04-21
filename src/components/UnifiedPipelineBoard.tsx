@@ -121,6 +121,27 @@ const UnifiedPipelineBoard = ({
   // cursor leaves the container, and intermediate children can't swallow
   // the events. Pan only *activates* after 3px of movement so normal
   // clicks pass through to cards / buttons untouched.
+  /** Walk up from an element looking for the nearest scrollable ancestor on a given axis. */
+  const findScrollableAncestor = (
+    start: HTMLElement | null,
+    axis: "x" | "y",
+    stopAt: HTMLElement,
+  ): HTMLElement | null => {
+    let el: HTMLElement | null = start;
+    while (el && el !== stopAt) {
+      const style = getComputedStyle(el);
+      if (axis === "y") {
+        const scrollable = (style.overflowY === "auto" || style.overflowY === "scroll") && el.scrollHeight > el.clientHeight;
+        if (scrollable) return el;
+      } else {
+        const scrollable = (style.overflowX === "auto" || style.overflowX === "scroll") && el.scrollWidth > el.clientWidth;
+        if (scrollable) return el;
+      }
+      el = el.parentElement;
+    }
+    return stopAt;
+  };
+
   const handlePanMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
     const container = scrollRef.current;
@@ -129,10 +150,17 @@ const UnifiedPipelineBoard = ({
     if (target.closest('[draggable="true"], button, a, input, textarea, select, [role="button"], [contenteditable="true"], [data-no-pan]')) {
       return;
     }
+
+    // Find scrollable targets — vertical drag scrolls the nearest scrollable
+    // ancestor (usually the column's inner list), horizontal drag scrolls the
+    // outer pipeline container.
+    const vertTarget = findScrollableAncestor(target, "y", container);
+    const horizTarget = container;
+
     const startX = e.clientX;
     const startY = e.clientY;
-    const startScrollLeft = container.scrollLeft;
-    const startScrollTop = container.scrollTop;
+    const startHorizScroll = horizTarget.scrollLeft;
+    const startVertScroll = vertTarget.scrollTop;
     let activated = false;
 
     const handleMove = (ev: MouseEvent) => {
@@ -144,8 +172,8 @@ const UnifiedPipelineBoard = ({
         document.body.style.userSelect = "none";
       }
       if (activated) {
-        container.scrollLeft = startScrollLeft - dx;
-        container.scrollTop = startScrollTop - dy;
+        horizTarget.scrollLeft = startHorizScroll - dx;
+        vertTarget.scrollTop = startVertScroll - dy;
         ev.preventDefault();
       }
     };

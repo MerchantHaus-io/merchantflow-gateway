@@ -141,13 +141,16 @@ const PipelineColumn = ({
         </div>
       )}
 
-      {/* Scrollable Cards Area */}
+      {/* Scrollable Cards Area.
+          touchAction: pan-x pan-y lets horizontal swipes from inside the
+          column bubble up to the outer pipeline container for horizontal
+          scroll, while vertical swipes still scroll this column. */}
       <div
         className={cn(
           "flex-1 overflow-y-auto overscroll-contain min-h-0 no-scrollbar animate-stagger",
           isCompact ? "p-1 space-y-1" : "p-1.5 space-y-1.5"
         )}
-        style={{ WebkitOverflowScrolling: "touch", touchAction: "auto" }}
+        style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-x pan-y" }}
       >
         {opportunities.length === 0 ? (
           <div
