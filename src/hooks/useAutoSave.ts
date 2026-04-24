@@ -20,30 +20,46 @@ export const useAutoSave = <T>({
   const initialDataRef = useRef<string>(JSON.stringify(data));
   const isFirstRender = useRef(true);
 
+  // Always-fresh refs so callbacks below stay stable (no infinite reset loop)
+  const dataRef = useRef(data);
+  const onSaveRef = useRef(onSave);
+  const enabledRef = useRef(enabled);
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
+  useEffect(() => {
+    onSaveRef.current = onSave;
+  }, [onSave]);
+  useEffect(() => {
+    enabledRef.current = enabled;
+  }, [enabled]);
+
   const save = useCallback(async () => {
-    if (!enabled) return;
-    
+    if (!enabledRef.current) return;
+
+    const snapshot = dataRef.current;
     setStatus('saving');
     try {
-      await onSave(data);
+      await onSaveRef.current(snapshot);
+      // Mark this snapshot as the new baseline so we don't re-save unchanged data
+      initialDataRef.current = JSON.stringify(snapshot);
       setStatus('saved');
-      // Reset to idle after showing "saved" for 2 seconds
-      setTimeout(() => setStatus('idle'), 2000);
+      setTimeout(() => setStatus((s) => (s === 'saved' ? 'idle' : s)), 2000);
     } catch (error) {
       setStatus('error');
       console.error('Auto-save failed:', error);
     }
-  }, [data, onSave, enabled]);
+  }, []);
 
   useEffect(() => {
-    // Skip auto-save on first render
+    // Skip auto-save on first render after a reset/mount
     if (isFirstRender.current) {
       isFirstRender.current = false;
       initialDataRef.current = JSON.stringify(data);
       return;
     }
 
-    // Don't save if data hasn't changed from initial
+    // Don't save if data hasn't changed from baseline
     const currentData = JSON.stringify(data);
     if (currentData === initialDataRef.current) {
       return;
@@ -51,12 +67,10 @@ export const useAutoSave = <T>({
 
     if (!enabled) return;
 
-    // Clear existing timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
 
-    // Set new timeout for debounced save
     timeoutRef.current = setTimeout(() => {
       save();
     }, delay);
@@ -68,14 +82,15 @@ export const useAutoSave = <T>({
     };
   }, [data, delay, enabled, save]);
 
-  // Reset initial data when enabling (e.g., when dialog opens)
+  // Reset initial data when enabling (e.g., when dialog opens / edit mode starts)
+  // Stable reference — does NOT depend on `data`, so callers can safely put it
+  // in a useEffect dep array without creating an infinite reset loop.
   const resetInitialData = useCallback(() => {
-    initialDataRef.current = JSON.stringify(data);
+    initialDataRef.current = JSON.stringify(dataRef.current);
     isFirstRender.current = true;
     setStatus('idle');
-  }, [data]);
+  }, []);
 
-  // Cancel any pending auto-save
   const cancel = useCallback(() => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -85,8 +100,8 @@ export const useAutoSave = <T>({
 
   // Mark current data as saved (prevents re-save of same data)
   const markSaved = useCallback(() => {
-    initialDataRef.current = JSON.stringify(data);
-  }, [data]);
+    initialDataRef.current = JSON.stringify(dataRef.current);
+  }, []);
 
   return { status, resetInitialData, cancel, markSaved };
 };
