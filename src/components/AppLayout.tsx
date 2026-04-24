@@ -11,6 +11,7 @@ import { NMIBoardingBroadcast } from "@/components/NMIBoardingBroadcast";
 import { MobileAppDock } from "@/components/MobileAppDock";
 import { PageTransition } from "@/components/PageTransition";
 import { OfficeSimulatorOverlay } from "@/components/chat/OfficeSimulatorOverlay";
+import { GmailReconnectBanner } from "@/components/GmailReconnectBanner";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTheme } from "@/contexts/ThemeContext";
