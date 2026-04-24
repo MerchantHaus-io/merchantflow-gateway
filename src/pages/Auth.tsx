@@ -225,6 +225,12 @@ const Auth = () => {
           `}</style>
         </div>
 
+        <div className="text-center -mt-4">
+          <span className="inline-block px-2.5 py-0.5 rounded-full border-[2px] border-foreground/30 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground bg-background/50">
+            v3.0
+          </span>
+        </div>
+
         <p className="text-center text-muted-foreground font-medium">
           Sign in to access your pipeline
         </p>
