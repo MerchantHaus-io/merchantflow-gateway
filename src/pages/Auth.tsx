@@ -159,24 +159,68 @@ const Auth = () => {
     <div className="light min-h-screen flex items-center justify-center p-4 bg-white text-black" data-theme="light">
       <div className="w-full max-w-sm space-y-8">
         {/* Logo */}
-        <div className="flex items-center justify-center">
+        <div className="relative flex items-center justify-center">
+          {/* Glow halo that pulses behind the logo */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 flex items-center justify-center"
+          >
+            <div className="h-32 w-32 rounded-full bg-primary/25 blur-3xl animate-[logo-glow_2.6s_ease-in-out_0.4s_infinite]" />
+          </div>
+          {/* Sweeping shine overlay */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 overflow-hidden"
+          >
+            <div className="absolute -inset-x-1/3 top-0 bottom-0 bg-gradient-to-r from-transparent via-white/60 to-transparent skew-x-[-20deg] opacity-0 animate-[logo-shine_1.4s_ease-out_0.9s_1_forwards]" />
+          </div>
           <img
             src={psTerminalLogo}
             alt="PS Terminal"
             width={293}
             height={72}
             fetchPriority="high"
-            className="h-[4.5rem] w-auto animate-[logo-float_3s_ease-in-out_infinite,logo-enter_0.8s_ease-out_both]"
+            className="relative h-[4.5rem] w-auto opacity-0 animate-[logo-drop_0.9s_cubic-bezier(0.22,1.2,0.36,1)_0.1s_both,logo-float_3.4s_ease-in-out_1s_infinite]"
           />
           <style>{`
-            @keyframes logo-enter {
-              0% { opacity: 0; transform: scale(0.7) translateY(20px); filter: blur(8px); }
-              60% { opacity: 1; transform: scale(1.05) translateY(-4px); filter: blur(0); }
-              100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
+            @keyframes logo-drop {
+              0%   { opacity: 0; transform: translateY(-48px) scale(0.6) rotate(-6deg); filter: blur(10px); }
+              55%  { opacity: 1; transform: translateY(8px)   scale(1.08) rotate(2deg);  filter: blur(0); }
+              75%  { transform: translateY(-3px) scale(0.98) rotate(-1deg); }
+              100% { opacity: 1; transform: translateY(0)    scale(1)    rotate(0);   filter: blur(0); }
             }
             @keyframes logo-float {
+              0%, 100% { transform: translateY(0) rotate(0); }
+              50%      { transform: translateY(-8px) rotate(0.5deg); }
+            }
+            @keyframes logo-shine {
+              0%   { transform: translateX(-120%) skewX(-20deg); opacity: 0; }
+              30%  { opacity: 0.9; }
+              100% { transform: translateX(120%)  skewX(-20deg); opacity: 0; }
+            }
+            @keyframes logo-glow {
+              0%, 100% { opacity: 0.35; transform: scale(0.85); }
+              50%      { opacity: 0.7;  transform: scale(1.15); }
+            }
+            @keyframes logo-rise {
+              0%   { opacity: 0; transform: translateY(20px) scale(0.92); filter: blur(6px); letter-spacing: 0.2em; }
+              60%  { opacity: 1; transform: translateY(-2px) scale(1.02); filter: blur(0);   letter-spacing: 0; }
+              100% { opacity: 1; transform: translateY(0)    scale(1);    filter: blur(0); }
+            }
+            @keyframes logo-bob {
               0%, 100% { transform: translateY(0); }
-              50% { transform: translateY(-6px); }
+              50%      { transform: translateY(-3px); }
+            }
+            @media (prefers-reduced-motion: reduce) {
+              .animate-\\[logo-drop_0\\.9s_cubic-bezier\\(0\\.22\\,1\\.2\\,0\\.36\\,1\\)_0\\.1s_both\\,logo-float_3\\.4s_ease-in-out_1s_infinite\\],
+              .animate-\\[logo-glow_2\\.6s_ease-in-out_0\\.4s_infinite\\],
+              .animate-\\[logo-shine_1\\.4s_ease-out_0\\.9s_1_forwards\\],
+              .animate-\\[logo-rise_0\\.9s_ease-out_0\\.7s_both\\,logo-bob_4s_ease-in-out_1\\.6s_infinite\\] {
+                animation: none !important;
+                opacity: 1 !important;
+                transform: none !important;
+                filter: none !important;
+              }
             }
           `}</style>
         </div>
@@ -260,11 +304,11 @@ const Auth = () => {
         </form>
 
         {/* Bottom logo */}
-        <div className="flex items-center justify-center pt-6 pb-2" style={{ animation: 'logo-enter 0.8s ease-out 0.6s both' }}>
+        <div className="flex items-center justify-center pt-6 pb-2">
           <img
             src={merchantHausLogo}
             alt="Merchant Haus"
-            className="h-8 w-auto"
+            className="h-8 w-auto opacity-0 animate-[logo-rise_0.9s_ease-out_0.7s_both,logo-bob_4s_ease-in-out_1.6s_infinite]"
           />
         </div>
       </div>
