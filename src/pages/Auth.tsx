@@ -202,20 +202,16 @@ const Auth = () => {
               0%, 100% { opacity: 0.35; transform: scale(0.85); }
               50%      { opacity: 0.7;  transform: scale(1.15); }
             }
-            @keyframes logo-rise {
-              0%   { opacity: 0; transform: translateY(20px) scale(0.92); filter: blur(6px); letter-spacing: 0.2em; }
-              60%  { opacity: 1; transform: translateY(-2px) scale(1.02); filter: blur(0);   letter-spacing: 0; }
-              100% { opacity: 1; transform: translateY(0)    scale(1);    filter: blur(0); }
-            }
-            @keyframes logo-bob {
-              0%, 100% { transform: translateY(0); }
-              50%      { transform: translateY(-3px); }
+            @keyframes logo-fly-in {
+              0%   { opacity: 0; transform: translateX(-60px) translateY(10px) scale(0.9); filter: blur(6px); }
+              60%  { opacity: 1; transform: translateX(6px)   translateY(0)    scale(1.02); filter: blur(0); }
+              100% { opacity: 1; transform: translateX(0)     translateY(0)    scale(1);    filter: blur(0); }
             }
             @media (prefers-reduced-motion: reduce) {
               .animate-\\[logo-drop_0\\.9s_cubic-bezier\\(0\\.22\\,1\\.2\\,0\\.36\\,1\\)_0\\.1s_both\\,logo-float_3\\.4s_ease-in-out_1s_infinite\\],
               .animate-\\[logo-glow_2\\.6s_ease-in-out_0\\.4s_infinite\\],
               .animate-\\[logo-shine_1\\.4s_ease-out_0\\.9s_1_forwards\\],
-              .animate-\\[logo-rise_0\\.9s_ease-out_0\\.7s_both\\,logo-bob_4s_ease-in-out_1\\.6s_infinite\\] {
+              .animate-\\[logo-fly-in_0\\.9s_cubic-bezier\\(0\\.22\\,1\\,0\\.36\\,1\\)_0\\.7s_both\\] {
                 animation: none !important;
                 opacity: 1 !important;
                 transform: none !important;
