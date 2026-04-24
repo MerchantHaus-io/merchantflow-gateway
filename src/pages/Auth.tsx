@@ -222,8 +222,8 @@ const Auth = () => {
         </div>
 
         <div className="text-center -mt-4">
-          <span className="inline-block px-2.5 py-0.5 rounded-full border-[2px] border-foreground/30 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground bg-background/50">
-            v3.0
+          <span className="inline-block px-2.5 py-0.5 text-[10px] tracking-[0.2em] text-muted-foreground">
+            <span className="font-normal">merchanthaus.io</span> <span className="font-black">Operations Terminal</span> <span className="font-normal">v3.0</span>
           </span>
         </div>
 
