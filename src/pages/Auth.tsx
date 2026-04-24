@@ -309,12 +309,12 @@ const Auth = () => {
           </Button>
         </form>
 
-        {/* Bottom logo */}
+        {/* Bottom logo - fly in then static */}
         <div className="flex items-center justify-center pt-6 pb-2">
           <img
             src={merchantHausLogo}
             alt="Merchant Haus"
-            className="h-8 w-auto opacity-0 animate-[logo-rise_0.9s_ease-out_0.7s_both,logo-bob_4s_ease-in-out_1.6s_infinite]"
+            className="h-8 w-auto opacity-0 animate-[logo-fly-in_0.9s_cubic-bezier(0.22,1,0.36,1)_0.7s_both]"
           />
         </div>
       </div>
