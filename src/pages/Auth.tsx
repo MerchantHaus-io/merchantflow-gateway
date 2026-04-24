@@ -304,11 +304,11 @@ const Auth = () => {
         </form>
 
         {/* Bottom logo */}
-        <div className="flex items-center justify-center pt-6 pb-2" style={{ animation: 'logo-enter 0.8s ease-out 0.6s both' }}>
+        <div className="flex items-center justify-center pt-6 pb-2">
           <img
             src={merchantHausLogo}
             alt="Merchant Haus"
-            className="h-8 w-auto"
+            className="h-8 w-auto opacity-0 animate-[logo-rise_0.9s_ease-out_0.7s_both,logo-bob_4s_ease-in-out_1.6s_infinite]"
           />
         </div>
       </div>
