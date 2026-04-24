@@ -85,6 +85,7 @@ export function AppLayout({
         </>
       )}
       <MegaMenuHeader onNewApplication={onNewApplication} />
+      <GmailReconnectBanner />
       <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {(pageTitle || headerActions) && (
           <div className="gradient-header px-4 lg:px-6 py-3">
