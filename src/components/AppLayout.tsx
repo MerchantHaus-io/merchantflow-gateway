@@ -11,6 +11,7 @@ import { NMIBoardingBroadcast } from "@/components/NMIBoardingBroadcast";
 import { MobileAppDock } from "@/components/MobileAppDock";
 import { PageTransition } from "@/components/PageTransition";
 import { OfficeSimulatorOverlay } from "@/components/chat/OfficeSimulatorOverlay";
+import { GmailReconnectBanner } from "@/components/GmailReconnectBanner";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -84,6 +85,7 @@ export function AppLayout({
         </>
       )}
       <MegaMenuHeader onNewApplication={onNewApplication} />
+      <GmailReconnectBanner />
       <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {(pageTitle || headerActions) && (
           <div className="gradient-header px-4 lg:px-6 py-3">
