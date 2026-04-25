@@ -405,6 +405,7 @@ const LiveAccountDetail = () => {
                   navigate("/live-billing");
                 }}
               />
+              </div>
               <Button
                 variant="outline"
                 size="sm"
