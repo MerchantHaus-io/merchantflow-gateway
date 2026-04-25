@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { preloadAudioFile } from '@/hooks/useNotificationSound';
 
 import merchantHausLogo from '@/assets/merchanthaus-logo.png';
 import { isEmailAllowed } from '@/types/opportunity';
@@ -20,6 +21,11 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    // Warm the login jingle so it plays instantly after auth
+    preloadAudioFile('/sounds/login-jingle.wav', 0.25);
+  }, []);
 
   useEffect(() => {
     if (user && !mustChangePassword) {
