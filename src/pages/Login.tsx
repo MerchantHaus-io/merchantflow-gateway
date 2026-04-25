@@ -23,6 +23,11 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    // Warm the login jingle so it plays instantly after auth
+    preloadAudioFile('/sounds/login-jingle.wav', 0.25);
+  }, []);
+
+  useEffect(() => {
     if (user && !mustChangePassword) {
       if (isEmailAllowed(user.email)) {
         navigate('/', { replace: true });
