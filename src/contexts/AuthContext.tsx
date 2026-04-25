@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { isEmailAllowed, getTeamMemberFromEmail } from '@/types/opportunity';
+import { playLoginJingle } from '@/hooks/useNotificationSound';
 
 interface AuthContextType {
   user: User | null;
@@ -104,6 +105,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
           // Track login sessions + store Google tokens + auto-sync
           if (event === 'SIGNED_IN' && session?.user) {
+            playLoginJingle();
+
             // Track login session
             supabase.from('user_sessions').insert({
               user_id: session.user.id,
