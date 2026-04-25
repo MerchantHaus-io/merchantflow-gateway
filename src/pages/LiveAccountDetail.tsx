@@ -79,6 +79,20 @@ const LiveAccountDetail = () => {
   const queryClient = useQueryClient();
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<any>(null);
+  const closeRef = useRef<HTMLDivElement>(null);
+  const [closeHighlight, setCloseHighlight] = useState(false);
+
+  // Auto-scroll to and highlight the Close Account control when arriving with #close
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.location.hash !== "#close") return;
+    const t = setTimeout(() => {
+      closeRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setCloseHighlight(true);
+      setTimeout(() => setCloseHighlight(false), 2400);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [accountId]);
 
   // Fetch ALL live opportunities for this account
   const { data: opportunities, isLoading } = useQuery({
