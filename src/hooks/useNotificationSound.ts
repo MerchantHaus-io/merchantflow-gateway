@@ -171,7 +171,8 @@ export function playNoticeBoardSound() {
  */
 export function playLoginJingle() {
   if (!isSoundEnabled()) return;
-  playAudioFile('/sounds/login-jingle.wav');
+  // Lowered by 50% from default 0.5 → 0.25
+  playAudioFile('/sounds/login-jingle.wav', 0.25);
 }
 
 export function playNotificationSound(
