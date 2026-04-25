@@ -10,7 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Zap, CreditCard, Users, TrendingUp, Calendar } from "lucide-react";
+import { Search, Zap, CreditCard, Users, TrendingUp, Calendar, XCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
 import { getServiceType, TEAM_MEMBERS } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
