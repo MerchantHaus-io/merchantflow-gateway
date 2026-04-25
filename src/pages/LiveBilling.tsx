@@ -334,6 +334,7 @@ const LiveBilling = () => {
                   <TableHead>Pipeline</TableHead>
                   <TableHead>Went Live</TableHead>
                   <TableHead>Owner</TableHead>
+                  <TableHead className="w-[60px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
