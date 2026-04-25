@@ -305,6 +305,18 @@ const LiveBilling = () => {
                         )}
                       </div>
                     </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full mt-2 h-8 text-xs gap-1.5 text-destructive border-destructive/40 hover:bg-destructive/10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/live-billing/${g.account_id}#close`);
+                      }}
+                    >
+                      <XCircle className="h-3.5 w-3.5" />
+                      Close Account
+                    </Button>
                   </CardContent>
                 </Card>
               );
