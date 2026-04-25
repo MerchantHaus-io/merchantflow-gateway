@@ -146,33 +146,7 @@ export function playNoticeBoardSound() {
  */
 export function playLoginJingle() {
   if (!isSoundEnabled()) return;
-
-  const ctx = getAudioContext();
-  if (!ctx) return;
-
-  // C5, E5, G5 — a clean major triad ascent
-  const notes = [523.25, 659.25, 783.99];
-  const noteDuration = 0.16;
-  const noteSpacing = 0.11;
-
-  notes.forEach((freq, i) => {
-    const start = ctx.currentTime + i * noteSpacing;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(freq, start);
-
-    // Quick attack, gentle decay so the notes blend without muddying
-    gain.gain.setValueAtTime(0.0001, start);
-    gain.gain.exponentialRampToValueAtTime(0.18, start + 0.015);
-    gain.gain.exponentialRampToValueAtTime(0.001, start + noteDuration);
-
-    osc.start(start);
-    osc.stop(start + noteDuration + 0.02);
-  });
+  playAudioFile('/sounds/login-jingle.wav');
 }
 
 export function playNotificationSound(
