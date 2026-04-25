@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { DocumentPreviewDialog } from "@/components/DocumentPreviewDialog";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -79,6 +79,20 @@ const LiveAccountDetail = () => {
   const queryClient = useQueryClient();
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<any>(null);
+  const closeRef = useRef<HTMLDivElement>(null);
+  const [closeHighlight, setCloseHighlight] = useState(false);
+
+  // Auto-scroll to and highlight the Close Account control when arriving with #close
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.location.hash !== "#close") return;
+    const t = setTimeout(() => {
+      closeRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      setCloseHighlight(true);
+      setTimeout(() => setCloseHighlight(false), 2400);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [accountId]);
 
   // Fetch ALL live opportunities for this account
   const { data: opportunities, isLoading } = useQuery({
@@ -318,6 +332,13 @@ const LiveAccountDetail = () => {
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
+              <div
+                ref={closeRef}
+                className={cn(
+                  "rounded-md transition-all",
+                  closeHighlight && "ring-4 ring-destructive/60 ring-offset-2 ring-offset-background animate-pulse"
+                )}
+              >
               <OutcomeSelector
                 onSelect={async (outcome: OutcomeStatus, reason: string, notes: string) => {
                   if (!opportunities || !user) return;
@@ -384,6 +405,7 @@ const LiveAccountDetail = () => {
                   navigate("/live-billing");
                 }}
               />
+              </div>
               <Button
                 variant="outline"
                 size="sm"

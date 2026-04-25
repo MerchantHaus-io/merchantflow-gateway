@@ -1258,6 +1258,16 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuSeparator />
+                        {/* Set Outcome — also exposed on mobile so deals can be closed from the modal */}
+                        <div className="px-2 py-1.5">
+                          <OutcomeSelector
+                            currentOutcome={opportunity.outcome_status as OutcomeStatus | null}
+                            currentReason={opportunity.outcome_reason}
+                            disabled={!!opportunity.outcome_status}
+                            onSelect={handleOutcomeSelect}
+                          />
+                        </div>
+                        <DropdownMenuSeparator />
                         {isAdmin ? (
                           <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-destructive">
                             <Trash2 className="h-4 w-4 mr-2" /> Delete

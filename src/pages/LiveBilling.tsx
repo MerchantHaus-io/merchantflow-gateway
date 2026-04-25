@@ -10,7 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Zap, CreditCard, Users, TrendingUp, Calendar } from "lucide-react";
+import { Search, Zap, CreditCard, Users, TrendingUp, Calendar, XCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { format } from "date-fns";
 import { getServiceType, TEAM_MEMBERS } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
@@ -303,6 +305,18 @@ const LiveBilling = () => {
                         )}
                       </div>
                     </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full mt-2 h-8 text-xs gap-1.5 text-destructive border-destructive/40 hover:bg-destructive/10"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/live-billing/${g.account_id}#close`);
+                      }}
+                    >
+                      <XCircle className="h-3.5 w-3.5" />
+                      Close Account
+                    </Button>
                   </CardContent>
                 </Card>
               );
@@ -320,6 +334,7 @@ const LiveBilling = () => {
                   <TableHead>Pipeline</TableHead>
                   <TableHead>Went Live</TableHead>
                   <TableHead>Owner</TableHead>
+                  <TableHead className="w-[60px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -370,6 +385,21 @@ const LiveBilling = () => {
                         ) : (
                           <span className="text-sm text-muted-foreground">Unassigned</span>
                         )}
+                      </TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => navigate(`/live-billing/${g.account_id}#close`)}
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Close Account</TooltipContent>
+                        </Tooltip>
                       </TableCell>
                     </TableRow>
                   );
