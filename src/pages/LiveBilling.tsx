@@ -386,6 +386,21 @@ const LiveBilling = () => {
                           <span className="text-sm text-muted-foreground">Unassigned</span>
                         )}
                       </TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => navigate(`/live-billing/${g.account_id}#close`)}
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Close Account</TooltipContent>
+                        </Tooltip>
+                      </TableCell>
                     </TableRow>
                   );
                 })}
