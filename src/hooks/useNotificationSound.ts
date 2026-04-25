@@ -24,12 +24,37 @@ function isSoundEnabled(): boolean {
   return localStorage.getItem('chatSoundEnabled') !== 'false';
 }
 
+/** Cache of preloaded audio elements for instant playback */
+const preloadedAudio = new Map<string, HTMLAudioElement>();
+
+/** Preload an audio file so it's ready for instant playback */
+export function preloadAudioFile(path: string, volume = 0.5): void {
+  if (preloadedAudio.has(path)) return;
+  try {
+    const audio = new Audio(path);
+    audio.preload = 'auto';
+    audio.volume = volume;
+    audio.load();
+    preloadedAudio.set(path, audio);
+  } catch {
+    // ignore
+  }
+}
+
 /** Play an audio file from the public/sounds directory */
-function playAudioFile(path: string): Promise<void> {
+function playAudioFile(path: string, volume = 0.5): Promise<void> {
   return new Promise((resolve) => {
     try {
+      const cached = preloadedAudio.get(path);
+      if (cached) {
+        // Clone so overlapping plays don't cut each other off
+        const node = cached.cloneNode(true) as HTMLAudioElement;
+        node.volume = volume;
+        node.play().then(resolve).catch(() => resolve());
+        return;
+      }
       const audio = new Audio(path);
-      audio.volume = 0.5;
+      audio.volume = volume;
       audio.play().then(resolve).catch(() => resolve());
     } catch {
       resolve();
