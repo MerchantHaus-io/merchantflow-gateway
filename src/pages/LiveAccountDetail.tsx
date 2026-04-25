@@ -332,6 +332,13 @@ const LiveAccountDetail = () => {
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
+              <div
+                ref={closeRef}
+                className={cn(
+                  "rounded-md transition-all",
+                  closeHighlight && "ring-4 ring-destructive/60 ring-offset-2 ring-offset-background animate-pulse"
+                )}
+              >
               <OutcomeSelector
                 onSelect={async (outcome: OutcomeStatus, reason: string, notes: string) => {
                   if (!opportunities || !user) return;
