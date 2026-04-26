@@ -114,17 +114,32 @@ serve(async (req) => {
     // Accounts linked to a closed_won opportunity AND with an nmi_merchant_id set.
     const { data: liveOpps, error: oppsError } = await sb
       .from("opportunities")
-      .select("account_id, account:accounts!inner(id, name, nmi_merchant_id)")
+      .select("account_id, account:accounts!inner(id, name, nmi_merchant_id, commission_model, merchant_rate_pct, interchange_rate_pct, revenue_share_pct)")
       .eq("outcome_status", "closed_won");
 
     if (oppsError) throw new Error(`Failed to load live accounts: ${oppsError.message}`);
 
-    const accountByMid = new Map<string, { id: string; name: string }>();
+    type AccountInfo = {
+      id: string;
+      name: string;
+      commission_model: string;
+      merchant_rate_pct: number;
+      interchange_rate_pct: number;
+      revenue_share_pct: number;
+    };
+    const accountByMid = new Map<string, AccountInfo>();
     for (const opp of liveOpps || []) {
       const acc: any = (opp as any).account;
       const mid = acc?.nmi_merchant_id ? String(acc.nmi_merchant_id).trim() : "";
       if (mid && !accountByMid.has(mid)) {
-        accountByMid.set(mid, { id: acc.id, name: acc.name || mid });
+        accountByMid.set(mid, {
+          id: acc.id,
+          name: acc.name || mid,
+          commission_model: acc.commission_model || "gateway_only",
+          merchant_rate_pct: Number(acc.merchant_rate_pct) || 0,
+          interchange_rate_pct: Number(acc.interchange_rate_pct) || 0,
+          revenue_share_pct: Number(acc.revenue_share_pct) || 0,
+        });
       }
     }
 
@@ -191,19 +206,41 @@ serve(async (req) => {
     }
 
     // ── Step 5: Build commission rows from our scoped accounts ──
+    // Per-account formula (processing model):
+    //   gross_fees      = volume × merchant_rate_pct / 100
+    //   gross_margin    = volume × (merchant_rate_pct − interchange_rate_pct) / 100
+    //   total_commission = gross_margin × revenue_share_pct / 100
+    // Gateway-only accounts produce no processing residual (commission = 0).
     const commissions = merchantIds.map((mid) => {
       const account = accountByMid.get(mid)!;
       const agg = aggByMid.get(mid)!;
       const displayName = account.name || nameOverride.get(mid) || mid;
+
+      let fees = 0;
+      let grossMargin = 0;
+      let totalCommission = 0;
+      let residualRate: number | null = null;
+
+      if (account.commission_model === "processing") {
+        const merchantRate = account.merchant_rate_pct / 100;
+        const interchangeRate = account.interchange_rate_pct / 100;
+        const revShare = account.revenue_share_pct / 100;
+        fees = agg.volume * merchantRate;
+        grossMargin = agg.volume * (merchantRate - interchangeRate);
+        totalCommission = grossMargin * revShare;
+        residualRate = (merchantRate - interchangeRate) * revShare;
+      }
+
       return {
         account_id: account.id,
         gateway_id: mid,
         company_name: displayName,
         transaction_count: agg.count,
         gross_volume: agg.volume,
-        fees: 0,
-        residual_amount: 0,
-        total_commission: 0,
+        fees: round2(fees),
+        residual_amount: round2(grossMargin),
+        residual_rate: residualRate,
+        total_commission: round2(totalCommission),
         chargeback_amount: agg.chargebacks,
         refund_amount: agg.refunds,
         status: agg.count > 0 ? "active" : "inactive",
@@ -261,6 +298,7 @@ serve(async (req) => {
               transaction_volume: c.gross_volume,
               transaction_fees: c.fees,
               chargeback_fees: c.chargeback_amount,
+              residual_rate: c.residual_rate,
               residual_amount: c.residual_amount,
               total_commission: c.total_commission,
             });
@@ -313,6 +351,10 @@ function json(body: unknown, status = 200) {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+function round2(n: number) {
+  return Math.round(n * 100) / 100;
 }
 
 function buildSummary(commissions: any[]) {
