@@ -39,6 +39,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useTheme } from "@/contexts/ThemeContext";
 import ClientInteractionLog from "@/components/ClientInteractionLog";
 import { NMITransactionsPanel } from "@/components/NMITransactionsPanel";
+import { AccountCommissionCard } from "@/components/AccountCommissionCard";
 import logoDark from "@/assets/logo-dark.png";
 import logoLight from "@/assets/logo-light.png";
 import liveBadge from "@/assets/live-badge.webp";
@@ -496,6 +497,9 @@ const LiveAccountDetail = () => {
                 )}
               </CardContent>
             </Card>
+
+            {/* Commission Settings */}
+            <AccountCommissionCard account={account} />
 
             {/* Opportunities (show each one) */}
             {opportunities?.map((opp) => {

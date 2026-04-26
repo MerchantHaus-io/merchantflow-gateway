@@ -8,7 +8,11 @@ const corsHeaders = {
 };
 
 const NMI_GATEWAY_BASE = "https://merchanthausio.transactiongateway.com";
-const DEDUP_WINDOW_HOURS = 6; // Skip re-sync if a successful sync exists within this window
+const NMI_TRANSACTIONS_REPORT_URL = "https://secure.nmi.com/api/v4/transactions/reports";
+const DEDUP_WINDOW_HOURS = 6;
+const MAX_RESULTS_PER_PAGE = 1000;
+const MAX_REPORT_PAGES = 20;
+const PRIMARY_ACTION_TYPES = new Set(["sale", "capture", "refund", "credit", "void", "auth", "validate"]);
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -30,7 +34,6 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAnon = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Verify user
     const anonClient = createClient(supabaseUrl, supabaseAnon, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -38,7 +41,6 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await anonClient.auth.getUser(token);
     if (userError || !user) return json({ error: "Unauthorized" }, 401);
 
-    // Service client for DB writes
     const sb = createClient(supabaseUrl, supabaseServiceKey);
 
     const body = await req.json().catch(() => ({}));
@@ -47,6 +49,13 @@ serve(async (req) => {
     const now = new Date();
     const requestMonth = month ? Number(month) : now.getMonth() + 1;
     const requestYear = year ? Number(year) : now.getFullYear();
+
+    // Build date range for the period
+    const startDate = `${requestYear}-${String(requestMonth).padStart(2, "0")}-01`;
+    const lastDay = new Date(requestYear, requestMonth, 0).getDate();
+    const endDate = `${requestYear}-${String(requestMonth).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+    const startIso = `${startDate}T00:00:00Z`;
+    const endIso = `${endDate}T23:59:59Z`;
 
     // ── Dedup check: skip if recent successful sync exists ──
     if (!force) {
@@ -64,13 +73,12 @@ serve(async (req) => {
 
       if (recentSync) {
         console.log(`Dedup: skipping sync for ${requestMonth}/${requestYear}, last synced at ${recentSync.created_at}`);
-        // Return cached data from commission_records instead
         const { data: cachedRecords } = await sb
           .from("commission_records")
           .select("nmi_gateway_id, company_name, transaction_count, transaction_volume, transaction_fees, chargeback_fees, residual_amount, total_commission")
           .eq("period_id", (await sb.from("commission_periods")
             .select("id")
-            .eq("period_start", `${requestYear}-${String(requestMonth).padStart(2, "0")}-01`)
+            .eq("period_start", startDate)
             .maybeSingle()).data?.id ?? "");
 
         const commissions = (cachedRecords || []).map(r => ({
@@ -100,73 +108,139 @@ serve(async (req) => {
       }
     }
 
-    // Build date range
-    const startDate = `${requestYear}-${String(requestMonth).padStart(2, "0")}-01`;
-    const lastDay = new Date(requestYear, requestMonth, 0).getDate();
-    const endDate = `${requestYear}-${String(requestMonth).padStart(2, "0")}-${lastDay}`;
-
     console.log(`Commission sync for ${requestMonth}/${requestYear} (${startDate} → ${endDate})`);
 
-    // ── Step 1: Fetch merchant roster from v3 Boarding API ──
-    const rosterRes = await fetch(`${NMI_GATEWAY_BASE}/api/v3/affiliate/gateways`, {
-      headers: { Authorization: nmiApiKey, Accept: "application/json" },
-    });
-    const rosterText = await rosterRes.text();
-    let rosterParsed: any = null;
-    try { rosterParsed = JSON.parse(rosterText); } catch { /* ignore */ }
+    // ── Step 1: Resolve OUR accounts (Live & Billing scope) ──
+    // Accounts linked to a closed_won opportunity AND with an nmi_merchant_id set.
+    const { data: liveOpps, error: oppsError } = await sb
+      .from("opportunities")
+      .select("account_id, account:accounts!inner(id, name, nmi_merchant_id, commission_model, merchant_rate_pct, interchange_rate_pct, revenue_share_pct)")
+      .eq("outcome_status", "closed_won");
 
-    const merchantsRaw = Array.isArray(rosterParsed) ? rosterParsed
-      : rosterParsed?.gateways ?? rosterParsed?.data ?? [];
+    if (oppsError) throw new Error(`Failed to load live accounts: ${oppsError.message}`);
 
-    // Build name map: gatewayId → company name
-    const nameMap = new Map<string, string>();
-    for (const m of merchantsRaw) {
-      const mid = String(m.id ?? m.gateway_id ?? m.merchant_id ?? "");
-      const name = String(m.company ?? m.company_name ?? m.dba_name ?? m.name ?? "");
-      if (mid) nameMap.set(mid, name);
-    }
-    console.log(`Merchant roster: ${nameMap.size} merchants loaded`);
-
-    // ── Step 2: Fetch per-merchant gateway detail for activity data ──
-    const merchantAgg = new Map<string, { count: number; volume: number; fees: number; refunds: number; chargebacks: number }>();
-    const rawDetails: Record<string, any> = {};
-
-    for (const [mid] of nameMap) {
-      try {
-        const detailRes = await fetch(`${NMI_GATEWAY_BASE}/api/v3/affiliate/gateways/${mid}`, {
-          headers: { Authorization: nmiApiKey, Accept: "application/json" },
+    type AccountInfo = {
+      id: string;
+      name: string;
+      commission_model: string;
+      merchant_rate_pct: number;
+      interchange_rate_pct: number;
+      revenue_share_pct: number;
+    };
+    const accountByMid = new Map<string, AccountInfo>();
+    for (const opp of liveOpps || []) {
+      const acc: any = (opp as any).account;
+      const mid = acc?.nmi_merchant_id ? String(acc.nmi_merchant_id).trim() : "";
+      if (mid && !accountByMid.has(mid)) {
+        accountByMid.set(mid, {
+          id: acc.id,
+          name: acc.name || mid,
+          commission_model: acc.commission_model || "gateway_only",
+          merchant_rate_pct: Number(acc.merchant_rate_pct) || 0,
+          interchange_rate_pct: Number(acc.interchange_rate_pct) || 0,
+          revenue_share_pct: Number(acc.revenue_share_pct) || 0,
         });
-        if (detailRes.ok) {
-          const detail = await detailRes.json();
-          rawDetails[mid] = detail;
-          const gateway = detail?.gateway ?? detail ?? {};
-          const txnCount = toNumber(gateway.transaction_count ?? gateway.total_transactions ?? 0);
-          const vol = toNumber(gateway.volume ?? gateway.total_volume ?? gateway.monthly_volume ?? 0);
-          const fees = toNumber(gateway.fees ?? gateway.total_fees ?? 0);
-          if (txnCount > 0 || vol > 0) {
-            merchantAgg.set(mid, { count: txnCount, volume: vol, fees, refunds: 0, chargebacks: 0 });
-          }
-        } else {
-          await detailRes.text();
-        }
-      } catch {
-        // Skip individual merchant errors
       }
     }
 
-    console.log(`Gateway detail: ${merchantAgg.size} merchants with activity data`);
+    const merchantIds = [...accountByMid.keys()];
+    console.log(`Live & Billing scope: ${merchantIds.length} accounts with NMI merchant IDs`);
 
-    // Build commission records
-    const commissions = [...nameMap.entries()].map(([mid, name]) => {
-      const agg = merchantAgg.get(mid) || { count: 0, volume: 0, fees: 0, refunds: 0, chargebacks: 0 };
+    // ── Step 2: Pull transactions for our merchants from v4 reports API ──
+    let txReport: { results: any[]; truncated: boolean } = { results: [], truncated: false };
+    if (merchantIds.length > 0) {
+      txReport = await fetchTransactionsReport({ nmiApiKey, merchantIds, startIso, endIso });
+      console.log(`Fetched ${txReport.results.length} transactions for period`);
+    }
+
+    // ── Step 3: Aggregate per merchant ──
+    type Agg = { count: number; volume: number; refunds: number; chargebacks: number };
+    const aggByMid = new Map<string, Agg>();
+    for (const mid of merchantIds) {
+      aggByMid.set(mid, { count: 0, volume: 0, refunds: 0, chargebacks: 0 });
+    }
+
+    for (const tx of txReport.results) {
+      const mid = String(tx?.merchantId ?? "").trim();
+      const agg = aggByMid.get(mid);
+      if (!agg) continue;
+
+      const primary = pickPrimaryAction(tx?.actions);
+      const amount = parseFloat(String(primary?.amount?.amount ?? tx?.amount?.amount ?? "0")) || 0;
+      const status = normaliseStatus(tx?.status);
+      const txType = normaliseType(primary?.actionType ?? tx?.transactionType);
+
+      if (txType === "refund" || txType === "credit") {
+        agg.refunds += amount;
+      } else if (txType === "void") {
+        // ignore voids in volume/count
+      } else if (status === "complete" || status === "pending" || status === "pending_settlement") {
+        agg.count += 1;
+        agg.volume += amount;
+      }
+
+      if (status === "chargeback" || txType === "chargeback") {
+        agg.chargebacks += amount;
+      }
+    }
+
+    // ── Step 4: Optionally enrich names from v3 affiliate roster (best-effort) ──
+    const nameOverride = new Map<string, string>();
+    try {
+      const rosterRes = await fetch(`${NMI_GATEWAY_BASE}/api/v3/affiliate/gateways`, {
+        headers: { Authorization: nmiApiKey, Accept: "application/json" },
+      });
+      if (rosterRes.ok) {
+        const rosterParsed = await rosterRes.json();
+        const merchantsRaw = Array.isArray(rosterParsed)
+          ? rosterParsed
+          : rosterParsed?.gateways ?? rosterParsed?.data ?? [];
+        for (const m of merchantsRaw) {
+          const mid = String(m.id ?? m.gateway_id ?? m.merchant_id ?? "");
+          const name = String(m.company ?? m.company_name ?? m.dba_name ?? m.name ?? "");
+          if (mid && name && accountByMid.has(mid)) nameOverride.set(mid, name);
+        }
+      }
+    } catch (rosterErr) {
+      console.warn("Affiliate roster lookup failed (non-fatal):", rosterErr);
+    }
+
+    // ── Step 5: Build commission rows from our scoped accounts ──
+    // Per-account formula (processing model):
+    //   gross_fees      = volume × merchant_rate_pct / 100
+    //   gross_margin    = volume × (merchant_rate_pct − interchange_rate_pct) / 100
+    //   total_commission = gross_margin × revenue_share_pct / 100
+    // Gateway-only accounts produce no processing residual (commission = 0).
+    const commissions = merchantIds.map((mid) => {
+      const account = accountByMid.get(mid)!;
+      const agg = aggByMid.get(mid)!;
+      const displayName = account.name || nameOverride.get(mid) || mid;
+
+      let fees = 0;
+      let grossMargin = 0;
+      let totalCommission = 0;
+      let residualRate: number | null = null;
+
+      if (account.commission_model === "processing") {
+        const merchantRate = account.merchant_rate_pct / 100;
+        const interchangeRate = account.interchange_rate_pct / 100;
+        const revShare = account.revenue_share_pct / 100;
+        fees = agg.volume * merchantRate;
+        grossMargin = agg.volume * (merchantRate - interchangeRate);
+        totalCommission = grossMargin * revShare;
+        residualRate = (merchantRate - interchangeRate) * revShare;
+      }
+
       return {
+        account_id: account.id,
         gateway_id: mid,
-        company_name: name || mid,
+        company_name: displayName,
         transaction_count: agg.count,
         gross_volume: agg.volume,
-        fees: agg.fees,
-        residual_amount: 0,
-        total_commission: agg.fees,
+        fees: round2(fees),
+        residual_amount: round2(grossMargin),
+        residual_rate: residualRate,
+        total_commission: round2(totalCommission),
         chargeback_amount: agg.chargebacks,
         refund_amount: agg.refunds,
         status: agg.count > 0 ? "active" : "inactive",
@@ -177,19 +251,19 @@ serve(async (req) => {
     const summary = buildSummary(commissions.filter(c => c.transaction_count > 0 || c.gross_volume > 0));
     const durationMs = Date.now() - startTime;
 
-    // ── Step 3: Log the sync to commission_sync_logs ──
+    // ── Step 6: Log the sync ──
     await sb.from("commission_sync_logs").insert({
       period_month: requestMonth,
       period_year: requestYear,
       merchant_count: commissions.length,
-      raw_response: { roster: merchantsRaw, details: rawDetails, summary },
-      source_api: "v3_boarding",
+      raw_response: { merchant_ids: merchantIds, transaction_count: txReport.results.length, summary },
+      source_api: "v4_transactions_reports",
       triggered_by: user.email,
       duration_ms: durationMs,
       status: "success",
     });
 
-    // ── Step 4: Persist to commission tables ──
+    // ── Step 7: Persist to commission tables ──
     if (persist) {
       try {
         const { data: period, error: periodError } = await sb
@@ -212,31 +286,19 @@ serve(async (req) => {
         if (periodError) {
           console.error("Failed to upsert commission period:", periodError);
         } else if (period) {
-          const { data: accounts } = await sb
-            .from("accounts")
-            .select("id, nmi_merchant_id")
-            .not("nmi_merchant_id", "is", null);
-
-          const accountMap = new Map<string, string>();
-          for (const a of accounts || []) {
-            if (a.nmi_merchant_id) accountMap.set(a.nmi_merchant_id, a.id);
-          }
-
           await sb.from("commission_records").delete().eq("period_id", period.id);
 
           for (const c of commissions) {
-            if (!c.gateway_id) continue;
-            const accountId = accountMap.get(c.gateway_id) || null;
-
             await sb.from("commission_records").insert({
               period_id: period.id,
-              account_id: accountId,
+              account_id: c.account_id,
               nmi_gateway_id: c.gateway_id,
               company_name: c.company_name,
               transaction_count: c.transaction_count,
               transaction_volume: c.gross_volume,
               transaction_fees: c.fees,
               chargeback_fees: c.chargeback_amount,
+              residual_rate: c.residual_rate,
               residual_amount: c.residual_amount,
               total_commission: c.total_commission,
             });
@@ -255,7 +317,7 @@ serve(async (req) => {
       commissions,
       total_count: commissions.length,
       summary,
-      truncated: false,
+      truncated: txReport.truncated,
       cached: false,
       sync_duration_ms: durationMs,
     });
@@ -263,7 +325,6 @@ serve(async (req) => {
     const durationMs = Date.now() - startTime;
     console.error("NMI commissions error:", err);
 
-    // Log failed sync attempt
     try {
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -274,7 +335,7 @@ serve(async (req) => {
         period_month: body?.month ? Number(body.month) : now.getMonth() + 1,
         period_year: body?.year ? Number(body.year) : now.getFullYear(),
         merchant_count: 0,
-        source_api: "v3_boarding",
+        source_api: "v4_transactions_reports",
         duration_ms: durationMs,
         status: "error",
         error_message: err instanceof Error ? err.message : "Unknown error",
@@ -292,9 +353,8 @@ function json(body: unknown, status = 200) {
   });
 }
 
-function toNumber(v: unknown) {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : 0;
+function round2(n: number) {
+  return Math.round(n * 100) / 100;
 }
 
 function buildSummary(commissions: any[]) {
@@ -307,4 +367,106 @@ function buildSummary(commissions: any[]) {
     total_transactions += c.transaction_count;
   }
   return { total_commission, total_volume, total_fees, total_refunds: 0, total_chargebacks, total_transactions, merchant_count: commissions.length };
+}
+
+async function fetchTransactionsReport({
+  nmiApiKey,
+  merchantIds,
+  startIso,
+  endIso,
+}: {
+  nmiApiKey: string;
+  merchantIds: string[];
+  startIso: string;
+  endIso: string;
+}) {
+  const results: any[] = [];
+  let offset = 0;
+  let hasMore = true;
+  let pageCount = 0;
+
+  while (hasMore && pageCount < MAX_REPORT_PAGES) {
+    const payload: Record<string, unknown> = {
+      maxResults: String(MAX_RESULTS_PER_PAGE),
+      offset: String(offset),
+      date: { start: startIso, end: endIso },
+    };
+
+    if (merchantIds.length === 1) {
+      payload.merchantId = merchantIds[0];
+    } else if (merchantIds.length > 1) {
+      payload.merchantIds = merchantIds;
+    }
+
+    const response = await fetch(NMI_TRANSACTIONS_REPORT_URL, {
+      method: "POST",
+      headers: {
+        Authorization: nmiApiKey,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const responseText = await response.text();
+    let parsed: any = null;
+    try { parsed = responseText ? JSON.parse(responseText) : null; } catch { /* ignore */ }
+
+    if (!response.ok) {
+      console.error(`NMI transactions HTTP ${response.status}:`, responseText.substring(0, 500));
+      throw new Error(extractNmiError(parsed) || `NMI transactions API returned HTTP ${response.status}`);
+    }
+
+    const pageResults = Array.isArray(parsed?.results) ? parsed.results : [];
+    results.push(...pageResults);
+
+    hasMore = Boolean(parsed?.hasMore) && pageResults.length > 0;
+    offset += pageResults.length;
+    pageCount += 1;
+
+    if (pageResults.length === 0) break;
+  }
+
+  return { results, truncated: hasMore };
+}
+
+function pickPrimaryAction(actions: any[] | undefined) {
+  if (!Array.isArray(actions) || actions.length === 0) return null;
+  const sorted = [...actions].sort((a, b) => {
+    const aTime = new Date(a?.date ?? 0).getTime();
+    const bTime = new Date(b?.date ?? 0).getTime();
+    return aTime - bTime;
+  });
+  const preferred = sorted.filter((a) => PRIMARY_ACTION_TYPES.has(normaliseType(a?.actionType)));
+  return preferred[preferred.length - 1] ?? sorted[sorted.length - 1] ?? sorted[0] ?? null;
+}
+
+function normaliseStatus(status: unknown) {
+  const value = String(status ?? "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+  if (value === "pendingsettlement") return "pending_settlement";
+  if (value === "approved") return "complete";
+  if (value === "declined") return "failed";
+  return value;
+}
+
+function normaliseType(type: unknown) {
+  return String(type ?? "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+}
+
+function extractNmiError(payload: any): string | null {
+  if (!payload) return null;
+  if (typeof payload === "string") return payload;
+  if (typeof payload.error === "string") return payload.error;
+  if (typeof payload.message === "string") return payload.message;
+  if (typeof payload.detail === "string") return payload.detail;
+  if (Array.isArray(payload.errors) && payload.errors.length > 0) {
+    return payload.errors
+      .map((item: any) =>
+        typeof item === "string" ? item :
+        typeof item?.message === "string" ? item.message :
+        JSON.stringify(item)
+      )
+      .join("; ");
+  }
+  return null;
 }

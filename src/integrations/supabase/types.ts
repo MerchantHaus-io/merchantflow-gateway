@@ -19,11 +19,15 @@ export type Database = {
           address1: string | null
           address2: string | null
           city: string | null
+          commission_model: string | null
           country: string | null
           created_at: string
           id: string
+          interchange_rate_pct: number | null
+          merchant_rate_pct: number | null
           name: string
           nmi_merchant_id: string | null
+          revenue_share_pct: number | null
           state: string | null
           status: string | null
           updated_at: string
@@ -34,11 +38,15 @@ export type Database = {
           address1?: string | null
           address2?: string | null
           city?: string | null
+          commission_model?: string | null
           country?: string | null
           created_at?: string
           id?: string
+          interchange_rate_pct?: number | null
+          merchant_rate_pct?: number | null
           name: string
           nmi_merchant_id?: string | null
+          revenue_share_pct?: number | null
           state?: string | null
           status?: string | null
           updated_at?: string
@@ -49,11 +57,15 @@ export type Database = {
           address1?: string | null
           address2?: string | null
           city?: string | null
+          commission_model?: string | null
           country?: string | null
           created_at?: string
           id?: string
+          interchange_rate_pct?: number | null
+          merchant_rate_pct?: number | null
           name?: string
           nmi_merchant_id?: string | null
+          revenue_share_pct?: number | null
           state?: string | null
           status?: string | null
           updated_at?: string
