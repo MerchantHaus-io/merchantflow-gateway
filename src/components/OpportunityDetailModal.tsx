@@ -1251,6 +1251,21 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                         </TooltipTrigger>
                         <TooltipContent>Download Details</TooltipContent>
                       </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 gap-1.5 text-primary border-primary/40 hover:bg-primary/10"
+                            onClick={() => setShowQuoteDialog(true)}
+                          >
+                            <Sparkles className="h-4 w-4" />
+                            <span className="hidden lg:inline">Generate Quote</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Generate a client quote</TooltipContent>
+                      </Tooltip>
                     </>
                   )}
 
