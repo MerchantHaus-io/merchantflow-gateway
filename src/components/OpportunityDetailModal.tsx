@@ -289,6 +289,18 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     setWizardFields(prev => ({ ...prev, [key]: value }));
   }, []);
 
+  // Quote generator dialog (wired to opportunity → prefill business + contact + volume)
+  const [showQuoteDialog, setShowQuoteDialog] = useState(false);
+  const quotePrefill = useMemo(() => ({
+    businessName: accountName || opportunity?.account?.name || "",
+    contactName: [firstName, lastName].filter(Boolean).join(" ").trim(),
+    email: email || opportunity?.contact?.email || "",
+    phone: phone || opportunity?.contact?.phone || "",
+    monthlyVolume: wizardFields?.monthly_volume || "",
+    averageTicket: wizardFields?.average_transaction || "",
+    notes: opportunity ? `Opportunity: ${opportunity.id}` : "",
+  }), [accountName, firstName, lastName, email, phone, wizardFields, opportunity]);
+
   // Combined form data for auto-save
   const formData = useMemo(() => ({
     accountName, website, address1, address2, city, state, zip, country,
