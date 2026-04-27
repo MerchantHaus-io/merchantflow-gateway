@@ -3,6 +3,7 @@ import { useAIAssistant } from "@/hooks/useAIAssistant";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { confirmAutoEmail } from "@/components/EmailSendConfirm";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -178,14 +179,19 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
         .filter(Boolean) as string[];
       if (taggedEmails.length > 0) {
         const posterName = profiles.find((p) => p.id === user.id)?.full_name || user.email || "Someone";
-        supabase.functions.invoke("send-notice-email", {
-          body: {
-            title: pinActionText.trim(),
-            postedBy: posterName,
-            postedByEmail: user.email || "",
-            taggedUsers: taggedEmails,
-          },
-        });
+        const ok = await confirmAutoEmail(
+          `A notice email will be sent to ${taggedEmails.length} tagged team member(s): ${taggedEmails.join(", ")}.`
+        );
+        if (ok) {
+          supabase.functions.invoke("send-notice-email", {
+            body: {
+              title: pinActionText.trim(),
+              postedBy: posterName,
+              postedByEmail: user.email || "",
+              taggedUsers: taggedEmails,
+            },
+          });
+        }
       }
 
       toast.success("Action pinned to Notice Board");
