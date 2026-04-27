@@ -375,30 +375,35 @@ const LiveAccountDetail = () => {
                   const contactEmail = contact?.email;
 
                   if (contactEmail && outcome !== "closed_won") {
-                    supabase.functions.invoke("send-account-closed", {
-                      body: {
-                        recipientEmail: contactEmail,
-                        recipientName: contactName,
-                        accountName: account?.name || "",
-                        outcomeStatus: outcome,
-                        outcomeReason: reason,
-                        closedBy: closerName.charAt(0).toUpperCase() + closerName.slice(1),
-                      },
-                    }).then(() => {
-                      supabase.from("client_interactions").insert({
-                        account_id: accountId,
-                        subject: `Account closure email sent — ${account?.name || ""}`,
-                        interaction_type: "email",
-                        channel: "email",
-                        contact_name: contactName,
-                        contact_email: contactEmail,
-                        notes: `Account closed (${outcome}: ${reason}). Closure notification email sent to ${contactEmail}.`,
-                        status: "closed",
-                        outcome: "sent",
-                        created_by: user.id,
-                        created_by_email: user.email,
-                      }).then(() => {});
-                    }).catch((err) => console.error("Closure email error:", err));
+                    const confirmed = await confirmAutoEmail(
+                      `A closure notification email will be sent to ${contactEmail}.`
+                    );
+                    if (confirmed) {
+                      supabase.functions.invoke("send-account-closed", {
+                        body: {
+                          recipientEmail: contactEmail,
+                          recipientName: contactName,
+                          accountName: account?.name || "",
+                          outcomeStatus: outcome,
+                          outcomeReason: reason,
+                          closedBy: closerName.charAt(0).toUpperCase() + closerName.slice(1),
+                        },
+                      }).then(() => {
+                        supabase.from("client_interactions").insert({
+                          account_id: accountId,
+                          subject: `Account closure email sent — ${account?.name || ""}`,
+                          interaction_type: "email",
+                          channel: "email",
+                          contact_name: contactName,
+                          contact_email: contactEmail,
+                          notes: `Account closed (${outcome}: ${reason}). Closure notification email sent to ${contactEmail}.`,
+                          status: "closed",
+                          outcome: "sent",
+                          created_by: user.id,
+                          created_by_email: user.email,
+                        }).then(() => {});
+                      }).catch((err) => console.error("Closure email error:", err));
+                    }
                   }
 
                   toast.success("Account closed and merchant notified");
