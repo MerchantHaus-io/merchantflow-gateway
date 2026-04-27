@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, X } from "lucide-react";
+import { Check, FileText, X } from "lucide-react";
 
 import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -17,9 +17,15 @@ interface TierCardProps {
   tier: PricingTier;
   billing: BillingCycle;
   onGetStarted: (tier: PricingTier) => void;
+  onGenerateQuote: (tier: PricingTier) => void;
 }
 
-function TierCard({ tier, billing, onGetStarted }: TierCardProps) {
+function TierCard({
+  tier,
+  billing,
+  onGetStarted,
+  onGenerateQuote,
+}: TierCardProps) {
   const price =
     billing === "annual" ? tier.annualPrice : tier.monthlyPrice;
   const isCustom = tier.monthlyPrice === null;
@@ -82,13 +88,23 @@ function TierCard({ tier, billing, onGetStarted }: TierCardProps) {
         ))}
       </ul>
 
-      <Button
-        onClick={() => onGetStarted(tier)}
-        variant={tier.popular ? "default" : "outline"}
-        className="w-full"
-      >
-        {tier.ctaLabel}
-      </Button>
+      <div className="space-y-2">
+        <Button
+          onClick={() => onGetStarted(tier)}
+          variant={tier.popular ? "default" : "outline"}
+          className="w-full"
+        >
+          {tier.ctaLabel}
+        </Button>
+        <Button
+          onClick={() => onGenerateQuote(tier)}
+          variant="ghost"
+          className="w-full text-primary hover:text-primary"
+        >
+          <FileText className="h-4 w-4 mr-2" />
+          Generate Quote
+        </Button>
+      </div>
     </div>
   );
 }
@@ -147,13 +163,14 @@ export default function Pricing() {
                 tier={tier}
                 billing={billing}
                 onGetStarted={setActiveTier}
+                onGenerateQuote={setActiveTier}
               />
             ))}
           </div>
 
           <p className="text-center text-sm text-muted-foreground mt-10">
-            Click any plan to generate a tailored quote with your client&apos;s
-            details.
+            Use <span className="font-medium text-foreground">Generate Quote</span>{" "}
+            on any plan to build a tailored proposal with your client&apos;s details.
           </p>
         </div>
       </div>
