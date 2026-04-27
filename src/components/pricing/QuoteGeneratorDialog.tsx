@@ -811,14 +811,15 @@ export function QuoteGeneratorDialog({
                     </div>
                   </div>
 
-                  <table className="w-full text-sm mt-6 border-t border-b">
-                    <thead className="bg-slate-900 text-white text-xs">
-                      <tr>
-                        <th className="text-left p-2.5">Item</th>
-                        <th className="text-left p-2.5">Detail</th>
-                        <th className="text-right p-2.5">Price</th>
-                      </tr>
-                    </thead>
+                  <div className="mt-6 -mx-2 sm:mx-0 overflow-x-auto border-t border-b">
+                    <table className="w-full min-w-[520px] text-sm">
+                      <thead className="bg-slate-900 text-white text-xs">
+                        <tr>
+                          <th className="text-left px-2 sm:px-3 py-2.5 whitespace-nowrap">Item</th>
+                          <th className="text-left px-2 sm:px-3 py-2.5 whitespace-nowrap">Detail</th>
+                          <th className="text-right px-2 sm:px-3 py-2.5 whitespace-nowrap w-[110px]">Price</th>
+                        </tr>
+                      </thead>
                     <tbody>
                       <tr className="border-b">
                         <td className="p-2.5 font-medium">Platform Bundle ({tier.name})</td>
