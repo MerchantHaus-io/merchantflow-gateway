@@ -63,20 +63,46 @@ const formatCurrency = (n: number) =>
   }).format(n);
 
 interface QuoteGeneratorDialogProps {
-  tier: PricingTier;
-  billing: BillingCycle;
+  /** Preselected tier. When omitted, the dialog renders a tier picker. */
+  tier?: PricingTier;
+  /** Initial billing cycle. Defaults to "monthly". */
+  billing?: BillingCycle;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Optional prefill from an opportunity / account record. */
+  initialClient?: Partial<ClientDetails>;
 }
 
 export function QuoteGeneratorDialog({
-  tier,
-  billing,
+  tier: tierProp,
+  billing: billingProp = "monthly",
   open,
   onOpenChange,
+  initialClient,
 }: QuoteGeneratorDialogProps) {
-  const [client, setClient] = useState<ClientDetails>(EMPTY_CLIENT);
+  const [client, setClient] = useState<ClientDetails>({
+    ...EMPTY_CLIENT,
+    ...(initialClient ?? {}),
+  });
   const [selectedAddOns, setSelectedAddOns] = useState<Set<AddOnId>>(new Set());
+  const [selectedTierId, setSelectedTierId] = useState<PricingTier["id"]>(
+    tierProp?.id ?? TIERS[0].id,
+  );
+  const [billing, setBilling] = useState<BillingCycle>(billingProp);
+
+  // Re-prefill when the dialog reopens with a new initial payload.
+  // Keeps the form responsive to changes from the opportunity modal.
+  useMemo(() => {
+    if (open) {
+      setClient({ ...EMPTY_CLIENT, ...(initialClient ?? {}) });
+      if (tierProp?.id) setSelectedTierId(tierProp.id);
+      setBilling(billingProp);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  const tier =
+    tierProp ?? TIERS.find((t) => t.id === selectedTierId) ?? TIERS[0];
 
   const isCustom = tier.monthlyPrice === null;
   const basePrice =
