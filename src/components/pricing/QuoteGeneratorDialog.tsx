@@ -91,8 +91,7 @@ export function QuoteGeneratorDialog({
   const [billing, setBilling] = useState<BillingCycle>(billingProp);
 
   // Re-prefill when the dialog reopens with a new initial payload.
-  // Keeps the form responsive to changes from the opportunity modal.
-  useMemo(() => {
+  useEffect(() => {
     if (open) {
       setClient({ ...EMPTY_CLIENT, ...(initialClient ?? {}) });
       if (tierProp?.id) setSelectedTierId(tierProp.id);
