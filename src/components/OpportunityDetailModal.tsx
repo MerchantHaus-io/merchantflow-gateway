@@ -1246,6 +1246,20 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                         </TooltipTrigger>
                         <TooltipContent>Download Details</TooltipContent>
                       </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8 text-primary border-primary/40 hover:bg-primary/10"
+                            onClick={() => setShowQuoteDialog(true)}
+                          >
+                            <FileSpreadsheet className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Generate Quote</TooltipContent>
+                      </Tooltip>
                     </>
                   )}
 
