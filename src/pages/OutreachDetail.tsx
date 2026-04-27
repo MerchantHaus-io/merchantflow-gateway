@@ -261,6 +261,10 @@ export default function OutreachDetail() {
   // ── Send ──
   const sendStep = async (stepNumber: number) => {
     if (!id || !campaign) return;
+    const ok = await confirmAutoEmail(
+      `Outreach campaign step ${stepNumber} will send emails to all eligible contacts in this list.`
+    );
+    if (!ok) return;
     setSending(true);
     try {
       const { error } = await supabase.functions.invoke("send-outreach-emails", {
