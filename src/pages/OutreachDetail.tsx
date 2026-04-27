@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { format, formatDistanceToNow, addDays } from "date-fns";
 import { toast } from "sonner";
+import { confirmAutoEmail } from "@/components/EmailSendConfirm";
 import { cn } from "@/lib/utils";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
