@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { confirmAutoEmail } from "@/components/EmailSendConfirm";
 import {
   Sparkles,
   Bug,
