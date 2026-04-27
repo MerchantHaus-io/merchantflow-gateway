@@ -693,16 +693,16 @@ export function QuoteGeneratorDialog({
                       Cost &amp; resale are editable per quote.
                     </p>
                   </div>
-                  <div className="overflow-x-auto rounded-md border">
-                    <table className="w-full text-sm">
+                  <div className="overflow-x-auto rounded-md border -mx-1 sm:mx-0">
+                    <table className="w-full min-w-[680px] text-sm">
                       <thead className="bg-secondary text-secondary-foreground text-xs">
                         <tr>
-                          <th className="text-left p-2 font-semibold">Include</th>
-                          <th className="text-left p-2 font-semibold">Item</th>
-                          <th className="text-right p-2 font-semibold">Cost</th>
-                          <th className="text-right p-2 font-semibold">Resale</th>
-                          <th className="text-right p-2 font-semibold">Margin</th>
-                          <th className="text-right p-2 font-semibold">Per-event</th>
+                          <th className="text-left px-2 sm:px-3 py-2 font-semibold whitespace-nowrap w-[60px]">Include</th>
+                          <th className="text-left px-2 sm:px-3 py-2 font-semibold whitespace-nowrap">Item</th>
+                          <th className="text-right px-2 sm:px-3 py-2 font-semibold whitespace-nowrap w-[80px]">Cost</th>
+                          <th className="text-right px-2 sm:px-3 py-2 font-semibold whitespace-nowrap w-[80px]">Resale</th>
+                          <th className="text-right px-2 sm:px-3 py-2 font-semibold whitespace-nowrap w-[80px]">Margin</th>
+                          <th className="text-right px-2 sm:px-3 py-2 font-semibold whitespace-nowrap w-[140px]">Per-event</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -811,14 +811,15 @@ export function QuoteGeneratorDialog({
                     </div>
                   </div>
 
-                  <table className="w-full text-sm mt-6 border-t border-b">
-                    <thead className="bg-slate-900 text-white text-xs">
-                      <tr>
-                        <th className="text-left p-2.5">Item</th>
-                        <th className="text-left p-2.5">Detail</th>
-                        <th className="text-right p-2.5">Price</th>
-                      </tr>
-                    </thead>
+                  <div className="mt-6 -mx-2 sm:mx-0 overflow-x-auto border-t border-b">
+                    <table className="w-full min-w-[520px] text-sm">
+                      <thead className="bg-slate-900 text-white text-xs">
+                        <tr>
+                          <th className="text-left px-2 sm:px-3 py-2.5 whitespace-nowrap">Item</th>
+                          <th className="text-left px-2 sm:px-3 py-2.5 whitespace-nowrap">Detail</th>
+                          <th className="text-right px-2 sm:px-3 py-2.5 whitespace-nowrap w-[110px]">Price</th>
+                        </tr>
+                      </thead>
                     <tbody>
                       <tr className="border-b">
                         <td className="p-2.5 font-medium">Platform Bundle ({tier.name})</td>
@@ -839,6 +840,7 @@ export function QuoteGeneratorDialog({
                       ))}
                     </tbody>
                   </table>
+                  </div>
 
                   <div className="flex justify-end mt-4 text-sm">
                     <div className="space-y-1 text-right">
