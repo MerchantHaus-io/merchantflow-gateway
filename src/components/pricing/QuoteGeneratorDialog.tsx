@@ -695,14 +695,14 @@ export function QuoteGeneratorDialog({
                   </div>
                   <div className="overflow-x-auto rounded-md border">
                     <table className="w-full text-sm">
-                      <thead className="bg-muted/50 text-xs">
+                      <thead className="bg-secondary text-secondary-foreground text-xs">
                         <tr>
-                          <th className="text-left p-2 font-medium">Include</th>
-                          <th className="text-left p-2 font-medium">Item</th>
-                          <th className="text-right p-2 font-medium">Cost</th>
-                          <th className="text-right p-2 font-medium">Resale</th>
-                          <th className="text-right p-2 font-medium">Margin</th>
-                          <th className="text-right p-2 font-medium">Per-event</th>
+                          <th className="text-left p-2 font-semibold">Include</th>
+                          <th className="text-left p-2 font-semibold">Item</th>
+                          <th className="text-right p-2 font-semibold">Cost</th>
+                          <th className="text-right p-2 font-semibold">Resale</th>
+                          <th className="text-right p-2 font-semibold">Margin</th>
+                          <th className="text-right p-2 font-semibold">Per-event</th>
                         </tr>
                       </thead>
                       <tbody>
