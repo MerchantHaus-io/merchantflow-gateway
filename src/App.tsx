@@ -36,6 +36,7 @@ import OpportunityDetail from "./pages/OpportunityDetail";
 
 import NMIPaymentsExplained from "./pages/NMIPaymentsExplained";
 import GatewayGuide from "./pages/GatewayGuide";
+import Pricing from "./pages/Pricing";
 import TerminalUpdates from "./pages/TerminalUpdates";
 import WebSubmissions from "./pages/WebSubmissions";
 import MerchantApply from "./pages/MerchantApply";
@@ -137,6 +138,7 @@ const App = () => (
                 <Route path="/chat" element={<ProtectedRoute><Home /></ProtectedRoute>} />
                 <Route path="/tools/nmi-payments" element={<ProtectedRoute><NMIPaymentsExplained /></ProtectedRoute>} />
                 <Route path="/tools/gateway-guide" element={<ProtectedRoute><GatewayGuide /></ProtectedRoute>} />
+                <Route path="/pricing" element={<ProtectedRoute><Pricing /></ProtectedRoute>} />
                 <Route path="/tools/terminal-updates" element={<ProtectedRoute><TerminalUpdates /></ProtectedRoute>} />
                 <Route path="/tools/netlify" element={<ProtectedRoute><NetlifyHub /></ProtectedRoute>} />
                 <Route path="/tools/nmi-boarding" element={<ProtectedRoute><NMIBoarding /></ProtectedRoute>} />
