@@ -693,7 +693,12 @@ export function QuoteGeneratorDialog({
                       Cost &amp; resale are editable per quote.
                     </p>
                   </div>
-                  <div className="overflow-x-auto rounded-md border -mx-1 sm:mx-0">
+                  <div className="relative -mx-1 sm:mx-0">
+                    <div className="sm:hidden flex items-center justify-end gap-1 pr-1 pb-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                      <span>Swipe for more</span>
+                      <span aria-hidden>→</span>
+                    </div>
+                    <div className="overflow-x-auto rounded-md border">
                     <table className="w-full min-w-[680px] text-sm">
                       <thead className="bg-secondary text-secondary-foreground text-xs">
                         <tr>
