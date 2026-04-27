@@ -177,8 +177,9 @@ export default function Pricing() {
 
       {activeTier && (
         <QuoteGeneratorDialog
-          tier={activeTier}
-          billing={billing}
+          initialTier={activeTier.id}
+          initialBilling={billing}
+          lockTier
           open={activeTier !== null}
           onOpenChange={(next) => {
             if (!next) setActiveTier(null);

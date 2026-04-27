@@ -10,7 +10,7 @@ import { Opportunity, STAGE_CONFIG, Account, Contact, getServiceType, EMAIL_TO_U
 import { OutcomeSelector } from "./OutcomeSelector";
 import { OutcomeDisplaySection } from "./opportunity-detail/OutcomeDisplaySection";
 import { OUTCOME_REASONS, OUTCOME_STATUS_LABELS, EMAIL_TRIGGERING_OUTCOMES, PERMANENT_SUPPRESSION_REASONS, REENGAGEMENT_TASKS } from "@/config/outcomeReasons";
-import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, Zap, CreditCard, Loader2, Wand2, RotateCcw, Eye, Check, ExternalLink, ArrowLeft, MoreHorizontal } from "lucide-react";
+import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, Zap, CreditCard, Loader2, Wand2, RotateCcw, Eye, Check, ExternalLink, ArrowLeft, MoreHorizontal, Sparkles } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -48,6 +48,7 @@ import { DocumentsTab } from "./DocumentsTab";
 import GameSplash from "./GameSplash";
 import CommentsTab from "./CommentsTab";
 import { PortalActivationDialog } from "./opportunity-detail/PortalActivationDialog";
+import { QuoteGeneratorDialog, type QuoteClientDetails } from "./pricing/QuoteGeneratorDialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 
 import liveBadge from "@/assets/live-badge.webp";
@@ -207,6 +208,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   const [showDeathSplash, setShowDeathSplash] = useState(false);
   const [reactivateConfirm, setReactivateConfirm] = useState<{ assignee: string } | null>(null);
   const [showActivationDialog, setShowActivationDialog] = useState(false);
+  const [showQuoteDialog, setShowQuoteDialog] = useState(false);
   const [activeSection, setActiveSection] = useState<ModalSection>('overview');
   const [mounted, setMounted] = useState(false);
   const isMobile = useIsMobile();
@@ -318,6 +320,22 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   );
 
   const isGatewayCard = opportunity ? getServiceType(opportunity) === 'gateway_only' : false;
+
+  const quoteClientPrefill = useMemo<Partial<QuoteClientDetails>>(() => {
+    const ws = wizardFormState;
+    const fullName = [resolvedContact?.first_name, resolvedContact?.last_name]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+    return {
+      businessName: resolvedAccount?.name ?? "",
+      contactName: fullName,
+      email: resolvedContact?.email ?? "",
+      phone: resolvedContact?.phone ?? "",
+      monthlyVolume: (ws.monthly_volume as string) ?? "",
+      averageTicket: (ws.average_transaction as string) ?? "",
+    };
+  }, [resolvedAccount, resolvedContact, wizardFormState]);
 
   const handleSectionSelect = useCallback((id: string) => {
     setActiveSection(id as ModalSection);
@@ -1251,6 +1269,9 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                         <DropdownMenuItem onClick={handleDownloadDetails}>
                           <Download className="h-4 w-4 mr-2" /> Download
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setShowQuoteDialog(true)}>
+                          <Sparkles className="h-4 w-4 mr-2" /> Generate Quote
+                        </DropdownMenuItem>
                         {!opportunity.outcome_status && (
                           <DropdownMenuItem onClick={() => setShowMoveDialog(true)}>
                             {isGatewayCard ? <CreditCard className="h-4 w-4 mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
@@ -1840,6 +1861,13 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
           }}
         />
       )}
+
+      {/* Quote Generator — prefilled with this opportunity's client details */}
+      <QuoteGeneratorDialog
+        open={showQuoteDialog}
+        onOpenChange={setShowQuoteDialog}
+        initialClient={quoteClientPrefill}
+      />
     </>
   );
 };

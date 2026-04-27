@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Check, Download, Printer, Sparkles } from "lucide-react";
 
@@ -18,16 +18,26 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 import {
   ADD_ONS,
+  TIERS,
+  getTier,
   type AddOnId,
-  type PricingTier,
+  type TierId,
 } from "@/config/pricing";
 
 type BillingCycle = "monthly" | "annual";
 
-interface ClientDetails {
+export interface QuoteClientDetails {
   businessName: string;
   contactName: string;
   email: string;
@@ -37,7 +47,7 @@ interface ClientDetails {
   notes: string;
 }
 
-const EMPTY_CLIENT: ClientDetails = {
+const EMPTY_CLIENT: QuoteClientDetails = {
   businessName: "",
   contactName: "",
   email: "",
@@ -55,21 +65,43 @@ const formatCurrency = (n: number) =>
   }).format(n);
 
 interface QuoteGeneratorDialogProps {
-  tier: PricingTier;
-  billing: BillingCycle;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialTier?: TierId;
+  initialBilling?: BillingCycle;
+  initialClient?: Partial<QuoteClientDetails>;
+  /** When true, hide the tier picker (e.g. when opened from a specific pricing card). */
+  lockTier?: boolean;
 }
 
 export function QuoteGeneratorDialog({
-  tier,
-  billing,
   open,
   onOpenChange,
+  initialTier = "growth",
+  initialBilling = "monthly",
+  initialClient,
+  lockTier = false,
 }: QuoteGeneratorDialogProps) {
-  const [client, setClient] = useState<ClientDetails>(EMPTY_CLIENT);
+  const [tierId, setTierId] = useState<TierId>(initialTier);
+  const [billing, setBilling] = useState<BillingCycle>(initialBilling);
+  const [client, setClient] = useState<QuoteClientDetails>({
+    ...EMPTY_CLIENT,
+    ...initialClient,
+  });
   const [selectedAddOns, setSelectedAddOns] = useState<Set<AddOnId>>(new Set());
 
+  // Sync state when the dialog is (re)opened with new initial values.
+  useEffect(() => {
+    if (open) {
+      setTierId(initialTier);
+      setBilling(initialBilling);
+      setClient({ ...EMPTY_CLIENT, ...initialClient });
+      setSelectedAddOns(new Set());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  const tier = getTier(tierId);
   const isCustom = tier.monthlyPrice === null;
   const basePrice =
     billing === "annual"
@@ -80,6 +112,17 @@ export function QuoteGeneratorDialog({
     () => ADD_ONS.filter((a) => !tier.bundledAddOnIds.includes(a.id)),
     [tier.bundledAddOnIds],
   );
+
+  // Drop any selections that are now bundled into the chosen tier.
+  useEffect(() => {
+    setSelectedAddOns((prev) => {
+      const filtered = new Set<AddOnId>();
+      prev.forEach((id) => {
+        if (!tier.bundledAddOnIds.includes(id)) filtered.add(id);
+      });
+      return filtered;
+    });
+  }, [tier.bundledAddOnIds]);
 
   const addOnSubtotal = useMemo(
     () =>
@@ -99,16 +142,6 @@ export function QuoteGeneratorDialog({
       else next.add(id);
       return next;
     });
-  };
-
-  const reset = () => {
-    setClient(EMPTY_CLIENT);
-    setSelectedAddOns(new Set());
-  };
-
-  const handleClose = (next: boolean) => {
-    if (!next) reset();
-    onOpenChange(next);
   };
 
   const handlePrint = () => {
@@ -144,7 +177,9 @@ export function QuoteGeneratorDialog({
     lines.push("Plan");
     lines.push("-".repeat(40));
     lines.push(`Tier:            ${tier.name}`);
-    lines.push(`Billing:         ${billing === "annual" ? "Annual (17% off)" : "Monthly"}`);
+    lines.push(
+      `Billing:         ${billing === "annual" ? "Annual (17% off)" : "Monthly"}`,
+    );
     if (isCustom) {
       lines.push(`Base Price:      Custom (volume-based)`);
     } else {
@@ -193,21 +228,76 @@ export function QuoteGeneratorDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl p-0 max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
-            <DialogTitle>Generate quote — {tier.name}</DialogTitle>
+            <DialogTitle>
+              Generate quote{lockTier ? ` — ${tier.name}` : ""}
+            </DialogTitle>
             {tier.popular && <Badge variant="secondary">Popular</Badge>}
           </div>
           <DialogDescription>
-            Add the client&apos;s details, pick any optional add-ons, and we&apos;ll build a
-            shareable quote based on the MerchantHaus pricing schedule.
+            Add the client&apos;s details, pick any optional add-ons, and we&apos;ll
+            build a shareable quote based on the MerchantHaus pricing schedule.
           </DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="flex-1">
+          {!lockTier && (
+            <div className="px-6 pt-5 pb-2 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
+              <div className="grid gap-1.5">
+                <Label htmlFor="qg-tier">Plan</Label>
+                <Select
+                  value={tierId}
+                  onValueChange={(v) => setTierId(v as TierId)}
+                >
+                  <SelectTrigger id="qg-tier">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TIERS.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name}
+                        {t.monthlyPrice !== null
+                          ? ` — $${t.monthlyPrice}/mo`
+                          : " — Custom"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/40 p-1 self-end">
+                <button
+                  type="button"
+                  onClick={() => setBilling("monthly")}
+                  className={cn(
+                    "px-3 py-1 text-xs rounded-full transition-colors",
+                    billing === "monthly"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  Monthly
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBilling("annual")}
+                  className={cn(
+                    "px-3 py-1 text-xs rounded-full transition-colors",
+                    billing === "annual"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  Annual
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="px-6 py-5 grid gap-6 md:grid-cols-2">
             <section className="space-y-4">
               <h3 className="text-sm font-semibold text-foreground">
@@ -323,12 +413,12 @@ export function QuoteGeneratorDialog({
                       <label
                         key={addon.id}
                         htmlFor={`qg-addon-${addon.id}`}
-                        className={
-                          "flex items-start gap-3 rounded-md border p-3 cursor-pointer transition-colors " +
-                          (checked
+                        className={cn(
+                          "flex items-start gap-3 rounded-md border p-3 cursor-pointer transition-colors",
+                          checked
                             ? "border-primary bg-primary/5"
-                            : "border-border hover:bg-muted/50")
-                        }
+                            : "border-border hover:bg-muted/50",
+                        )}
                       >
                         <Checkbox
                           id={`qg-addon-${addon.id}`}
@@ -413,7 +503,7 @@ export function QuoteGeneratorDialog({
         </ScrollArea>
 
         <DialogFooter className="px-6 py-4 border-t bg-background">
-          <Button variant="outline" onClick={() => handleClose(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button variant="outline" onClick={handlePrint}>
