@@ -40,15 +40,17 @@ export function AgendaSubmitDialog({ trigger }: { trigger?: React.ReactNode }) {
       });
       if (error) throw error;
 
-      // Email admin
-      supabase.functions.invoke("send-agenda-notification", {
-        body: {
-          title: title.trim(),
-          description: description.trim(),
-          category,
-          submittedByEmail: user.email,
-        },
-      });
+      // Email admin (with confirmation prompt)
+      if (await confirmAutoEmail("An agenda notification email will be sent to the admin.")) {
+        supabase.functions.invoke("send-agenda-notification", {
+          body: {
+            title: title.trim(),
+            description: description.trim(),
+            category,
+            submittedByEmail: user.email,
+          },
+        });
+      }
 
       toast.success("Agenda item submitted successfully");
       setTitle("");
