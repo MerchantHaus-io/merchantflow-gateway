@@ -59,6 +59,7 @@ import { Dialler } from "./components/Dialler";
 import { CommandPalette } from "./components/CommandPalette";
 import { KeyboardShortcutsModal } from "./components/KeyboardShortcutsModal";
 import { AdminPopupDisplay } from "./components/AdminPopupDisplay";
+import { EmailSendConfirm } from "./components/EmailSendConfirm";
 
 const PUBLIC_ROUTES = ['/auth', '/login', '/contact', '/apply', '/merchant-apply', '/forgot-password', '/update-password', '/terms-processing'];
 
@@ -73,6 +74,7 @@ const InternalWidgets = () => {
       <CommandPalette />
       <KeyboardShortcutsModal />
       <AdminPopupDisplay />
+      <EmailSendConfirm />
     </>
   );
 };
