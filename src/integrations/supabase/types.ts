@@ -22,12 +22,20 @@ export type Database = {
           commission_model: string | null
           country: string | null
           created_at: string
+          dba_name: string | null
           id: string
           interchange_rate_pct: number | null
+          legal_address_line1: string | null
+          legal_address_line2: string | null
+          legal_city: string | null
+          legal_country: string | null
+          legal_state: string | null
+          legal_zip: string | null
           merchant_rate_pct: number | null
           name: string
           nmi_merchant_id: string | null
           revenue_share_pct: number | null
+          source: string | null
           state: string | null
           status: string | null
           updated_at: string
@@ -41,12 +49,20 @@ export type Database = {
           commission_model?: string | null
           country?: string | null
           created_at?: string
+          dba_name?: string | null
           id?: string
           interchange_rate_pct?: number | null
+          legal_address_line1?: string | null
+          legal_address_line2?: string | null
+          legal_city?: string | null
+          legal_country?: string | null
+          legal_state?: string | null
+          legal_zip?: string | null
           merchant_rate_pct?: number | null
           name: string
           nmi_merchant_id?: string | null
           revenue_share_pct?: number | null
+          source?: string | null
           state?: string | null
           status?: string | null
           updated_at?: string
@@ -60,12 +76,20 @@ export type Database = {
           commission_model?: string | null
           country?: string | null
           created_at?: string
+          dba_name?: string | null
           id?: string
           interchange_rate_pct?: number | null
+          legal_address_line1?: string | null
+          legal_address_line2?: string | null
+          legal_city?: string | null
+          legal_country?: string | null
+          legal_state?: string | null
+          legal_zip?: string | null
           merchant_rate_pct?: number | null
           name?: string
           nmi_merchant_id?: string | null
           revenue_share_pct?: number | null
+          source?: string | null
           state?: string | null
           status?: string | null
           updated_at?: string
@@ -555,6 +579,122 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      billing_accounts: {
+        Row: {
+          account_id: string
+          activated_at: string
+          commission_model: string
+          created_at: string
+          deactivated_at: string | null
+          id: string
+          interchange_rate_pct: number | null
+          merchant_rate_pct: number | null
+          nmi_gateway_id: string | null
+          revenue_share_pct: number | null
+          source_opportunity_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          activated_at?: string
+          commission_model?: string
+          created_at?: string
+          deactivated_at?: string | null
+          id?: string
+          interchange_rate_pct?: number | null
+          merchant_rate_pct?: number | null
+          nmi_gateway_id?: string | null
+          revenue_share_pct?: number | null
+          source_opportunity_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          activated_at?: string
+          commission_model?: string
+          created_at?: string
+          deactivated_at?: string | null
+          id?: string
+          interchange_rate_pct?: number | null
+          merchant_rate_pct?: number | null
+          nmi_gateway_id?: string | null
+          revenue_share_pct?: number | null
+          source_opportunity_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_accounts_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: true
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_accounts_source_opportunity_id_fkey"
+            columns: ["source_opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      account_documents: {
+        Row: {
+          account_id: string
+          archived_at: string
+          content_type: string | null
+          created_at: string
+          document_type: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          source_document_id: string | null
+          source_opportunity_id: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          account_id: string
+          archived_at?: string
+          content_type?: string | null
+          created_at?: string
+          document_type?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          source_document_id?: string | null
+          source_opportunity_id?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          account_id?: string
+          archived_at?: string
+          content_type?: string | null
+          created_at?: string
+          document_type?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          source_document_id?: string | null
+          source_opportunity_id?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_documents_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       bank_accounts: {
         Row: {
@@ -1156,6 +1296,7 @@ export type Database = {
       commission_records: {
         Row: {
           account_id: string | null
+          billing_account_id: string | null
           chargeback_fees: number | null
           commission_change_pct: number | null
           company_name: string | null
@@ -1174,6 +1315,7 @@ export type Database = {
         }
         Insert: {
           account_id?: string | null
+          billing_account_id?: string | null
           chargeback_fees?: number | null
           commission_change_pct?: number | null
           company_name?: string | null
@@ -1192,6 +1334,7 @@ export type Database = {
         }
         Update: {
           account_id?: string | null
+          billing_account_id?: string | null
           chargeback_fees?: number | null
           commission_change_pct?: number | null
           company_name?: string | null
@@ -1984,82 +2127,142 @@ export type Database = {
           account_id: string
           agree_to_terms: boolean | null
           assigned_to: string | null
+          average_transaction: number | null
+          business_formation_date: string | null
           contact_id: string
           created_at: string
+          current_processor: string | null
+          federal_tax_id: string | null
+          high_ticket: number | null
           id: string
           language: string | null
+          legal_entity_name: string | null
+          monthly_volume: number | null
+          nature_of_business: string | null
           outcome_closed_at: string | null
           outcome_closed_by: string | null
           outcome_notes: string | null
           outcome_reason: string | null
           outcome_status: string | null
+          ownership_type: string | null
+          percent_b2b: number | null
+          percent_b2c: number | null
+          percent_ecommerce: number | null
+          percent_keyed: number | null
+          percent_moto: number | null
+          percent_swiped: number | null
           portal_merchant_id: string | null
           processing_services: string[] | null
+          product_description: string | null
           referral_source: string | null
           service_type: string | null
+          sic_mcc_code: string | null
           sla_status: string | null
           source: string | null
           stage: string
           stage_entered_at: string | null
+          state_incorporated: string | null
           status: string | null
+          tax_exempt: boolean | null
           timezone: string | null
           updated_at: string
           username: string | null
           value_services: string[] | null
+          website_url: string | null
         }
         Insert: {
           account_id: string
           agree_to_terms?: boolean | null
           assigned_to?: string | null
+          average_transaction?: number | null
+          business_formation_date?: string | null
           contact_id: string
           created_at?: string
+          current_processor?: string | null
+          federal_tax_id?: string | null
+          high_ticket?: number | null
           id?: string
           language?: string | null
+          legal_entity_name?: string | null
+          monthly_volume?: number | null
+          nature_of_business?: string | null
           outcome_closed_at?: string | null
           outcome_closed_by?: string | null
           outcome_notes?: string | null
           outcome_reason?: string | null
           outcome_status?: string | null
+          ownership_type?: string | null
+          percent_b2b?: number | null
+          percent_b2c?: number | null
+          percent_ecommerce?: number | null
+          percent_keyed?: number | null
+          percent_moto?: number | null
+          percent_swiped?: number | null
           portal_merchant_id?: string | null
           processing_services?: string[] | null
+          product_description?: string | null
           referral_source?: string | null
           service_type?: string | null
+          sic_mcc_code?: string | null
           sla_status?: string | null
           source?: string | null
           stage?: string
           stage_entered_at?: string | null
+          state_incorporated?: string | null
           status?: string | null
+          tax_exempt?: boolean | null
           timezone?: string | null
           updated_at?: string
           username?: string | null
           value_services?: string[] | null
+          website_url?: string | null
         }
         Update: {
           account_id?: string
           agree_to_terms?: boolean | null
           assigned_to?: string | null
+          average_transaction?: number | null
+          business_formation_date?: string | null
           contact_id?: string
           created_at?: string
+          current_processor?: string | null
+          federal_tax_id?: string | null
+          high_ticket?: number | null
           id?: string
           language?: string | null
+          legal_entity_name?: string | null
+          monthly_volume?: number | null
+          nature_of_business?: string | null
           outcome_closed_at?: string | null
           outcome_closed_by?: string | null
           outcome_notes?: string | null
           outcome_reason?: string | null
           outcome_status?: string | null
+          ownership_type?: string | null
+          percent_b2b?: number | null
+          percent_b2c?: number | null
+          percent_ecommerce?: number | null
+          percent_keyed?: number | null
+          percent_moto?: number | null
+          percent_swiped?: number | null
           portal_merchant_id?: string | null
           processing_services?: string[] | null
+          product_description?: string | null
           referral_source?: string | null
           service_type?: string | null
+          sic_mcc_code?: string | null
           sla_status?: string | null
           source?: string | null
           stage?: string
           stage_entered_at?: string | null
+          state_incorporated?: string | null
           status?: string | null
+          tax_exempt?: boolean | null
           timezone?: string | null
           updated_at?: string
           username?: string | null
           value_services?: string[] | null
+          website_url?: string | null
         }
         Relationships: [
           {
@@ -2498,6 +2701,62 @@ export type Database = {
           {
             foreignKeyName: "synced_emails_matched_opportunity_id_fkey"
             columns: ["matched_opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stage_change_events: {
+        Row: {
+          account_id: string
+          attempts: number
+          changed_by: string | null
+          created_at: string
+          id: string
+          last_error: string | null
+          new_stage: string
+          old_stage: string | null
+          opportunity_id: string
+          assigned_to: string | null
+          payload: Json
+          processed_at: string | null
+          status: string
+        }
+        Insert: {
+          account_id: string
+          attempts?: number
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          new_stage: string
+          old_stage?: string | null
+          opportunity_id: string
+          assigned_to?: string | null
+          payload?: Json
+          processed_at?: string | null
+          status?: string
+        }
+        Update: {
+          account_id?: string
+          attempts?: number
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          new_stage?: string
+          old_stage?: string | null
+          opportunity_id?: string
+          assigned_to?: string | null
+          payload?: Json
+          processed_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stage_change_events_opportunity_id_fkey"
+            columns: ["opportunity_id"]
             isOneToOne: false
             referencedRelation: "opportunities"
             referencedColumns: ["id"]

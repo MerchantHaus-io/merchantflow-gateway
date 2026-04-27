@@ -47,21 +47,71 @@ const LiveBilling = () => {
   const { teamMemberName } = useAuth();
   const { isAdmin } = useUserRole();
 
+  // Phase 2: read from billing_accounts. This survives deletion of the
+  // original closed-won opportunity. We then join opportunities (any
+  // closed-won row on the same account) for pipeline/contact/owner display.
   const { data: liveOpportunities, isLoading } = useQuery({
     queryKey: ["live-billing-opportunities"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: billing, error: billingError } = await supabase
+        .from("billing_accounts")
+        .select(`
+          id,
+          account_id,
+          source_opportunity_id,
+          activated_at,
+          status,
+          account:accounts(*)
+        `)
+        .eq("status", "active");
+
+      if (billingError) throw billingError;
+      if (!billing || billing.length === 0) return [];
+
+      const accountIds = billing.map((b: any) => b.account_id);
+      const { data: opps, error: oppError } = await supabase
         .from("opportunities")
         .select(`
           *,
-          account:accounts(*),
           contact:contacts(*)
         `)
+        .in("account_id", accountIds)
         .eq("outcome_status", "closed_won")
         .order("outcome_closed_at", { ascending: false, nullsFirst: false });
 
-      if (error) throw error;
-      return data || [];
+      if (oppError) throw oppError;
+
+      // Pivot into the existing per-opportunity shape the page already
+      // groups on. If a billing_account has no closed-won opp (e.g. opp
+      // was deleted), synthesize a stub so the row still appears.
+      const oppsByAccount = new Map<string, any[]>();
+      for (const o of opps || []) {
+        const list = oppsByAccount.get(o.account_id) || [];
+        list.push(o);
+        oppsByAccount.set(o.account_id, list);
+      }
+
+      const flat: any[] = [];
+      for (const b of billing as any[]) {
+        const accountOpps = oppsByAccount.get(b.account_id);
+        if (accountOpps && accountOpps.length > 0) {
+          for (const o of accountOpps) {
+            flat.push({ ...o, account: b.account });
+          }
+        } else {
+          flat.push({
+            id: b.id,
+            account_id: b.account_id,
+            account: b.account,
+            contact: null,
+            assigned_to: null,
+            stage_entered_at: b.activated_at,
+            outcome_status: "closed_won",
+            service_type: null,
+          });
+        }
+      }
+      return flat;
     },
   });
 

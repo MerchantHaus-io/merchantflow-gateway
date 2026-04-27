@@ -322,7 +322,6 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   const isGatewayCard = opportunity ? getServiceType(opportunity) === 'gateway_only' : false;
 
   const quoteClientPrefill = useMemo<Partial<QuoteClientDetails>>(() => {
-    const ws = wizardFormState;
     const fullName = [resolvedContact?.first_name, resolvedContact?.last_name]
       .filter(Boolean)
       .join(" ")
@@ -332,42 +331,28 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
       contactName: fullName,
       email: resolvedContact?.email ?? "",
       phone: resolvedContact?.phone ?? "",
-      monthlyVolume: (ws.monthly_volume as string) ?? "",
-      averageTicket: (ws.average_transaction as string) ?? "",
+      monthlyVolume: opportunity?.monthly_volume != null ? String(opportunity.monthly_volume) : "",
+      averageTicket: opportunity?.average_transaction != null ? String(opportunity.average_transaction) : "",
     };
-  }, [resolvedAccount, resolvedContact, wizardFormState]);
+  }, [resolvedAccount, resolvedContact, opportunity?.monthly_volume, opportunity?.average_transaction]);
 
   const handleSectionSelect = useCallback((id: string) => {
     setActiveSection(id as ModalSection);
   }, []);
 
-  // Helper: merge account/contact with wizard data, wizard takes precedence when available
+  // After Phase 1 (wizard normalization), canonical fields live on the
+  // accounts/contacts/opportunities columns. The wizard JSONB is UI-only.
+  // Reading from columns here means edits in any surface stay consistent.
   const resolvedAccount = useMemo(() => {
     if (!account) return undefined;
-    const ws = wizardFormState;
     return {
       ...account,
-      name: (ws.dba_name as string) || account.name,
-      address1: (ws.dba_address_line1 as string) || account.address1,
-      address2: account.address2,
-      city: (ws.dba_city as string) || account.city,
-      state: (ws.dba_state as string) || account.state,
-      zip: (ws.dba_zip as string) || account.zip,
-      website: (ws.website_url as string) || account.website,
+      name: account.dba_name || account.name,
+      website: opportunity?.website_url || account.website,
     };
-  }, [account, wizardFormState]);
+  }, [account, opportunity?.website_url]);
 
-  const resolvedContact = useMemo(() => {
-    if (!contact) return undefined;
-    const ws = wizardFormState;
-    return {
-      ...contact,
-      first_name: (ws.dba_contact_first_name as string) || contact.first_name,
-      last_name: (ws.dba_contact_last_name as string) || contact.last_name,
-      email: (ws.dba_contact_email as string) || contact.email,
-      phone: (ws.dba_contact_phone as string) || contact.phone,
-    };
-  }, [contact, wizardFormState]);
+  const resolvedContact = useMemo(() => contact, [contact]);
 
   const startEditing = () => {
     setAccountName(resolvedAccount?.name || "");
@@ -390,23 +375,48 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     setTimezone(opportunity!.timezone || "");
     setLanguage(opportunity!.language || "");
 
-    const wf: Record<string, string> = {};
-    const wizardKeys = [
-      'dba_name', 'product_description', 'nature_of_business',
-      'dba_contact_first_name', 'dba_contact_last_name', 'dba_contact_phone', 'dba_contact_email',
-      'dba_address_line1', 'dba_city', 'dba_state', 'dba_zip',
-      'legal_entity_name', 'federal_tax_id', 'ownership_type',
-      'business_formation_date', 'state_incorporated',
-      'legal_address_line1', 'legal_city', 'legal_state', 'legal_zip',
-      'monthly_volume', 'average_transaction', 'high_ticket',
-      'percent_swiped', 'percent_keyed', 'percent_moto', 'percent_ecommerce',
-      'percent_b2c', 'percent_b2b', 'website_url', 'sic_mcc_code',
-      'current_processor', 'username',
-    ];
-    for (const key of wizardKeys) {
-      wf[key] = (wizardFormState[key] as string) || "";
-    }
-    setWizardFields(wf);
+    // Seed wizard fields from canonical columns (post-Phase 1). Fall back
+    // to legacy wizardFormState for any value not yet promoted.
+    const opp = opportunity!;
+    const acc = resolvedAccount;
+    const con = resolvedContact;
+    const numStr = (n?: number | null) => (n == null ? "" : String(n));
+    const fromWf = (k: string) => (wizardFormState[k] as string) || "";
+    setWizardFields({
+      dba_name:                acc?.dba_name || acc?.name || "",
+      product_description:     opp.product_description || "",
+      nature_of_business:      opp.nature_of_business || "",
+      dba_contact_first_name:  con?.first_name || "",
+      dba_contact_last_name:   con?.last_name || "",
+      dba_contact_phone:       con?.phone || "",
+      dba_contact_email:       con?.email || "",
+      dba_address_line1:       acc?.address1 || "",
+      dba_city:                acc?.city || "",
+      dba_state:               acc?.state || "",
+      dba_zip:                 acc?.zip || "",
+      legal_entity_name:       opp.legal_entity_name || "",
+      federal_tax_id:          opp.federal_tax_id || "",
+      ownership_type:          opp.ownership_type || "",
+      business_formation_date: opp.business_formation_date || "",
+      state_incorporated:      opp.state_incorporated || "",
+      legal_address_line1:     acc?.legal_address_line1 || "",
+      legal_city:              acc?.legal_city || "",
+      legal_state:             acc?.legal_state || "",
+      legal_zip:               acc?.legal_zip || "",
+      monthly_volume:          numStr(opp.monthly_volume),
+      average_transaction:     numStr(opp.average_transaction),
+      high_ticket:             numStr(opp.high_ticket),
+      percent_swiped:          numStr(opp.percent_swiped),
+      percent_keyed:           numStr(opp.percent_keyed),
+      percent_moto:            numStr(opp.percent_moto),
+      percent_ecommerce:       numStr(opp.percent_ecommerce),
+      percent_b2c:             numStr(opp.percent_b2c),
+      percent_b2b:             numStr(opp.percent_b2b),
+      website_url:             opp.website_url || acc?.website || "",
+      sic_mcc_code:            opp.sic_mcc_code || "",
+      current_processor:       opp.current_processor || fromWf('current_processor'),
+      username:                opp.username || "",
+    });
     
     setIsEditing(true);
   };
@@ -479,11 +489,10 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   const handleDownloadDetails = useCallback(() => {
     if (!opportunity) return;
 
-    const ws = wizardFormState;
     const serviceType = getServiceType(opportunity);
     const lines: string[] = [];
-    const add = (label: string, value?: string | null) => {
-      lines.push(`${label}: ${value || '—'}`);
+    const add = (label: string, value?: string | number | null) => {
+      lines.push(`${label}: ${value === null || value === undefined || value === '' ? '—' : String(value)}`);
     };
     const section = (title: string) => { lines.push(''); lines.push(`=== ${title} ===`); };
 
@@ -516,48 +525,44 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     add('Language', opportunity.language);
 
     section('Business Profile');
-    add('DBA Name', ws.dba_name as string);
-    add('Products / Services', ws.product_description as string);
-    add('Nature of Business', ws.nature_of_business as string);
-    add('Contact First Name', ws.dba_contact_first_name as string);
-    add('Contact Last Name', ws.dba_contact_last_name as string);
-    add('Contact Phone', ws.dba_contact_phone as string);
-    add('Contact Email', ws.dba_contact_email as string);
-    add('DBA Address', ws.dba_address_line1 as string);
-    add('DBA City', ws.dba_city as string);
-    add('DBA State', ws.dba_state as string);
-    add('DBA Zip', ws.dba_zip as string);
+    add('DBA Name', account?.dba_name || account?.name);
+    add('Products / Services', opportunity.product_description);
+    add('Nature of Business', opportunity.nature_of_business);
+    add('DBA Address', account?.address1);
+    add('DBA City', account?.city);
+    add('DBA State', account?.state);
+    add('DBA Zip', account?.zip);
 
     if (serviceType !== 'gateway_only') {
       section('Legal Info');
-      add('Legal Entity Name', ws.legal_entity_name as string);
-      add('Federal Tax ID', ws.federal_tax_id as string);
-      add('Ownership Type', ws.ownership_type as string);
-      add('Formation Date', ws.business_formation_date as string);
-      add('State Incorporated', ws.state_incorporated as string);
-      add('Legal Address', ws.legal_address_line1 as string);
-      add('Legal City', ws.legal_city as string);
-      add('Legal State', ws.legal_state as string);
-      add('Legal Zip', ws.legal_zip as string);
+      add('Legal Entity Name', opportunity.legal_entity_name);
+      add('Federal Tax ID', opportunity.federal_tax_id);
+      add('Ownership Type', opportunity.ownership_type);
+      add('Formation Date', opportunity.business_formation_date);
+      add('State Incorporated', opportunity.state_incorporated);
+      add('Legal Address', account?.legal_address_line1);
+      add('Legal City', account?.legal_city);
+      add('Legal State', account?.legal_state);
+      add('Legal Zip', account?.legal_zip);
 
       section('Processing');
-      add('Monthly Volume', ws.monthly_volume as string);
-      add('Avg Transaction', ws.average_transaction as string);
-      add('High Ticket', ws.high_ticket as string);
-      add('% Swiped', ws.percent_swiped as string);
-      add('% Keyed', ws.percent_keyed as string);
-      add('% MOTO', ws.percent_moto as string);
-      add('% eCommerce', ws.percent_ecommerce as string);
-      add('% B2C', ws.percent_b2c as string);
-      add('% B2B', ws.percent_b2b as string);
-      add('Website URL', ws.website_url as string);
-      add('SIC / MCC Code', ws.sic_mcc_code as string);
+      add('Monthly Volume', opportunity.monthly_volume);
+      add('Avg Transaction', opportunity.average_transaction);
+      add('High Ticket', opportunity.high_ticket);
+      add('% Swiped', opportunity.percent_swiped);
+      add('% Keyed', opportunity.percent_keyed);
+      add('% MOTO', opportunity.percent_moto);
+      add('% eCommerce', opportunity.percent_ecommerce);
+      add('% B2C', opportunity.percent_b2c);
+      add('% B2B', opportunity.percent_b2b);
+      add('Website URL', opportunity.website_url);
+      add('SIC / MCC Code', opportunity.sic_mcc_code);
     }
 
     if (serviceType === 'gateway_only') {
       section('Gateway Details');
-      add('Username', ws.username as string);
-      add('Current Processor', ws.current_processor as string);
+      add('Username', opportunity.username);
+      add('Current Processor', opportunity.current_processor);
     }
 
     const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
@@ -568,13 +573,15 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     a.click();
     URL.revokeObjectURL(url);
     toast.success('Details downloaded');
-  }, [opportunity, resolvedAccount, resolvedContact, wizardFormState]);
+  }, [opportunity, account, resolvedAccount, resolvedContact]);
 
-  // Auto-save callback
+  // Auto-save callback. Canonical fields write to accounts/contacts/opportunities
+  // columns only — no more cross-sync into onboarding_wizard_states.form_state.
   const handleAutoSave = useCallback(async (data: typeof formData) => {
     if (!opportunity) return;
-    
+
     if (account) {
+      const wf0 = data.wizardFields || {};
       const { error: accountError } = await supabase
         .from('accounts')
         .update({
@@ -586,9 +593,14 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
           state: data.state || null,
           zip: data.zip || null,
           country: data.country || null,
+          dba_name: data.accountName || null,
+          legal_address_line1: wf0.legal_address_line1 || null,
+          legal_city: wf0.legal_city || null,
+          legal_state: wf0.legal_state || null,
+          legal_zip: wf0.legal_zip || null,
         })
         .eq('id', account.id);
-      
+
       if (accountError) throw accountError;
     }
 
@@ -603,77 +615,61 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
           fax: data.fax || null,
         })
         .eq('id', contact.id);
-      
+
       if (contactError) throw contactError;
     }
 
-    const { error: oppError } = await supabase
-      .from('opportunities')
-      .update({
-        username: data.username || null,
-        referral_source: data.referralSource || null,
-        timezone: data.timezone || null,
-        language: data.language || null,
-      })
-      .eq('id', opportunity.id);
-    
-    if (oppError) throw oppError;
-
-    const crossSyncFields: Record<string, string> = {
-      ...(data.wizardFields || {}),
-      dba_name: data.accountName || data.wizardFields?.dba_name || '',
-      dba_address_line1: data.address1 || data.wizardFields?.dba_address_line1 || '',
-      dba_city: data.city || data.wizardFields?.dba_city || '',
-      dba_state: data.state || data.wizardFields?.dba_state || '',
-      dba_zip: data.zip || data.wizardFields?.dba_zip || '',
-      website_url: data.website || data.wizardFields?.website_url || '',
-      dba_contact_first_name: data.firstName || data.wizardFields?.dba_contact_first_name || '',
-      dba_contact_last_name: data.lastName || data.wizardFields?.dba_contact_last_name || '',
-      dba_contact_email: data.email || data.wizardFields?.dba_contact_email || '',
-      dba_contact_phone: data.phone || data.wizardFields?.dba_contact_phone || '',
+    // Promote known wizard text fields to canonical opportunity columns.
+    // Numeric fields are best-effort cast — invalid values become NULL.
+    const wf = data.wizardFields || {};
+    const toNum = (v?: string): number | null => {
+      if (!v) return null;
+      const cleaned = v.replace(/[^0-9.\-]/g, '');
+      if (!cleaned) return null;
+      const n = Number(cleaned);
+      return Number.isFinite(n) ? n : null;
     };
 
-    const cleanedSync: Record<string, string> = {};
-    for (const [k, v] of Object.entries(crossSyncFields)) {
-      if (v) cleanedSync[k] = v;
-    }
+    const opportunityUpdate: Record<string, unknown> = {
+      username: data.username || null,
+      referral_source: data.referralSource || null,
+      timezone: data.timezone || null,
+      language: data.language || null,
+      nature_of_business: wf.nature_of_business || null,
+      product_description: wf.product_description || null,
+      website_url: data.website || wf.website_url || null,
+      sic_mcc_code: wf.sic_mcc_code || null,
+      legal_entity_name: wf.legal_entity_name || null,
+      federal_tax_id: wf.federal_tax_id || null,
+      ownership_type: wf.ownership_type || null,
+      business_formation_date: wf.business_formation_date || null,
+      state_incorporated: wf.state_incorporated || null,
+      monthly_volume: toNum(wf.monthly_volume),
+      average_transaction: toNum(wf.average_transaction),
+      high_ticket: toNum(wf.high_ticket),
+      percent_swiped: toNum(wf.percent_swiped),
+      percent_keyed: toNum(wf.percent_keyed),
+      percent_moto: toNum(wf.percent_moto),
+      percent_ecommerce: toNum(wf.percent_ecommerce),
+      percent_b2c: toNum(wf.percent_b2c),
+      percent_b2b: toNum(wf.percent_b2b),
+      current_processor: wf.current_processor || null,
+    };
 
-    if (Object.keys(cleanedSync).length > 0) {
-      const { data: ws } = await supabase
-        .from('onboarding_wizard_states')
-        .select('id, form_state')
-        .eq('opportunity_id', opportunity.id)
-        .maybeSingle();
+    const { error: oppError } = await supabase
+      .from('opportunities')
+      .update(opportunityUpdate)
+      .eq('id', opportunity.id);
 
-      if (ws) {
-        const currentForm = (ws.form_state as Record<string, unknown>) ?? {};
-        const mergedForm = { ...currentForm, ...cleanedSync };
-        const { error: wizErr } = await supabase
-          .from('onboarding_wizard_states')
-          .update({ form_state: mergedForm as never, updated_at: new Date().toISOString() } as never)
-          .eq('id', ws.id);
-        if (wizErr) throw wizErr;
-      } else {
-        const { error: wizErr } = await supabase
-          .from('onboarding_wizard_states')
-          .insert({
-            opportunity_id: opportunity.id,
-            form_state: cleanedSync as never,
-            progress: 0,
-            step_index: 0,
-          } as never);
-        if (wizErr) throw wizErr;
-      }
-    }
+    if (oppError) throw oppError;
+
     onUpdate({
       ...opportunity,
-      username: data.username || undefined,
-      referral_source: data.referralSource || undefined,
-      timezone: data.timezone || undefined,
-      language: data.language || undefined,
+      ...opportunityUpdate,
       account: account ? {
         ...account,
         name: data.accountName,
+        dba_name: data.accountName || undefined,
         website: data.website || undefined,
         address1: data.address1 || undefined,
         address2: data.address2 || undefined,
@@ -689,10 +685,6 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
         email: data.email || undefined,
         phone: data.phone || undefined,
         fax: data.fax || undefined,
-      } : undefined,
-      wizard_state: opportunity.wizard_state ? {
-        ...opportunity.wizard_state,
-        form_state: { ...(opportunity.wizard_state.form_state as Record<string, unknown>), ...cleanedSync },
       } : undefined,
     });
   }, [opportunity, account, contact, onUpdate]);
@@ -1564,17 +1556,17 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      <InfoItem label="DBA Name" value={wizardFormState.dba_name as string} />
-                      <InfoItem label="Products / Services" value={wizardFormState.product_description as string} />
-                      <InfoItem label="Nature of Business" value={wizardFormState.nature_of_business as string} />
-                      <InfoItem label="Contact First Name" value={wizardFormState.dba_contact_first_name as string} />
-                      <InfoItem label="Contact Last Name" value={wizardFormState.dba_contact_last_name as string} />
-                      <InfoItem label="Contact Phone" value={wizardFormState.dba_contact_phone as string} />
-                      <InfoItem label="Contact Email" value={wizardFormState.dba_contact_email as string} />
-                      <InfoItem label="DBA Address" value={wizardFormState.dba_address_line1 as string} />
-                      <InfoItem label="DBA City" value={wizardFormState.dba_city as string} />
-                      <InfoItem label="DBA State" value={wizardFormState.dba_state as string} />
-                      <InfoItem label="DBA Zip" value={wizardFormState.dba_zip as string} />
+                      <InfoItem label="DBA Name" value={account?.dba_name || account?.name} />
+                      <InfoItem label="Products / Services" value={opportunity.product_description ?? undefined} />
+                      <InfoItem label="Nature of Business" value={opportunity.nature_of_business ?? undefined} />
+                      <InfoItem label="Contact First Name" value={resolvedContact?.first_name} />
+                      <InfoItem label="Contact Last Name" value={resolvedContact?.last_name} />
+                      <InfoItem label="Contact Phone" value={resolvedContact?.phone} />
+                      <InfoItem label="Contact Email" value={resolvedContact?.email} />
+                      <InfoItem label="DBA Address" value={account?.address1} />
+                      <InfoItem label="DBA City" value={account?.city} />
+                      <InfoItem label="DBA State" value={account?.state} />
+                      <InfoItem label="DBA Zip" value={account?.zip} />
                     </div>
                   )}
                 </div>
@@ -1600,15 +1592,15 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      <InfoItem label="Legal Entity Name" value={wizardFormState.legal_entity_name as string} />
-                      <InfoItem label="Federal Tax ID" value={wizardFormState.federal_tax_id as string} />
-                      <InfoItem label="Ownership Type" value={wizardFormState.ownership_type as string} />
-                      <InfoItem label="Formation Date" value={wizardFormState.business_formation_date as string} />
-                      <InfoItem label="State Incorporated" value={wizardFormState.state_incorporated as string} />
-                      <InfoItem label="Legal Address" value={wizardFormState.legal_address_line1 as string} />
-                      <InfoItem label="Legal City" value={wizardFormState.legal_city as string} />
-                      <InfoItem label="Legal State" value={wizardFormState.legal_state as string} />
-                      <InfoItem label="Legal Zip" value={wizardFormState.legal_zip as string} />
+                      <InfoItem label="Legal Entity Name" value={opportunity.legal_entity_name ?? undefined} />
+                      <InfoItem label="Federal Tax ID" value={opportunity.federal_tax_id ?? undefined} />
+                      <InfoItem label="Ownership Type" value={opportunity.ownership_type ?? undefined} />
+                      <InfoItem label="Formation Date" value={opportunity.business_formation_date ?? undefined} />
+                      <InfoItem label="State Incorporated" value={opportunity.state_incorporated ?? undefined} />
+                      <InfoItem label="Legal Address" value={account?.legal_address_line1} />
+                      <InfoItem label="Legal City" value={account?.legal_city} />
+                      <InfoItem label="Legal State" value={account?.legal_state} />
+                      <InfoItem label="Legal Zip" value={account?.legal_zip} />
                     </div>
                   )}
                 </div>
@@ -1638,18 +1630,18 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      <InfoItem label="Monthly Volume" value={wizardFormState.monthly_volume as string} />
-                      <InfoItem label="Avg Transaction" value={wizardFormState.average_transaction as string} />
-                      <InfoItem label="High Ticket" value={wizardFormState.high_ticket as string} />
-                      <InfoItem label="% Swiped" value={wizardFormState.percent_swiped as string} />
-                      <InfoItem label="% Keyed" value={wizardFormState.percent_keyed as string} />
-                      <InfoItem label="% MOTO" value={wizardFormState.percent_moto as string} />
-                      <InfoItem label="% eCommerce" value={wizardFormState.percent_ecommerce as string} />
-                      <InfoItem label="% B2C" value={wizardFormState.percent_b2c as string} />
-                      <InfoItem label="% B2B" value={wizardFormState.percent_b2b as string} />
-                      <InfoItem label="Website" value={wizardFormState.website_url as string} />
-                      <InfoItem label="SIC / MCC Code" value={wizardFormState.sic_mcc_code as string} />
-                      <InfoItem label="Current Processor" value={wizardFormState.current_processor as string} />
+                      <InfoItem label="Monthly Volume" value={opportunity.monthly_volume != null ? String(opportunity.monthly_volume) : undefined} />
+                      <InfoItem label="Avg Transaction" value={opportunity.average_transaction != null ? String(opportunity.average_transaction) : undefined} />
+                      <InfoItem label="High Ticket" value={opportunity.high_ticket != null ? String(opportunity.high_ticket) : undefined} />
+                      <InfoItem label="% Swiped" value={opportunity.percent_swiped != null ? String(opportunity.percent_swiped) : undefined} />
+                      <InfoItem label="% Keyed" value={opportunity.percent_keyed != null ? String(opportunity.percent_keyed) : undefined} />
+                      <InfoItem label="% MOTO" value={opportunity.percent_moto != null ? String(opportunity.percent_moto) : undefined} />
+                      <InfoItem label="% eCommerce" value={opportunity.percent_ecommerce != null ? String(opportunity.percent_ecommerce) : undefined} />
+                      <InfoItem label="% B2C" value={opportunity.percent_b2c != null ? String(opportunity.percent_b2c) : undefined} />
+                      <InfoItem label="% B2B" value={opportunity.percent_b2b != null ? String(opportunity.percent_b2b) : undefined} />
+                      <InfoItem label="Website" value={opportunity.website_url ?? undefined} />
+                      <InfoItem label="SIC / MCC Code" value={opportunity.sic_mcc_code ?? undefined} />
+                      <InfoItem label="Current Processor" value={opportunity.current_processor ?? undefined} />
                     </div>
                   )}
                 </div>
@@ -1669,8 +1661,8 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <InfoItem label="Username" value={wizardFormState.username as string} />
-                        <InfoItem label="Current Processor" value={wizardFormState.current_processor as string} />
+                        <InfoItem label="Username" value={opportunity.username} />
+                        <InfoItem label="Current Processor" value={opportunity.current_processor ?? undefined} />
                       </div>
                     )}
                   </div>

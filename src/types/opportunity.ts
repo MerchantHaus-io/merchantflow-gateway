@@ -23,7 +23,7 @@ export type ServiceType = 'processing' | 'gateway_only';
 export interface Account {
   id: string;
   name: string;
-  status?: 'active' | 'dead';
+  status?: 'active' | 'dead' | 'lead';
   address1?: string;
   address2?: string;
   city?: string;
@@ -31,6 +31,15 @@ export interface Account {
   zip?: string;
   country?: string;
   website?: string;
+  // DBA name shown to customers; falls back to `name` when null.
+  dba_name?: string;
+  // Legal address (used when legal entity differs from DBA address)
+  legal_address_line1?: string;
+  legal_address_line2?: string;
+  legal_city?: string;
+  legal_state?: string;
+  legal_zip?: string;
+  legal_country?: string;
   created_at: string;
   updated_at: string;
 }
@@ -72,12 +81,38 @@ export interface Opportunity {
   outcome_notes?: string | null;
   outcome_closed_at?: string | null;
   outcome_closed_by?: string | null;
+  // Canonical business profile (promoted from wizard form_state in Phase 1)
+  nature_of_business?: string | null;
+  product_description?: string | null;
+  website_url?: string | null;
+  sic_mcc_code?: string | null;
+  // Canonical legal info
+  legal_entity_name?: string | null;
+  federal_tax_id?: string | null;
+  ownership_type?: string | null;
+  business_formation_date?: string | null;
+  state_incorporated?: string | null;
+  tax_exempt?: boolean | null;
+  // Canonical processing profile (numeric)
+  monthly_volume?: number | null;
+  average_transaction?: number | null;
+  high_ticket?: number | null;
+  percent_swiped?: number | null;
+  percent_keyed?: number | null;
+  percent_moto?: number | null;
+  percent_ecommerce?: number | null;
+  percent_b2b?: number | null;
+  percent_b2c?: number | null;
+  // Gateway-only field
+  current_processor?: string | null;
   created_at: string;
   updated_at: string;
   // Joined data
   account?: Account;
   contact?: Contact;
-  /** Optional wizard state saved from the onboarding/preboarding flow */
+  /** Wizard UI state — step + scratch only. Canonical fields live on the
+   *  account/contact/opportunity columns above. Read-only at the modal;
+   *  write only from the wizard pages. */
   wizard_state?: OnboardingWizardState;
   /** Related documents belonging to this opportunity */
   documents?: Document[];
@@ -109,7 +144,11 @@ export interface OnboardingWizardState {
   opportunity_id: string;
   progress: number;
   step_index: number;
-  form_state: unknown;
+  /** UI-only scratch state for the wizard. Canonical fields are stored on
+   *  account/contact/opportunity columns; this blob retains step state and
+   *  any not-yet-promoted scratch values. Do not read from this for
+   *  business-data display. */
+  form_state: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }

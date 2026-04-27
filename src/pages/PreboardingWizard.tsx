@@ -473,11 +473,83 @@ export default function PreboardingWizard() {
 
     if (error) {
       toast({ title: "Could not save wizard", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Wizard saved", description: "Progress is now available on the account card." });
+      setIsSaving(false);
+      return;
     }
 
+    // Promote canonical fields out of form_state into the opportunity/account/
+    // contact columns so the modal and other surfaces read consistent values.
+    await promoteCanonicalFields(selectedOpportunityId, form);
+
+    toast({ title: "Wizard saved", description: "Progress is now available on the account card." });
     setIsSaving(false);
+  };
+
+  // Mirror canonical wizard fields onto opportunities/accounts/contacts so
+  // form_state stops being the de-facto source of truth (Phase 1).
+  const promoteCanonicalFields = async (opportunityId: string, f: PreboardingForm) => {
+    const toNum = (v?: string | null): number | null => {
+      if (v == null || v === "") return null;
+      const cleaned = String(v).replace(/[^0-9.\-]/g, "");
+      if (!cleaned) return null;
+      const n = Number(cleaned);
+      return Number.isFinite(n) ? n : null;
+    };
+
+    const { data: opp } = await supabase
+      .from('opportunities')
+      .select('account_id, contact_id')
+      .eq('id', opportunityId)
+      .maybeSingle();
+    if (!opp) return;
+
+    await supabase.from('opportunities').update({
+      nature_of_business: f.nature_of_business || null,
+      product_description: f.product_description || null,
+      website_url: f.website_url || null,
+      sic_mcc_code: f.sic_mcc_code || null,
+      legal_entity_name: f.legal_entity_name || null,
+      federal_tax_id: f.federal_tax_id || null,
+      ownership_type: f.ownership_type || null,
+      business_formation_date: f.business_formation_date || null,
+      state_incorporated: f.state_incorporated || null,
+      monthly_volume: toNum(f.monthly_volume),
+      average_transaction: toNum(f.average_transaction),
+      high_ticket: toNum(f.high_ticket),
+      percent_swiped: toNum(f.percent_swiped),
+      percent_keyed: toNum(f.percent_keyed),
+      percent_moto: toNum(f.percent_moto),
+      percent_ecommerce: toNum(f.percent_ecommerce),
+      percent_b2b: toNum(f.percent_b2b),
+      percent_b2c: toNum(f.percent_b2c),
+    }).eq('id', opportunityId);
+
+    if (opp.account_id) {
+      await supabase.from('accounts').update({
+        dba_name: f.dba_name || null,
+        address1: f.dba_address_line1 || null,
+        address2: f.dba_address_line2 || null,
+        city: f.dba_city || null,
+        state: f.dba_state || null,
+        zip: f.dba_zip || null,
+        country: f.dba_country || null,
+        website: f.website_url || null,
+        legal_address_line1: f.legal_address_line1 || null,
+        legal_address_line2: f.legal_address_line2 || null,
+        legal_city: f.legal_city || null,
+        legal_state: f.legal_state || null,
+        legal_zip: f.legal_zip || null,
+      }).eq('id', opp.account_id);
+    }
+
+    if (opp.contact_id) {
+      await supabase.from('contacts').update({
+        first_name: f.dba_contact_first_name || null,
+        last_name: f.dba_contact_last_name || null,
+        email: f.dba_contact_email || null,
+        phone: f.dba_contact_phone || null,
+      }).eq('id', opp.contact_id);
+    }
   };
 
   const handleSubmit = async () => {

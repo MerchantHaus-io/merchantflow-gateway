@@ -562,7 +562,9 @@ const Index = () => {
       let accountId: string;
       let contactId: string;
 
-      // Use existing account or create new one
+      // Use existing account or create new one. Brand-new accounts start
+      // as 'lead'; the opportunities trigger (Phase 4) flips them to
+      // 'active' on the first opportunity insert below.
       if (formData.existingAccountId) {
         accountId = formData.existingAccountId;
       } else {
@@ -577,7 +579,8 @@ const Index = () => {
           state: formData.state || null,
           zip: formData.zip || null,
           country: formData.country || null,
-          website: formData.website || null
+          website: formData.website || null,
+          status: 'lead',
         }).select('id').single();
         if (accountError) throw accountError;
         accountId = account.id;

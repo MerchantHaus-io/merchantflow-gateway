@@ -131,19 +131,37 @@ const LiveAccountDetail = () => {
     ? [...new Set(opportunities.map((o) => getServiceType(o as any)))]
     : [];
 
-  // Fetch documents for ALL opportunities of this account
+  // Fetch documents for this account. Phase 2: prefer the
+  // account_documents archive (survives opportunity deletion); fall back to
+  // raw `documents` for any opp-scoped docs not yet archived.
   const oppIds = opportunities?.map((o) => o.id) || [];
   const { data: documents } = useQuery({
     queryKey: ["live-account-documents", accountId, oppIds],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("documents")
-        .select("*")
-        .in("opportunity_id", oppIds)
-        .order("created_at", { ascending: false });
-      return data || [];
+      const { data: archived } = await supabase
+        .from("account_documents")
+        .select("id, file_name, file_path, file_size, content_type, document_type, uploaded_by, archived_at, source_document_id")
+        .eq("account_id", accountId!)
+        .order("archived_at", { ascending: false });
+
+      const archivedIds = new Set((archived || []).map((d: any) => d.source_document_id).filter(Boolean));
+
+      let extra: any[] = [];
+      if (oppIds.length > 0) {
+        const { data: oppDocs } = await supabase
+          .from("documents")
+          .select("*")
+          .in("opportunity_id", oppIds)
+          .order("created_at", { ascending: false });
+        extra = (oppDocs || []).filter((d: any) => !archivedIds.has(d.id));
+      }
+
+      return [
+        ...(archived || []).map((d: any) => ({ ...d, created_at: d.archived_at })),
+        ...extra,
+      ];
     },
-    enabled: oppIds.length > 0,
+    enabled: !!accountId,
   });
 
   const handleDownloadAllDocs = async () => {
