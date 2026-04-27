@@ -31,6 +31,11 @@ export async function sendQualifiedDocsRequest(
       return;
     }
 
+    const confirmed = await confirmAutoEmail(
+      `A "Request for Documents" email will be sent to ${contact.email}.`
+    );
+    if (!confirmed) return;
+
     const { error } = await supabase.functions.invoke("send-qualified-docs-request", {
       body: {
         opportunity_id: opportunityId,
