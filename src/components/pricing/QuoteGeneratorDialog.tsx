@@ -853,6 +853,8 @@ export function QuoteGeneratorDialog({
                     </tbody>
                   </table>
                   </div>
+                  <div className="sm:hidden pointer-events-none absolute top-6 right-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent" />
+                  </div>
 
                   <div className="flex justify-end mt-4 text-sm">
                     <div className="space-y-1 text-right">
