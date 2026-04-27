@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Check, Download, Printer, Sparkles } from "lucide-react";
 
@@ -21,9 +21,17 @@ import { Badge } from "@/components/ui/badge";
 
 import {
   ADD_ONS,
+  TIERS,
   type AddOnId,
   type PricingTier,
 } from "@/config/pricing";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type BillingCycle = "monthly" | "annual";
 
@@ -55,20 +63,45 @@ const formatCurrency = (n: number) =>
   }).format(n);
 
 interface QuoteGeneratorDialogProps {
-  tier: PricingTier;
-  billing: BillingCycle;
+  /** Preselected tier. When omitted, the dialog renders a tier picker. */
+  tier?: PricingTier;
+  /** Initial billing cycle. Defaults to "monthly". */
+  billing?: BillingCycle;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Optional prefill from an opportunity / account record. */
+  initialClient?: Partial<ClientDetails>;
 }
 
 export function QuoteGeneratorDialog({
-  tier,
-  billing,
+  tier: tierProp,
+  billing: billingProp = "monthly",
   open,
   onOpenChange,
+  initialClient,
 }: QuoteGeneratorDialogProps) {
-  const [client, setClient] = useState<ClientDetails>(EMPTY_CLIENT);
+  const [client, setClient] = useState<ClientDetails>({
+    ...EMPTY_CLIENT,
+    ...(initialClient ?? {}),
+  });
   const [selectedAddOns, setSelectedAddOns] = useState<Set<AddOnId>>(new Set());
+  const [selectedTierId, setSelectedTierId] = useState<PricingTier["id"]>(
+    tierProp?.id ?? TIERS[0].id,
+  );
+  const [billing, setBilling] = useState<BillingCycle>(billingProp);
+
+  // Re-prefill when the dialog reopens with a new initial payload.
+  useEffect(() => {
+    if (open) {
+      setClient({ ...EMPTY_CLIENT, ...(initialClient ?? {}) });
+      if (tierProp?.id) setSelectedTierId(tierProp.id);
+      setBilling(billingProp);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  const tier =
+    tierProp ?? TIERS.find((t) => t.id === selectedTierId) ?? TIERS[0];
 
   const isCustom = tier.monthlyPrice === null;
   const basePrice =
@@ -208,6 +241,54 @@ export function QuoteGeneratorDialog({
         </DialogHeader>
 
         <ScrollArea className="flex-1">
+          {!tierProp && (
+            <div className="px-6 pt-5 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end border-b pb-5">
+              <div className="grid gap-1.5">
+                <Label htmlFor="qg-tier">Plan tier</Label>
+                <Select
+                  value={selectedTierId}
+                  onValueChange={(v) => setSelectedTierId(v as PricingTier["id"])}
+                >
+                  <SelectTrigger id="qg-tier">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TIERS.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name} — {t.tagline}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/40 p-1 self-end">
+                <button
+                  type="button"
+                  onClick={() => setBilling("monthly")}
+                  className={
+                    "px-3 py-1 text-xs rounded-full transition-colors " +
+                    (billing === "monthly"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground")
+                  }
+                >
+                  Monthly
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBilling("annual")}
+                  className={
+                    "px-3 py-1 text-xs rounded-full transition-colors " +
+                    (billing === "annual"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground")
+                  }
+                >
+                  Annual
+                </button>
+              </div>
+            </div>
+          )}
           <div className="px-6 py-5 grid gap-6 md:grid-cols-2">
             <section className="space-y-4">
               <h3 className="text-sm font-semibold text-foreground">

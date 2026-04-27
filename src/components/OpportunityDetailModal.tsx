@@ -10,7 +10,8 @@ import { Opportunity, STAGE_CONFIG, Account, Contact, getServiceType, EMAIL_TO_U
 import { OutcomeSelector } from "./OutcomeSelector";
 import { OutcomeDisplaySection } from "./opportunity-detail/OutcomeDisplaySection";
 import { OUTCOME_REASONS, OUTCOME_STATUS_LABELS, EMAIL_TRIGGERING_OUTCOMES, PERMANENT_SUPPRESSION_REASONS, REENGAGEMENT_TASKS } from "@/config/outcomeReasons";
-import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, Zap, CreditCard, Loader2, Wand2, RotateCcw, Eye, Check, ExternalLink, ArrowLeft, MoreHorizontal } from "lucide-react";
+import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, Zap, CreditCard, Loader2, Wand2, RotateCcw, Eye, Check, ExternalLink, ArrowLeft, MoreHorizontal, FileSpreadsheet } from "lucide-react";
+import { QuoteGeneratorDialog } from "./pricing/QuoteGeneratorDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -287,6 +288,18 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   const setWizardField = useCallback((key: string, value: string) => {
     setWizardFields(prev => ({ ...prev, [key]: value }));
   }, []);
+
+  // Quote generator dialog (wired to opportunity → prefill business + contact + volume)
+  const [showQuoteDialog, setShowQuoteDialog] = useState(false);
+  const quotePrefill = useMemo(() => ({
+    businessName: accountName || opportunity?.account?.name || "",
+    contactName: [firstName, lastName].filter(Boolean).join(" ").trim(),
+    email: email || opportunity?.contact?.email || "",
+    phone: phone || opportunity?.contact?.phone || "",
+    monthlyVolume: wizardFields?.monthly_volume || "",
+    averageTicket: wizardFields?.average_transaction || "",
+    notes: opportunity ? `Opportunity: ${opportunity.id}` : "",
+  }), [accountName, firstName, lastName, email, phone, wizardFields, opportunity]);
 
   // Combined form data for auto-save
   const formData = useMemo(() => ({
@@ -1233,6 +1246,20 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                         </TooltipTrigger>
                         <TooltipContent>Download Details</TooltipContent>
                       </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8 text-primary border-primary/40 hover:bg-primary/10"
+                            onClick={() => setShowQuoteDialog(true)}
+                          >
+                            <FileSpreadsheet className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Generate Quote</TooltipContent>
+                      </Tooltip>
                     </>
                   )}
 
@@ -1250,6 +1277,9 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={handleDownloadDetails}>
                           <Download className="h-4 w-4 mr-2" /> Download
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setShowQuoteDialog(true)}>
+                          <FileSpreadsheet className="h-4 w-4 mr-2" /> Generate Quote
                         </DropdownMenuItem>
                         {!opportunity.outcome_status && (
                           <DropdownMenuItem onClick={() => setShowMoveDialog(true)}>
@@ -1840,6 +1870,13 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
           }}
         />
       )}
+
+      {/* Quote Generator — wired to opportunity, prefilled from account/contact/wizard */}
+      <QuoteGeneratorDialog
+        open={showQuoteDialog}
+        onOpenChange={setShowQuoteDialog}
+        initialClient={quotePrefill}
+      />
     </>
   );
 };
