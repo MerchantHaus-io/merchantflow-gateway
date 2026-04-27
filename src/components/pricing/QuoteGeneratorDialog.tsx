@@ -818,7 +818,12 @@ export function QuoteGeneratorDialog({
                     </div>
                   </div>
 
-                  <div className="mt-6 -mx-2 sm:mx-0 overflow-x-auto border-t border-b">
+                  <div className="relative mt-6 -mx-2 sm:mx-0">
+                    <div className="sm:hidden flex items-center justify-end gap-1 pr-1 pb-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                      <span>Swipe for more</span>
+                      <span aria-hidden>→</span>
+                    </div>
+                    <div className="overflow-x-auto border-t border-b">
                     <table className="w-full min-w-[520px] text-sm">
                       <thead className="bg-slate-900 text-white text-xs">
                         <tr>
