@@ -1008,6 +1008,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
       }).catch((err) => {
         console.error('send-outcome-email invocation error:', err);
       });
+      }
     }
 
     // Step 4: Re-engagement task (skip for permanently suppressed reasons)
