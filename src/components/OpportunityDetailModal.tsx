@@ -967,8 +967,15 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
       if (actErr) console.error('Activity log failed:', actErr);
     });
 
-    // Step 3: Email invocation (fire-and-forget for email-triggering outcomes)
+    // Step 3: Email invocation (with confirmation prompt)
     if (EMAIL_TRIGGERING_OUTCOMES.includes(outcome)) {
+      const recipient = opportunity.contact?.email || "the merchant contact";
+      const ok = await confirmAutoEmail(
+        `A compliance outcome notification email will be sent to ${recipient}.`
+      );
+      if (!ok) {
+        toast.message("Outcome saved. Email skipped — send manually if required.");
+      } else {
       supabase.functions.invoke('send-outcome-email', {
         body: { opportunity_id: opportunity.id, outcome_status: outcome, outcome_reason: reason },
       }).then(({ error: emailErr }) => {
