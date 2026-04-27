@@ -1278,6 +1278,9 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                         <DropdownMenuItem onClick={handleDownloadDetails}>
                           <Download className="h-4 w-4 mr-2" /> Download
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setShowQuoteDialog(true)}>
+                          <FileSpreadsheet className="h-4 w-4 mr-2" /> Generate Quote
+                        </DropdownMenuItem>
                         {!opportunity.outcome_status && (
                           <DropdownMenuItem onClick={() => setShowMoveDialog(true)}>
                             {isGatewayCard ? <CreditCard className="h-4 w-4 mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
