@@ -1870,6 +1870,13 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
           }}
         />
       )}
+
+      {/* Quote Generator — wired to opportunity, prefilled from account/contact/wizard */}
+      <QuoteGeneratorDialog
+        open={showQuoteDialog}
+        onOpenChange={setShowQuoteDialog}
+        initialClient={quotePrefill}
+      />
     </>
   );
 };
