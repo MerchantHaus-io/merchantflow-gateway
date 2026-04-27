@@ -1,18 +1,23 @@
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { QueryErrorCard } from "@/components/QueryErrorCard";
-import { Download, FileText, ChevronDown, ChevronRight, Eye, Upload } from "lucide-react";
+import { Download, FileText, ChevronDown, ChevronRight, Eye, Upload, Search, Trash2, Folder, HardDrive, Tag } from "lucide-react";
 import { DocumentUploadDialog } from "@/components/DocumentUploadDialog";
 import { supabase } from "@/integrations/supabase/client";
 import type { Document } from "@/types/opportunity";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { DocumentPreviewDialog } from "@/components/DocumentPreviewDialog";
+import { PageHeader } from "@/components/PageHeader";
+import { StatCard } from "@/components/StatCard";
+import { EmptyState } from "@/components/EmptyState";
 
 /**
  * DocumentsPage lists all documents uploaded across opportunities. Users can
@@ -55,7 +60,6 @@ const DocumentsPage = () => {
   const [selectedDocName, setSelectedDocName] = useState<string>("all");
   const [collapsedAccounts, setCollapsedAccounts] = useState<Set<string> | null>(null);
   const [initialCollapseApplied, setInitialCollapseApplied] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewDoc, setPreviewDoc] = useState<DocumentWithOpportunity | null>(null);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
 
@@ -108,18 +112,6 @@ const DocumentsPage = () => {
       toast.error("Failed to fetch documents");
     }
     setLoading(false);
-  };
-
-  /**
-   * Placeholder handler for file uploads. Direct uploads are not
-   * supported from this page. Users should upload documents from within an
-   * opportunity. This function provides user feedback if triggered.
-   */
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    toast.error("Direct upload is not supported from this page.");
-    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   /**
@@ -348,79 +340,136 @@ const DocumentsPage = () => {
     });
   };
 
+  // Stats for KPI cards
+  const totalDocs = documents.length;
+  const totalSize = useMemo(() => documents.reduce((sum, d) => sum + (d.file_size || 0), 0), [documents]);
+  const unassignedCount = useMemo(() => documents.filter(d => !d.document_type || d.document_type === "Unassigned").length, [documents]);
+  const accountCount = useMemo(() => {
+    const ids = new Set<string>();
+    documents.forEach(d => { if (d.opportunity?.account?.id) ids.add(d.opportunity.account.id); });
+    return ids.size;
+  }, [documents]);
+
   return (
-    <AppLayout
-      pageTitle="Documents"
-      headerActions={
-        <>
-          <Select value={selectedDocName} onValueChange={setSelectedDocName}>
-            <SelectTrigger className="w-64">
-              <SelectValue placeholder="Filter by document type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All document types</SelectItem>
-              {DOCUMENT_TYPE_OPTIONS.map((type) => (
-                <SelectItem key={type} value={type}>
-                  {type}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <div className="relative">
-            <Input
-              placeholder="Search documents..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-3 w-64"
-            />
+    <AppLayout>
+      <div className="flex flex-col h-full overflow-hidden">
+        <PageHeader
+          icon={FileText}
+          title="Documents"
+          color="primary"
+          actions={
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadAll}
+                disabled={filteredDocs.length === 0 || isDownloading}
+              >
+                <Download className="h-4 w-4 mr-1" />
+                {isDownloading && selectedDocuments.size === 0 ? "Preparing…" : "Download all"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleBulkDownload()}
+                disabled={selectedDocuments.size === 0 || isDownloading}
+              >
+                <Download className="h-4 w-4 mr-1" />
+                {isDownloading && selectedDocuments.size > 0 ? "Preparing…" : `Download selected${selectedDocuments.size > 0 ? ` (${selectedDocuments.size})` : ""}`}
+              </Button>
+              <Button size="sm" onClick={() => setUploadDialogOpen(true)}>
+                <Upload className="h-4 w-4 mr-1" /> Upload
+              </Button>
+            </div>
+          }
+        />
+        <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-5">
+          {/* KPI Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 stagger-children">
+            <StatCard label="Documents" value={totalDocs} icon={FileText} color="primary" />
+            <StatCard label="Accounts" value={accountCount} icon={Folder} color="teal" />
+            <StatCard label="Unassigned Type" value={unassignedCount} icon={Tag} color="warning" />
+            <StatCard label="Total Size" value={formatFileSize(totalSize)} icon={HardDrive} color="muted" />
           </div>
-          <Button
-            variant="outline"
-            onClick={handleDownloadAll}
-            disabled={filteredDocs.length === 0 || isDownloading}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            {isDownloading && selectedDocuments.size === 0 ? "Preparing..." : "Download all"}
-          </Button>
-          <Button
-            onClick={() => handleBulkDownload()}
-            disabled={selectedDocuments.size === 0 || isDownloading}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            {isDownloading && selectedDocuments.size > 0 ? "Preparing..." : "Download selected"}
-          </Button>
-          <Button onClick={() => setUploadDialogOpen(true)}>
-            <Upload className="h-4 w-4 mr-2" />
-            Upload
-          </Button>
-        </>
-      }
-    >
-      <div className="p-4 lg:p-6">
+
+          {/* Filters toolbar */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold">{filteredDocs.length} {filteredDocs.length === 1 ? 'document' : 'documents'}</span>
+              {(searchQuery || selectedDocName !== "all") && (
+                <button
+                  onClick={() => { setSearchQuery(""); setSelectedDocName("all"); }}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Clear filters ×
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Search…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8 h-8 w-48 text-sm"
+                />
+              </div>
+              <Select value={selectedDocName} onValueChange={setSelectedDocName}>
+                <SelectTrigger className="h-8 w-[180px] text-xs">
+                  <SelectValue placeholder="Document type" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="all">All document types</SelectItem>
+                  {DOCUMENT_TYPE_OPTIONS.map((type) => (
+                    <SelectItem key={type} value={type} className="text-xs">{type}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Results */}
+          <Card className="border-border/60 overflow-hidden">
+            <CardHeader className="pb-2 pt-3 px-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Grouped by account · Click row to preview · Document type editable inline</span>
+                {filteredDocs.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={allSelected ? true : partiallySelected ? "indeterminate" : false}
+                      onCheckedChange={toggleSelectAll}
+                      aria-label="Select all documents"
+                    />
+                    <span className="text-xs text-muted-foreground">Select all</span>
+                  </div>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="pt-2">
         {fetchError ? (
           <QueryErrorCard message={fetchError} onRetry={() => { setLoading(true); fetchDocuments(); }} />
         ) : loading ? (
-          <div className="text-center py-16 text-muted-foreground">Loading documents...</div>
+          <div className="space-y-3">
+            {[1, 2, 3, 4, 5].map(i => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
+          </div>
         ) : (
               <div className="space-y-2">
                 {filteredDocs.length === 0 ? (
-                  <div className="text-center py-16 text-muted-foreground">
-                    <FileText className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                    <p className="text-lg">No documents found</p>
-                    <p className="text-sm mt-2">
-                      Try uploading documents within an opportunity to see them here
-                    </p>
-                  </div>
+                  <EmptyState
+                    icon={FileText}
+                    title="No documents found"
+                    description={searchQuery || selectedDocName !== "all"
+                      ? "Adjust your filters or upload a new document."
+                      : "Upload documents here, or attach them from within an opportunity."}
+                    actionLabel="Upload"
+                    onAction={() => setUploadDialogOpen(true)}
+                    size="sm"
+                  />
                 ) : (
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3 px-3 py-2 rounded-md bg-muted/40">
-                      <Checkbox
-                        checked={allSelected ? true : partiallySelected ? "indeterminate" : false}
-                        onCheckedChange={toggleSelectAll}
-                        aria-label="Select all documents"
-                      />
-                      <span className="text-sm text-muted-foreground">Select all</span>
-                    </div>
+                  <div className="space-y-3">
                     {Object.entries(groupedDocs).map(([key, group]) => {
                       const accountAllSelected =
                         group.docs.length > 0 && group.docs.every((doc) => selectedDocuments.has(doc.id));
@@ -536,22 +585,10 @@ const DocumentsPage = () => {
                                               size="icon"
                                               className="h-8 w-8"
                                               onClick={() => handleDelete(doc)}
+                                              title="Delete"
                                             >
                                               <span className="sr-only">Delete</span>
-                                              <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                className="h-4 w-4 text-destructive"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                                stroke="currentColor"
-                                              >
-                                                <path
-                                                  strokeLinecap="round"
-                                                  strokeLinejoin="round"
-                                                  strokeWidth={2}
-                                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
-                                                />
-                                              </svg>
+                                              <Trash2 className="h-4 w-4 text-destructive" />
                                             </Button>
                                           </div>
                                         </td>
@@ -566,9 +603,12 @@ const DocumentsPage = () => {
                       );
                     })}
                   </div>
+                )}
+              </div>
             )}
-          </div>
-        )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <DocumentPreviewDialog

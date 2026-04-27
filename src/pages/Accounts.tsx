@@ -339,7 +339,7 @@ const Accounts = () => {
     });
 
     return result;
-  }, [accounts, searchQuery, sortField, sortDirection]);
+  }, [accounts, searchQuery, statusFilter, sortField, sortDirection]);
 
   const totalAccounts = accounts.length;
   const accountsWithContacts = accounts.filter((account) => (account.contacts?.length || 0) > 0).length;
@@ -378,7 +378,7 @@ const Accounts = () => {
           title="Leads"
           color="teal"
           actions={
-            <Button size="sm" onClick={() => toast.info('Use New Application on the Pipeline to create leads')}>
+            <Button size="sm" onClick={() => navigate('/opportunities?new=true')}>
               <Plus className="h-4 w-4 mr-1" /> Add Lead
             </Button>
           }

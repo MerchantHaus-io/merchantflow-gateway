@@ -332,6 +332,7 @@ export default function Outreach() {
           icon={Zap}
           title="Sales Cadences"
           description="Multi-step email sequences · Lead list management · Conversion tracking"
+          color="warning"
           actions={
             <Button size="sm" className="gap-1.5" onClick={() => setOpen(true)}><Plus className="h-4 w-4" />New Cadence</Button>
           }
