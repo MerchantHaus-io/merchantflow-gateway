@@ -167,15 +167,20 @@ export function ActionItemsWidget() {
 
         if (taggedEmails.length > 0) {
           const posterName = profiles.find((p) => p.id === user.id)?.full_name || user.email || "Someone";
-          supabase.functions.invoke("send-notice-email", {
-            body: {
-              title: newTitle.trim(),
-              postedBy: posterName,
-              postedByEmail: user.email || "",
-              taggedUsers: taggedEmails,
-              attachmentName,
-            },
-          }).catch((err) => console.error("Notice email error:", err));
+          const ok = await confirmAutoEmail(
+            `A notice email will be sent to ${taggedEmails.length} tagged team member(s): ${taggedEmails.join(", ")}.`
+          );
+          if (ok) {
+            supabase.functions.invoke("send-notice-email", {
+              body: {
+                title: newTitle.trim(),
+                postedBy: posterName,
+                postedByEmail: user.email || "",
+                taggedUsers: taggedEmails,
+                attachmentName,
+              },
+            }).catch((err) => console.error("Notice email error:", err));
+          }
         }
       }
 
