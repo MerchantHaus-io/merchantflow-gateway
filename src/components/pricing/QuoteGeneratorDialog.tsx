@@ -241,6 +241,54 @@ export function QuoteGeneratorDialog({
         </DialogHeader>
 
         <ScrollArea className="flex-1">
+          {!tierProp && (
+            <div className="px-6 pt-5 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end border-b pb-5">
+              <div className="grid gap-1.5">
+                <Label htmlFor="qg-tier">Plan tier</Label>
+                <Select
+                  value={selectedTierId}
+                  onValueChange={(v) => setSelectedTierId(v as PricingTier["id"])}
+                >
+                  <SelectTrigger id="qg-tier">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TIERS.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name} — {t.tagline}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/40 p-1 self-end">
+                <button
+                  type="button"
+                  onClick={() => setBilling("monthly")}
+                  className={
+                    "px-3 py-1 text-xs rounded-full transition-colors " +
+                    (billing === "monthly"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground")
+                  }
+                >
+                  Monthly
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBilling("annual")}
+                  className={
+                    "px-3 py-1 text-xs rounded-full transition-colors " +
+                    (billing === "annual"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground")
+                  }
+                >
+                  Annual
+                </button>
+              </div>
+            </div>
+          )}
           <div className="px-6 py-5 grid gap-6 md:grid-cols-2">
             <section className="space-y-4">
               <h3 className="text-sm font-semibold text-foreground">
