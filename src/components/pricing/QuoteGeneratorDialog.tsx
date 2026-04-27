@@ -21,9 +21,17 @@ import { Badge } from "@/components/ui/badge";
 
 import {
   ADD_ONS,
+  TIERS,
   type AddOnId,
   type PricingTier,
 } from "@/config/pricing";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type BillingCycle = "monthly" | "annual";
 
