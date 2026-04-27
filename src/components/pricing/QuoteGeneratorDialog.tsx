@@ -840,6 +840,7 @@ export function QuoteGeneratorDialog({
                       ))}
                     </tbody>
                   </table>
+                  </div>
 
                   <div className="flex justify-end mt-4 text-sm">
                     <div className="space-y-1 text-right">
