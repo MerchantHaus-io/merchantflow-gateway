@@ -50,6 +50,9 @@ import { cn } from "@/lib/utils";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
 import { SortableTableHead } from "@/components/SortableTableHead";
+import { PageHeader } from "@/components/PageHeader";
+import { StatCard } from "@/components/StatCard";
+import { EmptyState } from "@/components/EmptyState";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -638,19 +641,55 @@ const Contacts = () => {
 
   // ─── Render ──────────────────────────────────────────────────────────────────
   return (
-    <AppLayout
-      pageTitle="Contacts"
-      headerActions={
-        <Button onClick={openNewDialog} className="gap-1.5">
-          <UserPlus className="h-4 w-4" />
-          New Contact
-        </Button>
-      }
-    >
-      <div className="flex flex-col h-full">
+    <AppLayout>
+      <div className="flex flex-col h-full overflow-hidden">
+        <PageHeader
+          icon={Users}
+          title="Contacts"
+          color="primary"
+          actions={
+            <Button size="sm" onClick={openNewDialog} className="gap-1.5">
+              <UserPlus className="h-4 w-4" />
+              New Contact
+            </Button>
+          }
+        />
+
+        {/* KPI Cards — click to quick-filter */}
+        <div className="px-4 lg:px-6 pt-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 stagger-children">
+            <StatCard
+              label="Total Contacts"
+              value={loading ? "—" : stats.total}
+              icon={Users}
+              color="primary"
+              onClick={() => setQuickFilter('all')}
+            />
+            <StatCard
+              label="Unassigned"
+              value={loading ? "—" : stats.unassigned}
+              icon={AlertCircle}
+              color="warning"
+              onClick={() => setQuickFilter(quickFilter === 'unassigned' ? 'all' : 'unassigned')}
+            />
+            <StatCard
+              label="No Deal"
+              value={loading ? "—" : stats.noDeal}
+              icon={Link2}
+              color="muted"
+              onClick={() => setQuickFilter(quickFilter === 'no_deal' ? 'all' : 'no_deal')}
+            />
+            <StatCard
+              label="Live Clients"
+              value={loading ? "—" : stats.liveClients}
+              icon={TrendingUp}
+              color="success"
+            />
+          </div>
+        </div>
 
         {/* ══ Sticky Toolbar ═══════════════════════════════════════════════════ */}
-        <div className="px-4 lg:px-6 py-3 border-b border-border/60 bg-background/80 backdrop-blur-sm sticky top-0 z-10 space-y-3">
+        <div className="px-4 lg:px-6 pt-3 pb-3 mt-3 border-b border-border/60 bg-background/80 backdrop-blur-sm sticky top-0 z-10 space-y-3">
 
           {/* Row 1: search + filter dropdowns + view toggle */}
           <div className="flex items-center gap-2 flex-wrap">
@@ -738,62 +777,30 @@ const Contacts = () => {
             </div>
           </div>
 
-          {/* Row 2: stat / quick-filter pills */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <button
-              onClick={() => setQuickFilter('all')}
-              className={cn(
-                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors border",
-                quickFilter === 'all'
-                  ? "bg-foreground text-background border-foreground"
-                  : "text-muted-foreground border-border hover:text-foreground hover:border-foreground/30"
+          {/* Row 2: active quick-filter chip + result count */}
+          {(quickFilter !== 'all' || hasActiveFilters) && (
+            <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
+              {quickFilter === 'unassigned' && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-warning/10 text-warning border border-warning/30">
+                  <AlertCircle className="h-3 w-3" /> Showing unassigned
+                  <button onClick={() => setQuickFilter('all')} className="ml-1 hover:text-foreground" aria-label="Clear">
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
               )}
-            >
-              <Users className="h-3 w-3" />
-              {loading ? '…' : stats.total} Contacts
-            </button>
-
-            <button
-              onClick={() => setQuickFilter(quickFilter === 'unassigned' ? 'all' : 'unassigned')}
-              className={cn(
-                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors border",
-                quickFilter === 'unassigned'
-                  ? "bg-amber-500 text-white border-amber-500"
-                  : stats.unassigned > 0
-                    ? "text-amber-600 border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                    : "text-muted-foreground border-border"
+              {quickFilter === 'no_deal' && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-foreground border border-border">
+                  <Link2 className="h-3 w-3" /> Showing contacts without deals
+                  <button onClick={() => setQuickFilter('all')} className="ml-1 hover:text-foreground" aria-label="Clear">
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
               )}
-            >
-              <AlertCircle className="h-3 w-3" />
-              {loading ? '…' : stats.unassigned} Unassigned
-            </button>
-
-            <button
-              onClick={() => setQuickFilter(quickFilter === 'no_deal' ? 'all' : 'no_deal')}
-              className={cn(
-                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors border",
-                quickFilter === 'no_deal'
-                  ? "bg-foreground text-background border-foreground"
-                  : "text-muted-foreground border-border hover:text-foreground hover:border-foreground/30"
-              )}
-            >
-              <Link2 className="h-3 w-3" />
-              {loading ? '…' : stats.noDeal} No Deal
-            </button>
-
-            <span className="text-border mx-1 select-none">|</span>
-
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border text-emerald-600 border-emerald-200 dark:border-emerald-800">
-              <TrendingUp className="h-3 w-3" />
-              {loading ? '…' : stats.liveClients} Live
-            </span>
-
-            {hasActiveFilters && (
-              <span className="ml-auto text-xs text-muted-foreground">
+              <span className="ml-auto">
                 {filteredContacts.length} result{filteredContacts.length !== 1 ? 's' : ''}
               </span>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* ══ Bulk Actions Bar ══════════════════════════════════════════════════ */}
@@ -1055,14 +1062,17 @@ const Contacts = () => {
                     })
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={10} className="py-16 text-center">
-                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                          <Users className="h-8 w-8 opacity-20" />
-                          <p className="text-sm font-medium">No contacts found</p>
-                          {hasActiveFilters && (
-                            <button onClick={clearAllFilters} className="text-xs text-primary hover:underline">Clear filters</button>
-                          )}
-                        </div>
+                      <TableCell colSpan={10}>
+                        <EmptyState
+                          icon={Users}
+                          title="No contacts found"
+                          description={hasActiveFilters ? "Adjust your filters or create a new contact." : "Create a contact to get started."}
+                          actionLabel="New Contact"
+                          onAction={openNewDialog}
+                          secondaryLabel={hasActiveFilters ? "Clear filters" : undefined}
+                          onSecondary={hasActiveFilters ? clearAllFilters : undefined}
+                          size="sm"
+                        />
                       </TableCell>
                     </TableRow>
                   )}
@@ -1187,12 +1197,17 @@ const Contacts = () => {
                   </div>
                 );
               }) : (
-                <div className="col-span-full py-16 flex flex-col items-center gap-2 text-muted-foreground">
-                  <Users className="h-8 w-8 opacity-20" />
-                  <p className="text-sm font-medium">No contacts found</p>
-                  {hasActiveFilters && (
-                    <button onClick={clearAllFilters} className="text-xs text-primary hover:underline">Clear filters</button>
-                  )}
+                <div className="col-span-full">
+                  <EmptyState
+                    icon={Users}
+                    title="No contacts found"
+                    description={hasActiveFilters ? "Adjust your filters or create a new contact." : "Create a contact to get started."}
+                    actionLabel="New Contact"
+                    onAction={openNewDialog}
+                    secondaryLabel={hasActiveFilters ? "Clear filters" : undefined}
+                    onSecondary={hasActiveFilters ? clearAllFilters : undefined}
+                    size="sm"
+                  />
                 </div>
               )}
             </div>
