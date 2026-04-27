@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
+import { confirmAutoEmail } from "@/components/EmailSendConfirm";
 import { getServiceType, STAGE_CONFIG, migrateStage, OutcomeStatus, EMAIL_TO_USER } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
