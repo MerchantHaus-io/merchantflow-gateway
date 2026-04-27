@@ -10,7 +10,8 @@ import { Opportunity, STAGE_CONFIG, Account, Contact, getServiceType, EMAIL_TO_U
 import { OutcomeSelector } from "./OutcomeSelector";
 import { OutcomeDisplaySection } from "./opportunity-detail/OutcomeDisplaySection";
 import { OUTCOME_REASONS, OUTCOME_STATUS_LABELS, EMAIL_TRIGGERING_OUTCOMES, PERMANENT_SUPPRESSION_REASONS, REENGAGEMENT_TASKS } from "@/config/outcomeReasons";
-import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, Zap, CreditCard, Loader2, Wand2, RotateCcw, Eye, Check, ExternalLink, ArrowLeft, MoreHorizontal } from "lucide-react";
+import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, Zap, CreditCard, Loader2, Wand2, RotateCcw, Eye, Check, ExternalLink, ArrowLeft, MoreHorizontal, FileSpreadsheet } from "lucide-react";
+import { QuoteGeneratorDialog } from "./pricing/QuoteGeneratorDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
