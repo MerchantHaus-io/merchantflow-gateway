@@ -15,6 +15,7 @@ import { QuoteGeneratorDialog } from "./pricing/QuoteGeneratorDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { confirmAutoEmail } from "@/components/EmailSendConfirm";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/contexts/AuthContext";
 
