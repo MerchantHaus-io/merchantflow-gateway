@@ -739,8 +739,7 @@ export function QuoteGeneratorDialog({
                   <div className="flex items-baseline justify-between">
                     <h3 className="text-sm font-semibold">Add-ons</h3>
                     <p className="text-[11px] text-muted-foreground">
-                      Bundled lines are included in {tier.name} at no extra cost.
-                      Cost &amp; resale are editable per quote.
+                      Toggle <span className="font-semibold">Bundle</span> on any line to include it free of charge in this quote.
                     </p>
                   </div>
                   <div className="relative -mx-1 sm:mx-0">
@@ -749,10 +748,11 @@ export function QuoteGeneratorDialog({
                       <span aria-hidden>→</span>
                     </div>
                     <div className="overflow-x-auto rounded-md border">
-                    <table className="w-full min-w-[680px] text-sm">
-                      <thead className="bg-secondary text-secondary-foreground text-xs">
+                    <table className="w-full min-w-[760px] text-sm">
+                      <thead className="bg-primary text-primary-foreground text-xs">
                         <tr>
                           <th className="text-left px-2 sm:px-3 py-2 font-semibold whitespace-nowrap w-[60px]">Include</th>
+                          <th className="text-left px-2 sm:px-3 py-2 font-semibold whitespace-nowrap w-[70px]">Bundle</th>
                           <th className="text-left px-2 sm:px-3 py-2 font-semibold whitespace-nowrap">Item</th>
                           <th className="text-right px-2 sm:px-3 py-2 font-semibold whitespace-nowrap w-[80px]">Cost</th>
                           <th className="text-right px-2 sm:px-3 py-2 font-semibold whitespace-nowrap w-[80px]">Resale</th>
@@ -768,6 +768,14 @@ export function QuoteGeneratorDialog({
                                 checked={l.enabled}
                                 onCheckedChange={(c) =>
                                   updateLine(l.id, { enabled: !!c })
+                                }
+                              />
+                            </td>
+                            <td className="p-2 align-top">
+                              <Checkbox
+                                checked={l.bundled}
+                                onCheckedChange={(c) =>
+                                  updateLine(l.id, { bundled: !!c, enabled: l.enabled || !!c })
                                 }
                               />
                             </td>
