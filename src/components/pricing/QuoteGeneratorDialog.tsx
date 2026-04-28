@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import {
   Building2,
   Download,
+  Eye,
   FileSignature,
   Mail,
   Pencil,
@@ -10,6 +11,12 @@ import {
   Sparkles,
   User,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -955,6 +962,22 @@ export function QuoteGeneratorDialog({
           </TabsContent>
         </Tabs>
 
+        {tab === "preview" && (
+          <div className="px-3 sm:px-6 py-2 border-t bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 text-xs flex items-center gap-2">
+            <Eye className="h-3.5 w-3.5 shrink-0" />
+            <span className="font-medium">
+              Preview mode — nothing is emailed to the client. Return to{" "}
+              <button
+                type="button"
+                onClick={() => setTab("build")}
+                className="underline underline-offset-2 font-semibold"
+              >
+                Edit
+              </button>{" "}
+              to enable Send.
+            </span>
+          </div>
+        )}
         <DialogFooter className="px-3 sm:px-6 py-3 border-t bg-background gap-2 flex-row flex-wrap [&>*]:flex-1 sm:[&>*]:flex-none">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
@@ -968,20 +991,53 @@ export function QuoteGeneratorDialog({
               <Pencil className="h-4 w-4 mr-2" /> Edit
             </Button>
           )}
-          <Button variant="outline" onClick={handleDownloadPdf}>
-            <Download className="h-4 w-4 mr-2" /> Download PDF
-          </Button>
-          <Button onClick={handleSendEmail} disabled={sending}>
-            {sending ? (
-              <>
-                <Mail className="h-4 w-4 mr-2 animate-pulse" /> Sending…
-              </>
-            ) : (
-              <>
-                <Send className="h-4 w-4 mr-2" /> Send to client
-              </>
-            )}
-          </Button>
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="contents">
+                  <Button
+                    variant="outline"
+                    onClick={handleDownloadPdf}
+                    disabled={tab === "preview"}
+                    aria-disabled={tab === "preview"}
+                  >
+                    <Download className="h-4 w-4 mr-2" /> Download PDF
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {tab === "preview" && (
+                <TooltipContent side="top">
+                  Preview won't email or download. Switch to Edit to take action.
+                </TooltipContent>
+              )}
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="contents">
+                  <Button
+                    onClick={handleSendEmail}
+                    disabled={sending || tab === "preview"}
+                    aria-disabled={sending || tab === "preview"}
+                  >
+                    {sending ? (
+                      <>
+                        <Mail className="h-4 w-4 mr-2 animate-pulse" /> Sending…
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4 mr-2" /> Send to client
+                      </>
+                    )}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              {tab === "preview" && (
+                <TooltipContent side="top">
+                  Preview won't email the client. Switch to Edit to send.
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
         </DialogFooter>
       </DialogContent>
     </Dialog>
