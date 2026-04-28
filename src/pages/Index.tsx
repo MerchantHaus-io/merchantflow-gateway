@@ -512,24 +512,8 @@ const Index = () => {
     setLoading(false);
   };
 
-  useEffect(() => {
-    const now = Date.now();
-    opportunities.forEach(opportunity => {
-      if (opportunity.stage === 'discovery') {
-        const createdAt = new Date(opportunity.created_at).getTime();
-        const ageInHours = (now - createdAt) / (1000 * 60 * 60);
-        if (ageInHours >= 24) {
-          ensureSlaTask({
-            relatedOpportunityId: opportunity.id,
-            title: `24h follow-up: ${opportunity.account?.name || 'Application'}`,
-            description: 'Application has been waiting for review for 24 hours',
-            assignee: opportunity.assigned_to || user?.email || 'Unassigned',
-            source: 'sla'
-          });
-        }
-      }
-    });
-  }, [ensureSlaTask, opportunities, user?.email]);
+  // SLA follow-ups are surfaced as notifications only (see sla-escalation edge function).
+  // Auto-tasks were too noisy and have been removed from the task system.
 
   // Filter opportunities by date range and assignee
   const filteredOpportunities = useMemo(() => {

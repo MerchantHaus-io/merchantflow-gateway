@@ -301,9 +301,9 @@ const Tasks = () => {
     return result;
   }, [tasks, dateRange, filterBy, searchQuery, statusFilter, priorityFilter, viewFilter, displayName, user?.email, assigneeFilter, sortKey, sortDirection]);
 
-  // Split into manual and auto tasks
+  // SLA-sourced tasks are deprecated (notifications-only). Hide entirely from reporting.
   const manualTasks = useMemo(() => filteredTasks.filter(t => t.source !== 'sla'), [filteredTasks]);
-  const autoTasks = useMemo(() => filteredTasks.filter(t => t.source === 'sla'), [filteredTasks]);
+  const autoTasks = useMemo(() => [] as typeof filteredTasks, []);
 
   // Pagination state
   const [manualPage, setManualPage] = useState(1);

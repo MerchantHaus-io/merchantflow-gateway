@@ -43,7 +43,7 @@ serve(async (req) => {
 
     const now = Date.now();
     let updated = 0;
-    let tasksCreated = 0;
+    const tasksCreated = 0; // SLA breaches no longer create tasks — notifications only
 
     for (const opp of opps || []) {
       const thresholds = SLA_THRESHOLDS[opp.stage];
@@ -67,7 +67,7 @@ serve(async (req) => {
           .eq("id", opp.id);
         updated++;
 
-        // Create escalation task on red breach
+        // Notify on red breach (no task creation — notifications only)
         if (newStatus === "red" && opp.sla_status !== "red") {
           // Get account name
           const { data: account } = await supabase
@@ -78,18 +78,6 @@ serve(async (req) => {
 
           const accountName = account?.name || "Unknown Account";
           const daysInStage = Math.floor(hoursInStage / 24);
-
-          await supabase.from("tasks").insert({
-            title: `SLA Breach: ${accountName} stuck in ${opp.stage} (${daysInStage}d)`,
-            description: `Opportunity has been in the ${opp.stage} stage for ${daysInStage} days, exceeding the SLA threshold. Immediate attention required.`,
-            assignee: opp.assigned_to || null,
-            status: "open",
-            priority: "high",
-            source: "sla",
-            related_opportunity_id: opp.id,
-            created_by: "system@ops.internal",
-          });
-          tasksCreated++;
 
           // Create notification for assigned user
           if (opp.assigned_to) {
