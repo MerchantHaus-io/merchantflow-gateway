@@ -645,6 +645,55 @@ export function QuoteGeneratorDialog({
                       Prepared by (auto-filled, editable)
                     </h3>
                     <div className="grid gap-3">
+                      <div className="grid gap-1.5">
+                        <Label>Select sender</Label>
+                        <Select
+                          value={
+                            QUOTE_SENDERS.find(
+                              (s) => s.email && s.email === sender.email,
+                            )?.id ?? "custom"
+                          }
+                          onValueChange={(id) => {
+                            const picked = QUOTE_SENDERS.find((s) => s.id === id);
+                            if (!picked) return;
+                            if (picked.id === "custom") {
+                              setSender({
+                                name: "",
+                                title: "",
+                                company: picked.company,
+                                email: "",
+                                phone: "",
+                                address: picked.address,
+                              });
+                            } else {
+                              setSender({
+                                name: picked.name,
+                                title: picked.title,
+                                company: picked.company,
+                                email: picked.email,
+                                phone: picked.phone,
+                                address: picked.address,
+                              });
+                            }
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Choose teammate…" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {QUOTE_SENDERS.map((s) => (
+                              <SelectItem key={s.id} value={s.id}>
+                                {s.id === "custom"
+                                  ? "✏️  Custom (manual entry)"
+                                  : `${s.name} — ${s.title}`}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-[11px] text-muted-foreground">
+                          All fields below are editable for one-off overrides.
+                        </p>
+                      </div>
                       <div className="grid grid-cols-2 gap-3">
                         <Field label="Name" value={sender.name}
                           onChange={(v) => setSender({ ...sender, name: v })} />
