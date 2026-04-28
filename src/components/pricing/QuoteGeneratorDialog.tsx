@@ -886,7 +886,7 @@ export function QuoteGeneratorDialog({
                   </div>
                 </div>
               </div>
-            </ScrollArea>
+            </div>
           </TabsContent>
         </Tabs>
 
