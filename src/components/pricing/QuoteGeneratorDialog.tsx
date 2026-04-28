@@ -556,8 +556,8 @@ export function QuoteGeneratorDialog({
           </div>
 
           {/* ========== BUILD TAB ========== */}
-          <TabsContent value="build" className="flex-1 min-h-0 m-0">
-            <ScrollArea className="h-full">
+          <TabsContent value="build" className="flex-1 min-h-0 m-0 overflow-y-auto overflow-x-hidden overscroll-contain" style={{ WebkitOverflowScrolling: "touch" }}>
+            <div className="h-full">
               <div className="px-6 py-5 space-y-6">
                 {/* Plan + billing */}
                 <section className="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
