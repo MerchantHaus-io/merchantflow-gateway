@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import {
   Building2,
   Download,
+  Eye,
   FileSignature,
   Mail,
   Pencil,
@@ -10,6 +11,12 @@ import {
   Sparkles,
   User,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
