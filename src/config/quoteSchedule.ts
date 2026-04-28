@@ -124,12 +124,77 @@ export const QUOTE_DISCLAIMERS = [
   "Initial term: twelve (12) months. Merchant may terminate with thirty (30) days' written notice.",
 ];
 
+/** Roster of MerchantHaus senders that can be selected as "Prepared by".
+ *  All fields remain editable in the Quote Generator after selection. */
+export interface QuoteSender {
+  id: string;
+  name: string;
+  title: string;
+  company: string;
+  email: string;
+  phone: string;
+  address: string;
+}
+
+const MH_ADDRESS = "1209 Mountain Road Pl NE Ste N, Albuquerque, NM 87110, USA";
+const MH_COMPANY = "MerchantHaus LLC";
+
+export const QUOTE_SENDERS: QuoteSender[] = [
+  {
+    id: "taryn",
+    name: "Taryn Engledoe",
+    title: "Managing Director",
+    company: MH_COMPANY,
+    email: "taryn@merchanthaus.io",
+    phone: "+1 (505) 600-6042",
+    address: MH_ADDRESS,
+  },
+  {
+    id: "jamie",
+    name: "Jamie",
+    title: "Partner",
+    company: MH_COMPANY,
+    email: "jamie@merchanthaus.io",
+    phone: "",
+    address: MH_ADDRESS,
+  },
+  {
+    id: "darryn",
+    name: "Darryn",
+    title: "Partner",
+    company: MH_COMPANY,
+    email: "admin@merchanthaus.io",
+    phone: "",
+    address: MH_ADDRESS,
+  },
+  {
+    id: "sheiky",
+    name: "Sheiky",
+    title: "Support Lead",
+    company: MH_COMPANY,
+    email: "support@merchanthaus.io",
+    phone: "",
+    address: MH_ADDRESS,
+  },
+  {
+    id: "sales",
+    name: "MerchantHaus Sales",
+    title: "Sales Team",
+    company: MH_COMPANY,
+    email: "sales@merchanthaus.io",
+    phone: "",
+    address: MH_ADDRESS,
+  },
+  {
+    id: "custom",
+    name: "",
+    title: "",
+    company: MH_COMPANY,
+    email: "",
+    phone: "",
+    address: MH_ADDRESS,
+  },
+];
+
 /** Default quote sender — auto-prefilled, editable per quote. */
-export const DEFAULT_QUOTE_SENDER = {
-  name: "Taryn Engledoe",
-  title: "Managing Director",
-  company: "MerchantHaus LLC",
-  email: "taryn@merchanthaus.io",
-  phone: "+1 (505) 600-6042",
-  address: "1209 Mountain Road Pl NE Ste N, Albuquerque, NM 87110, USA",
-};
+export const DEFAULT_QUOTE_SENDER = QUOTE_SENDERS[0];
