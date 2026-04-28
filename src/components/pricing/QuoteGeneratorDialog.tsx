@@ -51,6 +51,7 @@ import {
   TIER_PLATFORM_FEE,
 } from "@/config/quoteSchedule";
 import { supabase } from "@/integrations/supabase/client";
+import { confirmAutoEmail } from "@/components/EmailSendConfirm";
 import quoteHeader from "@/assets/quote-header.png";
 
 type BillingCycle = "monthly" | "annual";
@@ -488,6 +489,12 @@ export function QuoteGeneratorDialog({
       toast.error("Add a business name before sending.");
       return;
     }
+    const ok = await confirmAutoEmail(
+      `Send the ${tier.name} quote PDF to ${client.email}${
+        sender?.email ? ` (cc ${sender.email})` : ""
+      }?`,
+    );
+    if (!ok) return;
     try {
       setSending(true);
       const doc = await buildPdf();
