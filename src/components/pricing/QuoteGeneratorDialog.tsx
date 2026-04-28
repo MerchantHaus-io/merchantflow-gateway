@@ -523,7 +523,7 @@ export function QuoteGeneratorDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl p-0 max-h-[92vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-5xl p-0 w-[100vw] sm:w-full h-[100dvh] sm:h-auto max-h-[100dvh] sm:max-h-[92vh] rounded-none sm:rounded-lg overflow-hidden flex flex-col">
         <DialogHeader className="px-6 pt-5 pb-3 border-b">
           <div className="flex items-center gap-2 flex-wrap">
             <Sparkles className="h-5 w-5 text-primary" />
