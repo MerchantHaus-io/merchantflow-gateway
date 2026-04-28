@@ -523,7 +523,7 @@ export function QuoteGeneratorDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl p-0 max-h-[92vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-5xl p-0 w-[100vw] sm:w-full h-[100dvh] sm:h-auto max-h-[100dvh] sm:max-h-[92vh] rounded-none sm:rounded-lg overflow-hidden flex flex-col">
         <DialogHeader className="px-6 pt-5 pb-3 border-b">
           <div className="flex items-center gap-2 flex-wrap">
             <Sparkles className="h-5 w-5 text-primary" />
@@ -556,8 +556,8 @@ export function QuoteGeneratorDialog({
           </div>
 
           {/* ========== BUILD TAB ========== */}
-          <TabsContent value="build" className="flex-1 min-h-0 m-0">
-            <ScrollArea className="h-full">
+          <TabsContent value="build" className="flex-1 min-h-0 m-0 overflow-y-auto overflow-x-hidden overscroll-contain" style={{ WebkitOverflowScrolling: "touch" }}>
+            <div className="h-full">
               <div className="px-6 py-5 space-y-6">
                 {/* Plan + billing */}
                 <section className="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
@@ -781,13 +781,13 @@ export function QuoteGeneratorDialog({
                     accent />
                 </section>
               </div>
-            </ScrollArea>
+            </div>
           </TabsContent>
 
           {/* ========== PREVIEW TAB ========== */}
-          <TabsContent value="preview" className="flex-1 min-h-0 m-0">
-            <ScrollArea className="h-full bg-muted/40">
-              <div ref={previewRef} className="bg-white text-[#1f2937] mx-auto my-6 max-w-[820px] shadow-lg rounded-md overflow-hidden">
+          <TabsContent value="preview" className="flex-1 min-h-0 m-0 overflow-auto overscroll-contain bg-muted/40" style={{ WebkitOverflowScrolling: "touch" }}>
+            <div className="h-full p-2 sm:p-0">
+              <div ref={previewRef} className="bg-white text-[#1f2937] mx-auto my-3 sm:my-6 w-[820px] max-w-none shadow-lg rounded-md overflow-hidden">
                 <img src={quoteHeader} alt="MerchantHaus" className="w-full block" />
                 <div className="px-8 pt-6 pb-8">
                   <div className="flex justify-between items-start">
@@ -886,11 +886,11 @@ export function QuoteGeneratorDialog({
                   </div>
                 </div>
               </div>
-            </ScrollArea>
+            </div>
           </TabsContent>
         </Tabs>
 
-        <DialogFooter className="px-6 py-3 border-t bg-background gap-2">
+        <DialogFooter className="px-3 sm:px-6 py-3 border-t bg-background gap-2 flex-row flex-wrap [&>*]:flex-1 sm:[&>*]:flex-none">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
