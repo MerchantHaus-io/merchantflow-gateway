@@ -488,6 +488,12 @@ export function QuoteGeneratorDialog({
       toast.error("Add a business name before sending.");
       return;
     }
+    const ok = await confirmAutoEmail(
+      `Send the ${tier.name} quote PDF to ${client.email}${
+        sender?.email ? ` (cc ${sender.email})` : ""
+      }?`,
+    );
+    if (!ok) return;
     try {
       setSending(true);
       const doc = await buildPdf();
