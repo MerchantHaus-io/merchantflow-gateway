@@ -51,6 +51,7 @@ import {
   TIER_PLATFORM_FEE,
 } from "@/config/quoteSchedule";
 import { supabase } from "@/integrations/supabase/client";
+import { confirmAutoEmail } from "@/components/EmailSendConfirm";
 import quoteHeader from "@/assets/quote-header.png";
 
 type BillingCycle = "monthly" | "annual";
