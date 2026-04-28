@@ -23,6 +23,7 @@ import UpdatePassword from "./pages/UpdatePassword";
 import Apply from "./pages/Apply";
 import Contact from "./pages/Contact";
 import SOP from "./pages/SOP";
+import Training from "./pages/Training";
 import RevenueCalculator from "./pages/RevenueCalculator";
 import PreboardingWizard from "./pages/PreboardingWizard";
 import Tasks from "./pages/Tasks";
@@ -118,6 +119,7 @@ const App = () => (
                 <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
                 <Route path="/reports/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
                 <Route path="/sop" element={<ProtectedRoute><SOP /></ProtectedRoute>} />
+                <Route path="/training" element={<ProtectedRoute><Training /></ProtectedRoute>} />
                 <Route path="/tools/revenue-calculator" element={<ProtectedRoute><RevenueCalculator /></ProtectedRoute>} />
                 <Route path="/tools/preboarding-wizard" element={<ProtectedRoute><PreboardingWizard /></ProtectedRoute>} />
                 <Route path="/tools/csv-import" element={<ProtectedRoute><CsvImport /></ProtectedRoute>} />
