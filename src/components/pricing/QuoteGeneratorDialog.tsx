@@ -47,6 +47,7 @@ import {
   DEFAULT_QUOTE_SENDER,
   QUOTE_DISCLAIMERS,
   QUOTE_LINES,
+  QUOTE_SENDERS,
   TIER_PLATFORM_FEE,
 } from "@/config/quoteSchedule";
 import { supabase } from "@/integrations/supabase/client";
