@@ -890,7 +890,7 @@ export function QuoteGeneratorDialog({
           </TabsContent>
         </Tabs>
 
-        <DialogFooter className="px-6 py-3 border-t bg-background gap-2">
+        <DialogFooter className="px-3 sm:px-6 py-3 border-t bg-background gap-2 flex-row flex-wrap [&>*]:flex-1 sm:[&>*]:flex-none">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
