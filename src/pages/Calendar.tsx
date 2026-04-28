@@ -65,7 +65,7 @@ export default function Calendar() {
     { email: "admin@merchanthaus.io", label: "Jamie" },
     { email: "onboarding@merchanthaus.io", label: "Darryn" },
     { email: "support@merchanthaus.io", label: "Sheiky" },
-    { email: "sales@merchanthaus.io", label: "Wesley" },
+    { email: "sales@merchanthaus.io", label: "Sales" },
     { email: "taryn@merchanthaus.io", label: "Taryn" },
   ];
 
