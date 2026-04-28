@@ -133,7 +133,7 @@ const Reports = () => {
 
   const filteredOpps  = useMemo(() => opps.filter(o => inRange(o[filterBy])), [opps, dateRange, filterBy]);
   const filteredActs  = useMemo(() => activities.filter(a => inRange(a.created_at)), [activities, dateRange]);
-  const filteredTasks = useMemo(() => tasks.filter(t => inRange(t.createdAt)), [tasks, dateRange]);
+  const filteredTasks = useMemo(() => tasks.filter(t => t.source !== 'sla' && inRange(t.createdAt)), [tasks, dateRange]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
