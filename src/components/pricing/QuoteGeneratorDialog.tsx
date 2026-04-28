@@ -787,7 +787,7 @@ export function QuoteGeneratorDialog({
           {/* ========== PREVIEW TAB ========== */}
           <TabsContent value="preview" className="flex-1 min-h-0 m-0 overflow-y-auto overflow-x-hidden overscroll-contain bg-muted/40" style={{ WebkitOverflowScrolling: "touch" }}>
             <div className="h-full">
-              <div ref={previewRef} className="bg-white text-[#1f2937] mx-auto my-6 max-w-[820px] shadow-lg rounded-md overflow-hidden">
+              <div ref={previewRef} className="bg-white text-[#1f2937] mx-auto my-3 sm:my-6 w-[820px] max-w-[820px] sm:w-auto origin-top scale-[0.55] sm:scale-100 -translate-y-0 sm:translate-y-0 shadow-lg rounded-md overflow-hidden" style={{ transformOrigin: "top left" }}>
                 <img src={quoteHeader} alt="MerchantHaus" className="w-full block" />
                 <div className="px-8 pt-6 pb-8">
                   <div className="flex justify-between items-start">
