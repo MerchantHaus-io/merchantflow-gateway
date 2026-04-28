@@ -47,6 +47,7 @@ import {
   DEFAULT_QUOTE_SENDER,
   QUOTE_DISCLAIMERS,
   QUOTE_LINES,
+  QUOTE_SENDERS,
   TIER_PLATFORM_FEE,
 } from "@/config/quoteSchedule";
 import { supabase } from "@/integrations/supabase/client";
@@ -644,6 +645,55 @@ export function QuoteGeneratorDialog({
                       Prepared by (auto-filled, editable)
                     </h3>
                     <div className="grid gap-3">
+                      <div className="grid gap-1.5">
+                        <Label>Select sender</Label>
+                        <Select
+                          value={
+                            QUOTE_SENDERS.find(
+                              (s) => s.email && s.email === sender.email,
+                            )?.id ?? "custom"
+                          }
+                          onValueChange={(id) => {
+                            const picked = QUOTE_SENDERS.find((s) => s.id === id);
+                            if (!picked) return;
+                            if (picked.id === "custom") {
+                              setSender({
+                                name: "",
+                                title: "",
+                                company: picked.company,
+                                email: "",
+                                phone: "",
+                                address: picked.address,
+                              });
+                            } else {
+                              setSender({
+                                name: picked.name,
+                                title: picked.title,
+                                company: picked.company,
+                                email: picked.email,
+                                phone: picked.phone,
+                                address: picked.address,
+                              });
+                            }
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Choose teammate…" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {QUOTE_SENDERS.map((s) => (
+                              <SelectItem key={s.id} value={s.id}>
+                                {s.id === "custom"
+                                  ? "✏️  Custom (manual entry)"
+                                  : `${s.name} — ${s.title}`}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-[11px] text-muted-foreground">
+                          All fields below are editable for one-off overrides.
+                        </p>
+                      </div>
                       <div className="grid grid-cols-2 gap-3">
                         <Field label="Name" value={sender.name}
                           onChange={(v) => setSender({ ...sender, name: v })} />
@@ -689,8 +739,7 @@ export function QuoteGeneratorDialog({
                   <div className="flex items-baseline justify-between">
                     <h3 className="text-sm font-semibold">Add-ons</h3>
                     <p className="text-[11px] text-muted-foreground">
-                      Bundled lines are included in {tier.name} at no extra cost.
-                      Cost &amp; resale are editable per quote.
+                      Toggle <span className="font-semibold">Bundle</span> on any line to include it free of charge in this quote.
                     </p>
                   </div>
                   <div className="relative -mx-1 sm:mx-0">
@@ -699,10 +748,11 @@ export function QuoteGeneratorDialog({
                       <span aria-hidden>→</span>
                     </div>
                     <div className="overflow-x-auto rounded-md border">
-                    <table className="w-full min-w-[680px] text-sm">
-                      <thead className="bg-secondary text-secondary-foreground text-xs">
+                    <table className="w-full min-w-[760px] text-sm">
+                      <thead className="bg-primary text-primary-foreground text-xs">
                         <tr>
                           <th className="text-left px-2 sm:px-3 py-2 font-semibold whitespace-nowrap w-[60px]">Include</th>
+                          <th className="text-left px-2 sm:px-3 py-2 font-semibold whitespace-nowrap w-[70px]">Bundle</th>
                           <th className="text-left px-2 sm:px-3 py-2 font-semibold whitespace-nowrap">Item</th>
                           <th className="text-right px-2 sm:px-3 py-2 font-semibold whitespace-nowrap w-[80px]">Cost</th>
                           <th className="text-right px-2 sm:px-3 py-2 font-semibold whitespace-nowrap w-[80px]">Resale</th>
@@ -718,6 +768,14 @@ export function QuoteGeneratorDialog({
                                 checked={l.enabled}
                                 onCheckedChange={(c) =>
                                   updateLine(l.id, { enabled: !!c })
+                                }
+                              />
+                            </td>
+                            <td className="p-2 align-top">
+                              <Checkbox
+                                checked={l.bundled}
+                                onCheckedChange={(c) =>
+                                  updateLine(l.id, { bundled: !!c, enabled: l.enabled || !!c })
                                 }
                               />
                             </td>
