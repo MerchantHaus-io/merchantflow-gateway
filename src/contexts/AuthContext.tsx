@@ -105,7 +105,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
           // Track login sessions + store Google tokens + auto-sync
           if (event === 'SIGNED_IN' && session?.user) {
-            playLoginJingle();
+            // Only play jingle on a real login, not on tab focus / token refresh / reload
+            // SIGNED_IN fires on every session restore, so gate it via sessionStorage.
+            const jingleKey = `login_jingle_played:${session.user.id}`;
+            if (!sessionStorage.getItem(jingleKey)) {
+              sessionStorage.setItem(jingleKey, '1');
+              playLoginJingle();
+            }
 
             // Track login session
             supabase.from('user_sessions').insert({
