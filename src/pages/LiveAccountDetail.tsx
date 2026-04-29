@@ -46,11 +46,13 @@ import logoLight from "@/assets/logo-light.png";
 import liveBadge from "@/assets/live-badge.webp";
 
 const TEAM_EMAIL_MAP: Record<string, string> = {
-  'Wesley': 'sales@merchanthaus.io',
   'Jamie': 'admin@merchanthaus.io',
   'Darryn': 'onboarding@merchanthaus.io',
   'Taryn': 'taryn@merchanthaus.io',
+  'Yaseen Sheik': 'support@merchanthaus.io',
+  // Legacy
   'Sheiky': 'support@merchanthaus.io',
+  'Wesley': 'sales@merchanthaus.io',
 };
 
 const InfoRow = ({ icon: Icon, label, value, href }: { icon: any; label: string; value?: string | null; href?: string }) => {

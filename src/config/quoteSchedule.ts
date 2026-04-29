@@ -169,7 +169,7 @@ export const QUOTE_SENDERS: QuoteSender[] = [
   },
   {
     id: "sheiky",
-    name: "Sheiky",
+    name: "Yaseen Sheik",
     title: "Support Lead",
     company: MH_COMPANY,
     email: "support@merchanthaus.io",

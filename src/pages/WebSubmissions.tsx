@@ -483,7 +483,7 @@ export default function WebSubmissions() {
         progress = Math.round((filled / totalRequired) * 100);
       }
 
-      // 100% complete → Qualified + assigned to Sheiky; otherwise → Discovery
+      // 100% complete → Qualified + assigned to Yaseen Sheik; otherwise → Discovery
       const initialStage = progress >= 100 ? "qualified" : "discovery";
       const initialAssignee = progress >= 100 ? "support@merchanthaus.io" : null;
 

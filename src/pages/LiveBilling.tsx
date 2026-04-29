@@ -21,11 +21,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 
 const TEAM_EMAIL_MAP: Record<string, string> = {
-  'Wesley': 'sales@merchanthaus.io',
   'Jamie': 'jamie@merchanthaus.io',
   'Darryn': 'admin@merchanthaus.io',
   'Taryn': 'taryn@merchanthaus.io',
+  'Yaseen Sheik': 'support@merchanthaus.io',
+  // Legacy
   'Sheiky': 'support@merchanthaus.io',
+  'Wesley': 'sales@merchanthaus.io',
 };
 
 interface GroupedAccount {
