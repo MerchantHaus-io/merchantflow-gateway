@@ -16,6 +16,7 @@ import Contacts from "./pages/Contacts";
 import Documents from "./pages/Documents";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import TeamRoster from "./pages/TeamRoster";
 import Auth from "./pages/Auth";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -134,6 +135,7 @@ const App = () => (
                 <Route path="/admin/administration" element={<ProtectedRoute><Administration /></ProtectedRoute>} />
                 
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                <Route path="/admin/team-roster" element={<ProtectedRoute><TeamRoster /></ProtectedRoute>} />
                 <Route path="/integrations" element={<ProtectedRoute><Integrations /></ProtectedRoute>} />
                 <Route path="/live-billing" element={<ProtectedRoute><LiveBilling /></ProtectedRoute>} />
                 <Route path="/live-billing/:id" element={<ProtectedRoute><LiveAccountDetail /></ProtectedRoute>} />
