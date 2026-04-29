@@ -114,51 +114,42 @@ export interface OnboardingWizardState {
   updated_at: string;
 }
 
-// Active assignable team members (Wesley is inactive — sales@ is now a shared mailbox, no longer a specific user)
-export const TEAM_MEMBERS = [
-  'Taryn',
-  'Darryn',
-  'Jamie',
-  'Yaseen Sheik',
-] as const;
+// Team data is sourced from the roster: src/config/team.ts
+// Edit that file to rename anyone — it propagates everywhere.
+import {
+  ACTIVE_TEAM_NAMES,
+  ALL_TEAM_NAMES,
+  EMAIL_TO_DISPLAY_NAME,
+  TEAM_ROSTER,
+  colorTokenFor,
+  resolveDisplayName,
+} from "@/config/team";
 
-export type TeamMember = typeof TEAM_MEMBERS[number];
+/** Active assignable members — use for assignment dropdowns. */
+export const TEAM_MEMBERS = ACTIVE_TEAM_NAMES;
+export type TeamMember = string;
 
-export const TEAM_MEMBER_COLORS: Record<string, string> = {
-  'Jamie': 'border-team-jamie',
-  'Darryn': 'border-team-darryn',
-  'Taryn': 'border-team-taryn',
-  'Yaseen Sheik': 'border-team-yaseen',
-  // Legacy mapping for historical records
-  'Sheiky': 'border-team-yaseen',
-  'Wesley': 'border-team-wesley',
-};
+/** Border-color class per display name (includes legacy names for old records). */
+export const TEAM_MEMBER_COLORS: Record<string, string> = (() => {
+  const map: Record<string, string> = {};
+  ALL_TEAM_NAMES.forEach((n) => (map[n] = colorTokenFor(n)));
+  TEAM_ROSTER.forEach((m) =>
+    m.legacyNames?.forEach((n) => (map[n] = m.colorToken)),
+  );
+  return map;
+})();
 
-// Map user emails to display names
-export const EMAIL_TO_USER: Record<string, string> = {
-  'admin@merchanthaus.io': 'Darryn',
-  'onboarding@merchanthaus.io': 'Darryn',
-  'jamie@merchanthaus.io': 'Jamie',
-  'support@merchanthaus.io': 'Yaseen Sheik',
-  'sales@merchanthaus.io': 'Sales',
-  'taryn@merchanthaus.io': 'Taryn',
-};
+/** Map user emails to display names (canonical + aliases). */
+export const EMAIL_TO_USER: Record<string, string> = EMAIL_TO_DISPLAY_NAME;
 
-// Allowed emails that can access the dashboard
-export const ALLOWED_EMAILS = [
-  'admin@merchanthaus.io',
-  'onboarding@merchanthaus.io',
-  'jamie@merchanthaus.io',
-  'support@merchanthaus.io',
-  'sales@merchanthaus.io',
-  'taryn@merchanthaus.io',
-];
+/** Allowed emails that can access the dashboard. */
+export const ALLOWED_EMAILS = Object.keys(EMAIL_TO_DISPLAY_NAME);
 
-// Helper to get team member name from email
-export const getTeamMemberFromEmail = (email: string | undefined | null): string | null => {
-  if (!email) return null;
-  return EMAIL_TO_USER[email.toLowerCase()] || null;
-};
+/** Helper to get team member name from email. */
+export const getTeamMemberFromEmail = (
+  email: string | undefined | null,
+): string | null => resolveDisplayName(email);
+
 
 /**
  * Resolves any assignee value (email or raw name) to a proper display name.
