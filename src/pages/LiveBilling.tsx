@@ -20,15 +20,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 
-const TEAM_EMAIL_MAP: Record<string, string> = {
-  'Jamie': 'jamie@merchanthaus.io',
-  'Darryn': 'admin@merchanthaus.io',
-  'Taryn': 'taryn@merchanthaus.io',
-  'Yaseen Sheik': 'support@merchanthaus.io',
-  // Legacy
-  'Sheiky': 'support@merchanthaus.io',
-  'Wesley': 'sales@merchanthaus.io',
-};
+import { NAME_TO_EMAIL } from "@/config/team";
+const TEAM_EMAIL_MAP: Record<string, string> = NAME_TO_EMAIL;
 
 interface GroupedAccount {
   account_id: string;
