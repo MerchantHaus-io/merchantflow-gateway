@@ -64,7 +64,7 @@ export default function Calendar() {
   const TEAM_MEMBERS = [
     { email: "admin@merchanthaus.io", label: "Jamie" },
     { email: "onboarding@merchanthaus.io", label: "Darryn" },
-    { email: "support@merchanthaus.io", label: "Sheiky" },
+    { email: "support@merchanthaus.io", label: "Yaseen Sheik" },
     { email: "sales@merchanthaus.io", label: "Sales" },
     { email: "taryn@merchanthaus.io", label: "Taryn" },
   ];

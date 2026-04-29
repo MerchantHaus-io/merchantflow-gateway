@@ -114,22 +114,24 @@ export interface OnboardingWizardState {
   updated_at: string;
 }
 
+// Active assignable team members (Wesley is inactive — sales@ is now a shared mailbox, no longer a specific user)
 export const TEAM_MEMBERS = [
   'Taryn',
   'Darryn',
   'Jamie',
-  'Sheiky',
-  'Wesley',
+  'Yaseen Sheik',
 ] as const;
 
 export type TeamMember = typeof TEAM_MEMBERS[number];
 
 export const TEAM_MEMBER_COLORS: Record<string, string> = {
-  'Wesley': 'border-team-wesley',
   'Jamie': 'border-team-jamie',
   'Darryn': 'border-team-darryn',
   'Taryn': 'border-team-taryn',
+  'Yaseen Sheik': 'border-team-yaseen',
+  // Legacy mapping for historical records
   'Sheiky': 'border-team-yaseen',
+  'Wesley': 'border-team-wesley',
 };
 
 // Map user emails to display names
@@ -137,8 +139,8 @@ export const EMAIL_TO_USER: Record<string, string> = {
   'admin@merchanthaus.io': 'Darryn',
   'onboarding@merchanthaus.io': 'Darryn',
   'jamie@merchanthaus.io': 'Jamie',
-  'support@merchanthaus.io': 'Sheiky',
-  'sales@merchanthaus.io': 'Wesley',
+  'support@merchanthaus.io': 'Yaseen Sheik',
+  'sales@merchanthaus.io': 'Sales',
   'taryn@merchanthaus.io': 'Taryn',
 };
 

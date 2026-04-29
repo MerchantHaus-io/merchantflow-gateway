@@ -39,7 +39,7 @@ const TEAM: TeamMember[] = [
       "Overall business operations & SOP compliance",
       "Meeting agenda management",
       "Business & services account management (with Taryn) — e.g. banking",
-      "Application preparation (with Sheiky)",
+      "Application preparation (with Yaseen Sheik)",
       "Submit applications to underwriting",
       "Escalation point for all teams",
       "Ensures pipeline hygiene & data integrity",
@@ -70,7 +70,7 @@ const TEAM: TeamMember[] = [
     ],
   },
   {
-    name: "Sheiky",
+    name: "Yaseen Sheik",
     email: "support@merchanthaus.io",
     title: "Support & Gateway Operations",
     role: "Gateway / Integration / Testing / Go-Live / Support",
@@ -92,26 +92,6 @@ const TEAM: TeamMember[] = [
       "Go-live activation & verification",
       "Post-go-live client support (sole owner)",
       "Live account issue resolution",
-    ],
-  },
-  {
-    name: "Wesley",
-    email: "sales@merchanthaus.io",
-    title: "Sales",
-    role: "Outreach / Discovery / Lead Generation",
-    icon: <TrendingUp className="h-5 w-5" />,
-    color: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
-    borderColor: "border-violet-500/40",
-    stages: [
-      { stage: "discovery", role: "Lead gen & outreach" },
-      { stage: "qualified", role: "Qualification" },
-    ],
-    responsibilities: [
-      "Email outreach campaigns (sole owner)",
-      "Lead generation & cold outreach",
-      "Discovery calls & qualification",
-      "Follows all SOP items up to Qualified stage",
-      "Pipeline sourcing & referral tracking",
     ],
   },
   {
@@ -152,15 +132,15 @@ const TEAM: TeamMember[] = [
 ];
 
 const PIPELINE_OWNERSHIP: { stage: OpportunityStage; owners: string[] }[] = [
-  { stage: "discovery", owners: ["Wesley", "Darryn"] },
-  { stage: "qualified", owners: ["Wesley", "Darryn (QA Gate)"] },
-  { stage: "application_prep", owners: ["Jamie", "Sheiky"] },
-  { stage: "underwriting_review", owners: ["Jamie", "Sheiky"] },
+  { stage: "discovery", owners: ["Darryn"] },
+  { stage: "qualified", owners: ["Darryn (QA Gate)"] },
+  { stage: "application_prep", owners: ["Jamie", "Yaseen Sheik"] },
+  { stage: "underwriting_review", owners: ["Jamie", "Yaseen Sheik"] },
   { stage: "processor_approval", owners: ["Jamie"] },
-  { stage: "gateway_submitted", owners: ["Sheiky"] },
-  { stage: "integration_setup", owners: ["Sheiky", "Darryn (complex)"] },
-  { stage: "testing", owners: ["Sheiky"] },
-  { stage: "go_live_ready", owners: ["Sheiky"] },
+  { stage: "gateway_submitted", owners: ["Yaseen Sheik"] },
+  { stage: "integration_setup", owners: ["Yaseen Sheik", "Darryn (complex)"] },
+  { stage: "testing", owners: ["Yaseen Sheik"] },
+  { stage: "go_live_ready", owners: ["Yaseen Sheik"] },
 ];
 
 const STAGE_ICONS: Record<string, React.ReactNode> = {

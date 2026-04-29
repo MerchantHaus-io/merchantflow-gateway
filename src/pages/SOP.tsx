@@ -1549,7 +1549,7 @@ Sales Support`,
                       </div>
                       <div className="bg-muted/50 rounded-none p-3 text-sm">
                         <strong className="text-foreground">Set outcome to Closed Won when:</strong>
-                        <span className="text-muted-foreground"> Merchant is live and billing. Hand off to support team (Sheiky).</span>
+                        <span className="text-muted-foreground"> Merchant is live and billing. Hand off to support team (Yaseen Sheik).</span>
                       </div>
                     </div>
                   </div>
@@ -1576,7 +1576,7 @@ Sales Support`,
                         <ul className="space-y-2 text-sm text-muted-foreground">
                           <li className="flex gap-2 items-start"><span className="text-emerald-500">•</span><span>Update account status to Active</span></li>
                           <li className="flex gap-2 items-start"><span className="text-emerald-500">•</span><span>Appears in <strong className="text-foreground">Live & Billing</strong> report</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-emerald-500">•</span><span>Post-go-live support owned exclusively by Sheiky</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-emerald-500">•</span><span>Post-go-live support owned exclusively by Yaseen Sheik</span></li>
                           <li className="flex gap-2 items-start"><span className="text-emerald-500">•</span><span>Transaction monitoring via NMI dashboard (Taryn)</span></li>
                         </ul>
                       </div>
@@ -1702,7 +1702,7 @@ Sales Support`,
                       </ul>
                       <div className="mt-4 p-3 rounded-none border border-purple-500/20 bg-purple-500/5">
                         <p className="text-xs text-muted-foreground">
-                          <strong className="text-foreground">Example:</strong> "Assign the ABC Corp deal to Wesley" or "Create a high priority task for Sheiky to follow up on documents for XYZ account."
+                          <strong className="text-foreground">Example:</strong> "Assign the ABC Corp deal to Jamie" or "Create a high priority task for Yaseen Sheik to follow up on documents for XYZ account."
                         </p>
                       </div>
                     </div>

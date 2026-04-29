@@ -44,7 +44,7 @@ ACTIONS:
 - When running underwriting validation, you check document completeness against the required checklist and beneficial owner requirements, then save a validation report.
 - When updating records, you can change fields like name, website, city, state, status on accounts; first_name, last_name, email, phone on contacts; and service_type, referral_source, language, timezone on opportunities.
 - When adding notes, they are saved as comments on the opportunity and logged as activity.
-- Team members you can assign to: admin@merchanthaus.io (Darryn), jamie@merchanthaus.io (Jamie), onboarding@merchanthaus.io (Darryn), support@merchanthaus.io (Sheiky), sales@merchanthaus.io (Wesley), taryn@merchanthaus.io (Taryn).
+- Team members you can assign to: admin@merchanthaus.io (Darryn), jamie@merchanthaus.io (Jamie), onboarding@merchanthaus.io (Darryn), support@merchanthaus.io (Yaseen Sheik), taryn@merchanthaus.io (Taryn). Note: sales@merchanthaus.io is a shared mailbox managed by the team — not a specific user. Wesley is inactive; do not assign new work to him.
 - Valid pipeline stages: discovery, qualified, app_prep, underwriting, approved, gateway_setup, integration, testing, go_live_ready.
 - Valid opportunity outcomes (terminal — removes from active board): closed_won, closed_lost, disqualified, no_decision, underwriting_declined.
 - Valid opportunity statuses: active, dead, closed-lost.

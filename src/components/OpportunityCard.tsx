@@ -36,19 +36,23 @@ interface OpportunityCardProps {
 }
 
 const TEAM_COLORS: Record<string, { border: string; bg: string; text: string }> = {
-  Wesley:  { border: "border-l-team-wesley",  bg: "bg-red-100 dark:bg-red-900/30",    text: "text-red-700 dark:text-red-300" },
-  Jamie:   { border: "border-l-team-jamie",   bg: "bg-yellow-100 dark:bg-yellow-900/30", text: "text-yellow-700 dark:text-yellow-300" },
-  Darryn:  { border: "border-l-team-darryn",  bg: "bg-green-100 dark:bg-green-900/30",  text: "text-green-700 dark:text-green-300" },
-  Taryn:   { border: "border-l-team-taryn",   bg: "bg-blue-100 dark:bg-blue-900/30",    text: "text-blue-700 dark:text-blue-300" },
-  Sheiky:  { border: "border-l-team-yaseen",  bg: "bg-violet-100 dark:bg-violet-900/30", text: "text-violet-700 dark:text-violet-300" },
+  Jamie:          { border: "border-l-team-jamie",   bg: "bg-yellow-100 dark:bg-yellow-900/30", text: "text-yellow-700 dark:text-yellow-300" },
+  Darryn:         { border: "border-l-team-darryn",  bg: "bg-green-100 dark:bg-green-900/30",  text: "text-green-700 dark:text-green-300" },
+  Taryn:          { border: "border-l-team-taryn",   bg: "bg-blue-100 dark:bg-blue-900/30",    text: "text-blue-700 dark:text-blue-300" },
+  "Yaseen Sheik": { border: "border-l-team-yaseen",  bg: "bg-violet-100 dark:bg-violet-900/30", text: "text-violet-700 dark:text-violet-300" },
+  // Legacy mappings for historical records
+  Sheiky:         { border: "border-l-team-yaseen",  bg: "bg-violet-100 dark:bg-violet-900/30", text: "text-violet-700 dark:text-violet-300" },
+  Wesley:         { border: "border-l-team-wesley",  bg: "bg-red-100 dark:bg-red-900/30",    text: "text-red-700 dark:text-red-300" },
 };
 
 const TEAM_EMAIL_MAP: Record<string, string> = {
-  Wesley: "sales@merchanthaus.io",
-  Jamie:  "admin@merchanthaus.io",
-  Darryn: "onboarding@merchanthaus.io",
-  Taryn:  "taryn@merchanthaus.io",
-  Sheiky: "support@merchanthaus.io",
+  Jamie:          "admin@merchanthaus.io",
+  Darryn:         "onboarding@merchanthaus.io",
+  Taryn:          "taryn@merchanthaus.io",
+  "Yaseen Sheik": "support@merchanthaus.io",
+  // Legacy
+  Sheiky:         "support@merchanthaus.io",
+  Wesley:         "sales@merchanthaus.io",
 };
 
 const formatCurrency = (value: number) =>
