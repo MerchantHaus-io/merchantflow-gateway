@@ -78,11 +78,55 @@ const Login = () => {
     }
   };
 
+  // Repeating background text
+  const bgLine = 'merchanthaus.io  '.repeat(8);
+  const bgLines = Array.from({ length: 28 }, (_, i) => i);
+
   return (
-    <div className="light min-h-screen flex items-center justify-center bg-white text-black p-4" data-theme="light">
-      <div className="w-full max-w-md space-y-8">
-        <div className="flex items-center justify-center">
-          <img src={merchantHausLogo} alt="Merchant Haus" width={293} height={72} fetchPriority="high" className="h-[4.5rem] w-auto" />
+    <div className="light relative min-h-screen flex items-center justify-center bg-white text-black p-4 overflow-hidden" data-theme="light">
+      {/* Repeating wordmark background */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 select-none overflow-hidden"
+        style={{
+          background: 'linear-gradient(180deg, #fafafa 0%, #f1f1f0 100%)',
+        }}
+      >
+        <div className="absolute inset-0 flex flex-col justify-center gap-2 px-4 leading-none">
+          {bgLines.map((i) => (
+            <div
+              key={i}
+              className="whitespace-nowrap font-black tracking-tight"
+              style={{
+                fontSize: 'clamp(1.5rem, 4.2vw, 3.25rem)',
+                color: i % 2 === 0 ? 'rgba(115,115,115,0.18)' : 'rgba(160,160,160,0.13)',
+                transform: `translateX(${i % 2 === 0 ? '-2%' : '-6%'})`,
+              }}
+            >
+              {bgLine}
+            </div>
+          ))}
+        </div>
+        {/* Soft vignette so the form stays readable */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(ellipse at center, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.15) 55%, rgba(255,255,255,0) 100%)',
+          }}
+        />
+      </div>
+
+      <div className="relative w-full max-w-md space-y-8">
+        <div className="flex items-center justify-center [perspective:1000px]">
+          <img
+            src={merchantHausLogo}
+            alt="Merchant Haus"
+            width={293}
+            height={72}
+            fetchPriority="high"
+            className="h-[4.5rem] w-auto logo-tilt"
+          />
         </div>
 
         <div className="bg-card border-[3px] border-foreground/80 rounded-2xl p-8 neo-shadow">
