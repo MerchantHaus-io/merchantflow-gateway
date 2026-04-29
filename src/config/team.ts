@@ -154,15 +154,43 @@ export const resolveMember = (
 };
 
 /** Active team members (assignable). Sorted by display name. */
-export const ACTIVE_TEAM = TEAM_ROSTER
-  .filter((m) => m.active)
-  .sort((a, b) => a.displayName.localeCompare(b.displayName));
+export const getActiveTeam = (): TeamMemberRecord[] =>
+  TEAM_ROSTER.filter((m) => m.active).sort((a, b) => a.displayName.localeCompare(b.displayName));
 
 /** Active display names — use this for assignment dropdowns. */
-export const ACTIVE_TEAM_NAMES: string[] = ACTIVE_TEAM.map((m) => m.displayName);
+export const getActiveTeamNames = (): string[] => getActiveTeam().map((m) => m.displayName);
 
-/** All display names including inactive — use for legacy filters/badge colors. */
-export const ALL_TEAM_NAMES: string[] = TEAM_ROSTER.map((m) => m.displayName);
+/** All display names including inactive. */
+export const getAllTeamNames = (): string[] => TEAM_ROSTER.map((m) => m.displayName);
+
+// Live array proxies so existing imports (`ACTIVE_TEAM`, `ACTIVE_TEAM_NAMES`,
+// `ALL_TEAM_NAMES`, `EMAIL_TO_DISPLAY_NAME`, `NAME_TO_EMAIL`) always reflect
+// the current roster — even after DB hydration replaces it.
+const liveArray = <T>(compute: () => T[]): T[] =>
+  new Proxy([] as T[], {
+    get(_t, prop, recv) {
+      const arr = compute();
+      const v = (arr as any)[prop];
+      return typeof v === "function" ? v.bind(arr) : v;
+    },
+    has(_t, prop) { return prop in compute(); },
+    ownKeys() { return Reflect.ownKeys(compute()); },
+    getOwnPropertyDescriptor(_t, prop) { return Object.getOwnPropertyDescriptor(compute(), prop); },
+  });
+
+const liveObject = <V>(compute: () => Record<string, V>): Record<string, V> =>
+  new Proxy({} as Record<string, V>, {
+    get(_t, prop) { return compute()[prop as string]; },
+    has(_t, prop) { return (prop as string) in compute(); },
+    ownKeys() { return Object.keys(compute()); },
+    getOwnPropertyDescriptor(_t, prop) {
+      return Object.getOwnPropertyDescriptor(compute(), prop);
+    },
+  });
+
+export const ACTIVE_TEAM: TeamMemberRecord[] = liveArray(getActiveTeam);
+export const ACTIVE_TEAM_NAMES: string[] = liveArray(getActiveTeamNames);
+export const ALL_TEAM_NAMES: string[] = liveArray(getAllTeamNames);
 
 /** Border-color class for a member's badge / kanban card stripe. */
 export const colorTokenFor = (name: string | null | undefined): string => {
@@ -170,21 +198,54 @@ export const colorTokenFor = (name: string | null | undefined): string => {
   return m?.colorToken ?? "border-border";
 };
 
-/** Email → display-name lookup used by EMAIL_TO_USER consumers. */
-export const EMAIL_TO_DISPLAY_NAME: Record<string, string> = (() => {
+const computeEmailToDisplayName = (): Record<string, string> => {
   const map: Record<string, string> = {};
   for (const m of TEAM_ROSTER) {
     for (const e of allEmailsFor(m)) map[e] = m.displayName;
   }
   return map;
-})();
-
-/** Display-name → primary email lookup used by NAME_TO_EMAIL consumers. */
-export const NAME_TO_EMAIL: Record<string, string> = (() => {
+};
+const computeNameToEmail = (): Record<string, string> => {
   const map: Record<string, string> = {};
   for (const m of TEAM_ROSTER) {
     map[m.displayName] = m.email;
     m.legacyNames?.forEach((n) => (map[n] = m.email));
   }
   return map;
-})();
+};
+
+/** Email → display-name (live, reflects current roster). */
+export const EMAIL_TO_DISPLAY_NAME = liveObject(computeEmailToDisplayName);
+/** Display-name → primary email (live, reflects current roster). */
+export const NAME_TO_EMAIL = liveObject(computeNameToEmail);
+
+// ─── DB HYDRATION ──────────────────────────────────────────────────────────
+
+let hydrated = false;
+/** Loads the live roster from the `team_roster` table and replaces defaults. */
+export const hydrateTeamRosterFromDb = async (): Promise<void> => {
+  if (hydrated) return;
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data, error } = await supabase
+      .from("team_roster")
+      .select("id,email,display_name,title,active,color_token,legacy_names,aliases,sort_order")
+      .order("sort_order", { ascending: true });
+    if (error || !data || data.length === 0) return;
+    setTeamRoster(
+      data.map((r: any) => ({
+        id: r.id,
+        email: r.email,
+        displayName: r.display_name,
+        title: r.title ?? "",
+        active: r.active,
+        colorToken: r.color_token ?? "border-border",
+        legacyNames: r.legacy_names ?? [],
+        aliases: r.aliases ?? [],
+      })),
+    );
+    hydrated = true;
+  } catch {
+    // keep code defaults on any failure
+  }
+};
