@@ -34,10 +34,11 @@ export interface TeamMemberRecord {
 }
 
 // ─── ROSTER ────────────────────────────────────────────────────────────────
-// To rename someone: edit `displayName`. To deactivate: set `active: false`.
-// To add a new teammate: append a new record. That's it.
+// These are CODE DEFAULTS. The live roster is hydrated from the `team_roster`
+// table at app startup via `hydrateTeamRosterFromDb()` so admins can rename
+// people from the Team Roster settings page without a deploy.
 
-export const TEAM_ROSTER: TeamMemberRecord[] = [
+export let TEAM_ROSTER: TeamMemberRecord[] = [
   {
     id: "jamie",
     email: "jamie@merchanthaus.io",
@@ -82,7 +83,6 @@ export const TEAM_ROSTER: TeamMemberRecord[] = [
     active: true,
     colorToken: "border-team-neil",
   },
-  // ── Inactive / legacy ──
   {
     id: "wesley",
     email: "sales@merchanthaus.io",
@@ -92,6 +92,20 @@ export const TEAM_ROSTER: TeamMemberRecord[] = [
     colorToken: "border-team-wesley",
   },
 ];
+
+/** Listeners notified after the roster is replaced (so React views refresh). */
+const listeners = new Set<() => void>();
+export const subscribeToRosterChanges = (cb: () => void): (() => void) => {
+  listeners.add(cb);
+  return () => listeners.delete(cb);
+};
+const notify = () => listeners.forEach((cb) => cb());
+
+/** Replace the in-memory roster (called by hydrateTeamRosterFromDb + admin UI). */
+export const setTeamRoster = (next: TeamMemberRecord[]): void => {
+  TEAM_ROSTER = [...next];
+  notify();
+};
 
 // ─── HELPERS ───────────────────────────────────────────────────────────────
 
