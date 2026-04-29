@@ -22,10 +22,13 @@ interface TeamMember {
   responsibilities: string[];
 }
 
+import { resolveDisplayName, resolveEmail } from "@/config/team";
+
+// Display names & emails resolve through the roster — edit src/config/team.ts to rename.
 const TEAM: TeamMember[] = [
   {
-    name: "Jamie",
-    email: "jamie@merchanthaus.io",
+    name: resolveDisplayName("jamie") ?? "Jamie",
+    email: resolveEmail("jamie") ?? "jamie@merchanthaus.io",
     title: "CEO",
     role: "Leadership / Operations / Underwriting",
     icon: <Crown className="h-5 w-5" />,
@@ -46,8 +49,8 @@ const TEAM: TeamMember[] = [
     ],
   },
   {
-    name: "Darryn",
-    email: "admin@merchanthaus.io",
+    name: resolveDisplayName("darryn") ?? "Darryn",
+    email: resolveEmail("darryn") ?? "admin@merchanthaus.io",
     title: "QA & Complex Sales / Tech",
     role: "Quality Assurance / Sales / Integration / Workspace & CRM",
     icon: <Shield className="h-5 w-5" />,
@@ -70,8 +73,8 @@ const TEAM: TeamMember[] = [
     ],
   },
   {
-    name: "Yaseen Sheik",
-    email: "support@merchanthaus.io",
+    name: resolveDisplayName("yaseen") ?? "Yaseen Sheik",
+    email: resolveEmail("yaseen") ?? "support@merchanthaus.io",
     title: "Support & Gateway Operations",
     role: "Gateway / Integration / Testing / Go-Live / Support",
     icon: <HeadphonesIcon className="h-5 w-5" />,
@@ -95,8 +98,8 @@ const TEAM: TeamMember[] = [
     ],
   },
   {
-    name: "Taryn",
-    email: "taryn@merchanthaus.io",
+    name: resolveDisplayName("taryn") ?? "Taryn Engledoe",
+    email: resolveEmail("taryn") ?? "taryn@merchanthaus.io",
     title: "Affiliate & Partner Manager",
     role: "NMI / Affiliate Relationships / Finance",
     icon: <Link2 className="h-5 w-5" />,
@@ -115,8 +118,8 @@ const TEAM: TeamMember[] = [
     ],
   },
   {
-    name: "Neil",
-    email: "neil@nmi.com",
+    name: resolveDisplayName("neil") ?? "Neil",
+    email: resolveEmail("neil") ?? "neil@nmi.com",
     title: "NMI Support Liaison",
     role: "NMI Support Escalations",
     icon: <Shield className="h-5 w-5" />,

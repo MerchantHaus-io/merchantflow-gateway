@@ -63,12 +63,14 @@ interface OfficeChatProps {
 }
 
 // ── USERS ─────────────────────────────────────────────────────────────────────
+// Display names resolve through the team roster — edit src/config/team.ts to rename.
+import { resolveDisplayName as rn } from "@/config/team";
 
 const USERS: CRMUser[] = [
-  { email: "taryn@merchanthaus.io", name: "Taryn", title: "NMI / Finance", shirtColor: 0xe05a2b, hairColor: 0x3a1a08, skinColor: 0xffcba8, hairstyle: "bob", scale: 1.0 },
-  { email: "admin@merchanthaus.io", name: "Darryn", title: "QA & Complex Sales", shirtColor: 0xd03060, hairColor: 0x3a1010, skinColor: 0xffdbac, scale: 1.0 },
-  { email: "jamie@merchanthaus.io", name: "Jamie", title: "CEO / Admin", shirtColor: 0x3a7bd5, hairColor: 0xd4b96a, skinColor: 0xffe0bb, stubble: true, stubbleColor: 0xc8aa70, scale: 1.0 },
-  { email: "support@merchanthaus.io", name: "Yaseen Sheik", title: "Support", shirtColor: 0x9b30d0, hairColor: 0x2a1a40, skinColor: 0xd4a574, beard: true, beardColor: 0x9a9a9a, scale: 1.08 },
+  { email: "taryn@merchanthaus.io", name: rn("taryn") ?? "Taryn Engledoe", title: "NMI / Finance", shirtColor: 0xe05a2b, hairColor: 0x3a1a08, skinColor: 0xffcba8, hairstyle: "bob", scale: 1.0 },
+  { email: "admin@merchanthaus.io", name: rn("darryn") ?? "Darryn", title: "QA & Complex Sales", shirtColor: 0xd03060, hairColor: 0x3a1010, skinColor: 0xffdbac, scale: 1.0 },
+  { email: "jamie@merchanthaus.io", name: rn("jamie") ?? "Jamie", title: "CEO / Admin", shirtColor: 0x3a7bd5, hairColor: 0xd4b96a, skinColor: 0xffe0bb, stubble: true, stubbleColor: 0xc8aa70, scale: 1.0 },
+  { email: "support@merchanthaus.io", name: rn("yaseen") ?? "Yaseen Sheik", title: "Support", shirtColor: 0x9b30d0, hairColor: 0x2a1a40, skinColor: 0xd4a574, beard: true, beardColor: 0x9a9a9a, scale: 1.08 },
   { email: "atria@merchanthaus.io", name: "Atria", title: "AI Assistant", shirtColor: 0x7c3aed, hairColor: 0xc0c0ff, skinColor: 0xe8d8f0, hairstyle: "bob", scale: 0.95, online: true },
 ];
 

@@ -45,15 +45,8 @@ import logoDark from "@/assets/logo-dark.png";
 import logoLight from "@/assets/logo-light.png";
 import liveBadge from "@/assets/live-badge.webp";
 
-const TEAM_EMAIL_MAP: Record<string, string> = {
-  'Jamie': 'admin@merchanthaus.io',
-  'Darryn': 'onboarding@merchanthaus.io',
-  'Taryn': 'taryn@merchanthaus.io',
-  'Yaseen Sheik': 'support@merchanthaus.io',
-  // Legacy
-  'Sheiky': 'support@merchanthaus.io',
-  'Wesley': 'sales@merchanthaus.io',
-};
+import { NAME_TO_EMAIL } from "@/config/team";
+const TEAM_EMAIL_MAP: Record<string, string> = NAME_TO_EMAIL;
 
 const InfoRow = ({ icon: Icon, label, value, href }: { icon: any; label: string; value?: string | null; href?: string }) => {
   if (!value) return null;

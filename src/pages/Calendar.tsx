@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { ACTIVE_TEAM } from "@/config/team";
 import { AppLayout } from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, parseISO, startOfDay, addHours, differenceInMinutes, eachDayOfInterval as eachDay } from "date-fns";
@@ -61,12 +62,10 @@ export default function Calendar() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // Team list sourced from the roster — see src/config/team.ts
   const TEAM_MEMBERS = [
-    { email: "admin@merchanthaus.io", label: "Jamie" },
-    { email: "onboarding@merchanthaus.io", label: "Darryn" },
-    { email: "support@merchanthaus.io", label: "Yaseen Sheik" },
+    ...ACTIVE_TEAM.map((m) => ({ email: m.email, label: m.displayName })),
     { email: "sales@merchanthaus.io", label: "Sales" },
-    { email: "taryn@merchanthaus.io", label: "Taryn" },
   ];
 
   // Handle OAuth redirect params

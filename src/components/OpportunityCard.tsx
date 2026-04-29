@@ -35,25 +35,31 @@ interface OpportunityCardProps {
   isAdmin?: boolean;
 }
 
-const TEAM_COLORS: Record<string, { border: string; bg: string; text: string }> = {
-  Jamie:          { border: "border-l-team-jamie",   bg: "bg-yellow-100 dark:bg-yellow-900/30", text: "text-yellow-700 dark:text-yellow-300" },
-  Darryn:         { border: "border-l-team-darryn",  bg: "bg-green-100 dark:bg-green-900/30",  text: "text-green-700 dark:text-green-300" },
-  Taryn:          { border: "border-l-team-taryn",   bg: "bg-blue-100 dark:bg-blue-900/30",    text: "text-blue-700 dark:text-blue-300" },
-  "Yaseen Sheik": { border: "border-l-team-yaseen",  bg: "bg-violet-100 dark:bg-violet-900/30", text: "text-violet-700 dark:text-violet-300" },
-  // Legacy mappings for historical records
-  Sheiky:         { border: "border-l-team-yaseen",  bg: "bg-violet-100 dark:bg-violet-900/30", text: "text-violet-700 dark:text-violet-300" },
-  Wesley:         { border: "border-l-team-wesley",  bg: "bg-red-100 dark:bg-red-900/30",    text: "text-red-700 dark:text-red-300" },
+import { TEAM_ROSTER, NAME_TO_EMAIL } from "@/config/team";
+
+// Visual styles per member — sourced from the roster so renames propagate.
+// Border tokens come from team.ts; bg/text are the per-person palette.
+const MEMBER_PALETTE: Record<string, { bg: string; text: string }> = {
+  jamie:  { bg: "bg-yellow-100 dark:bg-yellow-900/30", text: "text-yellow-700 dark:text-yellow-300" },
+  darryn: { bg: "bg-green-100  dark:bg-green-900/30",  text: "text-green-700  dark:text-green-300" },
+  taryn:  { bg: "bg-blue-100   dark:bg-blue-900/30",   text: "text-blue-700   dark:text-blue-300" },
+  yaseen: { bg: "bg-violet-100 dark:bg-violet-900/30", text: "text-violet-700 dark:text-violet-300" },
+  neil:   { bg: "bg-cyan-100   dark:bg-cyan-900/30",   text: "text-cyan-700   dark:text-cyan-300" },
+  wesley: { bg: "bg-red-100    dark:bg-red-900/30",    text: "text-red-700    dark:text-red-300" },
 };
 
-const TEAM_EMAIL_MAP: Record<string, string> = {
-  Jamie:          "admin@merchanthaus.io",
-  Darryn:         "onboarding@merchanthaus.io",
-  Taryn:          "taryn@merchanthaus.io",
-  "Yaseen Sheik": "support@merchanthaus.io",
-  // Legacy
-  Sheiky:         "support@merchanthaus.io",
-  Wesley:         "sales@merchanthaus.io",
-};
+const TEAM_COLORS: Record<string, { border: string; bg: string; text: string }> = (() => {
+  const map: Record<string, { border: string; bg: string; text: string }> = {};
+  for (const m of TEAM_ROSTER) {
+    const palette = MEMBER_PALETTE[m.id] ?? { bg: "bg-muted", text: "text-foreground" };
+    const entry = { border: `border-l-${m.colorToken.replace("border-", "")}`, ...palette };
+    map[m.displayName] = entry;
+    m.legacyNames?.forEach((n) => (map[n] = entry));
+  }
+  return map;
+})();
+
+const TEAM_EMAIL_MAP: Record<string, string> = NAME_TO_EMAIL;
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);

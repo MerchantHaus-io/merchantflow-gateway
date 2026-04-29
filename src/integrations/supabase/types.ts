@@ -2555,6 +2555,48 @@ export type Database = {
           },
         ]
       }
+      team_roster: {
+        Row: {
+          active: boolean
+          aliases: string[] | null
+          color_token: string | null
+          display_name: string
+          email: string
+          id: string
+          legacy_names: string[] | null
+          sort_order: number
+          title: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          active?: boolean
+          aliases?: string[] | null
+          color_token?: string | null
+          display_name: string
+          email: string
+          id: string
+          legacy_names?: string[] | null
+          sort_order?: number
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          active?: boolean
+          aliases?: string[] | null
+          color_token?: string | null
+          display_name?: string
+          email?: string
+          id?: string
+          legacy_names?: string[] | null
+          sort_order?: number
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       terminal_updates: {
         Row: {
           created_at: string
