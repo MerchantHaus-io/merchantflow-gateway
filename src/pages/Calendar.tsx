@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { ACTIVE_TEAM } from "@/config/team";
 import { AppLayout } from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, parseISO, startOfDay, addHours, differenceInMinutes, eachDayOfInterval as eachDay } from "date-fns";
