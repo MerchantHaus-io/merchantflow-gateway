@@ -122,7 +122,7 @@ import {
   EMAIL_TO_DISPLAY_NAME,
   TEAM_ROSTER,
   colorTokenFor,
-  resolveDisplayName,
+  resolveDisplayName as rosterResolveDisplayName,
 } from "@/config/team";
 
 /** Active assignable members — use for assignment dropdowns. */
@@ -148,7 +148,7 @@ export const ALLOWED_EMAILS = Object.keys(EMAIL_TO_DISPLAY_NAME);
 /** Helper to get team member name from email. */
 export const getTeamMemberFromEmail = (
   email: string | undefined | null,
-): string | null => resolveDisplayName(email);
+): string | null => rosterResolveDisplayName(email);
 
 
 /**
@@ -157,11 +157,8 @@ export const getTeamMemberFromEmail = (
  */
 export const resolveDisplayName = (value: string | null | undefined): string => {
   if (!value) return 'Unassigned';
-  // Check direct email mapping
-  const mapped = EMAIL_TO_USER[value.toLowerCase()];
-  if (mapped) return mapped;
-  // Check if it's already a team member name
-  if ((TEAM_MEMBERS as readonly string[]).includes(value)) return value;
+  const fromRoster = rosterResolveDisplayName(value);
+  if (fromRoster) return fromRoster;
   // Fallback: strip email domain
   if (value.includes('@')) return value.split('@')[0];
   return value;
