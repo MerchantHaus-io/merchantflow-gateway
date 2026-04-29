@@ -139,40 +139,43 @@ export interface QuoteSender {
 const MH_ADDRESS = "1209 Mountain Road Pl NE Ste N, Albuquerque, NM 87110, USA";
 const MH_COMPANY = "MerchantHaus LLC";
 
+// Names + emails resolve through the team roster — edit src/config/team.ts to rename.
+import { resolveDisplayName as rnq, resolveEmail as req } from "@/config/team";
+
 export const QUOTE_SENDERS: QuoteSender[] = [
   {
     id: "taryn",
-    name: "Taryn Engledoe",
+    name: rnq("taryn") ?? "Taryn Engledoe",
     title: "Managing Director",
     company: MH_COMPANY,
-    email: "taryn@merchanthaus.io",
+    email: req("taryn") ?? "taryn@merchanthaus.io",
     phone: "+1 (505) 600-6042",
     address: MH_ADDRESS,
   },
   {
     id: "jamie",
-    name: "Jamie",
+    name: rnq("jamie") ?? "Jamie",
     title: "Partner",
     company: MH_COMPANY,
-    email: "jamie@merchanthaus.io",
+    email: req("jamie") ?? "jamie@merchanthaus.io",
     phone: "",
     address: MH_ADDRESS,
   },
   {
     id: "darryn",
-    name: "Darryn",
+    name: rnq("darryn") ?? "Darryn",
     title: "Partner",
     company: MH_COMPANY,
-    email: "admin@merchanthaus.io",
+    email: req("darryn") ?? "admin@merchanthaus.io",
     phone: "",
     address: MH_ADDRESS,
   },
   {
     id: "sheiky",
-    name: "Yaseen Sheik",
+    name: rnq("yaseen") ?? "Yaseen Sheik",
     title: "Support Lead",
     company: MH_COMPANY,
-    email: "support@merchanthaus.io",
+    email: req("yaseen") ?? "support@merchanthaus.io",
     phone: "",
     address: MH_ADDRESS,
   },
