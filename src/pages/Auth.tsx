@@ -27,6 +27,7 @@ const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
 
