@@ -208,9 +208,21 @@ export default function Calendar() {
   }, [currentDate]);
 
   const filteredEvents = useMemo(() => {
-    if (filterUser === "all") return events;
-    return events.filter((e) => e.calendar_owner_email === filterUser);
-  }, [events, filterUser]);
+    let evs = events;
+    if (filterUser !== "all") evs = evs.filter((e) => e.calendar_owner_email === filterUser);
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      evs = evs.filter((e) =>
+        e.title?.toLowerCase().includes(q) ||
+        e.location?.toLowerCase().includes(q) ||
+        e.description?.toLowerCase().includes(q) ||
+        (Array.isArray(e.attendees) && e.attendees.some((a: any) =>
+          a.email?.toLowerCase().includes(q) || a.displayName?.toLowerCase().includes(q)
+        ))
+      );
+    }
+    return evs;
+  }, [events, filterUser, search]);
 
   const eventsForDate = (date: Date) =>
     filteredEvents.filter((e) => isSameDayCT(e.start_time, date, e.all_day));
