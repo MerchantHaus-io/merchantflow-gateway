@@ -454,6 +454,7 @@ const Accounts = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-10 text-right pr-2 text-xs text-muted-foreground">#</TableHead>
                       <SortableTableHead field="name" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Account</SortableTableHead>
                       <TableHead>Opportunities</TableHead>
                       <SortableTableHead field="contacts" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Contacts</SortableTableHead>
