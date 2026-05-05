@@ -726,6 +726,7 @@ export default function WebSubmissions() {
               <Table>
                  <TableHeader>
                    <TableRow>
+                      <TableHead className="w-10 text-right pr-2">#</TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead>Business Name</TableHead>
                       <TableHead>Source</TableHead>
