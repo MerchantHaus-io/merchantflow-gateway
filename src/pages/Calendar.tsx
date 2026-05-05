@@ -257,7 +257,9 @@ export default function Calendar() {
                     ? format(currentDate, "EEEE, MMMM d, yyyy")
                     : viewMode === "week"
                       ? `Week of ${format(startOfWeek(currentDate), "MMM d")}`
-                      : format(currentDate, "MMMM yyyy")}
+                      : viewMode === "agenda"
+                        ? `Next 30 days from ${format(currentDate, "MMM d")}`
+                        : format(currentDate, "MMMM yyyy")}
                   <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                 </Button>
               </PopoverTrigger>
