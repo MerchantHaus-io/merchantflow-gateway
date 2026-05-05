@@ -701,7 +701,7 @@ function TeamDayGrid({
                       colors.bg, colors.border, "border-l-2"
                     )}
                     style={{ top, height: Math.min(height, HOURS.length * HOUR_HEIGHT - top) }}
-                    onClick={() => ev.html_link && window.open(ev.html_link, "_blank")}
+                    onClick={() => onSelect ? onSelect(ev) : (ev.html_link && window.open(ev.html_link, "_blank"))}
                     title={`${ev.title}\n${format(evStart, "h:mm a")} – ${format(evEnd, "h:mm a")} CT`}
                   >
                     <span className="text-[9px] font-bold text-foreground line-clamp-1 leading-tight">{ev.title}</span>
