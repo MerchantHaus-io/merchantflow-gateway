@@ -1463,7 +1463,7 @@ const Contacts = () => {
                       size="sm"
                       variant="outline"
                       className="h-8 gap-1.5 text-xs"
-                      onClick={() => { setSelectedContact(null); openEditDialog(selectedContact); }}
+                      onClick={() => { setSelectedContact(null); setViewMode('table'); startRowEdit(selectedContact); }}
                     >
                       <Pencil className="h-3.5 w-3.5" />Edit
                     </Button>
