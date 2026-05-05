@@ -465,6 +465,7 @@ const Opportunities = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-10 text-right pr-2 text-xs text-muted-foreground">#</TableHead>
                         <SortableTableHead field="name" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Account</SortableTableHead>
                         <SortableTableHead field="stage" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Stage</SortableTableHead>
                         <SortableTableHead field="outcome" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Outcome</SortableTableHead>
