@@ -488,11 +488,12 @@ function getTeamColor(email: string | null) {
   return TEAM_COLORS[email] || TEAM_COLORS.shared;
 }
 
-function EventCard({ event }: { event: CalendarEvent }) {
+function EventCard({ event, onClick }: { event: CalendarEvent; onClick?: () => void }) {
   const attendeeList = Array.isArray(event.attendees) ? event.attendees : [];
   const internalAttendees = attendeeList.filter((a: any) => a.email?.endsWith("@merchanthaus.io"));
   const colors = getTeamColor(event.calendar_owner_email);
   const ownerName = event.calendar_owner_email?.split("@")[0] || "shared";
+  const hasLink = !!(event.account_id || event.opportunity_id);
 
   return (
     <div
@@ -501,8 +502,13 @@ function EventCard({ event }: { event: CalendarEvent }) {
         "border-l-4",
         colors.border
       )}
-      onClick={() => event.html_link && window.open(event.html_link, "_blank")}
+      onClick={() => onClick ? onClick() : (event.html_link && window.open(event.html_link, "_blank"))}
     >
+      {hasLink && (
+        <div className="absolute top-2 right-2">
+          <Link2 className="h-3 w-3 text-primary" />
+        </div>
+      )}
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
