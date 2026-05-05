@@ -743,6 +743,7 @@ export default function Outreach() {
                 <Table>
                   <TableHeader>
                     <TableRow className="border-border/60">
+                      <TableHead className="w-10 text-right pr-2">#</TableHead>
                       <TableHead>Cadence</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Schedule</TableHead>
@@ -756,10 +757,11 @@ export default function Outreach() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filtered.map(c => {
+                    {filtered.map((c, idx) => {
                       const rr = c.sent_count > 0 ? Math.round((c.replied_count / c.sent_count) * 100) : 0;
                       return (
                         <TableRow key={c.id} className="cursor-pointer hover:bg-muted/30 border-border/40" onClick={() => navigate(`/outreach/${c.id}`)}>
+                          <TableCell className="text-[11px] text-muted-foreground tabular-nums text-right pr-2">{idx + 1}</TableCell>
                           <TableCell>
                             <p className="font-medium text-foreground text-sm">{c.name}</p>
                             <p className="text-xs text-muted-foreground truncate max-w-[180px]">{c.subject}</p>

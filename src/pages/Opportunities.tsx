@@ -465,6 +465,7 @@ const Opportunities = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-10 text-right pr-2 text-xs text-muted-foreground">#</TableHead>
                         <SortableTableHead field="name" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Account</SortableTableHead>
                         <SortableTableHead field="stage" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Stage</SortableTableHead>
                         <SortableTableHead field="outcome" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Outcome</SortableTableHead>
@@ -494,6 +495,7 @@ const Opportunities = () => {
                             className={cn("cursor-pointer hover:bg-muted/30 transition-colors", isStale && "opacity-75")}
                             onClick={() => navigateToOpportunity(opp)}
                           >
+                            <TableCell className="text-right pr-2 text-[11px] text-muted-foreground tabular-nums py-2.5">{index + 1}</TableCell>
                             <TableCell className="py-2.5">
                               <div>
                                 <div className="flex items-center gap-1.5 mb-0.5">

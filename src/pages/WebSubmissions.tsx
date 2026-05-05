@@ -726,6 +726,7 @@ export default function WebSubmissions() {
               <Table>
                  <TableHeader>
                    <TableRow>
+                      <TableHead className="w-10 text-right pr-2">#</TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead>Business Name</TableHead>
                       <TableHead>Source</TableHead>
@@ -738,8 +739,9 @@ export default function WebSubmissions() {
                    </TableRow>
                  </TableHeader>
                 <TableBody>
-                  {filteredApps.map((app) => (
+                  {filteredApps.map((app, idx) => (
                     <TableRow key={app.id}>
+                      <TableCell className="text-[11px] text-muted-foreground tabular-nums text-right pr-2">{idx + 1}</TableCell>
                       <TableCell>
                         {new Date(app.created_at).toLocaleDateString()}
                       </TableCell>

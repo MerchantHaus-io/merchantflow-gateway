@@ -552,6 +552,7 @@ const Transactions = () => {
                       <Table>
                         <TableHeader>
                           <TableRow>
+                            <TableHead className="text-xs w-10 text-right pr-2">#</TableHead>
                             <TableHead className="text-xs cursor-pointer select-none" onClick={() => toggleSort("date")}>
                               <span className="flex items-center gap-1">Date {sortField==="date" && (sortDir==="desc" ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />)}</span>
                             </TableHead>
@@ -570,6 +571,7 @@ const Transactions = () => {
                           {filtered.slice(0, 200).map((tx, idx) => (
                             <>
                               <TableRow key={tx.id || idx} className="cursor-pointer hover:bg-muted/30" onClick={() => setExpandedTx(expandedTx === tx.id ? null : tx.id)}>
+                                <TableCell className="text-[11px] text-muted-foreground tabular-nums text-right pr-2">{idx + 1}</TableCell>
                                 <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{formatTxDate(tx.date)}</TableCell>
                                 <TableCell className="text-xs max-w-[140px]">
                                   <p className="font-medium truncate">{getMerchantLabel(tx.merchant_id)}</p>
@@ -584,7 +586,7 @@ const Transactions = () => {
                               </TableRow>
                               {expandedTx === tx.id && (
                                 <TableRow key={`${tx.id}-detail`}>
-                                  <TableCell colSpan={8} className="bg-muted/20 p-4">
+                                  <TableCell colSpan={9} className="bg-muted/20 p-4">
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
                                       <div><span className="text-muted-foreground">Transaction ID</span><p className="font-mono font-medium">{tx.id}</p></div>
                                       <div><span className="text-muted-foreground">Authorization</span><p className="font-mono font-medium">{tx.authorization || "—"}</p></div>
