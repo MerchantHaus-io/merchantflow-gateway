@@ -586,7 +586,7 @@ const Transactions = () => {
                               </TableRow>
                               {expandedTx === tx.id && (
                                 <TableRow key={`${tx.id}-detail`}>
-                                  <TableCell colSpan={8} className="bg-muted/20 p-4">
+                                  <TableCell colSpan={9} className="bg-muted/20 p-4">
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
                                       <div><span className="text-muted-foreground">Transaction ID</span><p className="font-mono font-medium">{tx.id}</p></div>
                                       <div><span className="text-muted-foreground">Authorization</span><p className="font-mono font-medium">{tx.authorization || "—"}</p></div>
