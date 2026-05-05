@@ -1592,65 +1592,7 @@ const Contacts = () => {
         </SheetContent>
       </Sheet>
 
-      {/* ══ Edit Contact Dialog ═══════════════════════════════════════════════ */}
-      <Dialog open={!!editingContact} onOpenChange={(open) => { if (!open) setEditingContact(null); }}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <div className="flex items-center justify-between pr-6">
-              <DialogTitle>Edit Contact</DialogTitle>
-              <AutoSaveIndicator status={saveStatus} />
-            </div>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Account</Label>
-              <Select value={formData.account_id} onValueChange={(value) => setFormData({ ...formData, account_id: value })}>
-                <SelectTrigger className="bg-secondary"><SelectValue placeholder="Select account" /></SelectTrigger>
-                <SelectContent className="bg-popover">
-                  {accounts.map((a) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs">First Name</Label>
-                <Input value={formData.first_name} onChange={(e) => setFormData({ ...formData, first_name: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Last Name</Label>
-                <Input value={formData.last_name} onChange={(e) => setFormData({ ...formData, last_name: e.target.value })} />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Email</Label>
-              <Input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Phone</Label>
-                <Input value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Fax</Label>
-                <Input value={formData.fax} onChange={(e) => setFormData({ ...formData, fax: e.target.value })} />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Assigned To</Label>
-              <Select value={formData.assigned_to || "unassigned"} onValueChange={(v) => setFormData({ ...formData, assigned_to: v === "unassigned" ? "" : v })}>
-                <SelectTrigger className="bg-secondary"><SelectValue placeholder="Select team member" /></SelectTrigger>
-                <SelectContent className="bg-popover">
-                  <SelectItem value="unassigned">Unassigned</SelectItem>
-                  {TEAM_MEMBERS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex justify-end pt-2">
-              <Button variant="outline" onClick={() => setEditingContact(null)}>Close</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Edit Contact dialog removed in favor of inline row editing */}
 
       {/* ══ New Contact Dialog ════════════════════════════════════════════════ */}
       <Dialog open={isNewDialogOpen} onOpenChange={setIsNewDialogOpen}>
