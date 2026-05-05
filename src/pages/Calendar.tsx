@@ -124,6 +124,10 @@ export default function Calendar() {
     } else if (viewMode === "week") {
       rangeStart = startOfWeek(currentDate, { weekStartsOn: 0 });
       rangeEnd = endOfWeek(currentDate, { weekStartsOn: 0 });
+    } else if (viewMode === "agenda") {
+      // Agenda: show next 30 days from currentDate
+      rangeStart = startOfDay(currentDate);
+      rangeEnd = new Date(rangeStart.getTime() + 30 * 24 * 60 * 60 * 1000);
     } else {
       // For day/team views, compute range in CT so we fetch the correct CT day
       // CT is UTC-5 (CST) or UTC-6 depending on DST; use date-fns-tz for accuracy
