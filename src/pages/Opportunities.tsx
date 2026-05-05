@@ -495,6 +495,7 @@ const Opportunities = () => {
                             className={cn("cursor-pointer hover:bg-muted/30 transition-colors", isStale && "opacity-75")}
                             onClick={() => navigateToOpportunity(opp)}
                           >
+                            <TableCell className="text-right pr-2 text-[11px] text-muted-foreground tabular-nums py-2.5">{index + 1}</TableCell>
                             <TableCell className="py-2.5">
                               <div>
                                 <div className="flex items-center gap-1.5 mb-0.5">
