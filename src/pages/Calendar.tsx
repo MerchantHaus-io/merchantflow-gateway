@@ -409,11 +409,15 @@ export default function Calendar() {
                 ) : (
                   <div className="space-y-2">
                     {filteredEvents.map((ev) => (
-                      <EventCard key={ev.id} event={ev} />
+                      <EventCard key={ev.id} event={ev} onClick={() => setActiveEvent(ev)} />
                     ))}
                   </div>
                 )}
               </div>
+            )}
+
+            {viewMode === "agenda" && (
+              <AgendaView events={filteredEvents} onSelect={setActiveEvent} />
             )}
 
             {viewMode === "team" && (
@@ -421,6 +425,7 @@ export default function Calendar() {
                 events={events}
                 teamMembers={TEAM_MEMBERS}
                 currentDate={selectedDate || currentDate}
+                onSelect={setActiveEvent}
               />
             )}
           </div>
@@ -431,6 +436,9 @@ export default function Calendar() {
               <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
                 <CalendarDays className="h-4 w-4 text-primary" />
                 {selectedDate ? format(selectedDate, "EEEE, MMMM d") : "Select a day"}
+                {selectedEvents.length > 0 && (
+                  <Badge variant="secondary" className="ml-auto text-[9px]">{selectedEvents.length}</Badge>
+                )}
               </h3>
 
               {selectedEvents.length === 0 ? (
@@ -445,7 +453,7 @@ export default function Calendar() {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: idx * 0.05 }}
                       >
-                        <EventCard event={ev} />
+                        <EventCard event={ev} onClick={() => setActiveEvent(ev)} />
                       </motion.div>
                     ))}
                   </AnimatePresence>
@@ -455,6 +463,13 @@ export default function Calendar() {
           </div>
         </div>
       </div>
+
+      <EventDetailSheet
+        event={activeEvent}
+        open={!!activeEvent}
+        onOpenChange={(o) => !o && setActiveEvent(null)}
+        ownerColor={activeEvent ? getTeamColor(activeEvent.calendar_owner_email) : undefined}
+      />
     </AppLayout>
   );
 }
