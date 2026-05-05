@@ -334,12 +334,13 @@ const LiveBilling = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((g) => {
+                {filtered.map((g, idx) => {
                   const assignedEmail = g.assigned_to ? TEAM_EMAIL_MAP[g.assigned_to] : null;
                   const avatarUrl = assignedEmail && avatars ? avatars[assignedEmail] : null;
 
                   return (
                     <TableRow key={g.account_id} className="hover:bg-amber-50/30 dark:hover:bg-amber-950/10 cursor-pointer" onClick={() => navigate(`/live-billing/${g.account_id}`)}>
+                      <TableCell className="text-right pr-2 text-[11px] text-muted-foreground tabular-nums">{idx + 1}</TableCell>
                       <TableCell className="font-medium">{g.account?.name || "Unknown"}</TableCell>
                       <TableCell>
                         {g.account?.nmi_merchant_id ? (
