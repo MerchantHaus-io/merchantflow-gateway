@@ -935,9 +935,21 @@ const Contacts = () => {
                       const isRowEditing = rowEditId === contact.id;
 
                       if (isRowEditing) {
-                        return (
-                          <TableRow key={contact.id} className="bg-primary/5 hover:bg-primary/5">
-                            <TableCell className="py-1 pl-3 w-8" />
+                         return (
+                           <TableRow
+                             key={contact.id}
+                             className="bg-primary/5 hover:bg-primary/5"
+                             onKeyDown={(e) => {
+                               if (e.key === 'Enter' && !e.shiftKey) {
+                                 e.preventDefault();
+                                 if (!rowEditSaving) saveRowEdit();
+                               } else if (e.key === 'Escape') {
+                                 e.preventDefault();
+                                 if (!rowEditSaving) cancelRowEdit();
+                               }
+                             }}
+                           >
+                             <TableCell className="py-1 pl-3 w-8" />
                             <TableCell className="py-1 text-right pr-2 text-[11px] text-muted-foreground tabular-nums">{rowNumber}</TableCell>
                             <TableCell className="py-1">
                               <div className="flex gap-1">
