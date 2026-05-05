@@ -1022,14 +1022,21 @@ const Contacts = () => {
                               />
                             </TableCell>
                             <TableCell className="py-1">
-                              <div className="flex items-center justify-end gap-1 pr-1">
-                                <Button size="sm" onClick={saveRowEdit} disabled={rowEditSaving} className="h-7 px-2 text-xs">
-                                  <Check className="h-3.5 w-3.5 mr-1" />Save
-                                </Button>
-                                <Button size="sm" variant="ghost" onClick={cancelRowEdit} disabled={rowEditSaving} className="h-7 px-2 text-xs">
-                                  <X className="h-3.5 w-3.5" />
-                                </Button>
-                              </div>
+                               <div className="flex items-center justify-end gap-2 pr-1">
+                                 <span className="hidden md:inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                                   <kbd className="font-mono bg-muted px-1 py-0.5 rounded border border-border">Enter</kbd>
+                                   <span>save</span>
+                                   <span className="opacity-50">·</span>
+                                   <kbd className="font-mono bg-muted px-1 py-0.5 rounded border border-border">Esc</kbd>
+                                   <span>cancel</span>
+                                 </span>
+                                 <Button size="sm" onClick={saveRowEdit} disabled={rowEditSaving} className="h-7 px-2 text-xs">
+                                   <Check className="h-3.5 w-3.5 mr-1" />Save
+                                 </Button>
+                                 <Button size="sm" variant="ghost" onClick={cancelRowEdit} disabled={rowEditSaving} className="h-7 px-2 text-xs">
+                                   <X className="h-3.5 w-3.5" />
+                                 </Button>
+                               </div>
                             </TableCell>
                           </TableRow>
                         );
