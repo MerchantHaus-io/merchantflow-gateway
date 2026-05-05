@@ -287,6 +287,17 @@ export default function Calendar() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search events…"
+                className="h-8 w-[180px] pl-7 text-xs"
+              />
+            </div>
+
             {/* User filter */}
             <Select value={filterUser} onValueChange={setFilterUser}>
               <SelectTrigger className="h-8 w-[140px] text-xs">
@@ -313,7 +324,7 @@ export default function Calendar() {
             </Button>
 
             <div className="flex items-center rounded-lg border border-border/60 bg-card/40 p-0.5">
-              {(["month", "week", "day", "team"] as ViewMode[]).map((mode) => (
+              {(["month", "week", "day", "team", "agenda"] as ViewMode[]).map((mode) => (
                 <button
                   key={mode}
                   onClick={() => setViewMode(mode)}
