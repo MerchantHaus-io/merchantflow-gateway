@@ -911,6 +911,7 @@ const Contacts = () => {
                         className={someOnPageSelected && !allOnPageSelected ? "data-[state=checked]:bg-primary/50" : ""}
                       />
                     </TableHead>
+                    <TableHead className="w-10 text-xs text-muted-foreground font-medium text-right pr-2">#</TableHead>
                     <SortableTableHead field="first_name" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Name</SortableTableHead>
                     <TableHead className="text-xs text-muted-foreground font-medium">Type</TableHead>
                     <SortableTableHead field="email" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Email</SortableTableHead>
