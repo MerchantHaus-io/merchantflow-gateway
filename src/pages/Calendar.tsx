@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { ACTIVE_TEAM } from "@/config/team";
+import { ACTIVE_INTERNAL_TEAM } from "@/config/team";
 import { AppLayout } from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, isToday, parseISO, startOfDay, addHours, differenceInMinutes, eachDayOfInterval as eachDay } from "date-fns";
@@ -68,9 +68,9 @@ export default function Calendar() {
 
   // Team list sourced from the roster — see src/config/team.ts
   // De-duplicate by email (case-insensitive) so the shared Sales inbox only appears once.
-  const TEAM_MEMBERS = Array.from(
+  const TEAM_MEMBERS: { email: string; label: string }[] = Array.from(
     new Map(
-      ACTIVE_TEAM.map((m) => [m.email.toLowerCase(), { email: m.email, label: m.displayName }])
+      ACTIVE_INTERNAL_TEAM.map((m) => [m.email.toLowerCase(), { email: m.email, label: m.displayName }])
     ).values()
   );
 

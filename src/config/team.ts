@@ -31,6 +31,8 @@ export interface TeamMemberRecord {
   colorToken: string;
   /** Historical names this person used — auto-mapped to displayName at runtime. */
   legacyNames?: string[];
+  /** True for non-platform contacts (e.g. partner liaisons) — hidden from calendar columns. */
+  isExternal?: boolean;
 }
 
 // ─── ROSTER ────────────────────────────────────────────────────────────────
@@ -149,6 +151,10 @@ export const resolveMember = (
 export const getActiveTeam = (): TeamMemberRecord[] =>
   TEAM_ROSTER.filter((m) => m.active).sort((a, b) => a.displayName.localeCompare(b.displayName));
 
+/** Active *internal* team members — used for calendar columns / dashboards. */
+export const getActiveInternalTeam = (): TeamMemberRecord[] =>
+  getActiveTeam().filter((m) => !m.isExternal);
+
 /** Active display names — use this for assignment dropdowns. */
 export const getActiveTeamNames = (): string[] => getActiveTeam().map((m) => m.displayName);
 
@@ -181,6 +187,7 @@ const liveObject = <V>(compute: () => Record<string, V>): Record<string, V> =>
   });
 
 export const ACTIVE_TEAM: TeamMemberRecord[] = liveArray(getActiveTeam);
+export const ACTIVE_INTERNAL_TEAM: TeamMemberRecord[] = liveArray(getActiveInternalTeam);
 export const ACTIVE_TEAM_NAMES: string[] = liveArray(getActiveTeamNames);
 export const ALL_TEAM_NAMES: string[] = liveArray(getAllTeamNames);
 
@@ -221,7 +228,7 @@ export const hydrateTeamRosterFromDb = async (): Promise<void> => {
     const { supabase } = await import("@/integrations/supabase/client");
     const { data, error } = await supabase
       .from("team_roster")
-      .select("id,email,display_name,title,active,color_token,legacy_names,aliases,sort_order")
+      .select("id,email,display_name,title,active,color_token,legacy_names,aliases,sort_order,is_external")
       .order("sort_order", { ascending: true });
     if (error || !data || data.length === 0) return;
     setTeamRoster(
@@ -234,6 +241,7 @@ export const hydrateTeamRosterFromDb = async (): Promise<void> => {
         colorToken: r.color_token ?? "border-border",
         legacyNames: r.legacy_names ?? [],
         aliases: r.aliases ?? [],
+        isExternal: !!r.is_external,
       })),
     );
     hydrated = true;
