@@ -561,10 +561,12 @@ function TeamDayGrid({
   events,
   teamMembers,
   currentDate,
+  onSelect,
 }: {
   events: CalendarEvent[];
   teamMembers: { email: string; label: string }[];
   currentDate: Date;
+  onSelect?: (e: CalendarEvent) => void;
 }) {
   const dayStart = startOfDay(currentDate);
 
