@@ -925,12 +925,103 @@ const Contacts = () => {
                 </TableHeader>
                 <TableBody>
                   {paginatedContacts.length ? (
-                    paginatedContacts.map((contact) => {
+                    paginatedContacts.map((contact, idx) => {
+                      const rowNumber = (currentPage - 1) * ITEMS_PER_PAGE + idx + 1;
                       const stageConfig = contact.stage ? STAGE_CONFIG[contact.stage as OpportunityStage] : null;
                       const contactType = getContactType(contact.stage);
                       const fullName = [contact.first_name, contact.last_name].filter(Boolean).join(' ');
                       const initials = [contact.first_name?.[0], contact.last_name?.[0]].filter(Boolean).join('').toUpperCase() || '?';
                       const avatarBg = avatarColor(fullName || contact.id);
+                      const isRowEditing = rowEditId === contact.id;
+
+                      if (isRowEditing) {
+                        return (
+                          <TableRow key={contact.id} className="bg-primary/5 hover:bg-primary/5">
+                            <TableCell className="py-1 pl-3 w-8" />
+                            <TableCell className="py-1 text-right pr-2 text-[11px] text-muted-foreground tabular-nums">{rowNumber}</TableCell>
+                            <TableCell className="py-1">
+                              <div className="flex gap-1">
+                                <Input
+                                  autoFocus
+                                  placeholder="First"
+                                  value={rowEditData.first_name}
+                                  onChange={(e) => setRowEditData(d => ({ ...d, first_name: e.target.value }))}
+                                  className="h-7 text-xs px-2 w-20"
+                                />
+                                <Input
+                                  placeholder="Last"
+                                  value={rowEditData.last_name}
+                                  onChange={(e) => setRowEditData(d => ({ ...d, last_name: e.target.value }))}
+                                  className="h-7 text-xs px-2 w-20"
+                                />
+                              </div>
+                            </TableCell>
+                            <TableCell className="py-1">
+                              <span className="text-[10px] text-muted-foreground italic">editing…</span>
+                            </TableCell>
+                            <TableCell className="py-1">
+                              <Input
+                                type="email"
+                                placeholder="email"
+                                value={rowEditData.email}
+                                onChange={(e) => setRowEditData(d => ({ ...d, email: e.target.value }))}
+                                className="h-7 text-xs px-2 w-44"
+                              />
+                            </TableCell>
+                            <TableCell className="py-1">
+                              <Input
+                                placeholder="phone"
+                                value={rowEditData.phone}
+                                onChange={(e) => setRowEditData(d => ({ ...d, phone: e.target.value }))}
+                                className="h-7 text-xs px-2 w-32"
+                              />
+                            </TableCell>
+                            <TableCell className="py-1">
+                              <Select value={rowEditData.account_id} onValueChange={(v) => setRowEditData(d => ({ ...d, account_id: v }))}>
+                                <SelectTrigger className="h-7 text-xs w-40"><SelectValue placeholder="Account" /></SelectTrigger>
+                                <SelectContent className="bg-popover">
+                                  {accounts.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell className="py-1">
+                              {stageConfig ? (
+                                <span className="text-[11px] text-muted-foreground">{stageConfig.label}</span>
+                              ) : <span className="text-[11px] text-muted-foreground/40">—</span>}
+                            </TableCell>
+                            <TableCell className="py-1">
+                              <Select
+                                value={rowEditData.assigned_to || 'unassigned'}
+                                onValueChange={(v) => setRowEditData(d => ({ ...d, assigned_to: v === 'unassigned' ? '' : v }))}
+                              >
+                                <SelectTrigger className="h-7 text-xs w-32"><SelectValue placeholder="Owner" /></SelectTrigger>
+                                <SelectContent className="bg-popover">
+                                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                                  {TEAM_MEMBERS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell className="py-1">
+                              <Input
+                                placeholder="fax"
+                                value={rowEditData.fax}
+                                onChange={(e) => setRowEditData(d => ({ ...d, fax: e.target.value }))}
+                                className="h-7 text-xs px-2 w-24"
+                              />
+                            </TableCell>
+                            <TableCell className="py-1">
+                              <div className="flex items-center justify-end gap-1 pr-1">
+                                <Button size="sm" onClick={saveRowEdit} disabled={rowEditSaving} className="h-7 px-2 text-xs">
+                                  <Check className="h-3.5 w-3.5 mr-1" />Save
+                                </Button>
+                                <Button size="sm" variant="ghost" onClick={cancelRowEdit} disabled={rowEditSaving} className="h-7 px-2 text-xs">
+                                  <X className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      }
 
                       return (
                         <TableRow
