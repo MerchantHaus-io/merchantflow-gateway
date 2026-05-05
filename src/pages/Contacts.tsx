@@ -158,10 +158,68 @@ const Contacts = () => {
   const [editingContact, setEditingContact] = useState<ContactWithAccount | null>(null);
   const [isNewDialogOpen, setIsNewDialogOpen] = useState(false);
 
-  // Inline editing — same as original
+  // Inline single-field editing
   const [inlineEditId, setInlineEditId] = useState<string | null>(null);
   const [inlineEditField, setInlineEditField] = useState<string | null>(null);
   const [inlineEditValue, setInlineEditValue] = useState<string>('');
+
+  // Full row inline editing (replaces modal)
+  const [rowEditId, setRowEditId] = useState<string | null>(null);
+  const [rowEditData, setRowEditData] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    fax: '',
+    account_id: '',
+    assigned_to: '',
+  });
+  const [rowEditSaving, setRowEditSaving] = useState(false);
+
+  const startRowEdit = (contact: ContactWithAccount) => {
+    setRowEditId(contact.id);
+    setRowEditData({
+      first_name: contact.first_name || '',
+      last_name: contact.last_name || '',
+      email: contact.email || '',
+      phone: contact.phone || '',
+      fax: contact.fax || '',
+      account_id: contact.account_id || '',
+      assigned_to: contact.assigned_to || '',
+    });
+  };
+  const cancelRowEdit = () => setRowEditId(null);
+  const saveRowEdit = async () => {
+    if (!rowEditId) return;
+    setRowEditSaving(true);
+    const target = contacts.find(c => c.id === rowEditId);
+    const { error: cErr } = await supabase
+      .from('contacts')
+      .update({
+        first_name: rowEditData.first_name || null,
+        last_name: rowEditData.last_name || null,
+        email: rowEditData.email || null,
+        phone: rowEditData.phone || null,
+        fax: rowEditData.fax || null,
+        account_id: rowEditData.account_id || target?.account_id || null,
+      })
+      .eq('id', rowEditId);
+    if (cErr) {
+      toast.error('Failed to save contact');
+      setRowEditSaving(false);
+      return;
+    }
+    if (target?.opportunity_id) {
+      await supabase
+        .from('opportunities')
+        .update({ assigned_to: rowEditData.assigned_to || null })
+        .eq('id', target.opportunity_id);
+    }
+    toast.success('Contact updated');
+    setRowEditId(null);
+    setRowEditSaving(false);
+    fetchContacts();
+  };
 
   const startInlineEdit = (id: string, field: string, value: string) => {
     setInlineEditId(id);
