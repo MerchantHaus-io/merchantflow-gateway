@@ -552,6 +552,7 @@ const Transactions = () => {
                       <Table>
                         <TableHeader>
                           <TableRow>
+                            <TableHead className="text-xs w-10 text-right pr-2">#</TableHead>
                             <TableHead className="text-xs cursor-pointer select-none" onClick={() => toggleSort("date")}>
                               <span className="flex items-center gap-1">Date {sortField==="date" && (sortDir==="desc" ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />)}</span>
                             </TableHead>
