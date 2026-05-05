@@ -743,6 +743,7 @@ export default function Outreach() {
                 <Table>
                   <TableHeader>
                     <TableRow className="border-border/60">
+                      <TableHead className="w-10 text-right pr-2">#</TableHead>
                       <TableHead>Cadence</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Schedule</TableHead>
