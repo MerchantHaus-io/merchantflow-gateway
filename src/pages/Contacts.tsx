@@ -1039,7 +1039,7 @@ const Contacts = () => {
                               aria-label={`Select ${fullName || 'contact'}`}
                             />
                           </TableCell>
-
+                          <TableCell className="py-2 text-right pr-2 text-[11px] text-muted-foreground tabular-nums">{rowNumber}</TableCell>
                           {/* Name + colored avatar */}
                           <TableCell className="py-2">
                             <div className="flex items-center gap-2.5">
