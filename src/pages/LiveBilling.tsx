@@ -323,6 +323,7 @@ const LiveBilling = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10 text-right pr-2">#</TableHead>
                    <TableHead>Account</TableHead>
                   <TableHead>Merchant ID</TableHead>
                   <TableHead>Contact</TableHead>
