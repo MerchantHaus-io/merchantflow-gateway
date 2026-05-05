@@ -622,7 +622,7 @@ function TeamDayGrid({
                 <div
                   key={ev.id}
                   className={cn("rounded px-1.5 py-0.5 text-[9px] font-semibold truncate cursor-pointer hover:opacity-80", colors.bg, "text-foreground")}
-                  onClick={() => ev.html_link && window.open(ev.html_link, "_blank")}
+                  onClick={() => onSelect ? onSelect(ev) : (ev.html_link && window.open(ev.html_link, "_blank"))}
                 >
                   {ev.title}
                 </div>
