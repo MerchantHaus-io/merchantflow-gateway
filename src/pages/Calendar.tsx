@@ -717,6 +717,7 @@ function TeamDayGrid({
       </div>
     </div>
   );
+}
 
 // ── Agenda View — chronological list grouped by day ──
 function AgendaView({ events, onSelect }: { events: CalendarEvent[]; onSelect: (e: CalendarEvent) => void }) {
