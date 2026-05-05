@@ -19,9 +19,10 @@ const isSameDayCT = (iso: string, date: Date, allDay?: boolean) => {
   }
   return isSameDay(toCT(iso), date);
 };
-import { ChevronLeft, ChevronRight, CalendarDays, Clock, MapPin, Users, ExternalLink, Link2, CheckCircle2, Loader2, Mail, Filter, CalendarIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, Clock, MapPin, Users, ExternalLink, Link2, CheckCircle2, Loader2, Mail, Filter, CalendarIcon, Search, Sparkles, ListTree } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -30,6 +31,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useSearchParams } from "react-router-dom";
+import { EventDetailSheet } from "@/components/calendar/EventDetailSheet";
 
 interface CalendarEvent {
   id: string;
