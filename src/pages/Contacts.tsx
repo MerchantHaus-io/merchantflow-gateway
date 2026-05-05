@@ -1172,7 +1172,7 @@ const Contacts = () => {
                                   <Mail className="h-3.5 w-3.5 text-muted-foreground" />
                                 </a>
                               )}
-                              <button onClick={() => openEditDialog(contact)} className="p-1.5 rounded hover:bg-muted transition-colors" title="Edit">
+                              <button onClick={() => startRowEdit(contact)} className="p-1.5 rounded hover:bg-muted transition-colors" title="Edit">
                                 <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                               </button>
                               <DropdownMenu>
@@ -1188,7 +1188,7 @@ const Contacts = () => {
                                   <DropdownMenuItem onClick={() => { setSelectedContact(contact); setDetailTab('comments'); }}>
                                     <MessageSquare className="h-4 w-4 mr-2" />View Comments
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => openEditDialog(contact)}>
+                                  <DropdownMenuItem onClick={() => startRowEdit(contact)}>
                                     <Pencil className="h-4 w-4 mr-2" />Edit
                                   </DropdownMenuItem>
                                   {!contact.opportunity_id && contact.account_id && (
@@ -1212,7 +1212,7 @@ const Contacts = () => {
                     })
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={10}>
+                      <TableCell colSpan={11}>
                         <EmptyState
                           icon={Users}
                           title="No contacts found"
@@ -1333,7 +1333,7 @@ const Contacts = () => {
                               <ArrowRightCircle className="h-3.5 w-3.5" />
                             </button>
                           )}
-                          <button onClick={() => openEditDialog(contact)}
+                          <button onClick={() => startRowEdit(contact)}
                             className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
