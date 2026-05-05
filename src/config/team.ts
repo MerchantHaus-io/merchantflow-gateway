@@ -151,6 +151,10 @@ export const resolveMember = (
 export const getActiveTeam = (): TeamMemberRecord[] =>
   TEAM_ROSTER.filter((m) => m.active).sort((a, b) => a.displayName.localeCompare(b.displayName));
 
+/** Active *internal* team members — used for calendar columns / dashboards. */
+export const getActiveInternalTeam = (): TeamMemberRecord[] =>
+  getActiveTeam().filter((m) => !m.isExternal);
+
 /** Active display names — use this for assignment dropdowns. */
 export const getActiveTeamNames = (): string[] => getActiveTeam().map((m) => m.displayName);
 
