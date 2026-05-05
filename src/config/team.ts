@@ -187,6 +187,7 @@ const liveObject = <V>(compute: () => Record<string, V>): Record<string, V> =>
   });
 
 export const ACTIVE_TEAM: TeamMemberRecord[] = liveArray(getActiveTeam);
+export const ACTIVE_INTERNAL_TEAM: TeamMemberRecord[] = liveArray(getActiveInternalTeam);
 export const ACTIVE_TEAM_NAMES: string[] = liveArray(getActiveTeamNames);
 export const ALL_TEAM_NAMES: string[] = liveArray(getAllTeamNames);
 
