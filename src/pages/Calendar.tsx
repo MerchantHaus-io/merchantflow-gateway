@@ -49,7 +49,7 @@ interface CalendarEvent {
   calendar_owner_email: string | null;
 }
 
-type ViewMode = "month" | "week" | "day" | "team";
+type ViewMode = "month" | "week" | "day" | "team" | "agenda";
 
 export default function Calendar() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -61,6 +61,8 @@ export default function Calendar() {
   const [hasGmailScope, setHasGmailScope] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [filterUser, setFilterUser] = useState<string>("all");
+  const [search, setSearch] = useState("");
+  const [activeEvent, setActiveEvent] = useState<CalendarEvent | null>(null);
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
