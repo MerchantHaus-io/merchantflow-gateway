@@ -465,10 +465,11 @@ const Accounts = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredAccounts.map((account) => {
+                    {filteredAccounts.map((account, idx) => {
                       const deals = accountOpportunities[account.id] || [];
                       return (
                       <TableRow key={account.id} className={cn("hover:bg-muted/30 group/row", account.status === 'dead' && "opacity-50")}>
+                        <TableCell className="text-right pr-2 text-[11px] text-muted-foreground tabular-nums py-2.5">{idx + 1}</TableCell>
                         <TableCell className="font-medium py-2.5">
                           {inlineEditId === account.id && inlineEditField === 'name' ? (
                             <div className="flex items-center gap-1">
