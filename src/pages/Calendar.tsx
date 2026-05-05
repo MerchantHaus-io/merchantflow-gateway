@@ -67,10 +67,12 @@ export default function Calendar() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Team list sourced from the roster — see src/config/team.ts
-  const TEAM_MEMBERS = [
-    ...ACTIVE_TEAM.map((m) => ({ email: m.email, label: m.displayName })),
-    { email: "sales@merchanthaus.io", label: "Sales" },
-  ];
+  // De-duplicate by email (case-insensitive) so the shared Sales inbox only appears once.
+  const TEAM_MEMBERS = Array.from(
+    new Map(
+      ACTIVE_TEAM.map((m) => [m.email.toLowerCase(), { email: m.email, label: m.displayName }])
+    ).values()
+  );
 
   // Handle OAuth redirect params
   useEffect(() => {
