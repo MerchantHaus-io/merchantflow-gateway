@@ -571,6 +571,7 @@ const Transactions = () => {
                           {filtered.slice(0, 200).map((tx, idx) => (
                             <>
                               <TableRow key={tx.id || idx} className="cursor-pointer hover:bg-muted/30" onClick={() => setExpandedTx(expandedTx === tx.id ? null : tx.id)}>
+                                <TableCell className="text-[11px] text-muted-foreground tabular-nums text-right pr-2">{idx + 1}</TableCell>
                                 <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{formatTxDate(tx.date)}</TableCell>
                                 <TableCell className="text-xs max-w-[140px]">
                                   <p className="font-medium truncate">{getMerchantLabel(tx.merchant_id)}</p>
