@@ -19,9 +19,10 @@ const isSameDayCT = (iso: string, date: Date, allDay?: boolean) => {
   }
   return isSameDay(toCT(iso), date);
 };
-import { ChevronLeft, ChevronRight, CalendarDays, Clock, MapPin, Users, ExternalLink, Link2, CheckCircle2, Loader2, Mail, Filter, CalendarIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays, Clock, MapPin, Users, ExternalLink, Link2, CheckCircle2, Loader2, Mail, Filter, CalendarIcon, Search, Sparkles, ListTree } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -30,6 +31,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useSearchParams } from "react-router-dom";
+import { EventDetailSheet } from "@/components/calendar/EventDetailSheet";
 
 interface CalendarEvent {
   id: string;
@@ -47,7 +49,7 @@ interface CalendarEvent {
   calendar_owner_email: string | null;
 }
 
-type ViewMode = "month" | "week" | "day" | "team";
+type ViewMode = "month" | "week" | "day" | "team" | "agenda";
 
 export default function Calendar() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -59,6 +61,8 @@ export default function Calendar() {
   const [hasGmailScope, setHasGmailScope] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [filterUser, setFilterUser] = useState<string>("all");
+  const [search, setSearch] = useState("");
+  const [activeEvent, setActiveEvent] = useState<CalendarEvent | null>(null);
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -120,6 +124,10 @@ export default function Calendar() {
     } else if (viewMode === "week") {
       rangeStart = startOfWeek(currentDate, { weekStartsOn: 0 });
       rangeEnd = endOfWeek(currentDate, { weekStartsOn: 0 });
+    } else if (viewMode === "agenda") {
+      // Agenda: show next 30 days from currentDate
+      rangeStart = startOfDay(currentDate);
+      rangeEnd = new Date(rangeStart.getTime() + 30 * 24 * 60 * 60 * 1000);
     } else {
       // For day/team views, compute range in CT so we fetch the correct CT day
       // CT is UTC-5 (CST) or UTC-6 depending on DST; use date-fns-tz for accuracy
@@ -200,9 +208,21 @@ export default function Calendar() {
   }, [currentDate]);
 
   const filteredEvents = useMemo(() => {
-    if (filterUser === "all") return events;
-    return events.filter((e) => e.calendar_owner_email === filterUser);
-  }, [events, filterUser]);
+    let evs = events;
+    if (filterUser !== "all") evs = evs.filter((e) => e.calendar_owner_email === filterUser);
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      evs = evs.filter((e) =>
+        e.title?.toLowerCase().includes(q) ||
+        e.location?.toLowerCase().includes(q) ||
+        e.description?.toLowerCase().includes(q) ||
+        (Array.isArray(e.attendees) && e.attendees.some((a: any) =>
+          a.email?.toLowerCase().includes(q) || a.displayName?.toLowerCase().includes(q)
+        ))
+      );
+    }
+    return evs;
+  }, [events, filterUser, search]);
 
   const eventsForDate = (date: Date) =>
     filteredEvents.filter((e) => isSameDayCT(e.start_time, date, e.all_day));
@@ -237,7 +257,9 @@ export default function Calendar() {
                     ? format(currentDate, "EEEE, MMMM d, yyyy")
                     : viewMode === "week"
                       ? `Week of ${format(startOfWeek(currentDate), "MMM d")}`
-                      : format(currentDate, "MMMM yyyy")}
+                      : viewMode === "agenda"
+                        ? `Next 30 days from ${format(currentDate, "MMM d")}`
+                        : format(currentDate, "MMMM yyyy")}
                   <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                 </Button>
               </PopoverTrigger>
@@ -265,6 +287,17 @@ export default function Calendar() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground pointer-events-none" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search events…"
+                className="h-8 w-[180px] pl-7 text-xs"
+              />
+            </div>
+
             {/* User filter */}
             <Select value={filterUser} onValueChange={setFilterUser}>
               <SelectTrigger className="h-8 w-[140px] text-xs">
@@ -291,7 +324,7 @@ export default function Calendar() {
             </Button>
 
             <div className="flex items-center rounded-lg border border-border/60 bg-card/40 p-0.5">
-              {(["month", "week", "day", "team"] as ViewMode[]).map((mode) => (
+              {(["month", "week", "day", "team", "agenda"] as ViewMode[]).map((mode) => (
                 <button
                   key={mode}
                   onClick={() => setViewMode(mode)}
@@ -376,11 +409,15 @@ export default function Calendar() {
                 ) : (
                   <div className="space-y-2">
                     {filteredEvents.map((ev) => (
-                      <EventCard key={ev.id} event={ev} />
+                      <EventCard key={ev.id} event={ev} onClick={() => setActiveEvent(ev)} />
                     ))}
                   </div>
                 )}
               </div>
+            )}
+
+            {viewMode === "agenda" && (
+              <AgendaView events={filteredEvents} onSelect={setActiveEvent} />
             )}
 
             {viewMode === "team" && (
@@ -388,6 +425,7 @@ export default function Calendar() {
                 events={events}
                 teamMembers={TEAM_MEMBERS}
                 currentDate={selectedDate || currentDate}
+                onSelect={setActiveEvent}
               />
             )}
           </div>
@@ -398,6 +436,9 @@ export default function Calendar() {
               <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
                 <CalendarDays className="h-4 w-4 text-primary" />
                 {selectedDate ? format(selectedDate, "EEEE, MMMM d") : "Select a day"}
+                {selectedEvents.length > 0 && (
+                  <Badge variant="secondary" className="ml-auto text-[9px]">{selectedEvents.length}</Badge>
+                )}
               </h3>
 
               {selectedEvents.length === 0 ? (
@@ -412,7 +453,7 @@ export default function Calendar() {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: idx * 0.05 }}
                       >
-                        <EventCard event={ev} />
+                        <EventCard event={ev} onClick={() => setActiveEvent(ev)} />
                       </motion.div>
                     ))}
                   </AnimatePresence>
@@ -422,6 +463,13 @@ export default function Calendar() {
           </div>
         </div>
       </div>
+
+      <EventDetailSheet
+        event={activeEvent}
+        open={!!activeEvent}
+        onOpenChange={(o) => !o && setActiveEvent(null)}
+        ownerColor={activeEvent ? getTeamColor(activeEvent.calendar_owner_email) : undefined}
+      />
     </AppLayout>
   );
 }
@@ -440,11 +488,12 @@ function getTeamColor(email: string | null) {
   return TEAM_COLORS[email] || TEAM_COLORS.shared;
 }
 
-function EventCard({ event }: { event: CalendarEvent }) {
+function EventCard({ event, onClick }: { event: CalendarEvent; onClick?: () => void }) {
   const attendeeList = Array.isArray(event.attendees) ? event.attendees : [];
   const internalAttendees = attendeeList.filter((a: any) => a.email?.endsWith("@merchanthaus.io"));
   const colors = getTeamColor(event.calendar_owner_email);
   const ownerName = event.calendar_owner_email?.split("@")[0] || "shared";
+  const hasLink = !!(event.account_id || event.opportunity_id);
 
   return (
     <div
@@ -453,8 +502,13 @@ function EventCard({ event }: { event: CalendarEvent }) {
         "border-l-4",
         colors.border
       )}
-      onClick={() => event.html_link && window.open(event.html_link, "_blank")}
+      onClick={() => onClick ? onClick() : (event.html_link && window.open(event.html_link, "_blank"))}
     >
+      {hasLink && (
+        <div className="absolute top-2 right-2">
+          <Link2 className="h-3 w-3 text-primary" />
+        </div>
+      )}
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
@@ -507,10 +561,12 @@ function TeamDayGrid({
   events,
   teamMembers,
   currentDate,
+  onSelect,
 }: {
   events: CalendarEvent[];
   teamMembers: { email: string; label: string }[];
   currentDate: Date;
+  onSelect?: (e: CalendarEvent) => void;
 }) {
   const dayStart = startOfDay(currentDate);
 
@@ -566,7 +622,7 @@ function TeamDayGrid({
                 <div
                   key={ev.id}
                   className={cn("rounded px-1.5 py-0.5 text-[9px] font-semibold truncate cursor-pointer hover:opacity-80", colors.bg, "text-foreground")}
-                  onClick={() => ev.html_link && window.open(ev.html_link, "_blank")}
+                  onClick={() => onSelect ? onSelect(ev) : (ev.html_link && window.open(ev.html_link, "_blank"))}
                 >
                   {ev.title}
                 </div>
@@ -645,7 +701,7 @@ function TeamDayGrid({
                       colors.bg, colors.border, "border-l-2"
                     )}
                     style={{ top, height: Math.min(height, HOURS.length * HOUR_HEIGHT - top) }}
-                    onClick={() => ev.html_link && window.open(ev.html_link, "_blank")}
+                    onClick={() => onSelect ? onSelect(ev) : (ev.html_link && window.open(ev.html_link, "_blank"))}
                     title={`${ev.title}\n${format(evStart, "h:mm a")} – ${format(evEnd, "h:mm a")} CT`}
                   >
                     <span className="text-[9px] font-bold text-foreground line-clamp-1 leading-tight">{ev.title}</span>
@@ -662,3 +718,99 @@ function TeamDayGrid({
     </div>
   );
 }
+
+// ── Agenda View — chronological list grouped by day ──
+function AgendaView({ events, onSelect }: { events: CalendarEvent[]; onSelect: (e: CalendarEvent) => void }) {
+  const groups = useMemo(() => {
+    const map = new Map<string, CalendarEvent[]>();
+    for (const ev of events) {
+      const key = ev.all_day
+        ? format(parseISO(ev.start_time), "yyyy-MM-dd")
+        : format(toCT(ev.start_time), "yyyy-MM-dd");
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(ev);
+    }
+    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [events]);
+
+  if (groups.length === 0) {
+    return (
+      <div className="rounded-xl border border-border/60 bg-card/80 p-12 text-center">
+        <CalendarDays className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+        <p className="text-sm text-muted-foreground">No events in the next 30 days.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-border/60 bg-card/80 overflow-hidden">
+      <div className="divide-y divide-border/30 max-h-[700px] overflow-y-auto">
+        {groups.map(([dayKey, dayEvents]) => {
+          const date = parseISO(dayKey + "T12:00:00");
+          const today = isToday(date);
+          return (
+            <div key={dayKey} className="grid grid-cols-[110px_1fr] gap-3 p-3 hover:bg-accent/10">
+              <div className="text-right">
+                <div className={cn(
+                  "text-[10px] font-bold uppercase tracking-wider",
+                  today ? "text-primary" : "text-muted-foreground"
+                )}>
+                  {format(date, "EEE")}
+                </div>
+                <div className={cn(
+                  "text-2xl font-bold leading-none mt-0.5",
+                  today ? "text-primary" : "text-foreground"
+                )}>
+                  {format(date, "d")}
+                </div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">
+                  {format(date, "MMM yyyy")}
+                </div>
+                {today && (
+                  <Badge className="mt-1 text-[8px] px-1.5 py-0 h-4">Today</Badge>
+                )}
+              </div>
+              <div className="space-y-1.5 min-w-0">
+                {dayEvents.map((ev) => {
+                  const c = getTeamColor(ev.calendar_owner_email);
+                  return (
+                    <button
+                      key={ev.id}
+                      onClick={() => onSelect(ev)}
+                      className={cn(
+                        "w-full text-left rounded-md border border-border/40 bg-background/40 px-2.5 py-2 hover:bg-accent/40 transition-all border-l-4",
+                        c.border
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", c.dot)} />
+                        <span className="text-xs font-bold text-foreground truncate flex-1">{ev.title}</span>
+                        {(ev.account_id || ev.opportunity_id) && (
+                          <Link2 className="h-3 w-3 text-primary shrink-0" />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
+                        <Clock className="h-2.5 w-2.5" />
+                        {ev.all_day
+                          ? "All day"
+                          : `${format(toCT(ev.start_time), "h:mm a")} – ${format(toCT(ev.end_time), "h:mm a")} CT`}
+                        {ev.location && (
+                          <>
+                            <span>·</span>
+                            <MapPin className="h-2.5 w-2.5" />
+                            <span className="truncate">{ev.location}</span>
+                          </>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
