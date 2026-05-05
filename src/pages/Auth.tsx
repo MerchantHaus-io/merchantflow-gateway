@@ -318,6 +318,45 @@ const Auth = () => {
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
+            {password && (() => {
+              const { checks, score, label, colorClass, percent } = evaluatePassword(password);
+              const items: Array<[keyof typeof checks, string]> = [
+                ['length', 'At least 8 characters'],
+                ['upper', 'Uppercase letter (A-Z)'],
+                ['lower', 'Lowercase letter (a-z)'],
+                ['number', 'Number (0-9)'],
+                ['symbol', 'Symbol (!@#$…)'],
+              ];
+              return (
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider">
+                    <span className="text-muted-foreground">Strength</span>
+                    <span className={score >= 4 ? 'text-emerald-600' : score >= 2 ? 'text-amber-600' : 'text-destructive'}>
+                      {label}
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-foreground/10 overflow-hidden">
+                    <div
+                      className={`h-full ${colorClass} transition-all duration-300`}
+                      style={{ width: `${percent}%` }}
+                    />
+                  </div>
+                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1 pt-1">
+                    {items.map(([key, text]) => (
+                      <li
+                        key={key}
+                        className={`flex items-center gap-1.5 text-[11px] font-medium ${
+                          checks[key] ? 'text-emerald-600' : 'text-muted-foreground'
+                        }`}
+                      >
+                        {checks[key] ? <Check className="h-3 w-3" /> : <X className="h-3 w-3 opacity-50" />}
+                        {text}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })()}
             <div className="flex justify-end">
               <Button
                 type="button"
