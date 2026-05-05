@@ -2563,6 +2563,7 @@ export type Database = {
           display_name: string
           email: string
           id: string
+          is_external: boolean
           legacy_names: string[] | null
           sort_order: number
           title: string | null
@@ -2576,6 +2577,7 @@ export type Database = {
           display_name: string
           email: string
           id: string
+          is_external?: boolean
           legacy_names?: string[] | null
           sort_order?: number
           title?: string | null
@@ -2589,6 +2591,7 @@ export type Database = {
           display_name?: string
           email?: string
           id?: string
+          is_external?: boolean
           legacy_names?: string[] | null
           sort_order?: number
           title?: string | null
