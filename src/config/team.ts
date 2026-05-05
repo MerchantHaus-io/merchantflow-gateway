@@ -31,6 +31,8 @@ export interface TeamMemberRecord {
   colorToken: string;
   /** Historical names this person used — auto-mapped to displayName at runtime. */
   legacyNames?: string[];
+  /** True for non-platform contacts (e.g. partner liaisons) — hidden from calendar columns. */
+  isExternal?: boolean;
 }
 
 // ─── ROSTER ────────────────────────────────────────────────────────────────
