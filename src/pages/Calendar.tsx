@@ -68,9 +68,9 @@ export default function Calendar() {
 
   // Team list sourced from the roster — see src/config/team.ts
   // De-duplicate by email (case-insensitive) so the shared Sales inbox only appears once.
-  const TEAM_MEMBERS = Array.from(
+  const TEAM_MEMBERS: { email: string; label: string }[] = Array.from(
     new Map(
-      ACTIVE_TEAM.map((m) => [m.email.toLowerCase(), { email: m.email, label: m.displayName }])
+      ACTIVE_INTERNAL_TEAM.map((m) => [m.email.toLowerCase(), { email: m.email, label: m.displayName }])
     ).values()
   );
 
