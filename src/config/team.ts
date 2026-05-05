@@ -76,14 +76,6 @@ export let TEAM_ROSTER: TeamMemberRecord[] = [
     legacyNames: ["Taryn"],
   },
   {
-    id: "neil",
-    email: "neil@nmi.com",
-    displayName: "Neil",
-    title: "NMI Support Liaison",
-    active: true,
-    colorToken: "border-team-neil",
-  },
-  {
     id: "wesley",
     email: "sales@merchanthaus.io",
     displayName: "Wesley",
