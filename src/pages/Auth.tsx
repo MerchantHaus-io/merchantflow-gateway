@@ -5,8 +5,30 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Check, X } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
+
+const evaluatePassword = (pw: string) => {
+  const checks = {
+    length: pw.length >= 8,
+    upper: /[A-Z]/.test(pw),
+    lower: /[a-z]/.test(pw),
+    number: /\d/.test(pw),
+    symbol: /[^A-Za-z0-9]/.test(pw),
+  };
+  const score = Object.values(checks).filter(Boolean).length;
+  const labels = ['Too weak', 'Weak', 'Fair', 'Good', 'Strong', 'Excellent'];
+  const colors = [
+    'bg-destructive',
+    'bg-destructive',
+    'bg-amber-500',
+    'bg-amber-500',
+    'bg-emerald-500',
+    'bg-emerald-600',
+  ];
+  return { checks, score, label: labels[score], colorClass: colors[score], percent: (score / 5) * 100 };
+};
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
 import { getFriendlyError } from '@/lib/friendly-errors';
