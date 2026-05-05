@@ -717,4 +717,99 @@ function TeamDayGrid({
       </div>
     </div>
   );
+
+// ── Agenda View — chronological list grouped by day ──
+function AgendaView({ events, onSelect }: { events: CalendarEvent[]; onSelect: (e: CalendarEvent) => void }) {
+  const groups = useMemo(() => {
+    const map = new Map<string, CalendarEvent[]>();
+    for (const ev of events) {
+      const key = ev.all_day
+        ? format(parseISO(ev.start_time), "yyyy-MM-dd")
+        : format(toCT(ev.start_time), "yyyy-MM-dd");
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(ev);
+    }
+    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [events]);
+
+  if (groups.length === 0) {
+    return (
+      <div className="rounded-xl border border-border/60 bg-card/80 p-12 text-center">
+        <CalendarDays className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+        <p className="text-sm text-muted-foreground">No events in the next 30 days.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-border/60 bg-card/80 overflow-hidden">
+      <div className="divide-y divide-border/30 max-h-[700px] overflow-y-auto">
+        {groups.map(([dayKey, dayEvents]) => {
+          const date = parseISO(dayKey + "T12:00:00");
+          const today = isToday(date);
+          return (
+            <div key={dayKey} className="grid grid-cols-[110px_1fr] gap-3 p-3 hover:bg-accent/10">
+              <div className="text-right">
+                <div className={cn(
+                  "text-[10px] font-bold uppercase tracking-wider",
+                  today ? "text-primary" : "text-muted-foreground"
+                )}>
+                  {format(date, "EEE")}
+                </div>
+                <div className={cn(
+                  "text-2xl font-bold leading-none mt-0.5",
+                  today ? "text-primary" : "text-foreground"
+                )}>
+                  {format(date, "d")}
+                </div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">
+                  {format(date, "MMM yyyy")}
+                </div>
+                {today && (
+                  <Badge className="mt-1 text-[8px] px-1.5 py-0 h-4">Today</Badge>
+                )}
+              </div>
+              <div className="space-y-1.5 min-w-0">
+                {dayEvents.map((ev) => {
+                  const c = getTeamColor(ev.calendar_owner_email);
+                  return (
+                    <button
+                      key={ev.id}
+                      onClick={() => onSelect(ev)}
+                      className={cn(
+                        "w-full text-left rounded-md border border-border/40 bg-background/40 px-2.5 py-2 hover:bg-accent/40 transition-all border-l-4",
+                        c.border
+                      )}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", c.dot)} />
+                        <span className="text-xs font-bold text-foreground truncate flex-1">{ev.title}</span>
+                        {(ev.account_id || ev.opportunity_id) && (
+                          <Link2 className="h-3 w-3 text-primary shrink-0" />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
+                        <Clock className="h-2.5 w-2.5" />
+                        {ev.all_day
+                          ? "All day"
+                          : `${format(toCT(ev.start_time), "h:mm a")} – ${format(toCT(ev.end_time), "h:mm a")} CT`}
+                        {ev.location && (
+                          <>
+                            <span>·</span>
+                            <MapPin className="h-2.5 w-2.5" />
+                            <span className="truncate">{ev.location}</span>
+                          </>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
+
