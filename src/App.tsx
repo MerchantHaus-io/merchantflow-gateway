@@ -126,6 +126,7 @@ const App = () => (
                 <Route path="/tools/revenue-calculator" element={<ProtectedRoute><RevenueCalculator /></ProtectedRoute>} />
                 <Route path="/tools/preboarding-wizard" element={<ProtectedRoute><PreboardingWizard /></ProtectedRoute>} />
                 <Route path="/tools/csv-import" element={<ProtectedRoute><CsvImport /></ProtectedRoute>} />
+                <Route path="/tools/quote-builder" element={<ProtectedRoute><QuoteBuilder /></ProtectedRoute>} />
                 <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
                 <Route path="/my-tasks" element={<ProtectedRoute><MyTasks /></ProtectedRoute>} />
                 <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
