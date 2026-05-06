@@ -33,6 +33,7 @@ import {
   Send,
   Search,
   UserPlus,
+  FileSignature,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -130,6 +131,7 @@ const navMain: NavGroup[] = [
       { title: "Pre-Qualification Wizard", url: "/tools/preboarding-wizard", icon: ClipboardList, description: "Application readiness form" },
       { title: "Revenue Calculator", url: "/tools/revenue-calculator", icon: Calculator, description: "Estimate processing revenue" },
       { title: "CSV Import", url: "/tools/csv-import", icon: FileSpreadsheet, description: "Bulk import data" },
+      { title: "Quote Builder", url: "/tools/quote-builder", icon: FileSignature, description: "Generate gateway quotes from an opportunity" },
     ],
   },
   {

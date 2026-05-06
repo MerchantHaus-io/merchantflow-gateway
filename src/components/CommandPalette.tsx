@@ -28,6 +28,7 @@ const SEARCH_ITEMS: SearchItem[] = [
   { title: "Settings", url: "/settings", icon: Settings, keywords: "profile preferences theme" },
   { title: "SOP", url: "/sop", icon: BookOpen, keywords: "procedures guide how to" },
   { title: "Revenue Calculator", url: "/tools/revenue-calculator", icon: Calculator, keywords: "money estimate" },
+  { title: "Quote Builder", url: "/tools/quote-builder", icon: Calculator, keywords: "quote pricing pdf gateway" },
   { title: "Email Outreach", url: "/outreach", icon: Send, keywords: "campaigns email marketing" },
   { title: "Web Submissions", url: "/admin/web-submissions", icon: Globe, keywords: "applications incoming" },
   { title: "Live & Billing", url: "/live-billing", icon: BadgeDollarSign, keywords: "accounts billing" },
