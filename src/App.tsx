@@ -54,6 +54,7 @@ import Integrations from "./pages/Integrations";
 import Transactions from "./pages/Transactions";
 import Calendar from "./pages/Calendar";
 import Commissions from "./pages/Commissions";
+import QuoteBuilder from "./pages/QuoteBuilder";
 import { IncomingCallToast } from "./components/IncomingCallToast";
 import { IncomingMessageToast } from "./components/IncomingMessageToast";
 import { Dialler } from "./components/Dialler";
