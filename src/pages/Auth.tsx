@@ -180,85 +180,65 @@ const Auth = () => {
   }
 
   return (
-    <div className="light min-h-screen flex items-center justify-center p-4 bg-white text-black" data-theme="light">
-      <div className="w-full max-w-sm space-y-8">
-        {/* Logo */}
-        <div className="relative flex items-center justify-center">
-          {/* Glow halo that pulses behind the logo */}
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 flex items-center justify-center"
-          >
-            <div className="h-32 w-32 rounded-full bg-primary/25 blur-3xl animate-[logo-glow_2.6s_ease-in-out_0.4s_infinite]" />
-          </div>
-          {/* Sweeping shine overlay */}
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 overflow-hidden"
-          >
-            <div className="absolute -inset-x-1/3 top-0 bottom-0 bg-gradient-to-r from-transparent via-white/60 to-transparent skew-x-[-20deg] opacity-0 animate-[logo-shine_1.4s_ease-out_0.9s_1_forwards]" />
-          </div>
-          <img
-            src={psTerminalLogo}
-            alt="PS Terminal"
-            width={293}
-            height={72}
-            fetchPriority="high"
-            className="relative h-[4.5rem] w-auto opacity-0 animate-[logo-drop_0.9s_cubic-bezier(0.22,1.2,0.36,1)_0.1s_both,logo-float_3.4s_ease-in-out_1s_infinite]"
-          />
-          <style>{`
-            @keyframes logo-drop {
-              0%   { opacity: 0; transform: translateY(-48px) scale(0.6) rotate(-6deg); filter: blur(10px); }
-              55%  { opacity: 1; transform: translateY(8px)   scale(1.08) rotate(2deg);  filter: blur(0); }
-              75%  { transform: translateY(-3px) scale(0.98) rotate(-1deg); }
-              100% { opacity: 1; transform: translateY(0)    scale(1)    rotate(0);   filter: blur(0); }
-            }
-            @keyframes logo-float {
-              0%, 100% { transform: translateY(0) rotate(0); }
-              50%      { transform: translateY(-8px) rotate(0.5deg); }
-            }
-            @keyframes logo-shine {
-              0%   { transform: translateX(-120%) skewX(-20deg); opacity: 0; }
-              30%  { opacity: 0.9; }
-              100% { transform: translateX(120%)  skewX(-20deg); opacity: 0; }
-            }
-            @keyframes logo-glow {
-              0%, 100% { opacity: 0.35; transform: scale(0.85); }
-              50%      { opacity: 0.7;  transform: scale(1.15); }
-            }
-            @keyframes logo-fly-in {
-              0%   { opacity: 0; transform: translateX(-60px) translateY(10px) scale(0.9); filter: blur(6px); }
-              60%  { opacity: 1; transform: translateX(6px)   translateY(0)    scale(1.02); filter: blur(0); }
-              100% { opacity: 1; transform: translateX(0)     translateY(0)    scale(1);    filter: blur(0); }
-            }
-            @media (prefers-reduced-motion: reduce) {
-              .animate-\\[logo-drop_0\\.9s_cubic-bezier\\(0\\.22\\,1\\.2\\,0\\.36\\,1\\)_0\\.1s_both\\,logo-float_3\\.4s_ease-in-out_1s_infinite\\],
-              .animate-\\[logo-glow_2\\.6s_ease-in-out_0\\.4s_infinite\\],
-              .animate-\\[logo-shine_1\\.4s_ease-out_0\\.9s_1_forwards\\],
-              .animate-\\[logo-fly-in_0\\.9s_cubic-bezier\\(0\\.22\\,1\\,0\\.36\\,1\\)_0\\.7s_both\\] {
-                animation: none !important;
-                opacity: 1 !important;
-                transform: none !important;
-                filter: none !important;
-              }
-            }
-          `}</style>
-        </div>
+    <main
+      className="light min-h-screen flex flex-col items-center justify-center bg-background text-foreground px-4 relative overflow-hidden"
+      data-theme="light"
+      style={{ fontFamily: '"EB Garamond", Garamond, "Times New Roman", serif' }}
+    >
+      <style>{`
+        @keyframes auth-sweep {
+          0%   { transform: translateX(-110%); opacity: 0; }
+          10%  { opacity: 1; }
+          50%  { opacity: 1; }
+          90%  { opacity: 1; }
+          100% { transform: translateX(110%); opacity: 0; }
+        }
+        @keyframes ink-fade {
+          from { opacity: 0; transform: translateY(2px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .auth-ink > * {
+          opacity: 0;
+          animation: ink-fade 700ms ease-out forwards;
+        }
+        .auth-ink > *:nth-child(1) { animation-delay: 120ms; }
+        .auth-ink > *:nth-child(2) { animation-delay: 260ms; }
+        .auth-ink > *:nth-child(3) { animation-delay: 400ms; }
+        .auth-ink > *:nth-child(4) { animation-delay: 540ms; }
+        .auth-ink > *:nth-child(5) { animation-delay: 680ms; }
+        .auth-ink > *:nth-child(6) { animation-delay: 820ms; }
+        .auth-ink > *:nth-child(7) { animation-delay: 960ms; }
+      `}</style>
 
-        <div className="text-center -mt-4">
-          <span className="inline-block px-2.5 py-0.5 text-[10px] tracking-[0.2em] text-muted-foreground">
-            <span className="font-normal">merchanthaus.io</span> <span className="font-black">Operations Terminal</span> <span className="font-normal">v3.0</span>
+      {/* Animated rainbow sweep */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 -inset-x-1/4"
+        style={{
+          background:
+            'linear-gradient(100deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.9) 8%, rgba(255,210,140,0.85) 22%, rgba(255,120,180,0.8) 38%, rgba(140,90,255,0.8) 52%, rgba(80,180,255,0.85) 66%, rgba(120,255,200,0.8) 78%, rgba(255,255,255,0.9) 92%, rgba(255,255,255,0) 100%)',
+          filter: 'blur(40px) saturate(1.1)',
+          mixBlendMode: 'screen',
+          animation: 'auth-sweep 2.6s cubic-bezier(0.22, 1, 0.36, 1) 1 forwards',
+        }}
+      />
+
+      <div className="relative w-full max-w-sm auth-ink">
+        <div className="text-center mb-8">
+          <span className="text-[11px] uppercase tracking-[0.32em] text-muted-foreground font-sans">
+            merchanthaus.io · Operations Terminal
           </span>
+          <h1 className="mt-3 text-3xl font-semibold text-foreground tracking-tight">
+            Your private terminal
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground italic">
+            Sign in to continue to your pipeline.
+          </p>
         </div>
 
-        <p className="text-center text-muted-foreground font-medium">
-          Sign in to access your pipeline
-        </p>
-
-        {/* Google */}
         <Button
           variant="outline"
-          className="w-full border-[2.5px] border-foreground/60 rounded-xl h-12 font-bold neo-shadow-sm neo-interactive"
+          className="w-full mb-5 h-11 rounded-md font-sans text-sm font-medium"
           onClick={handleGoogleSignIn}
           disabled={isLoading}
         >
@@ -271,22 +251,20 @@ const Auth = () => {
           Continue with Google
         </Button>
 
-        {/* Divider */}
-        <div className="relative">
+        <div className="relative mb-5">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t-[2.5px] border-dashed border-foreground/20" />
+            <div className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center">
-            <span className="bg-white px-4 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            <span className="bg-background px-3 text-[10px] uppercase tracking-[0.28em] text-muted-foreground font-sans">
               or
             </span>
           </div>
         </div>
 
-        {/* Email form */}
-        <form onSubmit={handleEmailSignIn} className="space-y-5">
+        <form onSubmit={handleEmailSignIn} className="space-y-4 font-sans">
           <div className="space-y-2">
-            <Label htmlFor="signin-email" className="font-bold text-xs uppercase tracking-wider">Email</Label>
+            <Label htmlFor="signin-email" className="text-xs font-medium text-foreground">Email</Label>
             <Input
               id="signin-email"
               type="email"
@@ -294,11 +272,11 @@ const Auth = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="border-[2.5px] border-foreground/40 rounded-xl h-12 bg-background font-medium neo-shadow-xs neo-input transition-all"
+              className="h-11"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="signin-password" className="font-bold text-xs uppercase tracking-wider">Password</Label>
+            <Label htmlFor="signin-password" className="text-xs font-medium text-foreground">Password</Label>
             <div className="relative">
               <Input
                 id="signin-password"
@@ -307,13 +285,13 @@ const Auth = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="border-[2.5px] border-foreground/40 rounded-xl h-12 bg-background font-medium neo-shadow-xs neo-input transition-all pr-12"
+                className="h-11 pr-10"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((s) => !s)}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted-foreground hover:text-foreground transition-colors"
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -322,30 +300,27 @@ const Auth = () => {
               const { checks, score, label, colorClass, percent } = evaluatePassword(password);
               const items: Array<[keyof typeof checks, string]> = [
                 ['length', 'At least 8 characters'],
-                ['upper', 'Uppercase letter (A-Z)'],
-                ['lower', 'Lowercase letter (a-z)'],
-                ['number', 'Number (0-9)'],
-                ['symbol', 'Symbol (!@#$…)'],
+                ['upper', 'Uppercase letter'],
+                ['lower', 'Lowercase letter'],
+                ['number', 'Number'],
+                ['symbol', 'Symbol'],
               ];
               return (
                 <div className="space-y-2 pt-1">
-                  <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider">
+                  <div className="flex items-center justify-between text-[10px] uppercase tracking-wider">
                     <span className="text-muted-foreground">Strength</span>
                     <span className={score >= 4 ? 'text-emerald-600' : score >= 2 ? 'text-amber-600' : 'text-destructive'}>
                       {label}
                     </span>
                   </div>
-                  <div className="h-1.5 w-full rounded-full bg-foreground/10 overflow-hidden">
-                    <div
-                      className={`h-full ${colorClass} transition-all duration-300`}
-                      style={{ width: `${percent}%` }}
-                    />
+                  <div className="h-1 w-full rounded-full bg-foreground/10 overflow-hidden">
+                    <div className={`h-full ${colorClass} transition-all duration-300`} style={{ width: `${percent}%` }} />
                   </div>
-                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1 pt-1">
+                  <ul className="grid grid-cols-2 gap-x-3 gap-y-0.5 pt-1">
                     {items.map(([key, text]) => (
                       <li
                         key={key}
-                        className={`flex items-center gap-1.5 text-[11px] font-medium ${
+                        className={`flex items-center gap-1.5 text-[10px] ${
                           checks[key] ? 'text-emerald-600' : 'text-muted-foreground'
                         }`}
                       >
@@ -357,37 +332,35 @@ const Auth = () => {
                 </div>
               );
             })()}
-            <div className="flex justify-end">
-              <Button
+            <div className="flex items-center justify-between pt-1">
+              <p className="text-[11px] text-muted-foreground">Minimum 6 characters.</p>
+              <button
                 type="button"
-                variant="link"
-                className="px-0 text-sm font-bold text-primary"
                 onClick={handlePasswordReset}
                 disabled={isResetting || isLoading}
+                className="text-[11px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline disabled:opacity-50"
               >
-                {isResetting ? 'Sending reset link...' : 'Forgot password?'}
-              </Button>
+                {isResetting ? 'Sending…' : 'Forgot password?'}
+              </button>
             </div>
           </div>
-          <Button
-            type="submit"
-            className="w-full h-12 bg-primary text-primary-foreground border-[2.5px] border-foreground/80 rounded-xl font-black text-base neo-shadow-sm neo-interactive"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Signing in...' : 'Sign In'}
+          <Button type="submit" className="w-full h-11 rounded-md text-sm font-medium" disabled={isLoading}>
+            {isLoading ? 'Signing in…' : 'Sign in'}
           </Button>
         </form>
-
-        {/* Bottom logo - fly in then static */}
-        <div className="flex items-center justify-center pt-6 pb-2">
-          <img
-            src={merchantHausLogo}
-            alt="Merchant Haus"
-            className="h-8 w-auto opacity-0 animate-[logo-fly-in_0.9s_cubic-bezier(0.22,1,0.36,1)_0.7s_both]"
-          />
-        </div>
       </div>
-    </div>
+
+      {/* Bottom Merchant Haus logo */}
+      <div className="relative mt-12 flex items-center justify-center">
+        <img
+          src={merchantHausLogo}
+          alt="Merchant Haus"
+          width={180}
+          height={44}
+          className="h-10 w-auto opacity-80"
+        />
+      </div>
+    </main>
   );
 };
 
