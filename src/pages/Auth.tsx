@@ -136,10 +136,10 @@ const Auth = () => {
       <div className="relative w-full max-w-sm">
         <div className="text-center mb-6">
           <span className="text-xs uppercase tracking-[0.3em] text-muted-foreground normal-case-none">
-            Operations Terminal
+            merchanthaus.io
           </span>
           <h1 className="mt-2 text-2xl font-semibold text-foreground">
-            Your private terminal
+            Your Operations Terminal
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Sign in or create an account to continue.
@@ -239,16 +239,6 @@ const Auth = () => {
         </Tabs>
       </div>
 
-      {/* Bottom Merchant Haus logo */}
-      <div className="relative mt-12 flex items-center justify-center">
-        <img
-          src={merchantHausLogo}
-          alt="Merchant Haus"
-          width={180}
-          height={44}
-          className="h-10 w-auto opacity-80"
-        />
-      </div>
     </main>
   );
 };
