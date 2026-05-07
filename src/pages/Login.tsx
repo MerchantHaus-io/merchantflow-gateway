@@ -106,6 +106,21 @@ const Login = () => {
       />
 
       <div className="relative w-full max-w-sm">
+        <fieldset disabled={isLoading} aria-busy={isLoading} className="contents">
+        {isLoading && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-background/60 backdrop-blur-sm animate-fade-in"
+          >
+            <div className="flex items-center gap-2 rounded-full bg-background border border-border px-4 py-2 shadow-md">
+              <Loader2 className="h-4 w-4 animate-spin text-foreground" />
+              <span className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+                Signing in
+              </span>
+            </div>
+          </div>
+        )}
         <div className="text-center mb-6">
           <span className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Ops Terminal</span>
           <h1 className="mt-2 text-2xl font-semibold text-foreground">Welcome back</h1>
