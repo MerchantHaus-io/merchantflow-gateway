@@ -212,6 +212,7 @@ const Login = () => {
             Sign up
           </Link>
         </p>
+        </fieldset>
       </div>
 
       <div className="relative mt-10 flex items-center justify-center [perspective:1000px]">
