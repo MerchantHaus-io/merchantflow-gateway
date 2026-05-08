@@ -131,12 +131,31 @@ export const QUOTE_LINES: QuoteLineDefault[] = [
     description: "B2B/B2G interchange optimization for commercial cards.",
   },
   {
+    id: "payer_authentication",
+    label: "Payer Authentication (3DS)",
+    cost: 9,
+    resale: 19,
+    perEvent: { label: "per 3DS txn", cost: 0.09, resale: 0.20 },
+    bundledIn: [],
+    description: "3D Secure liability shift on card-not-present. NMI partner cost $9/mo + $0.09/txn.",
+  },
+  {
+    id: "level_iii",
+    label: "Level 3 Advantage",
+    cost: 25,
+    resale: 50,
+    perEvent: { label: "per Level III txn", cost: 0.25, resale: 0.50 },
+    bundledIn: ["scale", "enterprise"],
+    description: "B2B/B2G interchange optimization. NMI partner: $25 setup + $25/mo + $0.25/txn.",
+  },
+  {
     id: "shopify",
-    label: "Shopify Premium Integration",
+    label: "Shopify Integration",
     cost: 10,
     resale: 20,
+    perEvent: { label: "% of Shopify txn volume", cost: 0.0035, resale: 0.0075 },
     bundledIn: ["scale", "enterprise"],
-    description: "Shopify gateway connector + reporting (additional 0.75–1% fee applies).",
+    description: "Shopify gateway connector. NMI partner: $10/mo + 0.35% per txn.",
   },
 ];
 
