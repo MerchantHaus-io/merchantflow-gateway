@@ -806,6 +806,9 @@ Sales Support`,
                         <li>
                           <a href="#services-overview" className="hover:text-primary transition-colors cursor-pointer"><strong>4.2</strong> — Pricing Tiers & Features</a>
                         </li>
+                        <li>
+                          <a href="#nmi-pricing-schedule" className="hover:text-primary transition-colors cursor-pointer"><strong>4.3</strong> — NMI Schedule A — Gateway & Processing Pricing</a>
+                        </li>
                       </ul>
 
                       <h3 className="font-bold text-foreground mt-6 mb-3 uppercase tracking-[0.3em] text-[10px]">
