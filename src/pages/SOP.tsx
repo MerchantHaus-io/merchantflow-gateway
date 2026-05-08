@@ -36,6 +36,13 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AppLayout } from "@/components/AppLayout";
+import {
+  NMI_SCHEDULE_A_RATES,
+  NMI_REVENUE_ELIGIBLE_FEES,
+  NMI_NON_REVENUE_FEES,
+  NMI_GATEWAY_FEATURES,
+  NMI_ONE_TIME_FEES,
+} from "@/config/quoteSchedule";
 
 const SOP = () => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
