@@ -2052,6 +2052,136 @@ Sales Support`,
                   </div>
                 </section>
 
+                {/* NMI Schedule A — Gateway & Processing Pricing Reference */}
+                <section id="nmi-pricing-schedule" className="bg-card rounded-none border-2 border-[hsl(var(--gold))]/40 p-8">
+                  <SectionHeader gold sectionId="nmi-pricing-schedule" sectionTitle="NMI Schedule A — Gateway & Processing Pricing">
+                    4.3 — NMI Schedule A — Gateway & Processing Pricing
+                  </SectionHeader>
+                  <p className="text-muted-foreground mb-6 italic border-l-4 border-[hsl(var(--gold))] pl-4 bg-[hsl(var(--gold))]/10 py-2 pr-2">
+                    Authoritative reference extracted from the signed NMI All-in-One Plan proposal for merchanthaus.io
+                    (effective 14 Nov 2025). All partner-side costs and merchant-facing rates feed the Quote Generator.
+                    Confidential — share externally only via formal quote.
+                  </p>
+
+                  {/* Schedule A — Base Rates */}
+                  <div className="mb-8">
+                    <h3 className="text-foreground font-bold text-base mb-3">Schedule A — Base Processing Rates</h3>
+                    <div className="overflow-x-auto border border-border rounded-none">
+                      <table className="w-full text-sm">
+                        <thead className="bg-secondary/50">
+                          <tr><th className="text-left p-3 font-semibold">Item</th><th className="text-right p-3 font-semibold">Rate</th></tr>
+                        </thead>
+                        <tbody>
+                          {NMI_SCHEDULE_A_RATES.map((r) => (
+                            <tr key={r.name} className="border-t border-border">
+                              <td className="p-3 text-muted-foreground">{r.name}</td>
+                              <td className="p-3 text-right font-mono text-foreground">{r.value}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Revenue-eligible fees */}
+                  <div className="mb-8">
+                    <h3 className="text-foreground font-bold text-base mb-1">Revenue-Eligible Fees</h3>
+                    <p className="text-xs text-muted-foreground mb-3">These costs are deducted before MerchantHaus's 30% revenue share is applied.</p>
+                    <div className="overflow-x-auto border border-border rounded-none">
+                      <table className="w-full text-sm">
+                        <thead className="bg-secondary/50">
+                          <tr>
+                            <th className="text-left p-3 font-semibold">Fee</th>
+                            <th className="text-right p-3 font-semibold">Partner Cost</th>
+                            <th className="text-right p-3 font-semibold">Merchant Rate</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {NMI_REVENUE_ELIGIBLE_FEES.map((r) => (
+                            <tr key={r.label} className="border-t border-border">
+                              <td className="p-3 text-muted-foreground">{r.label}</td>
+                              <td className="p-3 text-right font-mono">{r.partner}</td>
+                              <td className="p-3 text-right font-mono text-foreground">{r.merchant}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Non-revenue passthrough */}
+                  <div className="mb-8">
+                    <h3 className="text-foreground font-bold text-base mb-1">Passthrough Fees (Not Revenue-Eligible)</h3>
+                    <p className="text-xs text-muted-foreground mb-3">Billed to merchant; partner cost equals merchant rate — no MerchantHaus margin.</p>
+                    <div className="overflow-x-auto border border-border rounded-none">
+                      <table className="w-full text-sm">
+                        <thead className="bg-secondary/50">
+                          <tr>
+                            <th className="text-left p-3 font-semibold">Fee</th>
+                            <th className="text-right p-3 font-semibold">Partner Cost</th>
+                            <th className="text-right p-3 font-semibold">Merchant Rate</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {NMI_NON_REVENUE_FEES.map((r) => (
+                            <tr key={r.label} className="border-t border-border">
+                              <td className="p-3 text-muted-foreground">{r.label}</td>
+                              <td className="p-3 text-right font-mono">{r.partner}</td>
+                              <td className="p-3 text-right font-mono text-foreground">{r.merchant}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Gateway add-ons */}
+                  <div className="mb-8">
+                    <h3 className="text-foreground font-bold text-base mb-3">Gateway Features & Add-Ons</h3>
+                    <div className="overflow-x-auto border border-border rounded-none">
+                      <table className="w-full text-sm">
+                        <thead className="bg-secondary/50">
+                          <tr>
+                            <th className="text-left p-3 font-semibold">Group</th>
+                            <th className="text-left p-3 font-semibold">Feature</th>
+                            <th className="text-left p-3 font-semibold">Description</th>
+                            <th className="text-right p-3 font-semibold">Partner Cost</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {NMI_GATEWAY_FEATURES.map((f) => (
+                            <tr key={f.name} className="border-t border-border">
+                              <td className="p-3 text-xs uppercase tracking-wider text-[hsl(var(--gold))]">{f.group}</td>
+                              <td className="p-3 font-semibold text-foreground">{f.name}</td>
+                              <td className="p-3 text-muted-foreground text-xs">{f.description}</td>
+                              <td className="p-3 text-right font-mono text-xs">{f.partnerCost}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* One-time fees */}
+                  <div>
+                    <h3 className="text-foreground font-bold text-base mb-3">One-Time Service Fees</h3>
+                    <div className="grid sm:grid-cols-2 gap-2">
+                      {NMI_ONE_TIME_FEES.map((f) => (
+                        <div key={f.label} className="flex justify-between border border-border bg-secondary/30 px-3 py-2 text-sm">
+                          <span className="text-muted-foreground">{f.label}</span>
+                          <span className="font-mono text-foreground">{f.amount}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mt-6 text-xs text-muted-foreground border-t border-border pt-4">
+                    Source: NMI All-in-One Plan proposal, signed by Taryn Engledoe on 2025-11-14.
+                    Use these figures as the baseline for all merchant quotes generated through the
+                    Quote Generator.
+                  </div>
+                </section>
+
                 {/* Appendices */}
                 <section id="appendix" className="bg-secondary/50 rounded-none border border-border p-8">
                   <h2 className="font-['Playfair_Display'] text-xl font-bold text-foreground mb-6">
