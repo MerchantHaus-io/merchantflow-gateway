@@ -159,6 +159,92 @@ export const QUOTE_LINES: QuoteLineDefault[] = [
   },
 ];
 
+// ───────────────────────────────────────────────────────────────────────────
+// NMI All-in-One Plan — Schedule A reference (effective 2025-11-14)
+// Source: signed NMI proposal for merchanthaus.io. These are the underlying
+// partner economics MerchantHaus inherits when reselling NMI processing.
+// ───────────────────────────────────────────────────────────────────────────
+
+export interface NMIScheduleARate {
+  name: string;
+  value: string;
+  note?: string;
+}
+
+export const NMI_SCHEDULE_A_RATES: NMIScheduleARate[] = [
+  { name: "Revenue Share to MerchantHaus", value: "30.00%" },
+  { name: "Sales Volume Rate — Card Present", value: "2.90%" },
+  { name: "Sales Volume Rate — Card Not Present", value: "3.40%" },
+  { name: "Sales Volume Rate — ACH", value: "0.80%" },
+  { name: "Per Authorization Fee", value: "$0.30 / txn" },
+  { name: "Per ACH Fee", value: "$0.50 / txn" },
+];
+
+export interface NMIFeeRow {
+  label: string;
+  partner: string;
+  merchant: string;
+  category: "per_occurrence" | "monthly" | "one_time";
+  revenueEligible: boolean;
+}
+
+export const NMI_REVENUE_ELIGIBLE_FEES: NMIFeeRow[] = [
+  { label: "Voice Authorization Fee", partner: "$0.45", merchant: "$0.95", category: "per_occurrence", revenueEligible: true },
+  { label: "Chargeback Fee", partner: "$15.00", merchant: "$25.00", category: "per_occurrence", revenueEligible: true },
+  { label: "Retrieval Fee", partner: "$5.00", merchant: "$10.00", category: "per_occurrence", revenueEligible: true },
+  { label: "Batch Fee", partner: "$0.05", merchant: "$0.25", category: "per_occurrence", revenueEligible: true },
+  { label: "Address Verification Fee (AVS)", partner: "$0.05", merchant: "$0.07", category: "per_occurrence", revenueEligible: true },
+  { label: "ACH Transaction Fee", partner: "$0.20", merchant: "$0.50", category: "per_occurrence", revenueEligible: true },
+  { label: "Monthly Fee", partner: "$5.00", merchant: "$10.00", category: "monthly", revenueEligible: true },
+  { label: "Monthly Breach Protection Fee", partner: "$2.50", merchant: "$7.95", category: "monthly", revenueEligible: true },
+  { label: "Annual PCI Fee", partner: "—", merchant: "$99.00", category: "monthly", revenueEligible: true },
+  { label: "Annual Fee", partner: "—", merchant: "$99.00", category: "monthly", revenueEligible: true },
+  { label: "Monthly ACH Fee", partner: "$5.00", merchant: "$10.00", category: "monthly", revenueEligible: true },
+];
+
+export const NMI_NON_REVENUE_FEES: NMIFeeRow[] = [
+  { label: "Breach Monitoring (per sales-volume event)", partner: "$0.45", merchant: "$0.95", category: "per_occurrence", revenueEligible: false },
+  { label: "Insufficient Funds Fee", partner: "$15.00", merchant: "$25.00", category: "per_occurrence", revenueEligible: false },
+  { label: "PCI Non-Compliance Fee", partner: "$5.00", merchant: "$24.95", category: "per_occurrence", revenueEligible: false },
+  { label: "ACH NOC / Return Fee", partner: "$2.00", merchant: "$2.00", category: "per_occurrence", revenueEligible: false },
+  { label: "ACH Premium Fee (txns > $35,000)", partner: "$25.00", merchant: "$25.00", category: "per_occurrence", revenueEligible: false },
+  { label: "Regulatory / 1099 Fee", partner: "$6.95", merchant: "$6.95", category: "monthly", revenueEligible: false },
+  { label: "Monthly Processing Minimum", partner: "$10.00", merchant: "$10.00", category: "monthly", revenueEligible: false },
+  { label: "ACH Setup Fee (one-time)", partner: "$25.00", merchant: "$25.00", category: "one_time", revenueEligible: false },
+];
+
+export interface NMIGatewayFeature {
+  group: string;
+  name: string;
+  description: string;
+  pricing: string;
+  partnerCost: string;
+}
+
+export const NMI_GATEWAY_FEATURES: NMIGatewayFeature[] = [
+  { group: "Digital Billing", name: "Pay via Text", description: "Receive & pay invoices via SMS.", pricing: "$5.00/mo + $0.18/txn", partnerCost: "$5.00/mo + $0.18/txn" },
+  { group: "Digital Billing", name: "Electronic Invoicing", description: "Digital invoices with embedded payment links.", pricing: "$5.00/mo + $0.05/event", partnerCost: "$5.00/mo + $0.05/event" },
+  { group: "Customer Data", name: "Customer Token Vault", description: "Network-token security for stored payments.", pricing: "$15.00/mo + $0.15/lifecycle event + $0.02/cryptogram", partnerCost: "$15.00/mo + $0.15/event + $0.02/cryptogram" },
+  { group: "Customer Data", name: "Customer Vault", description: "Securely store customer payment info.", pricing: "$8.00/mo + $0.08/txn", partnerCost: "$8.00/mo + $0.08/txn" },
+  { group: "Customer Data", name: "Automatic Card Updater", description: "Keep stored card data current.", pricing: "$5.00/mo + $0.20/record", partnerCost: "$5.00/mo + $0.20/record" },
+  { group: "Fraud & Security", name: "Fraud Prevention", description: "Rule-based velocity / AVS / CVV controls.", pricing: "$5.00/mo + $0.05/txn", partnerCost: "$5.00/mo + $0.05/txn" },
+  { group: "Fraud & Security", name: "Kount Advanced Fraud Prevention", description: "AI-powered scoring & decisioning.", pricing: "$7.00/mo + $0.07/txn", partnerCost: "$7.00/mo + $0.07/txn" },
+  { group: "Fraud & Security", name: "Payer Authentication (3DS)", description: "3D Secure liability shift on CNP.", pricing: "$9.00/mo + $0.09/txn", partnerCost: "$9.00/mo + $0.09/txn" },
+  { group: "In-Person & Mobile", name: "Customer-Present Cloud Device", description: "EMV/contactless via cloud-connected POS.", pricing: "$8.00/mo per device", partnerCost: "$8.00/mo/device" },
+  { group: "In-Person & Mobile", name: "iProcess Mobile Payments", description: "Swiped/dipped/keyed via mobile reader.", pricing: "$2.50/mo per device", partnerCost: "$2.50/mo/device" },
+  { group: "In-Person & Mobile", name: "Tap to Pay", description: "Contactless on mobile devices.", pricing: "$0.10/txn", partnerCost: "$0.10/txn" },
+  { group: "Advanced Processing", name: "Level 3 Advantage", description: "Commercial-card interchange optimization.", pricing: "$25.00 setup + $25.00/mo + $0.25/txn", partnerCost: "$25 setup + $25/mo + $0.25/txn" },
+  { group: "eCommerce", name: "Shopify Integration", description: "Shopify storefront/checkout connector.", pricing: "Setup included + $10.00/mo + 0.35%/txn", partnerCost: "$10/mo + 0.35%/txn" },
+];
+
+export const NMI_ONE_TIME_FEES: { label: string; amount: string }[] = [
+  { label: "Merchant Name Change Fee", amount: "$15.95 / change" },
+  { label: "Platform Change Fee", amount: "$15.95 / change" },
+  { label: "Bank Account Change Fee", amount: "$15.95 / change" },
+  { label: "Account Reactivation Fee", amount: "$25.00 / reactivation" },
+  { label: "Hardware Restocking Fee", amount: "25% / return" },
+];
+
 /** Standard quote disclaimers shown in the preview/PDF and required for acceptance. */
 export const QUOTE_DISCLAIMERS = [
   "Quote valid for thirty (30) (30) days from the date of issue. All pricing subject to underwriting approval.",
