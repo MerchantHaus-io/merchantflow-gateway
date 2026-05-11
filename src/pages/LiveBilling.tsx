@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search, Zap, CreditCard, Users, TrendingUp, Calendar, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { PricingBadges } from "@/components/PricingBadges";
 import { format } from "date-fns";
 import { getServiceType, TEAM_MEMBERS } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
