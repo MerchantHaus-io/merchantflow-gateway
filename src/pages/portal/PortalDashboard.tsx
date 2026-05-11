@@ -74,12 +74,10 @@ export default function PortalDashboard() {
     queryKey: ["portal-merchants", referrerId],
     enabled: !!referrerId,
     queryFn: async (): Promise<MerchantRow[]> => {
-      const { data, error } = await supabase
-        .from("merchants")
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .select("id, dba_name, legal_entity_name, is_live, created_at, account_id" as any)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .eq("referrer_id" as any, referrerId!)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.from("merchants") as any)
+        .select("id, dba_name, legal_entity_name, is_live, created_at, account_id")
+        .eq("referrer_id", referrerId!)
         .order("created_at", { ascending: false });
       if (error) {
         // merchants table may have different shape across deployments; degrade gracefully
