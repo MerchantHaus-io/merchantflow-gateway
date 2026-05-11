@@ -491,6 +491,19 @@ export default function WebSubmissions() {
       const initialStage = progress >= 100 ? "qualified" : "discovery";
       const initialAssignee = progress >= 100 ? "support@merchanthaus.io" : null;
 
+      // Auto-derive gateway tier from monthly volume
+      const volNum = Number(String(app.monthly_volume || "").replace(/[^0-9.]/g, ""));
+      const autoTier =
+        Number.isFinite(volNum) && volNum > 0
+          ? volNum <= 50000
+            ? "foundation"
+            : volNum <= 100000
+              ? "growth"
+              : "scale"
+          : null;
+      const appPricingPlan =
+        (app as Record<string, unknown>).pricing_plan as string | undefined;
+
       const { data: opportunity, error: opportunityError } = await supabase
         .from("opportunities")
         .insert({
@@ -504,6 +517,10 @@ export default function WebSubmissions() {
           username: isGatewayOnly ? (app.notes?.match(/Username:\s*([^.]+)/)?.[1]?.trim() || null) : null,
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ...(appReferrerId ? { referrer_id: appReferrerId } as any : {}),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ...(autoTier ? { gateway_tier: autoTier } as any : {}),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ...(appPricingPlan ? { pricing_plan: appPricingPlan } as any : {}),
         })
         .select()
         .single();
