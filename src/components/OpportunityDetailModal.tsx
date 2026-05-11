@@ -1689,6 +1689,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
               opportunityId={opportunity.id}
               opportunity={opportunity}
               wizardProgress={wizardState?.progress ?? 0}
+              monthlyVolume={wizardFields?.monthly_volume}
               onUpdate={onUpdate}
             />
           )}
