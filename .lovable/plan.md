@@ -1,54 +1,67 @@
+## Goal
 
+Make the **Pricing Plan** (Flat Rate vs Interchange+) and **Gateway Tier** (Foundation / Growth / Scale) first-class fields on every opportunity — auto-derived from monthly volume, editable, and visible everywhere an opportunity appears.
 
-# Give Atria Autonomous Avatar Control
+## Tier rule (from monthly volume)
 
-## What changes
-Atria's avatar in the Office Simulator currently wanders randomly between zones and her desk. This upgrade makes her behavior **context-aware and reactive** — she responds to chat activity, visits users who message her, uses interaction points purposefully, and exhibits personality.
+| Monthly Volume | Tier |
+|---|---|
+| ≤ $50,000 | Foundation |
+| $50,001 – $100,000 | Growth |
+| > $100,000 | Scale |
 
-## Behavior model
+(Enterprise stays a manual override only — not auto-assigned.)
 
-Atria will have a priority-based behavior queue:
+## What to build
 
-| Priority | Trigger | Behavior |
-|----------|---------|----------|
-| 1 (highest) | User sends message in `atria-ai` channel | Walk to that user's desk, face them, idle for a few seconds, then resume |
-| 2 | AI is "thinking" (response pending) | Walk to the whiteboard, face it, play typing animation |
-| 3 | Idle > 30s | Get coffee (walk to coffee machine, pause 4s, return) |
-| 4 | Idle > 60s | Visit a random team member's desk and idle briefly |
-| 5 (default) | No triggers | Current wander behavior (walk between zones, sit at desk) |
+### 1. Database — add two fields to `opportunities`
+- `pricing_plan` text — `flat_rate` | `interchange_plus` | null
+- `gateway_tier` text — `foundation` | `growth` | `scale` | `enterprise` | null
+- Backfill from related `applications.pricing_plan` and `merchants.monthly_volume` where available.
 
-When Atria arrives at a user's desk after a chat message, a small speech bubble will briefly appear above her head with "..." or a truncated snippet of her response.
+### 2. Shared helper
+`src/lib/pricing-tier.ts` exporting `tierFromVolume(monthlyVolume)` and label/color maps for both fields, reused everywhere.
 
-## Technical approach
+### 3. Auto-population on creation
+- **Web submission → opportunity conversion** (`WebSubmissions.tsx` / submit-merchant-application edge function): copy `pricing_plan` from the application and compute `gateway_tier` from `monthly_volume`.
+- **Manual new opportunity** (`NewApplicationModal.tsx`): when a monthly volume is entered, auto-fill `gateway_tier` (still editable).
 
-### File: `src/components/chat/OfficeChat.tsx`
+### 4. Auto-recompute on volume change
+When a user edits `monthly_volume` on an opportunity/merchant and `gateway_tier` hasn't been manually overridden, recompute. (Track via a simple `gateway_tier_locked` flag — or keep it simple and always recompute unless user explicitly picks Enterprise.)
 
-1. **Extend `NPCWanderState`** with new states: `"walking_to_user"`, `"at_whiteboard"`, `"getting_coffee"`, `"visiting"`
-2. **Add `AtriaIntent` interface** tracking: target email, reason, and callback
-3. **Add intent queue** (`atriaIntentQueue`) to the state ref — the animation loop checks this each frame
-4. **New function `queueAtriaIntent()`** — pushes behavior onto the queue with priority sorting
-5. **Modify the Atria block** in the NPC movement section (lines ~1322-1370) to check the intent queue before falling back to random wander
-6. **Speech bubble**: Add a small canvas-rendered text sprite above Atria's head that fades in/out when she arrives at a destination
+### 5. Surface the fields everywhere
 
-### File: `src/components/AtriaFAB.tsx`
+| Location | What to show |
+|---|---|
+| `OpportunityCard` (kanban + list) | Two compact badges: tier (color-coded) + pricing plan abbreviation (`IC+` / `Flat`) |
+| `OpportunityDetailModal` / `OpportunityDetail` header | Both badges next to stage path; editable in the right-side panel |
+| `Opportunities.tsx` table view | New "Tier" and "Plan" columns, sortable + filterable |
+| `LiveBilling.tsx` / `LiveAccountDetail.tsx` | Show on closed-won/live accounts so billing can confirm pricing |
+| `Accounts.tsx` detail | Show on each related opportunity row |
 
-7. **Dispatch custom event** `"atriaIntent"` when the user sends a message, carrying `{ targetEmail: user.email, reason: "chat" }` — the OfficeChat listens for this and queues Atria walking to the sender's desk
+### 6. Edit affordance
+On the opportunity detail right panel, add a small "Pricing" section with:
+- Pricing Plan select (Flat Rate / Interchange+)
+- Gateway Tier select (Foundation / Growth / Scale / Enterprise) with "auto from volume" hint
 
-### Interaction point usage
+## Visual treatment (matches existing dark-luxury-tech badge system)
 
-- **Whiteboard**: Atria walks there when "thinking" — plays a subtle arm-raise animation
-- **Coffee machine**: Atria visits during long idle periods — pauses 4s, then picks a new target
-- **Team desks**: Atria occasionally visits a random online team member's desk and idles
+- **Foundation** — slate badge
+- **Growth** — emerald badge (the "popular" tier)
+- **Scale** — violet badge
+- **Enterprise** — gold/amber badge
+- **Flat Rate** — neutral outline
+- **Interchange+** — primary-tinted
 
-### Speech bubble implementation
+## Out of scope
 
-A `THREE.Sprite` with a dynamically generated canvas texture:
-- White rounded rect background, dark text
-- Shows "..." while thinking, then first ~30 chars of response
-- Fades out after 3 seconds
-- Positioned at `y: 2.2` above Atria's mesh
+- Add-on selections (Kount, Level III, etc.) — not requested here.
+- Changing the Quote Generator math.
+- Touching merchant-portal pricing display.
 
-## Files modified
-- `src/components/chat/OfficeChat.tsx` — Enhanced Atria NPC logic, speech bubble sprite, intent queue
-- `src/components/AtriaFAB.tsx` — Dispatch `atriaIntent` event on message send
+## Technical notes
 
+- Migration adds 2 nullable text columns + a CHECK-style validation trigger (per project rule against immutable CHECK constraints).
+- Backfill SQL: `UPDATE opportunities o SET pricing_plan = a.pricing_plan FROM applications a WHERE …` matched via account email/name, plus volume-based tier calc.
+- Types regenerate automatically after migration.
+- All UI uses semantic tokens from `index.css` — no hardcoded colors.
