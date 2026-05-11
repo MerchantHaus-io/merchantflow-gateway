@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search, Zap, CreditCard, Users, TrendingUp, Calendar, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { PricingBadges } from "@/components/PricingBadges";
 import { format } from "date-fns";
 import { getServiceType, TEAM_MEMBERS } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
@@ -279,6 +280,12 @@ const LiveBilling = () => {
                       {g.contact?.first_name} {g.contact?.last_name}
                       {g.contact?.email && ` · ${g.contact.email}`}
                     </p>
+                    {(() => {
+                      const lead = g.opportunities?.[0] as any;
+                      return (lead?.pricing_plan || lead?.gateway_tier) ? (
+                        <PricingBadges pricingPlan={lead.pricing_plan} gatewayTier={lead.gateway_tier} />
+                      ) : null;
+                    })()}
                     <div className="flex items-center justify-between pt-1 border-t border-border/30">
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <Calendar className="h-3 w-3" />

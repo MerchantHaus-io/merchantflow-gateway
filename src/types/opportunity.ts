@@ -72,6 +72,9 @@ export interface Opportunity {
   outcome_notes?: string | null;
   outcome_closed_at?: string | null;
   outcome_closed_by?: string | null;
+  // Pricing fields
+  pricing_plan?: 'flat_rate' | 'interchange_plus' | null;
+  gateway_tier?: 'foundation' | 'growth' | 'scale' | 'enterprise' | null;
   created_at: string;
   updated_at: string;
   // Joined data

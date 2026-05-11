@@ -1,5 +1,6 @@
 import { Opportunity } from "@/types/opportunity";
 import { StatusBlockerFloating } from "./StatusBlockerFloating";
+import { PricingEditor } from "./PricingEditor";
 import ActivitiesTab from "@/components/ActivitiesTab";
 import CommentsTab from "@/components/CommentsTab";
 import { Activity, MessageSquare } from "lucide-react";
@@ -8,6 +9,7 @@ interface DetailRightPanelProps {
   opportunityId: string;
   opportunity: Opportunity;
   wizardProgress: number;
+  monthlyVolume?: string | number | null;
   onUpdate: (updates: Partial<Opportunity>) => void;
 }
 
@@ -15,10 +17,22 @@ export const DetailRightPanel = ({
   opportunityId,
   opportunity,
   wizardProgress,
+  monthlyVolume,
   onUpdate,
 }: DetailRightPanelProps) => {
   return (
     <div className="w-[320px] border-l border-border bg-muted/10 flex flex-col flex-shrink-0 overflow-y-auto">
+      {/* Pricing */}
+      <div className="p-3 border-b border-border">
+        <PricingEditor
+          opportunityId={opportunityId}
+          pricingPlan={opportunity.pricing_plan}
+          gatewayTier={opportunity.gateway_tier}
+          monthlyVolume={monthlyVolume}
+          onUpdate={(patch) => onUpdate(patch as Partial<Opportunity>)}
+        />
+      </div>
+
       {/* Status / Blocker */}
       {opportunity.outcome_status !== "closed_won" && (
         <div className="p-3 border-b border-border">

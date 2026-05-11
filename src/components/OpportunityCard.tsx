@@ -15,6 +15,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Opportunity, TEAM_MEMBERS, getServiceType } from "@/types/opportunity";
+import { PricingBadges } from "@/components/PricingBadges";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -317,6 +318,15 @@ const OpportunityCard = ({
             <span className="text-[9px] text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded-md truncate inline-block max-w-full border border-border/30">
               {opportunity.referral_source}
             </span>
+          )}
+
+          {/* Pricing tier + plan */}
+          {!isGreyed && (opportunity.pricing_plan || opportunity.gateway_tier) && (
+            <PricingBadges
+              pricingPlan={opportunity.pricing_plan}
+              gatewayTier={opportunity.gateway_tier}
+              short
+            />
           )}
 
           {/* Upcoming meeting indicator */}

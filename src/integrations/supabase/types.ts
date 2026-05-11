@@ -2006,6 +2006,7 @@ export type Database = {
           assigned_to: string | null
           contact_id: string
           created_at: string
+          gateway_tier: string | null
           id: string
           language: string | null
           outcome_closed_at: string | null
@@ -2014,6 +2015,7 @@ export type Database = {
           outcome_reason: string | null
           outcome_status: string | null
           portal_merchant_id: string | null
+          pricing_plan: string | null
           processing_services: string[] | null
           referral_source: string | null
           referrer_id: string | null
@@ -2034,6 +2036,7 @@ export type Database = {
           assigned_to?: string | null
           contact_id: string
           created_at?: string
+          gateway_tier?: string | null
           id?: string
           language?: string | null
           outcome_closed_at?: string | null
@@ -2042,6 +2045,7 @@ export type Database = {
           outcome_reason?: string | null
           outcome_status?: string | null
           portal_merchant_id?: string | null
+          pricing_plan?: string | null
           processing_services?: string[] | null
           referral_source?: string | null
           referrer_id?: string | null
@@ -2062,6 +2066,7 @@ export type Database = {
           assigned_to?: string | null
           contact_id?: string
           created_at?: string
+          gateway_tier?: string | null
           id?: string
           language?: string | null
           outcome_closed_at?: string | null
@@ -2070,6 +2075,7 @@ export type Database = {
           outcome_reason?: string | null
           outcome_status?: string | null
           portal_merchant_id?: string | null
+          pricing_plan?: string | null
           processing_services?: string[] | null
           referral_source?: string | null
           referrer_id?: string | null
