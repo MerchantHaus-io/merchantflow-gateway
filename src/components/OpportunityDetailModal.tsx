@@ -39,6 +39,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "./AutoSaveIndicator";
 import { StagePath } from "./opportunity-detail/StagePath";
+import { PricingBadges } from "./PricingBadges";
 import { ApplicationProgress } from "./opportunity-detail/ApplicationProgress";
 import { NotesSection } from "./opportunity-detail/NotesSection";
 import { OverviewUnderwritingSummary } from "./opportunity-detail/OverviewUnderwritingSummary";
