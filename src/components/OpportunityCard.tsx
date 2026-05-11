@@ -320,6 +320,15 @@ const OpportunityCard = ({
             </span>
           )}
 
+          {/* Pricing tier + plan */}
+          {!isGreyed && (opportunity.pricing_plan || opportunity.gateway_tier) && (
+            <PricingBadges
+              pricingPlan={opportunity.pricing_plan}
+              gatewayTier={opportunity.gateway_tier}
+              short
+            />
+          )}
+
           {/* Upcoming meeting indicator */}
           {!isGreyed && nextEvent && (
             <span className={cn(
