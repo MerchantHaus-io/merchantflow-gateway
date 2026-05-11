@@ -55,6 +55,11 @@ import Transactions from "./pages/Transactions";
 import Calendar from "./pages/Calendar";
 import Commissions from "./pages/Commissions";
 import QuoteBuilder from "./pages/QuoteBuilder";
+import Referrers from "./pages/Referrers";
+import { ReferrerRoute } from "./components/ReferrerRoute";
+import PortalDashboard from "./pages/portal/PortalDashboard";
+import PortalNewReferral from "./pages/portal/PortalNewReferral";
+import PortalCommissions from "./pages/portal/PortalCommissions";
 import { IncomingCallToast } from "./components/IncomingCallToast";
 import { IncomingMessageToast } from "./components/IncomingMessageToast";
 import { Dialler } from "./components/Dialler";
@@ -63,7 +68,7 @@ import { KeyboardShortcutsModal } from "./components/KeyboardShortcutsModal";
 import { AdminPopupDisplay } from "./components/AdminPopupDisplay";
 import { EmailSendConfirm } from "./components/EmailSendConfirm";
 
-const PUBLIC_ROUTES = ['/auth', '/login', '/contact', '/apply', '/merchant-apply', '/forgot-password', '/update-password', '/terms-processing'];
+const PUBLIC_ROUTES = ['/auth', '/login', '/contact', '/apply', '/merchant-apply', '/forgot-password', '/update-password', '/terms-processing', '/portal'];
 
 const InternalWidgets = () => {
   const { pathname } = useLocation();
@@ -155,6 +160,13 @@ const App = () => (
                 <Route path="/leads" element={<ProtectedRoute><Accounts /></ProtectedRoute>} />
                 <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
                 <Route path="/commissions" element={<ProtectedRoute><Commissions /></ProtectedRoute>} />
+                <Route path="/admin/referrers" element={<ProtectedRoute><Referrers /></ProtectedRoute>} />
+
+                {/* Referrer portal — external partners */}
+                <Route path="/portal" element={<ReferrerRoute><PortalDashboard /></ReferrerRoute>} />
+                <Route path="/portal/new-referral" element={<ReferrerRoute><PortalNewReferral /></ReferrerRoute>} />
+                <Route path="/portal/commissions" element={<ReferrerRoute><PortalCommissions /></ReferrerRoute>} />
+
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </TasksProvider>

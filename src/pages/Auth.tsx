@@ -21,7 +21,7 @@ const credSchema = z.object({
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { user, signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, mustChangePassword } = useAuth();
+  const { user, signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, mustChangePassword, userRole } = useAuth();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,9 +38,13 @@ const Auth = () => {
 
   useEffect(() => {
     if (user && !isRecoveryMode && !mustChangePassword) {
-      if (isEmailAllowed(user.email)) navigate('/', { replace: true });
+      if (userRole === 'internal' || isEmailAllowed(user.email)) {
+        navigate('/', { replace: true });
+      } else if (userRole === 'referrer') {
+        navigate('/portal', { replace: true });
+      }
     }
-  }, [user, navigate, isRecoveryMode, mustChangePassword]);
+  }, [user, navigate, isRecoveryMode, mustChangePassword, userRole]);
 
   const validate = () => {
     const parsed = credSchema.safeParse({ email, password });

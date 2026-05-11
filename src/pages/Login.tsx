@@ -18,7 +18,7 @@ const passwordSchema = z.string().min(6, 'Password must be at least 6 characters
 const Login = () => {
   const navigate = useNavigate();
 
-  const { user, signInWithGoogle, signInWithEmail, mustChangePassword } = useAuth();
+  const { user, signInWithGoogle, signInWithEmail, mustChangePassword, userRole } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -30,11 +30,13 @@ const Login = () => {
 
   useEffect(() => {
     if (user && !mustChangePassword) {
-      if (isEmailAllowed(user.email)) {
+      if (userRole === 'internal' || isEmailAllowed(user.email)) {
         navigate('/', { replace: true });
+      } else if (userRole === 'referrer') {
+        navigate('/portal', { replace: true });
       }
     }
-  }, [user, navigate, mustChangePassword]);
+  }, [user, navigate, mustChangePassword, userRole]);
 
   const validateInputs = () => {
     try {

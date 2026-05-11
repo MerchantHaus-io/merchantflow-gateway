@@ -328,7 +328,9 @@ export default function WebSubmissions() {
     setIsConverting(app.id);
 
     try {
-      // 1. Create Account
+      // 1. Create Account — propagate referrer_id when the application came from a partner portal
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const appReferrerId = (app as any).referrer_id ?? null;
       const { data: account, error: accountError } = await supabase
         .from("accounts")
         .insert({
@@ -340,6 +342,8 @@ export default function WebSubmissions() {
           state: app.state,
           zip: app.zip,
           website: app.website,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ...(appReferrerId ? { referrer_id: appReferrerId } as any : {}),
         })
         .select()
         .single();
@@ -498,6 +502,8 @@ export default function WebSubmissions() {
           referral_source: referralSource || null,
           assigned_to: initialAssignee,
           username: isGatewayOnly ? (app.notes?.match(/Username:\s*([^.]+)/)?.[1]?.trim() || null) : null,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ...(appReferrerId ? { referrer_id: appReferrerId } as any : {}),
         })
         .select()
         .single();

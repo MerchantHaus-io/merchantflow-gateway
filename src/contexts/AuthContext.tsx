@@ -4,12 +4,27 @@ import { supabase } from '@/integrations/supabase/client';
 import { isEmailAllowed, getTeamMemberFromEmail } from '@/types/opportunity';
 import { playLoginJingle } from '@/hooks/useNotificationSound';
 
+export interface ReferrerProfile {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  active: boolean;
+  commission_rate: number;
+  monthly_cap_per_merchant: number;
+  clawback_window_days: number;
+}
+
+export type UserRole = 'internal' | 'referrer' | null;
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
   mustChangePassword: boolean;
   teamMemberName: string | null;
+  userRole: UserRole;
+  referrer: ReferrerProfile | null;
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUpWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
@@ -63,8 +78,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [mustChangePassword, setMustChangePassword] = useState(false);
+  const [referrer, setReferrer] = useState<ReferrerProfile | null>(null);
 
   const teamMemberName = getTeamMemberFromEmail(user?.email);
+
+  // Determined from email allowlist (internal) and the loaded referrer profile.
+  const userRole: UserRole = isEmailAllowed(user?.email)
+    ? 'internal'
+    : referrer
+      ? 'referrer'
+      : null;
+
+  // Fetch referrer profile for an authenticated user (no-op for internal staff).
+  const loadReferrerProfile = async (currentUser: User | null) => {
+    if (!currentUser) {
+      setReferrer(null);
+      return;
+    }
+    // Skip the lookup for known-internal emails to avoid a wasted query.
+    if (isEmailAllowed(currentUser.email)) {
+      setReferrer(null);
+      return;
+    }
+    const { data } = await supabase
+      .from('referrers')
+      .select('id, full_name, email, phone, active, commission_rate, monthly_cap_per_merchant, clawback_window_days')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .eq('auth_user_id' as any, currentUser.id)
+      .eq('active', true)
+      .maybeSingle();
+    setReferrer((data as ReferrerProfile | null) ?? null);
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -74,12 +118,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (isMounted) {
         setSession(session);
         setUser(session?.user ?? null);
-        
+
         // Check if password change is required
         const needsPasswordChange = session?.user?.user_metadata?.must_change_password === true;
         setMustChangePassword(needsPasswordChange);
-        
-        setLoading(false);
+
+        // Resolve referrer profile (if any) so role-based routing has data on first paint
+        loadReferrerProfile(session?.user ?? null).finally(() => {
+          if (isMounted) setLoading(false);
+        });
       }
     }).catch(() => {
       if (isMounted) {
@@ -93,7 +140,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (isMounted) {
           setSession(session);
           setUser(session?.user ?? null);
-          
+
+          // Re-resolve referrer profile whenever the auth state changes
+          loadReferrerProfile(session?.user ?? null);
+
           // Check if password change is required
           const needsPasswordChange = session?.user?.user_metadata?.must_change_password === true;
           setMustChangePassword(needsPasswordChange);
@@ -105,10 +155,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
           // Track login sessions + store Google tokens + auto-sync
           if (event === 'SIGNED_IN' && session?.user) {
-            // Only play jingle on a real login, not on tab focus / token refresh / reload
-            // SIGNED_IN fires on every session restore, so gate it via sessionStorage.
+            // Login jingle is an internal-staff thing; skip it for external referrers.
             const jingleKey = `login_jingle_played:${session.user.id}`;
-            if (!sessionStorage.getItem(jingleKey)) {
+            if (!sessionStorage.getItem(jingleKey) && isEmailAllowed(session.user.email)) {
               sessionStorage.setItem(jingleKey, '1');
               playLoginJingle();
             }
@@ -199,11 +248,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signInWithEmail = async (email: string, password: string) => {
-    // Check if email is allowed before signing in
-    if (!isEmailAllowed(email)) {
-      return { error: new Error('Access denied. Your email is not authorized to access this dashboard.') };
-    }
-    
+    // No pre-check: external referrers won't match isEmailAllowed but should still
+    // be allowed to authenticate. Role-based gating happens post-auth in ProtectedRoute.
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -212,11 +258,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signUpWithEmail = async (email: string, password: string) => {
-    // Check if email is allowed before signing up
+    // Self-signup is still restricted to internal staff. Referrers are admin-provisioned.
     if (!isEmailAllowed(email)) {
       return { error: new Error('Access denied. Your email is not authorized to access this dashboard.') };
     }
-    
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -257,6 +303,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     setSession(null);
     setMustChangePassword(false);
+    setReferrer(null);
   };
 
   return (
@@ -267,6 +314,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         loading,
         mustChangePassword,
         teamMemberName,
+        userRole,
+        referrer,
         signInWithGoogle,
         signInWithEmail,
         signUpWithEmail,

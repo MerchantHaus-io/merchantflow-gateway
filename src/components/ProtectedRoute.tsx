@@ -10,7 +10,7 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { user, loading, mustChangePassword, signOut } = useAuth();
+  const { user, loading, mustChangePassword, signOut, userRole } = useAuth();
   const hasShownToast = useRef(false);
   const hasRequestedFullscreen = useRef(false);
 
@@ -39,14 +39,14 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     }
   }, [user, requestFullscreen]);
 
-  // Handle unauthorized email sign out with feedback
+  // Handle truly unauthorized users (neither internal nor referrer)
   useEffect(() => {
-    if (user && !isEmailAllowed(user.email) && !hasShownToast.current) {
+    if (user && !loading && userRole === null && !hasShownToast.current) {
       hasShownToast.current = true;
-      toast.error('Access denied. Only @merchanthaus.io emails are allowed.');
+      toast.error('Access denied. Your account is not authorized.');
       signOut();
     }
-  }, [user, signOut]);
+  }, [user, loading, userRole, signOut]);
 
   if (loading) {
     return (
@@ -64,8 +64,13 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     return <Navigate to="/auth" replace />;
   }
 
-  // Check if user's email is allowed (also handled in useEffect for feedback)
-  if (!isEmailAllowed(user.email)) {
+  // Referrers belong on the portal, not the internal CRM
+  if (userRole === 'referrer') {
+    return <Navigate to="/portal" replace />;
+  }
+
+  // Anyone else without a recognized role gets bounced
+  if (userRole !== 'internal') {
     return <Navigate to="/auth" replace />;
   }
 
