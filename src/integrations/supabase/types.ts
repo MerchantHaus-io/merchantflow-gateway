@@ -24,6 +24,7 @@ export type Database = {
           id: string
           name: string
           nmi_merchant_id: string | null
+          referrer_id: string | null
           state: string | null
           status: string | null
           updated_at: string
@@ -39,6 +40,7 @@ export type Database = {
           id?: string
           name: string
           nmi_merchant_id?: string | null
+          referrer_id?: string | null
           state?: string | null
           status?: string | null
           updated_at?: string
@@ -54,13 +56,22 @@ export type Database = {
           id?: string
           name?: string
           nmi_merchant_id?: string | null
+          referrer_id?: string | null
           state?: string | null
           status?: string | null
           updated_at?: string
           website?: string | null
           zip?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "accounts_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "referrers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       action_items: {
         Row: {
@@ -385,6 +396,7 @@ export type Database = {
           portal_merchant_id: string | null
           products: string | null
           raw_portal_data: Json | null
+          referrer_id: string | null
           service_type: string | null
           source: string | null
           state: string | null
@@ -434,6 +446,7 @@ export type Database = {
           portal_merchant_id?: string | null
           products?: string | null
           raw_portal_data?: Json | null
+          referrer_id?: string | null
           service_type?: string | null
           source?: string | null
           state?: string | null
@@ -483,6 +496,7 @@ export type Database = {
           portal_merchant_id?: string | null
           products?: string | null
           raw_portal_data?: Json | null
+          referrer_id?: string | null
           service_type?: string | null
           source?: string | null
           state?: string | null
@@ -494,7 +508,15 @@ export type Database = {
           website?: string | null
           zip?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "applications_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "referrers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       audit_entries: {
         Row: {
@@ -1567,6 +1589,7 @@ export type Database = {
           percent_moto: string | null
           percent_swiped: string | null
           product_description: string | null
+          referrer_id: string | null
           sic_mcc_code: string | null
           state_incorporated: string | null
           tax_exempt: boolean | null
@@ -1609,6 +1632,7 @@ export type Database = {
           percent_moto?: string | null
           percent_swiped?: string | null
           product_description?: string | null
+          referrer_id?: string | null
           sic_mcc_code?: string | null
           state_incorporated?: string | null
           tax_exempt?: boolean | null
@@ -1651,6 +1675,7 @@ export type Database = {
           percent_moto?: string | null
           percent_swiped?: string | null
           product_description?: string | null
+          referrer_id?: string | null
           sic_mcc_code?: string | null
           state_incorporated?: string | null
           tax_exempt?: boolean | null
@@ -1663,6 +1688,13 @@ export type Database = {
             columns: ["application_id"]
             isOneToOne: true
             referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merchants_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "referrers"
             referencedColumns: ["id"]
           },
         ]
@@ -1984,6 +2016,7 @@ export type Database = {
           portal_merchant_id: string | null
           processing_services: string[] | null
           referral_source: string | null
+          referrer_id: string | null
           service_type: string | null
           sla_status: string | null
           source: string | null
@@ -2011,6 +2044,7 @@ export type Database = {
           portal_merchant_id?: string | null
           processing_services?: string[] | null
           referral_source?: string | null
+          referrer_id?: string | null
           service_type?: string | null
           sla_status?: string | null
           source?: string | null
@@ -2038,6 +2072,7 @@ export type Database = {
           portal_merchant_id?: string | null
           processing_services?: string[] | null
           referral_source?: string | null
+          referrer_id?: string | null
           service_type?: string | null
           sla_status?: string | null
           source?: string | null
@@ -2062,6 +2097,13 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "referrers"
             referencedColumns: ["id"]
           },
         ]
@@ -2341,6 +2383,51 @@ export type Database = {
           updated_at?: string
           user_email?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      referrers: {
+        Row: {
+          active: boolean
+          auth_user_id: string | null
+          clawback_window_days: number
+          commission_rate: number
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          monthly_cap_per_merchant: number
+          notes: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          auth_user_id?: string | null
+          clawback_window_days?: number
+          commission_rate?: number
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          monthly_cap_per_merchant?: number
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          auth_user_id?: string | null
+          clawback_window_days?: number
+          commission_rate?: number
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          monthly_cap_per_merchant?: number
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -2825,9 +2912,51 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      referrer_commission_records: {
+        Row: {
+          account_id: string | null
+          at_cap: boolean | null
+          commission_rate: number | null
+          company_commission: number | null
+          company_name: string | null
+          monthly_cap_per_merchant: number | null
+          payout: number | null
+          period_end: string | null
+          period_id: string | null
+          period_start: string | null
+          record_id: string | null
+          referrer_id: string | null
+          transaction_count: number | null
+          transaction_volume: number | null
+          uncapped_payout: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "referrers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_records_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_records_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "commission_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      current_referrer_id: { Args: never; Returns: string }
       get_or_create_general_channel: { Args: never; Returns: string }
       has_role: {
         Args: {
@@ -2837,6 +2966,11 @@ export type Database = {
         Returns: boolean
       }
       is_admin_email: { Args: never; Returns: boolean }
+      is_referrer: { Args: never; Returns: boolean }
+      link_opportunity_to_referrer: {
+        Args: { p_application_email: string; p_opportunity_id: string }
+        Returns: undefined
+      }
       post_system_chat_message: {
         Args: { p_channel_name?: string; p_content: string }
         Returns: undefined
