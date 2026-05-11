@@ -280,6 +280,12 @@ const LiveBilling = () => {
                       {g.contact?.first_name} {g.contact?.last_name}
                       {g.contact?.email && ` · ${g.contact.email}`}
                     </p>
+                    {(() => {
+                      const lead = g.opportunities?.[0] as any;
+                      return (lead?.pricing_plan || lead?.gateway_tier) ? (
+                        <PricingBadges pricingPlan={lead.pricing_plan} gatewayTier={lead.gateway_tier} />
+                      ) : null;
+                    })()}
                     <div className="flex items-center justify-between pt-1 border-t border-border/30">
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <Calendar className="h-3 w-3" />
