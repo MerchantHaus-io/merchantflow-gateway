@@ -63,8 +63,7 @@ export default function PortalDashboard() {
       const { data, error } = await supabase
         .from("opportunities")
         .select("id, stage, status, outcome_status, outcome_reason, outcome_closed_at, created_at, updated_at, stage_entered_at, account:accounts(id, name)")
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .eq("referrer_id" as any, referrerId!)
+        .eq("referrer_id", referrerId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as OpportunityRow[];
