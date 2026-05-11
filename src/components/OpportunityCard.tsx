@@ -15,6 +15,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Opportunity, TEAM_MEMBERS, getServiceType } from "@/types/opportunity";
+import { PricingBadges } from "@/components/PricingBadges";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
