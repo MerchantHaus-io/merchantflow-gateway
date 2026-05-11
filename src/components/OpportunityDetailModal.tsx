@@ -1337,7 +1337,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
           )}
 
           {/* Stage Path — always visible */}
-          <div className="px-4 pb-2">
+          <div className="px-4 pb-2 space-y-2">
             {opportunity.outcome_status === 'closed_won' ? (
               <div className="rounded-lg bg-gradient-to-b from-emerald-50/60 via-emerald-100/30 to-transparent dark:from-emerald-500/10 dark:via-emerald-500/5 dark:to-transparent border border-emerald-200/40 dark:border-emerald-500/20 py-3 px-4">
                 <h3 className="text-emerald-600 dark:text-emerald-400 font-bold tracking-widest uppercase text-sm text-center">
@@ -1346,6 +1346,15 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
               </div>
             ) : (
               <StagePath opportunity={opportunity} />
+            )}
+            {(opportunity.pricing_plan || opportunity.gateway_tier) && (
+              <div className="flex justify-center">
+                <PricingBadges
+                  pricingPlan={opportunity.pricing_plan}
+                  gatewayTier={opportunity.gateway_tier}
+                  size="sm"
+                />
+              </div>
             )}
           </div>
 
