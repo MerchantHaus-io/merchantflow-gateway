@@ -63,8 +63,7 @@ export default function PortalDashboard() {
       const { data, error } = await supabase
         .from("opportunities")
         .select("id, stage, status, outcome_status, outcome_reason, outcome_closed_at, created_at, updated_at, stage_entered_at, account:accounts(id, name)")
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .eq("referrer_id" as any, referrerId!)
+        .eq("referrer_id", referrerId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as OpportunityRow[];
@@ -75,12 +74,10 @@ export default function PortalDashboard() {
     queryKey: ["portal-merchants", referrerId],
     enabled: !!referrerId,
     queryFn: async (): Promise<MerchantRow[]> => {
-      const { data, error } = await supabase
-        .from("merchants")
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .select("id, dba_name, legal_entity_name, is_live, created_at, account_id" as any)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .eq("referrer_id" as any, referrerId!)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.from("merchants") as any)
+        .select("id, dba_name, legal_entity_name, is_live, created_at, account_id")
+        .eq("referrer_id", referrerId!)
         .order("created_at", { ascending: false });
       if (error) {
         // merchants table may have different shape across deployments; degrade gracefully

@@ -103,8 +103,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { data } = await supabase
       .from('referrers')
       .select('id, full_name, email, phone, active, commission_rate, monthly_cap_per_merchant, clawback_window_days')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .eq('auth_user_id' as any, currentUser.id)
+      .eq('auth_user_id', currentUser.id)
       .eq('active', true)
       .maybeSingle();
     setReferrer((data as ReferrerProfile | null) ?? null);
