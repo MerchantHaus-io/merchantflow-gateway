@@ -23,7 +23,7 @@ serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Verify caller is internal staff (token-bearer must have a @merchanthaus.io email)
+    // Verify caller is an admin (matches create-team-user's allowlist exactly)
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -32,7 +32,9 @@ serve(async (req) => {
     }
     const token = authHeader.replace("Bearer ", "");
     const { data: { user: caller }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    if (authError || !caller || !(caller.email ?? "").toLowerCase().endsWith("@merchanthaus.io")) {
+
+    const ADMIN_EMAILS = ['admin@merchanthaus.io', 'onboarding@merchanthaus.io', 'jamie@merchanthaus.io'];
+    if (authError || !caller || !ADMIN_EMAILS.includes((caller.email ?? "").toLowerCase())) {
       return new Response(JSON.stringify({ error: "Admin access required" }), {
         status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
