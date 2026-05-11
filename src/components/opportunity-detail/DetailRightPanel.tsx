@@ -1,5 +1,6 @@
 import { Opportunity } from "@/types/opportunity";
 import { StatusBlockerFloating } from "./StatusBlockerFloating";
+import { PricingEditor } from "./PricingEditor";
 import ActivitiesTab from "@/components/ActivitiesTab";
 import CommentsTab from "@/components/CommentsTab";
 import { Activity, MessageSquare } from "lucide-react";
@@ -8,6 +9,7 @@ interface DetailRightPanelProps {
   opportunityId: string;
   opportunity: Opportunity;
   wizardProgress: number;
+  monthlyVolume?: string | number | null;
   onUpdate: (updates: Partial<Opportunity>) => void;
 }
 
