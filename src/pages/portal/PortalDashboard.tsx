@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,9 +8,12 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { STAGE_CONFIG, OpportunityStage, OutcomeStatus } from "@/types/opportunity";
 import { format, formatDistanceToNow, differenceInDays } from "date-fns";
-import { Send, CheckCircle2, XCircle, Clock, TrendingUp, Building2 } from "lucide-react";
+import { Send, CheckCircle2, XCircle, Clock, TrendingUp, Building2, Mail, Sparkles } from "lucide-react";
+
+const PREMIUM_CONTACT_EMAIL = "jamie@merchanthaus.io";
 
 interface OpportunityRow {
   id: string;
@@ -54,6 +57,7 @@ const OUTCOME_VARIANT: Record<OutcomeStatus, "default" | "secondary" | "destruct
 
 export default function PortalDashboard() {
   const { referrer } = useAuth();
+  const [premiumOpen, setPremiumOpen] = useState(false);
   const referrerId = referrer?.id;
 
   const { data: opportunities, isLoading: oppsLoading } = useQuery({
@@ -128,23 +132,41 @@ export default function PortalDashboard() {
     >
       {referrer?.tier === 'premium' && (
         <Card className="p-4 mb-6 border-[hsl(var(--gold))]/40 bg-gradient-to-r from-[hsl(var(--gold))]/10 via-transparent to-transparent">
-          <div className="flex items-start gap-3">
+          <div className="flex items-start gap-3 flex-wrap">
             <Badge className="bg-[hsl(var(--gold))] text-black hover:bg-[hsl(var(--gold))] uppercase tracking-wider text-[10px]">
+              <Sparkles className="h-3 w-3 mr-1" />
               Premium Partner
             </Badge>
-            <div className="text-sm">
+            <div className="text-sm flex-1 min-w-[240px]">
               <p className="font-semibold mb-0.5">A note on your commission</p>
               <p className="text-muted-foreground">
-                The figures shown across your dashboard reflect our <strong>standard partner model</strong>.
-                As a premium partner, your commission terms are <strong>always open to discussion</strong> —
-                reach out to{" "}
-                <a href="mailto:partners@merchanthaus.io" className="underline">partners@merchanthaus.io</a>{" "}
-                to revisit rates, caps, or bonus structure as your portfolio grows.
+                Figures shown reflect our <strong>standard partner model</strong>. As a premium partner, your
+                terms are <strong>always open to discussion</strong>.
               </p>
             </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-[hsl(var(--gold))]/60 text-[hsl(var(--gold))] hover:bg-[hsl(var(--gold))]/10"
+              onClick={() => setPremiumOpen(true)}
+            >
+              View premium details
+            </Button>
           </div>
         </Card>
       )}
+
+      <PremiumDetailsDialog
+        open={premiumOpen}
+        onOpenChange={setPremiumOpen}
+        referrerName={referrer?.full_name ?? null}
+        commissionRate={referrer?.commission_rate ?? 0.5}
+        lifetimeCap={referrer?.lifetime_cap_per_merchant ?? 500}
+        accountCeiling={referrer?.account_ceiling ?? 10}
+        bonusAmount={referrer?.bonus_amount ?? 500}
+        bonusMilestone={referrer?.bonus_milestone_count ?? 5}
+      />
+
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <StatCard label="Total submitted" value={stats.total} icon={Building2} />
@@ -300,5 +322,98 @@ function OpportunityListItem({ opp }: { opp: OpportunityRow }) {
         </div>
       </div>
     </li>
+  );
+}
+
+function PremiumDetailsDialog({
+  open,
+  onOpenChange,
+  referrerName,
+  commissionRate,
+  lifetimeCap,
+  accountCeiling,
+  bonusAmount,
+  bonusMilestone,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  referrerName: string | null;
+  commissionRate: number;
+  lifetimeCap: number;
+  accountCeiling: number;
+  bonusAmount: number;
+  bonusMilestone: number;
+}) {
+  const totalCap = lifetimeCap * accountCeiling;
+  const subject = encodeURIComponent(
+    `Premium partner commission discussion${referrerName ? ` — ${referrerName}` : ""}`,
+  );
+  const body = encodeURIComponent(
+    `Hi Jamie,\n\nI'd like to discuss my premium partner commission terms.\n\nThanks,\n${referrerName ?? ""}`,
+  );
+  const mailto = `mailto:${PREMIUM_CONTACT_EMAIL}?subject=${subject}&body=${body}`;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-[hsl(var(--gold))]" />
+            Premium Partner — Commission Details
+          </DialogTitle>
+          <DialogDescription>
+            Below is our standard partner model. As a premium partner, every line is open to
+            discussion based on your portfolio, vertical, and volume.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          <div className="rounded-lg border bg-muted/40 p-4">
+            <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-2">
+              Standard Model
+            </p>
+            <ul className="text-sm space-y-2">
+              <li className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Revenue share</span>
+                <strong>{(commissionRate * 100).toFixed(0)}% of company commission</strong>
+              </li>
+              <li className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Lifetime cap per account</span>
+                <strong>${lifetimeCap.toLocaleString()}</strong>
+              </li>
+              <li className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Account ceiling</span>
+                <strong>{accountCeiling} accounts (${totalCap.toLocaleString()} max)</strong>
+              </li>
+              <li className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Milestone bonus</span>
+                <strong>${bonusAmount} per {bonusMilestone} boarded merchants</strong>
+              </li>
+            </ul>
+          </div>
+
+          <div className="rounded-lg border border-[hsl(var(--gold))]/40 bg-[hsl(var(--gold))]/5 p-4">
+            <p className="text-sm font-semibold mb-1">Want to renegotiate?</p>
+            <p className="text-sm text-muted-foreground">
+              Premium partners can request adjusted rates, expanded caps, or custom bonus structures
+              once your pipeline justifies it. Reach out directly — there's no formal process, just a
+              conversation.
+            </p>
+          </div>
+        </div>
+
+        <DialogFooter className="sm:justify-between gap-2">
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+          <Button asChild>
+            <a href={mailto}>
+              <Mail className="h-4 w-4 mr-2" />
+              Email {PREMIUM_CONTACT_EMAIL}
+            </a>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
