@@ -1114,6 +1114,14 @@ const OpportunityDetail = () => {
                               <InfoItem label="Referral Source" value={opportunity.referral_source} />
                               <InfoItem label="Timezone" value={opportunity.timezone} />
                               <InfoItem label="Language" value={opportunity.language} />
+                              <div className="space-y-1">
+                                <p className="text-xs text-muted-foreground">Pricing Plan</p>
+                                <PricingBadges
+                                  pricingPlan={opportunity.pricing_plan}
+                                  gatewayTier={opportunity.gateway_tier}
+                                  size="sm"
+                                />
+                              </div>
                             </div>
                           )}
                         </div>
