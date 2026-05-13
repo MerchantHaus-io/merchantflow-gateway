@@ -317,6 +317,15 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
     }
   }, [report, opportunityId]);
 
+  // Holds context for the preview dialog so the send handler knows what to log/send.
+  const sendContextRef = useRef<{
+    accountName: string;
+    contactEmail: string;
+    contactFirstName: string;
+    missingDocs: string[];
+    websiteChanges: string[];
+  } | null>(null);
+
   const handleSendToMerchant = useCallback(async () => {
     if (!report) return;
     const missingDocs = (report.document_completeness || [])
@@ -340,41 +349,64 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
 
     const contactEmail = (opp as any)?.contact?.email;
     const accountName = (opp as any)?.account?.name;
+    const contactFirstName = (opp as any)?.contact?.first_name || "there";
     if (!contactEmail || !accountName) {
       toast.error("Missing contact email or account name");
       return;
     }
 
-    const summary = [
-      missingDocs.length > 0 ? `${missingDocs.length} missing doc(s)` : null,
-      websiteChanges.length > 0 ? `${websiteChanges.length} website change(s)` : null,
-    ].filter(Boolean).join(" + ");
+    const subject = buildDocsRequestSubject(accountName, missingDocs, websiteChanges);
+    const html = buildDocsRequestHtml({
+      firstName: contactFirstName,
+      accountName,
+      opportunityId,
+      missingDocs,
+      websiteChanges,
+    });
 
-    const ok = await confirmAutoEmail(
-      `Send a request to ${contactEmail} covering ${summary}?`
-    );
-    if (!ok) return;
-
-    setIsSendingMerchant(true);
-    try {
-      const { error } = await supabase.functions.invoke("send-qualified-docs-request", {
-        body: {
-          opportunity_id: opportunityId,
-          account_name: accountName,
-          contact_email: contactEmail,
-          contact_first_name: (opp as any)?.contact?.first_name || "",
-          missing_documents: missingDocs,
-          website_changes: websiteChanges,
-        },
-      });
-      if (error) throw error;
-      toast.success("Request sent to merchant");
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to send request");
-    } finally {
-      setIsSendingMerchant(false);
-    }
+    sendContextRef.current = {
+      accountName,
+      contactEmail,
+      contactFirstName,
+      missingDocs,
+      websiteChanges,
+    };
+    setPreviewSubject(subject);
+    setPreviewBody(html);
+    setPreviewRecipient({ email: contactEmail, name: contactFirstName });
+    setPreviewOpen(true);
   }, [report, opportunityId]);
+
+  const handleConfirmSendToMerchant = useCallback(
+    async ({ subject, bodyHtml }: { subject: string; bodyHtml: string }) => {
+      const ctx = sendContextRef.current;
+      if (!ctx) return;
+      setIsSendingMerchant(true);
+      try {
+        const { error } = await supabase.functions.invoke("send-qualified-docs-request", {
+          body: {
+            opportunity_id: opportunityId,
+            account_name: ctx.accountName,
+            contact_email: ctx.contactEmail,
+            contact_first_name: ctx.contactFirstName,
+            missing_documents: ctx.missingDocs,
+            website_changes: ctx.websiteChanges,
+            custom_subject: subject,
+            custom_html: bodyHtml,
+          },
+        });
+        if (error) throw error;
+        toast.success("Request sent to merchant");
+      } catch (err: any) {
+        toast.error(err?.message || "Failed to send request");
+        throw err;
+      } finally {
+        setIsSendingMerchant(false);
+      }
+    },
+    [opportunityId],
+  );
+
 
   const handleReview = useCallback(async () => {
     setIsRunning(true);
