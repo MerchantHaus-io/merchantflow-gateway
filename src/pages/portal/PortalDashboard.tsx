@@ -389,6 +389,10 @@ function PremiumDetailsDialog({
                 <strong>${bonusAmount} per {bonusMilestone} boarded merchants</strong>
               </li>
             </ul>
+            <p className="text-xs text-muted-foreground mt-3">
+              Example: 10 accounts each at the per-account monthly cap = $5,000/month recurring.
+              20 accounts = $10,000/month recurring. Paid every month for the life of the merchant.
+            </p>
           </div>
 
           <div className="rounded-lg border border-[hsl(var(--gold))]/40 bg-[hsl(var(--gold))]/5 p-4">
