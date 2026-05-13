@@ -44,7 +44,7 @@ export default function PortalNewReferral() {
   const { referrer } = useAuth();
   const [form, setForm] = useState<FormState>(initial);
   const [submitting, setSubmitting] = useState(false);
-  const [status, setStatus] = useState<{ kind: "success" | "error"; message: string; detail?: string } | null>(null);
+  const [status, setStatus] = useState<{ kind: "success" | "error"; message: string; detail?: string; referenceId?: string } | null>(null);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
@@ -82,7 +82,11 @@ export default function PortalNewReferral() {
       referrer_id: referrer.id,
       referral_source: form.referral_source.trim() || referrer.full_name,
     };
-    const { error } = await supabase.from("applications").insert(payload);
+    const { data, error } = await supabase
+      .from("applications")
+      .insert(payload)
+      .select("id")
+      .single();
 
     setSubmitting(false);
 
@@ -92,11 +96,21 @@ export default function PortalNewReferral() {
       return;
     }
 
+    const referenceId = data?.id as string | undefined;
+    const shortRef = referenceId ? referenceId.slice(0, 8).toUpperCase() : "";
     const successMsg = `${payload.company_name} has been submitted. Our team will review it within 1–2 business days.`;
-    setStatus({ kind: "success", message: "Referral submitted", detail: successMsg });
-    toast.success("Referral submitted", { description: successMsg, duration: 6000 });
+    setStatus({
+      kind: "success",
+      message: "Referral submitted",
+      detail: successMsg,
+      referenceId,
+    });
+    toast.success("Referral submitted", {
+      description: referenceId ? `Reference ID: ${shortRef} — ${successMsg}` : successMsg,
+      duration: 8000,
+    });
     setForm(initial);
-    setTimeout(() => navigate("/affiliate"), 1800);
+    setTimeout(() => navigate("/affiliate"), 4000);
   };
 
   return (
@@ -149,9 +163,34 @@ export default function PortalNewReferral() {
             ) : (
               <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
             )}
-            <div>
+            <div className="flex-1">
               <p className="font-semibold">{status.message}</p>
               {status.detail && <p className="mt-0.5 opacity-90">{status.detail}</p>}
+              {status.kind === "success" && status.referenceId && (
+                <div className="mt-3 rounded-md border border-emerald-500/30 bg-background/60 p-3">
+                  <p className="text-[10px] uppercase tracking-wider font-semibold opacity-70">
+                    Submission reference ID
+                  </p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <code className="font-mono text-sm font-semibold break-all">
+                      {status.referenceId}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(status.referenceId!);
+                        toast.success("Reference ID copied");
+                      }}
+                      className="text-xs underline hover:no-underline opacity-80"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                  <p className="mt-1 text-xs opacity-75">
+                    Save this ID — quote it if you contact support about this referral.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
