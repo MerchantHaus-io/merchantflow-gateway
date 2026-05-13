@@ -72,6 +72,8 @@ import { CommunicationLogPanel } from "@/components/CommunicationLogPanel";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
 import { PortalActivationDialog } from "@/components/opportunity-detail/PortalActivationDialog";
+import { PricingBadges } from "@/components/PricingBadges";
+
 
 // Helper components
 const InfoItem = ({ label, value }: { label: string; value?: string | null }) => (
@@ -755,7 +757,7 @@ const OpportunityDetail = () => {
                       <div className="bg-primary/10 text-primary p-3 rounded-lg">
                         <Building2 className="h-6 w-6" />
                       </div>
-                      <div>
+                        <div>
                         <CardTitle className="text-2xl">{account?.name || 'Unknown Business'}</CardTitle>
                         <div className="flex items-center gap-3 mt-2">
                           <Badge 
@@ -765,6 +767,11 @@ const OpportunityDetail = () => {
                           >
                             {stageConfig.label}
                           </Badge>
+                          <PricingBadges
+                            pricingPlan={opportunity.pricing_plan}
+                            gatewayTier={opportunity.gateway_tier}
+                            size="sm"
+                          />
                           {opportunity.status === 'dead' && (
                             <div className="flex items-center gap-2">
                               <Badge variant="destructive">Archived</Badge>
@@ -1107,6 +1114,14 @@ const OpportunityDetail = () => {
                               <InfoItem label="Referral Source" value={opportunity.referral_source} />
                               <InfoItem label="Timezone" value={opportunity.timezone} />
                               <InfoItem label="Language" value={opportunity.language} />
+                              <div className="space-y-1">
+                                <p className="text-xs text-muted-foreground">Pricing Plan</p>
+                                <PricingBadges
+                                  pricingPlan={opportunity.pricing_plan}
+                                  gatewayTier={opportunity.gateway_tier}
+                                  size="sm"
+                                />
+                              </div>
                             </div>
                           )}
                         </div>

@@ -54,6 +54,7 @@ import {
 import { format, formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import OpportunityDetailModal from "@/components/OpportunityDetailModal";
+import { PricingBadges } from "@/components/PricingBadges";
 import NewApplicationModal from "@/components/NewApplicationModal";
 import {
   DropdownMenu,
@@ -467,6 +468,8 @@ const Opportunities = () => {
                       <TableRow>
                         <TableHead className="w-10 text-right pr-2 text-xs text-muted-foreground">#</TableHead>
                         <SortableTableHead field="name" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Account</SortableTableHead>
+                        <TableHead className="text-xs text-muted-foreground">Tier</TableHead>
+                        <TableHead className="text-xs text-muted-foreground">Plan</TableHead>
                         <SortableTableHead field="stage" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Stage</SortableTableHead>
                         <SortableTableHead field="outcome" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Outcome</SortableTableHead>
                         <SortableTableHead field="pipeline" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Pipeline</SortableTableHead>
@@ -511,6 +514,18 @@ const Opportunities = () => {
                                   {opp.contact?.first_name ? `${opp.contact.first_name} ${opp.contact.last_name || ''}`.trim() : opp.contact?.email || '—'}
                                 </p>
                               </div>
+                            </TableCell>
+                            <TableCell className="py-2.5">
+                              <PricingBadges
+                                gatewayTier={opp.gateway_tier}
+                                short
+                              />
+                            </TableCell>
+                            <TableCell className="py-2.5">
+                              <PricingBadges
+                                pricingPlan={opp.pricing_plan}
+                                short
+                              />
                             </TableCell>
                             <TableCell onClick={(e) => e.stopPropagation()}>
                               <Select
@@ -777,7 +792,7 @@ const Opportunities = () => {
                       })}
                       {filteredOpportunities.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={10}>
+                          <TableCell colSpan={12}>
                             <EmptyState
                               icon={TrendingUp}
                               title="No opportunities found"
@@ -818,9 +833,17 @@ const Opportunities = () => {
                                 {isStale && <span className="text-[10px] text-muted-foreground/50">{daysSince}d idle</span>}
                               </div>
                               <h3 className="font-semibold text-sm leading-tight">{opp.account?.name || 'Unknown'}</h3>
-                              <p className="text-xs text-muted-foreground mt-0.5">
-                                {opp.contact?.first_name ? `${opp.contact.first_name} ${opp.contact.last_name || ''}`.trim() : opp.contact?.email || '—'}
-                              </p>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <p className="text-xs text-muted-foreground">
+                                  {opp.contact?.first_name ? `${opp.contact.first_name} ${opp.contact.last_name || ''}`.trim() : opp.contact?.email || '—'}
+                                </p>
+                                <PricingBadges
+                                  pricingPlan={opp.pricing_plan}
+                                  gatewayTier={opp.gateway_tier}
+                                  short
+                                  size="xs"
+                                />
+                              </div>
                             </div>
                             <div onClick={(e) => e.stopPropagation()}>
                               <Select value={opp.assigned_to || 'unassigned'} onValueChange={(value) => handleAssignmentChange(opp, value)}>
