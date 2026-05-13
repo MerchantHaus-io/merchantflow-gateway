@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Send, ArrowLeft } from "lucide-react";
+import { Send, ArrowLeft, CheckCircle2, AlertCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface FormState {
@@ -42,18 +42,25 @@ export default function PortalNewReferral() {
   const { referrer } = useAuth();
   const [form, setForm] = useState<FormState>(initial);
   const [submitting, setSubmitting] = useState(false);
+  const [status, setStatus] = useState<{ kind: "success" | "error"; message: string; detail?: string } | null>(null);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setStatus(null);
+
     if (!referrer) {
-      toast.error("No referrer profile loaded. Please refresh and try again.");
+      const msg = "No referrer profile loaded. Please refresh and try again.";
+      setStatus({ kind: "error", message: "Couldn't submit referral", detail: msg });
+      toast.error("Couldn't submit referral", { description: msg });
       return;
     }
     if (!form.full_name.trim() || !form.email.trim() || !form.company_name.trim()) {
-      toast.error("Contact name, email, and company name are required.");
+      const msg = "Contact name, email, and company name are required.";
+      setStatus({ kind: "error", message: "Missing required fields", detail: msg });
+      toast.error("Missing required fields", { description: msg });
       return;
     }
 
@@ -78,12 +85,16 @@ export default function PortalNewReferral() {
     setSubmitting(false);
 
     if (error) {
-      toast.error(error.message);
+      setStatus({ kind: "error", message: "Submission failed", detail: error.message });
+      toast.error("Submission failed", { description: error.message, duration: 8000 });
       return;
     }
 
-    toast.success("Referral submitted. Our team will review it within 1–2 business days.");
-    navigate("/affiliate");
+    const successMsg = `${payload.company_name} has been submitted. Our team will review it within 1–2 business days.`;
+    setStatus({ kind: "success", message: "Referral submitted", detail: successMsg });
+    toast.success("Referral submitted", { description: successMsg, duration: 6000 });
+    setForm(initial);
+    setTimeout(() => navigate("/affiliate"), 1800);
   };
 
   return (
@@ -104,6 +115,28 @@ export default function PortalNewReferral() {
           on your dashboard as the opportunity progresses. You don't need to share every detail — just enough
           for us to make contact.
         </p>
+
+        {status && (
+          <div
+            role="status"
+            aria-live="polite"
+            className={`mb-6 flex items-start gap-3 rounded-lg border p-4 text-sm ${
+              status.kind === "success"
+                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                : "border-destructive/40 bg-destructive/10 text-destructive"
+            }`}
+          >
+            {status.kind === "success" ? (
+              <CheckCircle2 className="h-5 w-5 flex-shrink-0 mt-0.5" />
+            ) : (
+              <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+            )}
+            <div>
+              <p className="font-semibold">{status.message}</p>
+              {status.detail && <p className="mt-0.5 opacity-90">{status.detail}</p>}
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
