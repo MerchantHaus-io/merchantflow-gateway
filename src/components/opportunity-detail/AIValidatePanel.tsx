@@ -824,6 +824,16 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <EmailPreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        subject={previewSubject}
+        bodyHtml={previewBody}
+        recipientEmail={previewRecipient.email}
+        recipientName={previewRecipient.name}
+        onSend={handleConfirmSendToMerchant}
+      />
     </div>
   );
 };
