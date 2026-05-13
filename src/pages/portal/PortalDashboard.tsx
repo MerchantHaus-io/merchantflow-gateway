@@ -132,23 +132,41 @@ export default function PortalDashboard() {
     >
       {referrer?.tier === 'premium' && (
         <Card className="p-4 mb-6 border-[hsl(var(--gold))]/40 bg-gradient-to-r from-[hsl(var(--gold))]/10 via-transparent to-transparent">
-          <div className="flex items-start gap-3">
+          <div className="flex items-start gap-3 flex-wrap">
             <Badge className="bg-[hsl(var(--gold))] text-black hover:bg-[hsl(var(--gold))] uppercase tracking-wider text-[10px]">
+              <Sparkles className="h-3 w-3 mr-1" />
               Premium Partner
             </Badge>
-            <div className="text-sm">
+            <div className="text-sm flex-1 min-w-[240px]">
               <p className="font-semibold mb-0.5">A note on your commission</p>
               <p className="text-muted-foreground">
-                The figures shown across your dashboard reflect our <strong>standard partner model</strong>.
-                As a premium partner, your commission terms are <strong>always open to discussion</strong> —
-                reach out to{" "}
-                <a href="mailto:partners@merchanthaus.io" className="underline">partners@merchanthaus.io</a>{" "}
-                to revisit rates, caps, or bonus structure as your portfolio grows.
+                Figures shown reflect our <strong>standard partner model</strong>. As a premium partner, your
+                terms are <strong>always open to discussion</strong>.
               </p>
             </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-[hsl(var(--gold))]/60 text-[hsl(var(--gold))] hover:bg-[hsl(var(--gold))]/10"
+              onClick={() => setPremiumOpen(true)}
+            >
+              View premium details
+            </Button>
           </div>
         </Card>
       )}
+
+      <PremiumDetailsDialog
+        open={premiumOpen}
+        onOpenChange={setPremiumOpen}
+        referrerName={referrer?.full_name ?? null}
+        commissionRate={referrer?.commission_rate ?? 0.5}
+        lifetimeCap={referrer?.lifetime_cap_per_merchant ?? 500}
+        accountCeiling={referrer?.account_ceiling ?? 10}
+        bonusAmount={referrer?.bonus_amount ?? 500}
+        bonusMilestone={referrer?.bonus_milestone_count ?? 5}
+      />
+
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <StatCard label="Total submitted" value={stats.total} icon={Building2} />
