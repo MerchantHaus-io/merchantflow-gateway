@@ -80,7 +80,7 @@ export default function PortalNewReferral() {
       message: form.message.trim() || null,
       status: "pending",
       referrer_id: referrer.id,
-      referral_source: referrer.full_name,
+      referral_source: form.referral_source.trim() || referrer.full_name,
     };
     const { error } = await supabase.from("applications").insert(payload);
 
