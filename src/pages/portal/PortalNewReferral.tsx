@@ -116,6 +116,28 @@ export default function PortalNewReferral() {
           for us to make contact.
         </p>
 
+        {status && (
+          <div
+            role="status"
+            aria-live="polite"
+            className={`mb-6 flex items-start gap-3 rounded-lg border p-4 text-sm ${
+              status.kind === "success"
+                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                : "border-destructive/40 bg-destructive/10 text-destructive"
+            }`}
+          >
+            {status.kind === "success" ? (
+              <CheckCircle2 className="h-5 w-5 flex-shrink-0 mt-0.5" />
+            ) : (
+              <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+            )}
+            <div>
+              <p className="font-semibold">{status.message}</p>
+              {status.detail && <p className="mt-0.5 opacity-90">{status.detail}</p>}
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
