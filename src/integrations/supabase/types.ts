@@ -2397,42 +2397,54 @@ export type Database = {
       }
       referrers: {
         Row: {
+          account_ceiling: number
           active: boolean
           auth_user_id: string | null
+          bonus_amount: number
+          bonus_milestone_count: number
           clawback_window_days: number
           commission_rate: number
           created_at: string
           email: string
           full_name: string
           id: string
+          lifetime_cap_per_merchant: number
           monthly_cap_per_merchant: number
           notes: string | null
           phone: string | null
           updated_at: string
         }
         Insert: {
+          account_ceiling?: number
           active?: boolean
           auth_user_id?: string | null
+          bonus_amount?: number
+          bonus_milestone_count?: number
           clawback_window_days?: number
           commission_rate?: number
           created_at?: string
           email: string
           full_name: string
           id?: string
+          lifetime_cap_per_merchant?: number
           monthly_cap_per_merchant?: number
           notes?: string | null
           phone?: string | null
           updated_at?: string
         }
         Update: {
+          account_ceiling?: number
           active?: boolean
           auth_user_id?: string | null
+          bonus_amount?: number
+          bonus_milestone_count?: number
           clawback_window_days?: number
           commission_rate?: number
           created_at?: string
           email?: string
           full_name?: string
           id?: string
+          lifetime_cap_per_merchant?: number
           monthly_cap_per_merchant?: number
           notes?: string | null
           phone?: string | null
