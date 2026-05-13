@@ -66,7 +66,7 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   // Referrers belong on the portal, not the internal CRM
   if (userRole === 'referrer') {
-    return <Navigate to="/portal" replace />;
+    return <Navigate to="/affiliate" replace />;
   }
 
   // Anyone else without a recognized role gets bounced

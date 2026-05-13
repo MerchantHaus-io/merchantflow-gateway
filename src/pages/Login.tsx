@@ -33,7 +33,7 @@ const Login = () => {
       if (userRole === 'internal' || isEmailAllowed(user.email)) {
         navigate('/', { replace: true });
       } else if (userRole === 'referrer') {
-        navigate('/portal', { replace: true });
+        navigate('/affiliate', { replace: true });
       }
     }
   }, [user, navigate, mustChangePassword, userRole]);
