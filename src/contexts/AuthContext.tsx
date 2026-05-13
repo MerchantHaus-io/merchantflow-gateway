@@ -106,7 +106,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     const { data } = await supabase
       .from('referrers')
-      .select('id, full_name, email, phone, active, commission_rate, monthly_cap_per_merchant, clawback_window_days')
+      .select('id, full_name, email, phone, active, commission_rate, monthly_cap_per_merchant, clawback_window_days, lifetime_cap_per_merchant, account_ceiling, bonus_amount, bonus_milestone_count')
       .eq('auth_user_id', currentUser.id)
       .eq('active', true)
       .maybeSingle();
