@@ -12,9 +12,9 @@ interface PortalLayoutProps {
 }
 
 const NAV = [
-  { to: "/portal", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/portal/commissions", label: "Earnings", icon: DollarSign, end: false },
-  { to: "/portal/new-referral", label: "Submit Referral", icon: Send, end: false },
+  { to: "/affiliate", label: "Dashboard", icon: LayoutDashboard, end: true },
+  { to: "/affiliate/commissions", label: "Earnings", icon: DollarSign, end: false },
+  { to: "/affiliate/new-referral", label: "Submit Referral", icon: Send, end: false },
 ];
 
 export function PortalLayout({ children, pageTitle, headerActions }: PortalLayoutProps) {
@@ -33,7 +33,7 @@ export function PortalLayout({ children, pageTitle, headerActions }: PortalLayou
     <div className="min-h-screen flex flex-col bg-background">
       <header className="border-b bg-card">
         <div className="max-w-6xl mx-auto px-4 lg:px-6 py-3 flex items-center justify-between gap-4">
-          <Link to="/portal" className="flex items-center gap-2">
+          <Link to="/affiliate" className="flex items-center gap-2">
             <img src="/favicon.png" alt="MerchantHaus" className="h-7 w-7" />
             <span className="font-semibold text-base">Referrer Portal</span>
           </Link>

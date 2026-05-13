@@ -83,7 +83,7 @@ export default function PortalNewReferral() {
     }
 
     toast.success("Referral submitted. Our team will review it within 1–2 business days.");
-    navigate("/portal");
+    navigate("/affiliate");
   };
 
   return (
@@ -91,7 +91,7 @@ export default function PortalNewReferral() {
       pageTitle="Submit a Referral"
       headerActions={
         <Button asChild variant="ghost" size="sm">
-          <Link to="/portal">
+          <Link to="/affiliate">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Link>

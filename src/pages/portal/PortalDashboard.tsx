@@ -119,7 +119,7 @@ export default function PortalDashboard() {
       pageTitle="Your Referrals"
       headerActions={
         <Button asChild>
-          <Link to="/portal/new-referral">
+          <Link to="/affiliate/new-referral">
             <Send className="h-4 w-4 mr-2" />
             Submit Referral
           </Link>
@@ -182,7 +182,7 @@ export default function PortalDashboard() {
             </div>
           ) : openOpps.length === 0 ? (
             <div className="p-6 text-sm text-muted-foreground">
-              No referrals in progress. <Link to="/portal/new-referral" className="underline">Submit one</Link>.
+              No referrals in progress. <Link to="/affiliate/new-referral" className="underline">Submit one</Link>.
             </div>
           ) : (
             <ul className="divide-y">
