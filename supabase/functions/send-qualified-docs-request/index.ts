@@ -135,7 +135,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { opportunity_id, account_name, contact_email, contact_first_name, missing_documents, custom_html, custom_subject }: QualifiedRequest = await req.json();
+    const { opportunity_id, account_name, contact_email, contact_first_name, missing_documents, website_changes, custom_html, custom_subject }: QualifiedRequest = await req.json();
 
     if (!contact_email || !account_name) {
       return new Response(
@@ -152,8 +152,18 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const finalSubject = (custom_subject || `Action Required — Complete Your Merchant Application — ${account_name}`).replace(/[\r\n]+/g, " ").trim();
-    const finalHtml = custom_html || buildDocsRequestHtml(contact_first_name || "there", account_name, opportunity_id, missing_documents);
+    const hasDocs = !!(missing_documents && missing_documents.length > 0);
+    const hasWebsite = !!(website_changes && website_changes.length > 0);
+    const websiteOnly = hasWebsite && !hasDocs;
+
+    const defaultSubject = websiteOnly
+      ? `A few quick website updates for a smooth approval — ${account_name}`
+      : hasDocs && hasWebsite
+        ? `Next steps for your application — ${account_name}`
+        : `Action Required — Complete Your Merchant Application — ${account_name}`;
+
+    const finalSubject = (custom_subject || defaultSubject).replace(/[\r\n]+/g, " ").trim();
+    const finalHtml = custom_html || buildDocsRequestHtml(contact_first_name || "there", account_name, opportunity_id, missing_documents, website_changes);
 
     console.log(`Sending docs request email to ${contact_email} for opportunity ${opportunity_id}`);
 
