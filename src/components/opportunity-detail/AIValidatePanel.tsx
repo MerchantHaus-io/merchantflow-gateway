@@ -462,6 +462,17 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
               )}
             </div>
             <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-6 text-xs"
+                onClick={handleSendToMerchant}
+                disabled={isSendingMerchant}
+                title="Email merchant the missing docs and any website changes from this report"
+              >
+                {isSendingMerchant ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Send className="h-3 w-3 mr-1" />}
+                Send to Merchant
+              </Button>
               <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={handleSaveAsNote} disabled={isSaving}>
                 {isSaving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <FileText className="h-3 w-3 mr-1" />}
                 Save Note
