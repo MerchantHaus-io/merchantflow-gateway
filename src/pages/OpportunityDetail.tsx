@@ -72,6 +72,8 @@ import { CommunicationLogPanel } from "@/components/CommunicationLogPanel";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
 import { PortalActivationDialog } from "@/components/opportunity-detail/PortalActivationDialog";
+import { PricingBadges } from "@/components/PricingBadges";
+
 
 // Helper components
 const InfoItem = ({ label, value }: { label: string; value?: string | null }) => (
