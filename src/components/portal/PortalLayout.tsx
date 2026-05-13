@@ -12,7 +12,7 @@ interface PortalLayoutProps {
 }
 
 const NAV = [
-  { to: "/portal", label: "Dashboard", icon: LayoutDashboard, end: true },
+  { to: "/affiliate", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/affiliate/commissions", label: "Earnings", icon: DollarSign, end: false },
   { to: "/affiliate/new-referral", label: "Submit Referral", icon: Send, end: false },
 ];
