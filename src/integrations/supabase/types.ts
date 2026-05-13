@@ -2412,6 +2412,7 @@ export type Database = {
           monthly_cap_per_merchant: number
           notes: string | null
           phone: string | null
+          tier: string
           updated_at: string
         }
         Insert: {
@@ -2430,6 +2431,7 @@ export type Database = {
           monthly_cap_per_merchant?: number
           notes?: string | null
           phone?: string | null
+          tier?: string
           updated_at?: string
         }
         Update: {
@@ -2448,6 +2450,7 @@ export type Database = {
           monthly_cap_per_merchant?: number
           notes?: string | null
           phone?: string | null
+          tier?: string
           updated_at?: string
         }
         Relationships: []
