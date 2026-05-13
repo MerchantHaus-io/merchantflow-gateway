@@ -141,7 +141,13 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isSendingMerchant, setIsSendingMerchant] = useState(false);
 
-  // Notice board pin dialog state
+  // Email preview dialog state
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewSubject, setPreviewSubject] = useState("");
+  const [previewBody, setPreviewBody] = useState("");
+  const [previewRecipient, setPreviewRecipient] = useState<{ email: string; name?: string }>({ email: "" });
+
+
   const [pinDialogOpen, setPinDialogOpen] = useState(false);
   const [pinActionText, setPinActionText] = useState("");
   const [pinSelectedUsers, setPinSelectedUsers] = useState<string[]>([]);
