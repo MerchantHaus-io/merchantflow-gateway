@@ -377,12 +377,12 @@ function PremiumDetailsDialog({
                 <strong>{(commissionRate * 100).toFixed(0)}% of company commission</strong>
               </li>
               <li className="flex justify-between gap-3">
-                <span className="text-muted-foreground">Lifetime cap per account</span>
-                <strong>${lifetimeCap.toLocaleString()}</strong>
+                <span className="text-muted-foreground">Per-account monthly cap</span>
+                <strong>${lifetimeCap.toLocaleString()} / account / month</strong>
               </li>
               <li className="flex justify-between gap-3">
-                <span className="text-muted-foreground">Account ceiling</span>
-                <strong>{accountCeiling} accounts (${totalCap.toLocaleString()} max)</strong>
+                <span className="text-muted-foreground">Account limit</span>
+                <strong>Unlimited (recurring monthly, no overall ceiling)</strong>
               </li>
               <li className="flex justify-between gap-3">
                 <span className="text-muted-foreground">Milestone bonus</span>
