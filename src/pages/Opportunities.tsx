@@ -792,7 +792,7 @@ const Opportunities = () => {
                       })}
                       {filteredOpportunities.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={10}>
+                          <TableCell colSpan={12}>
                             <EmptyState
                               icon={TrendingUp}
                               title="No opportunities found"
