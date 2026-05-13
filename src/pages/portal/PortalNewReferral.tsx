@@ -111,6 +111,22 @@ export default function PortalNewReferral() {
         </Button>
       }
     >
+      {referrer && (
+        <Card className="p-4 mb-4 max-w-2xl border-[hsl(var(--gold))]/40 bg-[hsl(var(--gold))]/5">
+          <p className="text-xs uppercase tracking-wider font-semibold mb-1 text-[hsl(var(--gold))]">
+            Program terms
+          </p>
+          <p className="text-sm text-muted-foreground">
+            You earn <strong>{(referrer.commission_rate * 100).toFixed(0)}%</strong> of company commission per
+            referral, capped at{" "}
+            <strong>${referrer.lifetime_cap_per_merchant.toLocaleString()} per account</strong> for the lifetime
+            of that account. Program covers your first <strong>{referrer.account_ceiling} accounts</strong> (max{" "}
+            <strong>${(referrer.lifetime_cap_per_merchant * referrer.account_ceiling).toLocaleString()}</strong>),
+            plus a <strong>${referrer.bonus_amount}</strong> bonus for every{" "}
+            <strong>{referrer.bonus_milestone_count}</strong> successfully boarded merchants.
+          </p>
+        </Card>
+      )}
       <Card className="p-6 max-w-2xl">
         <p className="text-sm text-muted-foreground mb-6">
           Submit a merchant you'd like to refer. Our team will reach out to them directly and update the status
