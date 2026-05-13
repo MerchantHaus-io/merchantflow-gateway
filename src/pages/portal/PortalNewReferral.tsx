@@ -23,6 +23,7 @@ interface FormState {
   monthly_volume: string;
   website: string;
   message: string;
+  referral_source: string;
 }
 
 const initial: FormState = {
@@ -35,6 +36,7 @@ const initial: FormState = {
   monthly_volume: "",
   website: "",
   message: "",
+  referral_source: "",
 };
 
 export default function PortalNewReferral() {
