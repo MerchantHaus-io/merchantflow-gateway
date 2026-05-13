@@ -68,7 +68,7 @@ import { KeyboardShortcutsModal } from "./components/KeyboardShortcutsModal";
 import { AdminPopupDisplay } from "./components/AdminPopupDisplay";
 import { EmailSendConfirm } from "./components/EmailSendConfirm";
 
-const PUBLIC_ROUTES = ['/auth', '/login', '/contact', '/apply', '/merchant-apply', '/forgot-password', '/update-password', '/terms-processing', '/portal'];
+const PUBLIC_ROUTES = ['/auth', '/login', '/contact', '/apply', '/merchant-apply', '/forgot-password', '/update-password', '/terms-processing', '/affiliate', '/portal'];
 
 const InternalWidgets = () => {
   const { pathname } = useLocation();
@@ -162,10 +162,14 @@ const App = () => (
                 <Route path="/commissions" element={<ProtectedRoute><Commissions /></ProtectedRoute>} />
                 <Route path="/admin/referrers" element={<ProtectedRoute><Referrers /></ProtectedRoute>} />
 
-                {/* Referrer portal — external partners */}
-                <Route path="/portal" element={<ReferrerRoute><PortalDashboard /></ReferrerRoute>} />
-                <Route path="/portal/new-referral" element={<ReferrerRoute><PortalNewReferral /></ReferrerRoute>} />
-                <Route path="/portal/commissions" element={<ReferrerRoute><PortalCommissions /></ReferrerRoute>} />
+                {/* Affiliate portal — external partners */}
+                <Route path="/affiliate" element={<ReferrerRoute><PortalDashboard /></ReferrerRoute>} />
+                <Route path="/affiliate/new-referral" element={<ReferrerRoute><PortalNewReferral /></ReferrerRoute>} />
+                <Route path="/affiliate/commissions" element={<ReferrerRoute><PortalCommissions /></ReferrerRoute>} />
+                {/* Legacy /portal redirects */}
+                <Route path="/portal" element={<Navigate to="/affiliate" replace />} />
+                <Route path="/portal/new-referral" element={<Navigate to="/affiliate/new-referral" replace />} />
+                <Route path="/portal/commissions" element={<Navigate to="/affiliate/commissions" replace />} />
 
                 <Route path="*" element={<NotFound />} />
               </Routes>
