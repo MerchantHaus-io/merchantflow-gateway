@@ -18,6 +18,7 @@ export interface ReferrerProfile {
   bonus_amount: number;
   bonus_milestone_count: number;
   tier?: 'standard' | 'premium' | null;
+}
 
 export type UserRole = 'internal' | 'referrer' | null;
 
