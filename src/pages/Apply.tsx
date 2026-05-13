@@ -10,8 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { CheckCircle2, Loader2, ArrowLeft } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
-import logoDark from '@/assets/logo-dark.png';
-import logoLight from '@/assets/logo-light.png';
+import logoDark from '@/assets/ps-terminal-logo.png';
+import logoLight from '@/assets/ps-terminal-logo.png';
 import type { ApplicationFormData } from '@/types/application';
 import { getFriendlyError } from '@/lib/friendly-errors';
 
