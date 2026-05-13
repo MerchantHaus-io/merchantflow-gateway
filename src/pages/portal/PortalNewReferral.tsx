@@ -82,7 +82,11 @@ export default function PortalNewReferral() {
       referrer_id: referrer.id,
       referral_source: form.referral_source.trim() || referrer.full_name,
     };
-    const { error } = await supabase.from("applications").insert(payload);
+    const { data, error } = await supabase
+      .from("applications")
+      .insert(payload)
+      .select("id")
+      .single();
 
     setSubmitting(false);
 
@@ -92,11 +96,21 @@ export default function PortalNewReferral() {
       return;
     }
 
+    const referenceId = data?.id as string | undefined;
+    const shortRef = referenceId ? referenceId.slice(0, 8).toUpperCase() : "";
     const successMsg = `${payload.company_name} has been submitted. Our team will review it within 1–2 business days.`;
-    setStatus({ kind: "success", message: "Referral submitted", detail: successMsg });
-    toast.success("Referral submitted", { description: successMsg, duration: 6000 });
+    setStatus({
+      kind: "success",
+      message: "Referral submitted",
+      detail: successMsg,
+      referenceId,
+    });
+    toast.success("Referral submitted", {
+      description: referenceId ? `Reference ID: ${shortRef} — ${successMsg}` : successMsg,
+      duration: 8000,
+    });
     setForm(initial);
-    setTimeout(() => navigate("/affiliate"), 1800);
+    setTimeout(() => navigate("/affiliate"), 4000);
   };
 
   return (
