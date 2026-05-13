@@ -126,6 +126,25 @@ export default function PortalDashboard() {
         </Button>
       }
     >
+      {referrer?.tier === 'premium' && (
+        <Card className="p-4 mb-6 border-[hsl(var(--gold))]/40 bg-gradient-to-r from-[hsl(var(--gold))]/10 via-transparent to-transparent">
+          <div className="flex items-start gap-3">
+            <Badge className="bg-[hsl(var(--gold))] text-black hover:bg-[hsl(var(--gold))] uppercase tracking-wider text-[10px]">
+              Premium Partner
+            </Badge>
+            <div className="text-sm">
+              <p className="font-semibold mb-0.5">A note on your commission</p>
+              <p className="text-muted-foreground">
+                The figures shown across your dashboard reflect our <strong>standard partner model</strong>.
+                As a premium partner, your commission terms are <strong>always open to discussion</strong> —
+                reach out to{" "}
+                <a href="mailto:partners@merchanthaus.io" className="underline">partners@merchanthaus.io</a>{" "}
+                to revisit rates, caps, or bonus structure as your portfolio grows.
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <StatCard label="Total submitted" value={stats.total} icon={Building2} />
