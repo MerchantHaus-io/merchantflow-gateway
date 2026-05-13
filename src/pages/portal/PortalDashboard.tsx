@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,9 +8,12 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { STAGE_CONFIG, OpportunityStage, OutcomeStatus } from "@/types/opportunity";
 import { format, formatDistanceToNow, differenceInDays } from "date-fns";
-import { Send, CheckCircle2, XCircle, Clock, TrendingUp, Building2 } from "lucide-react";
+import { Send, CheckCircle2, XCircle, Clock, TrendingUp, Building2, Mail, Sparkles } from "lucide-react";
+
+const PREMIUM_CONTACT_EMAIL = "jamie@merchanthaus.io";
 
 interface OpportunityRow {
   id: string;
