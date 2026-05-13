@@ -757,7 +757,7 @@ const OpportunityDetail = () => {
                       <div className="bg-primary/10 text-primary p-3 rounded-lg">
                         <Building2 className="h-6 w-6" />
                       </div>
-                      <div>
+                        <div>
                         <CardTitle className="text-2xl">{account?.name || 'Unknown Business'}</CardTitle>
                         <div className="flex items-center gap-3 mt-2">
                           <Badge 
@@ -767,6 +767,11 @@ const OpportunityDetail = () => {
                           >
                             {stageConfig.label}
                           </Badge>
+                          <PricingBadges
+                            pricingPlan={opportunity.pricing_plan}
+                            gatewayTier={opportunity.gateway_tier}
+                            size="sm"
+                          />
                           {opportunity.status === 'dead' && (
                             <div className="flex items-center gap-2">
                               <Badge variant="destructive">Archived</Badge>
