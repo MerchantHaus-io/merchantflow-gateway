@@ -9,8 +9,8 @@ import { toast } from 'sonner';
 import { Lock, Eye, EyeOff, CheckCircle2, AlertTriangle, ArrowLeft } from 'lucide-react';
 import { getFriendlyError } from '@/lib/friendly-errors';
 import { useTheme } from '@/contexts/ThemeContext';
-import logoDark from '@/assets/logo-dark.png';
-import logoLight from '@/assets/logo-light.png';
+import logoDark from '@/assets/ps-terminal-logo.png';
+import logoLight from '@/assets/ps-terminal-logo.png';
 
 const UpdatePassword = () => {
   const navigate = useNavigate();

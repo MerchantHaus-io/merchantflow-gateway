@@ -1,27 +1,18 @@
-## Rename `/portal` → `/affiliate`
+## Goal
+Retire the old `logo-light.png` (and matching `logo-dark.png`) and use `src/assets/ps-terminal-logo.png` as the single Ops Terminal logo across all auth/branded screens.
 
-Change the referrer dashboard URL from `/portal` to `/affiliate` everywhere it's referenced. File paths and component names stay the same (no folder rename) to keep the diff small and avoid breaking imports.
+## Changes
+Update these 5 files so both light and dark themes import and render `ps-terminal-logo.png` (drop the theme-conditional swap):
 
-### Route changes (`src/App.tsx`)
-- `/portal` → `/affiliate`
-- `/portal/new-referral` → `/affiliate/new-referral`
-- `/portal/commissions` → `/affiliate/commissions`
-- Add `/affiliate` to `PUBLIC_ROUTES`
-- Keep legacy `/portal*` routes as redirects to `/affiliate*` so old links and the temp creds I just sent still work
+1. `src/components/ForcePasswordChange.tsx` — the screen in your screenshot
+2. `src/pages/UpdatePassword.tsx`
+3. `src/pages/ForgotPassword.tsx`
+4. `src/pages/Apply.tsx`
+5. `src/pages/LiveAccountDetail.tsx`
 
-### Internal navigation updates
-- `src/pages/Auth.tsx` — redirect to `/affiliate`
-- `src/pages/Login.tsx` — redirect to `/affiliate`
-- `src/components/ProtectedRoute.tsx` — referrer-role redirect → `/affiliate`
-- `src/components/ReferrerRoute.tsx` — comment update
-- `src/components/portal/PortalLayout.tsx` — nav links (Dashboard, Earnings, Submit Referral) → `/affiliate*`
-- `src/pages/portal/PortalDashboard.tsx` — internal `<Link>`s → `/affiliate/new-referral`
-- `src/pages/portal/PortalNewReferral.tsx` — back link + post-submit nav → `/affiliate`
+Then delete the now-unused asset files:
+- `src/assets/logo-light.png`
+- `src/assets/logo-dark.png`
 
-### Out of scope
-- Folder/file renames (`pages/portal/` → `pages/affiliate/`) — cosmetic only, would touch every import
-- Edge functions or DB content referring to "portal" (e.g. `PORTAL_*` secrets, `portal_merchant_id` column) — those are unrelated to the URL
-- Magic-link generators that build absolute URLs — confirm with you whether `/portal` deep-links from external systems should also redirect (the legacy redirect above covers the common case)
-
-### New login URL
-After this change: `https://ops-terminal.merchant.haus/affiliate` (or `/auth` to sign in, then auto-routed).
+## Out of scope
+No layout, sizing, or copy changes — pure asset swap. Favicon and OG image untouched.

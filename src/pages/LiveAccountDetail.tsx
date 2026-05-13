@@ -41,8 +41,8 @@ import { useTheme } from "@/contexts/ThemeContext";
 import ClientInteractionLog from "@/components/ClientInteractionLog";
 import { NMITransactionsPanel } from "@/components/NMITransactionsPanel";
 import { AccountCommissionCard } from "@/components/AccountCommissionCard";
-import logoDark from "@/assets/logo-dark.png";
-import logoLight from "@/assets/logo-light.png";
+import logoDark from "@/assets/ps-terminal-logo.png";
+import logoLight from "@/assets/ps-terminal-logo.png";
 import liveBadge from "@/assets/live-badge.webp";
 
 import { NAME_TO_EMAIL } from "@/config/team";
