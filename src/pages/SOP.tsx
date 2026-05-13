@@ -822,7 +822,10 @@ Sales Support`,
                           <a href="#tech-stack" className="hover:text-primary transition-colors cursor-pointer"><strong>5.2</strong> — CRM Architecture & Technical Reference</a>
                         </li>
                         <li>
-                          <strong>5.3</strong> — Service Providers & SaaS Stack
+                          <a href="#referral-program" className="hover:text-primary transition-colors cursor-pointer"><strong>5.3</strong> — Referral Partner Program</a>
+                        </li>
+                        <li>
+                          <strong>5.4</strong> — Service Providers & SaaS Stack
                         </li>
                       </ul>
 
