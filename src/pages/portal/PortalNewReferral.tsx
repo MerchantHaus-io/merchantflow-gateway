@@ -44,7 +44,7 @@ export default function PortalNewReferral() {
   const { referrer } = useAuth();
   const [form, setForm] = useState<FormState>(initial);
   const [submitting, setSubmitting] = useState(false);
-  const [status, setStatus] = useState<{ kind: "success" | "error"; message: string; detail?: string } | null>(null);
+  const [status, setStatus] = useState<{ kind: "success" | "error"; message: string; detail?: string; referenceId?: string } | null>(null);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
