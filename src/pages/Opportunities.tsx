@@ -515,6 +515,18 @@ const Opportunities = () => {
                                 </p>
                               </div>
                             </TableCell>
+                            <TableCell className="py-2.5">
+                              <PricingBadges
+                                gatewayTier={opp.gateway_tier}
+                                short
+                              />
+                            </TableCell>
+                            <TableCell className="py-2.5">
+                              <PricingBadges
+                                pricingPlan={opp.pricing_plan}
+                                short
+                              />
+                            </TableCell>
                             <TableCell onClick={(e) => e.stopPropagation()}>
                               <Select
                                 value={opp.stage}
