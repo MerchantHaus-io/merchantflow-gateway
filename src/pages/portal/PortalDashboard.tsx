@@ -57,6 +57,7 @@ const OUTCOME_VARIANT: Record<OutcomeStatus, "default" | "secondary" | "destruct
 
 export default function PortalDashboard() {
   const { referrer } = useAuth();
+  const [premiumOpen, setPremiumOpen] = useState(false);
   const referrerId = referrer?.id;
 
   const { data: opportunities, isLoading: oppsLoading } = useQuery({
