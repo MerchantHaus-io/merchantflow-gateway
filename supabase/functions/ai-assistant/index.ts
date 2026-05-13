@@ -2743,6 +2743,9 @@ TRUTHFULNESS: Unless you have formal TIN-matching capability, say "EIN coherence
 
 ═══ DIMENSION 1: DOCUMENT SCRUTINY ═══
 
+FOUNDATION TIER NOTE (monthly volume ≤ $50,000):
+If the merchant's stated/projected monthly volume is $50,000 or less (Foundation tier), our new acquirer does NOT strictly require 3 months of transaction/processing history. Treat missing processing history as an informational note ("FYI — transaction history not required at this volume tier"), NOT as a missing-document red flag, hard stop, or score deduction. All other documents below remain required.
+
 HARD DOCUMENT REQUIREMENTS (all must be present and correctly labelled):
 1. Formation Document (Articles of Organization/Incorporation) — Parse: legal entity name, formation state, filing/formation date, entity/file number, registered agent, principal address. Cross-check against state business registry if possible. Red flags: entity name mismatch beyond punctuation, missing filing identifiers, templated/unfinished doc, state registry shows dissolved/revoked/not found.
 2. EIN / Tax Document (CP 575, 147C, SS-4, W-9) — Extract EIN (masked), legal name, address, notice date. Cross-check legal name and address against formation docs and bank evidence. Flag: EIN doc missing, name mismatch, edited/inconsistent formatting, W-9 supplied without IRS-issued confirmation.
