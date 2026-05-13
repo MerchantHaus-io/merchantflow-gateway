@@ -396,6 +396,7 @@ export type Database = {
           portal_merchant_id: string | null
           products: string | null
           raw_portal_data: Json | null
+          referral_source: string | null
           referrer_id: string | null
           service_type: string | null
           source: string | null
@@ -446,6 +447,7 @@ export type Database = {
           portal_merchant_id?: string | null
           products?: string | null
           raw_portal_data?: Json | null
+          referral_source?: string | null
           referrer_id?: string | null
           service_type?: string | null
           source?: string | null
@@ -496,6 +498,7 @@ export type Database = {
           portal_merchant_id?: string | null
           products?: string | null
           raw_portal_data?: Json | null
+          referral_source?: string | null
           referrer_id?: string | null
           service_type?: string | null
           source?: string | null
