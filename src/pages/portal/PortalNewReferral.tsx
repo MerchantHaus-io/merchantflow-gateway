@@ -163,9 +163,34 @@ export default function PortalNewReferral() {
             ) : (
               <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
             )}
-            <div>
+            <div className="flex-1">
               <p className="font-semibold">{status.message}</p>
               {status.detail && <p className="mt-0.5 opacity-90">{status.detail}</p>}
+              {status.kind === "success" && status.referenceId && (
+                <div className="mt-3 rounded-md border border-emerald-500/30 bg-background/60 p-3">
+                  <p className="text-[10px] uppercase tracking-wider font-semibold opacity-70">
+                    Submission reference ID
+                  </p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <code className="font-mono text-sm font-semibold break-all">
+                      {status.referenceId}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(status.referenceId!);
+                        toast.success("Reference ID copied");
+                      }}
+                      className="text-xs underline hover:no-underline opacity-80"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                  <p className="mt-1 text-xs opacity-75">
+                    Save this ID — quote it if you contact support about this referral.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
