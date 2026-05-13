@@ -344,7 +344,6 @@ function PremiumDetailsDialog({
   bonusAmount: number;
   bonusMilestone: number;
 }) {
-  const totalCap = lifetimeCap * accountCeiling;
   const subject = encodeURIComponent(
     `Premium partner commission discussion${referrerName ? ` — ${referrerName}` : ""}`,
   );
@@ -378,18 +377,22 @@ function PremiumDetailsDialog({
                 <strong>{(commissionRate * 100).toFixed(0)}% of company commission</strong>
               </li>
               <li className="flex justify-between gap-3">
-                <span className="text-muted-foreground">Lifetime cap per account</span>
-                <strong>${lifetimeCap.toLocaleString()}</strong>
+                <span className="text-muted-foreground">Per-account monthly cap</span>
+                <strong>${lifetimeCap.toLocaleString()} / account / month</strong>
               </li>
               <li className="flex justify-between gap-3">
-                <span className="text-muted-foreground">Account ceiling</span>
-                <strong>{accountCeiling} accounts (${totalCap.toLocaleString()} max)</strong>
+                <span className="text-muted-foreground">Account limit</span>
+                <strong>Unlimited (recurring monthly, no overall ceiling)</strong>
               </li>
               <li className="flex justify-between gap-3">
                 <span className="text-muted-foreground">Milestone bonus</span>
                 <strong>${bonusAmount} per {bonusMilestone} boarded merchants</strong>
               </li>
             </ul>
+            <p className="text-xs text-muted-foreground mt-3">
+              Example: 10 accounts each at the per-account monthly cap = $5,000/month recurring.
+              20 accounts = $10,000/month recurring. Paid every month for the life of the merchant.
+            </p>
           </div>
 
           <div className="rounded-lg border border-[hsl(var(--gold))]/40 bg-[hsl(var(--gold))]/5 p-4">
