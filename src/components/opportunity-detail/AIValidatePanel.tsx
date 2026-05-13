@@ -137,6 +137,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
   const [meta, setMeta] = useState<ReportMeta | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSendingMerchant, setIsSendingMerchant] = useState(false);
 
   // Notice board pin dialog state
   const [pinDialogOpen, setPinDialogOpen] = useState(false);
