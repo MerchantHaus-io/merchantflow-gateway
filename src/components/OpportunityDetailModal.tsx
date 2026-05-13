@@ -94,54 +94,90 @@ const wizardProgressColor = (value: number) => {
 
 type WizardSectionKey = "business" | "legal" | "processing" | "documents";
 
+// Field keys MUST match the snake_case keys persisted by PreboardingWizard's form_state.
+// camelCase aliases are accepted for legacy form_state rows.
+const WIZARD_FIELD_ALIASES: Record<string, string[]> = {
+  dba_name: ["dbaName"],
+  product_description: ["products"],
+  nature_of_business: ["natureOfBusiness"],
+  dba_contact_first_name: ["dbaContactFirst"],
+  dba_contact_last_name: ["dbaContactLast"],
+  dba_contact_phone: ["dbaPhone"],
+  dba_contact_email: ["dbaEmail"],
+  dba_address_line1: ["dbaAddress"],
+  dba_city: ["dbaCity"],
+  dba_state: ["dbaState"],
+  dba_zip: ["dbaZip"],
+  legal_entity_name: ["legalEntityName"],
+  legal_phone: ["legalPhone"],
+  legal_email: ["legalEmail"],
+  federal_tax_id: ["tin"],
+  ownership_type: ["ownershipType"],
+  business_formation_date: ["formationDate"],
+  state_incorporated: ["stateIncorporated"],
+  legal_address_line1: ["legalAddress"],
+  legal_city: ["legalCity"],
+  legal_state: ["legalState"],
+  legal_zip: ["legalZip"],
+  monthly_volume: ["monthlyVolume"],
+  average_transaction: ["avgTicket"],
+  high_ticket: ["highTicket"],
+  percent_swiped: ["swipedPct"],
+  percent_keyed: ["keyedPct"],
+  percent_moto: ["motoPct"],
+  percent_ecommerce: ["ecomPct"],
+  percent_b2c: ["b2cPct"],
+  percent_b2b: ["b2bPct"],
+};
+
 const WIZARD_SECTIONS: { key: WizardSectionKey; label: string; fields: string[] }[] = [
   {
     key: "business",
     label: "Business profile",
     fields: [
-      "dbaName",
-      "products",
-      "natureOfBusiness",
-      "dbaContactFirst",
-      "dbaContactLast",
-      "dbaPhone",
-      "dbaEmail",
-      "dbaAddress",
-      "dbaCity",
-      "dbaState",
-      "dbaZip",
+      "dba_name",
+      "product_description",
+      "nature_of_business",
+      "dba_contact_first_name",
+      "dba_contact_last_name",
+      "dba_contact_phone",
+      "dba_contact_email",
+      "dba_address_line1",
+      "dba_city",
+      "dba_state",
+      "dba_zip",
     ],
   },
   {
     key: "legal",
     label: "Legal info",
     fields: [
-      "legalEntityName",
-      "legalPhone",
-      "legalEmail",
-      "tin",
-      "ownershipType",
-      "formationDate",
-      "stateIncorporated",
-      "legalAddress",
-      "legalCity",
-      "legalState",
-      "legalZip",
+      "legal_entity_name",
+      "legal_phone",
+      "legal_email",
+      "federal_tax_id",
+      "ownership_type",
+      "business_formation_date",
+      "state_incorporated",
+      "legal_address_line1",
+      "legal_city",
+      "legal_state",
+      "legal_zip",
     ],
   },
   {
     key: "processing",
     label: "Processing",
     fields: [
-      "monthlyVolume",
-      "avgTicket",
-      "highTicket",
-      "swipedPct",
-      "keyedPct",
-      "motoPct",
-      "ecomPct",
-      "b2cPct",
-      "b2bPct",
+      "monthly_volume",
+      "average_transaction",
+      "high_ticket",
+      "percent_swiped",
+      "percent_keyed",
+      "percent_moto",
+      "percent_ecommerce",
+      "percent_b2c",
+      "percent_b2b",
     ],
   },
   {
@@ -152,16 +188,24 @@ const WIZARD_SECTIONS: { key: WizardSectionKey; label: string; fields: string[] 
 ];
 
 const isWizardFieldComplete = (formState: Record<string, unknown>, field: string) => {
-  const value = formState[field];
-
   if (field === "documents") {
+    const value = formState["documents"];
     return Array.isArray(value) && value.length > 0;
   }
 
-  if (value === undefined || value === null) return false;
-  if (typeof value === "string") return value.trim().length > 0;
-  return Boolean(value);
+  const candidates = [field, ...(WIZARD_FIELD_ALIASES[field] ?? [])];
+  for (const key of candidates) {
+    const value = formState[key];
+    if (value === undefined || value === null) continue;
+    if (typeof value === "string") {
+      if (value.trim().length > 0) return true;
+      continue;
+    }
+    if (Boolean(value)) return true;
+  }
+  return false;
 };
+
 
 const computeWizardSectionProgress = (formState: Record<string, unknown>) =>
   WIZARD_SECTIONS.map((section) => {
