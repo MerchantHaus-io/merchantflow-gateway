@@ -221,6 +221,18 @@ export default function PortalNewReferral() {
                 placeholder="$50,000"
               />
             </div>
+            <div className="md:col-span-2">
+              <Label htmlFor="referral_source">Referral source</Label>
+              <Input
+                id="referral_source"
+                value={form.referral_source}
+                onChange={(e) => set("referral_source", e.target.value)}
+                placeholder={referrer ? `Defaults to "${referrer.full_name}"` : "How did you hear about this lead?"}
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Optional — leave blank to use your name as the source.
+              </p>
+            </div>
           </div>
 
           <div>
