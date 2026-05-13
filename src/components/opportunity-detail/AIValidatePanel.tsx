@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { EMAIL_TO_USER } from "@/types/opportunity";
 import {
-  Wand2, Loader2, CheckCircle2, XCircle, AlertTriangle, ChevronDown, ChevronUp, Eye, Clock, User, Globe, FileText, Tag, BarChart3, Shield, Search, Scale, Pin,
+  Wand2, Loader2, CheckCircle2, XCircle, AlertTriangle, ChevronDown, ChevronUp, Eye, Clock, User, Globe, FileText, Tag, BarChart3, Shield, Search, Scale, Pin, Send,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -137,6 +137,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
   const [meta, setMeta] = useState<ReportMeta | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSendingMerchant, setIsSendingMerchant] = useState(false);
 
   // Notice board pin dialog state
   const [pinDialogOpen, setPinDialogOpen] = useState(false);
@@ -308,6 +309,65 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
     }
   }, [report, opportunityId]);
 
+  const handleSendToMerchant = useCallback(async () => {
+    if (!report) return;
+    const missingDocs = (report.document_completeness || [])
+      .filter((d) => d.status === "missing")
+      .map((d) => d.document + (d.note ? ` — ${d.note}` : ""));
+    const websiteChanges = (report.website_requirements || [])
+      .filter((r) => !r.met)
+      .map((r) => r.requirement + (r.detail ? ` — ${r.detail}` : ""));
+
+    if (missingDocs.length === 0 && websiteChanges.length === 0) {
+      toast.info("Nothing outstanding to request — report is clean.");
+      return;
+    }
+
+    // Fetch contact + account
+    const { data: opp } = await supabase
+      .from("opportunities")
+      .select("account_id, contact_id, account:accounts(name), contact:contacts(email, first_name)")
+      .eq("id", opportunityId)
+      .single();
+
+    const contactEmail = (opp as any)?.contact?.email;
+    const accountName = (opp as any)?.account?.name;
+    if (!contactEmail || !accountName) {
+      toast.error("Missing contact email or account name");
+      return;
+    }
+
+    const summary = [
+      missingDocs.length > 0 ? `${missingDocs.length} missing doc(s)` : null,
+      websiteChanges.length > 0 ? `${websiteChanges.length} website change(s)` : null,
+    ].filter(Boolean).join(" + ");
+
+    const ok = await confirmAutoEmail(
+      `Send a request to ${contactEmail} covering ${summary}?`
+    );
+    if (!ok) return;
+
+    setIsSendingMerchant(true);
+    try {
+      const { error } = await supabase.functions.invoke("send-qualified-docs-request", {
+        body: {
+          opportunity_id: opportunityId,
+          account_name: accountName,
+          contact_email: contactEmail,
+          contact_first_name: (opp as any)?.contact?.first_name || "",
+          missing_documents: missingDocs,
+          website_changes: websiteChanges,
+        },
+      });
+      if (error) throw error;
+      toast.success("Request sent to merchant");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to send request");
+    } finally {
+      setIsSendingMerchant(false);
+    }
+  }, [report, opportunityId]);
+
   const handleReview = useCallback(async () => {
     setIsRunning(true);
     try {
@@ -402,6 +462,17 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
               )}
             </div>
             <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-6 text-xs"
+                onClick={handleSendToMerchant}
+                disabled={isSendingMerchant}
+                title="Email merchant the missing docs and any website changes from this report"
+              >
+                {isSendingMerchant ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Send className="h-3 w-3 mr-1" />}
+                Send to Merchant
+              </Button>
               <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={handleSaveAsNote} disabled={isSaving}>
                 {isSaving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <FileText className="h-3 w-3 mr-1" />}
                 Save Note
