@@ -42,18 +42,25 @@ export default function PortalNewReferral() {
   const { referrer } = useAuth();
   const [form, setForm] = useState<FormState>(initial);
   const [submitting, setSubmitting] = useState(false);
+  const [status, setStatus] = useState<{ kind: "success" | "error"; message: string; detail?: string } | null>(null);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setStatus(null);
+
     if (!referrer) {
-      toast.error("No referrer profile loaded. Please refresh and try again.");
+      const msg = "No referrer profile loaded. Please refresh and try again.";
+      setStatus({ kind: "error", message: "Couldn't submit referral", detail: msg });
+      toast.error("Couldn't submit referral", { description: msg });
       return;
     }
     if (!form.full_name.trim() || !form.email.trim() || !form.company_name.trim()) {
-      toast.error("Contact name, email, and company name are required.");
+      const msg = "Contact name, email, and company name are required.";
+      setStatus({ kind: "error", message: "Missing required fields", detail: msg });
+      toast.error("Missing required fields", { description: msg });
       return;
     }
 
@@ -78,12 +85,16 @@ export default function PortalNewReferral() {
     setSubmitting(false);
 
     if (error) {
-      toast.error(error.message);
+      setStatus({ kind: "error", message: "Submission failed", detail: error.message });
+      toast.error("Submission failed", { description: error.message, duration: 8000 });
       return;
     }
 
-    toast.success("Referral submitted. Our team will review it within 1–2 business days.");
-    navigate("/affiliate");
+    const successMsg = `${payload.company_name} has been submitted. Our team will review it within 1–2 business days.`;
+    setStatus({ kind: "success", message: "Referral submitted", detail: successMsg });
+    toast.success("Referral submitted", { description: successMsg, duration: 6000 });
+    setForm(initial);
+    setTimeout(() => navigate("/affiliate"), 1800);
   };
 
   return (
