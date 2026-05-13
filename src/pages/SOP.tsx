@@ -2185,7 +2185,72 @@ Sales Support`,
                   </div>
                 </section>
 
-                {/* Appendices */}
+                {/* Referral Program */}
+                <section id="referral-program" className="bg-card rounded-none border-2 border-[hsl(var(--gold))]/40 p-8">
+                  <SectionHeader gold sectionId="referral-program" sectionTitle="Referral Partner Program">
+                    Referral Partner Program
+                  </SectionHeader>
+                  <p className="text-sm text-muted-foreground mb-6">
+                    The MerchantHaus Referral Partner Program rewards partners who introduce qualified merchants.
+                    Terms below govern every active referrer profile and are enforced in the partner portal so
+                    earnings can never display above the stipulated caps.
+                  </p>
+
+                  <div className="grid md:grid-cols-2 gap-6 mb-6">
+                    <div className="bg-secondary/40 p-5 rounded-none border border-border">
+                      <h4 className="font-bold text-foreground mb-3 uppercase tracking-[0.2em] text-[11px]">Revenue Share</h4>
+                      <ul className="text-sm text-muted-foreground space-y-2">
+                        <li><strong className="text-foreground">50%</strong> of MerchantHaus's company commission, paid monthly per referred merchant.</li>
+                        <li>Calculated from net processor settlement after interchange, scheme fees, and processor cost.</li>
+                        <li>Earnings are visible in the partner portal at the close of each monthly cycle.</li>
+                      </ul>
+                    </div>
+                    <div className="bg-secondary/40 p-5 rounded-none border border-border">
+                      <h4 className="font-bold text-foreground mb-3 uppercase tracking-[0.2em] text-[11px]">Caps & Ceilings</h4>
+                      <ul className="text-sm text-muted-foreground space-y-2">
+                        <li><strong className="text-foreground">$500</strong> lifetime cap per referred account.</li>
+                        <li><strong className="text-foreground">10 accounts</strong> maximum eligible per partner.</li>
+                        <li><strong className="text-foreground">$5,000</strong> total program ceiling per partner ($500 × 10).</li>
+                        <li>Accounts beyond the 10-account ceiling are visible but ineligible for payout.</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="bg-[hsl(var(--gold))]/5 p-5 rounded-none border border-[hsl(var(--gold))]/40 mb-6">
+                    <h4 className="font-bold text-foreground mb-2 uppercase tracking-[0.2em] text-[11px]">Milestone Bonus</h4>
+                    <p className="text-sm text-muted-foreground">
+                      A <strong className="text-foreground">$500 bonus</strong> is paid for every{" "}
+                      <strong className="text-foreground">5 successfully boarded merchants</strong> (live and
+                      processing). Bonuses are paid in addition to commission revenue share and accumulate over
+                      the lifetime of the partnership.
+                    </p>
+                  </div>
+
+                  <div className="mb-6">
+                    <h4 className="font-bold text-foreground mb-3 uppercase tracking-[0.2em] text-[11px]">Calculation Model</h4>
+                    <div className="bg-secondary/40 p-4 rounded-none border border-border font-mono text-xs text-muted-foreground space-y-1">
+                      <div>per_account_payout = MIN(company_commission × 0.50, $500_remaining)</div>
+                      <div>lifetime_payout    = SUM(per_account_payout) up to 10 eligible accounts</div>
+                      <div>program_cap        = $500 × 10 = $5,000</div>
+                      <div>milestone_bonus    = FLOOR(successful_merchants / 5) × $500</div>
+                      <div>total_earnings     = MIN(lifetime_payout, $5,000) + milestone_bonus</div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-bold text-foreground mb-3 uppercase tracking-[0.2em] text-[11px]">Operating Rules</h4>
+                    <ol className="text-sm text-muted-foreground space-y-2 list-decimal pl-5">
+                      <li>Referrers submit leads through the Partner Portal at <code className="text-xs bg-secondary px-1.5 py-0.5">/affiliate/referral</code>; submissions automatically tag <code className="text-xs bg-secondary px-1.5 py-0.5">applications.referral_source</code> with the partner's name.</li>
+                      <li>The first 10 accounts (by earliest commission record date) are the eligible cohort. Subsequent accounts are tracked but display $0 with a "Beyond 10-account cap" badge.</li>
+                      <li>Per-account payouts are capped client-side and server-side; values can never exceed $500 per account or $5,000 in aggregate.</li>
+                      <li>Clawbacks apply within the standard 90-day window from a merchant's go-live date.</li>
+                      <li>Partners are notified of milestone bonus thresholds in the portal earnings dashboard.</li>
+                      <li>Program terms (rate, cap, ceiling, bonus) are stored on the <code className="text-xs bg-secondary px-1.5 py-0.5">referrers</code> record and can be adjusted per partner by Admin.</li>
+                    </ol>
+                  </div>
+                </section>
+
+
                 <section id="appendix" className="bg-secondary/50 rounded-none border border-border p-8">
                   <h2 className="font-['Playfair_Display'] text-xl font-bold text-foreground mb-6">
                     Appendix — SOP Structure
