@@ -324,3 +324,96 @@ function OpportunityListItem({ opp }: { opp: OpportunityRow }) {
     </li>
   );
 }
+
+function PremiumDetailsDialog({
+  open,
+  onOpenChange,
+  referrerName,
+  commissionRate,
+  lifetimeCap,
+  accountCeiling,
+  bonusAmount,
+  bonusMilestone,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  referrerName: string | null;
+  commissionRate: number;
+  lifetimeCap: number;
+  accountCeiling: number;
+  bonusAmount: number;
+  bonusMilestone: number;
+}) {
+  const totalCap = lifetimeCap * accountCeiling;
+  const subject = encodeURIComponent(
+    `Premium partner commission discussion${referrerName ? ` — ${referrerName}` : ""}`,
+  );
+  const body = encodeURIComponent(
+    `Hi Jamie,\n\nI'd like to discuss my premium partner commission terms.\n\nThanks,\n${referrerName ?? ""}`,
+  );
+  const mailto = `mailto:${PREMIUM_CONTACT_EMAIL}?subject=${subject}&body=${body}`;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-[hsl(var(--gold))]" />
+            Premium Partner — Commission Details
+          </DialogTitle>
+          <DialogDescription>
+            Below is our standard partner model. As a premium partner, every line is open to
+            discussion based on your portfolio, vertical, and volume.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          <div className="rounded-lg border bg-muted/40 p-4">
+            <p className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-2">
+              Standard Model
+            </p>
+            <ul className="text-sm space-y-2">
+              <li className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Revenue share</span>
+                <strong>{(commissionRate * 100).toFixed(0)}% of company commission</strong>
+              </li>
+              <li className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Lifetime cap per account</span>
+                <strong>${lifetimeCap.toLocaleString()}</strong>
+              </li>
+              <li className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Account ceiling</span>
+                <strong>{accountCeiling} accounts (${totalCap.toLocaleString()} max)</strong>
+              </li>
+              <li className="flex justify-between gap-3">
+                <span className="text-muted-foreground">Milestone bonus</span>
+                <strong>${bonusAmount} per {bonusMilestone} boarded merchants</strong>
+              </li>
+            </ul>
+          </div>
+
+          <div className="rounded-lg border border-[hsl(var(--gold))]/40 bg-[hsl(var(--gold))]/5 p-4">
+            <p className="text-sm font-semibold mb-1">Want to renegotiate?</p>
+            <p className="text-sm text-muted-foreground">
+              Premium partners can request adjusted rates, expanded caps, or custom bonus structures
+              once your pipeline justifies it. Reach out directly — there's no formal process, just a
+              conversation.
+            </p>
+          </div>
+        </div>
+
+        <DialogFooter className="sm:justify-between gap-2">
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+          <Button asChild>
+            <a href={mailto}>
+              <Mail className="h-4 w-4 mr-2" />
+              Email {PREMIUM_CONTACT_EMAIL}
+            </a>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
