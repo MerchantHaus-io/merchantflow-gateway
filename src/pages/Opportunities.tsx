@@ -54,6 +54,7 @@ import {
 import { format, formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import OpportunityDetailModal from "@/components/OpportunityDetailModal";
+import { PricingBadges } from "@/components/PricingBadges";
 import NewApplicationModal from "@/components/NewApplicationModal";
 import {
   DropdownMenu,
