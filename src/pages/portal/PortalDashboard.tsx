@@ -344,7 +344,6 @@ function PremiumDetailsDialog({
   bonusAmount: number;
   bonusMilestone: number;
 }) {
-  const totalCap = lifetimeCap * accountCeiling;
   const subject = encodeURIComponent(
     `Premium partner commission discussion${referrerName ? ` — ${referrerName}` : ""}`,
   );
