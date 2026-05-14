@@ -141,18 +141,14 @@ export default function PortalCommissions() {
           <Trophy className="h-4 w-4 text-[hsl(var(--gold))]" />
           <h2 className="text-sm font-semibold uppercase tracking-wider">Referral program</h2>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
           <div>
             <div className="text-xs text-muted-foreground uppercase">Rev share</div>
             <div className="font-semibold text-base mt-0.5">{fmtPct(rate)} of commission</div>
           </div>
           <div>
             <div className="text-xs text-muted-foreground uppercase">Cap / account</div>
-            <div className="font-semibold text-base mt-0.5">{fmt(lifetimeCap)} lifetime</div>
-          </div>
-          <div>
-            <div className="text-xs text-muted-foreground uppercase">Account ceiling</div>
-            <div className="font-semibold text-base mt-0.5">{accountCeiling} accounts</div>
+            <div className="font-semibold text-base mt-0.5">{fmt(monthlyCap)} / month</div>
           </div>
           <div>
             <div className="text-xs text-muted-foreground uppercase">Milestone bonus</div>
@@ -163,10 +159,9 @@ export default function PortalCommissions() {
         </div>
         <p className="text-xs text-muted-foreground mt-3">
           You earn <strong>{fmtPct(rate)}</strong> of the company commission for each merchant you refer, capped
-          at <strong>{fmt(lifetimeCap)} per account</strong> for the lifetime of that account. The program covers
-          your first <strong>{accountCeiling} accounts</strong> (max {fmt(programCap)}). A{" "}
-          <strong>{fmt(bonusAmount)}</strong> bonus is paid for every <strong>{bonusMilestone}</strong>{" "}
-          successfully boarded merchants.
+          at <strong>{fmt(monthlyCap)} per account, per month</strong> — recurring for the lifetime of that
+          account. A <strong>{fmt(bonusAmount)}</strong> bonus is paid for every{" "}
+          <strong>{bonusMilestone}</strong> successfully boarded merchants.
         </p>
       </Card>
 
