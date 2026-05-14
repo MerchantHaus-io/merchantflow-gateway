@@ -66,6 +66,29 @@ Deno.serve(async (req) => {
       return json({ error: linkErr?.message || "Failed to generate magic link" }, 500);
     }
 
+    // Exchange the magic-link OTP for a real session pair so the admin can hand
+    // tokens to an isolated tab via setSession() — no browser navigation needed.
+    const tokenHash = (linkData as any)?.properties?.hashed_token as string | undefined;
+    let access_token: string | null = null;
+    let refresh_token: string | null = null;
+    if (tokenHash) {
+      const otpClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { auth: { persistSession: false, autoRefreshToken: false } }
+      );
+      const { data: otpData, error: otpErr } = await otpClient.auth.verifyOtp({
+        type: "magiclink",
+        token_hash: tokenHash,
+      });
+      if (otpErr) {
+        console.error("verifyOtp error", otpErr);
+      } else {
+        access_token = otpData.session?.access_token ?? null;
+        refresh_token = otpData.session?.refresh_token ?? null;
+      }
+    }
+
     // Backfill referrers.auth_user_id so RLS policies that key off auth_user_id work
     // for impersonated sessions. generateLink upserts the auth user, so it now exists.
     try {
