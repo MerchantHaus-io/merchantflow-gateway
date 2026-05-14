@@ -272,7 +272,7 @@ Deno.serve(async (req) => {
 
   try {
     const payload = await req.json();
-    console.log('Quo webhook received:', JSON.stringify(payload).slice(0, 500));
+    console.log('Quo webhook received:', JSON.stringify({ type: payload?.type, hasData: !!payload?.data }));
 
     const supabase = getSupabase();
     const eventType = payload.type;
