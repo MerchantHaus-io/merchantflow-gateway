@@ -1177,6 +1177,7 @@ export type Database = {
           monthly_fees: number | null
           nmi_gateway_id: string
           period_id: string
+          referrer_payout: number
           residual_amount: number | null
           residual_rate: number | null
           total_commission: number | null
@@ -1195,6 +1196,7 @@ export type Database = {
           monthly_fees?: number | null
           nmi_gateway_id: string
           period_id: string
+          referrer_payout?: number
           residual_amount?: number | null
           residual_rate?: number | null
           total_commission?: number | null
@@ -1213,6 +1215,7 @@ export type Database = {
           monthly_fees?: number | null
           nmi_gateway_id?: string
           period_id?: string
+          referrer_payout?: number
           residual_amount?: number | null
           residual_rate?: number | null
           total_commission?: number | null
@@ -2432,7 +2435,6 @@ export type Database = {
       }
       referrers: {
         Row: {
-          account_ceiling: number
           active: boolean
           alias: string | null
           auth_user_id: string | null
@@ -2444,7 +2446,6 @@ export type Database = {
           email: string
           full_name: string
           id: string
-          lifetime_cap_per_merchant: number
           monthly_cap_per_merchant: number
           notes: string | null
           phone: string | null
@@ -2452,7 +2453,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          account_ceiling?: number
           active?: boolean
           alias?: string | null
           auth_user_id?: string | null
@@ -2464,7 +2464,6 @@ export type Database = {
           email: string
           full_name: string
           id?: string
-          lifetime_cap_per_merchant?: number
           monthly_cap_per_merchant?: number
           notes?: string | null
           phone?: string | null
@@ -2472,7 +2471,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          account_ceiling?: number
           active?: boolean
           alias?: string | null
           auth_user_id?: string | null
@@ -2484,7 +2482,6 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
-          lifetime_cap_per_merchant?: number
           monthly_cap_per_merchant?: number
           notes?: string | null
           phone?: string | null

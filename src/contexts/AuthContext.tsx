@@ -13,8 +13,6 @@ export interface ReferrerProfile {
   commission_rate: number;
   monthly_cap_per_merchant: number;
   clawback_window_days: number;
-  lifetime_cap_per_merchant: number;
-  account_ceiling: number;
   bonus_amount: number;
   bonus_milestone_count: number;
   tier?: 'standard' | 'premium' | null;
@@ -105,7 +103,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setReferrer(null);
       return;
     }
-    const cols = 'id, full_name, email, phone, active, commission_rate, monthly_cap_per_merchant, clawback_window_days, lifetime_cap_per_merchant, account_ceiling, bonus_amount, bonus_milestone_count';
+    const cols = 'id, full_name, email, phone, active, commission_rate, monthly_cap_per_merchant, clawback_window_days, bonus_amount, bonus_milestone_count';
     // Primary lookup: auth_user_id link
     let { data } = await supabase
       .from('referrers')

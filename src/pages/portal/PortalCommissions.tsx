@@ -54,58 +54,50 @@ export default function PortalCommissions() {
   });
 
   // Program rules from referrer profile (with safe fallbacks).
+  // NEW MODEL: 50% rev share, $500/account/MONTH recurring (no lifetime cap, no account ceiling).
   const rate = referrer?.commission_rate ?? 0.5;
-  const lifetimeCap = referrer?.lifetime_cap_per_merchant ?? 500;
-  const accountCeiling = referrer?.account_ceiling ?? 10;
+  const monthlyCap = referrer?.monthly_cap_per_merchant ?? 500;
   const bonusAmount = referrer?.bonus_amount ?? 500;
   const bonusMilestone = referrer?.bonus_milestone_count ?? 5;
-  const programCap = lifetimeCap * accountCeiling;
 
-  // Lifetime payout per account, with the per-account cap applied.
-  // We pick the EARLIEST `accountCeiling` accounts (by first commission period)
-  // as the eligible cohort — anything beyond that is locked out from earnings.
+  // Per-period capped payout for every record.
+  const cappedRecords = useMemo(() => {
+    return (allRecords ?? []).map((r) => {
+      const raw = Number(r.company_commission) * rate;
+      const displayPayout = Math.min(raw, monthlyCap);
+      return { ...r, displayPayout, eligible: true as const };
+    });
+  }, [allRecords, rate, monthlyCap]);
+
+  // Aggregate per-account: lifetime sum of capped monthly payouts (uncapped overall).
   const accountSummaries = useMemo(() => {
     const map = new Map<
       string,
-      { account_id: string; company_name: string; firstSeen: string; rawLifetime: number }
+      { account_id: string; company_name: string; firstSeen: string; lifetime: number }
     >();
-    for (const r of allRecords ?? []) {
+    for (const r of cappedRecords) {
       const key = r.account_id || r.record_id;
       const existing = map.get(key);
-      const rawAmount = Number(r.company_commission) * rate; // re-apply our 50% rule
       if (existing) {
-        existing.rawLifetime += rawAmount;
+        existing.lifetime += r.displayPayout;
         if (r.period_start < existing.firstSeen) existing.firstSeen = r.period_start;
       } else {
         map.set(key, {
           account_id: key,
           company_name: r.company_name || "Merchant",
           firstSeen: r.period_start,
-          rawLifetime: rawAmount,
+          lifetime: r.displayPayout,
         });
       }
     }
-    const arr = Array.from(map.values()).sort((a, b) => a.firstSeen.localeCompare(b.firstSeen));
-    return arr.map((a, idx) => {
-      const eligible = idx < accountCeiling;
-      const cappedLifetime = eligible ? Math.min(a.rawLifetime, lifetimeCap) : 0;
-      return {
-        ...a,
-        eligible,
-        rank: idx + 1,
-        cappedLifetime,
-        atCap: eligible && a.rawLifetime >= lifetimeCap,
-      };
-    });
-  }, [allRecords, rate, lifetimeCap, accountCeiling]);
+    return Array.from(map.values()).sort((a, b) => a.firstSeen.localeCompare(b.firstSeen));
+  }, [cappedRecords]);
 
-  const eligibleAccountCount = accountSummaries.filter((a) => a.eligible).length;
-  const lifetimeEarnings = accountSummaries.reduce((s, a) => s + a.cappedLifetime, 0);
-  const cappedLifetimeEarnings = Math.min(lifetimeEarnings, programCap);
+  const eligibleAccountCount = accountSummaries.length;
+  const lifetimeEarnings = accountSummaries.reduce((s, a) => s + a.lifetime, 0);
 
-  // Bonus payouts: $bonusAmount for every $bonusMilestone successful merchants
-  // (a "successful merchant" = an eligible account that has any commission record).
-  const successfulCount = accountSummaries.filter((a) => a.eligible && a.rawLifetime > 0).length;
+  // Bonus: $bonusAmount for every $bonusMilestone successfully boarded merchants (no ceiling).
+  const successfulCount = accountSummaries.filter((a) => a.lifetime > 0).length;
   const bonusesEarned = Math.floor(successfulCount / bonusMilestone) * bonusAmount;
   const nextBonusAt = (Math.floor(successfulCount / bonusMilestone) + 1) * bonusMilestone;
 
@@ -121,26 +113,10 @@ export default function PortalCommissions() {
 
   const effectivePeriodId = selectedPeriodId || periods[0]?.id || "";
 
-  // Per-period rows, but with payout capped so the running lifetime per account
-  // never exceeds lifetimeCap and ineligible accounts show $0.
-  const periodRecords = useMemo(() => {
-    const eligibleIds = new Set(accountSummaries.filter((a) => a.eligible).map((a) => a.account_id));
-    // running lifetime by account up to and including each period
-    const byAccount = new Map<string, number>();
-    const sorted = [...(allRecords ?? [])].sort((a, b) => a.period_start.localeCompare(b.period_start));
-    const capped: Array<PayoutRecord & { displayPayout: number; eligible: boolean }> = [];
-    for (const r of sorted) {
-      const accountKey = r.account_id || r.record_id;
-      const eligible = eligibleIds.has(accountKey);
-      const raw = Number(r.company_commission) * rate;
-      const prior = byAccount.get(accountKey) ?? 0;
-      const remaining = Math.max(0, lifetimeCap - prior);
-      const display = eligible ? Math.min(raw, remaining) : 0;
-      byAccount.set(accountKey, prior + display);
-      capped.push({ ...r, displayPayout: display, eligible });
-    }
-    return capped.filter((r) => r.period_id === effectivePeriodId);
-  }, [allRecords, accountSummaries, effectivePeriodId, rate, lifetimeCap]);
+  const periodRecords = useMemo(
+    () => cappedRecords.filter((r) => r.period_id === effectivePeriodId),
+    [cappedRecords, effectivePeriodId]
+  );
 
   const totals = useMemo(() => {
     const periodTotal = periodRecords.reduce((sum, r) => sum + r.displayPayout, 0);
@@ -157,9 +133,6 @@ export default function PortalCommissions() {
     );
   }
 
-  const accountsProgress = (eligibleAccountCount / accountCeiling) * 100;
-  const earningsProgress = (cappedLifetimeEarnings / programCap) * 100;
-
   return (
     <PortalLayout pageTitle="Earnings">
       {/* Program terms */}
@@ -168,18 +141,14 @@ export default function PortalCommissions() {
           <Trophy className="h-4 w-4 text-[hsl(var(--gold))]" />
           <h2 className="text-sm font-semibold uppercase tracking-wider">Referral program</h2>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
           <div>
             <div className="text-xs text-muted-foreground uppercase">Rev share</div>
             <div className="font-semibold text-base mt-0.5">{fmtPct(rate)} of commission</div>
           </div>
           <div>
             <div className="text-xs text-muted-foreground uppercase">Cap / account</div>
-            <div className="font-semibold text-base mt-0.5">{fmt(lifetimeCap)} lifetime</div>
-          </div>
-          <div>
-            <div className="text-xs text-muted-foreground uppercase">Account ceiling</div>
-            <div className="font-semibold text-base mt-0.5">{accountCeiling} accounts</div>
+            <div className="font-semibold text-base mt-0.5">{fmt(monthlyCap)} / month</div>
           </div>
           <div>
             <div className="text-xs text-muted-foreground uppercase">Milestone bonus</div>
@@ -190,10 +159,9 @@ export default function PortalCommissions() {
         </div>
         <p className="text-xs text-muted-foreground mt-3">
           You earn <strong>{fmtPct(rate)}</strong> of the company commission for each merchant you refer, capped
-          at <strong>{fmt(lifetimeCap)} per account</strong> for the lifetime of that account. The program covers
-          your first <strong>{accountCeiling} accounts</strong> (max {fmt(programCap)}). A{" "}
-          <strong>{fmt(bonusAmount)}</strong> bonus is paid for every <strong>{bonusMilestone}</strong>{" "}
-          successfully boarded merchants.
+          at <strong>{fmt(monthlyCap)} per account, per month</strong> — recurring for the lifetime of that
+          account. A <strong>{fmt(bonusAmount)}</strong> bonus is paid for every{" "}
+          <strong>{bonusMilestone}</strong> successfully boarded merchants.
         </p>
       </Card>
 
@@ -205,19 +173,14 @@ export default function PortalCommissions() {
         </Card>
         <Card className="p-4">
           <div className="text-xs uppercase tracking-wide text-muted-foreground">Lifetime earnings</div>
-          <div className="text-2xl font-semibold mt-1 tabular-nums">{fmt(cappedLifetimeEarnings)}</div>
-          <Progress value={earningsProgress} className="h-1.5 mt-2" />
-          <div className="text-[10px] text-muted-foreground mt-1">of {fmt(programCap)} program cap</div>
+          <div className="text-2xl font-semibold mt-1 tabular-nums">{fmt(lifetimeEarnings)}</div>
+          <div className="text-[10px] text-muted-foreground mt-1">recurring, no overall cap</div>
         </Card>
         <Card className="p-4">
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">Eligible accounts</div>
-          <div className="text-2xl font-semibold mt-1 tabular-nums">
-            {eligibleAccountCount}
-            <span className="text-base text-muted-foreground"> / {accountCeiling}</span>
-          </div>
-          <Progress value={accountsProgress} className="h-1.5 mt-2" />
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">Active accounts</div>
+          <div className="text-2xl font-semibold mt-1 tabular-nums">{eligibleAccountCount}</div>
           <div className="text-[10px] text-muted-foreground mt-1">
-            {Math.max(0, accountCeiling - eligibleAccountCount)} slots remaining
+            {fmt(monthlyCap)} max per account / month
           </div>
         </Card>
         <Card className="p-4">
@@ -279,16 +242,10 @@ export default function PortalCommissions() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {!r.eligible && (
-                        <Badge variant="outline" className="text-muted-foreground">
-                          <Lock className="h-3 w-3 mr-1" />
-                          Beyond {accountCeiling}-account cap
-                        </Badge>
-                      )}
-                      {r.eligible && r.displayPayout === 0 && Number(r.company_commission) > 0 && (
+                      {r.displayPayout >= monthlyCap && (
                         <Badge variant="outline" className="text-amber-700 border-amber-300 dark:text-amber-400">
                           <TrendingUp className="h-3 w-3 mr-1" />
-                          Lifetime cap hit
+                          Monthly cap hit
                         </Badge>
                       )}
                       <div className="text-right">
@@ -310,10 +267,10 @@ export default function PortalCommissions() {
       <p className="text-xs text-muted-foreground mt-4 flex items-start gap-2">
         <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
         <span>
-          Figures reflect calculated payouts after program caps. Earnings never exceed{" "}
-          <strong>{fmt(lifetimeCap)}</strong> per account or <strong>{fmt(programCap)}</strong> in total. Actual
-          disbursement schedule and any clawbacks (within the first {referrer.clawback_window_days} days of a
-          merchant going live) are confirmed by MerchantHaus accounting.
+          Figures reflect calculated payouts after the per-account monthly cap. Earnings are capped at{" "}
+          <strong>{fmt(monthlyCap)} per account, per month</strong> and recur for the lifetime of each
+          account. Disbursement schedule and any clawbacks (within the first {referrer.clawback_window_days} days
+          of a merchant going live) are confirmed by MerchantHaus accounting.
         </span>
       </p>
     </PortalLayout>
