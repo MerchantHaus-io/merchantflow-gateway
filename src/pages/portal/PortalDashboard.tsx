@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { activeSupabase as supabase } from "@/integrations/supabase/activeClient";
 import { useAuth } from "@/contexts/AuthContext";
 import { PortalLayout } from "@/components/portal/PortalLayout";
 import { Card } from "@/components/ui/card";
