@@ -273,9 +273,6 @@ export default function PortalCommissions() {
           of a merchant going live) are confirmed by MerchantHaus accounting.
         </span>
       </p>
-          merchant going live) are confirmed by MerchantHaus accounting.
-        </span>
-      </p>
     </PortalLayout>
   );
 }
