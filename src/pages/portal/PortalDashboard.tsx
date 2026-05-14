@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { STAGE_CONFIG, OpportunityStage, OutcomeStatus } from "@/types/opportunity";
 import { format, formatDistanceToNow, differenceInDays } from "date-fns";
 import { Send, CheckCircle2, XCircle, Clock, TrendingUp, Building2, Mail, Sparkles } from "lucide-react";
@@ -122,12 +123,35 @@ export default function PortalDashboard() {
     <PortalLayout
       pageTitle="Your Referrals"
       headerActions={
-        <Button asChild>
-          <Link to="/affiliate/new-referral">
-            <Send className="h-4 w-4 mr-2" />
-            Submit Referral
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          {referrer?.tier === 'premium' && (
+            <TooltipProvider delayDuration={150}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => setPremiumOpen(true)}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-[hsl(var(--gold))]/50 bg-[hsl(var(--gold))]/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-[hsl(var(--gold))] hover:bg-[hsl(var(--gold))]/20 transition-colors"
+                    aria-label="Premium partner status"
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    Premium
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-[260px] text-xs">
+                  You're a <strong>Premium Partner</strong>. Standard model figures shown — your terms are
+                  always open to discussion. Click to view details.
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+          <Button asChild>
+            <Link to="/affiliate/new-referral">
+              <Send className="h-4 w-4 mr-2" />
+              Submit Referral
+            </Link>
+          </Button>
+        </div>
       }
     >
       {referrer?.tier === 'premium' && (
