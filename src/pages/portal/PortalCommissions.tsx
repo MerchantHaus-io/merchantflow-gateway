@@ -173,19 +173,14 @@ export default function PortalCommissions() {
         </Card>
         <Card className="p-4">
           <div className="text-xs uppercase tracking-wide text-muted-foreground">Lifetime earnings</div>
-          <div className="text-2xl font-semibold mt-1 tabular-nums">{fmt(cappedLifetimeEarnings)}</div>
-          <Progress value={earningsProgress} className="h-1.5 mt-2" />
-          <div className="text-[10px] text-muted-foreground mt-1">of {fmt(programCap)} program cap</div>
+          <div className="text-2xl font-semibold mt-1 tabular-nums">{fmt(lifetimeEarnings)}</div>
+          <div className="text-[10px] text-muted-foreground mt-1">recurring, no overall cap</div>
         </Card>
         <Card className="p-4">
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">Eligible accounts</div>
-          <div className="text-2xl font-semibold mt-1 tabular-nums">
-            {eligibleAccountCount}
-            <span className="text-base text-muted-foreground"> / {accountCeiling}</span>
-          </div>
-          <Progress value={accountsProgress} className="h-1.5 mt-2" />
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">Active accounts</div>
+          <div className="text-2xl font-semibold mt-1 tabular-nums">{eligibleAccountCount}</div>
           <div className="text-[10px] text-muted-foreground mt-1">
-            {Math.max(0, accountCeiling - eligibleAccountCount)} slots remaining
+            {fmt(monthlyCap)} max per account / month
           </div>
         </Card>
         <Card className="p-4">
