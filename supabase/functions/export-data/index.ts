@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log("Starting data export for admin:", user.email);
+    console.log("Starting data export (admin authorized)");
 
     // Fetch all tables including chat data
     const tables = [
