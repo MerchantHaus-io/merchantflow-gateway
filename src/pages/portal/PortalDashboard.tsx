@@ -185,8 +185,7 @@ export default function PortalDashboard() {
         onOpenChange={setPremiumOpen}
         referrerName={referrer?.full_name ?? null}
         commissionRate={referrer?.commission_rate ?? 0.5}
-        lifetimeCap={referrer?.lifetime_cap_per_merchant ?? 500}
-        accountCeiling={referrer?.account_ceiling ?? 10}
+        monthlyCap={referrer?.monthly_cap_per_merchant ?? 500}
         bonusAmount={referrer?.bonus_amount ?? 500}
         bonusMilestone={referrer?.bonus_milestone_count ?? 5}
       />
