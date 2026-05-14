@@ -242,16 +242,10 @@ export default function PortalCommissions() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      {!r.eligible && (
-                        <Badge variant="outline" className="text-muted-foreground">
-                          <Lock className="h-3 w-3 mr-1" />
-                          Beyond {accountCeiling}-account cap
-                        </Badge>
-                      )}
-                      {r.eligible && r.displayPayout === 0 && Number(r.company_commission) > 0 && (
+                      {r.displayPayout >= monthlyCap && (
                         <Badge variant="outline" className="text-amber-700 border-amber-300 dark:text-amber-400">
                           <TrendingUp className="h-3 w-3 mr-1" />
-                          Lifetime cap hit
+                          Monthly cap hit
                         </Badge>
                       )}
                       <div className="text-right">
