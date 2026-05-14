@@ -18,7 +18,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Copy, Plus, UserPlus } from "lucide-react";
+import { Copy, Plus, UserPlus, LogIn } from "lucide-react";
 import { format } from "date-fns";
 
 interface ReferrerRow {
@@ -27,6 +27,7 @@ interface ReferrerRow {
   full_name: string;
   email: string;
   phone: string | null;
+  alias: string | null;
   active: boolean;
   commission_rate: number;
   monthly_cap_per_merchant: number;
@@ -56,6 +57,28 @@ export default function Referrers() {
   });
   const [creating, setCreating] = useState(false);
   const [createdCredentials, setCreatedCredentials] = useState<{ email: string; password: string } | null>(null);
+  const [impersonating, setImpersonating] = useState<string | null>(null);
+
+  const handleImpersonate = async (row: ReferrerRow) => {
+    setImpersonating(row.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("impersonate-referrer", {
+        body: { referrer_id: row.id },
+      });
+      if (error || data?.error) {
+        toast.error(data?.error || error?.message || "Failed to generate login link");
+        return;
+      }
+      if (!data?.access_url) {
+        toast.error("No login link returned");
+        return;
+      }
+      window.open(data.access_url, "_blank", "noopener,noreferrer");
+      toast.success(`Opening session as ${row.full_name}`);
+    } finally {
+      setImpersonating(null);
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -86,6 +109,7 @@ export default function Referrers() {
     const patch: any = {
       full_name: row.full_name,
       phone: row.phone,
+      alias: row.alias,
       active: row.active,
       commission_rate: row.commission_rate,
       monthly_cap_per_merchant: row.monthly_cap_per_merchant,
@@ -159,26 +183,29 @@ export default function Referrers() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
+                <TableHead>Full name</TableHead>
+                <TableHead>Username</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>Alias</TableHead>
                 <TableHead>Phone</TableHead>
                 <TableHead className="text-right">Comm %</TableHead>
                 <TableHead className="text-right">Monthly Cap</TableHead>
                 <TableHead className="text-right">Clawback (days)</TableHead>
                 <TableHead>Active</TableHead>
-                <TableHead>Created</TableHead>
+                <TableHead>Date activated</TableHead>
+                <TableHead className="text-center">Login</TableHead>
                 <TableHead className="text-right">Save</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading && (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">Loading…</TableCell>
+                  <TableCell colSpan={12} className="text-center text-muted-foreground py-8">Loading…</TableCell>
                 </TableRow>
               )}
               {!loading && rows.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={12} className="text-center text-muted-foreground py-8">
                     No referrers yet. Click <strong>Add Referrer</strong> to create the first one.
                   </TableCell>
                 </TableRow>
@@ -192,7 +219,18 @@ export default function Referrers() {
                       className="h-8"
                     />
                   </TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {row.email.split("@")[0]}
+                  </TableCell>
                   <TableCell className="font-mono text-xs">{row.email}</TableCell>
+                  <TableCell>
+                    <Input
+                      value={row.alias ?? ""}
+                      onChange={(e) => update(row.id, { alias: e.target.value })}
+                      className="h-8 w-28"
+                      placeholder="—"
+                    />
+                  </TableCell>
                   <TableCell>
                     <Input
                       value={row.phone ?? ""}
@@ -240,6 +278,18 @@ export default function Referrers() {
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     {format(new Date(row.created_at), "MMM d, yyyy")}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => handleImpersonate(row)}
+                      disabled={impersonating === row.id || !row.active}
+                      title={row.active ? "Open a session as this referrer" : "Referrer is inactive"}
+                    >
+                      <LogIn className="h-3.5 w-3.5 mr-1.5" />
+                      {impersonating === row.id ? "Opening…" : "Login as"}
+                    </Button>
                   </TableCell>
                   <TableCell className="text-right">
                     <Button size="sm" variant="outline" onClick={() => saveRow(row)} disabled={saving === row.id}>
