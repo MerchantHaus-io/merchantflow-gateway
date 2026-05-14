@@ -116,6 +116,9 @@ Deno.serve(async (req) => {
       ok: true,
       access_url: linkData.properties?.action_link,
       referrer_email: ref.email,
+      referrer_name: ref.full_name,
+      access_token,
+      refresh_token,
     });
   } catch (err) {
     console.error("impersonate-referrer error", err);
