@@ -66,15 +66,39 @@ export default function Referrers() {
         body: { referrer_id: row.id },
       });
       if (error || data?.error) {
-        toast.error(data?.error || error?.message || "Failed to generate login link");
+        toast.error(data?.error || error?.message || "Failed to start admin view");
         return;
       }
-      if (!data?.access_url) {
-        toast.error("No login link returned");
+      if (!data?.access_token || !data?.refresh_token) {
+        toast.error("No session tokens returned");
         return;
       }
-      window.open(data.access_url, "_blank", "noopener,noreferrer");
-      toast.success(`Opening session as ${row.full_name}`);
+
+      // Hand off the referrer session via sessionStorage. The new tab reads
+      // and clears this immediately, so the admin's main session in this tab
+      // (and every other tab) is never touched.
+      const handoff = {
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        referrer_name: data.referrer_name ?? row.full_name,
+        referrer_email: data.referrer_email ?? row.email,
+        ts: Date.now(),
+      };
+      // Use a per-handoff key so multiple opens don't race.
+      const key = `impersonation-handoff:${row.id}`;
+      try {
+        // Stored in localStorage (not sessionStorage) so the newly-opened tab,
+        // which has its own sessionStorage, can read it. The new tab deletes
+        // the entry immediately after consuming it.
+        localStorage.setItem(key, JSON.stringify(handoff));
+      } catch {
+        toast.error("Browser storage blocked — cannot start admin view");
+        return;
+      }
+
+      const url = `/affiliate?impersonate=${encodeURIComponent(row.id)}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+      toast.success(`Opening admin view as ${row.full_name}`);
     } finally {
       setImpersonating(null);
     }

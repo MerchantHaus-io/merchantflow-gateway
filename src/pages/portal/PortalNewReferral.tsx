@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { activeSupabase as supabase } from "@/integrations/supabase/activeClient";
 import { useAuth } from "@/contexts/AuthContext";
 import { PortalLayout } from "@/components/portal/PortalLayout";
 import { Card } from "@/components/ui/card";

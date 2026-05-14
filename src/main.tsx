@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import { hydrateTeamRosterFromDb } from "@/config/team";
+import { bootstrapImpersonation } from "@/integrations/supabase/impersonationBootstrap";
 
 // Load the live team roster from the database (admins edit it from
 // Settings → Team Roster). Fire-and-forget — code defaults stand in until ready.
@@ -13,4 +14,8 @@ if (splash) {
   setTimeout(() => splash.remove(), 400);
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+// Bootstrap admin-impersonation BEFORE mounting React so AuthProvider sees the
+// correct (isolated) session on its first render. No-op for normal sessions.
+void bootstrapImpersonation().finally(() => {
+  createRoot(document.getElementById("root")!).render(<App />);
+});

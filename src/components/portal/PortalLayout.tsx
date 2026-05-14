@@ -3,7 +3,12 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Send, DollarSign, LogOut } from "lucide-react";
+import { LayoutDashboard, Send, DollarSign, LogOut, ShieldAlert, X } from "lucide-react";
+import {
+  IMPERSONATION_ACTIVE_FLAG,
+  IMPERSONATION_REFERRER_LABEL,
+  isImpersonationTab,
+} from "@/integrations/supabase/impersonationClient";
 
 interface PortalLayoutProps {
   children: ReactNode;
@@ -21,16 +26,58 @@ export function PortalLayout({ children, pageTitle, headerActions }: PortalLayou
   const { referrer, signOut, user } = useAuth();
   const navigate = useNavigate();
 
+  const impersonating = isImpersonationTab();
+  const impersonationLabel =
+    typeof window !== "undefined"
+      ? sessionStorage.getItem(IMPERSONATION_REFERRER_LABEL)
+      : null;
+
   const handleSignOut = async () => {
     await signOut();
+    if (impersonating) {
+      // Tear down the impersonation tab cleanly. Closing the tab discards
+      // sessionStorage; the admin's main tab is unaffected.
+      sessionStorage.removeItem(IMPERSONATION_ACTIVE_FLAG);
+      sessionStorage.removeItem(IMPERSONATION_REFERRER_LABEL);
+      window.close();
+      return;
+    }
     navigate("/auth", { replace: true });
+  };
+
+  const exitAdminView = () => {
+    sessionStorage.removeItem(IMPERSONATION_ACTIVE_FLAG);
+    sessionStorage.removeItem(IMPERSONATION_REFERRER_LABEL);
+    window.close();
   };
 
   // referrer can be null momentarily for internal staff previewing the portal
   const displayName = referrer?.full_name ?? user?.email ?? "Partner";
 
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      {impersonating && (
+        <div className="sticky top-0 z-50 border-b border-amber-500/40 bg-amber-500/15">
+          <div className="max-w-6xl mx-auto px-4 lg:px-6 py-2 flex items-center justify-between gap-3 text-amber-900 dark:text-amber-200">
+            <div className="flex items-center gap-2 min-w-0">
+              <ShieldAlert className="h-4 w-4 shrink-0" />
+              <span className="text-xs sm:text-sm font-medium truncate">
+                Admin View — acting as <strong>{impersonationLabel ?? referrer?.full_name ?? user?.email}</strong>. Your own session is untouched.
+              </span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-amber-900 dark:text-amber-200 hover:bg-amber-500/20"
+              onClick={exitAdminView}
+            >
+              <X className="h-3.5 w-3.5 mr-1" />
+              Exit view
+            </Button>
+          </div>
+        </div>
+      )}
       <header className="border-b bg-card">
         <div className="max-w-6xl mx-auto px-4 lg:px-6 py-3 flex items-center justify-between gap-4">
           <Link to="/affiliate" className="flex items-center gap-2">
