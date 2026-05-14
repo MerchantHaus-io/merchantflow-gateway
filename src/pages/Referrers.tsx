@@ -183,26 +183,29 @@ export default function Referrers() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
+                <TableHead>Full name</TableHead>
+                <TableHead>Username</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>Alias</TableHead>
                 <TableHead>Phone</TableHead>
                 <TableHead className="text-right">Comm %</TableHead>
                 <TableHead className="text-right">Monthly Cap</TableHead>
                 <TableHead className="text-right">Clawback (days)</TableHead>
                 <TableHead>Active</TableHead>
-                <TableHead>Created</TableHead>
+                <TableHead>Date activated</TableHead>
+                <TableHead className="text-center">Login</TableHead>
                 <TableHead className="text-right">Save</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading && (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">Loading…</TableCell>
+                  <TableCell colSpan={12} className="text-center text-muted-foreground py-8">Loading…</TableCell>
                 </TableRow>
               )}
               {!loading && rows.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={12} className="text-center text-muted-foreground py-8">
                     No referrers yet. Click <strong>Add Referrer</strong> to create the first one.
                   </TableCell>
                 </TableRow>
@@ -216,7 +219,18 @@ export default function Referrers() {
                       className="h-8"
                     />
                   </TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {row.email.split("@")[0]}
+                  </TableCell>
                   <TableCell className="font-mono text-xs">{row.email}</TableCell>
+                  <TableCell>
+                    <Input
+                      value={row.alias ?? ""}
+                      onChange={(e) => update(row.id, { alias: e.target.value })}
+                      className="h-8 w-28"
+                      placeholder="—"
+                    />
+                  </TableCell>
                   <TableCell>
                     <Input
                       value={row.phone ?? ""}
@@ -264,6 +278,18 @@ export default function Referrers() {
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     {format(new Date(row.created_at), "MMM d, yyyy")}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => handleImpersonate(row)}
+                      disabled={impersonating === row.id || !row.active}
+                      title={row.active ? "Open a session as this referrer" : "Referrer is inactive"}
+                    >
+                      <LogIn className="h-3.5 w-3.5 mr-1.5" />
+                      {impersonating === row.id ? "Opening…" : "Login as"}
+                    </Button>
                   </TableCell>
                   <TableCell className="text-right">
                     <Button size="sm" variant="outline" onClick={() => saveRow(row)} disabled={saving === row.id}>
