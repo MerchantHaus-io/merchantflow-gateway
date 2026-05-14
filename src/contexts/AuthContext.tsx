@@ -13,8 +13,6 @@ export interface ReferrerProfile {
   commission_rate: number;
   monthly_cap_per_merchant: number;
   clawback_window_days: number;
-  lifetime_cap_per_merchant: number;
-  account_ceiling: number;
   bonus_amount: number;
   bonus_milestone_count: number;
   tier?: 'standard' | 'premium' | null;
