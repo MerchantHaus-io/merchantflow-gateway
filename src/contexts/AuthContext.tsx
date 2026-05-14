@@ -105,12 +105,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setReferrer(null);
       return;
     }
-    const { data } = await supabase
+    const cols = 'id, full_name, email, phone, active, commission_rate, monthly_cap_per_merchant, clawback_window_days, lifetime_cap_per_merchant, account_ceiling, bonus_amount, bonus_milestone_count';
+    // Primary lookup: auth_user_id link
+    let { data } = await supabase
       .from('referrers')
-      .select('id, full_name, email, phone, active, commission_rate, monthly_cap_per_merchant, clawback_window_days, lifetime_cap_per_merchant, account_ceiling, bonus_amount, bonus_milestone_count')
+      .select(cols)
       .eq('auth_user_id', currentUser.id)
       .eq('active', true)
       .maybeSingle();
+    // Fallback: match by email (covers impersonation magic-links and unlinked rows)
+    if (!data && currentUser.email) {
+      const { data: byEmail } = await supabase
+        .from('referrers')
+        .select(cols)
+        .ilike('email', currentUser.email)
+        .eq('active', true)
+        .maybeSingle();
+      data = byEmail ?? null;
+    }
     setReferrer((data as ReferrerProfile | null) ?? null);
   };
 

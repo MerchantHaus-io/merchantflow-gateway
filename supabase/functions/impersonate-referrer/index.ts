@@ -66,6 +66,19 @@ Deno.serve(async (req) => {
       return json({ error: linkErr?.message || "Failed to generate magic link" }, 500);
     }
 
+    // Backfill referrers.auth_user_id so RLS policies that key off auth_user_id work
+    // for impersonated sessions. generateLink upserts the auth user, so it now exists.
+    try {
+      const userId = (linkData as any)?.user?.id;
+      if (userId) {
+        await admin
+          .from("referrers")
+          .update({ auth_user_id: userId })
+          .eq("id", ref.id)
+          .is("auth_user_id", null);
+      }
+    } catch (_) { /* non-fatal */ }
+
     // Audit log
     await admin.from("referrer_impersonation_logs").insert({
       referrer_id: ref.id,
