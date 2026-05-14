@@ -506,10 +506,15 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { client_ip, user_agent, ...formData } = body;
+    // Strip any client-supplied client_ip — it is forgeable. Use trusted headers.
+    const { client_ip: _ignoredIp, user_agent: bodyUserAgent, ...formData } = body;
     const parsed = InputSchema.parse(formData);
-    const clientIp = client_ip || "unknown";
-    const userAgent = user_agent || "unknown";
+    const clientIp =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("cf-connecting-ip") ||
+      req.headers.get("x-real-ip") ||
+      "unknown";
+    const userAgent = req.headers.get("user-agent") || bodyUserAgent || "unknown";
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
