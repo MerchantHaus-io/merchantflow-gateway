@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { activeSupabase as supabase } from '@/integrations/supabase/activeClient';
 import { isEmailAllowed, getTeamMemberFromEmail } from '@/types/opportunity';
 import { playLoginJingle } from '@/hooks/useNotificationSound';
 
