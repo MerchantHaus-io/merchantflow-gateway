@@ -3,7 +3,12 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Send, DollarSign, LogOut } from "lucide-react";
+import { LayoutDashboard, Send, DollarSign, LogOut, ShieldAlert, X } from "lucide-react";
+import {
+  IMPERSONATION_ACTIVE_FLAG,
+  IMPERSONATION_REFERRER_LABEL,
+  isImpersonationTab,
+} from "@/integrations/supabase/impersonationClient";
 
 interface PortalLayoutProps {
   children: ReactNode;
@@ -21,13 +26,34 @@ export function PortalLayout({ children, pageTitle, headerActions }: PortalLayou
   const { referrer, signOut, user } = useAuth();
   const navigate = useNavigate();
 
+  const impersonating = isImpersonationTab();
+  const impersonationLabel =
+    typeof window !== "undefined"
+      ? sessionStorage.getItem(IMPERSONATION_REFERRER_LABEL)
+      : null;
+
   const handleSignOut = async () => {
     await signOut();
+    if (impersonating) {
+      // Tear down the impersonation tab cleanly. Closing the tab discards
+      // sessionStorage; the admin's main tab is unaffected.
+      sessionStorage.removeItem(IMPERSONATION_ACTIVE_FLAG);
+      sessionStorage.removeItem(IMPERSONATION_REFERRER_LABEL);
+      window.close();
+      return;
+    }
     navigate("/auth", { replace: true });
+  };
+
+  const exitAdminView = () => {
+    sessionStorage.removeItem(IMPERSONATION_ACTIVE_FLAG);
+    sessionStorage.removeItem(IMPERSONATION_REFERRER_LABEL);
+    window.close();
   };
 
   // referrer can be null momentarily for internal staff previewing the portal
   const displayName = referrer?.full_name ?? user?.email ?? "Partner";
+
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
