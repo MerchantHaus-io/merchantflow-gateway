@@ -353,8 +353,7 @@ function PremiumDetailsDialog({
   onOpenChange,
   referrerName,
   commissionRate,
-  lifetimeCap,
-  accountCeiling,
+  monthlyCap,
   bonusAmount,
   bonusMilestone,
 }: {
@@ -362,8 +361,7 @@ function PremiumDetailsDialog({
   onOpenChange: (v: boolean) => void;
   referrerName: string | null;
   commissionRate: number;
-  lifetimeCap: number;
-  accountCeiling: number;
+  monthlyCap: number;
   bonusAmount: number;
   bonusMilestone: number;
 }) {
@@ -401,7 +399,7 @@ function PremiumDetailsDialog({
               </li>
               <li className="flex justify-between gap-3">
                 <span className="text-muted-foreground">Per-account monthly cap</span>
-                <strong>${lifetimeCap.toLocaleString()} / account / month</strong>
+                <strong>${monthlyCap.toLocaleString()} / account / month</strong>
               </li>
               <li className="flex justify-between gap-3">
                 <span className="text-muted-foreground">Account limit</span>
@@ -413,8 +411,8 @@ function PremiumDetailsDialog({
               </li>
             </ul>
             <p className="text-xs text-muted-foreground mt-3">
-              Example: 10 accounts each at the per-account monthly cap = $5,000/month recurring.
-              20 accounts = $10,000/month recurring. Paid every month for the life of the merchant.
+              Example: 10 accounts each at the per-account monthly cap = ${(monthlyCap * 10).toLocaleString()}/month recurring.
+              20 accounts = ${(monthlyCap * 20).toLocaleString()}/month recurring. Paid every month for the life of the merchant.
             </p>
           </div>
 
