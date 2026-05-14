@@ -267,9 +267,12 @@ export default function PortalCommissions() {
       <p className="text-xs text-muted-foreground mt-4 flex items-start gap-2">
         <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
         <span>
-          Figures reflect calculated payouts after program caps. Earnings never exceed{" "}
-          <strong>{fmt(lifetimeCap)}</strong> per account or <strong>{fmt(programCap)}</strong> in total. Actual
-          disbursement schedule and any clawbacks (within the first {referrer.clawback_window_days} days of a
+          Figures reflect calculated payouts after the per-account monthly cap. Earnings are capped at{" "}
+          <strong>{fmt(monthlyCap)} per account, per month</strong> and recur for the lifetime of each
+          account. Disbursement schedule and any clawbacks (within the first {referrer.clawback_window_days} days
+          of a merchant going live) are confirmed by MerchantHaus accounting.
+        </span>
+      </p>
           merchant going live) are confirmed by MerchantHaus accounting.
         </span>
       </p>
