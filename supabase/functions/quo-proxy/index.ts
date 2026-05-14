@@ -258,7 +258,7 @@ Deno.serve(async (req) => {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('Quo API error:', data);
+      console.error('Quo API error: status', (data as any)?.status || 'unknown');
       return new Response(
         JSON.stringify({ success: false, error: data.error || data.message || `Request failed: ${response.status}` }),
         { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
