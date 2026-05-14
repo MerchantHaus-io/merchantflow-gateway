@@ -2395,10 +2395,46 @@ export type Database = {
         }
         Relationships: []
       }
+      referrer_impersonation_logs: {
+        Row: {
+          admin_email: string
+          admin_user_id: string
+          created_at: string
+          id: string
+          referrer_email: string
+          referrer_id: string
+        }
+        Insert: {
+          admin_email: string
+          admin_user_id: string
+          created_at?: string
+          id?: string
+          referrer_email: string
+          referrer_id: string
+        }
+        Update: {
+          admin_email?: string
+          admin_user_id?: string
+          created_at?: string
+          id?: string
+          referrer_email?: string
+          referrer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrer_impersonation_logs_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "referrers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       referrers: {
         Row: {
           account_ceiling: number
           active: boolean
+          alias: string | null
           auth_user_id: string | null
           bonus_amount: number
           bonus_milestone_count: number
@@ -2418,6 +2454,7 @@ export type Database = {
         Insert: {
           account_ceiling?: number
           active?: boolean
+          alias?: string | null
           auth_user_id?: string | null
           bonus_amount?: number
           bonus_milestone_count?: number
@@ -2437,6 +2474,7 @@ export type Database = {
         Update: {
           account_ceiling?: number
           active?: boolean
+          alias?: string | null
           auth_user_id?: string | null
           bonus_amount?: number
           bonus_milestone_count?: number
