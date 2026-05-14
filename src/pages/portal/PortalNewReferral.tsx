@@ -133,10 +133,9 @@ export default function PortalNewReferral() {
           <p className="text-sm text-muted-foreground">
             You earn <strong>{(referrer.commission_rate * 100).toFixed(0)}%</strong> of company commission per
             referral, capped at{" "}
-            <strong>${referrer.lifetime_cap_per_merchant.toLocaleString()} per account</strong> for the lifetime
-            of that account. Program covers your first <strong>{referrer.account_ceiling} accounts</strong> (max{" "}
-            <strong>${(referrer.lifetime_cap_per_merchant * referrer.account_ceiling).toLocaleString()}</strong>),
-            plus a <strong>${referrer.bonus_amount}</strong> bonus for every{" "}
+            <strong>${referrer.monthly_cap_per_merchant.toLocaleString()} per account, per month</strong> —
+            recurring for the lifetime of each account, with no overall ceiling. Plus a{" "}
+            <strong>${referrer.bonus_amount}</strong> bonus for every{" "}
             <strong>{referrer.bonus_milestone_count}</strong> successfully boarded merchants.
           </p>
         </Card>
