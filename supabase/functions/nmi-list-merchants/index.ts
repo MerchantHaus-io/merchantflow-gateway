@@ -6,10 +6,15 @@ const corsHeaders = {
 const NMI_V4_BASE = "https://secure.nmi.com/api/v4";
 const NMI_GATEWAY_BASE = "https://merchanthausio.transactiongateway.com";
 
+import { requireAuth } from "../_shared/require-auth.ts";
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  const unauth = await requireAuth(req, corsHeaders);
+  if (unauth) return unauth;
 
   try {
     const apiKey = Deno.env.get("NMI_API_KEY");
