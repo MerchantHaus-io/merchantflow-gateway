@@ -101,10 +101,15 @@ async function sendWebPush(
   return response;
 }
 
+import { requireAuth } from "../_shared/require-auth.ts";
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const unauth = await requireAuth(req, corsHeaders);
+  if (unauth) return unauth;
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
