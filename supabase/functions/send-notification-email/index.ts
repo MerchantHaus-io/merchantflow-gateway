@@ -174,11 +174,16 @@ const getEmailHtml = (type: string, recipientName: string, data: Record<string, 
   }
 };
 
+import { requireAuth } from "../_shared/require-auth.ts";
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const unauth = await requireAuth(req, corsHeaders);
+  if (unauth) return unauth;
 
   try {
     const { type, recipientEmail, recipientName, data }: NotificationEmailRequest = await req.json();
