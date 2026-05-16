@@ -1254,6 +1254,115 @@ Sales Support`,
                     <strong className="text-foreground">Two pipelines:</strong> Processing deals follow all 10 stages. Gateway Only deals skip App Prep, Underwriting, and Approved — going directly from Qualified → Gateway Setup.
                   </div>
 
+                  {/* SOP → CRM stage mapping reference */}
+                  <div className="mb-8 border border-border rounded-none overflow-hidden">
+                    <div className="bg-[hsl(var(--gold))]/15 border-b border-border px-4 py-3">
+                      <h3 className="font-bold text-foreground text-sm uppercase tracking-wider">SOP → CRM Stage Mapping & Automated Emails</h3>
+                      <p className="text-xs text-muted-foreground mt-1">Single source of truth: each SOP stage, its exact pipeline value in the CRM (<code className="text-foreground">opportunities.stage</code>), and every email that fires automatically when entered.</p>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs">
+                        <thead className="bg-secondary/40 border-b border-border">
+                          <tr className="text-left">
+                            <th className="px-3 py-2 font-bold text-foreground w-10">#</th>
+                            <th className="px-3 py-2 font-bold text-foreground">SOP Stage</th>
+                            <th className="px-3 py-2 font-bold text-foreground">CRM Pipeline Value</th>
+                            <th className="px-3 py-2 font-bold text-foreground">Automated Emails / Triggers</th>
+                          </tr>
+                        </thead>
+                        <tbody className="[&_td]:px-3 [&_td]:py-2 [&_td]:align-top [&_tr]:border-b [&_tr]:border-border/60">
+                          <tr>
+                            <td className="text-muted-foreground">1</td>
+                            <td className="font-medium text-foreground">Discovery</td>
+                            <td><code className="text-foreground">discovery</code></td>
+                            <td className="text-muted-foreground">None automated. Reps defer prospects to <code>/merchant-apply</code>; submission triggers application-received confirmation via <code>submit-merchant-application</code>.</td>
+                          </tr>
+                          <tr>
+                            <td className="text-muted-foreground">2</td>
+                            <td className="font-medium text-foreground">Qualified</td>
+                            <td><code className="text-foreground">qualified</code></td>
+                            <td className="text-muted-foreground"><strong className="text-foreground">send-qualified-docs-request</strong> — fires on entry to Qualified (and via the "Request Documents" button). Sends branded document checklist to the merchant.</td>
+                          </tr>
+                          <tr>
+                            <td className="text-muted-foreground">3</td>
+                            <td className="font-medium text-foreground">App Prep</td>
+                            <td><code className="text-foreground">application_prep</code></td>
+                            <td className="text-muted-foreground">No auto-send. <strong className="text-foreground">send-quote-email</strong> is manual via the Quote Generator (gated until volume, ticket, card mix, and statements are captured).</td>
+                          </tr>
+                          <tr>
+                            <td className="text-muted-foreground">4</td>
+                            <td className="font-medium text-foreground">Underwriting Review</td>
+                            <td><code className="text-foreground">underwriting_review</code></td>
+                            <td className="text-muted-foreground">No outbound email. AI underwriting analysis runs and persists a 0–100 risk score. Gateway-only deals are blocked from this stage.</td>
+                          </tr>
+                          <tr>
+                            <td className="text-muted-foreground">5</td>
+                            <td className="font-medium text-foreground">Approved</td>
+                            <td><code className="text-foreground">processor_approval</code></td>
+                            <td className="text-muted-foreground">Auto-spawns a linked Gateway deal (gateway funnel auto-creation). No merchant email fires on entry — onboarding handoff is manual.</td>
+                          </tr>
+                          <tr>
+                            <td className="text-muted-foreground">6</td>
+                            <td className="font-medium text-foreground">Gateway Setup</td>
+                            <td><code className="text-foreground">gateway_submitted</code></td>
+                            <td className="text-muted-foreground"><strong className="text-foreground">nmi-board-merchant</strong> posts to NMI Partner v4. NMI webhook responses route through <strong className="text-foreground">nmi-webhook</strong>.</td>
+                          </tr>
+                          <tr>
+                            <td className="text-muted-foreground">7</td>
+                            <td className="font-medium text-foreground">Integration</td>
+                            <td><code className="text-foreground">integration_setup</code></td>
+                            <td className="text-muted-foreground"><strong className="text-foreground">send-terminal-update-email</strong> fires when a terminal-update changelog entry is published. Portal milestone events from <strong className="text-foreground">receive-portal-milestone</strong> can trigger merchant notifications.</td>
+                          </tr>
+                          <tr>
+                            <td className="text-muted-foreground">8</td>
+                            <td className="font-medium text-foreground">Testing</td>
+                            <td><code className="text-foreground">testing</code></td>
+                            <td className="text-muted-foreground">None automated. NMI transaction sync confirms first test transactions.</td>
+                          </tr>
+                          <tr>
+                            <td className="text-muted-foreground">9</td>
+                            <td className="font-medium text-foreground">Go Live Ready</td>
+                            <td><code className="text-foreground">go_live_ready</code></td>
+                            <td className="text-muted-foreground">No merchant email. Internal notification + push fires to assignee. Activation is gated behind the portal activation step.</td>
+                          </tr>
+                          <tr>
+                            <td className="text-muted-foreground">10</td>
+                            <td className="font-medium text-foreground">Closed Won</td>
+                            <td><code className="text-foreground">closed_won</code></td>
+                            <td className="text-muted-foreground"><strong className="text-foreground">activate-portal-merchant</strong> provisions the merchant portal. Portal activation cron syncs status every 15 min. SLA aging disabled at this stage.</td>
+                          </tr>
+                          <tr className="bg-secondary/20">
+                            <td className="text-muted-foreground">—</td>
+                            <td className="font-medium text-foreground">Outcome: Disqualified</td>
+                            <td><code className="text-foreground">outcome_status = disqualified</code></td>
+                            <td className="text-muted-foreground"><strong className="text-foreground">send-outcome-email</strong> fires for disqualification reasons (gated by <code>EMAIL_TRIGGERING_OUTCOMES</code>). Permanent-suppression reasons block re-engagement tasks.</td>
+                          </tr>
+                          <tr className="bg-secondary/20">
+                            <td className="text-muted-foreground">—</td>
+                            <td className="font-medium text-foreground">Outcome: Underwriting Declined</td>
+                            <td><code className="text-foreground">outcome_status = underwriting_declined</code></td>
+                            <td className="text-muted-foreground"><strong className="text-foreground">send-application-declined</strong> + <strong className="text-foreground">send-outcome-email</strong>. Remediable reasons auto-create re-engagement tasks per <code>REENGAGEMENT_TASKS</code>.</td>
+                          </tr>
+                          <tr className="bg-secondary/20">
+                            <td className="text-muted-foreground">—</td>
+                            <td className="font-medium text-foreground">Outcome: Closed Lost / No Decision</td>
+                            <td><code className="text-foreground">outcome_status = closed_lost | no_decision</code></td>
+                            <td className="text-muted-foreground">No closure email to merchant (excluded from client email triggers). Re-engagement tasks auto-scheduled where reason is recoverable.</td>
+                          </tr>
+                          <tr className="bg-secondary/20">
+                            <td className="text-muted-foreground">—</td>
+                            <td className="font-medium text-foreground">Outcome: Account Closed (live)</td>
+                            <td><code className="text-foreground">account.status = dead</code></td>
+                            <td className="text-muted-foreground"><strong className="text-foreground">send-account-closed</strong> notifies the merchant of account closure on a live account.</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="bg-secondary/30 border-t border-border px-4 py-2 text-[11px] text-muted-foreground">
+                      Cross-cutting automations (any stage): task assignment emails, stage-change notifications (email + in-app + push), agenda notifications, notice-board DM/email, Gmail/Calendar sync, SLA escalation (amber 12h / red 24h).
+                    </div>
+                  </div>
+
                   {/* Stage 1: Discovery */}
                   <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
                     <div className="bg-zinc-600/20 px-6 py-4 border-b border-border flex items-center gap-3">
