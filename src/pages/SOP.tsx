@@ -1277,12 +1277,13 @@ Sales Support`,
                           <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Send <strong className="text-foreground">Step 1 — Intro & Discovery</strong> email template</span></li>
                           <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Document business type, monthly volume, current processor</span></li>
                           <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Identify processing needs: Gateway Only vs Full Processing</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Schedule a discovery call if needed (Step 1.2)</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Schedule a discovery call only if the prospect asks (Step 1.2)</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-[hsl(var(--gold))]">★</span><span><strong className="text-foreground">Preferred path:</strong> once you've established their requirements, defer the merchant to <a href="/merchant-apply" target="_blank" rel="noopener noreferrer" className="text-primary underline">/merchant-apply</a>. The form populates the CRM and auto-fires the <em>Application Received</em> and <em>Website Compliance Checklist</em> emails — no manual templates needed.</span></li>
                         </ul>
                       </div>
                       <div className="bg-muted/50 rounded-none p-3 text-sm">
                         <strong className="text-foreground">Advance to Qualified when:</strong>
-                        <span className="text-muted-foreground"> Business model understood, solution fit confirmed, merchant interested in proceeding.</span>
+                        <span className="text-muted-foreground"> Business model understood, solution fit confirmed, and the merchant has either submitted /merchant-apply or verbally committed to proceed.</span>
                       </div>
                     </div>
                   </div>
@@ -1309,14 +1310,16 @@ Sales Support`,
                         <ul className="space-y-2 text-sm text-muted-foreground">
                           <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Confirm merchant interest and commitment to proceed</span></li>
                           <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Set appropriate pipeline: <strong className="text-foreground">Processing</strong> or <strong className="text-foreground">Gateway Only</strong></span></li>
-                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Send <strong className="text-foreground">Step 2 — Request for Documents</strong> email</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Create tasks for document follow-up</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Darryn QA gate: Initial underwriting data review</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-[hsl(var(--gold))]">★</span><span><strong className="text-foreground">Preferred path:</strong> open the Documents tab and click <strong className="text-foreground">"Request Documents"</strong>. This fires the automated <em>Qualified Docs Request</em> email (templated, tracked, customisable subject/body) — use this instead of manually sending Step 2.</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span><em>Fallback only:</em> Step 2 — Request for Documents email template (manual copy/paste) if the automation isn't available or the merchant needs the pre-launch variant</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Moving the stage to Qualified also triggers the Qualified Docs Request flow if not already sent</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Create tasks for document follow-up; Darryn QA gate: initial underwriting data review</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span><strong className="text-foreground">Do not</strong> generate a Quote yet — quotes are gated on full client info (see App Prep)</span></li>
                         </ul>
                       </div>
                       <div className="bg-muted/50 rounded-none p-3 text-sm">
                         <strong className="text-foreground">Advance to App Prep when:</strong>
-                        <span className="text-muted-foreground"> Document request sent and acknowledged. <strong>Gateway Only</strong> deals skip to Gateway Setup.</span>
+                        <span className="text-muted-foreground"> Documents have been requested (automation fired) and the merchant has acknowledged. <strong>Gateway Only</strong> deals skip directly to Gateway Setup — they are blocked from underwriting by design.</span>
                       </div>
                     </div>
                   </div>
