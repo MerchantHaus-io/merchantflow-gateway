@@ -1885,8 +1885,8 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
 
               onUpdate({
                 ...opportunity,
-                service_type: newType as unknown,
-                ...(stageReset ? { stage: stageReset as unknown } : {}),
+                service_type: newType as any,
+                ...(stageReset ? { stage: stageReset as any } : {}),
               });
 
               toast.success(`Switched to ${newType === 'gateway_only' ? 'Gateway' : 'Processing'} pipeline`);
