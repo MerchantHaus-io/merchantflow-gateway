@@ -130,7 +130,7 @@ export default function Referrers() {
   const saveRow = async (row: ReferrerRow) => {
     setSaving(row.id);
      
-    const patch: unknown = {
+    const patch: any = {
       full_name: row.full_name,
       phone: row.phone,
       alias: row.alias,
