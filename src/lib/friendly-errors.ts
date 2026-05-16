@@ -55,7 +55,7 @@ const FALLBACK = 'Something went wrong. Please try again. If the problem persist
  * Convert any error object into a user-friendly message.
  * Accepts Supabase error objects, generic Error instances, or plain strings.
  */
-export function getFriendlyError(error: unknown): string {
+export function getFriendlyError(error: any): string {
   if (!error) return FALLBACK;
 
   // Extract code and message from various shapes

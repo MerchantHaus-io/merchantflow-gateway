@@ -241,12 +241,12 @@ const Reports = () => {
     setModalState({ open: true, title, description, type, opportunities: opps, tasks });
 
   // ── Custom tooltip ──
-  const CustomTooltip = ({ active, payload, label }: unknown) => {
+  const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
     return (
       <div className="bg-background border border-border rounded-lg shadow-md px-3 py-2 text-xs">
         <p className="font-medium text-foreground mb-1">{label}</p>
-        {payload.map((p: unknown, i: number) => (
+        {payload.map((p: any, i: number) => (
           <p key={i} style={{ color: p.color }}>{p.name}: <span className="font-bold">{p.value}</span></p>
         ))}
       </div>

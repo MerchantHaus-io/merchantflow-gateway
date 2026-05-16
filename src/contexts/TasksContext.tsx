@@ -49,7 +49,7 @@ export const TasksProvider = ({ children }: { children: React.ReactNode }) => {
 
     if (data) {
       setTasks(
-        data.map((task: unknown) => {
+        data.map((task: any) => {
           const accountName = task.opportunities?.accounts?.name;
           const contact = task.contacts;
           const contactName = contact 

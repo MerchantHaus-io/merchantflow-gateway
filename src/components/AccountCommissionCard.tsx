@@ -74,7 +74,7 @@ export function AccountCommissionCard({ account }: AccountCommissionCardProps) {
       queryClient.invalidateQueries({ queryKey: ["live-account-detail"] });
       queryClient.invalidateQueries({ queryKey: ["live-billing-opportunities"] });
     },
-    onError: (err: unknown) => {
+    onError: (err: any) => {
       toast.error(`Failed to save: ${err.message || "Unknown error"}`);
     },
   });

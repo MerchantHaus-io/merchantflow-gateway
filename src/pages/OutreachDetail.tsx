@@ -50,7 +50,7 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function mergeTags(html: string, contact: unknown) {
+function mergeTags(html: string, contact: any) {
   return html
     .replace(/\{\{first_name\}\}/g, contact.first_name || "")
     .replace(/\{\{last_name\}\}/g,  contact.last_name  || "")
@@ -274,7 +274,7 @@ export default function OutreachDetail() {
       toast.success(`Step ${stepNumber} emails queued`);
       queryClient.invalidateQueries({ queryKey: ["outreach-contacts", id] });
       queryClient.invalidateQueries({ queryKey: ["outreach-campaign", id] });
-    } catch (err: unknown) {
+    } catch (err: any) {
       toast.error(err.message || "Failed");
     } finally {
       setSending(false);
@@ -309,7 +309,7 @@ export default function OutreachDetail() {
   };
 
   // ── Convert to pipeline ──
-  const convertToPipeline = async (contact: unknown) => {
+  const convertToPipeline = async (contact: any) => {
     if (!campaign) return;
     setConvertingId(contact.id);
     try {
@@ -333,7 +333,7 @@ export default function OutreachDetail() {
       queryClient.invalidateQueries({ queryKey: ["outreach-contacts", id] });
       queryClient.invalidateQueries({ queryKey: ["outreach-campaign", id] });
       toast.success(`${accountName} added to pipeline ✓`);
-    } catch (err: unknown) {
+    } catch (err: any) {
       toast.error(err.message);
     } finally {
       setConvertingId(null);

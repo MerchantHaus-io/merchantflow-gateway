@@ -483,7 +483,7 @@ export function QuoteGeneratorDialog({
       const doc = await buildPdf();
       doc.save(safeFilename());
       toast.success("Quote PDF downloaded.");
-    } catch (err: unknown) {
+    } catch (err: any) {
       toast.error(`Failed to build PDF: ${err?.message ?? err}`);
     }
   };
@@ -530,7 +530,7 @@ export function QuoteGeneratorDialog({
       if ((data as unknown)?.error) throw new Error(JSON.stringify((data as unknown).error));
       toast.success(`Quote emailed to ${client.email}`);
       onOpenChange(false);
-    } catch (err: unknown) {
+    } catch (err: any) {
       toast.error(`Email failed: ${err?.message ?? err}`);
     } finally {
       setSending(false);

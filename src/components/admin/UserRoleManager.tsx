@@ -70,7 +70,7 @@ export const UserRoleManager = () => {
         toast.success(`Granted admin to ${profile.full_name || profile.email}`);
       }
       await fetchData();
-    } catch (err: unknown) {
+    } catch (err: any) {
       toast.error(err.message || "Failed to update role");
     } finally {
       setToggling(null);

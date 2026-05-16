@@ -23,7 +23,7 @@ export const GATEWAY_TIER_LABEL: Record<GatewayTier, string> = {
 };
 
 /** Parse a numeric monthly volume from any string/number input. */
-export function parseMonthlyVolume(input: unknown): number | null {
+export function parseMonthlyVolume(input: any): number | null {
   if (input == null) return null;
   const n =
     typeof input === "number"
@@ -33,7 +33,7 @@ export function parseMonthlyVolume(input: unknown): number | null {
 }
 
 /** Auto-derive gateway tier from monthly volume. */
-export function tierFromVolume(volume: unknown): GatewayTier | null {
+export function tierFromVolume(volume: any): GatewayTier | null {
   const v = parseMonthlyVolume(volume);
   if (v == null) return null;
   if (v <= 50_000) return "foundation";

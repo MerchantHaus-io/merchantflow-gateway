@@ -271,7 +271,7 @@ export default function WebSubmissions() {
       toast({ title: "Documents assigned", description: `${migrated} file(s) assigned to ${accountName}.` });
       setAssignPrompt(null);
       fetchApplications();
-    } catch (err: unknown) {
+    } catch (err: any) {
       toast({ variant: "destructive", title: "Assignment failed", description: err.message });
     } finally {
       setIsAssigning(false);
@@ -317,7 +317,7 @@ export default function WebSubmissions() {
       URL.revokeObjectURL(url);
 
       toast({ title: "Download started", description: `${storedFiles.length} file(s) zipped and downloading.` });
-    } catch (err: unknown) {
+    } catch (err: any) {
       toast({ variant: "destructive", title: "Download failed", description: err.message });
     } finally {
       setIsDownloading(null);
@@ -672,7 +672,7 @@ export default function WebSubmissions() {
       });
 
       fetchApplications();
-    } catch (error: unknown) {
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Conversion failed",

@@ -232,7 +232,7 @@ export const hydrateTeamRosterFromDb = async (): Promise<void> => {
       .order("sort_order", { ascending: true });
     if (error || !data || data.length === 0) return;
     setTeamRoster(
-      data.map((r: unknown) => ({
+      data.map((r: any) => ({
         id: r.id,
         email: r.email,
         displayName: r.display_name,

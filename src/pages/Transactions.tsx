@@ -367,12 +367,12 @@ const Transactions = () => {
     URL.revokeObjectURL(url);
   }, [filtered, datePreset, getMerchantLabel]);
 
-  const CustomTooltip = ({ active, payload, label }: unknown) => {
+  const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
     return (
       <div className="bg-background border border-border rounded-lg shadow-md px-3 py-2 text-xs">
         <p className="font-medium text-foreground mb-1">{label}</p>
-        {payload.map((p: unknown, i: number) => (
+        {payload.map((p: any, i: number) => (
           <p key={i} style={{ color: p.color }}>{p.name}: <span className="font-bold">{typeof p.value === "number" && p.name.toLowerCase().includes("volume") ? formatCurrency(p.value) : p.value}</span></p>
         ))}
       </div>
@@ -719,7 +719,7 @@ const Transactions = () => {
                           toast.success(`Merchant roster synced — ${count} merchants found`);
                           // Refresh transactions to pick up any new merchant data
                           refetch();
-                        } catch (err: unknown) {
+                        } catch (err: any) {
                           console.error('Merchant sync error:', err);
                           toast.error(err.message || 'Failed to sync merchants');
                         } finally {

@@ -35,7 +35,7 @@ export function AdminPopupDisplay() {
       .select("popup_id")
       .eq("user_id", user.id);
 
-    const ackedIds = new Set((acked || []).map((a: unknown) => a.popup_id));
+    const ackedIds = new Set((acked || []).map((a: any) => a.popup_id));
     const pending = (popups as Popup[]).find((p) => !ackedIds.has(p.id));
 
     if (pending) {

@@ -217,7 +217,7 @@ function SmallStat({
   );
 }
 
-function Chip({ children, active, onClick }: unknown) {
+function Chip({ children, active, onClick }: any) {
   return (
     <button
       type="button"

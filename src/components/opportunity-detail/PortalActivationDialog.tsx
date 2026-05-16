@@ -150,7 +150,7 @@ export const PortalActivationDialog = ({
       toast.success("Portal account activated — merchant has been notified");
       handleClose(false);
       onSuccess?.();
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error("Portal activation error:", err);
       setInlineError(
         err.message || "Activation failed — check API key and try again"

@@ -122,7 +122,7 @@ export default function TerminalUpdates() {
       } else {
         toast.info(data?.message || "No updates to send");
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
       const msg = err instanceof Error ? err.message : "Failed to send";
       toast.error(msg);
     } finally {

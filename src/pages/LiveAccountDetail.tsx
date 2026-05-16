@@ -222,7 +222,7 @@ const LiveAccountDetail = () => {
 
   // Combine gateway IDs from boarding submissions AND account-level merchant ID
   const accountGatewayIds = [
-    ...(boardingSubmissions || []).map((s: unknown) => s.nmi_gateway_id).filter(Boolean),
+    ...(boardingSubmissions || []).map((s: any) => s.nmi_gateway_id).filter(Boolean),
     ...(account?.nmi_merchant_id ? [account.nmi_merchant_id] : []),
   ].filter((v, i, a) => a.indexOf(v) === i) as string[];
 

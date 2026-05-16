@@ -643,7 +643,7 @@ export default function MerchantApply() {
 
       if (!res.ok) {
         const msg = result.issues
-          ? result.issues.map((i: unknown) => `${i.field}: ${i.message}`).join(", ")
+          ? result.issues.map((i: any) => `${i.field}: ${i.message}`).join(", ")
           : result.error || "Submission failed";
         throw new Error(msg);
       }
@@ -659,7 +659,7 @@ export default function MerchantApply() {
 
       setIsSubmitted(true);
       window.location.href = "https://merchanthaus.io";
-    } catch (error: unknown) {
+    } catch (error: any) {
       const message = error?.message || '';
       const friendly = message && message.length < 500
         ? message

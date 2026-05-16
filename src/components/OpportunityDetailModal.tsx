@@ -510,7 +510,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
       } else {
         toast.error(data?.error || "Failed to generate access link");
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
       toast.error(err.message || "Failed to access portal");
     } finally {
       setPortalAccessLoading(false);

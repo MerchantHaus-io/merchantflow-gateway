@@ -156,14 +156,14 @@ const Tasks = () => {
     ]);
 
     if (oppsResult.data) {
-      setOpportunities(oppsResult.data.map((o: unknown) => ({
+      setOpportunities(oppsResult.data.map((o: any) => ({
         id: o.id,
         accountName: o.account?.name || 'Unknown Account'
       })));
     }
 
     if (contactsResult.data) {
-      setContacts(contactsResult.data.map((c: unknown) => ({
+      setContacts(contactsResult.data.map((c: any) => ({
         id: c.id,
         name: `${c.first_name || ''} ${c.last_name || ''}`.trim() || 'Unnamed',
         accountId: c.account_id

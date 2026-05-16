@@ -310,7 +310,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
       });
 
       toast.success("Report saved as note");
-    } catch (err: unknown) {
+    } catch (err: any) {
       toast.error(err?.message || "Failed to save report");
     } finally {
       setIsSaving(false);
@@ -397,7 +397,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
         });
         if (error) throw error;
         toast.success("Request sent to merchant");
-      } catch (err: unknown) {
+      } catch (err: any) {
         toast.error(err?.message || "Failed to send request");
         throw err;
       } finally {
@@ -428,7 +428,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
           toast.success("Underwriting Review complete — saved as note");
         }
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
       toast.error(err?.message || "Underwriting Review failed — please try again");
     } finally {
       setIsRunning(false);
