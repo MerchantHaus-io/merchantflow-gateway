@@ -21,7 +21,7 @@ interface CalendarEvent {
   start_time: string;
   end_time: string;
   all_day: boolean;
-  attendees: unknown[];
+  attendees: any[];
   opportunity_id: string | null;
   account_id: string | null;
   html_link: string | null;
@@ -189,7 +189,7 @@ function Row({ icon, children }: { icon: React.ReactNode; children: React.ReactN
   );
 }
 
-function AttendeeRow({ attendee }: { attendee: unknown }) {
+function AttendeeRow({ attendee }: { attendee: any }) {
   const name = attendee.displayName || attendee.email?.split("@")[0] || "Unknown";
   const status = attendee.responseStatus;
   const statusColor =

@@ -64,7 +64,7 @@ type WizardPrefillForm = {
   website_url: string;
   username: string;
   current_processor: string;
-  documents: unknown[];
+  documents: any[];
   notes: string;
 };
 

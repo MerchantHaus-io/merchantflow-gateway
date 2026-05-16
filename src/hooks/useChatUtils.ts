@@ -18,7 +18,7 @@ interface RetryableMessage {
 /**
  * Debounced callback hook - prevents rapid successive calls
  */
-export function useDebouncedCallback<T extends (...args: unknown[]) => void>(
+export function useDebouncedCallback<T extends (...args: any[]) => void>(
   callback: T,
   delay: number
 ): T {
@@ -46,7 +46,7 @@ export function useDebouncedCallback<T extends (...args: unknown[]) => void>(
 /**
  * Throttled callback hook - limits call frequency
  */
-export function useThrottledCallback<T extends (...args: unknown[]) => void>(
+export function useThrottledCallback<T extends (...args: any[]) => void>(
   callback: T,
   limit: number
 ): T {

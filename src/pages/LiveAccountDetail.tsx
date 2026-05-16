@@ -48,7 +48,7 @@ import liveBadge from "@/assets/live-badge.webp";
 import { NAME_TO_EMAIL } from "@/config/team";
 const TEAM_EMAIL_MAP: Record<string, string> = NAME_TO_EMAIL;
 
-const InfoRow = ({ icon: Icon, label, value, href }: { icon: unknown; label: string; value?: string | null; href?: string }) => {
+const InfoRow = ({ icon: Icon, label, value, href }: { icon: any; label: string; value?: string | null; href?: string }) => {
   if (!value) return null;
   return (
     <div className="flex items-start gap-3 py-2">

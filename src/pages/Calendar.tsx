@@ -41,7 +41,7 @@ interface CalendarEvent {
   start_time: string;
   end_time: string;
   all_day: boolean;
-  attendees: unknown[];
+  attendees: any[];
   opportunity_id: string | null;
   account_id: string | null;
   html_link: string | null;

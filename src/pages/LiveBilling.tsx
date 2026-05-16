@@ -26,12 +26,12 @@ const TEAM_EMAIL_MAP: Record<string, string> = NAME_TO_EMAIL;
 
 interface GroupedAccount {
   account_id: string;
-  account: unknown;
-  contact: unknown;
+  account: any;
+  contact: any;
   assigned_to: string | null;
   stage_entered_at: string | null;
   pipelines: ('processing' | 'gateway_only')[];
-  opportunities: unknown[];
+  opportunities: any[];
 }
 
 const LiveBilling = () => {

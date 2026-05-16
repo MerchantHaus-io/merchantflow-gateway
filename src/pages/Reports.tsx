@@ -78,7 +78,7 @@ function Delta({ value, suffix = "" }: { value: number; suffix?: string }) {
 
 // ─── Metric card ──────────────────────────────────────────────────────────────
 function MetricCard({ label, value, icon: Icon, color, bg, delta, suffix, onClick }: {
-  label: string; value: string | number; icon: unknown;
+  label: string; value: string | number; icon: any;
   color: string; bg: string; delta?: number; suffix?: string; onClick?: () => void;
 }) {
   return (
@@ -98,7 +98,7 @@ function MetricCard({ label, value, icon: Icon, color, bg, delta, suffix, onClic
 }
 
 // ─── Section header ───────────────────────────────────────────────────────────
-function SectionHeader({ icon: Icon, title, description }: { icon: unknown; title: string; description?: string }) {
+function SectionHeader({ icon: Icon, title, description }: { icon: any; title: string; description?: string }) {
   return (
     <div className="flex items-center gap-3 mb-4">
       <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">

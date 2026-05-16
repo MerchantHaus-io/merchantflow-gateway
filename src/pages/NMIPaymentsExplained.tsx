@@ -160,7 +160,7 @@ function Pill({
   title,
   desc,
 }: {
-  icon: unknown;
+  icon: any;
   title: string;
   desc: string;
 }) {

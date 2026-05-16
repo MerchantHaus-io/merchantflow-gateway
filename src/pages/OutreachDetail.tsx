@@ -369,7 +369,7 @@ export default function OutreachDetail() {
 
   // Timeline
   const timeline = contacts.flatMap(c => {
-    const ev: unknown[] = [];
+    const ev: any[] = [];
     if (c.sent_at)      ev.push({ type: "sent",      date: c.sent_at,      contact: c });
     if (c.bounced_at)   ev.push({ type: "bounced",   date: c.bounced_at,   contact: c });
     if (c.replied_at)   ev.push({ type: "replied",   date: c.replied_at,   contact: c, detail: c.reply_snippet });
