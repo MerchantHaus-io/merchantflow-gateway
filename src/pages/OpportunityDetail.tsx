@@ -107,7 +107,7 @@ const EditField = ({
 
 // Emails component - shows client_interactions of type email for the account
 const EmailsSection = ({ accountId, opportunityId }: { accountId: string; opportunityId?: string }) => {
-  const [emails, setEmails] = useState<any[]>([]);
+  const [emails, setEmails] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -131,7 +131,7 @@ const EmailsSection = ({ accountId, opportunityId }: { accountId: string; opport
         .order('received_at', { ascending: false })
         .limit(100);
 
-      const merged: any[] = [];
+      const merged: unknown[] = [];
 
       for (const i of interactions || []) {
         merged.push({
@@ -263,7 +263,7 @@ const EmailsSection = ({ accountId, opportunityId }: { accountId: string; opport
 
 // Documents component
 const DocumentsSection = ({ opportunityId }: { opportunityId: string }) => {
-  const [documents, setDocuments] = useState<any[]>([]);
+  const [documents, setDocuments] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
 

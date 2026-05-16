@@ -50,7 +50,7 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function mergeTags(html: string, contact: any) {
+function mergeTags(html: string, contact: unknown) {
   return html
     .replace(/\{\{first_name\}\}/g, contact.first_name || "")
     .replace(/\{\{last_name\}\}/g,  contact.last_name  || "")
@@ -113,7 +113,7 @@ export default function OutreachDetail() {
   const [sending, setSending]             = useState(false);
   const [previewOpen, setPreviewOpen]     = useState(false);
   const [previewStep, setPreviewStep]     = useState<number>(1);
-  const [replyDialog, setReplyDialog]     = useState<any | null>(null);
+  const [replyDialog, setReplyDialog]     = useState<unknown | null>(null);
   const [replySnippet, setReplySnippet]   = useState("");
   const [convertingId, setConvertingId]   = useState<string | null>(null);
   const [search, setSearch]               = useState("");
@@ -193,7 +193,7 @@ export default function OutreachDetail() {
 
   const markStatus = useMutation({
     mutationFn: async ({ contactId, status }: { contactId: string; status: string }) => {
-      const updates: Record<string, any> = { status };
+      const updates: Record<string, unknown> = { status };
       if (status === "bounced")   updates.bounced_at   = new Date().toISOString();
       if (status === "replied")   updates.replied_at   = new Date().toISOString();
       if (status === "converted") updates.converted_at = new Date().toISOString();
@@ -274,7 +274,7 @@ export default function OutreachDetail() {
       toast.success(`Step ${stepNumber} emails queued`);
       queryClient.invalidateQueries({ queryKey: ["outreach-contacts", id] });
       queryClient.invalidateQueries({ queryKey: ["outreach-campaign", id] });
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(err.message || "Failed");
     } finally {
       setSending(false);
@@ -309,7 +309,7 @@ export default function OutreachDetail() {
   };
 
   // ── Convert to pipeline ──
-  const convertToPipeline = async (contact: any) => {
+  const convertToPipeline = async (contact: unknown) => {
     if (!campaign) return;
     setConvertingId(contact.id);
     try {
@@ -333,7 +333,7 @@ export default function OutreachDetail() {
       queryClient.invalidateQueries({ queryKey: ["outreach-contacts", id] });
       queryClient.invalidateQueries({ queryKey: ["outreach-campaign", id] });
       toast.success(`${accountName} added to pipeline ✓`);
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(err.message);
     } finally {
       setConvertingId(null);
@@ -369,7 +369,7 @@ export default function OutreachDetail() {
 
   // Timeline
   const timeline = contacts.flatMap(c => {
-    const ev: any[] = [];
+    const ev: unknown[] = [];
     if (c.sent_at)      ev.push({ type: "sent",      date: c.sent_at,      contact: c });
     if (c.bounced_at)   ev.push({ type: "bounced",   date: c.bounced_at,   contact: c });
     if (c.replied_at)   ev.push({ type: "replied",   date: c.replied_at,   contact: c, detail: c.reply_snippet });
@@ -552,7 +552,7 @@ export default function OutreachDetail() {
                               <TableCell className="text-xs text-muted-foreground">—</TableCell>
                               <TableCell className="text-xs text-muted-foreground">{c.company || "—"}</TableCell>
                               <TableCell>
-                                <Badge variant="outline" className="text-[10px] font-mono">S{(c as any).current_step || 1}</Badge>
+                                <Badge variant="outline" className="text-[10px] font-mono">S{(c as unknown).current_step || 1}</Badge>
                               </TableCell>
                               <TableCell><StatusBadge status={c.status} /></TableCell>
                               <TableCell className="text-xs text-muted-foreground">
@@ -603,7 +603,7 @@ export default function OutreachDetail() {
                       <Button variant="ghost" size="sm" className="h-6 text-xs gap-1" onClick={() => {
                         const csv = ["Last Name,First Name,Email,Company,Status,Step,Sent At",
                           ...filteredContacts.map(c =>
-                            [c.last_name, c.first_name, c.email, c.company, c.status, (c as any).current_step, c.sent_at]
+                            [c.last_name, c.first_name, c.email, c.company, c.status, (c as unknown).current_step, c.sent_at]
                               .map(v => `"${v || ""}"`).join(",")
                           )].join("\n");
                         const a = document.createElement("a");
@@ -837,7 +837,7 @@ export default function OutreachDetail() {
               const rendered = mergeTags(stepData.body_html, sample);
               const eligibleCount = sendConfirmStep === 1
                 ? contacts.filter(c => c.status === "pending").length
-                : contacts.filter(c => (c as any).current_step === sendConfirmStep - 1 && c.status === "sent").length;
+                : contacts.filter(c => (c as unknown).current_step === sendConfirmStep - 1 && c.status === "sent").length;
               return (
                 <>
                   <div className="rounded-lg border border-border/60 bg-muted/20 p-3 space-y-1">

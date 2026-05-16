@@ -129,8 +129,8 @@ export default function Referrers() {
 
   const saveRow = async (row: ReferrerRow) => {
     setSaving(row.id);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const patch: any = {
+     
+    const patch: unknown = {
       full_name: row.full_name,
       phone: row.phone,
       alias: row.alias,
@@ -163,7 +163,7 @@ export default function Referrers() {
     setCreating(false);
 
     if (error || (data && data.error)) {
-      toast.error((data && data.error) || error?.message || "Failed to create referrer");
+      toast.error((data && data.error) || error?.message || "Failed to create affiliate");
       return;
     }
 
@@ -181,7 +181,7 @@ export default function Referrers() {
   if (roleLoading) return null;
   if (!isAdmin) {
     return (
-      <AppLayout pageTitle="Referrers">
+      <AppLayout pageTitle="Affiliates">
         <div className="p-6 text-muted-foreground">Admin access required.</div>
       </AppLayout>
     );
@@ -189,11 +189,11 @@ export default function Referrers() {
 
   return (
     <AppLayout
-      pageTitle="Referrers"
+      pageTitle="Affiliates"
       headerActions={
         <Button onClick={() => setCreateOpen(true)} size="sm">
           <UserPlus className="h-4 w-4 mr-2" />
-          Add Referrer
+          Add Affiliate
         </Button>
       }
     >
@@ -230,7 +230,7 @@ export default function Referrers() {
               {!loading && rows.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={12} className="text-center text-muted-foreground py-8">
-                    No referrers yet. Click <strong>Add Referrer</strong> to create the first one.
+                    No affiliates yet. Click <strong>Add Affiliate</strong> to create the first one.
                   </TableCell>
                 </TableRow>
               )}
@@ -309,7 +309,7 @@ export default function Referrers() {
                       variant="secondary"
                       onClick={() => handleImpersonate(row)}
                       disabled={impersonating === row.id || !row.active}
-                      title={row.active ? "Open a session as this referrer" : "Referrer is inactive"}
+                      title={row.active ? "Open a session as this affiliate" : "Affiliate is inactive"}
                     >
                       <LogIn className="h-3.5 w-3.5 mr-1.5" />
                       {impersonating === row.id ? "Opening…" : "Login as"}
@@ -327,20 +327,20 @@ export default function Referrers() {
         </Card>
 
         <p className="text-xs text-muted-foreground">
-          Commission: rep earns <strong>Comm %</strong> of net monthly revenue per referred merchant, capped at
+          Commission: affiliate earns <strong>Comm %</strong> of net monthly revenue per referred merchant, capped at
           <strong> Monthly Cap</strong> per merchant per month. Clawback applies if the merchant churns within
           the clawback window of going live.
         </p>
       </div>
 
-      {/* Create Referrer dialog */}
+      {/* Create Affiliate dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Referrer</DialogTitle>
+            <DialogTitle>Add Affiliate</DialogTitle>
             <DialogDescription>
               Creates an admin-provisioned account. A temporary password will be generated — share it with the
-              referrer; they'll be prompted to change it on first login.
+              affiliate; they'll be prompted to change it on first login.
             </DialogDescription>
           </DialogHeader>
 
@@ -406,7 +406,7 @@ export default function Referrers() {
             <Button variant="ghost" onClick={() => setCreateOpen(false)} disabled={creating}>Cancel</Button>
             <Button onClick={handleCreate} disabled={creating}>
               <Plus className="h-4 w-4 mr-2" />
-              {creating ? "Creating…" : "Create referrer"}
+              {creating ? "Creating…" : "Create affiliate"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -416,9 +416,9 @@ export default function Referrers() {
       <Dialog open={!!createdCredentials} onOpenChange={(o) => !o && setCreatedCredentials(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Referrer created</DialogTitle>
+            <DialogTitle>Affiliate created</DialogTitle>
             <DialogDescription>
-              Share these credentials with the referrer through a secure channel. This password is only shown once.
+              Share these credentials with the affiliate through a secure channel. This password is only shown once.
             </DialogDescription>
           </DialogHeader>
           {createdCredentials && (
@@ -442,7 +442,7 @@ export default function Referrers() {
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                The referrer must change this password on first login.
+                The affiliate must change this password on first login.
               </p>
             </div>
           )}

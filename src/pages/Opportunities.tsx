@@ -30,22 +30,15 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Search, 
-  Filter, 
-  Building2, 
-  User, 
-  Calendar, 
-  Clock, 
-  ArrowUpDown, 
+import {
+  User,
+  Clock,
   Eye,
   Zap,
   CreditCard,
-  MoreHorizontal,
   ChevronDown,
   Plus,
   TrendingUp,
-  AlertCircle,
   CheckCircle2,
   XCircle,
   RotateCcw,
@@ -78,6 +71,10 @@ import { SortableTableHead } from "@/components/SortableTableHead";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { EmptyState } from "@/components/EmptyState";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ListViewHeader } from "@/components/list-view/ListViewHeader";
+import { ListViewToolbar } from "@/components/list-view/ListViewToolbar";
+import { Upload, Sparkles, Megaphone } from "lucide-react";
 
 type SortField = 'name' | 'stage' | 'outcome' | 'pipeline' | 'owner' | 'tasks' | 'progress' | 'created' | 'updated';
 type SortDirection = 'asc' | 'desc';
@@ -103,6 +100,17 @@ const Opportunities = () => {
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
   const [viewTab, setViewTab] = useState<'all' | 'archive'>('all');
   const [reactivateConfirm, setReactivateConfirm] = useState<{ opp: Opportunity; assignee: string } | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showFilters, setShowFilters] = useState(false);
+
+  const toggleRowSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   // Handle ?new=true query param from sidebar navigation
   useEffect(() => {
@@ -129,7 +137,7 @@ const Opportunities = () => {
 
       if (error) throw error;
 
-      const mapped = (data || []).map((opp: any) => ({
+      const mapped = (data || []).map((opp: unknown) => ({
         ...opp,
         stage: migrateStage(opp.stage),
         wizard_state: Array.isArray(opp.wizard_state) ? opp.wizard_state[0] : opp.wizard_state,
@@ -346,48 +354,85 @@ const Opportunities = () => {
     }
   };
 
+  const selectedCount = selectedIds.size;
+  const visibleCount = filteredOpportunities.length;
+  const viewLabel = viewTab === 'archive'
+    ? 'Archived - Opportunities'
+    : statusFilter === 'all'
+      ? 'All - Opportunities'
+      : statusFilter === 'active'
+        ? 'Active - Opportunities'
+        : 'Dead - Opportunities';
+  const statusText = selectedCount > 0
+    ? `${selectedCount} item${selectedCount === 1 ? '' : 's'} selected`
+    : `${visibleCount} item${visibleCount === 1 ? '' : 's'} • Sorted by ${sortField.charAt(0).toUpperCase() + sortField.slice(1)}`;
+
+  const headerActions = (
+    <>
+      <div className="flex items-center gap-1 bg-muted rounded-md p-0.5 mr-1">
+        <button
+          onClick={() => setViewTab('all')}
+          className={cn(
+            "px-2.5 py-1 text-xs font-medium rounded transition-colors",
+            viewTab === 'all' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          All
+        </button>
+        <button
+          onClick={() => setViewTab('archive')}
+          className={cn(
+            "px-2.5 py-1 text-xs font-medium rounded transition-colors flex items-center gap-1",
+            viewTab === 'archive' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Archive className="h-3 w-3" />
+          Archive
+          {stats.archived > 0 && (
+            <Badge variant="muted" className="h-4 px-1 text-[10px] ml-0.5">{stats.archived}</Badge>
+          )}
+        </button>
+      </div>
+      <Button variant="outline" size="sm" className="h-8" onClick={() => navigate('/tools/csv-import')}>
+        <Upload className="h-3.5 w-3.5 mr-1.5" /> Import
+      </Button>
+      <Button variant="outline" size="sm" className="h-8 text-info border-info/30 hover:bg-info/10 hover:text-info">
+        <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Intelligence View
+      </Button>
+      <Button size="sm" className="h-8" onClick={() => setShowNewModal(true)}>
+        <Plus className="h-3.5 w-3.5 mr-1.5" /> New
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="icon" className="h-8 w-8">
+            <ChevronDown className="h-3.5 w-3.5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="bg-popover">
+          <DropdownMenuItem onClick={() => navigate('/admin/data-export')}>Export</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => navigate('/tools/csv-import')}>Import CSV</DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={fetchOpportunities}>Refresh list</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
+  );
+
   return (
     <AppLayout
       onNewApplication={() => setShowNewModal(true)}
     >
       <div className="flex flex-col h-full overflow-hidden">
-        <PageHeader
+        <ListViewHeader
           icon={TrendingUp}
-          title="Opportunities"
+          category="Opportunities"
+          viewLabel={viewLabel}
           color="success"
-          actions={
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-                <button
-                  onClick={() => setViewTab('all')}
-                  className={cn(
-                    "px-3 py-1 text-xs font-medium rounded-md transition-colors",
-                    viewTab === 'all' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  All
-                </button>
-                <button
-                  onClick={() => setViewTab('archive')}
-                  className={cn(
-                    "px-3 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1",
-                    viewTab === 'archive' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <Archive className="h-3 w-3" />
-                  Archive
-                  {stats.archived > 0 && (
-                    <Badge variant="muted" className="h-4 px-1 text-[10px] ml-0.5">{stats.archived}</Badge>
-                  )}
-                </button>
-              </div>
-              <Button size="sm" onClick={() => setShowNewModal(true)}>
-                <Plus className="h-4 w-4 mr-1" /> New Application
-              </Button>
-            </div>
-          }
+          pinUrl="/opportunities"
+          status={statusText}
+          actions={headerActions}
         />
-        <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-5">
+        <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4">
           {/* KPI Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 stagger-children">
             <StatCard label="Active Deals" value={stats.total} icon={TrendingUp} color="success" />
@@ -397,24 +442,30 @@ const Opportunities = () => {
             <StatCard label="Archived" value={stats.archived} icon={Archive} color="muted" />
           </div>
 
-          {/* Filters toolbar */}
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold">{filteredOpportunities.length} {filteredOpportunities.length === 1 ? 'opportunity' : 'opportunities'}</span>
-              {(stageFilter !== 'all' || ownerFilter !== 'all' || pipelineFilter !== 'all' || searchQuery) && (
-                <button onClick={() => { setStageFilter('all'); setOwnerFilter('all'); setPipelineFilter('all'); setSearchQuery(''); }}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+          {/* Toolbar */}
+          <ListViewToolbar
+            searchValue={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchPlaceholder="Search this list..."
+            onRefresh={fetchOpportunities}
+            onToggleFilters={() => setShowFilters(v => !v)}
+            filtersActive={showFilters}
+            leftControls={
+              (stageFilter !== 'all' || ownerFilter !== 'all' || pipelineFilter !== 'all' || searchQuery) && (
+                <button
+                  onClick={() => { setStageFilter('all'); setOwnerFilter('all'); setPipelineFilter('all'); setSearchQuery(''); }}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
                   Clear filters ×
                 </button>
-              )}
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                <Input placeholder="Search…" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-8 h-8 w-48 text-sm" />
-              </div>
+              )
+            }
+          />
+
+          {showFilters && (
+            <div className="flex items-center gap-2 flex-wrap pb-1">
               <Select value={stageFilter} onValueChange={setStageFilter}>
-                <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue placeholder="Stage" /></SelectTrigger>
+                <SelectTrigger className="h-8 w-[140px] text-xs"><SelectValue placeholder="Stage" /></SelectTrigger>
                 <SelectContent className="bg-popover">
                   <SelectItem value="all">All Stages</SelectItem>
                   {Object.entries(STAGE_CONFIG).map(([key, config]) => (
@@ -423,7 +474,7 @@ const Opportunities = () => {
                 </SelectContent>
               </Select>
               <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-                <SelectTrigger className="h-8 w-[120px] text-xs"><SelectValue placeholder="Owner" /></SelectTrigger>
+                <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue placeholder="Owner" /></SelectTrigger>
                 <SelectContent className="bg-popover">
                   <SelectItem value="all">All Owners</SelectItem>
                   <SelectItem value="unassigned">Unassigned</SelectItem>
@@ -431,7 +482,7 @@ const Opportunities = () => {
                 </SelectContent>
               </Select>
               <Select value={pipelineFilter} onValueChange={setPipelineFilter}>
-                <SelectTrigger className="h-8 w-[110px] text-xs"><SelectValue placeholder="Pipeline" /></SelectTrigger>
+                <SelectTrigger className="h-8 w-[120px] text-xs"><SelectValue placeholder="Pipeline" /></SelectTrigger>
                 <SelectContent className="bg-popover">
                   <SelectItem value="all">All Pipelines</SelectItem>
                   <SelectItem value="processing">Processing</SelectItem>
@@ -439,7 +490,7 @@ const Opportunities = () => {
                 </SelectContent>
               </Select>
             </div>
-          </div>
+          )}
 
           {/* Results */}
           <Card className="border-border/60 overflow-hidden">
@@ -465,8 +516,23 @@ const Opportunities = () => {
                 <div className="rounded-md border">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-10 text-right pr-2 text-xs text-muted-foreground">#</TableHead>
+                      <TableRow className="bg-muted/40 hover:bg-muted/40 border-b border-border/60">
+                        <TableHead className="w-10 text-right pr-2 text-xs text-muted-foreground py-2"></TableHead>
+                        <TableHead className="w-8 py-2">
+                          <Checkbox
+                            checked={filteredOpportunities.length > 0 && filteredOpportunities.every(o => selectedIds.has(o.id))}
+                            onCheckedChange={() => {
+                              const allSel = filteredOpportunities.length > 0 && filteredOpportunities.every(o => selectedIds.has(o.id));
+                              setSelectedIds(prev => {
+                                const next = new Set(prev);
+                                if (allSel) filteredOpportunities.forEach(o => next.delete(o.id));
+                                else filteredOpportunities.forEach(o => next.add(o.id));
+                                return next;
+                              });
+                            }}
+                            aria-label="Select all rows"
+                          />
+                        </TableHead>
                         <SortableTableHead field="name" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Account</SortableTableHead>
                         <TableHead className="text-xs text-muted-foreground">Tier</TableHead>
                         <TableHead className="text-xs text-muted-foreground">Plan</TableHead>
@@ -492,17 +558,29 @@ const Opportunities = () => {
                           const daysSinceUpdate = Math.floor((Date.now() - new Date(opp.updated_at).getTime()) / 86400000);
                           const isStale = daysSinceUpdate > 7 && !['live_activated', 'closed_won', 'closed_lost'].includes(opp.stage);
                         
+                        const isSelected = selectedIds.has(opp.id);
                         return (
-                          <TableRow 
-                            key={opp.id} 
-                            className={cn("cursor-pointer hover:bg-muted/30 transition-colors", isStale && "opacity-75")}
+                          <TableRow
+                            key={opp.id}
+                            className={cn(
+                              "cursor-pointer transition-colors border-b border-border/40",
+                              isSelected ? "bg-info/5 hover:bg-info/10" : "hover:bg-muted/30",
+                              isStale && "opacity-75"
+                            )}
                             onClick={() => navigateToOpportunity(opp)}
                           >
-                            <TableCell className="text-right pr-2 text-[11px] text-muted-foreground tabular-nums py-2.5">{index + 1}</TableCell>
-                            <TableCell className="py-2.5">
+                            <TableCell className="text-right pr-2 text-[11px] text-muted-foreground tabular-nums py-2">{index + 1}</TableCell>
+                            <TableCell className="py-2" onClick={(e) => e.stopPropagation()}>
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={() => toggleRowSelect(opp.id)}
+                                aria-label={`Select ${opp.account?.name || 'opportunity'}`}
+                              />
+                            </TableCell>
+                            <TableCell className="py-2">
                               <div>
                                 <div className="flex items-center gap-1.5 mb-0.5">
-                                  <p className="font-medium text-sm leading-tight">{opp.account?.name || 'Unknown'}</p>
+                                  <p className="text-info hover:underline text-sm font-normal leading-tight">{opp.account?.name || 'Unknown'}</p>
                                   {opp.status === 'dead' && (
                                     <Badge variant="outline" className="text-[9px] h-4 px-1 border-amber-500/40 text-amber-600 dark:text-amber-400">archived</Badge>
                                   )}
@@ -736,11 +814,11 @@ const Opportunities = () => {
                             <TableCell className="py-2.5 text-xs text-muted-foreground">
                               {formatDistanceToNow(new Date(opp.updated_at), { addSuffix: true }).replace('about ', '').replace('less than a minute ago', 'just now')}
                             </TableCell>
-                            <TableCell onClick={(e) => e.stopPropagation()}>
+                            <TableCell onClick={(e) => e.stopPropagation()} className="w-10 py-2">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                                    <MoreHorizontal className="h-4 w-4" />
+                                  <Button variant="ghost" size="icon" className="h-7 w-7 opacity-60 hover:opacity-100">
+                                    <ChevronDown className="h-3.5 w-3.5" />
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="bg-popover">
@@ -792,7 +870,7 @@ const Opportunities = () => {
                       })}
                       {filteredOpportunities.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={12}>
+                          <TableCell colSpan={14}>
                             <EmptyState
                               icon={TrendingUp}
                               title="No opportunities found"

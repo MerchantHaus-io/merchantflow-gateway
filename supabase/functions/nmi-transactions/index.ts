@@ -148,7 +148,7 @@ async function fetchTransactionsReport({
   startIso: string;
   endIso: string;
 }) {
-  const results: any[] = [];
+  const results: unknown[] = [];
   let offset = 0;
   let totalResults = 0;
   let hasMore = true;
@@ -181,7 +181,7 @@ async function fetchTransactionsReport({
     });
 
     const responseText = await response.text();
-    let parsed: any = null;
+    let parsed: unknown = null;
 
     try {
       parsed = responseText ? JSON.parse(responseText) : null;
@@ -214,7 +214,7 @@ async function fetchTransactionsReport({
   };
 }
 
-function extractNmiError(payload: any): string | null {
+function extractNmiError(payload: unknown): string | null {
   if (!payload) return null;
   if (typeof payload === "string") return payload;
   if (typeof payload.error === "string") return payload.error;
@@ -223,7 +223,7 @@ function extractNmiError(payload: any): string | null {
 
   if (Array.isArray(payload.errors) && payload.errors.length > 0) {
     return payload.errors
-      .map((item: any) => {
+      .map((item: unknown) => {
         if (typeof item === "string") return item;
         if (typeof item?.message === "string") return item.message;
         return JSON.stringify(item);
@@ -234,7 +234,7 @@ function extractNmiError(payload: any): string | null {
   return null;
 }
 
-function mapTransaction(tx: any) {
+function mapTransaction(tx: unknown) {
   const primaryAction = pickPrimaryAction(tx?.actions);
   const billing = tx?.billingAddress ?? {};
   const paymentInfo = tx?.paymentInfo ?? {};
@@ -270,7 +270,7 @@ function mapTransaction(tx: any) {
   };
 }
 
-function pickPrimaryAction(actions: any[] | undefined) {
+function pickPrimaryAction(actions: unknown[] | undefined) {
   if (!Array.isArray(actions) || actions.length === 0) return null;
 
   const sorted = [...actions].sort((a, b) => {
@@ -348,7 +348,7 @@ function toNumber(value: unknown) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function buildSummary(transactions: any[]) {
+function buildSummary(transactions: unknown[]) {
   const summary = {
     total_count: transactions.length,
     approved_count: 0,

@@ -135,7 +135,7 @@ serve(async (req) => {
             .eq("id", contact.id);
           bouncedCount++;
         }
-      } catch (emailErr: any) {
+      } catch (emailErr: unknown) {
         await supabase
           .from("outreach_contacts")
           .update({
@@ -159,10 +159,10 @@ serve(async (req) => {
     if (allContacts) {
       await supabase.from("outreach_campaigns").update({
         status: "sent",
-        sent_count: allContacts.filter((c: any) => ["sent", "bounced", "replied", "converted"].includes(c.status)).length,
-        bounced_count: allContacts.filter((c: any) => c.status === "bounced").length,
-        replied_count: allContacts.filter((c: any) => ["replied", "converted"].includes(c.status)).length,
-        converted_count: allContacts.filter((c: any) => c.status === "converted").length,
+        sent_count: allContacts.filter((c: unknown) => ["sent", "bounced", "replied", "converted"].includes(c.status)).length,
+        bounced_count: allContacts.filter((c: unknown) => c.status === "bounced").length,
+        replied_count: allContacts.filter((c: unknown) => ["replied", "converted"].includes(c.status)).length,
+        converted_count: allContacts.filter((c: unknown) => c.status === "converted").length,
         total_contacts: allContacts.length,
       }).eq("id", campaign_id);
     }
@@ -171,7 +171,7 @@ serve(async (req) => {
       JSON.stringify({ sent: sentCount, bounced: bouncedCount }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("send-outreach-emails error:", err);
     return new Response(
       JSON.stringify({ error: err.message }),

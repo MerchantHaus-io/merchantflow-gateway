@@ -137,7 +137,7 @@ export default function NetlifyHub() {
         <Separator />
 
         {/* Filter tabs */}
-        <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
+        <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as unknown)}>
           <TabsList>
             <TabsTrigger value="all">All ({entries.length})</TabsTrigger>
             <TabsTrigger value="open">Open ({openCount})</TabsTrigger>

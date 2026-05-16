@@ -160,7 +160,7 @@ function Pill({
   title,
   desc,
 }: {
-  icon: any;
+  icon: unknown;
   title: string;
   desc: string;
 }) {
@@ -217,7 +217,7 @@ function SmallStat({
   );
 }
 
-function Chip({ children, active, onClick }: any) {
+function Chip({ children, active, onClick }: unknown) {
   return (
     <button
       type="button"

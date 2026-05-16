@@ -310,8 +310,8 @@ export default function PreboardingWizard() {
     const ids = (data || []).map(d => d.id);
     const { data: serviceTypes } = ids.length > 0
       ? await supabase.from('opportunities').select('id, service_type').in('id', ids)
-      : { data: [] as any[] };
-    const serviceTypeMap = new Map((serviceTypes || []).map((s: any) => [s.id, s.service_type]));
+      : { data: [] as unknown[] };
+    const serviceTypeMap = new Map((serviceTypes || []).map((s: unknown) => [s.id, s.service_type]));
 
     const mapped = (data || []).map(item => ({
       id: item.id,
@@ -345,7 +345,7 @@ export default function PreboardingWizard() {
       .eq('id', opportunityId)
       .maybeSingle();
 
-    const gatewayOnly = (oppServiceType as any)?.service_type === "gateway_only";
+    const gatewayOnly = (oppServiceType as unknown)?.service_type === "gateway_only";
     setIsGatewayOnly(gatewayOnly);
 
     const prefilledForm = createFormFromOpportunity(opportunity);
@@ -611,7 +611,7 @@ export default function PreboardingWizard() {
                     <DocumentsStep form={form} onChange={handleChange} onDocsChange={handleDocsChange} opportunityId={selectedOpportunityId} onDocCountChange={setUploadedDocCount} onDocTypeCountsChange={setUploadedDocTypeCounts} />
                   )}
                   {currentStep.label === "Review" && (
-                    <ReviewStep form={form} missingBySection={missingBySection as any} />
+                    <ReviewStep form={form} missingBySection={missingBySection as unknown} />
                   )}
                   {currentStep.label === "Business Details" && (
                     <GatewayBusinessStep form={form} onChange={handleChange} />
@@ -705,7 +705,7 @@ export default function PreboardingWizard() {
                       )}
                     </div>
 
-                    <OutstandingSummary progress={progress} missingBySection={missingBySection as any} />
+                    <OutstandingSummary progress={progress} missingBySection={missingBySection as unknown} />
                   </div>
 
                   <div className="rounded-2xl border border-border bg-card p-4 shadow-xl text-xs text-muted-foreground space-y-2">

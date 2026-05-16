@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
       .neq("status", "shredded")
       .not("storage_path", "is", null);
 
-    const paths = (docs || []).map((d: any) => d.storage_path).filter(Boolean);
+    const paths = (docs || []).map((d: unknown) => d.storage_path).filter(Boolean);
 
     if (paths.length > 0) {
       // Delete files from portal storage

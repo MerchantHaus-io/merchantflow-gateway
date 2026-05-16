@@ -54,7 +54,7 @@ export const OutcomeDisplaySection = ({ opportunity }: OutcomeDisplaySectionProp
         .eq('type', 'task_scheduled')
         .limit(1);
       if (taskData && taskData.length > 0) {
-        setTaskActivity(taskData[0] as any);
+        setTaskActivity(taskData[0] as unknown);
       }
 
       setLoading(false);

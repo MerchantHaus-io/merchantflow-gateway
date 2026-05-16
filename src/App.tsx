@@ -160,7 +160,8 @@ const App = () => (
                 <Route path="/leads" element={<ProtectedRoute><Accounts /></ProtectedRoute>} />
                 <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
                 <Route path="/commissions" element={<ProtectedRoute><Commissions /></ProtectedRoute>} />
-                <Route path="/admin/referrers" element={<ProtectedRoute><Referrers /></ProtectedRoute>} />
+                <Route path="/admin/affiliates" element={<ProtectedRoute><Referrers /></ProtectedRoute>} />
+                <Route path="/admin/referrers" element={<Navigate to="/admin/affiliates" replace />} />
 
                 {/* Affiliate portal — external partners */}
                 <Route path="/affiliate" element={<ReferrerRoute><PortalDashboard /></ReferrerRoute>} />

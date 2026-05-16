@@ -129,7 +129,7 @@ serve(async (req) => {
     };
     const accountByMid = new Map<string, AccountInfo>();
     for (const opp of liveOpps || []) {
-      const acc: any = (opp as any).account;
+      const acc: unknown = (opp as unknown).account;
       const mid = acc?.nmi_merchant_id ? String(acc.nmi_merchant_id).trim() : "";
       if (mid && !accountByMid.has(mid)) {
         accountByMid.set(mid, {
@@ -147,7 +147,7 @@ serve(async (req) => {
     console.log(`Live & Billing scope: ${merchantIds.length} accounts with NMI merchant IDs`);
 
     // ── Step 2: Pull transactions for our merchants from v4 reports API ──
-    let txReport: { results: any[]; truncated: boolean } = { results: [], truncated: false };
+    let txReport: { results: unknown[]; truncated: boolean } = { results: [], truncated: false };
     if (merchantIds.length > 0) {
       txReport = await fetchTransactionsReport({ nmiApiKey, merchantIds, startIso, endIso });
       console.log(`Fetched ${txReport.results.length} transactions for period`);
@@ -357,7 +357,7 @@ function round2(n: number) {
   return Math.round(n * 100) / 100;
 }
 
-function buildSummary(commissions: any[]) {
+function buildSummary(commissions: unknown[]) {
   let total_commission = 0, total_volume = 0, total_fees = 0, total_chargebacks = 0, total_transactions = 0;
   for (const c of commissions) {
     total_commission += c.total_commission;
@@ -380,7 +380,7 @@ async function fetchTransactionsReport({
   startIso: string;
   endIso: string;
 }) {
-  const results: any[] = [];
+  const results: unknown[] = [];
   let offset = 0;
   let hasMore = true;
   let pageCount = 0;
@@ -409,7 +409,7 @@ async function fetchTransactionsReport({
     });
 
     const responseText = await response.text();
-    let parsed: any = null;
+    let parsed: unknown = null;
     try { parsed = responseText ? JSON.parse(responseText) : null; } catch { /* ignore */ }
 
     if (!response.ok) {
@@ -430,7 +430,7 @@ async function fetchTransactionsReport({
   return { results, truncated: hasMore };
 }
 
-function pickPrimaryAction(actions: any[] | undefined) {
+function pickPrimaryAction(actions: unknown[] | undefined) {
   if (!Array.isArray(actions) || actions.length === 0) return null;
   const sorted = [...actions].sort((a, b) => {
     const aTime = new Date(a?.date ?? 0).getTime();
@@ -453,7 +453,7 @@ function normaliseType(type: unknown) {
   return String(type ?? "").trim().toLowerCase().replace(/[\s-]+/g, "_");
 }
 
-function extractNmiError(payload: any): string | null {
+function extractNmiError(payload: unknown): string | null {
   if (!payload) return null;
   if (typeof payload === "string") return payload;
   if (typeof payload.error === "string") return payload.error;
@@ -461,7 +461,7 @@ function extractNmiError(payload: any): string | null {
   if (typeof payload.detail === "string") return payload.detail;
   if (Array.isArray(payload.errors) && payload.errors.length > 0) {
     return payload.errors
-      .map((item: any) =>
+      .map((item: unknown) =>
         typeof item === "string" ? item :
         typeof item?.message === "string" ? item.message :
         JSON.stringify(item)

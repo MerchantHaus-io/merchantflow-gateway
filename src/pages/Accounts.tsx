@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Search, Users, Trash, Mail, Phone, ExternalLink, Check, X, Plus, TrendingUp, Globe, MapPin, UserPlus } from "lucide-react";
+import { Pencil, Users, Trash, Check, X, Plus, TrendingUp, Globe, UserPlus, ChevronDown, Upload, Megaphone, Sparkles } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -34,6 +34,16 @@ import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { EmptyState } from "@/components/EmptyState";
 import { Building2 as Building2Icon } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ListViewHeader } from "@/components/list-view/ListViewHeader";
+import { ListViewToolbar } from "@/components/list-view/ListViewToolbar";
 
 type SortField = 'name' | 'contacts' | 'city' | 'state' | 'country' | 'website' | 'created_at';
 type SortDirection = 'asc' | 'desc';
@@ -82,6 +92,17 @@ const Accounts = () => {
   const [inlineEditField, setInlineEditField] = useState<string | null>(null);
   const [inlineEditValue, setInlineEditValue] = useState<string>('');
   const [accountOpportunities, setAccountOpportunities] = useState<Record<string, Array<{ id: string; stage: string; label: string; color: string; assigned_to?: string; outcome_status?: string | null }>>>({});
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showFilters, setShowFilters] = useState(false);
+
+  const toggleRowSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const startInlineEdit = (accountId: string, field: string, currentValue: string) => {
     setInlineEditId(accountId);
@@ -208,7 +229,7 @@ const Accounts = () => {
       .order('updated_at', { ascending: false });
     if (oppData) {
       const map: Record<string, Array<{ id: string; stage: string; label: string; color: string; assigned_to?: string; outcome_status?: string | null }>> = {};
-      oppData.forEach((opp: any) => {
+      oppData.forEach((opp: unknown) => {
         const cfg = STAGE_CONFIG[opp.stage as keyof typeof STAGE_CONFIG];
         if (cfg) {
           if (!map[opp.account_id]) map[opp.account_id] = [];
@@ -293,7 +314,7 @@ const Accounts = () => {
 
   // Filter and sort accounts based on search query, status, and sort settings
   const filteredAccounts = useMemo(() => {
-    let result = accounts.filter((account) => {
+    const result = accounts.filter((account) => {
       // Treat null status as 'lead' so newly-created records show in the default view
       const effectiveStatus = account.status ?? 'lead';
       const matchesStatus = statusFilter === 'all' || effectiveStatus === statusFilter;
@@ -345,10 +366,53 @@ const Accounts = () => {
   const accountsWithContacts = accounts.filter((account) => (account.contacts?.length || 0) > 0).length;
   const accountsWithWebsites = accounts.filter((account) => !!account.website).length;
 
+  const viewLabel = `${statusFilter === 'all' ? 'All' : statusFilter === 'lead' ? 'New' : statusFilter === 'active' ? 'Active' : 'Dead'} - Leads`;
+  const selectedCount = selectedIds.size;
+  const visibleCount = filteredAccounts.length;
+  const statusText = selectedCount > 0
+    ? `${selectedCount} item${selectedCount === 1 ? '' : 's'} selected`
+    : `${visibleCount} item${visibleCount === 1 ? '' : 's'} • Sorted by ${sortField === 'created_at' ? 'Created' : sortField.charAt(0).toUpperCase() + sortField.slice(1)} • Updated a few seconds ago`;
+
+  const headerActions = (
+    <>
+      <Button variant="outline" size="sm" className="h-8" onClick={() => navigate('/tools/csv-import')}>
+        <Upload className="h-3.5 w-3.5 mr-1.5" /> Import
+      </Button>
+      <Button variant="outline" size="sm" className="h-8" onClick={() => navigate('/outreach')}>
+        <Megaphone className="h-3.5 w-3.5 mr-1.5" /> Add to Campaign
+      </Button>
+      <Button variant="outline" size="sm" className="h-8 text-info border-info/30 hover:bg-info/10 hover:text-info">
+        <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Intelligence View
+      </Button>
+      <Button size="sm" className="h-8" onClick={() => navigate('/opportunities?new=true')}>
+        <Plus className="h-3.5 w-3.5 mr-1.5" /> New
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="icon" className="h-8 w-8">
+            <ChevronDown className="h-3.5 w-3.5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="bg-popover">
+          <DropdownMenuItem onClick={() => navigate('/tools/csv-import')}>Import CSV</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => navigate('/admin/data-export')}>Export</DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={fetchAccounts}>Refresh list</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
+  );
+
   if (loading) {
     return (
       <AppLayout>
-        <PageHeader icon={UserPlus} title="Leads" color="teal" />
+        <ListViewHeader
+          icon={UserPlus}
+          category="Leads"
+          viewLabel={viewLabel}
+          color="teal"
+          pinUrl="/leads"
+        />
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
             <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -362,7 +426,13 @@ const Accounts = () => {
   if (fetchError) {
     return (
       <AppLayout>
-        <PageHeader icon={UserPlus} title="Leads" color="teal" />
+        <ListViewHeader
+          icon={UserPlus}
+          category="Leads"
+          viewLabel={viewLabel}
+          color="teal"
+          pinUrl="/leads"
+        />
         <div className="p-6">
           <QueryErrorCard message={fetchError} onRetry={() => { setLoading(true); fetchAccounts(); }} />
         </div>
@@ -370,20 +440,40 @@ const Accounts = () => {
     );
   }
 
+  const allOnPageSelected = filteredAccounts.length > 0 && filteredAccounts.every(a => selectedIds.has(a.id));
+  const toggleSelectAll = () => {
+    setSelectedIds(prev => {
+      if (allOnPageSelected) {
+        const next = new Set(prev);
+        filteredAccounts.forEach(a => next.delete(a.id));
+        return next;
+      }
+      const next = new Set(prev);
+      filteredAccounts.forEach(a => next.add(a.id));
+      return next;
+    });
+  };
+
   return (
     <AppLayout>
       <div className="flex flex-col h-full overflow-hidden">
-        <PageHeader
+        <ListViewHeader
           icon={UserPlus}
-          title="Leads"
+          category="Leads"
+          viewLabel={viewLabel}
           color="teal"
-          actions={
-            <Button size="sm" onClick={() => navigate('/opportunities?new=true')}>
-              <Plus className="h-4 w-4 mr-1" /> Add Lead
-            </Button>
-          }
+          pinUrl="/leads"
+          status={statusText}
+          views={[
+            { key: 'lead', label: 'New - Leads' },
+            { key: 'active', label: 'Active - Leads' },
+            { key: 'dead', label: 'Dead - Leads' },
+            { key: 'all', label: 'All - Leads' },
+          ]}
+          onViewChange={(k) => setStatusFilter(k as typeof statusFilter)}
+          actions={headerActions}
         />
-        <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-5">
+        <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4">
           {/* KPI Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 stagger-children">
             <StatCard label="Total" value={totalAccounts} icon={Building2Icon} color="teal" />
@@ -392,85 +482,90 @@ const Accounts = () => {
             <StatCard label="Have Website" value={accountsWithWebsites} icon={Globe} color="muted" />
           </div>
 
-          {/* Status tabs */}
-          <div className="flex items-center gap-1 border-b border-border/60 overflow-x-auto">
-            {([
-              { key: 'lead', label: 'New Leads' },
-              { key: 'active', label: 'Active' },
-              { key: 'dead', label: 'Dead' },
-              { key: 'all', label: 'All' },
-            ] as const).map((tab) => {
-              const isTabActive = statusFilter === tab.key;
-              const count = tab.key === 'all'
-                ? accounts.length
-                : accounts.filter((a) => (a.status ?? 'lead') === tab.key).length;
-              return (
-                <button
-                  key={tab.key}
-                  onClick={() => setStatusFilter(tab.key)}
-                  className={cn(
-                    "px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px whitespace-nowrap",
-                    isTabActive
-                      ? "text-foreground border-[hsl(var(--teal))]"
-                      : "text-muted-foreground border-transparent hover:text-foreground"
-                  )}
-                >
-                  {tab.label}
-                  <span className="ml-1.5 text-xs text-muted-foreground">({count})</span>
-                </button>
-              );
-            })}
-          </div>
+          <ListViewToolbar
+            searchValue={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchPlaceholder="Search this list..."
+            onRefresh={fetchAccounts}
+            onToggleFilters={() => setShowFilters(v => !v)}
+            filtersActive={showFilters}
+          />
 
-          {/* Filters toolbar */}
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold">{filteredAccounts.length} {statusFilter === 'all' ? 'records' : statusFilter === 'lead' ? 'leads' : statusFilter}</span>
-              {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                  Clear ×
-                </button>
-              )}
+          {showFilters && (
+            <div className="flex items-center gap-1 border-b border-border/60 overflow-x-auto">
+              {([
+                { key: 'lead', label: 'New Leads' },
+                { key: 'active', label: 'Active' },
+                { key: 'dead', label: 'Dead' },
+                { key: 'all', label: 'All' },
+              ] as const).map((tab) => {
+                const isTabActive = statusFilter === tab.key;
+                const count = tab.key === 'all'
+                  ? accounts.length
+                  : accounts.filter((a) => (a.status ?? 'lead') === tab.key).length;
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => setStatusFilter(tab.key)}
+                    className={cn(
+                      "px-3 py-1.5 text-xs font-medium transition-colors border-b-2 -mb-px whitespace-nowrap",
+                      isTabActive
+                        ? "text-foreground border-[hsl(var(--teal))]"
+                        : "text-muted-foreground border-transparent hover:text-foreground"
+                    )}
+                  >
+                    {tab.label}
+                    <span className="ml-1.5 text-[10px] text-muted-foreground">({count})</span>
+                  </button>
+                );
+              })}
             </div>
-            <div className="relative w-64">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                placeholder="Search leads…"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 h-8 text-sm"
-              />
-            </div>
-          </div>
+          )}
 
           {/* Table */}
           <Card className="border-border/60 overflow-hidden">
-            <CardHeader className="pb-0 pt-3 px-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Click any cell to edit inline · Deal stage shown from latest active opportunity</span>
-              </div>
-            </CardHeader>
               <CardContent className="p-0">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-10 text-right pr-2 text-xs text-muted-foreground">#</TableHead>
+                    <TableRow className="bg-muted/40 hover:bg-muted/40 border-b border-border/60">
+                      <TableHead className="w-10 text-right pr-2 text-[11px] text-muted-foreground font-normal py-2">
+                        <span className="sr-only">Row number</span>
+                      </TableHead>
+                      <TableHead className="w-8 py-2">
+                        <Checkbox
+                          checked={allOnPageSelected}
+                          onCheckedChange={toggleSelectAll}
+                          aria-label="Select all rows"
+                        />
+                      </TableHead>
                       <SortableTableHead field="name" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Account</SortableTableHead>
-                      <TableHead>Opportunities</TableHead>
+                      <TableHead className="text-xs font-semibold text-foreground">Opportunities</TableHead>
                       <SortableTableHead field="contacts" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Contacts</SortableTableHead>
-                      <TableHead>Location</TableHead>
+                      <TableHead className="text-xs font-semibold text-foreground">Location</TableHead>
                       <SortableTableHead field="website" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Website</SortableTableHead>
                       <SortableTableHead field="created_at" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Created</SortableTableHead>
-                      <TableHead className="w-16"></TableHead>
+                      <TableHead className="w-10 py-2"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredAccounts.map((account, idx) => {
                       const deals = accountOpportunities[account.id] || [];
+                      const isSelected = selectedIds.has(account.id);
                       return (
-                      <TableRow key={account.id} className={cn("hover:bg-muted/30 group/row", account.status === 'dead' && "opacity-50")}>
-                        <TableCell className="text-right pr-2 text-[11px] text-muted-foreground tabular-nums py-2.5">{idx + 1}</TableCell>
-                        <TableCell className="font-medium py-2.5">
+                      <TableRow key={account.id} className={cn(
+                        "group/row border-b border-border/40 transition-colors",
+                        isSelected ? "bg-info/5 hover:bg-info/10" : "hover:bg-muted/30",
+                        account.status === 'dead' && "opacity-50"
+                      )}>
+                        <TableCell className="text-right pr-2 text-[11px] text-muted-foreground tabular-nums py-2">{idx + 1}</TableCell>
+                        <TableCell className="py-2">
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => toggleRowSelect(account.id)}
+                            aria-label={`Select ${account.name}`}
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium py-2">
                           {inlineEditId === account.id && inlineEditField === 'name' ? (
                             <div className="flex items-center gap-1">
                               <Input
@@ -486,7 +581,7 @@ const Accounts = () => {
                           ) : (
                             <div className="flex items-center gap-2 group/cell">
                               <span
-                                className="cursor-pointer hover:text-primary transition-colors"
+                                className="cursor-pointer text-info hover:underline transition-colors text-sm font-normal"
                                 onClick={() => startInlineEdit(account.id, 'name', account.name)}
                                 title="Click to edit"
                               >
@@ -590,30 +685,36 @@ const Accounts = () => {
                         <TableCell className="py-2.5 text-xs text-muted-foreground">
                           {account.created_at ? formatDistanceToNow(new Date(account.created_at), { addSuffix: true }).replace('about ', '') : '—'}
                         </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => openEditDialog(account)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setDeleteConfirm(account.id)}
-                            >
-                              <Trash className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
+                        <TableCell className="w-10 py-2">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 opacity-60 group-hover/row:opacity-100">
+                                <ChevronDown className="h-3.5 w-3.5" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-popover">
+                              <DropdownMenuItem onClick={() => openEditDialog(account)}>
+                                <Pencil className="h-3.5 w-3.5 mr-2" /> Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => navigate('/opportunities?new=true')}>
+                                <Plus className="h-3.5 w-3.5 mr-2" /> New deal
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => setDeleteConfirm(account.id)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash className="h-3.5 w-3.5 mr-2" /> Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     );
                     })}
                     {filteredAccounts.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={7}>
+                        <TableCell colSpan={9}>
                           <EmptyState
                             icon={UserPlus}
                             title="No leads found"

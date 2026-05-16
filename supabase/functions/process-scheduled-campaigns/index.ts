@@ -95,7 +95,7 @@ serve(async (req) => {
       JSON.stringify({ processed: dueCampaigns.length }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("process-scheduled-campaigns error:", err);
     return new Response(
       JSON.stringify({ error: err.message }),

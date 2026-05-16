@@ -36,8 +36,8 @@ function extractName(str: string): string {
   return match ? match[1].trim() : str.replace(/<[^>]+>/, "").trim();
 }
 
-function getHeader(headers: any[], name: string): string {
-  const h = headers.find((h: any) => h.name.toLowerCase() === name.toLowerCase());
+function getHeader(headers: unknown[], name: string): string {
+  const h = headers.find((h: unknown) => h.name.toLowerCase() === name.toLowerCase());
   return h?.value || "";
 }
 
@@ -57,7 +57,7 @@ function decodeBase64Url(str: string): string {
   }
 }
 
-function extractBodyFromPayload(payload: any): string {
+function extractBodyFromPayload(payload: unknown): string {
   if (!payload) return "";
 
   // Single-part message
@@ -91,11 +91,11 @@ function extractBodyFromPayload(payload: any): string {
   return "";
 }
 
-function extractAttachmentInfo(payload: any): { name: string; mimeType: string; attachmentId: string; size: number }[] {
+function extractAttachmentInfo(payload: unknown): { name: string; mimeType: string; attachmentId: string; size: number }[] {
   const attachments: { name: string; mimeType: string; attachmentId: string; size: number }[] = [];
   if (!payload) return attachments;
 
-  function walkParts(parts: any[]) {
+  function walkParts(parts: unknown[]) {
     for (const part of parts) {
       if (part.filename && part.body?.attachmentId) {
         attachments.push({
@@ -190,7 +190,7 @@ serve(async (req) => {
       .from("contacts")
       .select("id, email, account_id, first_name, last_name");
 
-    const contactsByEmail = new Map<string, any>();
+    const contactsByEmail = new Map<string, unknown>();
     for (const c of allContacts || []) {
       if (c.email) contactsByEmail.set(c.email.toLowerCase(), c);
     }
@@ -200,14 +200,14 @@ serve(async (req) => {
       .from("opportunities")
       .select("id, account_id, contact_id");
 
-    const oppsByContact = new Map<string, any>();
+    const oppsByContact = new Map<string, unknown>();
     for (const o of allOpportunities || []) {
       if (o.contact_id) oppsByContact.set(o.contact_id, o);
     }
 
     const now = new Date();
     let totalSynced = 0;
-    let leadsCreated = 0;
+    const leadsCreated = 0;
     let activitiesCreated = 0;
 
     for (const token of tokenRows) {
@@ -305,7 +305,7 @@ serve(async (req) => {
         }
 
         const listData = await listResp.json();
-        const ids = (listData.messages || []).map((m: any) => m.id);
+        const ids = (listData.messages || []).map((m: unknown) => m.id);
         allMessageIds = allMessageIds.concat(ids);
         pageToken = listData.nextPageToken || null;
         pageCount++;
@@ -370,7 +370,7 @@ serve(async (req) => {
         let matchedAccountId: string | null = null;
         let matchedContactId: string | null = null;
         let matchedOpportunityId: string | null = null;
-        let leadCreated = false;
+        const leadCreated = false;
 
         for (const email of allEmails) {
           const contact = contactsByEmail.get(email);

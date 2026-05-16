@@ -42,7 +42,7 @@ export function IncomingMessageToast() {
           // Don't show toast for own messages
           if (msg.user_id === userIdRef.current) return;
 
-          const msgId = (payload.new as any).id;
+          const msgId = (payload.new as unknown).id;
 
           // Skip sound if FloatingChat already played it
           if (!wasMessageSoundPlayed(msgId)) {
@@ -97,7 +97,7 @@ export function IncomingMessageToast() {
             senderName = profile.full_name || profile.email?.split('@')[0] || 'Someone';
           }
 
-          const dmId = (payload.new as any).id;
+          const dmId = (payload.new as unknown).id;
 
           // Skip sound if already played
           if (!wasMessageSoundPlayed(dmId)) {

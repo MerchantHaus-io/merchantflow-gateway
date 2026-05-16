@@ -78,7 +78,7 @@ function Delta({ value, suffix = "" }: { value: number; suffix?: string }) {
 
 // ─── Metric card ──────────────────────────────────────────────────────────────
 function MetricCard({ label, value, icon: Icon, color, bg, delta, suffix, onClick }: {
-  label: string; value: string | number; icon: any;
+  label: string; value: string | number; icon: unknown;
   color: string; bg: string; delta?: number; suffix?: string; onClick?: () => void;
 }) {
   return (
@@ -98,7 +98,7 @@ function MetricCard({ label, value, icon: Icon, color, bg, delta, suffix, onClic
 }
 
 // ─── Section header ───────────────────────────────────────────────────────────
-function SectionHeader({ icon: Icon, title, description }: { icon: any; title: string; description?: string }) {
+function SectionHeader({ icon: Icon, title, description }: { icon: unknown; title: string; description?: string }) {
   return (
     <div className="flex items-center gap-3 mb-4">
       <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
@@ -117,7 +117,7 @@ const Reports = () => {
   const { tasks } = useTasks();
   const [opps, setOpps]             = useState<OppData[]>([]);
   const [activities, setActivities] = useState<ActivityData[]>([]);
-  const [campaigns, setCampaigns]   = useState<any[]>([]);
+  const [campaigns, setCampaigns]   = useState<unknown[]>([]);
   const [loading, setLoading]       = useState(true);
   const [dateRange, setDateRange]   = useState<DateRange | undefined>();
   const [filterBy]                  = useState<"created_at" | "updated_at">("created_at");
@@ -241,12 +241,12 @@ const Reports = () => {
     setModalState({ open: true, title, description, type, opportunities: opps, tasks });
 
   // ── Custom tooltip ──
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: unknown) => {
     if (!active || !payload?.length) return null;
     return (
       <div className="bg-background border border-border rounded-lg shadow-md px-3 py-2 text-xs">
         <p className="font-medium text-foreground mb-1">{label}</p>
-        {payload.map((p: any, i: number) => (
+        {payload.map((p: unknown, i: number) => (
           <p key={i} style={{ color: p.color }}>{p.name}: <span className="font-bold">{p.value}</span></p>
         ))}
       </div>

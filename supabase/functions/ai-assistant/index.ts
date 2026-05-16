@@ -194,15 +194,15 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
 
   // Pipeline summary
   const opps = pipelineRes.data || [];
-  const activeOpps = opps.filter((o: any) => o.status === "active");
-  const deadOpps = opps.filter((o: any) => o.status === "dead" || o.status === "closed-lost");
+  const activeOpps = opps.filter((o: unknown) => o.status === "active");
+  const deadOpps = opps.filter((o: unknown) => o.status === "dead" || o.status === "closed-lost");
   const stageCounts: Record<string, number> = {};
   const statusCounts: Record<string, number> = {};
   const assigneeCounts: Record<string, number> = {};
   for (const o of opps) {
-    const stage = String((o as any).stage || "unknown");
-    const status = String((o as any).status || "unknown");
-    const assignedTo = String((o as any).assigned_to || "");
+    const stage = String((o as unknown).stage || "unknown");
+    const status = String((o as unknown).status || "unknown");
+    const assignedTo = String((o as unknown).assigned_to || "");
     stageCounts[stage] = (stageCounts[stage] || 0) + 1;
     statusCounts[status] = (statusCounts[status] || 0) + 1;
     if (assignedTo) assigneeCounts[assignedTo] = (assigneeCounts[assignedTo] || 0) + 1;
@@ -218,41 +218,41 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
 
   // Recent deals
   const recentDeals = (recentOppsRes.data || [])
-    .map((o: any) => `  - [opp:${o.id}] ${o.accounts?.name || "Unknown"} (${o.stage} | ${o.status || "active"}) → ${o.assigned_to || "Unassigned"} | Contact: ${[o.contacts?.first_name, o.contacts?.last_name].filter(Boolean).join(" ") || "N/A"}`)
+    .map((o: unknown) => `  - [opp:${o.id}] ${o.accounts?.name || "Unknown"} (${o.stage} | ${o.status || "active"}) → ${o.assigned_to || "Unassigned"} | Contact: ${[o.contacts?.first_name, o.contacts?.last_name].filter(Boolean).join(" ") || "N/A"}`)
     .join("\n");
 
   // Open tasks
   const openTasks = (tasksRes.data || [])
-    .map((t: any) => `  - [${t.priority || "medium"}] ${t.title} → ${t.assignee || "Unassigned"} (${t.status})${t.due_at ? " due " + t.due_at.split("T")[0] : ""}`)
+    .map((t: unknown) => `  - [${t.priority || "medium"}] ${t.title} → ${t.assignee || "Unassigned"} (${t.status})${t.due_at ? " due " + t.due_at.split("T")[0] : ""}`)
     .join("\n");
 
   // Team
   const team = (profilesRes.data || [])
-    .filter((p: any) => p.email)
-    .map((p: any) => `  - ${p.full_name || p.email} (${p.email})${p.last_seen ? " — last seen " + new Date(p.last_seen).toLocaleDateString() : ""}`)
+    .filter((p: unknown) => p.email)
+    .map((p: unknown) => `  - ${p.full_name || p.email} (${p.email})${p.last_seen ? " — last seen " + new Date(p.last_seen).toLocaleDateString() : ""}`)
     .join("\n");
 
   // Build full account + contact roster
   const allAccounts = accountsFullRes.data || [];
   const allContacts = contactsFullRes.data || [];
-  const activeAccounts = allAccounts.filter((a: any) => a.status === "active" || !a.status).length;
-  const deadAccounts = allAccounts.filter((a: any) => a.status === "dead").length;
+  const activeAccounts = allAccounts.filter((a: unknown) => a.status === "active" || !a.status).length;
+  const deadAccounts = allAccounts.filter((a: unknown) => a.status === "dead").length;
 
   // Group contacts by account_id
-  const contactsByAccount: Record<string, any[]> = {};
+  const contactsByAccount: Record<string, unknown[]> = {};
   for (const c of allContacts) {
-    const accId = String((c as any).account_id);
+    const accId = String((c as unknown).account_id);
     if (!contactsByAccount[accId]) contactsByAccount[accId] = [];
     contactsByAccount[accId].push(c);
   }
 
   // Build account roster with contacts
   const accountRoster = allAccounts
-    .map((a: any) => {
+    .map((a: unknown) => {
       const created = a.created_at ? new Date(a.created_at).toLocaleDateString() : "Unknown";
       const contacts = contactsByAccount[a.id] || [];
       const contactLines = contacts
-        .map((c: any) => `      [contact:${c.id}] ${[c.first_name, c.last_name].filter(Boolean).join(" ") || "Unnamed"} | ${c.email || "no email"} | ${c.phone || "no phone"}`)
+        .map((c: unknown) => `      [contact:${c.id}] ${[c.first_name, c.last_name].filter(Boolean).join(" ") || "Unnamed"} | ${c.email || "no email"} | ${c.phone || "no phone"}`)
         .join("\n");
       return `  [acct:${a.id}] ${a.name} (${a.status || "active"}) — since ${created}${a.city && a.state ? ` | ${a.city}, ${a.state}` : ""}${a.website ? ` | ${a.website}` : ""}\n${contactLines || "      No contacts on file"}`;
     })
@@ -268,23 +268,23 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
 
   // Map opportunity_id to account name
   const accountIdToName: Record<string, string> = {};
-  for (const a of allAccounts) accountIdToName[String((a as any).id)] = (a as any).name;
+  for (const a of allAccounts) accountIdToName[String((a as unknown).id)] = (a as unknown).name;
 
   const oppToAccount: Record<string, string> = {};
   for (const o of (recentOppsRes.data || [])) {
-    oppToAccount[String((o as any).id)] = (o as any).accounts?.name || "Unknown Account";
+    oppToAccount[String((o as unknown).id)] = (o as unknown).accounts?.name || "Unknown Account";
   }
   // Also map from full pipeline data for docs that belong to older opps
   for (const o of opps) {
-    if (!oppToAccount[(o as any).id]) {
-      oppToAccount[(o as any).id] = accountIdToName[(o as any).account_id] || "Unknown Account";
+    if (!oppToAccount[(o as unknown).id]) {
+      oppToAccount[(o as unknown).id] = accountIdToName[(o as unknown).account_id] || "Unknown Account";
     }
   }
 
   // Group docs by opportunity
-  const docsByOpp: Record<string, any[]> = {};
+  const docsByOpp: Record<string, unknown[]> = {};
   for (const d of allDocs) {
-    const oppId = String((d as any).opportunity_id);
+    const oppId = String((d as unknown).opportunity_id);
     if (!docsByOpp[oppId]) docsByOpp[oppId] = [];
     docsByOpp[oppId].push(d);
   }
@@ -293,7 +293,7 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
     .map(([oppId, docs]) => {
       const acctName = oppToAccount[oppId] || "Unknown Account";
       const docLines = docs
-        .map((d: any) => `      [doc:${d.id}] ${d.file_name} (${d.document_type || "Unassigned"}) — uploaded ${d.created_at ? new Date(d.created_at).toLocaleDateString() : "unknown"}${d.uploaded_by ? " by " + d.uploaded_by : ""}`)
+        .map((d: unknown) => `      [doc:${d.id}] ${d.file_name} (${d.document_type || "Unassigned"}) — uploaded ${d.created_at ? new Date(d.created_at).toLocaleDateString() : "unknown"}${d.uploaded_by ? " by " + d.uploaded_by : ""}`)
         .join("\n");
       return `  ${acctName} [opp:${oppId}] (${docs.length} docs):\n${docLines}`;
     })
@@ -301,7 +301,7 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
 
   // Validation report summaries
   const validationSummary = allValidations
-    .map((v: any) => {
+    .map((v: unknown) => {
       const acctName = oppToAccount[v.opportunity_id] || "Unknown Account";
       const score = v.readiness_score === "ready" ? "🟢" : v.readiness_score === "needs_attention" ? "🟡" : "🔴";
       return `  ${score} ${acctName} — ${v.summary || "No summary"} (${new Date(v.created_at).toLocaleDateString()})`;
@@ -310,9 +310,9 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
 
   // Build beneficial owners grouped by opportunity
   const allBOs = beneficialOwnersRes.data || [];
-  const bosByOpp: Record<string, any[]> = {};
+  const bosByOpp: Record<string, unknown[]> = {};
   for (const bo of allBOs) {
-    const oppId = String((bo as any).opportunity_id);
+    const oppId = String((bo as unknown).opportunity_id);
     if (!bosByOpp[oppId]) bosByOpp[oppId] = [];
     bosByOpp[oppId].push(bo);
   }
@@ -320,7 +320,7 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
     .map(([oppId, bos]) => {
       const acctName = oppToAccount[oppId] || "Unknown Account";
       const boLines = bos
-        .map((b: any) => `      [bo:${b.id || "?"}] ${b.full_name} — ${b.title || "No title"} | ${b.ownership_percentage}% | ${[b.address_city, b.address_state].filter(Boolean).join(", ") || "No address"}`)
+        .map((b: unknown) => `      [bo:${b.id || "?"}] ${b.full_name} — ${b.title || "No title"} | ${b.ownership_percentage}% | ${[b.address_city, b.address_state].filter(Boolean).join(", ") || "No address"}`)
         .join("\n");
       return `  ${acctName} [opp:${oppId}]:\n${boLines}`;
     })
@@ -328,7 +328,7 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
 
   // Recent activities
   const recentActivities = (activitiesRes.data || [])
-    .map((a: any) => {
+    .map((a: unknown) => {
       const acctName = oppToAccount[a.opportunity_id] || "Unknown Account";
       const date = a.created_at ? new Date(a.created_at).toLocaleDateString() : "unknown";
       return `  ${date} | ${acctName} | ${a.type} | ${a.description || "No description"} | by ${a.user_email || "system"}`;
@@ -338,7 +338,7 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
   // NMI boarding submissions
   const allBoardings = nmiBoardingRes.data || [];
   const boardingRoster = allBoardings
-    .map((b: any) => {
+    .map((b: unknown) => {
       const acctName = b.account_id ? accountIdToName[b.account_id] || b.company_name : b.company_name;
       const date = b.created_at ? new Date(b.created_at).toLocaleDateString() : "unknown";
       return `  ${acctName}${b.dba_name ? " (DBA: " + b.dba_name + ")" : ""} — ${b.nmi_status}${b.nmi_gateway_id ? " | GW: " + b.nmi_gateway_id : ""}${b.error_message ? " | Error: " + b.error_message : ""} | ${date} by ${b.submitted_by_email}`;
@@ -348,7 +348,7 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
   // Client interactions
   const allInteractions = clientInteractionsRes.data || [];
   const interactionRoster = allInteractions
-    .map((i: any) => {
+    .map((i: unknown) => {
       const acctName = accountIdToName[i.account_id] || "Unknown Account";
       const date = i.created_at ? new Date(i.created_at).toLocaleDateString() : "unknown";
       return `  ${date} | ${acctName} | ${i.interaction_type} — ${i.subject} | ${i.status} (${i.priority}) | ${i.outcome || "No outcome"}${i.follow_up_at ? " | Follow-up: " + new Date(i.follow_up_at).toLocaleDateString() : ""} | by ${i.created_by_email || "unknown"}`;
@@ -441,7 +441,7 @@ serve(async (req) => {
 
       // Fetch CRM context and channel history in parallel
       const [crmContext, historyRes] = await Promise.all([
-        buildCRMContext(supabase as any),
+        buildCRMContext(supabase as unknown),
         supabase
           .from("chat_messages")
           .select("user_name, user_email, content")
@@ -1109,13 +1109,13 @@ serve(async (req) => {
               .select("full_name, ownership_percentage, title")
               .eq("opportunity_id", args.opportunity_id);
 
-            const docList = (docs || []).map((d: any) => `${d.file_name} (${d.document_type})`).join(", ");
-            const boList = (bos || []).map((b: any) => `${b.full_name} ${b.ownership_percentage}%`).join(", ");
-            const acctName = (oppData as any).accounts?.name || "Unknown";
-            const website = (oppData as any).accounts?.website || "None";
+            const docList = (docs || []).map((d: unknown) => `${d.file_name} (${d.document_type})`).join(", ");
+            const boList = (bos || []).map((b: unknown) => `${b.full_name} ${b.ownership_percentage}%`).join(", ");
+            const acctName = (oppData as unknown).accounts?.name || "Unknown";
+            const website = (oppData as unknown).accounts?.website || "None";
 
             // Check required docs
-            const docTypes = (docs || []).map((d: any) => d.document_type || "");
+            const docTypes = (docs || []).map((d: unknown) => d.document_type || "");
             const hasBank = docTypes.filter((t: string) => t === "Bank Statement").length >= 3;
             const hasArticles = docTypes.includes("Articles of Organization");
             const hasEIN = docTypes.includes("EIN / Tax Document");
@@ -1247,7 +1247,7 @@ serve(async (req) => {
                     ? rawContent
                     : Array.isArray(rawContent)
                       ? rawContent
-                        .map((part: any) => {
+                        .map((part: unknown) => {
                           if (typeof part === "string") return part;
                           if (typeof part?.text === "string") return part.text;
                           return "";
@@ -1535,7 +1535,7 @@ Look at the actual content, logos, headers, formatting, and data to determine th
               .select("accounts!inner(name)")
               .eq("id", bulkOppId as string)
               .single();
-            const bulkAcctName = (bulkOpp as any)?.accounts?.name || "this opportunity";
+            const bulkAcctName = (bulkOpp as unknown)?.accounts?.name || "this opportunity";
 
             const results: string[] = [];
             let classified = 0;
@@ -1634,7 +1634,7 @@ Look at the actual content, logos, headers, formatting, and data to determine th
             };
 
             // Search by code or keyword
-            let results: string[] = [];
+            const results: string[] = [];
             if (MCC_DATABASE[q]) {
               const m = MCC_DATABASE[q];
               results.push(`MCC ${q}: ${m.description} | Risk: ${m.risk === "high_risk" ? "🔴 HIGH RISK" : "🟢 Standard"} | ${m.interchange_note}`);
@@ -1704,7 +1704,7 @@ Look at the actual content, logos, headers, formatting, and data to determine th
 
             if (opps?.length) {
               results.push(`\nOPPORTUNITIES (${opps.length} matches):`);
-              for (const o of opps as any[]) {
+              for (const o of opps as unknown[]) {
                 results.push(`  [opp:${o.id}] ${o.accounts?.name} | ${o.stage} (${o.status || "active"}) | ${o.service_type || "processing"} | ${o.assigned_to || "Unassigned"}`);
               }
             }
@@ -1729,41 +1729,41 @@ Look at the actual content, logos, headers, formatting, and data to determine th
             if (oppErr) return `Error fetching pipeline data: ${oppErr.message}`;
 
             const opps = allOpps || [];
-            const active = opps.filter((o: any) => o.status === "active");
-            const dead = opps.filter((o: any) => o.status === "dead" || o.status === "closed-lost");
+            const active = opps.filter((o: unknown) => o.status === "active");
+            const dead = opps.filter((o: unknown) => o.status === "dead" || o.status === "closed-lost");
 
             // Stage distribution
             const stageDist: Record<string, number> = {};
             for (const o of active) {
-              const s = (o as any).stage || "unknown";
+              const s = (o as unknown).stage || "unknown";
               stageDist[s] = (stageDist[s] || 0) + 1;
             }
 
             // Stuck deals (>5 days in current stage)
             const now = Date.now();
             const fiveDaysMs = 5 * 24 * 60 * 60 * 1000;
-            const stuckDeals = active.filter((o: any) => {
+            const stuckDeals = active.filter((o: unknown) => {
               if (!o.stage_entered_at) return false;
               return (now - new Date(o.stage_entered_at).getTime()) > fiveDaysMs;
-            }).map((o: any) => {
+            }).map((o: unknown) => {
               const daysStuck = Math.round((now - new Date(o.stage_entered_at).getTime()) / (24 * 60 * 60 * 1000));
-              return `  ⚠️ ${(o as any).accounts?.name} — stuck in ${o.stage} for ${daysStuck} days (${o.assigned_to || "Unassigned"})${o.sla_status ? ` | SLA: ${o.sla_status}` : ""}`;
+              return `  ⚠️ ${(o as unknown).accounts?.name} — stuck in ${o.stage} for ${daysStuck} days (${o.assigned_to || "Unassigned"})${o.sla_status ? ` | SLA: ${o.sla_status}` : ""}`;
             });
 
             // Assignee workload
             const assigneeWork: Record<string, { total: number; stages: Record<string, number> }> = {};
             for (const o of active) {
-              const a = (o as any).assigned_to || "Unassigned";
+              const a = (o as unknown).assigned_to || "Unassigned";
               if (!assigneeWork[a]) assigneeWork[a] = { total: 0, stages: {} };
               assigneeWork[a].total++;
-              const s = (o as any).stage || "unknown";
+              const s = (o as unknown).stage || "unknown";
               assigneeWork[a].stages[s] = (assigneeWork[a].stages[s] || 0) + 1;
             }
 
             // Service type breakdown
             const serviceTypes: Record<string, number> = {};
             for (const o of active) {
-              const st = (o as any).service_type || "processing";
+              const st = (o as unknown).service_type || "processing";
               serviceTypes[st] = (serviceTypes[st] || 0) + 1;
             }
 
@@ -1801,13 +1801,13 @@ Look at the actual content, logos, headers, formatting, and data to determine th
 
             if (oppRes.error || !oppRes.data) return `Error: Opportunity not found (${opportunity_id}).`;
 
-            const opp = oppRes.data as any;
+            const opp = oppRes.data as unknown;
             const docs = docsRes.data || [];
             const bos = bosRes.data || [];
             const acctName = opp.accounts?.name || "Unknown";
             const isGateway = opp.service_type === "gateway" || opp.service_type === "gateway_only";
 
-            const docTypes = docs.map((d: any) => d.document_type || "");
+            const docTypes = docs.map((d: unknown) => d.document_type || "");
             const lines: string[] = [`DOCUMENT COMPLETENESS — ${acctName} (${opp.stage})`, ""];
 
             if (isGateway) {
@@ -1840,7 +1840,7 @@ Look at the actual content, logos, headers, formatting, and data to determine th
                 if (!c.present) missingCount++;
               }
 
-              lines.push("", `BENEFICIAL OWNERS: ${bos.length > 0 ? "✅" : "❌"} ${bos.length} on file${bos.length > 0 ? ` (${bos.map((b: any) => `${b.full_name} ${b.ownership_percentage}%`).join(", ")})` : " — at least 1 required (25%+ equity)"}`);
+              lines.push("", `BENEFICIAL OWNERS: ${bos.length > 0 ? "✅" : "❌"} ${bos.length} on file${bos.length > 0 ? ` (${bos.map((b: unknown) => `${b.full_name} ${b.ownership_percentage}%`).join(", ")})` : " — at least 1 required (25%+ equity)"}`);
               if (!bos.length) missingCount++;
 
               lines.push("");
@@ -1854,12 +1854,12 @@ Look at the actual content, logos, headers, formatting, and data to determine th
             }
 
             // Additional docs on file
-            const extraDocs = docs.filter((d: any) => d.document_type && d.document_type !== "Unassigned");
-            const unassigned = docs.filter((d: any) => !d.document_type || d.document_type === "Unassigned");
+            const extraDocs = docs.filter((d: unknown) => d.document_type && d.document_type !== "Unassigned");
+            const unassigned = docs.filter((d: unknown) => !d.document_type || d.document_type === "Unassigned");
             lines.push("", `TOTAL DOCUMENTS: ${docs.length} (${extraDocs.length} labelled, ${unassigned.length} unassigned)`);
             if (unassigned.length > 0) {
               lines.push("UNASSIGNED FILES:");
-              unassigned.forEach((d: any) => lines.push(`  📄 ${d.file_name}`));
+              unassigned.forEach((d: unknown) => lines.push(`  📄 ${d.file_name}`));
             }
 
             return lines.join("\n");
@@ -1878,30 +1878,30 @@ Look at the actual content, logos, headers, formatting, and data to determine th
               .single();
 
             if (oppErr || !opp) return `Error: Opportunity not found (${opportunity_id}).`;
-            if ((opp as any).status !== "active") return `Cannot advance — opportunity is ${(opp as any).status}. Only active deals can be advanced.`;
+            if ((opp as unknown).status !== "active") return `Cannot advance — opportunity is ${(opp as unknown).status}. Only active deals can be advanced.`;
 
-            const currentIdx = STAGE_ORDER.indexOf((opp as any).stage);
+            const currentIdx = STAGE_ORDER.indexOf((opp as unknown).stage);
             const nextStage = target_stage || STAGE_ORDER[currentIdx + 1];
-            if (!nextStage) return `Cannot advance — ${(opp as any).stage} is the last stage. Use outcomes (closed_won, etc.) to close.`;
+            if (!nextStage) return `Cannot advance — ${(opp as unknown).stage} is the last stage. Use outcomes (closed_won, etc.) to close.`;
 
             const targetIdx = STAGE_ORDER.indexOf(nextStage as string);
-            if (targetIdx <= currentIdx) return `Cannot move backward from ${(opp as any).stage} to ${nextStage}. Use update_opportunity_stage for non-sequential moves.`;
+            if (targetIdx <= currentIdx) return `Cannot move backward from ${(opp as unknown).stage} to ${nextStage}. Use update_opportunity_stage for non-sequential moves.`;
 
-            const acctName = (opp as any).accounts?.name || "Unknown";
+            const acctName = (opp as unknown).accounts?.name || "Unknown";
 
             // Gate checks for specific transitions
             const warnings: string[] = [];
 
             // Underwriting gate
             if (nextStage === "underwriting" || (targetIdx >= STAGE_ORDER.indexOf("underwriting") && currentIdx < STAGE_ORDER.indexOf("underwriting"))) {
-              const isGateway = (opp as any).service_type === "gateway" || (opp as any).service_type === "gateway_only";
+              const isGateway = (opp as unknown).service_type === "gateway" || (opp as unknown).service_type === "gateway_only";
 
               const [docsRes, bosRes] = await Promise.all([
                 supabase.from("documents").select("document_type").eq("opportunity_id", opportunity_id as string),
                 supabase.from("beneficial_owners").select("id").eq("opportunity_id", opportunity_id as string),
               ]);
 
-              const docTypes = (docsRes.data || []).map((d: any) => d.document_type || "");
+              const docTypes = (docsRes.data || []).map((d: unknown) => d.document_type || "");
 
               if (isGateway) {
                 if (!docTypes.includes("Voided Check") && !docTypes.includes("Bank Confirmation Letter")) warnings.push("Missing: Voided Check or Bank Confirmation");
@@ -1918,7 +1918,7 @@ Look at the actual content, logos, headers, formatting, and data to determine th
             }
 
             if (warnings.length > 0) {
-              return `⛔ Cannot advance ${acctName} from ${(opp as any).stage} to ${nextStage}. Gate check failed:\n${warnings.map(w => `  ❌ ${w}`).join("\n")}\n\nResolve these items first, then try again.`;
+              return `⛔ Cannot advance ${acctName} from ${(opp as unknown).stage} to ${nextStage}. Gate check failed:\n${warnings.map(w => `  ❌ ${w}`).join("\n")}\n\nResolve these items first, then try again.`;
             }
 
             // Perform the stage update
@@ -1933,12 +1933,12 @@ Look at the actual content, logos, headers, formatting, and data to determine th
             await supabase.from("activities").insert({
               opportunity_id: opportunity_id,
               type: "stage_change",
-              description: `Atria advanced ${acctName} from ${(opp as any).stage} to ${nextStage}`,
+              description: `Atria advanced ${acctName} from ${(opp as unknown).stage} to ${nextStage}`,
               user_id: AI_BOT_USER_ID,
               user_email: AI_BOT_EMAIL,
             });
 
-            return `✅ ${acctName} advanced from ${(opp as any).stage} → ${nextStage} successfully.${targetIdx >= STAGE_ORDER.indexOf("underwriting") && currentIdx < STAGE_ORDER.indexOf("underwriting") ? " All underwriting gate checks passed." : ""}`;
+            return `✅ ${acctName} advanced from ${(opp as unknown).stage} → ${nextStage} successfully.${targetIdx >= STAGE_ORDER.indexOf("underwriting") && currentIdx < STAGE_ORDER.indexOf("underwriting") ? " All underwriting gate checks passed." : ""}`;
           }
 
           case "search_duplicates": {
@@ -1955,14 +1955,14 @@ Look at the actual content, logos, headers, formatting, and data to determine th
 
             // Also search with common variations (remove LLC, Inc, etc.)
             const stripped = searchName.replace(/\b(llc|inc|corp|ltd|co|company|group|enterprises?|services?|solutions?)\b/gi, "").trim();
-            let extraAccounts: any[] = [];
+            let extraAccounts: unknown[] = [];
             if (stripped.length >= 3 && stripped !== searchName) {
               const { data } = await supabase
                 .from("accounts")
                 .select("id, name, status, website, city, state")
                 .ilike("name", `%${stripped}%`)
                 .limit(10);
-              extraAccounts = (data || []).filter((a: any) => !(matchingAccounts || []).find((m: any) => m.id === a.id));
+              extraAccounts = (data || []).filter((a: unknown) => !(matchingAccounts || []).find((m: unknown) => m.id === a.id));
             }
 
             const allMatches = [...(matchingAccounts || []), ...extraAccounts];
@@ -2006,7 +2006,7 @@ Look at the actual content, logos, headers, formatting, and data to determine th
                   .select("id, stage, status")
                   .eq("account_id", a.id)
                   .limit(5);
-                const oppInfo = opps?.length ? ` | ${opps.length} opp(s): ${opps.map((o: any) => `${o.stage}/${o.status}`).join(", ")}` : " | No opportunities";
+                const oppInfo = opps?.length ? ` | ${opps.length} opp(s): ${opps.map((o: unknown) => `${o.stage}/${o.status}`).join(", ")}` : " | No opportunities";
                 results.push(`  [acct:${a.id}] ${a.name} (${a.status || "active"})${a.city && a.state ? ` — ${a.city}, ${a.state}` : ""}${oppInfo}`);
               }
             }
@@ -2069,38 +2069,38 @@ Look at the actual content, logos, headers, formatting, and data to determine th
 
             const now = Date.now();
             for (const o of opps) {
-              const rep = (o as any).assigned_to || "Unassigned";
+              const rep = (o as unknown).assigned_to || "Unassigned";
               ensureRep(rep);
               const s = repStats[rep];
 
-              if ((o as any).status === "active") {
+              if ((o as unknown).status === "active") {
                 s.active++;
-                const stage = (o as any).stage || "unknown";
+                const stage = (o as unknown).stage || "unknown";
                 s.stages[stage] = (s.stages[stage] || 0) + 1;
-                if ((o as any).stage_entered_at) {
-                  s.avgDaysInStage.push((now - new Date((o as any).stage_entered_at).getTime()) / (24 * 60 * 60 * 1000));
+                if ((o as unknown).stage_entered_at) {
+                  s.avgDaysInStage.push((now - new Date((o as unknown).stage_entered_at).getTime()) / (24 * 60 * 60 * 1000));
                 }
-              } else if ((o as any).outcome_status === "closed_won") s.closed_won++;
-              else if ((o as any).outcome_status === "closed_lost") s.closed_lost++;
-              else if ((o as any).status === "dead") s.dead++;
+              } else if ((o as unknown).outcome_status === "closed_won") s.closed_won++;
+              else if ((o as unknown).outcome_status === "closed_lost") s.closed_lost++;
+              else if ((o as unknown).status === "dead") s.dead++;
 
-              if (new Date((o as any).created_at).toISOString() >= since) s.recentCreated++;
-              if ((o as any).sla_status === "breached") s.slaBreaches++;
+              if (new Date((o as unknown).created_at).toISOString() >= since) s.recentCreated++;
+              if ((o as unknown).sla_status === "breached") s.slaBreaches++;
             }
 
             for (const a of (activities || [])) {
-              const rep = (a as any).user_email || "unknown";
+              const rep = (a as unknown).user_email || "unknown";
               ensureRep(rep);
               repStats[rep].activitiesCount++;
             }
 
             for (const t of (tasks || [])) {
-              const rep = (t as any).assignee || "Unassigned";
+              const rep = (t as unknown).assignee || "Unassigned";
               ensureRep(rep);
-              if ((t as any).status === "done") repStats[rep].tasksDone++;
+              if ((t as unknown).status === "done") repStats[rep].tasksDone++;
               else {
                 repStats[rep].tasksOpen++;
-                if ((t as any).due_at && new Date((t as any).due_at).getTime() < now) repStats[rep].tasksOverdue++;
+                if ((t as unknown).due_at && new Date((t as unknown).due_at).getTime() < now) repStats[rep].tasksOverdue++;
               }
             }
 
@@ -2148,8 +2148,8 @@ Look at the actual content, logos, headers, formatting, and data to determine th
               .eq("id", opportunity_id)
               .single();
 
-            const acctName = (opp as any)?.accounts?.name || "Unknown";
-            const assignTo = (assignee as string) || (opp as any)?.assigned_to || "ai-assistant@ops.internal";
+            const acctName = (opp as unknown)?.accounts?.name || "Unknown";
+            const assignTo = (assignee as string) || (opp as unknown)?.assigned_to || "ai-assistant@ops.internal";
 
             const taskData: Record<string, unknown> = {
               title: `Follow-up: ${subject}`,
@@ -2190,18 +2190,18 @@ Look at the actual content, logos, headers, formatting, and data to determine th
               .single();
             if (oppErr || !opp) return `Error: Opportunity not found (${opportunity_id}).`;
 
-            const acctName = (opp as any).accounts?.name || "Unknown";
-            const contactName = [(opp as any).contacts?.first_name, (opp as any).contacts?.last_name].filter(Boolean).join(" ") || "Merchant";
-            const contactEmail = (opp as any).contacts?.email || "N/A";
-            const stage = (opp as any).stage || "discovery";
-            const serviceType = (opp as any).service_type || "processing";
+            const acctName = (opp as unknown).accounts?.name || "Unknown";
+            const contactName = [(opp as unknown).contacts?.first_name, (opp as unknown).contacts?.last_name].filter(Boolean).join(" ") || "Merchant";
+            const contactEmail = (opp as unknown).contacts?.email || "N/A";
+            const stage = (opp as unknown).stage || "discovery";
+            const serviceType = (opp as unknown).service_type || "processing";
 
             // Fetch docs for context
             const { data: docs } = await supabase
               .from("documents")
               .select("document_type")
               .eq("opportunity_id", opportunity_id as string);
-            const docTypes = (docs || []).map((d: any) => d.document_type).filter(Boolean);
+            const docTypes = (docs || []).map((d: unknown) => d.document_type).filter(Boolean);
 
             // Build email drafting prompt
             const emailContext = `
@@ -2279,7 +2279,7 @@ Subject: [subject line]
                 .eq("campaign_id", campaign_id as string)
                 .order("updated_at", { ascending: false });
 
-              const c = campaign as any;
+              const c = campaign as unknown;
               const openRate = c.sent_count > 0 ? Math.round(((c.sent_count - c.bounced_count) / c.sent_count) * 100) : 0;
               const replyRate = c.sent_count > 0 ? Math.round((c.replied_count / c.sent_count) * 100) : 0;
 
@@ -2299,9 +2299,9 @@ Subject: [subject line]
 
               // Contact breakdown
               if (contacts?.length) {
-                const replied = contacts.filter((ct: any) => ct.replied_at);
-                const bounced = contacts.filter((ct: any) => ct.bounced_at);
-                const pending = contacts.filter((ct: any) => ct.status === "pending");
+                const replied = contacts.filter((ct: unknown) => ct.replied_at);
+                const bounced = contacts.filter((ct: unknown) => ct.bounced_at);
+                const pending = contacts.filter((ct: unknown) => ct.status === "pending");
 
                 if (replied.length > 0) {
                   lines.push("", `REPLIES (${replied.length}):`);
@@ -2336,8 +2336,8 @@ Subject: [subject line]
 
               const lines: string[] = [`📧 OUTREACH CAMPAIGNS (${campaigns.length} recent):`, ""];
               for (const c of campaigns) {
-                const replyRate = (c as any).sent_count > 0 ? Math.round(((c as any).replied_count / (c as any).sent_count) * 100) : 0;
-                lines.push(`  ${(c as any).name} (${(c as any).status}) — ${(c as any).sent_count}/${(c as any).total_contacts} sent | ${(c as any).replied_count} replies (${replyRate}%) | ${(c as any).bounced_count} bounced | by ${(c as any).created_by_email}`);
+                const replyRate = (c as unknown).sent_count > 0 ? Math.round(((c as unknown).replied_count / (c as unknown).sent_count) * 100) : 0;
+                lines.push(`  ${(c as unknown).name} (${(c as unknown).status}) — ${(c as unknown).sent_count}/${(c as unknown).total_contacts} sent | ${(c as unknown).replied_count} replies (${replyRate}%) | ${(c as unknown).bounced_count} bounced | by ${(c as unknown).created_by_email}`);
               }
 
               return lines.join("\n");
@@ -2350,7 +2350,7 @@ Subject: [subject line]
       }
 
       // Call AI gateway with tools
-      let messages: Array<Record<string, unknown>> = [
+      const messages: Array<Record<string, unknown>> = [
         { role: "system", content: systemPrompt },
         ...conversationHistory,
       ];

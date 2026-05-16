@@ -42,8 +42,8 @@ export default function PortalCommissions() {
     enabled: !!referrer?.id,
     queryFn: async (): Promise<PayoutRecord[]> => {
       const { data, error } = await supabase
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .from("referrer_commission_records" as any)
+         
+        .from("referrer_commission_records" as unknown)
         .select("*")
         .order("period_start", { ascending: false });
       if (error) {

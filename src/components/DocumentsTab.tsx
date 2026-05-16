@@ -178,7 +178,7 @@ export const DocumentsTab = ({ opportunityId, serviceType }: DocumentsTabProps) 
         missingDocs,
       });
       setEmailPreviewOpen(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(err?.message || "Failed to load email preview");
     }
   }, [opportunityId, documents, serviceType]);
@@ -220,7 +220,7 @@ export const DocumentsTab = ({ opportunityId, serviceType }: DocumentsTabProps) 
       }
 
       toast.success("Document request email sent to client");
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(err?.message || "Failed to send document request");
       throw err;
     }

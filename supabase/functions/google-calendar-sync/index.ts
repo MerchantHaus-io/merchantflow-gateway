@@ -30,7 +30,7 @@ async function refreshAccessToken(refreshToken: string, clientId: string, client
 }
 
 async function fetchCalendarEvents(accessToken: string, calendarId: string, timeMin?: string, timeMax?: string) {
-  const allItems: any[] = [];
+  const allItems: unknown[] = [];
   let pageToken: string | null = null;
   let pages = 0;
   const MAX_PAGES = 50;
@@ -104,7 +104,7 @@ serve(async (req) => {
     // Sync all-time: no timeMin, 1 year forward
     const timeMax = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString();
 
-    const allEvents: any[] = [];
+    const allEvents: unknown[] = [];
     const sharedCalIds = (Deno.env.get("GOOGLE_CALENDAR_IDS") || "").split(",").map(c => c.trim()).filter(Boolean);
     let sharedCalsFetched = false;
 
@@ -156,7 +156,7 @@ serve(async (req) => {
     }
 
     // Deduplicate by Google event ID
-    const uniqueEvents = new Map<string, any>();
+    const uniqueEvents = new Map<string, unknown>();
     for (const ev of allEvents) {
       if (ev.id && !uniqueEvents.has(ev.id)) {
         uniqueEvents.set(ev.id, ev);
@@ -171,7 +171,7 @@ serve(async (req) => {
       if (!startTime || !endTime) continue;
 
       const isAllDay = !ev.start?.dateTime;
-      const attendees = (ev.attendees || []).map((a: any) => ({
+      const attendees = (ev.attendees || []).map((a: unknown) => ({
         email: a.email,
         displayName: a.displayName || null,
         responseStatus: a.responseStatus || null,

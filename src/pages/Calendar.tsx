@@ -41,7 +41,7 @@ interface CalendarEvent {
   start_time: string;
   end_time: string;
   all_day: boolean;
-  attendees: any[];
+  attendees: unknown[];
   opportunity_id: string | null;
   account_id: string | null;
   html_link: string | null;
@@ -193,7 +193,7 @@ export default function Calendar() {
       if (activitiesCreated > 0) msg += `, ${activitiesCreated} activities`;
       toast.success(msg);
       fetchEvents();
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error("Sync failed: " + (err.message || "Unknown error"));
     } finally {
       setSyncing(false);
@@ -218,7 +218,7 @@ export default function Calendar() {
         e.title?.toLowerCase().includes(q) ||
         e.location?.toLowerCase().includes(q) ||
         e.description?.toLowerCase().includes(q) ||
-        (Array.isArray(e.attendees) && e.attendees.some((a: any) =>
+        (Array.isArray(e.attendees) && e.attendees.some((a: unknown) =>
           a.email?.toLowerCase().includes(q) || a.displayName?.toLowerCase().includes(q)
         ))
       );
@@ -492,7 +492,7 @@ function getTeamColor(email: string | null) {
 
 function EventCard({ event, onClick }: { event: CalendarEvent; onClick?: () => void }) {
   const attendeeList = Array.isArray(event.attendees) ? event.attendees : [];
-  const internalAttendees = attendeeList.filter((a: any) => a.email?.endsWith("@merchanthaus.io"));
+  const internalAttendees = attendeeList.filter((a: unknown) => a.email?.endsWith("@merchanthaus.io"));
   const colors = getTeamColor(event.calendar_owner_email);
   const ownerName = event.calendar_owner_email?.split("@")[0] || "shared";
   const hasLink = !!(event.account_id || event.opportunity_id);
@@ -532,7 +532,7 @@ function EventCard({ event, onClick }: { event: CalendarEvent; onClick?: () => v
             <div className="flex items-center gap-1 mt-1">
               <Users className="h-3 w-3 text-muted-foreground shrink-0" />
               <span className="text-[10px] text-muted-foreground truncate">
-                {internalAttendees.map((a: any) => a.displayName || a.email?.split("@")[0]).join(", ")}
+                {internalAttendees.map((a: unknown) => a.displayName || a.email?.split("@")[0]).join(", ")}
               </span>
             </div>
           )}
@@ -582,7 +582,7 @@ function TeamDayGrid({
       if (e.calendar_owner_email === member.email) return true;
       // Check attendees for shared calendar events
       if (e.calendar_owner_email === "shared" && Array.isArray(e.attendees)) {
-        return e.attendees.some((a: any) => a.email === member.email);
+        return e.attendees.some((a: unknown) => a.email === member.email);
       }
       return false;
     });

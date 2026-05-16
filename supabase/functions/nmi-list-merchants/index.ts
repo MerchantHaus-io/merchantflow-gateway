@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
 });
 
 // v3 Boarding API — richer data (processors, services, status details)
-async function fetchV3Roster(apiKey: string): Promise<any[] | null> {
+async function fetchV3Roster(apiKey: string): Promise<unknown[] | null> {
   try {
     const res = await fetch(`${NMI_GATEWAY_BASE}/api/v3/affiliate/gateways`, {
       headers: {
@@ -61,7 +61,7 @@ async function fetchV3Roster(apiKey: string): Promise<any[] | null> {
     const data = await res.json();
     const gateways = Array.isArray(data) ? data : data.gateways ?? data.data ?? [];
 
-    return gateways.map((g: any) => ({
+    return gateways.map((g: unknown) => ({
       merchant_id: String(g.id ?? ""),
       company_name: g.company ?? g.company_name ?? null,
       dba_name: g.dba_name ?? null,
@@ -81,8 +81,8 @@ async function fetchV3Roster(apiKey: string): Promise<any[] | null> {
 }
 
 // v4 Partner API — basic roster
-async function fetchV4Roster(apiKey: string): Promise<any[] | null> {
-  const allMerchants: any[] = [];
+async function fetchV4Roster(apiKey: string): Promise<unknown[] | null> {
+  const allMerchants: unknown[] = [];
   let offset = 0;
   const pageSize = 100;
   let hasMore = true;

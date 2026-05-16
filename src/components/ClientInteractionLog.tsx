@@ -152,7 +152,7 @@ const ClientInteractionLog = ({ accountId, contactName, contactEmail, contactPho
   const { data: interactions, isLoading } = useQuery({
     queryKey: ["client-interactions", accountId],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await (supabase as unknown)
         .from("client_interactions")
         .select("*")
         .eq("account_id", accountId)
@@ -180,7 +180,7 @@ const ClientInteractionLog = ({ accountId, contactName, contactEmail, contactPho
 
   const addMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await (supabase as any).from("client_interactions").insert({
+      const { error } = await (supabase as unknown).from("client_interactions").insert({
         account_id: accountId,
         interaction_type: form.type,
         subject: form.subject.trim(),
@@ -211,7 +211,7 @@ const ClientInteractionLog = ({ accountId, contactName, contactEmail, contactPho
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await (supabase as any)
+      const { error } = await (supabase as unknown)
         .from("client_interactions")
         .update({ status })
         .eq("id", id);
@@ -224,7 +224,7 @@ const ClientInteractionLog = ({ accountId, contactName, contactEmail, contactPho
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await (supabase as any).from("client_interactions").delete().eq("id", id);
+      const { error } = await (supabase as unknown).from("client_interactions").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {

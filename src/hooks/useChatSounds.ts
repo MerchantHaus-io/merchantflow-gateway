@@ -17,8 +17,8 @@ export const useChatSounds = (options: UseChatSoundsOptions = {}) => {
     try {
       const audio = new Audio(path);
       audio.volume = volume;
-      audio.play().catch(() => {});
-    } catch {}
+      audio.play().catch(() => { /* ignore */ });
+    } catch { /* ignore */ }
   }, [soundEnabled, volume]);
 
   const playMessageSound = useCallback(() => {

@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
 
     // Exchange the magic-link OTP for a real session pair so the admin can hand
     // tokens to an isolated tab via setSession() — no browser navigation needed.
-    const tokenHash = (linkData as any)?.properties?.hashed_token as string | undefined;
+    const tokenHash = (linkData as unknown)?.properties?.hashed_token as string | undefined;
     let access_token: string | null = null;
     let refresh_token: string | null = null;
     if (tokenHash) {
@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
     // Backfill referrers.auth_user_id so RLS policies that key off auth_user_id work
     // for impersonated sessions. generateLink upserts the auth user, so it now exists.
     try {
-      const userId = (linkData as any)?.user?.id;
+      const userId = (linkData as unknown)?.user?.id;
       if (userId) {
         await admin
           .from("referrers")

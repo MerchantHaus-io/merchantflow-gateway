@@ -1127,7 +1127,7 @@ Sales Support`,
                     <div className="bg-secondary/50 p-4 border border-border">
                       <div className="flex items-start justify-between gap-4 flex-wrap">
                         <strong className="text-foreground text-sm">8. Pipeline Stage Change</strong>
-                        <span className="text-[11px] uppercase tracking-wider text-muted-foreground bg-background px-2 py-0.5 border border-border">Fires: any deal's stage changes</span>
+                        <span className="text-[11px] uppercase tracking-wider text-muted-foreground bg-background px-2 py-0.5 border border-border">Fires: unknown deal's stage changes</span>
                       </div>
                       <p className="text-sm text-muted-foreground mt-2"><strong className="text-foreground">What it says:</strong> Which deal moved, where it went, who moved it. Keeps the team silently aware of pipeline movement.</p>
                     </div>

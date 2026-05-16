@@ -145,10 +145,10 @@ export function useMessageSender() {
     }
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       const { error } = await supabase
         .from(message.options.table)
-        .insert(message.options.data as any);
+        .insert(message.options.data as unknown);
 
       if (error) throw error;
 
@@ -196,10 +196,10 @@ export function useMessageSender() {
     }
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       const { data, error } = await supabase
         .from(options.table)
-        .insert(options.data as any)
+        .insert(options.data as unknown)
         .select()
         .single();
 
