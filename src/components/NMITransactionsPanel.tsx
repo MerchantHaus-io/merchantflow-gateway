@@ -103,7 +103,7 @@ export const NMITransactionsPanel = ({ gatewayIds, accountName, merchantId }: NM
   });
 
   // Debug info from the edge function (merchant_ids seen in NMI response)
-  const debugInfo = (data as unknown)?._debug as { total_in_response: number; seen_merchant_ids: string[] } | undefined;
+  const debugInfo = (data as any)?._debug as { total_in_response: number; seen_merchant_ids: string[] } | undefined;
 
   // Merge all gateway results into one unified view
   const merged = data?.reduce<{ transactions: Transaction[]; summary: TransactionSummary; errors: { gateway_id: string; message: string }[] }>(

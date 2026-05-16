@@ -168,7 +168,7 @@ const liveArray = <T>(compute: () => T[]): T[] =>
   new Proxy([] as T[], {
     get(_t, prop, recv) {
       const arr = compute();
-      const v = (arr as unknown)[prop];
+      const v = (arr as any)[prop];
       return typeof v === "function" ? v.bind(arr) : v;
     },
     has(_t, prop) { return prop in compute(); },

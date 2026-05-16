@@ -330,7 +330,7 @@ export default function WebSubmissions() {
     try {
       // 1. Create Account — propagate referrer_id when the application came from a partner portal
        
-      const appReferrerId = (app as unknown).referrer_id ?? null;
+      const appReferrerId = (app as any).referrer_id ?? null;
       const { data: account, error: accountError } = await supabase
         .from("accounts")
         .insert({
@@ -610,7 +610,7 @@ export default function WebSubmissions() {
 
         // Fetch audit trail for accurate document type mapping
         const { data: auditDocs } = await supabase
-          .from('application_documents' as unknown)
+          .from('application_documents' as any)
           .select('file_path, document_type, file_name')
           .eq('application_id', app.id);
 
@@ -701,7 +701,7 @@ export default function WebSubmissions() {
   };
 
   const getSourceBadge = (app: Application) => {
-    const source = (app as unknown).source;
+    const source = (app as any).source;
     if (source === "merchant_portal") {
       return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/40">Portal</Badge>;
     }
@@ -720,7 +720,7 @@ export default function WebSubmissions() {
 
   const filteredApps = apps.filter((app) => {
     if (sourceFilter === "all") return true;
-    const source = (app as unknown).source || "web_form";
+    const source = (app as any).source || "web_form";
     return source === sourceFilter;
   });
 
@@ -791,7 +791,7 @@ export default function WebSubmissions() {
                            : "-"}
                        </TableCell>
                        <TableCell>
-                         <ApplicationDocsBadge applicationId={app.id} source={(app as unknown).source} />
+                         <ApplicationDocsBadge applicationId={app.id} source={(app as any).source} />
                        </TableCell>
                        <TableCell>{getStatusBadge(app.status)}</TableCell>
                       <TableCell className="text-right space-x-2">
@@ -1032,7 +1032,7 @@ export default function WebSubmissions() {
                   <Separator />
                   <div>
                     <span className="text-xs text-muted-foreground">Uploaded Documents</span>
-                    <ApplicationDocsDetail applicationId={selectedApp.id} source={(selectedApp as unknown).source} />
+                    <ApplicationDocsDetail applicationId={selectedApp.id} source={(selectedApp as any).source} />
                   </div>
 
                   {/* Actions */}

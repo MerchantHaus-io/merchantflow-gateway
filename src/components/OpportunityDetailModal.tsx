@@ -1442,7 +1442,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
           {/* CENTER: Primary Panel */}
           <div className="flex-1 min-h-0 min-w-0 overflow-y-auto px-4 md:px-6 py-4">
             {/* Mobile context tab: show activity/comments/status */}
-            {isMobile && activeSection === ('context' as unknown) && (
+            {isMobile && activeSection === ('context' as any) && (
               <DetailRightPanel
                 opportunityId={opportunity.id}
                 opportunity={opportunity}

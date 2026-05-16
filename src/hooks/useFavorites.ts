@@ -10,7 +10,7 @@ export function useFavorites() {
   useEffect(() => {
     if (!user?.id) return;
     supabase
-      .from("user_favorites" as unknown)
+      .from("user_favorites" as any)
       .select("shortcut_url")
       .eq("user_id", user.id)
       .then(({ data }) => {
@@ -35,14 +35,14 @@ export function useFavorites() {
 
       if (isFav) {
         await supabase
-          .from("user_favorites" as unknown)
+          .from("user_favorites" as any)
           .delete()
           .eq("user_id", user.id)
           .eq("shortcut_url", url);
       } else {
         await supabase
-          .from("user_favorites" as unknown)
-          .insert({ user_id: user.id, shortcut_url: url } as unknown);
+          .from("user_favorites" as any)
+          .insert({ user_id: user.id, shortcut_url: url } as any);
       }
     },
     [user?.id, favoriteUrls]

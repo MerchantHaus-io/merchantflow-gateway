@@ -191,7 +191,7 @@ export const CommunicationLogPanel = ({
 
   return (
     <div className="space-y-2">
-      <Tabs value={tab} onValueChange={(v) => setTab(v as unknown)}>
+      <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
         <TabsList className="grid w-full grid-cols-3 h-8">
           <TabsTrigger value="all" className="text-xs">All ({entries.length})</TabsTrigger>
           <TabsTrigger value="calls" className="text-xs">

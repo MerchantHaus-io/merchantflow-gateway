@@ -552,7 +552,7 @@ export default function OutreachDetail() {
                               <TableCell className="text-xs text-muted-foreground">—</TableCell>
                               <TableCell className="text-xs text-muted-foreground">{c.company || "—"}</TableCell>
                               <TableCell>
-                                <Badge variant="outline" className="text-[10px] font-mono">S{(c as unknown).current_step || 1}</Badge>
+                                <Badge variant="outline" className="text-[10px] font-mono">S{(c as any).current_step || 1}</Badge>
                               </TableCell>
                               <TableCell><StatusBadge status={c.status} /></TableCell>
                               <TableCell className="text-xs text-muted-foreground">
@@ -603,7 +603,7 @@ export default function OutreachDetail() {
                       <Button variant="ghost" size="sm" className="h-6 text-xs gap-1" onClick={() => {
                         const csv = ["Last Name,First Name,Email,Company,Status,Step,Sent At",
                           ...filteredContacts.map(c =>
-                            [c.last_name, c.first_name, c.email, c.company, c.status, (c as unknown).current_step, c.sent_at]
+                            [c.last_name, c.first_name, c.email, c.company, c.status, (c as any).current_step, c.sent_at]
                               .map(v => `"${v || ""}"`).join(",")
                           )].join("\n");
                         const a = document.createElement("a");
@@ -837,7 +837,7 @@ export default function OutreachDetail() {
               const rendered = mergeTags(stepData.body_html, sample);
               const eligibleCount = sendConfirmStep === 1
                 ? contacts.filter(c => c.status === "pending").length
-                : contacts.filter(c => (c as unknown).current_step === sendConfirmStep - 1 && c.status === "sent").length;
+                : contacts.filter(c => (c as any).current_step === sendConfirmStep - 1 && c.status === "sent").length;
               return (
                 <>
                   <div className="rounded-lg border border-border/60 bg-muted/20 p-3 space-y-1">

@@ -87,7 +87,7 @@ const LiveBilling = () => {
       if (!isAdmin && teamMemberName && opp.assigned_to !== teamMemberName) continue;
 
       const accountId = opp.account_id;
-      const svcType = getServiceType(opp as unknown);
+      const svcType = getServiceType(opp as any);
 
       if (map.has(accountId)) {
         const group = map.get(accountId)!;
@@ -122,7 +122,7 @@ const LiveBilling = () => {
       const q = search.toLowerCase();
       const matchSearch = !q || name.includes(q) || contactName.includes(q);
       const matchAssignee = filterAssignee === "all" || g.assigned_to === filterAssignee;
-      const matchPipeline = filterPipeline === "all" || g.pipelines.includes(filterPipeline as unknown);
+      const matchPipeline = filterPipeline === "all" || g.pipelines.includes(filterPipeline as any);
       return matchSearch && matchAssignee && matchPipeline;
     });
   }, [grouped, search, filterAssignee, filterPipeline]);

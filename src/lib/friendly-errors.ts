@@ -60,9 +60,9 @@ export function getFriendlyError(error: any): string {
 
   // Extract code and message from various shapes
   const code: string | undefined =
-    (error as unknown)?.code ?? (error as unknown)?.error_code ?? (error as unknown)?.status_code?.toString();
+    (error as any)?.code ?? (error as any)?.error_code ?? (error as any)?.status_code?.toString();
   const message: string =
-    (error as unknown)?.message ?? (error as unknown)?.error_description ?? (error as unknown)?.msg ?? String(error);
+    (error as any)?.message ?? (error as any)?.error_description ?? (error as any)?.msg ?? String(error);
 
   // 1. Direct code match
   if (code && ERROR_MAP[code]) {

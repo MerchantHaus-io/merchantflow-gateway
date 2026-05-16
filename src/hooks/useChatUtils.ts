@@ -148,7 +148,7 @@ export function useMessageSender() {
        
       const { error } = await supabase
         .from(message.options.table)
-        .insert(message.options.data as unknown);
+        .insert(message.options.data as any);
 
       if (error) throw error;
 
@@ -199,7 +199,7 @@ export function useMessageSender() {
        
       const { data, error } = await supabase
         .from(options.table)
-        .insert(options.data as unknown)
+        .insert(options.data as any)
         .select()
         .single();
 

@@ -124,7 +124,7 @@ const LiveAccountDetail = () => {
   const contact = primaryOpp?.contact as any;
 
   const pipelines = opportunities
-    ? [...new Set(opportunities.map((o) => getServiceType(o as unknown)))]
+    ? [...new Set(opportunities.map((o) => getServiceType(o as any)))]
     : [];
 
   // Fetch documents for ALL opportunities of this account
@@ -504,7 +504,7 @@ const LiveAccountDetail = () => {
 
             {/* Opportunities (show each one) */}
             {opportunities?.map((opp) => {
-              const svcType = getServiceType(opp as unknown);
+              const svcType = getServiceType(opp as any);
               return (
                 <Card key={opp.id}>
                   <CardHeader className="pb-3">

@@ -345,7 +345,7 @@ export default function PreboardingWizard() {
       .eq('id', opportunityId)
       .maybeSingle();
 
-    const gatewayOnly = (oppServiceType as unknown)?.service_type === "gateway_only";
+    const gatewayOnly = (oppServiceType as any)?.service_type === "gateway_only";
     setIsGatewayOnly(gatewayOnly);
 
     const prefilledForm = createFormFromOpportunity(opportunity);
