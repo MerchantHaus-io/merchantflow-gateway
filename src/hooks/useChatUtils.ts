@@ -18,7 +18,7 @@ interface RetryableMessage {
 /**
  * Debounced callback hook - prevents rapid successive calls
  */
-export function useDebouncedCallback<T extends (...args: unknown[]) => void>(
+export function useDebouncedCallback<T extends (...args: any[]) => void>(
   callback: T,
   delay: number
 ): T {
@@ -46,7 +46,7 @@ export function useDebouncedCallback<T extends (...args: unknown[]) => void>(
 /**
  * Throttled callback hook - limits call frequency
  */
-export function useThrottledCallback<T extends (...args: unknown[]) => void>(
+export function useThrottledCallback<T extends (...args: any[]) => void>(
   callback: T,
   limit: number
 ): T {
@@ -148,7 +148,7 @@ export function useMessageSender() {
        
       const { error } = await supabase
         .from(message.options.table)
-        .insert(message.options.data as unknown);
+        .insert(message.options.data as any);
 
       if (error) throw error;
 
@@ -199,7 +199,7 @@ export function useMessageSender() {
        
       const { data, error } = await supabase
         .from(options.table)
-        .insert(options.data as unknown)
+        .insert(options.data as any)
         .select()
         .single();
 

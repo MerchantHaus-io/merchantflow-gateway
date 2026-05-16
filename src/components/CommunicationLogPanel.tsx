@@ -85,7 +85,7 @@ export const CommunicationLogPanel = ({
 
       const [callRes, msgRes] = await Promise.all([callQuery, msgQuery]);
 
-      const calls: CommEntry[] = (callRes.data || []).map((c: unknown) => ({
+      const calls: CommEntry[] = (callRes.data || []).map((c: any) => ({
         kind: 'call' as const,
         id: c.id,
         quo_call_id: c.quo_call_id,
@@ -100,7 +100,7 @@ export const CommunicationLogPanel = ({
         account_name: c.contacts?.accounts?.name,
       }));
 
-      const messages: CommEntry[] = (msgRes.data || []).map((m: unknown) => ({
+      const messages: CommEntry[] = (msgRes.data || []).map((m: any) => ({
         kind: 'sms' as const,
         id: m.id,
         quo_message_id: m.quo_message_id,
@@ -191,7 +191,7 @@ export const CommunicationLogPanel = ({
 
   return (
     <div className="space-y-2">
-      <Tabs value={tab} onValueChange={(v) => setTab(v as unknown)}>
+      <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
         <TabsList className="grid w-full grid-cols-3 h-8">
           <TabsTrigger value="all" className="text-xs">All ({entries.length})</TabsTrigger>
           <TabsTrigger value="calls" className="text-xs">

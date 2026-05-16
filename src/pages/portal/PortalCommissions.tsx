@@ -43,7 +43,7 @@ export default function PortalCommissions() {
     queryFn: async (): Promise<PayoutRecord[]> => {
       const { data, error } = await supabase
          
-        .from("referrer_commission_records" as unknown)
+        .from("referrer_commission_records" as any)
         .select("*")
         .order("period_start", { ascending: false });
       if (error) {

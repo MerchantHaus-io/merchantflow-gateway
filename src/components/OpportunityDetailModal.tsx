@@ -510,7 +510,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
       } else {
         toast.error(data?.error || "Failed to generate access link");
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
       toast.error(err.message || "Failed to access portal");
     } finally {
       setPortalAccessLoading(false);
@@ -1442,7 +1442,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
           {/* CENTER: Primary Panel */}
           <div className="flex-1 min-h-0 min-w-0 overflow-y-auto px-4 md:px-6 py-4">
             {/* Mobile context tab: show activity/comments/status */}
-            {isMobile && activeSection === ('context' as unknown) && (
+            {isMobile && activeSection === ('context' as any) && (
               <DetailRightPanel
                 opportunityId={opportunity.id}
                 opportunity={opportunity}
@@ -1885,8 +1885,8 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
 
               onUpdate({
                 ...opportunity,
-                service_type: newType as unknown,
-                ...(stageReset ? { stage: stageReset as unknown } : {}),
+                service_type: newType as any,
+                ...(stageReset ? { stage: stageReset as any } : {}),
               });
 
               toast.success(`Switched to ${newType === 'gateway_only' ? 'Gateway' : 'Processing'} pipeline`);

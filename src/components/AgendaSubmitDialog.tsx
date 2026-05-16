@@ -57,7 +57,7 @@ export function AgendaSubmitDialog({ trigger }: { trigger?: React.ReactNode }) {
       setDescription("");
       setCategory("agenda");
       setOpen(false);
-    } catch (err: unknown) {
+    } catch (err: any) {
       toast.error(err.message || "Failed to submit");
     } finally {
       setSubmitting(false);

@@ -79,7 +79,7 @@ const Auth = () => {
         const { error } = await signInWithEmail(email, password);
         if (error) throw error;
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
       toast({
         title: mode === 'signup' ? 'Sign Up Failed' : 'Sign In Failed',
         description: getFriendlyError(err),
@@ -93,7 +93,7 @@ const Auth = () => {
   const handlePasswordReset = async () => {
     try {
       credSchema.shape.email.parse(email);
-    } catch (err: unknown) {
+    } catch (err: any) {
       toast({ title: 'Validation Error', description: err.issues?.[0]?.message ?? 'Enter a valid email', variant: 'destructive' });
       return;
     }

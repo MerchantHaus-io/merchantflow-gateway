@@ -643,7 +643,7 @@ export default function MerchantApply() {
 
       if (!res.ok) {
         const msg = result.issues
-          ? result.issues.map((i: unknown) => `${i.field}: ${i.message}`).join(", ")
+          ? result.issues.map((i: any) => `${i.field}: ${i.message}`).join(", ")
           : result.error || "Submission failed";
         throw new Error(msg);
       }
@@ -659,7 +659,7 @@ export default function MerchantApply() {
 
       setIsSubmitted(true);
       window.location.href = "https://merchanthaus.io";
-    } catch (error: unknown) {
+    } catch (error: any) {
       const message = error?.message || '';
       const friendly = message && message.length < 500
         ? message
@@ -1049,7 +1049,7 @@ function GatewayDocumentsStep({ form, onChange, onSubmit, isSubmitting, progress
           <span className="text-[10px] text-muted-foreground">PDF, JPG, PNG, DOC</span>
           <input type="file" multiple className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.tiff,.tif" onChange={e => {
             const files = Array.from(e.target.files ?? []);
-            onChange("gateway_var_docs", [...form.gateway_var_docs, ...files] as unknown);
+            onChange("gateway_var_docs", [...form.gateway_var_docs, ...files] as any);
           }} />
         </label>
         {form.gateway_var_docs.length > 0 && (
@@ -1057,7 +1057,7 @@ function GatewayDocumentsStep({ form, onChange, onSubmit, isSubmitting, progress
             {form.gateway_var_docs.map((f, i) => (
               <div key={`var-${i}`} className="flex items-center justify-between text-xs">
                 <span className="text-foreground truncate">📄 {f.name} <span className="text-muted-foreground">({(f.size / 1024).toFixed(0)} KB)</span></span>
-                <button type="button" onClick={() => onChange("gateway_var_docs", form.gateway_var_docs.filter((_, j) => j !== i) as unknown)} className="text-destructive hover:text-destructive/80 ml-2"><Trash2 className="w-3 h-3" /></button>
+                <button type="button" onClick={() => onChange("gateway_var_docs", form.gateway_var_docs.filter((_, j) => j !== i) as any)} className="text-destructive hover:text-destructive/80 ml-2"><Trash2 className="w-3 h-3" /></button>
               </div>
             ))}
           </div>
@@ -1075,7 +1075,7 @@ function GatewayDocumentsStep({ form, onChange, onSubmit, isSubmitting, progress
           <span className="text-[10px] text-muted-foreground">PDF, JPG, PNG, DOC</span>
           <input type="file" multiple className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.tiff,.tif" onChange={e => {
             const files = Array.from(e.target.files ?? []);
-            onChange("gateway_void_docs", [...form.gateway_void_docs, ...files] as unknown);
+            onChange("gateway_void_docs", [...form.gateway_void_docs, ...files] as any);
           }} />
         </label>
         {form.gateway_void_docs.length > 0 && (
@@ -1083,7 +1083,7 @@ function GatewayDocumentsStep({ form, onChange, onSubmit, isSubmitting, progress
             {form.gateway_void_docs.map((f, i) => (
               <div key={`void-${i}`} className="flex items-center justify-between text-xs">
                 <span className="text-foreground truncate">📄 {f.name} <span className="text-muted-foreground">({(f.size / 1024).toFixed(0)} KB)</span></span>
-                <button type="button" onClick={() => onChange("gateway_void_docs", form.gateway_void_docs.filter((_, j) => j !== i) as unknown)} className="text-destructive hover:text-destructive/80 ml-2"><Trash2 className="w-3 h-3" /></button>
+                <button type="button" onClick={() => onChange("gateway_void_docs", form.gateway_void_docs.filter((_, j) => j !== i) as any)} className="text-destructive hover:text-destructive/80 ml-2"><Trash2 className="w-3 h-3" /></button>
               </div>
             ))}
           </div>
@@ -1196,7 +1196,7 @@ function DocumentSubmissionStep({ form, onChange, onBlur, getError, onSubmit, is
           </div>
           <input type="file" multiple className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.tiff,.tif" onChange={e => {
             const files = Array.from(e.target.files ?? []);
-            onChange("general_docs", [...form.general_docs, ...files] as unknown);
+            onChange("general_docs", [...form.general_docs, ...files] as any);
           }} />
         </label>
       </div>
@@ -1208,7 +1208,7 @@ function DocumentSubmissionStep({ form, onChange, onBlur, getError, onSubmit, is
           {form.general_docs.map((f, i) => (
             <div key={`gd-${i}`} className="flex items-center justify-between text-xs">
               <span className="text-foreground truncate">📄 {f.name} <span className="text-muted-foreground">({(f.size / 1024).toFixed(0)} KB)</span></span>
-              <button type="button" onClick={() => onChange("general_docs", form.general_docs.filter((_, j) => j !== i) as unknown)} className="text-destructive hover:text-destructive/80 ml-2"><Trash2 className="w-3 h-3" /></button>
+              <button type="button" onClick={() => onChange("general_docs", form.general_docs.filter((_, j) => j !== i) as any)} className="text-destructive hover:text-destructive/80 ml-2"><Trash2 className="w-3 h-3" /></button>
             </div>
           ))}
         </div>
@@ -1490,7 +1490,7 @@ function ProcessingStep({ form, onChange, onBlur, getError }: StepProps) {
           <div className="text-xs md:text-sm font-semibold text-foreground uppercase tracking-wide">Bank or Processing Statements</div>
           <input type="file" multiple className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onChange={e => {
             const files = Array.from(e.target.files ?? []);
-            onChange("statement_docs", [...form.statement_docs, ...files] as unknown);
+            onChange("statement_docs", [...form.statement_docs, ...files] as any);
           }} />
         </label>
         <label className="flex items-center gap-3 rounded-xl border-2 border-dashed border-border hover:border-primary/50 bg-card p-4 cursor-pointer transition-all group">
@@ -1498,7 +1498,7 @@ function ProcessingStep({ form, onChange, onBlur, getError }: StepProps) {
           <div className="text-xs md:text-sm font-semibold text-foreground uppercase tracking-wide">Void Check or Bank Letter</div>
           <input type="file" multiple className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onChange={e => {
             const files = Array.from(e.target.files ?? []);
-            onChange("void_check_docs", [...form.void_check_docs, ...files] as unknown);
+            onChange("void_check_docs", [...form.void_check_docs, ...files] as any);
           }} />
         </label>
       </div>
@@ -1507,13 +1507,13 @@ function ProcessingStep({ form, onChange, onBlur, getError }: StepProps) {
           {form.statement_docs.map((f, i) => (
             <div key={`s-${i}`} className="flex items-center justify-between">
               <span className="text-foreground">📄 {f.name}</span>
-              <button type="button" onClick={() => onChange("statement_docs", form.statement_docs.filter((_, j) => j !== i) as unknown)} className="text-destructive hover:text-destructive/80"><Trash2 className="w-3 h-3" /></button>
+              <button type="button" onClick={() => onChange("statement_docs", form.statement_docs.filter((_, j) => j !== i) as any)} className="text-destructive hover:text-destructive/80"><Trash2 className="w-3 h-3" /></button>
             </div>
           ))}
           {form.void_check_docs.map((f, i) => (
             <div key={`v-${i}`} className="flex items-center justify-between">
               <span className="text-foreground">📄 {f.name}</span>
-              <button type="button" onClick={() => onChange("void_check_docs", form.void_check_docs.filter((_, j) => j !== i) as unknown)} className="text-destructive hover:text-destructive/80"><Trash2 className="w-3 h-3" /></button>
+              <button type="button" onClick={() => onChange("void_check_docs", form.void_check_docs.filter((_, j) => j !== i) as any)} className="text-destructive hover:text-destructive/80"><Trash2 className="w-3 h-3" /></button>
             </div>
           ))}
         </div>

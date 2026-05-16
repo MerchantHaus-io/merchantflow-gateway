@@ -393,7 +393,7 @@ const FloatingChat: React.FC = () => {
 
   useEffect(() => {
     if (!user) return;
-    const handleDMEvent = (payload: { eventType: string; new: unknown; old: unknown }) => {
+    const handleDMEvent = (payload: { eventType: string; new: any; old: any }) => {
       const newMsg = payload.new as DirectMessage;
       if (newMsg.sender_id !== user.id && newMsg.receiver_id !== user.id) return;
       const currentView = viewRef.current;

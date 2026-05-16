@@ -816,7 +816,7 @@ const NMIGuide: React.FC = () => {
                 <div key={label} className="mb-1">
                   <p className="px-2 pt-3 pb-1.5 text-[9px] font-black uppercase tracking-[0.14em]"
                     style={{ color: 'hsl(var(--muted-foreground)/0.45)' }}>{label}</p>
-                  {items.map(({ label: l, id, ph }: unknown) => (
+                  {items.map(({ label: l, id, ph }: any) => (
                     <button key={id} onClick={() => navClick(id)}
                       className="flex items-center gap-1.5 w-full text-left px-2 py-1.5 text-xs rounded-md transition-colors relative"
                       style={{

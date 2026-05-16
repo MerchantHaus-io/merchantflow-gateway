@@ -271,7 +271,7 @@ export default function WebSubmissions() {
       toast({ title: "Documents assigned", description: `${migrated} file(s) assigned to ${accountName}.` });
       setAssignPrompt(null);
       fetchApplications();
-    } catch (err: unknown) {
+    } catch (err: any) {
       toast({ variant: "destructive", title: "Assignment failed", description: err.message });
     } finally {
       setIsAssigning(false);
@@ -317,7 +317,7 @@ export default function WebSubmissions() {
       URL.revokeObjectURL(url);
 
       toast({ title: "Download started", description: `${storedFiles.length} file(s) zipped and downloading.` });
-    } catch (err: unknown) {
+    } catch (err: any) {
       toast({ variant: "destructive", title: "Download failed", description: err.message });
     } finally {
       setIsDownloading(null);
@@ -330,7 +330,7 @@ export default function WebSubmissions() {
     try {
       // 1. Create Account — propagate referrer_id when the application came from a partner portal
        
-      const appReferrerId = (app as unknown).referrer_id ?? null;
+      const appReferrerId = (app as any).referrer_id ?? null;
       const { data: account, error: accountError } = await supabase
         .from("accounts")
         .insert({
@@ -343,7 +343,7 @@ export default function WebSubmissions() {
           zip: app.zip,
           website: app.website,
            
-          ...(appReferrerId ? { referrer_id: appReferrerId } as unknown : {}),
+          ...(appReferrerId ? { referrer_id: appReferrerId } as any : {}),
         })
         .select()
         .single();
@@ -516,11 +516,11 @@ export default function WebSubmissions() {
           assigned_to: initialAssignee,
           username: isGatewayOnly ? (app.notes?.match(/Username:\s*([^.]+)/)?.[1]?.trim() || null) : null,
            
-          ...(appReferrerId ? { referrer_id: appReferrerId } as unknown : {}),
+          ...(appReferrerId ? { referrer_id: appReferrerId } as any : {}),
            
-          ...(autoTier ? { gateway_tier: autoTier } as unknown : {}),
+          ...(autoTier ? { gateway_tier: autoTier } as any : {}),
            
-          ...(appPricingPlan ? { pricing_plan: appPricingPlan } as unknown : {}),
+          ...(appPricingPlan ? { pricing_plan: appPricingPlan } as any : {}),
         })
         .select()
         .single();
@@ -610,13 +610,13 @@ export default function WebSubmissions() {
 
         // Fetch audit trail for accurate document type mapping
         const { data: auditDocs } = await supabase
-          .from('application_documents' as unknown)
+          .from('application_documents' as any)
           .select('file_path, document_type, file_name')
           .eq('application_id', app.id);
 
         const auditMap = new Map<string, string>();
         if (auditDocs) {
-          for (const ad of auditDocs as unknown[]) {
+          for (const ad of auditDocs as any[]) {
             // Map by filename from file_path
             const fileName = (ad.file_path as string).split('/').pop() || '';
             auditMap.set(fileName, ad.document_type || 'Unassigned');
@@ -672,7 +672,7 @@ export default function WebSubmissions() {
       });
 
       fetchApplications();
-    } catch (error: unknown) {
+    } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Conversion failed",
@@ -701,7 +701,7 @@ export default function WebSubmissions() {
   };
 
   const getSourceBadge = (app: Application) => {
-    const source = (app as unknown).source;
+    const source = (app as any).source;
     if (source === "merchant_portal") {
       return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/40">Portal</Badge>;
     }
@@ -720,7 +720,7 @@ export default function WebSubmissions() {
 
   const filteredApps = apps.filter((app) => {
     if (sourceFilter === "all") return true;
-    const source = (app as unknown).source || "web_form";
+    const source = (app as any).source || "web_form";
     return source === sourceFilter;
   });
 
@@ -791,7 +791,7 @@ export default function WebSubmissions() {
                            : "-"}
                        </TableCell>
                        <TableCell>
-                         <ApplicationDocsBadge applicationId={app.id} source={(app as unknown).source} />
+                         <ApplicationDocsBadge applicationId={app.id} source={(app as any).source} />
                        </TableCell>
                        <TableCell>{getStatusBadge(app.status)}</TableCell>
                       <TableCell className="text-right space-x-2">
@@ -1032,7 +1032,7 @@ export default function WebSubmissions() {
                   <Separator />
                   <div>
                     <span className="text-xs text-muted-foreground">Uploaded Documents</span>
-                    <ApplicationDocsDetail applicationId={selectedApp.id} source={(selectedApp as unknown).source} />
+                    <ApplicationDocsDetail applicationId={selectedApp.id} source={(selectedApp as any).source} />
                   </div>
 
                   {/* Actions */}

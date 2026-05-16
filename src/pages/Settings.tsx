@@ -295,8 +295,8 @@ const Settings = () => {
             .maybeSingle();
 
           const existingForm = (wizardState?.form_state as Record<string, unknown>) || {};
-          const account = opp.account as unknown;
-          const contact = opp.contact as unknown;
+          const account = opp.account as any;
+          const contact = opp.contact as any;
           const isGateway = opp.service_type === "gateway_only";
 
           // Build canonical form state, preserving existing values where they exist

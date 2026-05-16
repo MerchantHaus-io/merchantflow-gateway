@@ -26,12 +26,12 @@ const TEAM_EMAIL_MAP: Record<string, string> = NAME_TO_EMAIL;
 
 interface GroupedAccount {
   account_id: string;
-  account: unknown;
-  contact: unknown;
+  account: any;
+  contact: any;
   assigned_to: string | null;
   stage_entered_at: string | null;
   pipelines: ('processing' | 'gateway_only')[];
-  opportunities: unknown[];
+  opportunities: any[];
 }
 
 const LiveBilling = () => {
@@ -87,7 +87,7 @@ const LiveBilling = () => {
       if (!isAdmin && teamMemberName && opp.assigned_to !== teamMemberName) continue;
 
       const accountId = opp.account_id;
-      const svcType = getServiceType(opp as unknown);
+      const svcType = getServiceType(opp as any);
 
       if (map.has(accountId)) {
         const group = map.get(accountId)!;
@@ -122,7 +122,7 @@ const LiveBilling = () => {
       const q = search.toLowerCase();
       const matchSearch = !q || name.includes(q) || contactName.includes(q);
       const matchAssignee = filterAssignee === "all" || g.assigned_to === filterAssignee;
-      const matchPipeline = filterPipeline === "all" || g.pipelines.includes(filterPipeline as unknown);
+      const matchPipeline = filterPipeline === "all" || g.pipelines.includes(filterPipeline as any);
       return matchSearch && matchAssignee && matchPipeline;
     });
   }, [grouped, search, filterAssignee, filterPipeline]);
@@ -281,7 +281,7 @@ const LiveBilling = () => {
                       {g.contact?.email && ` · ${g.contact.email}`}
                     </p>
                     {(() => {
-                      const lead = g.opportunities?.[0] as unknown;
+                      const lead = g.opportunities?.[0] as any;
                       return (lead?.pricing_plan || lead?.gateway_tier) ? (
                         <PricingBadges pricingPlan={lead.pricing_plan} gatewayTier={lead.gateway_tier} />
                       ) : null;

@@ -65,12 +65,12 @@ export const UserRoleManager = () => {
       } else {
         const { error } = await supabase
           .from("user_roles")
-          .insert({ user_id: profile.id, role: "admin" } as unknown);
+          .insert({ user_id: profile.id, role: "admin" } as any);
         if (error) throw error;
         toast.success(`Granted admin to ${profile.full_name || profile.email}`);
       }
       await fetchData();
-    } catch (err: unknown) {
+    } catch (err: any) {
       toast.error(err.message || "Failed to update role");
     } finally {
       setToggling(null);

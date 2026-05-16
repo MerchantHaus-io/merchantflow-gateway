@@ -107,7 +107,7 @@ export function GmailEditor({
         onChange(data.html);
         toast.success("Email polished by AI ✨");
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
       toast.error(err.message || "Failed to polish email");
     } finally {
       setPolishing(false);

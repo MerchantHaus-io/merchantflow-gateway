@@ -483,7 +483,7 @@ export function QuoteGeneratorDialog({
       const doc = await buildPdf();
       doc.save(safeFilename());
       toast.success("Quote PDF downloaded.");
-    } catch (err: unknown) {
+    } catch (err: any) {
       toast.error(`Failed to build PDF: ${err?.message ?? err}`);
     }
   };
@@ -527,10 +527,10 @@ export function QuoteGeneratorDialog({
         },
       );
       if (error) throw error;
-      if ((data as unknown)?.error) throw new Error(JSON.stringify((data as unknown).error));
+      if ((data as any)?.error) throw new Error(JSON.stringify((data as any).error));
       toast.success(`Quote emailed to ${client.email}`);
       onOpenChange(false);
-    } catch (err: unknown) {
+    } catch (err: any) {
       toast.error(`Email failed: ${err?.message ?? err}`);
     } finally {
       setSending(false);
@@ -559,7 +559,7 @@ export function QuoteGeneratorDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={tab} onValueChange={(v) => setTab(v as unknown)} className="flex-1 flex flex-col min-h-0">
+        <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="flex-1 flex flex-col min-h-0">
           <div className="px-6 pt-3">
             <TabsList>
               <TabsTrigger value="build">

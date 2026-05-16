@@ -80,7 +80,7 @@ export default function PortalDashboard() {
     enabled: !!referrerId,
     queryFn: async (): Promise<MerchantRow[]> => {
        
-      const { data, error } = await (supabase.from("merchants") as unknown)
+      const { data, error } = await (supabase.from("merchants") as any)
         .select("id, dba_name, legal_entity_name, is_live, created_at, account_id")
         .eq("referrer_id", referrerId!)
         .order("created_at", { ascending: false });

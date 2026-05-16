@@ -131,7 +131,7 @@ const EmailsSection = ({ accountId, opportunityId }: { accountId: string; opport
         .order('received_at', { ascending: false })
         .limit(100);
 
-      const merged: unknown[] = [];
+      const merged: any[] = [];
 
       for (const i of interactions || []) {
         merged.push({

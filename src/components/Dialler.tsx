@@ -160,7 +160,7 @@ export const Dialler = () => {
         .limit(25);
       if (data) {
         setRecentCalls(
-          data.map((c: unknown) => ({
+          data.map((c: any) => ({
             id: c.id,
             direction: c.direction,
             status: c.status,
@@ -193,7 +193,7 @@ export const Dialler = () => {
         .limit(5);
       if (data) {
         setMatchedContacts(
-          data.map((c: unknown) => ({
+          data.map((c: any) => ({
             id: c.id,
             first_name: c.first_name,
             last_name: c.last_name,

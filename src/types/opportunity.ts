@@ -112,7 +112,7 @@ export interface OnboardingWizardState {
   opportunity_id: string;
   progress: number;
   step_index: number;
-  form_state: unknown;
+  form_state: any;
   created_at: string;
   updated_at: string;
 }

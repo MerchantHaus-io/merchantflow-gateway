@@ -48,7 +48,7 @@ import liveBadge from "@/assets/live-badge.webp";
 import { NAME_TO_EMAIL } from "@/config/team";
 const TEAM_EMAIL_MAP: Record<string, string> = NAME_TO_EMAIL;
 
-const InfoRow = ({ icon: Icon, label, value, href }: { icon: unknown; label: string; value?: string | null; href?: string }) => {
+const InfoRow = ({ icon: Icon, label, value, href }: { icon: any; label: string; value?: string | null; href?: string }) => {
   if (!value) return null;
   return (
     <div className="flex items-start gap-3 py-2">
@@ -120,11 +120,11 @@ const LiveAccountDetail = () => {
 
   // Use first opportunity for shared account/contact data
   const primaryOpp = opportunities?.[0];
-  const account = primaryOpp?.account as unknown;
-  const contact = primaryOpp?.contact as unknown;
+  const account = primaryOpp?.account as any;
+  const contact = primaryOpp?.contact as any;
 
   const pipelines = opportunities
-    ? [...new Set(opportunities.map((o) => getServiceType(o as unknown)))]
+    ? [...new Set(opportunities.map((o) => getServiceType(o as any)))]
     : [];
 
   // Fetch documents for ALL opportunities of this account
@@ -222,7 +222,7 @@ const LiveAccountDetail = () => {
 
   // Combine gateway IDs from boarding submissions AND account-level merchant ID
   const accountGatewayIds = [
-    ...(boardingSubmissions || []).map((s: unknown) => s.nmi_gateway_id).filter(Boolean),
+    ...(boardingSubmissions || []).map((s: any) => s.nmi_gateway_id).filter(Boolean),
     ...(account?.nmi_merchant_id ? [account.nmi_merchant_id] : []),
   ].filter((v, i, a) => a.indexOf(v) === i) as string[];
 
@@ -504,7 +504,7 @@ const LiveAccountDetail = () => {
 
             {/* Opportunities (show each one) */}
             {opportunities?.map((opp) => {
-              const svcType = getServiceType(opp as unknown);
+              const svcType = getServiceType(opp as any);
               return (
                 <Card key={opp.id}>
                   <CardHeader className="pb-3">

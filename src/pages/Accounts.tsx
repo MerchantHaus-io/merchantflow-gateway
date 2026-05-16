@@ -229,7 +229,7 @@ const Accounts = () => {
       .order('updated_at', { ascending: false });
     if (oppData) {
       const map: Record<string, Array<{ id: string; stage: string; label: string; color: string; assigned_to?: string; outcome_status?: string | null }>> = {};
-      oppData.forEach((opp: unknown) => {
+      oppData.forEach((opp: any) => {
         const cfg = STAGE_CONFIG[opp.stage as keyof typeof STAGE_CONFIG];
         if (cfg) {
           if (!map[opp.account_id]) map[opp.account_id] = [];

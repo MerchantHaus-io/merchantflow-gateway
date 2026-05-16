@@ -332,7 +332,7 @@ export default function Home() {
     setShowToggleHint(false);
     localStorage.setItem("home_layout_hint_seen", "1");
     if (user?.id) {
-      supabase.from("profiles").update({ home_layout: next } as unknown).eq("id", user.id).then();
+      supabase.from("profiles").update({ home_layout: next } as any).eq("id", user.id).then();
     }
   };
 

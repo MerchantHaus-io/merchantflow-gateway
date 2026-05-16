@@ -45,7 +45,7 @@ function StatusPill({ status }: { status: string }) {
   );
 }
 
-function CampaignCard({ c, onOpen, onDelete }: { c: unknown; onOpen: () => void; onDelete: () => void }) {
+function CampaignCard({ c, onOpen, onDelete }: { c: any; onOpen: () => void; onDelete: () => void }) {
   const total  = Math.max(c.total_contacts || 1, 1);
   const sentPct = Math.round(((c.sent_count || 0) / total) * 100);
   return (

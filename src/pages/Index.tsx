@@ -64,7 +64,7 @@ type WizardPrefillForm = {
   website_url: string;
   username: string;
   current_processor: string;
-  documents: unknown[];
+  documents: any[];
   notes: string;
 };
 
@@ -758,7 +758,7 @@ const Index = () => {
 
       const gatewayId = boarding?.nmi_gateway_id ?? acctData?.nmi_merchant_id ?? null;
 
-      setPortalActivationOpp({ ...opportunity, ...updates, _prefillGatewayId: gatewayId } as unknown);
+      setPortalActivationOpp({ ...opportunity, ...updates, _prefillGatewayId: gatewayId } as any);
     }
 
     setOpportunities(prev => prev.map(o => o.id === id ? {
@@ -966,7 +966,7 @@ const Index = () => {
           opportunityId={portalActivationOpp.id}
           portalMerchantId={portalActivationOpp.portal_merchant_id}
           accountName={portalActivationOpp.account?.name}
-          prefillGatewayId={(portalActivationOpp as unknown)._prefillGatewayId}
+          prefillGatewayId={(portalActivationOpp as any)._prefillGatewayId}
           onSuccess={() => {
             setPortalActivationOpp(null);
             fetchOpportunities();

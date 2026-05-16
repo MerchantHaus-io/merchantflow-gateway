@@ -230,9 +230,9 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
       if (data) {
         setReport(data as unknown as UnifiedReport);
         setMeta({
-          triggered_by: (data as unknown).triggered_by || "unknown",
-          created_at: (data as unknown).created_at || "",
-          no_change: !!(data as unknown).no_change,
+          triggered_by: (data as any).triggered_by || "unknown",
+          created_at: (data as any).created_at || "",
+          no_change: !!(data as any).no_change,
         });
       }
     })();
@@ -310,7 +310,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
       });
 
       toast.success("Report saved as note");
-    } catch (err: unknown) {
+    } catch (err: any) {
       toast.error(err?.message || "Failed to save report");
     } finally {
       setIsSaving(false);
@@ -347,9 +347,9 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
       .eq("id", opportunityId)
       .single();
 
-    const contactEmail = (opp as unknown)?.contact?.email;
-    const accountName = (opp as unknown)?.account?.name;
-    const contactFirstName = (opp as unknown)?.contact?.first_name || "there";
+    const contactEmail = (opp as any)?.contact?.email;
+    const accountName = (opp as any)?.account?.name;
+    const contactFirstName = (opp as any)?.contact?.first_name || "there";
     if (!contactEmail || !accountName) {
       toast.error("Missing contact email or account name");
       return;
@@ -397,7 +397,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
         });
         if (error) throw error;
         toast.success("Request sent to merchant");
-      } catch (err: unknown) {
+      } catch (err: any) {
         toast.error(err?.message || "Failed to send request");
         throw err;
       } finally {
@@ -428,7 +428,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
           toast.success("Underwriting Review complete — saved as note");
         }
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
       toast.error(err?.message || "Underwriting Review failed — please try again");
     } finally {
       setIsRunning(false);
@@ -446,9 +446,9 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
     if (data) {
       setReport(data as unknown as UnifiedReport);
       setMeta({
-        triggered_by: (data as unknown).triggered_by || "unknown",
-        created_at: (data as unknown).created_at || "",
-        no_change: !!(data as unknown).no_change,
+        triggered_by: (data as any).triggered_by || "unknown",
+        created_at: (data as any).created_at || "",
+        no_change: !!(data as any).no_change,
       });
     } else {
       toast("No previous report found");

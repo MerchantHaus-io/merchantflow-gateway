@@ -310,8 +310,8 @@ export default function PreboardingWizard() {
     const ids = (data || []).map(d => d.id);
     const { data: serviceTypes } = ids.length > 0
       ? await supabase.from('opportunities').select('id, service_type').in('id', ids)
-      : { data: [] as unknown[] };
-    const serviceTypeMap = new Map((serviceTypes || []).map((s: unknown) => [s.id, s.service_type]));
+      : { data: [] as any[] };
+    const serviceTypeMap = new Map((serviceTypes || []).map((s: any) => [s.id, s.service_type]));
 
     const mapped = (data || []).map(item => ({
       id: item.id,
@@ -345,7 +345,7 @@ export default function PreboardingWizard() {
       .eq('id', opportunityId)
       .maybeSingle();
 
-    const gatewayOnly = (oppServiceType as unknown)?.service_type === "gateway_only";
+    const gatewayOnly = (oppServiceType as any)?.service_type === "gateway_only";
     setIsGatewayOnly(gatewayOnly);
 
     const prefilledForm = createFormFromOpportunity(opportunity);
@@ -468,7 +468,7 @@ export default function PreboardingWizard() {
         opportunity_id: selectedOpportunityId,
         progress,
         step_index: stepIndex,
-        form_state: serializableForm as unknown
+        form_state: serializableForm as any
       } as never, { onConflict: 'opportunity_id' });
 
     if (error) {

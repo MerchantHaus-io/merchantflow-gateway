@@ -168,7 +168,7 @@ const liveArray = <T>(compute: () => T[]): T[] =>
   new Proxy([] as T[], {
     get(_t, prop, recv) {
       const arr = compute();
-      const v = (arr as unknown)[prop];
+      const v = (arr as any)[prop];
       return typeof v === "function" ? v.bind(arr) : v;
     },
     has(_t, prop) { return prop in compute(); },
@@ -232,7 +232,7 @@ export const hydrateTeamRosterFromDb = async (): Promise<void> => {
       .order("sort_order", { ascending: true });
     if (error || !data || data.length === 0) return;
     setTeamRoster(
-      data.map((r: unknown) => ({
+      data.map((r: any) => ({
         id: r.id,
         email: r.email,
         displayName: r.display_name,

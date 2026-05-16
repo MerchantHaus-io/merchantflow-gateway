@@ -48,7 +48,7 @@ export function usePushNotifications() {
     const checkSubscription = async () => {
       try {
         const registration = await navigator.serviceWorker.register('/sw.js');
-        const subscription = await (registration as unknown).pushManager.getSubscription();
+        const subscription = await (registration as any).pushManager.getSubscription();
         
         if (subscription) {
           // Verify subscription exists in database
@@ -97,7 +97,7 @@ export function usePushNotifications() {
 
       // Subscribe to push
       const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
-      const subscription = await (registration as unknown).pushManager.subscribe({
+      const subscription = await (registration as any).pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: applicationServerKey.buffer as ArrayBuffer,
       });
@@ -143,7 +143,7 @@ export function usePushNotifications() {
 
       const registration = await navigator.serviceWorker.getRegistration();
       if (registration) {
-        const subscription = await (registration as unknown).pushManager.getSubscription();
+        const subscription = await (registration as any).pushManager.getSubscription();
         if (subscription) {
           await subscription.unsubscribe();
           

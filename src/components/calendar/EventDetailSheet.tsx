@@ -21,7 +21,7 @@ interface CalendarEvent {
   start_time: string;
   end_time: string;
   all_day: boolean;
-  attendees: unknown[];
+  attendees: any[];
   opportunity_id: string | null;
   account_id: string | null;
   html_link: string | null;
@@ -66,8 +66,8 @@ export function EventDetailSheet({ event, open, onOpenChange, ownerColor }: Prop
 
   if (!event) return null;
   const attendees = Array.isArray(event.attendees) ? event.attendees : [];
-  const internal = attendees.filter((a: unknown) => a.email?.endsWith("@merchanthaus.io"));
-  const external = attendees.filter((a: unknown) => !a.email?.endsWith("@merchanthaus.io"));
+  const internal = attendees.filter((a: any) => a.email?.endsWith("@merchanthaus.io"));
+  const external = attendees.filter((a: any) => !a.email?.endsWith("@merchanthaus.io"));
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -136,7 +136,7 @@ export function EventDetailSheet({ event, open, onOpenChange, ownerColor }: Prop
                 {internal.length > 0 && (
                   <div className="space-y-1">
                     <p className="text-[10px] text-muted-foreground">Internal</p>
-                    {internal.map((a: unknown, i: number) => (
+                    {internal.map((a: any, i: number) => (
                       <AttendeeRow key={`i-${i}`} attendee={a} />
                     ))}
                   </div>
@@ -144,7 +144,7 @@ export function EventDetailSheet({ event, open, onOpenChange, ownerColor }: Prop
                 {external.length > 0 && (
                   <div className="space-y-1">
                     <p className="text-[10px] text-muted-foreground">External</p>
-                    {external.map((a: unknown, i: number) => (
+                    {external.map((a: any, i: number) => (
                       <AttendeeRow key={`e-${i}`} attendee={a} />
                     ))}
                   </div>
@@ -189,7 +189,7 @@ function Row({ icon, children }: { icon: React.ReactNode; children: React.ReactN
   );
 }
 
-function AttendeeRow({ attendee }: { attendee: unknown }) {
+function AttendeeRow({ attendee }: { attendee: any }) {
   const name = attendee.displayName || attendee.email?.split("@")[0] || "Unknown";
   const status = attendee.responseStatus;
   const statusColor =
