@@ -1350,6 +1350,7 @@ Sales Support`,
                           <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Verify document completeness and quality</span></li>
                           <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Send <strong className="text-foreground">Step 3 — Application in Process</strong> when ready</span></li>
                           <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Record beneficial owners (≥ 25% equity required)</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-[hsl(var(--gold))]">★</span><span><strong className="text-foreground">Quote generation gate:</strong> only generate a Quote once you have <em>all</em> client info — monthly volume, average ticket, high ticket, card mix (CP / CNP / keyed), MCC, accepted card types, and current processor statements. Generating earlier produces unreliable pricing and erodes trust. Use the Quote Generator from the opportunity detail panel.</span></li>
                         </ul>
                       </div>
                       <div className="bg-[hsl(var(--gold))]/10 border border-[hsl(var(--gold))]/30 rounded-none p-3 text-sm">
