@@ -1220,7 +1220,7 @@ Sales Support`,
                 {/* ═══════════════════════════════════════════
                     PIPELINE STAGE MANAGEMENT GUIDE
                     Corrected to match actual DB stages:
-                    discovery → qualification → preboarding → underwriting → boarding → live
+                    discovery → qualified → application_prep → underwriting_review → processor_approval → gateway_submitted → integration_setup → testing → go_live_ready → closed_won
                 ═══════════════════════════════════════════ */}
                 <section id="pipeline-stages" className="bg-card rounded-none border border-border p-8">
                   <SectionHeader gold sectionId="pipeline-stages" sectionTitle="Pipeline Stage Management">Pipeline Stage Management Guide</SectionHeader>
