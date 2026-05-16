@@ -120,8 +120,8 @@ const LiveAccountDetail = () => {
 
   // Use first opportunity for shared account/contact data
   const primaryOpp = opportunities?.[0];
-  const account = primaryOpp?.account as unknown;
-  const contact = primaryOpp?.contact as unknown;
+  const account = primaryOpp?.account as any;
+  const contact = primaryOpp?.contact as any;
 
   const pipelines = opportunities
     ? [...new Set(opportunities.map((o) => getServiceType(o as unknown)))]

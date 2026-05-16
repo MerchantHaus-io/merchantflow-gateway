@@ -24,7 +24,7 @@ export const IncomingCallToast = () => {
           filter: 'direction=eq.incoming',
         },
         (payload) => {
-          const call = payload.new as unknown;
+          const call = payload.new as any;
           if (call.status !== 'ringing') return;
 
           const caller = call.phone_number || 'Unknown number';

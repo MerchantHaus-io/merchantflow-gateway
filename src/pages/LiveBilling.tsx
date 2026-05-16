@@ -281,7 +281,7 @@ const LiveBilling = () => {
                       {g.contact?.email && ` · ${g.contact.email}`}
                     </p>
                     {(() => {
-                      const lead = g.opportunities?.[0] as unknown;
+                      const lead = g.opportunities?.[0] as any;
                       return (lead?.pricing_plan || lead?.gateway_tier) ? (
                         <PricingBadges pricingPlan={lead.pricing_plan} gatewayTier={lead.gateway_tier} />
                       ) : null;

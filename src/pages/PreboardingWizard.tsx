@@ -468,7 +468,7 @@ export default function PreboardingWizard() {
         opportunity_id: selectedOpportunityId,
         progress,
         step_index: stepIndex,
-        form_state: serializableForm as unknown
+        form_state: serializableForm as any
       } as never, { onConflict: 'opportunity_id' });
 
     if (error) {
