@@ -2562,15 +2562,15 @@ Sales Support`,
                     <div>
                       <h3 className="text-[hsl(var(--gold))] font-bold mb-3 text-base">7. Pipeline & Workflow</h3>
                       <div className="flex flex-wrap items-center gap-2 mb-4 text-xs font-bold">
-                        {["discovery", "qualification", "preboarding", "underwriting", "boarding", "live"].map((s, i) => (
+                        {["discovery", "qualified", "application_prep", "underwriting_review", "processor_approval", "gateway_submitted", "integration_setup", "testing", "go_live_ready", "closed_won"].map((s, i, arr) => (
                           <div key={s} className="flex items-center gap-2">
                             <code className="bg-background px-2 py-1 border border-border text-foreground">{s}</code>
-                            {i < 5 && <ArrowRight className="w-3 h-3 text-muted-foreground" />}
+                            {i < arr.length - 1 && <ArrowRight className="w-3 h-3 text-muted-foreground" />}
                           </div>
                         ))}
                       </div>
                       <ul className="space-y-1.5 text-muted-foreground">
-                        <li>• <strong className="text-foreground">Service Types:</strong> Processing, Gateway Only, Document Submission</li>
+                        <li>• <strong className="text-foreground">Service Types:</strong> Processing (10 stages) and Gateway Only (skips App Prep, Underwriting, Approved — blocked from underwriting by design)</li>
                         <li>• <strong className="text-foreground">SLA Tracking:</strong> Automatic 24-hour SLA tasks on stage entry</li>
                         <li>• <strong className="text-foreground">Realtime:</strong> Pipeline, chat, notifications use WebSocket subscriptions</li>
                         <li>• <strong className="text-foreground">Auto-assignment:</strong> Web submissions at 100% completion → support@merchanthaus.io</li>
