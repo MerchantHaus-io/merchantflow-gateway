@@ -67,8 +67,8 @@ export default function PortalNewReferral() {
     }
 
     setSubmitting(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const payload: any = {
+     
+    const payload: unknown = {
       full_name: form.full_name.trim(),
       email: form.email.trim().toLowerCase(),
       phone: form.phone.trim() || null,

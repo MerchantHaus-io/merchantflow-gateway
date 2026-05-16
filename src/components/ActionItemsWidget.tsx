@@ -189,7 +189,7 @@ export function ActionItemsWidget() {
       setSelectedUsers([]);
       setPendingFile(null);
       setShowUserPicker(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(err?.message || "Failed to add action item");
     } finally {
       setIsUploading(false);

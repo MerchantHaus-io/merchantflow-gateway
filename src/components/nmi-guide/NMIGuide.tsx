@@ -356,7 +356,7 @@ const ReferenceContent = ({ scrollTo, viewportRef }: { scrollTo: string | null; 
 
       <section ref={ref('s2')} className="mb-12 scroll-mt-4">
         <SectionHeader number={2} title="List Accounts" subtitle="My Accounts → List Accounts" url="/partners/accounts" />
-        <p className="text-sm text-muted-foreground leading-relaxed mb-4">Your complete merchant portfolio. Search, sign in as any merchant, export, or kick off bulk operations.</p>
+        <p className="text-sm text-muted-foreground leading-relaxed mb-4">Your complete merchant portfolio. Search, sign in as unknown merchant, export, or kick off bulk operations.</p>
         <HotspotImage screenshot={{ key: 'list_accounts', label: 'List Accounts', pins: [
           { id: 'la1', x: '26%', y: '27%', label: 1, title: 'Search Box', description: 'Type any part of a merchant name to filter the list instantly as you type.', tip: 'Filters as you type' },
           { id: 'la2', x: '71%', y: '17%', label: 2, title: 'Update Multiple Accounts', description: 'Opens Bulk Actions — apply a service or fee change to multiple merchants at once.', tip: 'Bulk Actions' },
@@ -816,7 +816,7 @@ const NMIGuide: React.FC = () => {
                 <div key={label} className="mb-1">
                   <p className="px-2 pt-3 pb-1.5 text-[9px] font-black uppercase tracking-[0.14em]"
                     style={{ color: 'hsl(var(--muted-foreground)/0.45)' }}>{label}</p>
-                  {items.map(({ label: l, id, ph }: any) => (
+                  {items.map(({ label: l, id, ph }: unknown) => (
                     <button key={id} onClick={() => navClick(id)}
                       className="flex items-center gap-1.5 w-full text-left px-2 py-1.5 text-xs rounded-md transition-colors relative"
                       style={{

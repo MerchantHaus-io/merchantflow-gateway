@@ -434,7 +434,7 @@ const InputSchema = z.discriminatedUnion("service_type", [
 // ─── File Upload Helper ───
 
 async function uploadFiles(
-  supabase: any,
+  supabase: unknown,
   applicationId: string,
   files: z.infer<typeof FileSchema>[],
   clientIp: string,
@@ -522,7 +522,7 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceKey);
 
     const applicationId = crypto.randomUUID();
-    const files = (parsed as any).files as z.infer<typeof FileSchema>[] | undefined;
+    const files = (parsed as unknown).files as z.infer<typeof FileSchema>[] | undefined;
 
     if (parsed.service_type === "document_submission") {
       const { error } = await supabase.from("applications").insert({
@@ -817,7 +817,7 @@ Deno.serve(async (req) => {
 
     console.error("submit-merchant-application error:", err);
     return new Response(
-      JSON.stringify({ error: (err as any)?.message || "Internal error" }),
+      JSON.stringify({ error: (err as unknown)?.message || "Internal error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

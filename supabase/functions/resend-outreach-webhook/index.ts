@@ -85,17 +85,17 @@ serve(async (req) => {
 
     if (allContacts) {
       await supabase.from("outreach_campaigns").update({
-        sent_count: allContacts.filter((c: any) => ["sent", "bounced", "replied", "converted"].includes(c.status)).length,
-        bounced_count: allContacts.filter((c: any) => c.status === "bounced").length,
-        replied_count: allContacts.filter((c: any) => ["replied", "converted"].includes(c.status)).length,
-        converted_count: allContacts.filter((c: any) => c.status === "converted").length,
+        sent_count: allContacts.filter((c: unknown) => ["sent", "bounced", "replied", "converted"].includes(c.status)).length,
+        bounced_count: allContacts.filter((c: unknown) => c.status === "bounced").length,
+        replied_count: allContacts.filter((c: unknown) => ["replied", "converted"].includes(c.status)).length,
+        converted_count: allContacts.filter((c: unknown) => c.status === "converted").length,
       }).eq("id", contact.campaign_id);
     }
 
     return new Response(JSON.stringify({ ok: true, processed: eventType }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("resend-outreach-webhook error:", err);
     return new Response(
       JSON.stringify({ error: err.message }),

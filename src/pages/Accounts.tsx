@@ -229,7 +229,7 @@ const Accounts = () => {
       .order('updated_at', { ascending: false });
     if (oppData) {
       const map: Record<string, Array<{ id: string; stage: string; label: string; color: string; assigned_to?: string; outcome_status?: string | null }>> = {};
-      oppData.forEach((opp: any) => {
+      oppData.forEach((opp: unknown) => {
         const cfg = STAGE_CONFIG[opp.stage as keyof typeof STAGE_CONFIG];
         if (cfg) {
           if (!map[opp.account_id]) map[opp.account_id] = [];
@@ -314,7 +314,7 @@ const Accounts = () => {
 
   // Filter and sort accounts based on search query, status, and sort settings
   const filteredAccounts = useMemo(() => {
-    let result = accounts.filter((account) => {
+    const result = accounts.filter((account) => {
       // Treat null status as 'lead' so newly-created records show in the default view
       const effectiveStatus = account.status ?? 'lead';
       const matchesStatus = statusFilter === 'all' || effectiveStatus === statusFilter;

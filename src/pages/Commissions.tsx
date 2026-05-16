@@ -132,7 +132,7 @@ export default function Commissions() {
       if (error) throw error;
       return data;
     },
-    onSuccess: (data: any) => {
+    onSuccess: (data: unknown) => {
       const cached = data?.cached;
       if (cached) {
         toast.info(`Using cached data from ${new Date(data.last_synced).toLocaleString()}. Use Force Sync to refresh.`);
@@ -142,7 +142,7 @@ export default function Commissions() {
       queryClient.invalidateQueries({ queryKey: ["commission-periods"] });
       queryClient.invalidateQueries({ queryKey: ["commission-records"] });
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       toast.error(`Sync failed: ${err.message || "Unknown error"}`);
     },
   });

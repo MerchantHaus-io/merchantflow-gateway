@@ -156,14 +156,14 @@ const Tasks = () => {
     ]);
 
     if (oppsResult.data) {
-      setOpportunities(oppsResult.data.map((o: any) => ({
+      setOpportunities(oppsResult.data.map((o: unknown) => ({
         id: o.id,
         accountName: o.account?.name || 'Unknown Account'
       })));
     }
 
     if (contactsResult.data) {
-      setContacts(contactsResult.data.map((c: any) => ({
+      setContacts(contactsResult.data.map((c: unknown) => ({
         id: c.id,
         name: `${c.first_name || ''} ${c.last_name || ''}`.trim() || 'Unnamed',
         accountId: c.account_id
@@ -280,19 +280,21 @@ const Tasks = () => {
         case 'contact':
           return (a.contactName || '').localeCompare(b.contactName || '') * dir;
         case 'createdAt':
-        case 'dueAt':
+        case 'dueAt': {
           const aDate = a[sortKey] ? new Date(a[sortKey] as string).getTime() : 0;
           const bDate = b[sortKey] ? new Date(b[sortKey] as string).getTime() : 0;
           return (aDate - bDate) * dir;
+        }
         case 'assignee':
           return (a.assignee || '').localeCompare(b.assignee || '') * dir;
         case 'status':
           return (a.status || '').localeCompare(b.status || '') * dir;
-        case 'priority':
+        case 'priority': {
           const priorityOrder = { high: 0, medium: 1, low: 2 };
           const aPriority = priorityOrder[a.priority || 'medium'];
           const bPriority = priorityOrder[b.priority || 'medium'];
           return (aPriority - bPriority) * dir;
+        }
         default:
           return 0;
       }
@@ -395,9 +397,10 @@ const Tasks = () => {
     if (!dueStatus) return formatDate(dueAt);
     
     switch (dueStatus) {
-      case 'overdue':
+      case 'overdue': {
         const daysOverdue = differenceInDays(new Date(), new Date(dueAt!));
         return `${daysOverdue}d overdue`;
+      }
       case 'due-today':
         return 'Due today';
       case 'due-tomorrow':

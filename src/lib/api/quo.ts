@@ -91,7 +91,7 @@ export const quoApi = {
   // ── Phone Numbers ────────────────────────────────────────
   async listPhoneNumbers() {
     const result = await invoke<{ data: QuoPhoneNumber[] }>('list-phone-numbers');
-    return { ...result, data: result.data?.data || (result.data as any) };
+    return { ...result, data: result.data?.data || (result.data as unknown) };
   },
 
   async getPhoneNumber(phoneNumberId: string) {
@@ -115,7 +115,7 @@ export const quoApi = {
     if (params.phoneNumber) proxyParams.participants = [params.phoneNumber];
 
     const result = await invoke<{ data: QuoCall[] }>('list-calls', proxyParams);
-    return { ...result, data: result.data?.data || (result.data as any) };
+    return { ...result, data: result.data?.data || (result.data as unknown) };
   },
 
   async getCall(callId: string) {
@@ -146,7 +146,7 @@ export const quoApi = {
     after?: string;
   }) {
     const result = await invoke<{ data: QuoMessage[] }>('list-messages', params);
-    return { ...result, data: result.data?.data || (result.data as any) };
+    return { ...result, data: result.data?.data || (result.data as unknown) };
   },
 
   async getMessage(messageId: string) {
@@ -164,7 +164,7 @@ export const quoApi = {
   // ── Contacts ─────────────────────────────────────────────
   async listContacts(params?: { maxResults?: number; after?: string; externalIds?: string[] }) {
     const result = await invoke<{ data: QuoContact[] }>('list-contacts', params);
-    return { ...result, data: result.data?.data || (result.data as any) };
+    return { ...result, data: result.data?.data || (result.data as unknown) };
   },
 
   async getContact(contactId: string) {
@@ -199,13 +199,13 @@ export const quoApi = {
   // ── Conversations ────────────────────────────────────────
   async listConversations(params?: { phoneNumberId?: string; userId?: string; maxResults?: number; after?: string }) {
     const result = await invoke<{ data: QuoConversation[] }>('list-conversations', params);
-    return { ...result, data: result.data?.data || (result.data as any) };
+    return { ...result, data: result.data?.data || (result.data as unknown) };
   },
 
   // ── Users ────────────────────────────────────────────────
   async listUsers() {
     const result = await invoke<{ data: QuoUser[] }>('list-users');
-    return { ...result, data: result.data?.data || (result.data as any) };
+    return { ...result, data: result.data?.data || (result.data as unknown) };
   },
 
   async getUser(userId: string) {
@@ -238,8 +238,8 @@ export const quoApi = {
   },
 
   async listWebhooks() {
-    const result = await invoke<{ data: any[] }>('list-webhooks');
-    return { ...result, data: result.data?.data || (result.data as any) };
+    const result = await invoke<{ data: unknown[] }>('list-webhooks');
+    return { ...result, data: result.data?.data || (result.data as unknown) };
   },
 
   async getWebhook(webhookId: string) {

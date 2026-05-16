@@ -98,7 +98,7 @@ export function NewLeadDialog() {
       toast.success(`${accountName} added as a lead ✓`);
       reset();
       setOpen(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(err.message);
     } finally {
       setSaving(false);
@@ -142,7 +142,7 @@ export function NewLeadDialog() {
       toast.success(`${form.first_name || email} added as an outreach lead ✓`);
       reset();
       setOpen(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(err.message);
     } finally {
       setSaving(false);

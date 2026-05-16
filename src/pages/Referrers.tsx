@@ -129,8 +129,8 @@ export default function Referrers() {
 
   const saveRow = async (row: ReferrerRow) => {
     setSaving(row.id);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const patch: any = {
+     
+    const patch: unknown = {
       full_name: row.full_name,
       phone: row.phone,
       alias: row.alias,

@@ -255,6 +255,7 @@ export function QuoteGeneratorDialog({
     const doc = new jsPDF({ unit: "pt", format: "letter" });
     const pageW = doc.internal.pageSize.getWidth();
     const margin = 40;
+    let cursor: number;
 
     // Header image (full width band)
     try {
@@ -266,9 +267,9 @@ export function QuoteGeneratorDialog({
       });
       const headerH = (img.height / img.width) * (pageW - margin * 2);
       doc.addImage(img, "PNG", margin, 24, pageW - margin * 2, headerH);
-      var cursor = 24 + headerH + 18;
+      cursor = 24 + headerH + 18;
     } catch {
-      var cursor = margin;
+      cursor = margin;
     }
 
     doc.setFont("helvetica", "bold");
@@ -482,7 +483,7 @@ export function QuoteGeneratorDialog({
       const doc = await buildPdf();
       doc.save(safeFilename());
       toast.success("Quote PDF downloaded.");
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(`Failed to build PDF: ${err?.message ?? err}`);
     }
   };
@@ -526,10 +527,10 @@ export function QuoteGeneratorDialog({
         },
       );
       if (error) throw error;
-      if ((data as any)?.error) throw new Error(JSON.stringify((data as any).error));
+      if ((data as unknown)?.error) throw new Error(JSON.stringify((data as unknown).error));
       toast.success(`Quote emailed to ${client.email}`);
       onOpenChange(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(`Email failed: ${err?.message ?? err}`);
     } finally {
       setSending(false);
@@ -558,7 +559,7 @@ export function QuoteGeneratorDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="flex-1 flex flex-col min-h-0">
+        <Tabs value={tab} onValueChange={(v) => setTab(v as unknown)} className="flex-1 flex flex-col min-h-0">
           <div className="px-6 pt-3">
             <TabsList>
               <TabsTrigger value="build">

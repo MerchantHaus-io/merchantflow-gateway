@@ -56,7 +56,7 @@ export const CallLogPanel = ({
 
       const { data, error } = await query;
       if (!error && data) {
-        setCalls(data.map((c: any) => ({
+        setCalls(data.map((c: unknown) => ({
           ...c,
           contact_name: c.contacts ? `${c.contacts.first_name || ''} ${c.contacts.last_name || ''}`.trim() : undefined,
           account_name: c.contacts?.accounts?.name,

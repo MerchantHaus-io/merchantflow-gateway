@@ -65,7 +65,7 @@ export function AccountCommissionCard({ account }: AccountCommissionCardProps) {
               interchange_rate_pct: null,
               revenue_share_pct: null,
             };
-      const { error } = await supabase.from("accounts").update(payload as any).eq("id", account.id);
+      const { error } = await supabase.from("accounts").update(payload as unknown).eq("id", account.id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -74,7 +74,7 @@ export function AccountCommissionCard({ account }: AccountCommissionCardProps) {
       queryClient.invalidateQueries({ queryKey: ["live-account-detail"] });
       queryClient.invalidateQueries({ queryKey: ["live-billing-opportunities"] });
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       toast.error(`Failed to save: ${err.message || "Unknown error"}`);
     },
   });

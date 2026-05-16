@@ -196,7 +196,7 @@ export const DocumentUploadDialog = ({ open, onOpenChange, onUploaded }: Documen
           autoClassifyDocuments(uploadedDocIds, () => onUploaded?.());
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(err?.message || "Upload failed");
     } finally {
       setIsUploading(false);

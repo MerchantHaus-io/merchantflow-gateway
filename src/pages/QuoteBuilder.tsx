@@ -69,7 +69,7 @@ export default function QuoteBuilder() {
       if (error) {
         toast.error("Failed to load opportunities");
       } else {
-        setOpps((data as any) || []);
+        setOpps((data as unknown) || []);
       }
       setLoading(false);
     })();
@@ -94,7 +94,7 @@ export default function QuoteBuilder() {
         .eq("account_id", selectedOpp.account!.id)
         .order("first_name", { ascending: true });
       if (!error) {
-        const list = (data as any) || [];
+        const list = (data as unknown) || [];
         setContacts(list);
         // Default to opportunity's primary contact if present.
         const primary =

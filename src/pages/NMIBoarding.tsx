@@ -133,7 +133,7 @@ const NMIBoarding = () => {
         .order("created_at", { ascending: false });
 
       if (!error && data) {
-        const mapped: OpportunityOption[] = data.map((opp: any) => ({
+        const mapped: OpportunityOption[] = data.map((opp: unknown) => ({
           id: opp.id,
           accountName: opp.accounts?.name || "",
           contactFirstName: opp.contacts?.first_name,
@@ -289,7 +289,7 @@ const NMIBoarding = () => {
         setResult({ success: false, error: data?.error || "Unknown error from NMI" });
         toast.error(`Boarding failed: ${data?.error}`);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       const msg = err?.message || "Failed to submit boarding request";
       setResult({ success: false, error: msg });
       toast.error(msg);

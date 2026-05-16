@@ -137,7 +137,7 @@ const Opportunities = () => {
 
       if (error) throw error;
 
-      const mapped = (data || []).map((opp: any) => ({
+      const mapped = (data || []).map((opp: unknown) => ({
         ...opp,
         stage: migrateStage(opp.stage),
         wizard_state: Array.isArray(opp.wizard_state) ? opp.wizard_state[0] : opp.wizard_state,

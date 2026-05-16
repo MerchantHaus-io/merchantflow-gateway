@@ -22,7 +22,7 @@ const PATTERNS: { keywords: string[]; label: string }[] = [
  * Returns confidence: high (strong match), medium (partial), low (no match / guess).
  */
 export function suggestLabel(file: File): SuggestedLabel {
-  const name = file.name.toLowerCase().replace(/[_\-\.]/g, " ");
+  const name = file.name.toLowerCase().replace(/[_\-.]/g, " ");
 
   for (const { keywords, label } of PATTERNS) {
     for (const kw of keywords) {

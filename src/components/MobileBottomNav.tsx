@@ -80,7 +80,7 @@ const GROUPS: { label: string; items: NavItem[] }[] = [
       { title: "SOP", url: "/sop", icon: BookOpen },
       { title: "CRM Updates", url: "/tools/terminal-updates", icon: Activity },
       { title: "Administration", url: "/admin/administration", icon: Activity },
-      { title: "Affiliates", url: "/admin/referrers", icon: Handshake },
+      { title: "Affiliates", url: "/admin/affiliates", icon: Handshake },
       { title: "Data Export", url: "/admin/data-export", icon: Download },
       { title: "Partner Guide", url: "/tools/gateway-guide", icon: CreditCard },
       { title: "NMI Payments", url: "/tools/nmi-payments", icon: CreditCard },

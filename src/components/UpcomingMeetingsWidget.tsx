@@ -19,7 +19,7 @@ interface CalendarEvent {
   start_time: string;
   end_time: string;
   all_day: boolean;
-  attendees: any[];
+  attendees: unknown[];
   opportunity_id: string | null;
   account_id: string | null;
   html_link: string | null;
@@ -152,7 +152,7 @@ export function UpcomingMeetingsWidget() {
             const badge = urgencyBadge[urgency];
             const attendeeList = Array.isArray(event.attendees) ? event.attendees : [];
             const internalAttendees = attendeeList.filter(
-              (a: any) => a.email?.endsWith("@merchanthaus.io")
+              (a: unknown) => a.email?.endsWith("@merchanthaus.io")
             );
 
             return (
@@ -201,7 +201,7 @@ export function UpcomingMeetingsWidget() {
                       <div className="flex items-center gap-1 mt-1">
                         <Users className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
                         <span className="text-[10px] text-muted-foreground truncate">
-                          {internalAttendees.map((a: any) => a.displayName || a.email?.split("@")[0]).join(", ")}
+                          {internalAttendees.map((a: unknown) => a.displayName || a.email?.split("@")[0]).join(", ")}
                         </span>
                       </div>
                     )}

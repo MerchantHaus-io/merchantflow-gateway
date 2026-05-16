@@ -71,7 +71,7 @@ export function AdminPopupManager() {
       setMinSeconds(10);
       setCreateOpen(false);
       fetchData();
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(err.message);
     } finally {
       setCreating(false);
