@@ -524,10 +524,10 @@ Sales Support`,
       templateKey: "step1" as const,
       title: "Step 1 — Intro & Discovery",
       note: {
-        text: "Logic Step 1.2: If needed, schedule a discovery call.",
+        text: "Once requirements are established, defer the prospect to our apply form: /merchant-apply. That submission feeds the CRM directly and auto-fires the Application Received + Website Compliance Checklist emails. Use Step 1.2 only if a call is requested first.",
         link: "https://calendar.app.google/6F1xCy8DcVh8B4aR7",
         linkText: "Schedule a Call",
-        skipNote: "If no call requested, skip to Step 2.",
+        skipNote: "If no call requested and requirements are clear, point them straight to /merchant-apply.",
       },
     },
     {
@@ -538,7 +538,7 @@ Sales Support`,
     {
       id: "step2",
       templateKey: "step2" as const,
-      title: "Step 2 — Request for Documents",
+      title: "Step 2 — Request for Documents (Manual Fallback)",
     },
     {
       id: "step3",
