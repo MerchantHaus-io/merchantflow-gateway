@@ -142,7 +142,7 @@ const navMain: NavGroup[] = [
       { title: "SOP", url: "/sop", icon: BookOpen, description: "Standard operating procedures" },
       { title: "CRM Updates", url: "/tools/terminal-updates", icon: Sparkles, description: "Latest changes & features" },
       { title: "Administration", url: "/admin/administration", icon: Activity, description: "Agenda, popups & session tracking" },
-      { title: "Referrers", url: "/admin/referrers", icon: UserPlus, description: "External referral partners & commissions" },
+      { title: "Affiliates", url: "/admin/referrers", icon: UserPlus, description: "External affiliate partners & commissions" },
       { title: "Data Export", url: "/admin/data-export", icon: Download, description: "Export opportunity data" },
       { title: "Merchant Portal Guide", url: "/tools/gateway-guide", icon: BookMarked, description: "Interactive portal walkthrough" },
       { title: "Deployment", url: "/tools/netlify", icon: Cloud, description: "Deployment audit & fix prompts" },

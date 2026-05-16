@@ -5,7 +5,8 @@ import {
   LayoutDashboard, Briefcase, ListChecks, Building2, Users, FileText,
   BarChart3, Settings, BookOpen, ClipboardList, Calculator, FileSpreadsheet,
   Download, CreditCard, Activity, Trash2, LogOut, BadgeDollarSign, Cloud,
-  Send, Globe, Search, X, ChevronRight, UserPlus, type LucideIcon,
+  Send, Globe, Search, X, ChevronRight, UserPlus, FileSignature, Calendar,
+  Bell, Handshake, type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -43,6 +44,8 @@ const GROUPS: { label: string; items: NavItem[] }[] = [
     items: [
       { title: "Contacts", url: "/contacts", icon: Users },
       { title: "Documents", url: "/documents", icon: FileText },
+      { title: "Calendar", url: "/calendar", icon: Calendar },
+      { title: "Notifications", url: "/notifications", icon: Bell },
     ],
   },
   {
@@ -68,6 +71,7 @@ const GROUPS: { label: string; items: NavItem[] }[] = [
       { title: "Preboarding", url: "/tools/preboarding-wizard", icon: ClipboardList },
       { title: "Revenue Calc", url: "/tools/revenue-calculator", icon: Calculator },
       { title: "CSV Import", url: "/tools/csv-import", icon: FileSpreadsheet },
+      { title: "Quote Builder", url: "/tools/quote-builder", icon: FileSignature },
     ],
   },
   {
@@ -76,6 +80,7 @@ const GROUPS: { label: string; items: NavItem[] }[] = [
       { title: "SOP", url: "/sop", icon: BookOpen },
       { title: "CRM Updates", url: "/tools/terminal-updates", icon: Activity },
       { title: "Administration", url: "/admin/administration", icon: Activity },
+      { title: "Affiliates", url: "/admin/referrers", icon: Handshake },
       { title: "Data Export", url: "/admin/data-export", icon: Download },
       { title: "Partner Guide", url: "/tools/gateway-guide", icon: CreditCard },
       { title: "NMI Payments", url: "/tools/nmi-payments", icon: CreditCard },

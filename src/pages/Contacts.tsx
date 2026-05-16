@@ -42,6 +42,7 @@ import {
   AlertCircle,
   XCircle,
   MessageSquare,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import CommentsTab from "@/components/CommentsTab";
@@ -53,6 +54,7 @@ import { SortableTableHead } from "@/components/SortableTableHead";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { EmptyState } from "@/components/EmptyState";
+import { ListViewHeader } from "@/components/list-view/ListViewHeader";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -698,18 +700,42 @@ const Contacts = () => {
   };
 
   // ─── Render ──────────────────────────────────────────────────────────────────
+  const selectedCount = selectedIds.size;
+  const visibleCount = filteredContacts.length;
+  const contactsStatusText = selectedCount > 0
+    ? `${selectedCount} item${selectedCount === 1 ? '' : 's'} selected`
+    : `${visibleCount} item${visibleCount === 1 ? '' : 's'} • Sorted by ${typeof sortField === 'string' ? sortField.charAt(0).toUpperCase() + sortField.slice(1).replace('_', ' ') : 'Name'}`;
+  const contactsViewLabel = quickFilter === 'unassigned'
+    ? 'Unassigned - Contacts'
+    : quickFilter === 'no_deal'
+      ? 'No Deal - Contacts'
+      : 'All - Contacts';
+
   return (
     <AppLayout>
       <div className="flex flex-col h-full overflow-hidden">
-        <PageHeader
+        <ListViewHeader
           icon={Users}
-          title="Contacts"
+          category="Contacts"
+          viewLabel={contactsViewLabel}
           color="primary"
+          pinUrl="/contacts"
+          status={contactsStatusText}
+          views={[
+            { key: 'all', label: 'All - Contacts' },
+            { key: 'unassigned', label: 'Unassigned - Contacts' },
+            { key: 'no_deal', label: 'No Deal - Contacts' },
+          ]}
+          onViewChange={(k) => setQuickFilter(k as typeof quickFilter)}
           actions={
-            <Button size="sm" onClick={openNewDialog} className="gap-1.5">
-              <UserPlus className="h-4 w-4" />
-              New Contact
-            </Button>
+            <>
+              <Button variant="outline" size="sm" className="h-8 text-info border-info/30 hover:bg-info/10 hover:text-info">
+                <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Intelligence View
+              </Button>
+              <Button size="sm" onClick={openNewDialog} className="h-8 gap-1.5">
+                <UserPlus className="h-3.5 w-3.5" /> New
+              </Button>
+            </>
           }
         />
 
@@ -1065,7 +1091,7 @@ const Contacts = () => {
                               <div className={cn("w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0", avatarBg)}>
                                 {initials}
                               </div>
-                              <span className="text-sm font-medium truncate">
+                              <span className="text-sm font-normal text-info hover:underline truncate">
                                 {fullName || <span className="italic text-muted-foreground">Unnamed</span>}
                               </span>
                             </div>
