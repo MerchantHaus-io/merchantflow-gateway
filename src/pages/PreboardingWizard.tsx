@@ -310,7 +310,7 @@ export default function PreboardingWizard() {
     const ids = (data || []).map(d => d.id);
     const { data: serviceTypes } = ids.length > 0
       ? await supabase.from('opportunities').select('id, service_type').in('id', ids)
-      : { data: [] as unknown[] };
+      : { data: [] as any[] };
     const serviceTypeMap = new Map((serviceTypes || []).map((s: any) => [s.id, s.service_type]));
 
     const mapped = (data || []).map(item => ({

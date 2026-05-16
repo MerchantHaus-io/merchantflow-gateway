@@ -343,7 +343,7 @@ export default function WebSubmissions() {
           zip: app.zip,
           website: app.website,
            
-          ...(appReferrerId ? { referrer_id: appReferrerId } as unknown : {}),
+          ...(appReferrerId ? { referrer_id: appReferrerId } as any : {}),
         })
         .select()
         .single();
@@ -516,11 +516,11 @@ export default function WebSubmissions() {
           assigned_to: initialAssignee,
           username: isGatewayOnly ? (app.notes?.match(/Username:\s*([^.]+)/)?.[1]?.trim() || null) : null,
            
-          ...(appReferrerId ? { referrer_id: appReferrerId } as unknown : {}),
+          ...(appReferrerId ? { referrer_id: appReferrerId } as any : {}),
            
-          ...(autoTier ? { gateway_tier: autoTier } as unknown : {}),
+          ...(autoTier ? { gateway_tier: autoTier } as any : {}),
            
-          ...(appPricingPlan ? { pricing_plan: appPricingPlan } as unknown : {}),
+          ...(appPricingPlan ? { pricing_plan: appPricingPlan } as any : {}),
         })
         .select()
         .single();
@@ -616,7 +616,7 @@ export default function WebSubmissions() {
 
         const auditMap = new Map<string, string>();
         if (auditDocs) {
-          for (const ad of auditDocs as unknown[]) {
+          for (const ad of auditDocs as any[]) {
             // Map by filename from file_path
             const fileName = (ad.file_path as string).split('/').pop() || '';
             auditMap.set(fileName, ad.document_type || 'Unassigned');

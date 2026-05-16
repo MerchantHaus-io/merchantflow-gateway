@@ -15,7 +15,7 @@ export function useFavorites() {
       .eq("user_id", user.id)
       .then(({ data }) => {
         if (data) {
-          setFavoriteUrls(new Set((data as unknown[]).map((r) => r.shortcut_url)));
+          setFavoriteUrls(new Set((data as any[]).map((r) => r.shortcut_url)));
         }
         setLoaded(true);
       });
