@@ -1223,7 +1223,7 @@ function DocumentsStep({ form, onChange, onDocsChange, opportunityId, onDocCount
   );
 }
 
-function ReviewStep({ form, missingBySection }: { form: PreboardingForm; missingBySection: Record<SectionKey, string[]>; }) {
+function ReviewStep({ form, missingBySection }: { form: PreboardingForm; missingBySection: Partial<Record<SectionKey, string[]>>; }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
