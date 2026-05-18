@@ -1349,7 +1349,7 @@ export default function OfficeChat({
     scene.fog = new THREE.Fog(0x1a1a1a, 20, 55);
 
     const camera = new THREE.PerspectiveCamera(78, W / H, 0.1, 120); // 78 FOV = more natural FPS
-    camera.position.set(SPAWN[currentUserEmail].x, 1.65, SPAWN[currentUserEmail].z + 2.0); // slightly behind desk
+    camera.position.set(getSpawn(currentUserEmail).x, 1.65, getSpawn(currentUserEmail).z + 2.0); // slightly behind desk
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(W, H);
@@ -1428,7 +1428,7 @@ export default function OfficeChat({
 
     // Player mesh hidden in FP view (camera IS the player)
     const playerMesh = buildCharacterMesh(currentUser, true);
-    playerMesh.position.copy(SPAWN[currentUserEmail]);
+    playerMesh.position.copy(getSpawn(currentUserEmail));
     playerMesh.visible = false;
     scene.add(playerMesh);
 
@@ -1466,7 +1466,7 @@ export default function OfficeChat({
       renderer, scene, camera, playerMesh, npcMeshes,
       yaw: 0, pitch: 0, locked: false,
       keys: new Set<string>(),
-      playerPos: SPAWN[currentUserEmail].clone(),
+      playerPos: getSpawn(currentUserEmail).clone(),
       raf: 0, onlineIndicators, npcWander,
     };
     stateRef.current = state;
