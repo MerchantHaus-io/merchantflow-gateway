@@ -80,15 +80,7 @@ export let TEAM_ROSTER: TeamMemberRecord[] = [
   {
     id: "xavier",
     email: "xavier@merchanthaus.io",
-    displayName: "Xavier",
-    title: "Sales",
-    active: true,
-    colorToken: "border-border",
-  },
-  {
-    id: "rooza",
-    email: "rooza@merchanthaus.io",
-    displayName: "Rooza",
+    displayName: "Xavier Rooza",
     title: "Sales",
     active: true,
     colorToken: "border-border",
