@@ -113,7 +113,7 @@ export default function OutreachDetail() {
   const [sending, setSending]             = useState(false);
   const [previewOpen, setPreviewOpen]     = useState(false);
   const [previewStep, setPreviewStep]     = useState<number>(1);
-  const [replyDialog, setReplyDialog]     = useState<unknown | null>(null);
+  const [replyDialog, setReplyDialog]     = useState<{ id: string; email?: string | null; reply_snippet?: string | null } | null>(null);
   const [replySnippet, setReplySnippet]   = useState("");
   const [convertingId, setConvertingId]   = useState<string | null>(null);
   const [search, setSearch]               = useState("");

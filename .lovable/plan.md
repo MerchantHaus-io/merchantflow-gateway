@@ -1,50 +1,87 @@
-## Problem
+# Replace `unknown`/`any` casts with proper types
 
-Today, "Login as" on `/admin/referrers` calls `impersonate-referrer`, gets a magic link, and opens it in a new tab. Because Supabase auth uses shared `localStorage` across tabs of the same origin, consuming that magic link **wipes the admin's session in every tab** — so the admin gets logged out and forced to re-auth themselves afterwards.
+The previous fix used a bulk `unknown → any` sed to unblock the build. The app currently compiles, but type safety was lost across ~60 files. This plan restores proper typing in waves so we don't reintroduce build breakage.
 
-Goal: as an admin, clicking "View as" on a referrer should drop you straight into that referrer's portal **without touching your own session**.
+## Current state
+
+- `src/integrations/supabase/types.ts` is the generated source of truth (`Database`, `Tables<>`, `Enums<>`).
+- Most components now use `any` for: Supabase query results, catch errors, event payloads, state arrays.
+- A small number of legitimate `unknown` casts remain — Proxy in `activeClient.ts`, SSR storage shim, type-bridges for shape-incompatible DB rows.
 
 ## Approach
 
-Introduce a second, isolated Supabase client used **only** for impersonation, scoped to a dedicated route. The admin's main `supabase` client (and its localStorage key) is never touched.
+Refactor in 4 waves. After each wave: run `bunx tsc --noEmit`, fix fallout, commit.
 
-```text
-Admin tab (main session)        New tab: /affiliate?impersonate=<id>
-─────────────────────────       ───────────────────────────────────
-supabase  (sb-*, localStorage)  supabaseImpersonation (sb-impersonation-*, sessionStorage)
-   ▲                                ▲
-   │ admin stays logged in          │ holds referrer session, dies with the tab
+### Wave 1 — Shared utilities (low risk, high leverage)
+
+1. Create `src/types/db.ts` re-exporting common row types:
+   ```ts
+   import type { Tables, Enums } from "@/integrations/supabase/types";
+   export type Opportunity   = Tables<"opportunities">;
+   export type Account       = Tables<"accounts">;
+   export type Contact       = Tables<"contacts">;
+   export type Document      = Tables<"opportunity_documents">;
+   export type Interaction   = Tables<"client_interactions">;
+   export type Campaign      = Tables<"outreach_campaigns">;
+   export type CampaignContact = Tables<"outreach_campaign_contacts">;
+   // …etc
+   ```
+2. Add a narrow error helper in `src/lib/friendly-errors.ts`:
+   ```ts
+   export const errorMessage = (e: unknown): string =>
+     e instanceof Error ? e.message : typeof e === "string" ? e : "Unknown error";
+   ```
+3. Codemod every `catch (err: any) { … err.message }` → `catch (err) { … errorMessage(err) }`.
+
+### Wave 2 — Page-level state arrays (the noisy ones)
+
+Files with `useState<any[]>` / `useState<any>(null)` that map to a single table:
+
+- `OpportunityDetail.tsx` — `emails: Interaction[]`, `documents: Document[]`
+- `LiveAccountDetail.tsx` — `previewDoc: PreviewableDocument | null`
+- `LiveBilling.tsx` — `GroupedAccount.account/contact` → `Account | null`, `Contact | null`
+- `Reports.tsx` — `campaigns: Campaign[]`
+- `Outreach.tsx` / `OutreachDetail.tsx` — `Campaign`, `CampaignContact`
+- `Accounts.tsx`, `Opportunities.tsx`, `Contacts.tsx` — list rows
+- `Calendar.tsx`, `calendar/EventDetailSheet.tsx` — define a local `CalendarEvent` + `Attendee` interface (no DB table)
+
+Replace `any` with these types. Use `?? null` instead of optional-chaining-with-any.
+
+### Wave 3 — Supabase query result casts
+
+For joined queries that don't fit the generated row type, declare a local intersection instead of `as any`:
+
+```ts
+type OppWithRelations = Opportunity & {
+  account: Account | null;
+  contact: Contact | null;
+};
+const { data } = await supabase.from("opportunities").select("*, account:accounts(*), contact:contacts(*)").returns<OppWithRelations[]>();
 ```
 
-## Changes
+Apply to: `LiveBilling`, `Opportunities`, `Index`, `Home`, `Accounts`, `OpportunityDetailModal`, hooks under `src/hooks/`.
 
-### 1. New isolated client — `src/integrations/supabase/impersonationClient.ts`
-- `createClient(URL, ANON_KEY, { auth: { storage: sessionStorage, storageKey: 'sb-impersonation', persistSession: true, autoRefreshToken: true } })`
-- Uses `sessionStorage` so the impersonation session is per-tab and auto-discards when the tab closes.
+### Wave 4 — Event handler / payload types
 
-### 2. Edge function `impersonate-referrer` — return tokens, not just a magic link
-- After `generateLink({ type: 'magiclink' })`, call `admin.auth.admin.generateLink` already gives us `properties.hashed_token`. Use `admin.auth.verifyOtp({ token_hash, type: 'magiclink' })` server-side to mint an `access_token` + `refresh_token` for the referrer, and return `{ access_token, refresh_token, referrer_email }`.
-- Keep existing audit log + `auth_user_id` backfill.
-- Keep team-domain gate.
+- Realtime: `payload: RealtimePostgresChangesPayload<Tables<"x">>` from `@supabase/supabase-js`.
+- Chart `chart.tsx` formatter signatures — use Recharts' `TooltipProps`.
+- Quo API responses (`src/lib/api/quo.ts`) — declare interfaces matching the actual JSON.
 
-### 3. Admin trigger — `src/pages/Referrers.tsx`
-- On "View as": call the function, store the returned tokens in `sessionStorage` under a one-shot handoff key (e.g. `impersonation-handoff`), then `window.open('/affiliate?impersonate=1', '_blank')`.
-- No magic link is ever opened in a browser tab.
+### Out of scope (intentionally keep `unknown`)
 
-### 4. Portal route — read handoff once, hydrate impersonation client
-- Add a tiny `ImpersonationBootstrap` that runs before `ReferrerRoute` when `?impersonate=1` is present:
-  - Read tokens from `sessionStorage`, delete the handoff key, call `supabaseImpersonation.auth.setSession({ access_token, refresh_token })`.
-  - Show an "Admin view — viewing as <name>" banner with an "Exit view" button (closes the tab / signs out of the impersonation client only).
+- `activeClient.ts` Proxy generic forwarding.
+- SSR `Storage` shim in `impersonationClient.ts`.
+- Cross-shape bridge casts (`as unknown as OnboardingWizardState`) where the DB JSONB column legitimately doesn't match the runtime shape — these would need schema work first.
+- Edge functions (Deno) — separate pass; their `unknown` in catch blocks is the TS-recommended default.
 
-### 5. Portal pages use the impersonation client when in admin-view mode
-- `PortalDashboard`, `PortalCommissions`, `PortalNewReferral`, `PortalLayout`, and `AuthContext` consumers used inside `/affiliate/*` need to read from `supabaseImpersonation` instead of `supabase` when the impersonation flag is active.
-- Cleanest implementation: a small `usePortalSupabase()` hook that returns `supabaseImpersonation` if a sessionStorage flag `impersonation-active` is set, else `supabase`. Swap the 4–5 direct `supabase` imports inside `src/pages/portal/*` and `src/components/portal/PortalLayout.tsx` to use it.
-- `AuthContext` for the impersonated tab: gate it so when `impersonation-active` is set, it subscribes to `supabaseImpersonation.auth` instead. (Single conditional at context init.)
+## Risks
 
-### 6. Visual cue
-- Persistent top banner in the impersonated tab: "Admin View — acting as {referrer name}. Exit view." Red/amber accent, sticky.
+- Joined Supabase queries often have `null` relations that current `any` code accesses unguarded → fixing types will surface real null-deref bugs. We'll add `?.` and fallbacks as they appear.
+- `Tables<"…">` keys must match actual table names; if any have been renamed since type regen, regenerate types first.
 
-## Result
-- Admin's own session is never overwritten — no re-auth.
-- Impersonated tab is fully isolated, dies with the tab, never leaks back into the admin's main session.
-- Audit log still records every impersonation.
+## Deliverable per wave
+
+- All edits + `bunx tsc --noEmit` clean.
+- No new `any` introduced; PR diff should show `any` count decreasing.
+
+Confirm and I'll start with Wave 1.

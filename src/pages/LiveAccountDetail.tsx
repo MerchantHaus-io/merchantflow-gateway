@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { DocumentPreviewDialog } from "@/components/DocumentPreviewDialog";
+import { DocumentPreviewDialog, type PreviewableDocument } from "@/components/DocumentPreviewDialog";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -75,7 +75,7 @@ const LiveAccountDetail = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
-  const [previewDoc, setPreviewDoc] = useState<unknown>(null);
+  const [previewDoc, setPreviewDoc] = useState<PreviewableDocument | null>(null);
   const closeRef = useRef<HTMLDivElement>(null);
   const [closeHighlight, setCloseHighlight] = useState(false);
 

@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { STAGE_CONFIG, TEAM_MEMBERS, OpportunityStage } from "@/types/opportunity";
 import { useTasks } from "@/contexts/TasksContext";
 import { Task } from "@/types/task";
+import type { OutreachCampaign } from "@/types/db";
 import DateRangeFilter from "@/components/DateRangeFilter";
 import ReportDetailModal from "@/components/ReportDetailModal";
 import { PageHeader } from "@/components/PageHeader";
@@ -117,7 +118,7 @@ const Reports = () => {
   const { tasks } = useTasks();
   const [opps, setOpps]             = useState<OppData[]>([]);
   const [activities, setActivities] = useState<ActivityData[]>([]);
-  const [campaigns, setCampaigns]   = useState<unknown[]>([]);
+  const [campaigns, setCampaigns]   = useState<OutreachCampaign[]>([]);
   const [loading, setLoading]       = useState(true);
   const [dateRange, setDateRange]   = useState<DateRange | undefined>();
   const [filterBy]                  = useState<"created_at" | "updated_at">("created_at");

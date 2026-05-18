@@ -52,17 +52,31 @@ const MESSAGE_PATTERNS: Array<[RegExp, string]> = [
 const FALLBACK = 'Something went wrong. Please try again. If the problem persists, contact support@merchanthaus.io.';
 
 /**
+ * Narrow an `unknown` error to a string message without losing useful info.
+ * Safe in catch blocks where TS infers `unknown`.
+ */
+export function errorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  if (error && typeof error === "object") {
+    const obj = error as Record<string, unknown>;
+    const msg = obj.message ?? obj.error_description ?? obj.msg;
+    if (typeof msg === "string") return msg;
+  }
+  try { return String(error); } catch { return "Unknown error"; }
+}
+
+/**
  * Convert any error object into a user-friendly message.
  * Accepts Supabase error objects, generic Error instances, or plain strings.
  */
-export function getFriendlyError(error: any): string {
+export function getFriendlyError(error: unknown): string {
   if (!error) return FALLBACK;
 
-  // Extract code and message from various shapes
-  const code: string | undefined =
-    (error as any)?.code ?? (error as any)?.error_code ?? (error as any)?.status_code?.toString();
-  const message: string =
-    (error as any)?.message ?? (error as any)?.error_description ?? (error as any)?.msg ?? String(error);
+  const obj = (typeof error === "object" && error !== null) ? (error as Record<string, unknown>) : {};
+  const codeRaw = obj.code ?? obj.error_code ?? obj.status_code;
+  const code: string | undefined = codeRaw == null ? undefined : String(codeRaw);
+  const message: string = errorMessage(error);
 
   // 1. Direct code match
   if (code && ERROR_MAP[code]) {

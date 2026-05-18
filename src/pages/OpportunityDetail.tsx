@@ -48,6 +48,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/contexts/AuthContext";
+import type { DocumentRow } from "@/types/db";
 import { useTasks } from "@/contexts/TasksContext";
 import { cn } from "@/lib/utils";
 import { 
@@ -107,7 +108,20 @@ const EditField = ({
 
 // Emails component - shows client_interactions of type email for the account
 const EmailsSection = ({ accountId, opportunityId }: { accountId: string; opportunityId?: string }) => {
-  const [emails, setEmails] = useState<unknown[]>([]);
+  type EmailRow = {
+    id: string;
+    source: 'interaction' | 'gmail';
+    subject: string | null;
+    from: string;
+    to: string;
+    toName: string;
+    body: string;
+    status: string | null;
+    date: string | null;
+    channel: string | null;
+    resolution: string | null;
+  };
+  const [emails, setEmails] = useState<EmailRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -263,7 +277,7 @@ const EmailsSection = ({ accountId, opportunityId }: { accountId: string; opport
 
 // Documents component
 const DocumentsSection = ({ opportunityId }: { opportunityId: string }) => {
-  const [documents, setDocuments] = useState<unknown[]>([]);
+  const [documents, setDocuments] = useState<DocumentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
 

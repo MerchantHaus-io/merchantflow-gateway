@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Download, X, Loader2, FileText, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
-interface PreviewableDocument {
+export interface PreviewableDocument {
   id: string;
   file_name: string;
   file_path: string;
