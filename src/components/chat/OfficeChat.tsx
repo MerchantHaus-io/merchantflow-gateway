@@ -96,6 +96,11 @@ function chairPos(email: string): THREE.Vector3 {
 }
 const SPAWN: Record<string, THREE.Vector3> = {};
 Object.keys(DESK_POS).forEach(email => { SPAWN[email] = chairPos(email); });
+// Safe accessor — any unknown email gets a center-room spawn so the simulator never crashes.
+const FALLBACK_SPAWN = new THREE.Vector3(0, 0, 0);
+function getSpawn(email: string): THREE.Vector3 {
+  return SPAWN[email] ?? FALLBACK_SPAWN;
+}
 
 // ── COLLISION SYSTEM (AABB) ───────────────────────────────────────────────────
 
