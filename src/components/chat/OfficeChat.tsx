@@ -1303,7 +1303,28 @@ export default function OfficeChat({
   const lastBroadcastRef = useRef(0);
 
 
-  const currentUser = USERS.find(u => u.email === currentUserEmail)!;
+  // Fallback synth-user for any signed-in email not in the canonical USERS list
+  // (prevents "cannot read properties of undefined" crashes for new teammates).
+  const fallbackUser: CRMUser = React.useMemo(() => {
+    const email = currentUserEmail || "guest@merchanthaus.io";
+    const local = email.split("@")[0] || "guest";
+    const pretty = (rn(local) ?? local.replace(/[._-]+/g, " ").replace(/\b\w/g, c => c.toUpperCase()));
+    // Deterministic color from email hash
+    let h = 0; for (let i = 0; i < email.length; i++) h = ((h << 5) - h + email.charCodeAt(i)) | 0;
+    const hue = Math.abs(h) % 360;
+    const hslToHex = (hDeg: number, s: number, l: number) => {
+      const a = s * Math.min(l, 1 - l);
+      const f = (n: number) => {
+        const k = (n + hDeg / 30) % 12;
+        const c = l - a * Math.max(-1, Math.min(k - 3, Math.min(9 - k, 1)));
+        return Math.round(c * 255);
+      };
+      return (f(0) << 16) | (f(8) << 8) | f(4);
+    };
+    return { email, name: pretty, title: "Team", shirtColor: hslToHex(hue, 0.55, 0.5), hairColor: 0x2a1a10, skinColor: 0xe0b48a, scale: 1.0 };
+  }, [currentUserEmail]);
+
+  const currentUser = USERS.find(u => u.email === currentUserEmail) ?? fallbackUser;
   const others = USERS.filter(u => u.email !== currentUserEmail);
 
   useEffect(() => { showTerminalRef.current = showTerminal; }, [showTerminal]);
