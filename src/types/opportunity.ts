@@ -167,10 +167,12 @@ export const resolveDisplayName = (value: string | null | undefined): string => 
   return value;
 };
 
-// Helper to check if email is allowed - only specific team members
+// Helper to check if email is allowed - explicit team roster + anyone on the merchanthaus.io domain
 export const isEmailAllowed = (email: string | undefined | null): boolean => {
   if (!email) return false;
-  return ALLOWED_EMAILS.includes(email.toLowerCase());
+  const normalized = email.toLowerCase().trim();
+  if (ALLOWED_EMAILS.includes(normalized)) return true;
+  return normalized.endsWith('@merchanthaus.io');
 };
 
 export const STAGE_CONFIG: Record<
