@@ -276,7 +276,7 @@ const EmailsSection = ({ accountId, opportunityId }: { accountId: string; opport
 
 // Documents component
 const DocumentsSection = ({ opportunityId }: { opportunityId: string }) => {
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [documents, setDocuments] = useState<DocumentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
 
