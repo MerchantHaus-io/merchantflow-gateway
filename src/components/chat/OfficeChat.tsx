@@ -85,6 +85,7 @@ const DESK_POS: Record<string, THREE.Vector3> = {
   "admin@merchanthaus.io":   new THREE.Vector3(-2,  0, -16),
   "jamie@merchanthaus.io":   new THREE.Vector3(6,   0, -16),
   "support@merchanthaus.io": new THREE.Vector3(-6,  0, -8),
+  "xavier@merchanthaus.io":  new THREE.Vector3(2,   0, -8),
   "atria@merchanthaus.io":   new THREE.Vector3(10,  0, -8),
 };
 // Chair offset: chairs sit at z+0.65 relative to cubicle center
