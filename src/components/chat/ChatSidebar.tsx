@@ -53,6 +53,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
   const filteredChannels = channels
     .filter(ch => !ch.name.toLowerCase().startsWith("dm-"))
+    .filter(ch => ch.name.toLowerCase() !== "atria-ai")
     .filter(ch => !contactSearch || ch.name.toLowerCase().includes(contactSearch.toLowerCase()));
 
   const protectedChannels = ["general", "ops-updates", "atria-ai"];
