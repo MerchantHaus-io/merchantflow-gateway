@@ -117,7 +117,7 @@ const buildClientConfirmationHtml = (firstName: string): string => `
       <h1>Merchant Haus</h1>
     </div>
     <div class="content">
-      <p>Hi ${firstName},</p>
+      <p>Hi ${escapeHtml(firstName)},</p>
       <p>Thank you for reaching out to Merchant Haus. We've received your inquiry and a member of our sales team will be in touch with you shortly.</p>
       <p>In the meantime, if you have any additional questions, feel free to reply to this email or contact us at <a href="mailto:sales@merchanthaus.io">sales@merchanthaus.io</a>.</p>
       <p style="margin-top: 24px;">Kind regards,<br><strong>The Merchant Haus Team</strong></p>
