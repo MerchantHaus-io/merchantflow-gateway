@@ -71,6 +71,8 @@ const USERS: CRMUser[] = [
   { email: "admin@merchanthaus.io", name: rn("darryn") ?? "Darryn", title: "QA & Complex Sales", shirtColor: 0xd03060, hairColor: 0x3a1010, skinColor: 0xffdbac, scale: 1.0 },
   { email: "jamie@merchanthaus.io", name: rn("jamie") ?? "Jamie", title: "CEO / Admin", shirtColor: 0x3a7bd5, hairColor: 0xd4b96a, skinColor: 0xffe0bb, stubble: true, stubbleColor: 0xc8aa70, scale: 1.0 },
   { email: "support@merchanthaus.io", name: rn("yaseen") ?? "Yaseen Sheik", title: "Support", shirtColor: 0x9b30d0, hairColor: 0x2a1a40, skinColor: 0xd4a574, beard: true, beardColor: 0x9a9a9a, scale: 1.08 },
+  { email: "xavier@merchanthaus.io", name: rn("xavier") ?? "Xavier", title: "Sales", shirtColor: 0x1f8f4a, hairColor: 0x1a0e08, skinColor: 0xc68a5a, stubble: true, stubbleColor: 0x2a1a10, scale: 1.04 },
+  { email: "rooza@merchanthaus.io", name: rn("rooza") ?? "Rooza", title: "Sales", shirtColor: 0xc94f7c, hairColor: 0x2a1208, skinColor: 0xe8b890, hairstyle: "bob", scale: 0.98 },
   { email: "atria@merchanthaus.io", name: "Atria", title: "AI Assistant", shirtColor: 0x7c3aed, hairColor: 0xc0c0ff, skinColor: 0xe8d8f0, hairstyle: "bob", scale: 0.95, online: true },
 ];
 
