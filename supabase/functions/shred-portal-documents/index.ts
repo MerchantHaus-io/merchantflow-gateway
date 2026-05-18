@@ -28,6 +28,13 @@ Deno.serve(async (req) => {
       return json({ error: "Unauthorized" }, 401);
     }
 
+    // Admin-only: irreversible destructive storage operation
+    const ADMIN_EMAILS = ['admin@merchanthaus.io', 'onboarding@merchanthaus.io', 'jamie@merchanthaus.io'];
+    if (!ADMIN_EMAILS.includes(user.email || '')) {
+      console.warn(`Forbidden shred-portal-documents attempt by ${user.email}`);
+      return json({ error: "Admin access required" }, 403);
+    }
+
     const { portal_merchant_id } = await req.json();
     if (!portal_merchant_id) {
       return json({ error: "portal_merchant_id is required" }, 400);
