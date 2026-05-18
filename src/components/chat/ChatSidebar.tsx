@@ -114,26 +114,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
       <ScrollArea className="flex-1 min-h-0">
         <div>
-          {/* AI Assistant tab */}
-          {onSelectAI && (
-            <button
-              onClick={onSelectAI}
-              className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 transition-colors border-b border-[hsl(var(--wa-divider))]",
-                view === "ai"
-                  ? "bg-[hsl(var(--wa-sidebar-hover))]"
-                  : "hover:bg-[hsl(var(--wa-sidebar-hover))]"
-              )}
-            >
-              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shrink-0">
-                <Sparkles className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <div className="flex-1 text-left min-w-0">
-                <p className="font-medium text-sm text-[hsl(var(--wa-bubble-in-foreground))]">Atria AI</p>
-                <p className="text-xs text-[hsl(var(--wa-meta))]">AI Assistant</p>
-              </div>
-            </button>
-          )}
+
 
           {/* Channels */}
           {filteredChannels.length > 0 && (
