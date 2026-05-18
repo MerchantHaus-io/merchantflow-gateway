@@ -75,7 +75,7 @@ const LiveAccountDetail = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
-  const [previewDoc, setPreviewDoc] = useState<unknown>(null);
+  const [previewDoc, setPreviewDoc] = useState<PreviewableDocument | null>(null);
   const closeRef = useRef<HTMLDivElement>(null);
   const [closeHighlight, setCloseHighlight] = useState(false);
 
