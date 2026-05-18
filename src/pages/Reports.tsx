@@ -117,7 +117,7 @@ const Reports = () => {
   const { tasks } = useTasks();
   const [opps, setOpps]             = useState<OppData[]>([]);
   const [activities, setActivities] = useState<ActivityData[]>([]);
-  const [campaigns, setCampaigns]   = useState<unknown[]>([]);
+  const [campaigns, setCampaigns]   = useState<OutreachCampaign[]>([]);
   const [loading, setLoading]       = useState(true);
   const [dateRange, setDateRange]   = useState<DateRange | undefined>();
   const [filterBy]                  = useState<"created_at" | "updated_at">("created_at");
