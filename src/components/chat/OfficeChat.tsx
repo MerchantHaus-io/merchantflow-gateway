@@ -2,7 +2,7 @@
 // articulated characters, and interaction system.
 // Peer deps: three, @types/three
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import * as THREE from "three";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -85,6 +85,7 @@ const DESK_POS: Record<string, THREE.Vector3> = {
   "admin@merchanthaus.io":   new THREE.Vector3(-2,  0, -16),
   "jamie@merchanthaus.io":   new THREE.Vector3(6,   0, -16),
   "support@merchanthaus.io": new THREE.Vector3(-6,  0, -8),
+  "xavier@merchanthaus.io":  new THREE.Vector3(2,   0, -8),
   "atria@merchanthaus.io":   new THREE.Vector3(10,  0, -8),
 };
 // Chair offset: chairs sit at z+0.65 relative to cubicle center
@@ -95,6 +96,11 @@ function chairPos(email: string): THREE.Vector3 {
 }
 const SPAWN: Record<string, THREE.Vector3> = {};
 Object.keys(DESK_POS).forEach(email => { SPAWN[email] = chairPos(email); });
+// Safe accessor — any unknown email gets a center-room spawn so the simulator never crashes.
+const FALLBACK_SPAWN = new THREE.Vector3(0, 0, 0);
+function getSpawn(email: string): THREE.Vector3 {
+  return SPAWN[email] ?? FALLBACK_SPAWN;
+}
 
 // ── COLLISION SYSTEM (AABB) ───────────────────────────────────────────────────
 
@@ -1302,7 +1308,28 @@ export default function OfficeChat({
   const lastBroadcastRef = useRef(0);
 
 
-  const currentUser = USERS.find(u => u.email === currentUserEmail)!;
+  // Fallback synth-user for any signed-in email not in the canonical USERS list
+  // (prevents "cannot read properties of undefined" crashes for new teammates).
+  const fallbackUser: CRMUser = useMemo(() => {
+    const email = currentUserEmail || "guest@merchanthaus.io";
+    const local = email.split("@")[0] || "guest";
+    const pretty = (rn(local) ?? local.replace(/[._-]+/g, " ").replace(/\b\w/g, c => c.toUpperCase()));
+    // Deterministic color from email hash
+    let h = 0; for (let i = 0; i < email.length; i++) h = ((h << 5) - h + email.charCodeAt(i)) | 0;
+    const hue = Math.abs(h) % 360;
+    const hslToHex = (hDeg: number, s: number, l: number) => {
+      const a = s * Math.min(l, 1 - l);
+      const f = (n: number) => {
+        const k = (n + hDeg / 30) % 12;
+        const c = l - a * Math.max(-1, Math.min(k - 3, Math.min(9 - k, 1)));
+        return Math.round(c * 255);
+      };
+      return (f(0) << 16) | (f(8) << 8) | f(4);
+    };
+    return { email, name: pretty, title: "Team", shirtColor: hslToHex(hue, 0.55, 0.5), hairColor: 0x2a1a10, skinColor: 0xe0b48a, scale: 1.0 };
+  }, [currentUserEmail]);
+
+  const currentUser = USERS.find(u => u.email === currentUserEmail) ?? fallbackUser;
   const others = USERS.filter(u => u.email !== currentUserEmail);
 
   useEffect(() => { showTerminalRef.current = showTerminal; }, [showTerminal]);
@@ -1322,7 +1349,7 @@ export default function OfficeChat({
     scene.fog = new THREE.Fog(0x1a1a1a, 20, 55);
 
     const camera = new THREE.PerspectiveCamera(78, W / H, 0.1, 120); // 78 FOV = more natural FPS
-    camera.position.set(SPAWN[currentUserEmail].x, 1.65, SPAWN[currentUserEmail].z + 2.0); // slightly behind desk
+    camera.position.set(getSpawn(currentUserEmail).x, 1.65, getSpawn(currentUserEmail).z + 2.0); // slightly behind desk
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(W, H);
@@ -1401,7 +1428,7 @@ export default function OfficeChat({
 
     // Player mesh hidden in FP view (camera IS the player)
     const playerMesh = buildCharacterMesh(currentUser, true);
-    playerMesh.position.copy(SPAWN[currentUserEmail]);
+    playerMesh.position.copy(getSpawn(currentUserEmail));
     playerMesh.visible = false;
     scene.add(playerMesh);
 
@@ -1439,7 +1466,7 @@ export default function OfficeChat({
       renderer, scene, camera, playerMesh, npcMeshes,
       yaw: 0, pitch: 0, locked: false,
       keys: new Set<string>(),
-      playerPos: SPAWN[currentUserEmail].clone(),
+      playerPos: getSpawn(currentUserEmail).clone(),
       raf: 0, onlineIndicators, npcWander,
     };
     stateRef.current = state;
