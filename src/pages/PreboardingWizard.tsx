@@ -611,7 +611,7 @@ export default function PreboardingWizard() {
                     <DocumentsStep form={form} onChange={handleChange} onDocsChange={handleDocsChange} opportunityId={selectedOpportunityId} onDocCountChange={setUploadedDocCount} onDocTypeCountsChange={setUploadedDocTypeCounts} />
                   )}
                   {currentStep.label === "Review" && (
-                    <ReviewStep form={form} missingBySection={missingBySection as unknown} />
+                    <ReviewStep form={form} missingBySection={missingBySection} />
                   )}
                   {currentStep.label === "Business Details" && (
                     <GatewayBusinessStep form={form} onChange={handleChange} />
