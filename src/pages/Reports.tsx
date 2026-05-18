@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { STAGE_CONFIG, TEAM_MEMBERS, OpportunityStage } from "@/types/opportunity";
 import { useTasks } from "@/contexts/TasksContext";
 import { Task } from "@/types/task";
+import type { OutreachCampaign } from "@/types/db";
 import DateRangeFilter from "@/components/DateRangeFilter";
 import ReportDetailModal from "@/components/ReportDetailModal";
 import { PageHeader } from "@/components/PageHeader";
