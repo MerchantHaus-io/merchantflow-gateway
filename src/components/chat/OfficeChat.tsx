@@ -2,7 +2,7 @@
 // articulated characters, and interaction system.
 // Peer deps: three, @types/three
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import * as THREE from "three";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
