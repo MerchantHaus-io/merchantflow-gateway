@@ -107,7 +107,20 @@ const EditField = ({
 
 // Emails component - shows client_interactions of type email for the account
 const EmailsSection = ({ accountId, opportunityId }: { accountId: string; opportunityId?: string }) => {
-  const [emails, setEmails] = useState<unknown[]>([]);
+  type EmailRow = {
+    id: string;
+    source: 'interaction' | 'gmail';
+    subject: string | null;
+    from: string;
+    to: string;
+    toName: string;
+    body: string;
+    status: string | null;
+    date: string | null;
+    channel: string | null;
+    resolution: string | null;
+  };
+  const [emails, setEmails] = useState<EmailRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
