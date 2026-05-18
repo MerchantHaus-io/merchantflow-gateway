@@ -1305,7 +1305,7 @@ export default function OfficeChat({
 
   // Fallback synth-user for any signed-in email not in the canonical USERS list
   // (prevents "cannot read properties of undefined" crashes for new teammates).
-  const fallbackUser: CRMUser = React.useMemo(() => {
+  const fallbackUser: CRMUser = useMemo(() => {
     const email = currentUserEmail || "guest@merchanthaus.io";
     const local = email.split("@")[0] || "guest";
     const pretty = (rn(local) ?? local.replace(/[._-]+/g, " ").replace(/\b\w/g, c => c.toUpperCase()));
