@@ -705,7 +705,7 @@ export default function PreboardingWizard() {
                       )}
                     </div>
 
-                    <OutstandingSummary progress={progress} missingBySection={missingBySection as unknown} />
+                    <OutstandingSummary progress={progress} missingBySection={missingBySection} />
                   </div>
 
                   <div className="rounded-2xl border border-border bg-card p-4 shadow-xl text-xs text-muted-foreground space-y-2">
