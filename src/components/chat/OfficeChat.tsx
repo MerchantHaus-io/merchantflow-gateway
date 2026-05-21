@@ -102,6 +102,43 @@ function getSpawn(email: string): THREE.Vector3 {
   return SPAWN[email] ?? FALLBACK_SPAWN;
 }
 
+/**
+ * Register a teammate loaded from the office_avatars onboarding table so they
+ * appear in the simulator. Idempotent — safe to call multiple times.
+ */
+export interface OfficeAvatarRow {
+  email: string;
+  name: string;
+  title: string | null;
+  desk_x: number;
+  desk_z: number;
+  shirt_color: number;
+  hair_color: number;
+  skin_color: number;
+  hairstyle: string | null;
+  scale: number | string | null;
+}
+export function registerOfficeAvatar(row: OfficeAvatarRow) {
+  const email = (row.email || "").toLowerCase();
+  if (!email) return;
+  if (!DESK_POS[email]) {
+    DESK_POS[email] = new THREE.Vector3(row.desk_x, 0, row.desk_z);
+    SPAWN[email] = DESK_POS[email].clone().add(CHAIR_OFFSET);
+  }
+  if (!USERS.find(u => u.email === email)) {
+    USERS.push({
+      email,
+      name: row.name || email.split("@")[0],
+      title: row.title || "Team",
+      shirtColor: row.shirt_color >>> 0,
+      hairColor: (row.hair_color ?? 0x2a1a10) >>> 0,
+      skinColor: (row.skin_color ?? 0xe0b48a) >>> 0,
+      hairstyle: (row.hairstyle as CRMUser["hairstyle"]) || undefined,
+      scale: Number(row.scale) || 1.0,
+    });
+  }
+}
+
 // ── COLLISION SYSTEM (AABB) ───────────────────────────────────────────────────
 
 interface AABB { minX: number; maxX: number; minZ: number; maxZ: number; }
