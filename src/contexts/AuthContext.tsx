@@ -169,6 +169,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setSession(session);
           setUser(session?.user ?? null);
 
+          // Reset so the combined `loading` waits for the new referrer lookup.
+          if (session?.user) setReferrerChecked(false);
+          else setReferrerChecked(true);
+
           // Re-resolve referrer profile whenever the auth state changes
           loadReferrerProfile(session?.user ?? null);
 
