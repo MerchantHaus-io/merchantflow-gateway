@@ -122,6 +122,7 @@ export function NewTicketDialog({ open, onOpenChange, onCreated }: NewTicketDial
       const { data, error } = await supabase
         .from("support_tickets")
         .insert({
+          ticket_number: "",
           subject: form.subject.trim(),
           description: form.description.trim() || null,
           category: form.category,

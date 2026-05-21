@@ -2541,6 +2541,47 @@ export type Database = {
         }
         Relationships: []
       }
+      support_ticket_comments: {
+        Row: {
+          author_id: string | null
+          author_name: string | null
+          author_type: string
+          body: string
+          created_at: string
+          id: string
+          is_internal: boolean
+          ticket_id: string
+        }
+        Insert: {
+          author_id?: string | null
+          author_name?: string | null
+          author_type?: string
+          body: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          ticket_id: string
+        }
+        Update: {
+          author_id?: string | null
+          author_name?: string | null
+          author_type?: string
+          body?: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_comments_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       support_tickets: {
         Row: {
           account_id: string | null
@@ -2583,7 +2624,7 @@ export type Database = {
           source?: string
           status?: string
           subject: string
-          ticket_number?: string
+          ticket_number: string
           updated_at?: string
         }
         Update: {
@@ -2621,47 +2662,6 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "contacts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      support_ticket_comments: {
-        Row: {
-          author_id: string | null
-          author_name: string | null
-          author_type: string
-          body: string
-          created_at: string
-          id: string
-          is_internal: boolean
-          ticket_id: string
-        }
-        Insert: {
-          author_id?: string | null
-          author_name?: string | null
-          author_type?: string
-          body: string
-          created_at?: string
-          id?: string
-          is_internal?: boolean
-          ticket_id: string
-        }
-        Update: {
-          author_id?: string | null
-          author_name?: string | null
-          author_type?: string
-          body?: string
-          created_at?: string
-          id?: string
-          is_internal?: boolean
-          ticket_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "support_ticket_comments_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "support_tickets"
             referencedColumns: ["id"]
           },
         ]
