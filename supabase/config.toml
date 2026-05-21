@@ -83,3 +83,9 @@ verify_jwt = false
 
 [functions.send-quote-email]
 verify_jwt = false
+
+[functions.submit-support-ticket]
+verify_jwt = false
+
+[functions.support-inbound-email]
+verify_jwt = false
