@@ -147,14 +147,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const needsPasswordChange = session?.user?.user_metadata?.must_change_password === true;
         setMustChangePassword(needsPasswordChange);
 
+        // Reset before lookup so combined `loading` waits for the new result.
+        if (session?.user) setReferrerChecked(false);
+
         // Resolve referrer profile (if any) so role-based routing has data on first paint
         loadReferrerProfile(session?.user ?? null).finally(() => {
-          if (isMounted) setLoading(false);
+          if (isMounted) setAuthLoading(false);
         });
       }
     }).catch(() => {
       if (isMounted) {
-        setLoading(false);
+        setAuthLoading(false);
+        setReferrerChecked(true);
       }
     });
 
