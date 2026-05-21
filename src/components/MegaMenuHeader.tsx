@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, NavLink as RouterNavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink as RouterNavLink, useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   BookMarked,
@@ -36,6 +36,7 @@ import {
   FileSignature,
   LifeBuoy,
   MessageSquarePlus,
+  LayoutGrid,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -265,6 +266,10 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
         <Link to="/" className="flex items-center shrink-0 mr-1 hover:drop-shadow-[0_0_8px_hsl(var(--primary)/0.4)] transition-all duration-300">
           <img src={sidebarIcon} alt="Ops Terminal" className="h-7 w-7 object-contain" />
         </Link>
+
+        {/* Ops ⇄ Support context toggle */}
+        <ContextTogglePill />
+
 
         {/* Desktop Navigation */}
         <NavigationMenu className="hidden lg:flex flex-1">
@@ -529,5 +534,38 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
         </div>
       </div>
     </header>
+  );
+}
+
+function ContextTogglePill() {
+  const { pathname } = useLocation();
+  const inSupport = pathname.startsWith("/support");
+  const target = inSupport ? "/" : "/support";
+  const opsActive = !inSupport;
+  return (
+    <Link
+      to={target}
+      title={inSupport ? "Back to Ops Terminal" : "Go to Support Triage"}
+      className="hidden sm:inline-flex items-center gap-0.5 h-8 rounded-full border border-border/60 bg-muted/40 p-0.5 mr-1 shrink-0 hover:border-primary/40 transition-colors"
+    >
+      <span
+        className={cn(
+          "inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-xs font-semibold transition-all",
+          opsActive ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+        )}
+      >
+        <LayoutGrid className="h-3.5 w-3.5" />
+        Ops
+      </span>
+      <span
+        className={cn(
+          "inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-xs font-semibold transition-all",
+          inSupport ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+        )}
+      >
+        <LifeBuoy className="h-3.5 w-3.5" />
+        Support
+      </span>
+    </Link>
   );
 }
