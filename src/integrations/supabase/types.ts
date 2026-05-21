@@ -1967,6 +1967,51 @@ export type Database = {
         }
         Relationships: []
       }
+      office_avatars: {
+        Row: {
+          created_at: string
+          desk_x: number
+          desk_z: number
+          email: string
+          hair_color: number
+          hairstyle: string | null
+          name: string
+          scale: number
+          shirt_color: number
+          skin_color: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          desk_x: number
+          desk_z: number
+          email: string
+          hair_color?: number
+          hairstyle?: string | null
+          name: string
+          scale?: number
+          shirt_color: number
+          skin_color?: number
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          desk_x?: number
+          desk_z?: number
+          email?: string
+          hair_color?: number
+          hairstyle?: string | null
+          name?: string
+          scale?: number
+          shirt_color?: number
+          skin_color?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       onboarding_wizard_states: {
         Row: {
           created_at: string
@@ -3141,6 +3186,29 @@ export type Database = {
     }
     Functions: {
       current_referrer_id: { Args: never; Returns: string }
+      ensure_office_avatar: {
+        Args: { p_email: string }
+        Returns: {
+          created_at: string
+          desk_x: number
+          desk_z: number
+          email: string
+          hair_color: number
+          hairstyle: string | null
+          name: string
+          scale: number
+          shirt_color: number
+          skin_color: number
+          title: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "office_avatars"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       get_or_create_general_channel: { Args: never; Returns: string }
       has_role: {
         Args: {
