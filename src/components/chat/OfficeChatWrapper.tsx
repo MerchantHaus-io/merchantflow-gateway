@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import OfficeChat, { ChatMessage, RemotePosition, ActionItemNote } from "./OfficeChat";
+import OfficeChat, { ChatMessage, RemotePosition, ActionItemNote, registerOfficeAvatar } from "./OfficeChat";
 
 /**
  * Wrapper that connects the 3D OfficeChat component to real Supabase
@@ -13,9 +13,40 @@ export default function OfficeChatWrapper() {
   const [presence, setPresence] = useState<Record<string, boolean>>({});
   const [remotePositions, setRemotePositions] = useState<Record<string, RemotePosition>>({});
   const [actionItems, setActionItems] = useState<ActionItemNote[]>([]);
+  const [onboarded, setOnboarded] = useState(false);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const currentUserEmail = user?.email || "";
+
+  // ── Onboarding: ensure this teammate has an office_avatars row, then load
+  // every teammate's row into the simulator's runtime maps before render. ──
+  useEffect(() => {
+    if (!currentUserEmail) return;
+    let cancelled = false;
+    (async () => {
+      // 1. Self-heal: ensure current user has a row (trigger normally handles
+      //    this on signup; this covers legacy accounts and first-load races).
+      if (currentUserEmail.toLowerCase().endsWith("@merchanthaus.io")) {
+        await supabase.rpc("ensure_office_avatar", { p_email: currentUserEmail });
+      }
+      // 2. Load every teammate's avatar mapping.
+      const { data } = await supabase.from("office_avatars").select("*");
+      if (cancelled) return;
+      (data || []).forEach((row: any) => registerOfficeAvatar(row));
+      setOnboarded(true);
+    })();
+    // Live update when a new teammate is onboarded.
+    const channel = supabase
+      .channel("office-avatars-sync")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "office_avatars" },
+        (payload) => registerOfficeAvatar(payload.new as any),
+      )
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(channel); };
+  }, [currentUserEmail]);
+
 
   // Fetch notice board items
   useEffect(() => {
