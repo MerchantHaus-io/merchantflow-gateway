@@ -267,6 +267,10 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
           <img src={sidebarIcon} alt="Ops Terminal" className="h-7 w-7 object-contain" />
         </Link>
 
+        {/* Ops ⇄ Support context toggle */}
+        <ContextTogglePill />
+
+
         {/* Desktop Navigation */}
         <NavigationMenu className="hidden lg:flex flex-1">
           <NavigationMenuList className="gap-0">
