@@ -536,3 +536,36 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
     </header>
   );
 }
+
+function ContextTogglePill() {
+  const { pathname } = useLocation();
+  const inSupport = pathname.startsWith("/support");
+  const target = inSupport ? "/" : "/support";
+  const opsActive = !inSupport;
+  return (
+    <Link
+      to={target}
+      title={inSupport ? "Back to Ops Terminal" : "Go to Support Triage"}
+      className="hidden sm:inline-flex items-center gap-0.5 h-8 rounded-full border border-border/60 bg-muted/40 p-0.5 mr-1 shrink-0 hover:border-primary/40 transition-colors"
+    >
+      <span
+        className={cn(
+          "inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-xs font-semibold transition-all",
+          opsActive ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+        )}
+      >
+        <LayoutGrid className="h-3.5 w-3.5" />
+        Ops
+      </span>
+      <span
+        className={cn(
+          "inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-xs font-semibold transition-all",
+          inSupport ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+        )}
+      >
+        <LifeBuoy className="h-3.5 w-3.5" />
+        Support
+      </span>
+    </Link>
+  );
+}
