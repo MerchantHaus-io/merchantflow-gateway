@@ -252,7 +252,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
           }
           
-          setLoading(false);
+          setAuthLoading(false);
         }
       }
     );
