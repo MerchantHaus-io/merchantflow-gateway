@@ -217,7 +217,7 @@ export default function OfficeChatWrapper() {
     [user]
   );
 
-  if (!currentUserEmail) return null;
+  if (!currentUserEmail || !onboarded) return null;
 
   return (
     <OfficeChat
