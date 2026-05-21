@@ -34,6 +34,8 @@ import {
   Search,
   UserPlus,
   FileSignature,
+  LifeBuoy,
+  MessageSquarePlus,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -111,6 +113,15 @@ const navMain: NavGroup[] = [
       { title: "Transactions", url: "/reports/transactions", icon: CreditCard, description: "NMI gateway transactions" },
       { title: "Commissions", url: "/commissions", icon: BadgeDollarSign, description: "Partner commission reports" },
       { title: "Supported Processors", url: "/supported-processors", icon: Globe, description: "Processor compatibility reference" },
+    ],
+  },
+  {
+    title: "Support",
+    url: "/support",
+    icon: LifeBuoy,
+    items: [
+      { title: "Support Triage", url: "/support", icon: LifeBuoy, description: "Live ticket queue — claim & resolve client tickets" },
+      { title: "Client Request Form", url: "/support-request", icon: MessageSquarePlus, description: "Public support request page to share with clients", external: true },
     ],
   },
   {

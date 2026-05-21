@@ -60,6 +60,9 @@ import { ReferrerRoute } from "./components/ReferrerRoute";
 import PortalDashboard from "./pages/portal/PortalDashboard";
 import PortalNewReferral from "./pages/portal/PortalNewReferral";
 import PortalCommissions from "./pages/portal/PortalCommissions";
+import SupportTriage from "./pages/SupportTriage";
+import SupportTicketDetail from "./pages/SupportTicketDetail";
+import SupportRequest from "./pages/SupportRequest";
 import { IncomingCallToast } from "./components/IncomingCallToast";
 import { IncomingMessageToast } from "./components/IncomingMessageToast";
 import { Dialler } from "./components/Dialler";
@@ -68,7 +71,7 @@ import { KeyboardShortcutsModal } from "./components/KeyboardShortcutsModal";
 import { AdminPopupDisplay } from "./components/AdminPopupDisplay";
 import { EmailSendConfirm } from "./components/EmailSendConfirm";
 
-const PUBLIC_ROUTES = ['/auth', '/login', '/contact', '/apply', '/merchant-apply', '/forgot-password', '/update-password', '/terms-processing', '/affiliate', '/portal'];
+const PUBLIC_ROUTES = ['/auth', '/login', '/contact', '/apply', '/merchant-apply', '/forgot-password', '/update-password', '/terms-processing', '/affiliate', '/portal', '/support-request'];
 
 const InternalWidgets = () => {
   const { pathname } = useLocation();
@@ -117,6 +120,7 @@ const App = () => (
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/merchant-apply" element={<MerchantApply />} />
                 <Route path="/terms-processing" element={<TermsProcessing />} />
+                <Route path="/support-request" element={<SupportRequest />} />
                 <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
                 <Route path="/pipeline" element={<ProtectedRoute><Index /></ProtectedRoute>} />
                 <Route path="/dashboard" element={<ProtectedRoute><Home /></ProtectedRoute>} />
@@ -146,6 +150,8 @@ const App = () => (
                 <Route path="/integrations" element={<ProtectedRoute><Integrations /></ProtectedRoute>} />
                 <Route path="/live-billing" element={<ProtectedRoute><LiveBilling /></ProtectedRoute>} />
                 <Route path="/live-billing/:id" element={<ProtectedRoute><LiveAccountDetail /></ProtectedRoute>} />
+                <Route path="/support" element={<ProtectedRoute><SupportTriage /></ProtectedRoute>} />
+                <Route path="/support/:id" element={<ProtectedRoute><SupportTicketDetail /></ProtectedRoute>} />
                 <Route path="/chat" element={<ProtectedRoute><Home /></ProtectedRoute>} />
                 <Route path="/tools/nmi-payments" element={<ProtectedRoute><NMIPaymentsExplained /></ProtectedRoute>} />
                 <Route path="/tools/gateway-guide" element={<ProtectedRoute><GatewayGuide /></ProtectedRoute>} />
