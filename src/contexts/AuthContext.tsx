@@ -79,7 +79,8 @@ const getRedirectUrl = (path?: string) => {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [referrerChecked, setReferrerChecked] = useState(false);
   const [mustChangePassword, setMustChangePassword] = useState(false);
   const [referrer, setReferrer] = useState<ReferrerProfile | null>(null);
 
@@ -92,15 +93,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       ? 'referrer'
       : null;
 
+  // Combined loading: we're loading until auth resolves AND, if there's a user,
+  // the referrer-profile lookup has completed. This prevents a race where
+  // ReferrerRoute reads userRole === null before the referrer row arrives and
+  // wrongly bounces a freshly-magic-linked referrer back to /auth.
+  const loading = authLoading || (!!user && !isEmailAllowed(user.email) && !referrerChecked);
+
   // Fetch referrer profile for an authenticated user (no-op for internal staff).
   const loadReferrerProfile = async (currentUser: User | null) => {
     if (!currentUser) {
       setReferrer(null);
+      setReferrerChecked(true);
       return;
     }
     // Skip the lookup for known-internal emails to avoid a wasted query.
     if (isEmailAllowed(currentUser.email)) {
       setReferrer(null);
+      setReferrerChecked(true);
       return;
     }
     const cols = 'id, full_name, email, phone, active, commission_rate, monthly_cap_per_merchant, clawback_window_days, bonus_amount, bonus_milestone_count';
@@ -122,6 +131,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       data = byEmail ?? null;
     }
     setReferrer((data as ReferrerProfile | null) ?? null);
+    setReferrerChecked(true);
   };
 
   useEffect(() => {
@@ -137,14 +147,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const needsPasswordChange = session?.user?.user_metadata?.must_change_password === true;
         setMustChangePassword(needsPasswordChange);
 
+        // Reset before lookup so combined `loading` waits for the new result.
+        if (session?.user) setReferrerChecked(false);
+
         // Resolve referrer profile (if any) so role-based routing has data on first paint
         loadReferrerProfile(session?.user ?? null).finally(() => {
-          if (isMounted) setLoading(false);
+          if (isMounted) setAuthLoading(false);
         });
       }
     }).catch(() => {
       if (isMounted) {
-        setLoading(false);
+        setAuthLoading(false);
+        setReferrerChecked(true);
       }
     });
 
@@ -154,6 +168,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (isMounted) {
           setSession(session);
           setUser(session?.user ?? null);
+
+          // Reset so the combined `loading` waits for the new referrer lookup.
+          if (session?.user) setReferrerChecked(false);
+          else setReferrerChecked(true);
 
           // Re-resolve referrer profile whenever the auth state changes
           loadReferrerProfile(session?.user ?? null);
@@ -234,7 +252,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
           }
           
-          setLoading(false);
+          setAuthLoading(false);
         }
       }
     );
