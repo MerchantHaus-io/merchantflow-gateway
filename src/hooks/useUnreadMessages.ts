@@ -51,7 +51,7 @@ export const useUnreadMessages = () => {
           continue;
         }
 
-        let query = supabase
+        const query = supabase
           .from('chat_messages')
           .select('id', { count: 'exact' })
           .eq('channel_id', channel.id)

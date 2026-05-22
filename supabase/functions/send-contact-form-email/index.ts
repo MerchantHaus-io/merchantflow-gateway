@@ -17,7 +17,38 @@ interface ContactFormRequest {
   business_requirements: string;
 }
 
-const buildSalesNotificationHtml = (data: ContactFormRequest): string => `
+const escapeHtml = (str: string): string =>
+  String(str ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+const safeHttpUrl = (url: string): string | null => {
+  const trimmed = String(url ?? "").trim();
+  if (!/^https?:\/\//i.test(trimmed)) return null;
+  // Block javascript: smuggling via embedded whitespace and only allow http(s)
+  try {
+    const u = new URL(trimmed);
+    return u.protocol === "http:" || u.protocol === "https:" ? u.toString() : null;
+  } catch {
+    return null;
+  }
+};
+
+const buildSalesNotificationHtml = (data: ContactFormRequest): string => {
+  const first = escapeHtml(data.first_name);
+  const last = escapeHtml(data.last_name);
+  const email = escapeHtml(data.email);
+  const phone = escapeHtml(data.phone);
+  const requirements = escapeHtml(data.business_requirements);
+  const websiteUrl = safeHttpUrl(data.website);
+  const websiteBlock = websiteUrl
+    ? `<div class="field"><div class="field-label">Website</div><div class="field-value"><a href="${escapeHtml(websiteUrl)}">${escapeHtml(websiteUrl)}</a></div></div>`
+    : "";
+
+  return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -38,31 +69,32 @@ const buildSalesNotificationHtml = (data: ContactFormRequest): string => `
 <body>
   <div class="container">
     <div class="header">
-      <h1>📩 New Contact Inquiry</h1>
+      <h1>New Contact Inquiry</h1>
     </div>
     <div class="content">
       <div class="field">
         <div class="field-label">Name</div>
-        <div class="field-value">${data.first_name} ${data.last_name}</div>
+        <div class="field-value">${first} ${last}</div>
       </div>
       <div class="field">
         <div class="field-label">Email</div>
-        <div class="field-value"><a href="mailto:${data.email}">${data.email}</a></div>
+        <div class="field-value"><a href="mailto:${email}">${email}</a></div>
       </div>
       <div class="field">
         <div class="field-label">Phone</div>
-        <div class="field-value">${data.phone}</div>
+        <div class="field-value">${phone}</div>
       </div>
-      ${data.website ? `<div class="field"><div class="field-label">Website</div><div class="field-value"><a href="${data.website}">${data.website}</a></div></div>` : ""}
+      ${websiteBlock}
       <div class="field">
         <div class="field-label">Business Requirements</div>
-        <div class="requirements">${data.business_requirements}</div>
+        <div class="requirements">${requirements}</div>
       </div>
     </div>
     <div class="footer">Submitted via Merchant Haus Contact Form</div>
   </div>
 </body>
 </html>`;
+};
 
 const buildClientConfirmationHtml = (firstName: string): string => `
 <!DOCTYPE html>
@@ -85,7 +117,7 @@ const buildClientConfirmationHtml = (firstName: string): string => `
       <h1>Merchant Haus</h1>
     </div>
     <div class="content">
-      <p>Hi ${firstName},</p>
+      <p>Hi ${escapeHtml(firstName)},</p>
       <p>Thank you for reaching out to Merchant Haus. We've received your inquiry and a member of our sales team will be in touch with you shortly.</p>
       <p>In the meantime, if you have any additional questions, feel free to reply to this email or contact us at <a href="mailto:sales@merchanthaus.io">sales@merchanthaus.io</a>.</p>
       <p style="margin-top: 24px;">Kind regards,<br><strong>The Merchant Haus Team</strong></p>

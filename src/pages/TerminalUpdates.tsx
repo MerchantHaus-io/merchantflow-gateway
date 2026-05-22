@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { confirmAutoEmail } from "@/components/EmailSendConfirm";
 import {
   Sparkles,
   Bug,
@@ -106,6 +107,10 @@ export default function TerminalUpdates() {
   }, [dayBlocks]);
 
   const sendUpdateEmail = useCallback(async (date?: string) => {
+    const ok = await confirmAutoEmail(
+      "Terminal update digest will be emailed to the entire team."
+    );
+    if (!ok) return;
     setSending(true);
     try {
       const { data, error } = await supabase.functions.invoke("send-terminal-update-email", {
@@ -117,7 +122,7 @@ export default function TerminalUpdates() {
       } else {
         toast.info(data?.message || "No updates to send");
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
       const msg = err instanceof Error ? err.message : "Failed to send";
       toast.error(msg);
     } finally {

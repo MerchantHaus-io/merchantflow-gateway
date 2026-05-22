@@ -509,7 +509,7 @@ export default function MerchantApply() {
       );
 
       // Build validated payload based on service type
-      let payload: Record<string, any>;
+      let payload: Record<string, unknown>;
 
       if (isDocSubmission) {
         payload = {

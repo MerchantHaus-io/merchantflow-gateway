@@ -2,7 +2,7 @@
 // articulated characters, and interaction system.
 // Peer deps: three, @types/three
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import * as THREE from "three";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -63,12 +63,15 @@ interface OfficeChatProps {
 }
 
 // ── USERS ─────────────────────────────────────────────────────────────────────
+// Display names resolve through the team roster — edit src/config/team.ts to rename.
+import { resolveDisplayName as rn } from "@/config/team";
 
 const USERS: CRMUser[] = [
-  { email: "taryn@merchanthaus.io", name: "Taryn", title: "NMI / Finance", shirtColor: 0xe05a2b, hairColor: 0x3a1a08, skinColor: 0xffcba8, hairstyle: "bob", scale: 1.0 },
-  { email: "admin@merchanthaus.io", name: "Darryn", title: "QA & Complex Sales", shirtColor: 0xd03060, hairColor: 0x3a1010, skinColor: 0xffdbac, scale: 1.0 },
-  { email: "jamie@merchanthaus.io", name: "Jamie", title: "CEO / Admin", shirtColor: 0x3a7bd5, hairColor: 0xd4b96a, skinColor: 0xffe0bb, stubble: true, stubbleColor: 0xc8aa70, scale: 1.0 },
-  { email: "support@merchanthaus.io", name: "Sheiky", title: "Support", shirtColor: 0x9b30d0, hairColor: 0x2a1a40, skinColor: 0xd4a574, beard: true, beardColor: 0x9a9a9a, scale: 1.08 },
+  { email: "taryn@merchanthaus.io", name: rn("taryn") ?? "Taryn Engledoe", title: "NMI / Finance", shirtColor: 0xe05a2b, hairColor: 0x3a1a08, skinColor: 0xffcba8, hairstyle: "bob", scale: 1.0 },
+  { email: "admin@merchanthaus.io", name: rn("darryn") ?? "Darryn", title: "QA & Complex Sales", shirtColor: 0xd03060, hairColor: 0x3a1010, skinColor: 0xffdbac, scale: 1.0 },
+  { email: "jamie@merchanthaus.io", name: rn("jamie") ?? "Jamie", title: "CEO / Admin", shirtColor: 0x3a7bd5, hairColor: 0xd4b96a, skinColor: 0xffe0bb, stubble: true, stubbleColor: 0xc8aa70, scale: 1.0 },
+  { email: "support@merchanthaus.io", name: rn("yaseen") ?? "Yaseen Sheik", title: "Support", shirtColor: 0x9b30d0, hairColor: 0x2a1a40, skinColor: 0xd4a574, beard: true, beardColor: 0x9a9a9a, scale: 1.08 },
+  { email: "xavier@merchanthaus.io", name: rn("xavier") ?? "Xavier Rooza", title: "Sales", shirtColor: 0x1f8f4a, hairColor: 0x1a0e08, skinColor: 0xc68a5a, stubble: true, stubbleColor: 0x2a1a10, scale: 1.04 },
   { email: "atria@merchanthaus.io", name: "Atria", title: "AI Assistant", shirtColor: 0x7c3aed, hairColor: 0xc0c0ff, skinColor: 0xe8d8f0, hairstyle: "bob", scale: 0.95, online: true },
 ];
 
@@ -82,6 +85,7 @@ const DESK_POS: Record<string, THREE.Vector3> = {
   "admin@merchanthaus.io":   new THREE.Vector3(-2,  0, -16),
   "jamie@merchanthaus.io":   new THREE.Vector3(6,   0, -16),
   "support@merchanthaus.io": new THREE.Vector3(-6,  0, -8),
+  "xavier@merchanthaus.io":  new THREE.Vector3(2,   0, -8),
   "atria@merchanthaus.io":   new THREE.Vector3(10,  0, -8),
 };
 // Chair offset: chairs sit at z+0.65 relative to cubicle center
@@ -92,6 +96,48 @@ function chairPos(email: string): THREE.Vector3 {
 }
 const SPAWN: Record<string, THREE.Vector3> = {};
 Object.keys(DESK_POS).forEach(email => { SPAWN[email] = chairPos(email); });
+// Safe accessor — any unknown email gets a center-room spawn so the simulator never crashes.
+const FALLBACK_SPAWN = new THREE.Vector3(0, 0, 0);
+function getSpawn(email: string): THREE.Vector3 {
+  return SPAWN[email] ?? FALLBACK_SPAWN;
+}
+
+/**
+ * Register a teammate loaded from the office_avatars onboarding table so they
+ * appear in the simulator. Idempotent — safe to call multiple times.
+ */
+export interface OfficeAvatarRow {
+  email: string;
+  name: string;
+  title: string | null;
+  desk_x: number;
+  desk_z: number;
+  shirt_color: number;
+  hair_color: number;
+  skin_color: number;
+  hairstyle: string | null;
+  scale: number | string | null;
+}
+export function registerOfficeAvatar(row: OfficeAvatarRow) {
+  const email = (row.email || "").toLowerCase();
+  if (!email) return;
+  if (!DESK_POS[email]) {
+    DESK_POS[email] = new THREE.Vector3(row.desk_x, 0, row.desk_z);
+    SPAWN[email] = DESK_POS[email].clone().add(CHAIR_OFFSET);
+  }
+  if (!USERS.find(u => u.email === email)) {
+    USERS.push({
+      email,
+      name: row.name || email.split("@")[0],
+      title: row.title || "Team",
+      shirtColor: row.shirt_color >>> 0,
+      hairColor: (row.hair_color ?? 0x2a1a10) >>> 0,
+      skinColor: (row.skin_color ?? 0xe0b48a) >>> 0,
+      hairstyle: (row.hairstyle as CRMUser["hairstyle"]) || undefined,
+      scale: Number(row.scale) || 1.0,
+    });
+  }
+}
 
 // ── COLLISION SYSTEM (AABB) ───────────────────────────────────────────────────
 
@@ -776,7 +822,7 @@ function buildRoom(): THREE.Group {
       eye1.position.set(0.74, 0.868, 0.015); cg.add(eye1);
       const eye2 = eye1.clone(); eye2.position.set(0.76, 0.868, 0.015); cg.add(eye2);
     },
-    // Sheiky: stress ball
+    // Yaseen Sheik: stress ball
     "support@merchanthaus.io": (cg) => {
       const ball = new THREE.Mesh(new THREE.SphereGeometry(0.03, 10, 8), new THREE.MeshStandardMaterial({ color: 0xe53935, roughness: 0.9 }));
       ball.position.set(0.75, 0.81, 0.05); cg.add(ball);
@@ -1299,7 +1345,28 @@ export default function OfficeChat({
   const lastBroadcastRef = useRef(0);
 
 
-  const currentUser = USERS.find(u => u.email === currentUserEmail)!;
+  // Fallback synth-user for any signed-in email not in the canonical USERS list
+  // (prevents "cannot read properties of undefined" crashes for new teammates).
+  const fallbackUser: CRMUser = useMemo(() => {
+    const email = currentUserEmail || "guest@merchanthaus.io";
+    const local = email.split("@")[0] || "guest";
+    const pretty = (rn(local) ?? local.replace(/[._-]+/g, " ").replace(/\b\w/g, c => c.toUpperCase()));
+    // Deterministic color from email hash
+    let h = 0; for (let i = 0; i < email.length; i++) h = ((h << 5) - h + email.charCodeAt(i)) | 0;
+    const hue = Math.abs(h) % 360;
+    const hslToHex = (hDeg: number, s: number, l: number) => {
+      const a = s * Math.min(l, 1 - l);
+      const f = (n: number) => {
+        const k = (n + hDeg / 30) % 12;
+        const c = l - a * Math.max(-1, Math.min(k - 3, Math.min(9 - k, 1)));
+        return Math.round(c * 255);
+      };
+      return (f(0) << 16) | (f(8) << 8) | f(4);
+    };
+    return { email, name: pretty, title: "Team", shirtColor: hslToHex(hue, 0.55, 0.5), hairColor: 0x2a1a10, skinColor: 0xe0b48a, scale: 1.0 };
+  }, [currentUserEmail]);
+
+  const currentUser = USERS.find(u => u.email === currentUserEmail) ?? fallbackUser;
   const others = USERS.filter(u => u.email !== currentUserEmail);
 
   useEffect(() => { showTerminalRef.current = showTerminal; }, [showTerminal]);
@@ -1319,7 +1386,7 @@ export default function OfficeChat({
     scene.fog = new THREE.Fog(0x1a1a1a, 20, 55);
 
     const camera = new THREE.PerspectiveCamera(78, W / H, 0.1, 120); // 78 FOV = more natural FPS
-    camera.position.set(SPAWN[currentUserEmail].x, 1.65, SPAWN[currentUserEmail].z + 2.0); // slightly behind desk
+    camera.position.set(getSpawn(currentUserEmail).x, 1.65, getSpawn(currentUserEmail).z + 2.0); // slightly behind desk
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(W, H);
@@ -1398,7 +1465,7 @@ export default function OfficeChat({
 
     // Player mesh hidden in FP view (camera IS the player)
     const playerMesh = buildCharacterMesh(currentUser, true);
-    playerMesh.position.copy(SPAWN[currentUserEmail]);
+    playerMesh.position.copy(getSpawn(currentUserEmail));
     playerMesh.visible = false;
     scene.add(playerMesh);
 
@@ -1436,7 +1503,7 @@ export default function OfficeChat({
       renderer, scene, camera, playerMesh, npcMeshes,
       yaw: 0, pitch: 0, locked: false,
       keys: new Set<string>(),
-      playerPos: SPAWN[currentUserEmail].clone(),
+      playerPos: getSpawn(currentUserEmail).clone(),
       raf: 0, onlineIndicators, npcWander,
     };
     stateRef.current = state;
@@ -2154,7 +2221,7 @@ export default function OfficeChat({
       mesh.traverse(child => {
         if (child instanceof THREE.Mesh) {
           const mat = child.material as THREE.MeshStandardMaterial;
-          if (mat && typeof mat.opacity !== undefined) {
+          if (mat && typeof mat.opacity !== "undefined") {
             mat.opacity = isOnline ? 1.0 : 0.45;
             mat.transparent = !isOnline;
           }

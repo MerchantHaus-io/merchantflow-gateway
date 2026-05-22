@@ -214,7 +214,7 @@ export const quoApi = {
 
   // ── Contact Custom Fields ────────────────────────────────
   async getContactCustomFields() {
-    return invoke<{ data: unknown[] }>('get-contact-custom-fields');
+    return invoke<{ data: any[] }>('get-contact-custom-fields');
   },
 
   // ── Webhooks ─────────────────────────────────────────────

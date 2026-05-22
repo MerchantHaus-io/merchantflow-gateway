@@ -19,15 +19,12 @@ export type Database = {
           address1: string | null
           address2: string | null
           city: string | null
-          commission_model: string | null
           country: string | null
           created_at: string
           id: string
-          interchange_rate_pct: number | null
-          merchant_rate_pct: number | null
           name: string
           nmi_merchant_id: string | null
-          revenue_share_pct: number | null
+          referrer_id: string | null
           state: string | null
           status: string | null
           updated_at: string
@@ -38,15 +35,12 @@ export type Database = {
           address1?: string | null
           address2?: string | null
           city?: string | null
-          commission_model?: string | null
           country?: string | null
           created_at?: string
           id?: string
-          interchange_rate_pct?: number | null
-          merchant_rate_pct?: number | null
           name: string
           nmi_merchant_id?: string | null
-          revenue_share_pct?: number | null
+          referrer_id?: string | null
           state?: string | null
           status?: string | null
           updated_at?: string
@@ -57,22 +51,27 @@ export type Database = {
           address1?: string | null
           address2?: string | null
           city?: string | null
-          commission_model?: string | null
           country?: string | null
           created_at?: string
           id?: string
-          interchange_rate_pct?: number | null
-          merchant_rate_pct?: number | null
           name?: string
           nmi_merchant_id?: string | null
-          revenue_share_pct?: number | null
+          referrer_id?: string | null
           state?: string | null
           status?: string | null
           updated_at?: string
           website?: string | null
           zip?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "accounts_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "referrers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       action_items: {
         Row: {
@@ -397,6 +396,8 @@ export type Database = {
           portal_merchant_id: string | null
           products: string | null
           raw_portal_data: Json | null
+          referral_source: string | null
+          referrer_id: string | null
           service_type: string | null
           source: string | null
           state: string | null
@@ -446,6 +447,8 @@ export type Database = {
           portal_merchant_id?: string | null
           products?: string | null
           raw_portal_data?: Json | null
+          referral_source?: string | null
+          referrer_id?: string | null
           service_type?: string | null
           source?: string | null
           state?: string | null
@@ -495,6 +498,8 @@ export type Database = {
           portal_merchant_id?: string | null
           products?: string | null
           raw_portal_data?: Json | null
+          referral_source?: string | null
+          referrer_id?: string | null
           service_type?: string | null
           source?: string | null
           state?: string | null
@@ -506,7 +511,15 @@ export type Database = {
           website?: string | null
           zip?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "applications_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "referrers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       audit_entries: {
         Row: {
@@ -1164,6 +1177,7 @@ export type Database = {
           monthly_fees: number | null
           nmi_gateway_id: string
           period_id: string
+          referrer_payout: number
           residual_amount: number | null
           residual_rate: number | null
           total_commission: number | null
@@ -1182,6 +1196,7 @@ export type Database = {
           monthly_fees?: number | null
           nmi_gateway_id: string
           period_id: string
+          referrer_payout?: number
           residual_amount?: number | null
           residual_rate?: number | null
           total_commission?: number | null
@@ -1200,6 +1215,7 @@ export type Database = {
           monthly_fees?: number | null
           nmi_gateway_id?: string
           period_id?: string
+          referrer_payout?: number
           residual_amount?: number | null
           residual_rate?: number | null
           total_commission?: number | null
@@ -1579,6 +1595,7 @@ export type Database = {
           percent_moto: string | null
           percent_swiped: string | null
           product_description: string | null
+          referrer_id: string | null
           sic_mcc_code: string | null
           state_incorporated: string | null
           tax_exempt: boolean | null
@@ -1621,6 +1638,7 @@ export type Database = {
           percent_moto?: string | null
           percent_swiped?: string | null
           product_description?: string | null
+          referrer_id?: string | null
           sic_mcc_code?: string | null
           state_incorporated?: string | null
           tax_exempt?: boolean | null
@@ -1663,6 +1681,7 @@ export type Database = {
           percent_moto?: string | null
           percent_swiped?: string | null
           product_description?: string | null
+          referrer_id?: string | null
           sic_mcc_code?: string | null
           state_incorporated?: string | null
           tax_exempt?: boolean | null
@@ -1675,6 +1694,13 @@ export type Database = {
             columns: ["application_id"]
             isOneToOne: true
             referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merchants_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "referrers"
             referencedColumns: ["id"]
           },
         ]
@@ -1941,6 +1967,51 @@ export type Database = {
         }
         Relationships: []
       }
+      office_avatars: {
+        Row: {
+          created_at: string
+          desk_x: number
+          desk_z: number
+          email: string
+          hair_color: number
+          hairstyle: string | null
+          name: string
+          scale: number
+          shirt_color: number
+          skin_color: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          desk_x: number
+          desk_z: number
+          email: string
+          hair_color?: number
+          hairstyle?: string | null
+          name: string
+          scale?: number
+          shirt_color: number
+          skin_color?: number
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          desk_x?: number
+          desk_z?: number
+          email?: string
+          hair_color?: number
+          hairstyle?: string | null
+          name?: string
+          scale?: number
+          shirt_color?: number
+          skin_color?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       onboarding_wizard_states: {
         Row: {
           created_at: string
@@ -1986,6 +2057,7 @@ export type Database = {
           assigned_to: string | null
           contact_id: string
           created_at: string
+          gateway_tier: string | null
           id: string
           language: string | null
           outcome_closed_at: string | null
@@ -1994,8 +2066,10 @@ export type Database = {
           outcome_reason: string | null
           outcome_status: string | null
           portal_merchant_id: string | null
+          pricing_plan: string | null
           processing_services: string[] | null
           referral_source: string | null
+          referrer_id: string | null
           service_type: string | null
           sla_status: string | null
           source: string | null
@@ -2013,6 +2087,7 @@ export type Database = {
           assigned_to?: string | null
           contact_id: string
           created_at?: string
+          gateway_tier?: string | null
           id?: string
           language?: string | null
           outcome_closed_at?: string | null
@@ -2021,8 +2096,10 @@ export type Database = {
           outcome_reason?: string | null
           outcome_status?: string | null
           portal_merchant_id?: string | null
+          pricing_plan?: string | null
           processing_services?: string[] | null
           referral_source?: string | null
+          referrer_id?: string | null
           service_type?: string | null
           sla_status?: string | null
           source?: string | null
@@ -2040,6 +2117,7 @@ export type Database = {
           assigned_to?: string | null
           contact_id?: string
           created_at?: string
+          gateway_tier?: string | null
           id?: string
           language?: string | null
           outcome_closed_at?: string | null
@@ -2048,8 +2126,10 @@ export type Database = {
           outcome_reason?: string | null
           outcome_status?: string | null
           portal_merchant_id?: string | null
+          pricing_plan?: string | null
           processing_services?: string[] | null
           referral_source?: string | null
+          referrer_id?: string | null
           service_type?: string | null
           sla_status?: string | null
           source?: string | null
@@ -2074,6 +2154,13 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "referrers"
             referencedColumns: ["id"]
           },
         ]
@@ -2356,6 +2443,98 @@ export type Database = {
         }
         Relationships: []
       }
+      referrer_impersonation_logs: {
+        Row: {
+          admin_email: string
+          admin_user_id: string
+          created_at: string
+          id: string
+          referrer_email: string
+          referrer_id: string
+        }
+        Insert: {
+          admin_email: string
+          admin_user_id: string
+          created_at?: string
+          id?: string
+          referrer_email: string
+          referrer_id: string
+        }
+        Update: {
+          admin_email?: string
+          admin_user_id?: string
+          created_at?: string
+          id?: string
+          referrer_email?: string
+          referrer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrer_impersonation_logs_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "referrers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referrers: {
+        Row: {
+          active: boolean
+          alias: string | null
+          auth_user_id: string | null
+          bonus_amount: number
+          bonus_milestone_count: number
+          clawback_window_days: number
+          commission_rate: number
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          monthly_cap_per_merchant: number
+          notes: string | null
+          phone: string | null
+          tier: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          alias?: string | null
+          auth_user_id?: string | null
+          bonus_amount?: number
+          bonus_milestone_count?: number
+          clawback_window_days?: number
+          commission_rate?: number
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          monthly_cap_per_merchant?: number
+          notes?: string | null
+          phone?: string | null
+          tier?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          alias?: string | null
+          auth_user_id?: string | null
+          bonus_amount?: number
+          bonus_milestone_count?: number
+          clawback_window_days?: number
+          commission_rate?: number
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          monthly_cap_per_merchant?: number
+          notes?: string | null
+          phone?: string | null
+          tier?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sop_change_requests: {
         Row: {
           created_at: string
@@ -2406,6 +2585,131 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      support_ticket_comments: {
+        Row: {
+          author_id: string | null
+          author_name: string | null
+          author_type: string
+          body: string
+          created_at: string
+          id: string
+          is_internal: boolean
+          ticket_id: string
+        }
+        Insert: {
+          author_id?: string | null
+          author_name?: string | null
+          author_type?: string
+          body: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          ticket_id: string
+        }
+        Update: {
+          author_id?: string | null
+          author_name?: string | null
+          author_type?: string
+          body?: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_comments_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          account_id: string | null
+          assigned_to: string | null
+          assigned_to_email: string | null
+          assigned_to_name: string | null
+          category: string
+          claimed_at: string | null
+          closed_at: string | null
+          contact_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          priority: string
+          requester_email: string
+          requester_name: string | null
+          source: string
+          status: string
+          subject: string
+          ticket_number: string
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          assigned_to?: string | null
+          assigned_to_email?: string | null
+          assigned_to_name?: string | null
+          category?: string
+          claimed_at?: string | null
+          closed_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          priority?: string
+          requester_email: string
+          requester_name?: string | null
+          source?: string
+          status?: string
+          subject: string
+          ticket_number: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          assigned_to?: string | null
+          assigned_to_email?: string | null
+          assigned_to_name?: string | null
+          category?: string
+          claimed_at?: string | null
+          closed_at?: string | null
+          contact_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          priority?: string
+          requester_email?: string
+          requester_name?: string | null
+          source?: string
+          status?: string
+          subject?: string
+          ticket_number?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_tickets_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       synced_emails: {
         Row: {
@@ -2566,6 +2870,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      team_roster: {
+        Row: {
+          active: boolean
+          aliases: string[] | null
+          color_token: string | null
+          display_name: string
+          email: string
+          id: string
+          is_external: boolean
+          legacy_names: string[] | null
+          sort_order: number
+          title: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          active?: boolean
+          aliases?: string[] | null
+          color_token?: string | null
+          display_name: string
+          email: string
+          id: string
+          is_external?: boolean
+          legacy_names?: string[] | null
+          sort_order?: number
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          active?: boolean
+          aliases?: string[] | null
+          color_token?: string | null
+          display_name?: string
+          email?: string
+          id?: string
+          is_external?: boolean
+          legacy_names?: string[] | null
+          sort_order?: number
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
       }
       terminal_updates: {
         Row: {
@@ -2792,9 +3141,74 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      referrer_commission_records: {
+        Row: {
+          account_id: string | null
+          at_cap: boolean | null
+          commission_rate: number | null
+          company_commission: number | null
+          company_name: string | null
+          monthly_cap_per_merchant: number | null
+          payout: number | null
+          period_end: string | null
+          period_id: string | null
+          period_start: string | null
+          record_id: string | null
+          referrer_id: string | null
+          transaction_count: number | null
+          transaction_volume: number | null
+          uncapped_payout: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "referrers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_records_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_records_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "commission_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      current_referrer_id: { Args: never; Returns: string }
+      ensure_office_avatar: {
+        Args: { p_email: string }
+        Returns: {
+          created_at: string
+          desk_x: number
+          desk_z: number
+          email: string
+          hair_color: number
+          hairstyle: string | null
+          name: string
+          scale: number
+          shirt_color: number
+          skin_color: number
+          title: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "office_avatars"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       get_or_create_general_channel: { Args: never; Returns: string }
       has_role: {
         Args: {
@@ -2804,6 +3218,11 @@ export type Database = {
         Returns: boolean
       }
       is_admin_email: { Args: never; Returns: boolean }
+      is_referrer: { Args: never; Returns: boolean }
+      link_opportunity_to_referrer: {
+        Args: { p_application_email: string; p_opportunity_id: string }
+        Returns: undefined
+      }
       post_system_chat_message: {
         Args: { p_channel_name?: string; p_content: string }
         Returns: undefined

@@ -15,7 +15,9 @@ function loadPosition(): DockPosition {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return JSON.parse(raw);
-  } catch {}
+  } catch {
+    /* ignore */
+  }
   return DEFAULT_POS;
 }
 

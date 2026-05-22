@@ -1,8 +1,24 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { activeSupabase as supabase } from '@/integrations/supabase/activeClient';
 import { isEmailAllowed, getTeamMemberFromEmail } from '@/types/opportunity';
 import { playLoginJingle } from '@/hooks/useNotificationSound';
+
+export interface ReferrerProfile {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  active: boolean;
+  commission_rate: number;
+  monthly_cap_per_merchant: number;
+  clawback_window_days: number;
+  bonus_amount: number;
+  bonus_milestone_count: number;
+  tier?: 'standard' | 'premium' | null;
+}
+
+export type UserRole = 'internal' | 'referrer' | null;
 
 interface AuthContextType {
   user: User | null;
@@ -10,6 +26,8 @@ interface AuthContextType {
   loading: boolean;
   mustChangePassword: boolean;
   teamMemberName: string | null;
+  userRole: UserRole;
+  referrer: ReferrerProfile | null;
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUpWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
@@ -61,10 +79,60 @@ const getRedirectUrl = (path?: string) => {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [referrerChecked, setReferrerChecked] = useState(false);
   const [mustChangePassword, setMustChangePassword] = useState(false);
+  const [referrer, setReferrer] = useState<ReferrerProfile | null>(null);
 
   const teamMemberName = getTeamMemberFromEmail(user?.email);
+
+  // Determined from email allowlist (internal) and the loaded referrer profile.
+  const userRole: UserRole = isEmailAllowed(user?.email)
+    ? 'internal'
+    : referrer
+      ? 'referrer'
+      : null;
+
+  // Combined loading: we're loading until auth resolves AND, if there's a user,
+  // the referrer-profile lookup has completed. This prevents a race where
+  // ReferrerRoute reads userRole === null before the referrer row arrives and
+  // wrongly bounces a freshly-magic-linked referrer back to /auth.
+  const loading = authLoading || (!!user && !isEmailAllowed(user.email) && !referrerChecked);
+
+  // Fetch referrer profile for an authenticated user (no-op for internal staff).
+  const loadReferrerProfile = async (currentUser: User | null) => {
+    if (!currentUser) {
+      setReferrer(null);
+      setReferrerChecked(true);
+      return;
+    }
+    // Skip the lookup for known-internal emails to avoid a wasted query.
+    if (isEmailAllowed(currentUser.email)) {
+      setReferrer(null);
+      setReferrerChecked(true);
+      return;
+    }
+    const cols = 'id, full_name, email, phone, active, commission_rate, monthly_cap_per_merchant, clawback_window_days, bonus_amount, bonus_milestone_count';
+    // Primary lookup: auth_user_id link
+    let { data } = await supabase
+      .from('referrers')
+      .select(cols)
+      .eq('auth_user_id', currentUser.id)
+      .eq('active', true)
+      .maybeSingle();
+    // Fallback: match by email (covers impersonation magic-links and unlinked rows)
+    if (!data && currentUser.email) {
+      const { data: byEmail } = await supabase
+        .from('referrers')
+        .select(cols)
+        .ilike('email', currentUser.email)
+        .eq('active', true)
+        .maybeSingle();
+      data = byEmail ?? null;
+    }
+    setReferrer((data as ReferrerProfile | null) ?? null);
+    setReferrerChecked(true);
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -74,16 +142,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (isMounted) {
         setSession(session);
         setUser(session?.user ?? null);
-        
+
         // Check if password change is required
         const needsPasswordChange = session?.user?.user_metadata?.must_change_password === true;
         setMustChangePassword(needsPasswordChange);
-        
-        setLoading(false);
+
+        // Reset before lookup so combined `loading` waits for the new result.
+        if (session?.user) setReferrerChecked(false);
+
+        // Resolve referrer profile (if any) so role-based routing has data on first paint
+        loadReferrerProfile(session?.user ?? null).finally(() => {
+          if (isMounted) setAuthLoading(false);
+        });
       }
     }).catch(() => {
       if (isMounted) {
-        setLoading(false);
+        setAuthLoading(false);
+        setReferrerChecked(true);
       }
     });
 
@@ -93,7 +168,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (isMounted) {
           setSession(session);
           setUser(session?.user ?? null);
-          
+
+          // Reset so the combined `loading` waits for the new referrer lookup.
+          if (session?.user) setReferrerChecked(false);
+          else setReferrerChecked(true);
+
+          // Re-resolve referrer profile whenever the auth state changes
+          loadReferrerProfile(session?.user ?? null);
+
           // Check if password change is required
           const needsPasswordChange = session?.user?.user_metadata?.must_change_password === true;
           setMustChangePassword(needsPasswordChange);
@@ -105,7 +187,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
           // Track login sessions + store Google tokens + auto-sync
           if (event === 'SIGNED_IN' && session?.user) {
-            playLoginJingle();
+            // Login jingle is an internal-staff thing; skip it for external referrers.
+            const jingleKey = `login_jingle_played:${session.user.id}`;
+            if (!sessionStorage.getItem(jingleKey) && isEmailAllowed(session.user.email)) {
+              sessionStorage.setItem(jingleKey, '1');
+              playLoginJingle();
+            }
 
             // Track login session
             supabase.from('user_sessions').insert({
@@ -165,7 +252,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
           }
           
-          setLoading(false);
+          setAuthLoading(false);
         }
       }
     );
@@ -193,11 +280,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signInWithEmail = async (email: string, password: string) => {
-    // Check if email is allowed before signing in
-    if (!isEmailAllowed(email)) {
-      return { error: new Error('Access denied. Your email is not authorized to access this dashboard.') };
-    }
-    
+    // No pre-check: external referrers won't match isEmailAllowed but should still
+    // be allowed to authenticate. Role-based gating happens post-auth in ProtectedRoute.
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -206,11 +290,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signUpWithEmail = async (email: string, password: string) => {
-    // Check if email is allowed before signing up
+    // Self-signup is still restricted to internal staff. Referrers are admin-provisioned.
     if (!isEmailAllowed(email)) {
       return { error: new Error('Access denied. Your email is not authorized to access this dashboard.') };
     }
-    
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -251,6 +335,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     setSession(null);
     setMustChangePassword(false);
+    setReferrer(null);
   };
 
   return (
@@ -261,6 +346,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         loading,
         mustChangePassword,
         teamMemberName,
+        userRole,
+        referrer,
         signInWithGoogle,
         signInWithEmail,
         signUpWithEmail,

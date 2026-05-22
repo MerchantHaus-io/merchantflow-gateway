@@ -6,10 +6,15 @@ const corsHeaders = {
 const NMI_V4_BASE = "https://secure.nmi.com/api/v4";
 const NMI_GATEWAY_BASE = "https://merchanthausio.transactiongateway.com";
 
+import { requireAuth } from "../_shared/require-auth.ts";
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  const unauth = await requireAuth(req, corsHeaders);
+  if (unauth) return unauth;
 
   try {
     const apiKey = Deno.env.get("NMI_API_KEY");
@@ -38,7 +43,7 @@ Deno.serve(async (req) => {
 });
 
 // v3 Boarding API — richer data (processors, services, status details)
-async function fetchV3Roster(apiKey: string): Promise<any[] | null> {
+async function fetchV3Roster(apiKey: string): Promise<unknown[] | null> {
   try {
     const res = await fetch(`${NMI_GATEWAY_BASE}/api/v3/affiliate/gateways`, {
       headers: {
@@ -56,7 +61,7 @@ async function fetchV3Roster(apiKey: string): Promise<any[] | null> {
     const data = await res.json();
     const gateways = Array.isArray(data) ? data : data.gateways ?? data.data ?? [];
 
-    return gateways.map((g: any) => ({
+    return gateways.map((g: unknown) => ({
       merchant_id: String(g.id ?? ""),
       company_name: g.company ?? g.company_name ?? null,
       dba_name: g.dba_name ?? null,
@@ -76,8 +81,8 @@ async function fetchV3Roster(apiKey: string): Promise<any[] | null> {
 }
 
 // v4 Partner API — basic roster
-async function fetchV4Roster(apiKey: string): Promise<any[] | null> {
-  const allMerchants: any[] = [];
+async function fetchV4Roster(apiKey: string): Promise<unknown[] | null> {
+  const allMerchants: unknown[] = [];
   let offset = 0;
   const pageSize = 100;
   let hasMore = true;

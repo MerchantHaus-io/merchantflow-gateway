@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TasksProvider } from "@/contexts/TasksContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -16,6 +16,7 @@ import Contacts from "./pages/Contacts";
 import Documents from "./pages/Documents";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import TeamRoster from "./pages/TeamRoster";
 import Auth from "./pages/Auth";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -37,6 +38,7 @@ import OpportunityDetail from "./pages/OpportunityDetail";
 
 import NMIPaymentsExplained from "./pages/NMIPaymentsExplained";
 import GatewayGuide from "./pages/GatewayGuide";
+import Pricing from "./pages/Pricing";
 import TerminalUpdates from "./pages/TerminalUpdates";
 import WebSubmissions from "./pages/WebSubmissions";
 import MerchantApply from "./pages/MerchantApply";
@@ -53,14 +55,24 @@ import Integrations from "./pages/Integrations";
 import Transactions from "./pages/Transactions";
 import Calendar from "./pages/Calendar";
 import Commissions from "./pages/Commissions";
+import QuoteBuilder from "./pages/QuoteBuilder";
+import Referrers from "./pages/Referrers";
+import { ReferrerRoute } from "./components/ReferrerRoute";
+import PortalDashboard from "./pages/portal/PortalDashboard";
+import PortalNewReferral from "./pages/portal/PortalNewReferral";
+import PortalCommissions from "./pages/portal/PortalCommissions";
+import SupportTriage from "./pages/SupportTriage";
+import SupportTicketDetail from "./pages/SupportTicketDetail";
+import SupportRequest from "./pages/SupportRequest";
 import { IncomingCallToast } from "./components/IncomingCallToast";
 import { IncomingMessageToast } from "./components/IncomingMessageToast";
 import { Dialler } from "./components/Dialler";
 import { CommandPalette } from "./components/CommandPalette";
 import { KeyboardShortcutsModal } from "./components/KeyboardShortcutsModal";
 import { AdminPopupDisplay } from "./components/AdminPopupDisplay";
+import { EmailSendConfirm } from "./components/EmailSendConfirm";
 
-const PUBLIC_ROUTES = ['/auth', '/login', '/contact', '/apply', '/merchant-apply', '/forgot-password', '/update-password', '/terms-processing'];
+const PUBLIC_ROUTES = ['/auth', '/login', '/contact', '/apply', '/merchant-apply', '/forgot-password', '/update-password', '/terms-processing', '/affiliate', '/portal', '/support-request'];
 
 const InternalWidgets = () => {
   const { pathname } = useLocation();
@@ -73,6 +85,7 @@ const InternalWidgets = () => {
       <CommandPalette />
       <KeyboardShortcutsModal />
       <AdminPopupDisplay />
+      <EmailSendConfirm />
     </>
   );
 };
@@ -108,6 +121,7 @@ const App = () => (
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/merchant-apply" element={<MerchantApply />} />
                 <Route path="/terms-processing" element={<TermsProcessing />} />
+                <Route path="/support-request" element={<SupportRequest />} />
                 <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
                 <Route path="/pipeline" element={<ProtectedRoute><Index /></ProtectedRoute>} />
                 <Route path="/dashboard" element={<ProtectedRoute><Home /></ProtectedRoute>} />
@@ -123,6 +137,7 @@ const App = () => (
                 <Route path="/tools/revenue-calculator" element={<ProtectedRoute><RevenueCalculator /></ProtectedRoute>} />
                 <Route path="/tools/preboarding-wizard" element={<ProtectedRoute><PreboardingWizard /></ProtectedRoute>} />
                 <Route path="/tools/csv-import" element={<ProtectedRoute><CsvImport /></ProtectedRoute>} />
+                <Route path="/tools/quote-builder" element={<ProtectedRoute><QuoteBuilder /></ProtectedRoute>} />
                 <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
                 <Route path="/my-tasks" element={<ProtectedRoute><MyTasks /></ProtectedRoute>} />
                 <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
@@ -133,12 +148,16 @@ const App = () => (
                 <Route path="/admin/administration" element={<ProtectedRoute><Administration /></ProtectedRoute>} />
                 
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                <Route path="/admin/team-roster" element={<ProtectedRoute><TeamRoster /></ProtectedRoute>} />
                 <Route path="/integrations" element={<ProtectedRoute><Integrations /></ProtectedRoute>} />
                 <Route path="/live-billing" element={<ProtectedRoute><LiveBilling /></ProtectedRoute>} />
                 <Route path="/live-billing/:id" element={<ProtectedRoute><LiveAccountDetail /></ProtectedRoute>} />
+                <Route path="/support" element={<ProtectedRoute><SupportTriage /></ProtectedRoute>} />
+                <Route path="/support/:id" element={<ProtectedRoute><SupportTicketDetail /></ProtectedRoute>} />
                 <Route path="/chat" element={<ProtectedRoute><Home /></ProtectedRoute>} />
                 <Route path="/tools/nmi-payments" element={<ProtectedRoute><NMIPaymentsExplained /></ProtectedRoute>} />
                 <Route path="/tools/gateway-guide" element={<ProtectedRoute><GatewayGuide /></ProtectedRoute>} />
+                <Route path="/pricing" element={<ProtectedRoute><Pricing /></ProtectedRoute>} />
                 <Route path="/tools/terminal-updates" element={<ProtectedRoute><TerminalUpdates /></ProtectedRoute>} />
                 <Route path="/tools/netlify" element={<ProtectedRoute><NetlifyHub /></ProtectedRoute>} />
                 <Route path="/tools/nmi-boarding" element={<ProtectedRoute><NMIBoarding /></ProtectedRoute>} />
@@ -149,6 +168,18 @@ const App = () => (
                 <Route path="/leads" element={<ProtectedRoute><Accounts /></ProtectedRoute>} />
                 <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
                 <Route path="/commissions" element={<ProtectedRoute><Commissions /></ProtectedRoute>} />
+                <Route path="/admin/affiliates" element={<ProtectedRoute><Referrers /></ProtectedRoute>} />
+                <Route path="/admin/referrers" element={<Navigate to="/admin/affiliates" replace />} />
+
+                {/* Affiliate portal — external partners */}
+                <Route path="/affiliate" element={<ReferrerRoute><PortalDashboard /></ReferrerRoute>} />
+                <Route path="/affiliate/new-referral" element={<ReferrerRoute><PortalNewReferral /></ReferrerRoute>} />
+                <Route path="/affiliate/commissions" element={<ReferrerRoute><PortalCommissions /></ReferrerRoute>} />
+                {/* Legacy /portal redirects */}
+                <Route path="/portal" element={<Navigate to="/affiliate" replace />} />
+                <Route path="/portal/new-referral" element={<Navigate to="/affiliate/new-referral" replace />} />
+                <Route path="/portal/commissions" element={<Navigate to="/affiliate/commissions" replace />} />
+
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </TasksProvider>

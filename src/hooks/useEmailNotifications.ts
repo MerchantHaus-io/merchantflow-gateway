@@ -40,16 +40,10 @@ export const sendEmailNotification = async ({
   }
 };
 
-// Helper to get user email from team member name
-export const getTeamMemberEmail = (teamMemberName: string): string | null => {
-  const emailMap: Record<string, string> = {
-    "Sheiky": "support@merchanthaus.io",
-    "Taryn": "taryn@merchanthaus.io",
-    "Kyle": "kyle@merchanthaus.io",
-    "Ryan": "ryan@merchanthaus.io",
-  };
-  return emailMap[teamMemberName] || null;
-};
+// Helper to get user email from team member name (sourced from roster)
+import { resolveEmail } from "@/config/team";
+export const getTeamMemberEmail = (teamMemberName: string): string | null =>
+  resolveEmail(teamMemberName);
 
 // Send stage change notification
 export const sendStageChangeEmail = async (

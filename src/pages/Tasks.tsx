@@ -280,19 +280,21 @@ const Tasks = () => {
         case 'contact':
           return (a.contactName || '').localeCompare(b.contactName || '') * dir;
         case 'createdAt':
-        case 'dueAt':
+        case 'dueAt': {
           const aDate = a[sortKey] ? new Date(a[sortKey] as string).getTime() : 0;
           const bDate = b[sortKey] ? new Date(b[sortKey] as string).getTime() : 0;
           return (aDate - bDate) * dir;
+        }
         case 'assignee':
           return (a.assignee || '').localeCompare(b.assignee || '') * dir;
         case 'status':
           return (a.status || '').localeCompare(b.status || '') * dir;
-        case 'priority':
+        case 'priority': {
           const priorityOrder = { high: 0, medium: 1, low: 2 };
           const aPriority = priorityOrder[a.priority || 'medium'];
           const bPriority = priorityOrder[b.priority || 'medium'];
           return (aPriority - bPriority) * dir;
+        }
         default:
           return 0;
       }
@@ -301,9 +303,9 @@ const Tasks = () => {
     return result;
   }, [tasks, dateRange, filterBy, searchQuery, statusFilter, priorityFilter, viewFilter, displayName, user?.email, assigneeFilter, sortKey, sortDirection]);
 
-  // Split into manual and auto tasks
+  // SLA-sourced tasks are deprecated (notifications-only). Hide entirely from reporting.
   const manualTasks = useMemo(() => filteredTasks.filter(t => t.source !== 'sla'), [filteredTasks]);
-  const autoTasks = useMemo(() => filteredTasks.filter(t => t.source === 'sla'), [filteredTasks]);
+  const autoTasks = useMemo(() => [] as typeof filteredTasks, []);
 
   // Pagination state
   const [manualPage, setManualPage] = useState(1);
@@ -395,9 +397,10 @@ const Tasks = () => {
     if (!dueStatus) return formatDate(dueAt);
     
     switch (dueStatus) {
-      case 'overdue':
+      case 'overdue': {
         const daysOverdue = differenceInDays(new Date(), new Date(dueAt!));
         return `${daysOverdue}d overdue`;
+      }
       case 'due-today':
         return 'Due today';
       case 'due-tomorrow':

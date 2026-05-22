@@ -28,6 +28,13 @@ Deno.serve(async (req) => {
       return json({ error: "Unauthorized" }, 401);
     }
 
+    // Admin-only: this endpoint writes payment-gateway credentials to the portal DB
+    const ADMIN_EMAILS = ['admin@merchanthaus.io', 'onboarding@merchanthaus.io', 'jamie@merchanthaus.io'];
+    if (!ADMIN_EMAILS.includes(user.email || '')) {
+      console.warn(`Forbidden activate-portal-merchant attempt by ${user.email}`);
+      return json({ error: "Admin access required" }, 403);
+    }
+
     const { portal_merchant_id, nmi_api_key, nmi_public_key, nmi_gateway_id, pricing_model } = await req.json();
 
     if (!portal_merchant_id || !nmi_api_key || !nmi_public_key || !pricing_model) {

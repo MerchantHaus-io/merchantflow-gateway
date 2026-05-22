@@ -328,7 +328,9 @@ export default function WebSubmissions() {
     setIsConverting(app.id);
 
     try {
-      // 1. Create Account
+      // 1. Create Account — propagate referrer_id when the application came from a partner portal
+       
+      const appReferrerId = (app as any).referrer_id ?? null;
       const { data: account, error: accountError } = await supabase
         .from("accounts")
         .insert({
@@ -340,6 +342,8 @@ export default function WebSubmissions() {
           state: app.state,
           zip: app.zip,
           website: app.website,
+           
+          ...(appReferrerId ? { referrer_id: appReferrerId } as any : {}),
         })
         .select()
         .single();
@@ -483,9 +487,22 @@ export default function WebSubmissions() {
         progress = Math.round((filled / totalRequired) * 100);
       }
 
-      // 100% complete → Qualified + assigned to Sheiky; otherwise → Discovery
+      // 100% complete → Qualified + assigned to Yaseen Sheik; otherwise → Discovery
       const initialStage = progress >= 100 ? "qualified" : "discovery";
       const initialAssignee = progress >= 100 ? "support@merchanthaus.io" : null;
+
+      // Auto-derive gateway tier from monthly volume
+      const volNum = Number(String(app.monthly_volume || "").replace(/[^0-9.]/g, ""));
+      const autoTier =
+        Number.isFinite(volNum) && volNum > 0
+          ? volNum <= 50000
+            ? "foundation"
+            : volNum <= 100000
+              ? "growth"
+              : "scale"
+          : null;
+      const appPricingPlan =
+        (app as Record<string, unknown>).pricing_plan as string | undefined;
 
       const { data: opportunity, error: opportunityError } = await supabase
         .from("opportunities")
@@ -498,6 +515,12 @@ export default function WebSubmissions() {
           referral_source: referralSource || null,
           assigned_to: initialAssignee,
           username: isGatewayOnly ? (app.notes?.match(/Username:\s*([^.]+)/)?.[1]?.trim() || null) : null,
+           
+          ...(appReferrerId ? { referrer_id: appReferrerId } as any : {}),
+           
+          ...(autoTier ? { gateway_tier: autoTier } as any : {}),
+           
+          ...(appPricingPlan ? { pricing_plan: appPricingPlan } as any : {}),
         })
         .select()
         .single();
@@ -726,6 +749,7 @@ export default function WebSubmissions() {
               <Table>
                  <TableHeader>
                    <TableRow>
+                      <TableHead className="w-10 text-right pr-2">#</TableHead>
                       <TableHead>Date</TableHead>
                       <TableHead>Business Name</TableHead>
                       <TableHead>Source</TableHead>
@@ -738,8 +762,9 @@ export default function WebSubmissions() {
                    </TableRow>
                  </TableHeader>
                 <TableBody>
-                  {filteredApps.map((app) => (
+                  {filteredApps.map((app, idx) => (
                     <TableRow key={app.id}>
+                      <TableCell className="text-[11px] text-muted-foreground tabular-nums text-right pr-2">{idx + 1}</TableCell>
                       <TableCell>
                         {new Date(app.created_at).toLocaleDateString()}
                       </TableCell>

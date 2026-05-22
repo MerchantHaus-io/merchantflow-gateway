@@ -3,12 +3,15 @@ import { useAIAssistant } from "@/hooks/useAIAssistant";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { confirmAutoEmail } from "@/components/EmailSendConfirm";
+import { EmailPreviewDialog } from "@/components/EmailPreviewDialog";
+import { buildDocsRequestHtml, buildDocsRequestSubject } from "@/lib/docs-request-email";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { EMAIL_TO_USER } from "@/types/opportunity";
 import {
-  Wand2, Loader2, CheckCircle2, XCircle, AlertTriangle, ChevronDown, ChevronUp, Eye, Clock, User, Globe, FileText, Tag, BarChart3, Shield, Search, Scale, Pin,
+  Wand2, Loader2, CheckCircle2, XCircle, AlertTriangle, ChevronDown, ChevronUp, Eye, Clock, User, Globe, FileText, Tag, BarChart3, Shield, Search, Scale, Pin, Send,
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -136,8 +139,15 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
   const [meta, setMeta] = useState<ReportMeta | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSendingMerchant, setIsSendingMerchant] = useState(false);
 
-  // Notice board pin dialog state
+  // Email preview dialog state
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewSubject, setPreviewSubject] = useState("");
+  const [previewBody, setPreviewBody] = useState("");
+  const [previewRecipient, setPreviewRecipient] = useState<{ email: string; name?: string }>({ email: "" });
+
+
   const [pinDialogOpen, setPinDialogOpen] = useState(false);
   const [pinActionText, setPinActionText] = useState("");
   const [pinSelectedUsers, setPinSelectedUsers] = useState<string[]>([]);
@@ -178,14 +188,19 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
         .filter(Boolean) as string[];
       if (taggedEmails.length > 0) {
         const posterName = profiles.find((p) => p.id === user.id)?.full_name || user.email || "Someone";
-        supabase.functions.invoke("send-notice-email", {
-          body: {
-            title: pinActionText.trim(),
-            postedBy: posterName,
-            postedByEmail: user.email || "",
-            taggedUsers: taggedEmails,
-          },
-        });
+        const ok = await confirmAutoEmail(
+          `A notice email will be sent to ${taggedEmails.length} tagged team member(s): ${taggedEmails.join(", ")}.`
+        );
+        if (ok) {
+          supabase.functions.invoke("send-notice-email", {
+            body: {
+              title: pinActionText.trim(),
+              postedBy: posterName,
+              postedByEmail: user.email || "",
+              taggedUsers: taggedEmails,
+            },
+          });
+        }
       }
 
       toast.success("Action pinned to Notice Board");
@@ -302,6 +317,97 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
     }
   }, [report, opportunityId]);
 
+  // Holds context for the preview dialog so the send handler knows what to log/send.
+  const sendContextRef = useRef<{
+    accountName: string;
+    contactEmail: string;
+    contactFirstName: string;
+    missingDocs: string[];
+    websiteChanges: string[];
+  } | null>(null);
+
+  const handleSendToMerchant = useCallback(async () => {
+    if (!report) return;
+    const missingDocs = (report.document_completeness || [])
+      .filter((d) => d.status === "missing")
+      .map((d) => d.document + (d.note ? ` — ${d.note}` : ""));
+    const websiteChanges = (report.website_requirements || [])
+      .filter((r) => !r.met)
+      .map((r) => r.requirement + (r.detail ? ` — ${r.detail}` : ""));
+
+    if (missingDocs.length === 0 && websiteChanges.length === 0) {
+      toast.info("Nothing outstanding to request — report is clean.");
+      return;
+    }
+
+    // Fetch contact + account
+    const { data: opp } = await supabase
+      .from("opportunities")
+      .select("account_id, contact_id, account:accounts(name), contact:contacts(email, first_name)")
+      .eq("id", opportunityId)
+      .single();
+
+    const contactEmail = (opp as any)?.contact?.email;
+    const accountName = (opp as any)?.account?.name;
+    const contactFirstName = (opp as any)?.contact?.first_name || "there";
+    if (!contactEmail || !accountName) {
+      toast.error("Missing contact email or account name");
+      return;
+    }
+
+    const subject = buildDocsRequestSubject(accountName, missingDocs, websiteChanges);
+    const html = buildDocsRequestHtml({
+      firstName: contactFirstName,
+      accountName,
+      opportunityId,
+      missingDocs,
+      websiteChanges,
+    });
+
+    sendContextRef.current = {
+      accountName,
+      contactEmail,
+      contactFirstName,
+      missingDocs,
+      websiteChanges,
+    };
+    setPreviewSubject(subject);
+    setPreviewBody(html);
+    setPreviewRecipient({ email: contactEmail, name: contactFirstName });
+    setPreviewOpen(true);
+  }, [report, opportunityId]);
+
+  const handleConfirmSendToMerchant = useCallback(
+    async ({ subject, bodyHtml }: { subject: string; bodyHtml: string }) => {
+      const ctx = sendContextRef.current;
+      if (!ctx) return;
+      setIsSendingMerchant(true);
+      try {
+        const { error } = await supabase.functions.invoke("send-qualified-docs-request", {
+          body: {
+            opportunity_id: opportunityId,
+            account_name: ctx.accountName,
+            contact_email: ctx.contactEmail,
+            contact_first_name: ctx.contactFirstName,
+            missing_documents: ctx.missingDocs,
+            website_changes: ctx.websiteChanges,
+            custom_subject: subject,
+            custom_html: bodyHtml,
+          },
+        });
+        if (error) throw error;
+        toast.success("Request sent to merchant");
+      } catch (err: any) {
+        toast.error(err?.message || "Failed to send request");
+        throw err;
+      } finally {
+        setIsSendingMerchant(false);
+      }
+    },
+    [opportunityId],
+  );
+
+
   const handleReview = useCallback(async () => {
     setIsRunning(true);
     try {
@@ -396,6 +502,17 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
               )}
             </div>
             <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-6 text-xs"
+                onClick={handleSendToMerchant}
+                disabled={isSendingMerchant}
+                title="Email merchant the missing docs and any website changes from this report"
+              >
+                {isSendingMerchant ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Send className="h-3 w-3 mr-1" />}
+                Send to Merchant
+              </Button>
               <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={handleSaveAsNote} disabled={isSaving}>
                 {isSaving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <FileText className="h-3 w-3 mr-1" />}
                 Save Note
@@ -707,6 +824,16 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <EmailPreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        subject={previewSubject}
+        bodyHtml={previewBody}
+        recipientEmail={previewRecipient.email}
+        recipientName={previewRecipient.name}
+        onSend={handleConfirmSendToMerchant}
+      />
     </div>
   );
 };

@@ -107,7 +107,7 @@ serve(async (req) => {
     const resolvedAccount = check_account || account_number || '';
 
     // Build NMI request payload
-    const nmiPayload: Record<string, any> = {
+    const nmiPayload: Record<string, unknown> = {
       type: resolvedType,
       company,
       firstName: first_name,

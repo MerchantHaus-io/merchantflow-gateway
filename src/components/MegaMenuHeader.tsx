@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, NavLink as RouterNavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink as RouterNavLink, useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   BookMarked,
@@ -34,6 +34,10 @@ import {
   Send,
   Search,
   UserPlus,
+  FileSignature,
+  LifeBuoy,
+  MessageSquarePlus,
+  LayoutGrid,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -114,6 +118,15 @@ const navMain: NavGroup[] = [
     ],
   },
   {
+    title: "Support",
+    url: "/support",
+    icon: LifeBuoy,
+    items: [
+      { title: "Support Triage", url: "/support", icon: LifeBuoy, description: "Live ticket queue — claim & resolve client tickets" },
+      { title: "Client Request Form", url: "/support-request", icon: MessageSquarePlus, description: "Public support request page to share with clients", external: true },
+    ],
+  },
+  {
     title: "Reports",
     url: "/reports",
     icon: BarChart3,
@@ -131,6 +144,7 @@ const navMain: NavGroup[] = [
       { title: "Pre-Qualification Wizard", url: "/tools/preboarding-wizard", icon: ClipboardList, description: "Application readiness form" },
       { title: "Revenue Calculator", url: "/tools/revenue-calculator", icon: Calculator, description: "Estimate processing revenue" },
       { title: "CSV Import", url: "/tools/csv-import", icon: FileSpreadsheet, description: "Bulk import data" },
+      { title: "Quote Builder", url: "/tools/quote-builder", icon: FileSignature, description: "Generate gateway quotes from an opportunity" },
     ],
   },
   {
@@ -142,6 +156,7 @@ const navMain: NavGroup[] = [
       { title: "Training", url: "/training", icon: GraduationCap, description: "Onboarding guide for the Ops Terminal" },
       { title: "CRM Updates", url: "/tools/terminal-updates", icon: Sparkles, description: "Latest changes & features" },
       { title: "Administration", url: "/admin/administration", icon: Activity, description: "Agenda, popups & session tracking" },
+      { title: "Affiliates", url: "/admin/affiliates", icon: UserPlus, description: "External affiliate partners & commissions" },
       { title: "Data Export", url: "/admin/data-export", icon: Download, description: "Export opportunity data" },
       { title: "Merchant Portal Guide", url: "/tools/gateway-guide", icon: BookMarked, description: "Interactive portal walkthrough" },
       { title: "Deployment", url: "/tools/netlify", icon: Cloud, description: "Deployment audit & fix prompts" },
@@ -253,6 +268,10 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
         <Link to="/" className="flex items-center shrink-0 mr-1 hover:drop-shadow-[0_0_8px_hsl(var(--primary)/0.4)] transition-all duration-300">
           <img src={sidebarIcon} alt="Ops Terminal" className="h-7 w-7 object-contain" />
         </Link>
+
+        {/* Ops ⇄ Support context toggle */}
+        <ContextTogglePill />
+
 
         {/* Desktop Navigation */}
         <NavigationMenu className="hidden lg:flex flex-1">
@@ -517,5 +536,38 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
         </div>
       </div>
     </header>
+  );
+}
+
+function ContextTogglePill() {
+  const { pathname } = useLocation();
+  const inSupport = pathname.startsWith("/support");
+  const target = inSupport ? "/" : "/support";
+  const opsActive = !inSupport;
+  return (
+    <Link
+      to={target}
+      title={inSupport ? "Back to Ops Terminal" : "Go to Support Triage"}
+      className="hidden sm:inline-flex items-center gap-0.5 h-8 rounded-full border border-border/60 bg-muted/40 p-0.5 mr-1 shrink-0 hover:border-primary/40 transition-colors"
+    >
+      <span
+        className={cn(
+          "inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-xs font-semibold transition-all",
+          opsActive ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+        )}
+      >
+        <LayoutGrid className="h-3.5 w-3.5" />
+        Ops
+      </span>
+      <span
+        className={cn(
+          "inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-xs font-semibold transition-all",
+          inSupport ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+        )}
+      >
+        <LifeBuoy className="h-3.5 w-3.5" />
+        Support
+      </span>
+    </Link>
   );
 }

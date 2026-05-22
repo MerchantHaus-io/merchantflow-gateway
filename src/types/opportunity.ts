@@ -72,6 +72,9 @@ export interface Opportunity {
   outcome_notes?: string | null;
   outcome_closed_at?: string | null;
   outcome_closed_by?: string | null;
+  // Pricing fields
+  pricing_plan?: 'flat_rate' | 'interchange_plus' | null;
+  gateway_tier?: 'foundation' | 'growth' | 'scale' | 'enterprise' | null;
   created_at: string;
   updated_at: string;
   // Joined data
@@ -109,54 +112,47 @@ export interface OnboardingWizardState {
   opportunity_id: string;
   progress: number;
   step_index: number;
-  form_state: unknown;
+  form_state: any;
   created_at: string;
   updated_at: string;
 }
 
-export const TEAM_MEMBERS = [
-  'Taryn',
-  'Darryn',
-  'Jamie',
-  'Sheiky',
-  'Wesley',
-] as const;
+// Team data is sourced from the roster: src/config/team.ts
+// Edit that file to rename anyone — it propagates everywhere.
+import {
+  ACTIVE_TEAM_NAMES,
+  ALL_TEAM_NAMES,
+  EMAIL_TO_DISPLAY_NAME,
+  TEAM_ROSTER,
+  colorTokenFor,
+  resolveDisplayName as rosterResolveDisplayName,
+} from "@/config/team";
 
-export type TeamMember = typeof TEAM_MEMBERS[number];
+/** Active assignable members — use for assignment dropdowns. */
+export const TEAM_MEMBERS = ACTIVE_TEAM_NAMES;
+export type TeamMember = string;
 
-export const TEAM_MEMBER_COLORS: Record<string, string> = {
-  'Wesley': 'border-team-wesley',
-  'Jamie': 'border-team-jamie',
-  'Darryn': 'border-team-darryn',
-  'Taryn': 'border-team-taryn',
-  'Sheiky': 'border-team-yaseen',
-};
+/** Border-color class per display name (includes legacy names for old records). */
+export const TEAM_MEMBER_COLORS: Record<string, string> = (() => {
+  const map: Record<string, string> = {};
+  ALL_TEAM_NAMES.forEach((n) => (map[n] = colorTokenFor(n)));
+  TEAM_ROSTER.forEach((m) =>
+    m.legacyNames?.forEach((n) => (map[n] = m.colorToken)),
+  );
+  return map;
+})();
 
-// Map user emails to display names
-export const EMAIL_TO_USER: Record<string, string> = {
-  'admin@merchanthaus.io': 'Darryn',
-  'onboarding@merchanthaus.io': 'Darryn',
-  'jamie@merchanthaus.io': 'Jamie',
-  'support@merchanthaus.io': 'Sheiky',
-  'sales@merchanthaus.io': 'Wesley',
-  'taryn@merchanthaus.io': 'Taryn',
-};
+/** Map user emails to display names (canonical + aliases). */
+export const EMAIL_TO_USER: Record<string, string> = EMAIL_TO_DISPLAY_NAME;
 
-// Allowed emails that can access the dashboard
-export const ALLOWED_EMAILS = [
-  'admin@merchanthaus.io',
-  'onboarding@merchanthaus.io',
-  'jamie@merchanthaus.io',
-  'support@merchanthaus.io',
-  'sales@merchanthaus.io',
-  'taryn@merchanthaus.io',
-];
+/** Allowed emails that can access the dashboard. */
+export const ALLOWED_EMAILS = Object.keys(EMAIL_TO_DISPLAY_NAME);
 
-// Helper to get team member name from email
-export const getTeamMemberFromEmail = (email: string | undefined | null): string | null => {
-  if (!email) return null;
-  return EMAIL_TO_USER[email.toLowerCase()] || null;
-};
+/** Helper to get team member name from email. */
+export const getTeamMemberFromEmail = (
+  email: string | undefined | null,
+): string | null => rosterResolveDisplayName(email);
+
 
 /**
  * Resolves any assignee value (email or raw name) to a proper display name.
@@ -164,20 +160,19 @@ export const getTeamMemberFromEmail = (email: string | undefined | null): string
  */
 export const resolveDisplayName = (value: string | null | undefined): string => {
   if (!value) return 'Unassigned';
-  // Check direct email mapping
-  const mapped = EMAIL_TO_USER[value.toLowerCase()];
-  if (mapped) return mapped;
-  // Check if it's already a team member name
-  if ((TEAM_MEMBERS as readonly string[]).includes(value)) return value;
+  const fromRoster = rosterResolveDisplayName(value);
+  if (fromRoster) return fromRoster;
   // Fallback: strip email domain
   if (value.includes('@')) return value.split('@')[0];
   return value;
 };
 
-// Helper to check if email is allowed - only specific team members
+// Helper to check if email is allowed - explicit team roster + anyone on the merchanthaus.io domain
 export const isEmailAllowed = (email: string | undefined | null): boolean => {
   if (!email) return false;
-  return ALLOWED_EMAILS.includes(email.toLowerCase());
+  const normalized = email.toLowerCase().trim();
+  if (ALLOWED_EMAILS.includes(normalized)) return true;
+  return normalized.endsWith('@merchanthaus.io');
 };
 
 export const STAGE_CONFIG: Record<

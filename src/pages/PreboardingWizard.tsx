@@ -468,7 +468,7 @@ export default function PreboardingWizard() {
         opportunity_id: selectedOpportunityId,
         progress,
         step_index: stepIndex,
-        form_state: serializableForm as unknown
+        form_state: serializableForm as any
       } as never, { onConflict: 'opportunity_id' });
 
     if (error) {
@@ -611,7 +611,7 @@ export default function PreboardingWizard() {
                     <DocumentsStep form={form} onChange={handleChange} onDocsChange={handleDocsChange} opportunityId={selectedOpportunityId} onDocCountChange={setUploadedDocCount} onDocTypeCountsChange={setUploadedDocTypeCounts} />
                   )}
                   {currentStep.label === "Review" && (
-                    <ReviewStep form={form} missingBySection={missingBySection as any} />
+                    <ReviewStep form={form} missingBySection={missingBySection} />
                   )}
                   {currentStep.label === "Business Details" && (
                     <GatewayBusinessStep form={form} onChange={handleChange} />
@@ -705,7 +705,7 @@ export default function PreboardingWizard() {
                       )}
                     </div>
 
-                    <OutstandingSummary progress={progress} missingBySection={missingBySection as any} />
+                    <OutstandingSummary progress={progress} missingBySection={missingBySection} />
                   </div>
 
                   <div className="rounded-2xl border border-border bg-card p-4 shadow-xl text-xs text-muted-foreground space-y-2">
@@ -1223,7 +1223,7 @@ function DocumentsStep({ form, onChange, onDocsChange, opportunityId, onDocCount
   );
 }
 
-function ReviewStep({ form, missingBySection }: { form: PreboardingForm; missingBySection: Record<SectionKey, string[]>; }) {
+function ReviewStep({ form, missingBySection }: { form: PreboardingForm; missingBySection: Partial<Record<SectionKey, string[]>>; }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-sm font-semibold text-foreground">

@@ -22,10 +22,13 @@ interface TeamMember {
   responsibilities: string[];
 }
 
+import { resolveDisplayName, resolveEmail } from "@/config/team";
+
+// Display names & emails resolve through the roster — edit src/config/team.ts to rename.
 const TEAM: TeamMember[] = [
   {
-    name: "Jamie",
-    email: "jamie@merchanthaus.io",
+    name: resolveDisplayName("jamie") ?? "Jamie",
+    email: resolveEmail("jamie") ?? "jamie@merchanthaus.io",
     title: "CEO",
     role: "Leadership / Operations / Underwriting",
     icon: <Crown className="h-5 w-5" />,
@@ -39,15 +42,15 @@ const TEAM: TeamMember[] = [
       "Overall business operations & SOP compliance",
       "Meeting agenda management",
       "Business & services account management (with Taryn) — e.g. banking",
-      "Application preparation (with Sheiky)",
+      "Application preparation (with Yaseen Sheik)",
       "Submit applications to underwriting",
       "Escalation point for all teams",
       "Ensures pipeline hygiene & data integrity",
     ],
   },
   {
-    name: "Darryn",
-    email: "admin@merchanthaus.io",
+    name: resolveDisplayName("darryn") ?? "Darryn",
+    email: resolveEmail("darryn") ?? "admin@merchanthaus.io",
     title: "QA & Complex Sales / Tech",
     role: "Quality Assurance / Sales / Integration / Workspace & CRM",
     icon: <Shield className="h-5 w-5" />,
@@ -70,8 +73,8 @@ const TEAM: TeamMember[] = [
     ],
   },
   {
-    name: "Sheiky",
-    email: "support@merchanthaus.io",
+    name: resolveDisplayName("yaseen") ?? "Yaseen Sheik",
+    email: resolveEmail("yaseen") ?? "support@merchanthaus.io",
     title: "Support & Gateway Operations",
     role: "Gateway / Integration / Testing / Go-Live / Support",
     icon: <HeadphonesIcon className="h-5 w-5" />,
@@ -95,28 +98,8 @@ const TEAM: TeamMember[] = [
     ],
   },
   {
-    name: "Wesley",
-    email: "sales@merchanthaus.io",
-    title: "Sales",
-    role: "Outreach / Discovery / Lead Generation",
-    icon: <TrendingUp className="h-5 w-5" />,
-    color: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
-    borderColor: "border-violet-500/40",
-    stages: [
-      { stage: "discovery", role: "Lead gen & outreach" },
-      { stage: "qualified", role: "Qualification" },
-    ],
-    responsibilities: [
-      "Email outreach campaigns (sole owner)",
-      "Lead generation & cold outreach",
-      "Discovery calls & qualification",
-      "Follows all SOP items up to Qualified stage",
-      "Pipeline sourcing & referral tracking",
-    ],
-  },
-  {
-    name: "Taryn",
-    email: "taryn@merchanthaus.io",
+    name: resolveDisplayName("taryn") ?? "Taryn Engledoe",
+    email: resolveEmail("taryn") ?? "taryn@merchanthaus.io",
     title: "Affiliate & Partner Manager",
     role: "NMI / Affiliate Relationships / Finance",
     icon: <Link2 className="h-5 w-5" />,
@@ -135,8 +118,8 @@ const TEAM: TeamMember[] = [
     ],
   },
   {
-    name: "Neil",
-    email: "neil@nmi.com",
+    name: resolveDisplayName("neil") ?? "Neil",
+    email: resolveEmail("neil") ?? "neil@nmi.com",
     title: "NMI Support Liaison",
     role: "NMI Support Escalations",
     icon: <Shield className="h-5 w-5" />,
@@ -152,15 +135,15 @@ const TEAM: TeamMember[] = [
 ];
 
 const PIPELINE_OWNERSHIP: { stage: OpportunityStage; owners: string[] }[] = [
-  { stage: "discovery", owners: ["Wesley", "Darryn"] },
-  { stage: "qualified", owners: ["Wesley", "Darryn (QA Gate)"] },
-  { stage: "application_prep", owners: ["Jamie", "Sheiky"] },
-  { stage: "underwriting_review", owners: ["Jamie", "Sheiky"] },
+  { stage: "discovery", owners: ["Darryn"] },
+  { stage: "qualified", owners: ["Darryn (QA Gate)"] },
+  { stage: "application_prep", owners: ["Jamie", "Yaseen Sheik"] },
+  { stage: "underwriting_review", owners: ["Jamie", "Yaseen Sheik"] },
   { stage: "processor_approval", owners: ["Jamie"] },
-  { stage: "gateway_submitted", owners: ["Sheiky"] },
-  { stage: "integration_setup", owners: ["Sheiky", "Darryn (complex)"] },
-  { stage: "testing", owners: ["Sheiky"] },
-  { stage: "go_live_ready", owners: ["Sheiky"] },
+  { stage: "gateway_submitted", owners: ["Yaseen Sheik"] },
+  { stage: "integration_setup", owners: ["Yaseen Sheik", "Darryn (complex)"] },
+  { stage: "testing", owners: ["Yaseen Sheik"] },
+  { stage: "go_live_ready", owners: ["Yaseen Sheik"] },
 ];
 
 const STAGE_ICONS: Record<string, React.ReactNode> = {

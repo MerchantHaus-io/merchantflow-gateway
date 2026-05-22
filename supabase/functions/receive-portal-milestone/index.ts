@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
 });
 
 // ── MILESTONE 1 — merchant_registered ──
-async function handleRegistered(payload: any, supabase: any) {
+async function handleRegistered(payload: unknown, supabase: unknown) {
   // 1. Create minimal applications row so it appears in Web Submissions immediately
   const { data: existing } = await supabase
     .from("applications")
@@ -93,7 +93,7 @@ async function handleRegistered(payload: any, supabase: any) {
 }
 
 // ── PROGRESSIVE SYNC — application_progress ──
-async function handleProgress(payload: any, supabase: any) {
+async function handleProgress(payload: unknown, supabase: unknown) {
   const { data: existing } = await supabase
     .from("applications")
     .select("id")
@@ -179,7 +179,7 @@ async function handleProgress(payload: any, supabase: any) {
 }
 
 // ── MILESTONE 2 — application_submitted ──
-async function handleSubmitted(payload: any, supabase: any) {
+async function handleSubmitted(payload: unknown, supabase: unknown) {
   // 1. Upsert applications row (idempotent on portal_merchant_id)
   const { data: existing } = await supabase
     .from("applications")
@@ -394,7 +394,7 @@ async function handleSubmitted(payload: any, supabase: any) {
 }
 
 // ── MILESTONE 3 — documents_complete ──
-async function handleDocsComplete(payload: any, supabase: any) {
+async function handleDocsComplete(payload: unknown, supabase: unknown) {
   const { data: application, error: appErr } = await supabase
     .from("applications")
     .select("id")

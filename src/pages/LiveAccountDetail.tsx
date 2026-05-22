@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { DocumentPreviewDialog } from "@/components/DocumentPreviewDialog";
+import { DocumentPreviewDialog, type PreviewableDocument } from "@/components/DocumentPreviewDialog";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
+import { confirmAutoEmail } from "@/components/EmailSendConfirm";
 import { getServiceType, STAGE_CONFIG, migrateStage, OutcomeStatus, EMAIL_TO_USER } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -40,17 +41,12 @@ import { useTheme } from "@/contexts/ThemeContext";
 import ClientInteractionLog from "@/components/ClientInteractionLog";
 import { NMITransactionsPanel } from "@/components/NMITransactionsPanel";
 import { AccountCommissionCard } from "@/components/AccountCommissionCard";
-import logoDark from "@/assets/logo-dark.png";
-import logoLight from "@/assets/logo-light.png";
+import logoDark from "@/assets/ps-terminal-logo.png";
+import logoLight from "@/assets/ps-terminal-logo.png";
 import liveBadge from "@/assets/live-badge.webp";
 
-const TEAM_EMAIL_MAP: Record<string, string> = {
-  'Wesley': 'sales@merchanthaus.io',
-  'Jamie': 'admin@merchanthaus.io',
-  'Darryn': 'onboarding@merchanthaus.io',
-  'Taryn': 'taryn@merchanthaus.io',
-  'Sheiky': 'support@merchanthaus.io',
-};
+import { NAME_TO_EMAIL } from "@/config/team";
+const TEAM_EMAIL_MAP: Record<string, string> = NAME_TO_EMAIL;
 
 const InfoRow = ({ icon: Icon, label, value, href }: { icon: any; label: string; value?: string | null; href?: string }) => {
   if (!value) return null;
@@ -79,7 +75,7 @@ const LiveAccountDetail = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
-  const [previewDoc, setPreviewDoc] = useState<any>(null);
+  const [previewDoc, setPreviewDoc] = useState<PreviewableDocument | null>(null);
   const closeRef = useRef<HTMLDivElement>(null);
   const [closeHighlight, setCloseHighlight] = useState(false);
 
@@ -374,30 +370,35 @@ const LiveAccountDetail = () => {
                   const contactEmail = contact?.email;
 
                   if (contactEmail && outcome !== "closed_won") {
-                    supabase.functions.invoke("send-account-closed", {
-                      body: {
-                        recipientEmail: contactEmail,
-                        recipientName: contactName,
-                        accountName: account?.name || "",
-                        outcomeStatus: outcome,
-                        outcomeReason: reason,
-                        closedBy: closerName.charAt(0).toUpperCase() + closerName.slice(1),
-                      },
-                    }).then(() => {
-                      supabase.from("client_interactions").insert({
-                        account_id: accountId,
-                        subject: `Account closure email sent — ${account?.name || ""}`,
-                        interaction_type: "email",
-                        channel: "email",
-                        contact_name: contactName,
-                        contact_email: contactEmail,
-                        notes: `Account closed (${outcome}: ${reason}). Closure notification email sent to ${contactEmail}.`,
-                        status: "closed",
-                        outcome: "sent",
-                        created_by: user.id,
-                        created_by_email: user.email,
-                      }).then(() => {});
-                    }).catch((err) => console.error("Closure email error:", err));
+                    const confirmed = await confirmAutoEmail(
+                      `A closure notification email will be sent to ${contactEmail}.`
+                    );
+                    if (confirmed) {
+                      supabase.functions.invoke("send-account-closed", {
+                        body: {
+                          recipientEmail: contactEmail,
+                          recipientName: contactName,
+                          accountName: account?.name || "",
+                          outcomeStatus: outcome,
+                          outcomeReason: reason,
+                          closedBy: closerName.charAt(0).toUpperCase() + closerName.slice(1),
+                        },
+                      }).then(() => {
+                        supabase.from("client_interactions").insert({
+                          account_id: accountId,
+                          subject: `Account closure email sent — ${account?.name || ""}`,
+                          interaction_type: "email",
+                          channel: "email",
+                          contact_name: contactName,
+                          contact_email: contactEmail,
+                          notes: `Account closed (${outcome}: ${reason}). Closure notification email sent to ${contactEmail}.`,
+                          status: "closed",
+                          outcome: "sent",
+                          created_by: user.id,
+                          created_by_email: user.email,
+                        }).then(() => {});
+                      }).catch((err) => console.error("Closure email error:", err));
+                    }
                   }
 
                   toast.success("Account closed and merchant notified");

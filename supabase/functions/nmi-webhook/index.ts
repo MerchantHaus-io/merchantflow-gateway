@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
 });
 
 // ── Transaction events ──
-async function handleTransaction(sb: any, eventType: string, body: any, eventId: string) {
+async function handleTransaction(sb: unknown, eventType: string, body: unknown, eventId: string) {
   const merchantId = body.merchant?.id ?? body.merchant_id;
   const merchantName = body.merchant?.name ?? body.merchant_name;
   const txnId = body.transaction_id;
@@ -91,7 +91,7 @@ async function handleTransaction(sb: any, eventType: string, body: any, eventId:
 }
 
 // ── Chargeback events ──
-async function handleChargeback(sb: any, eventType: string, body: any, eventId: string) {
+async function handleChargeback(sb: unknown, eventType: string, body: unknown, eventId: string) {
   const count = body.count || 0;
   const totalAmount = parseFloat(body.chargeback_amount) || 0;
   const chargebacks = body.chargebacks || [];
@@ -115,7 +115,7 @@ async function handleChargeback(sb: any, eventType: string, body: any, eventId: 
 }
 
 // ── Settlement events ──
-async function handleSettlement(sb: any, eventType: string, body: any, eventId: string) {
+async function handleSettlement(sb: unknown, eventType: string, body: unknown, eventId: string) {
   const batchId = body.batch_id;
   const count = body.count || 0;
   const amount = parseFloat(body.amount) || 0;
@@ -139,7 +139,7 @@ async function handleSettlement(sb: any, eventType: string, body: any, eventId: 
 }
 
 // ── Recurring/subscription events ──
-async function handleRecurring(sb: any, eventType: string, body: any, eventId: string) {
+async function handleRecurring(sb: unknown, eventType: string, body: unknown, eventId: string) {
   console.log(`Recurring event: ${eventType}`, JSON.stringify(body).substring(0, 300));
 
   if (eventType.includes("charge.failure")) {
@@ -153,7 +153,7 @@ async function handleRecurring(sb: any, eventType: string, body: any, eventId: s
 }
 
 // ── Automatic Card Updater events ──
-async function handleACU(sb: any, eventType: string, body: any, eventId: string) {
+async function handleACU(sb: unknown, eventType: string, body: unknown, eventId: string) {
   const vaultUpdated = body.vault_updated_cards?.length || 0;
   const recurringUpdated = body.recurring_updated_cards?.length || 0;
   const total = vaultUpdated + recurringUpdated;
@@ -169,7 +169,7 @@ async function handleACU(sb: any, eventType: string, body: any, eventId: string)
 
 // ── Helpers ──
 
-async function logWebhookEvent(sb: any, eventId: string, eventType: string, body: any) {
+async function logWebhookEvent(sb: unknown, eventId: string, eventType: string, body: unknown) {
   try {
     // Log to activities table as a system activity for audit trail
     await sb.from("activities").insert({
@@ -183,7 +183,7 @@ async function logWebhookEvent(sb: any, eventId: string, eventType: string, body
   }
 }
 
-async function notifyTeam(sb: any, title: string, message: string, type = "info") {
+async function notifyTeam(sb: unknown, title: string, message: string, type = "info") {
   try {
     const { data: profiles } = await sb
       .from("profiles")
@@ -205,7 +205,7 @@ async function notifyTeam(sb: any, title: string, message: string, type = "info"
   }
 }
 
-async function postSystemMessage(sb: any, content: string) {
+async function postSystemMessage(sb: unknown, content: string) {
   try {
     await sb.rpc("post_system_chat_message", { p_content: content });
   } catch (err) {

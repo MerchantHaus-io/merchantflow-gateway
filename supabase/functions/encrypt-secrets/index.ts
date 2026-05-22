@@ -161,7 +161,7 @@ Deno.serve(async (req) => {
       : null;
 
     const clientIp = req.headers.get("x-forwarded-for") || "unknown";
-    console.log(`Encrypt request: app_id=${application_id}, ip=${clientIp}, has_ssn=${!!ssn_full}`);
+    console.log(`Encrypt request received (has_ssn=${!!ssn_full})`);
 
     const { error } = await supabase.from("application_secrets").insert({
       application_id,

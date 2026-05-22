@@ -36,6 +36,13 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AppLayout } from "@/components/AppLayout";
+import {
+  NMI_SCHEDULE_A_RATES,
+  NMI_REVENUE_ELIGIBLE_FEES,
+  NMI_NON_REVENUE_FEES,
+  NMI_GATEWAY_FEATURES,
+  NMI_ONE_TIME_FEES,
+} from "@/config/quoteSchedule";
 
 const SOP = () => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -517,10 +524,10 @@ Sales Support`,
       templateKey: "step1" as const,
       title: "Step 1 — Intro & Discovery",
       note: {
-        text: "Logic Step 1.2: If needed, schedule a discovery call.",
+        text: "Once requirements are established, defer the prospect to our apply form: /merchant-apply. That submission feeds the CRM directly and auto-fires the Application Received + Website Compliance Checklist emails. Use Step 1.2 only if a call is requested first.",
         link: "https://calendar.app.google/6F1xCy8DcVh8B4aR7",
         linkText: "Schedule a Call",
-        skipNote: "If no call requested, skip to Step 2.",
+        skipNote: "If no call requested and requirements are clear, point them straight to /merchant-apply.",
       },
     },
     {
@@ -531,7 +538,7 @@ Sales Support`,
     {
       id: "step2",
       templateKey: "step2" as const,
-      title: "Step 2 — Request for Documents",
+      title: "Step 2 — Request for Documents (Manual Fallback)",
     },
     {
       id: "step3",
@@ -799,6 +806,9 @@ Sales Support`,
                         <li>
                           <a href="#services-overview" className="hover:text-primary transition-colors cursor-pointer"><strong>4.2</strong> — Pricing Tiers & Features</a>
                         </li>
+                        <li>
+                          <a href="#nmi-pricing-schedule" className="hover:text-primary transition-colors cursor-pointer"><strong>4.3</strong> — NMI Schedule A — Gateway & Processing Pricing</a>
+                        </li>
                       </ul>
 
                       <h3 className="font-bold text-foreground mt-6 mb-3 uppercase tracking-[0.3em] text-[10px]">
@@ -812,7 +822,10 @@ Sales Support`,
                           <a href="#tech-stack" className="hover:text-primary transition-colors cursor-pointer"><strong>5.2</strong> — CRM Architecture & Technical Reference</a>
                         </li>
                         <li>
-                          <strong>5.3</strong> — Service Providers & SaaS Stack
+                          <a href="#referral-program" className="hover:text-primary transition-colors cursor-pointer"><strong>5.3</strong> — Referral Partner Program</a>
+                        </li>
+                        <li>
+                          <strong>5.4</strong> — Service Providers & SaaS Stack
                         </li>
                       </ul>
 
@@ -1114,7 +1127,7 @@ Sales Support`,
                     <div className="bg-secondary/50 p-4 border border-border">
                       <div className="flex items-start justify-between gap-4 flex-wrap">
                         <strong className="text-foreground text-sm">8. Pipeline Stage Change</strong>
-                        <span className="text-[11px] uppercase tracking-wider text-muted-foreground bg-background px-2 py-0.5 border border-border">Fires: any deal's stage changes</span>
+                        <span className="text-[11px] uppercase tracking-wider text-muted-foreground bg-background px-2 py-0.5 border border-border">Fires: unknown deal's stage changes</span>
                       </div>
                       <p className="text-sm text-muted-foreground mt-2"><strong className="text-foreground">What it says:</strong> Which deal moved, where it went, who moved it. Keeps the team silently aware of pipeline movement.</p>
                     </div>
@@ -1207,7 +1220,7 @@ Sales Support`,
                 {/* ═══════════════════════════════════════════
                     PIPELINE STAGE MANAGEMENT GUIDE
                     Corrected to match actual DB stages:
-                    discovery → qualification → preboarding → underwriting → boarding → live
+                    discovery → qualified → application_prep → underwriting_review → processor_approval → gateway_submitted → integration_setup → testing → go_live_ready → closed_won
                 ═══════════════════════════════════════════ */}
                 <section id="pipeline-stages" className="bg-card rounded-none border border-border p-8">
                   <SectionHeader gold sectionId="pipeline-stages" sectionTitle="Pipeline Stage Management">Pipeline Stage Management Guide</SectionHeader>
@@ -1241,6 +1254,115 @@ Sales Support`,
                     <strong className="text-foreground">Two pipelines:</strong> Processing deals follow all 10 stages. Gateway Only deals skip App Prep, Underwriting, and Approved — going directly from Qualified → Gateway Setup.
                   </div>
 
+                  {/* SOP → CRM stage mapping reference */}
+                  <div className="mb-8 border border-border rounded-none overflow-hidden">
+                    <div className="bg-[hsl(var(--gold))]/15 border-b border-border px-4 py-3">
+                      <h3 className="font-bold text-foreground text-sm uppercase tracking-wider">SOP → CRM Stage Mapping & Automated Emails</h3>
+                      <p className="text-xs text-muted-foreground mt-1">Single source of truth: each SOP stage, its exact pipeline value in the CRM (<code className="text-foreground">opportunities.stage</code>), and every email that fires automatically when entered.</p>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs">
+                        <thead className="bg-secondary/40 border-b border-border">
+                          <tr className="text-left">
+                            <th className="px-3 py-2 font-bold text-foreground w-10">#</th>
+                            <th className="px-3 py-2 font-bold text-foreground">SOP Stage</th>
+                            <th className="px-3 py-2 font-bold text-foreground">CRM Pipeline Value</th>
+                            <th className="px-3 py-2 font-bold text-foreground">Automated Emails / Triggers</th>
+                          </tr>
+                        </thead>
+                        <tbody className="[&_td]:px-3 [&_td]:py-2 [&_td]:align-top [&_tr]:border-b [&_tr]:border-border/60">
+                          <tr>
+                            <td className="text-muted-foreground">1</td>
+                            <td className="font-medium text-foreground">Discovery</td>
+                            <td><code className="text-foreground">discovery</code></td>
+                            <td className="text-muted-foreground">None automated. Reps defer prospects to <code>/merchant-apply</code>; submission triggers application-received confirmation via <code>submit-merchant-application</code>.</td>
+                          </tr>
+                          <tr>
+                            <td className="text-muted-foreground">2</td>
+                            <td className="font-medium text-foreground">Qualified</td>
+                            <td><code className="text-foreground">qualified</code></td>
+                            <td className="text-muted-foreground"><strong className="text-foreground">send-qualified-docs-request</strong> — fires on entry to Qualified (and via the "Request Documents" button). Sends branded document checklist to the merchant.</td>
+                          </tr>
+                          <tr>
+                            <td className="text-muted-foreground">3</td>
+                            <td className="font-medium text-foreground">App Prep</td>
+                            <td><code className="text-foreground">application_prep</code></td>
+                            <td className="text-muted-foreground">No auto-send. <strong className="text-foreground">send-quote-email</strong> is manual via the Quote Generator (gated until volume, ticket, card mix, and statements are captured).</td>
+                          </tr>
+                          <tr>
+                            <td className="text-muted-foreground">4</td>
+                            <td className="font-medium text-foreground">Underwriting Review</td>
+                            <td><code className="text-foreground">underwriting_review</code></td>
+                            <td className="text-muted-foreground">No outbound email. AI underwriting analysis runs and persists a 0–100 risk score. Gateway-only deals are blocked from this stage.</td>
+                          </tr>
+                          <tr>
+                            <td className="text-muted-foreground">5</td>
+                            <td className="font-medium text-foreground">Approved</td>
+                            <td><code className="text-foreground">processor_approval</code></td>
+                            <td className="text-muted-foreground">Auto-spawns a linked Gateway deal (gateway funnel auto-creation). No merchant email fires on entry — onboarding handoff is manual.</td>
+                          </tr>
+                          <tr>
+                            <td className="text-muted-foreground">6</td>
+                            <td className="font-medium text-foreground">Gateway Setup</td>
+                            <td><code className="text-foreground">gateway_submitted</code></td>
+                            <td className="text-muted-foreground"><strong className="text-foreground">nmi-board-merchant</strong> posts to NMI Partner v4. NMI webhook responses route through <strong className="text-foreground">nmi-webhook</strong>.</td>
+                          </tr>
+                          <tr>
+                            <td className="text-muted-foreground">7</td>
+                            <td className="font-medium text-foreground">Integration</td>
+                            <td><code className="text-foreground">integration_setup</code></td>
+                            <td className="text-muted-foreground"><strong className="text-foreground">send-terminal-update-email</strong> fires when a terminal-update changelog entry is published. Portal milestone events from <strong className="text-foreground">receive-portal-milestone</strong> can trigger merchant notifications.</td>
+                          </tr>
+                          <tr>
+                            <td className="text-muted-foreground">8</td>
+                            <td className="font-medium text-foreground">Testing</td>
+                            <td><code className="text-foreground">testing</code></td>
+                            <td className="text-muted-foreground">None automated. NMI transaction sync confirms first test transactions.</td>
+                          </tr>
+                          <tr>
+                            <td className="text-muted-foreground">9</td>
+                            <td className="font-medium text-foreground">Go Live Ready</td>
+                            <td><code className="text-foreground">go_live_ready</code></td>
+                            <td className="text-muted-foreground">No merchant email. Internal notification + push fires to assignee. Activation is gated behind the portal activation step.</td>
+                          </tr>
+                          <tr>
+                            <td className="text-muted-foreground">10</td>
+                            <td className="font-medium text-foreground">Closed Won</td>
+                            <td><code className="text-foreground">closed_won</code></td>
+                            <td className="text-muted-foreground"><strong className="text-foreground">activate-portal-merchant</strong> provisions the merchant portal. Portal activation cron syncs status every 15 min. SLA aging disabled at this stage.</td>
+                          </tr>
+                          <tr className="bg-secondary/20">
+                            <td className="text-muted-foreground">—</td>
+                            <td className="font-medium text-foreground">Outcome: Disqualified</td>
+                            <td><code className="text-foreground">outcome_status = disqualified</code></td>
+                            <td className="text-muted-foreground"><strong className="text-foreground">send-outcome-email</strong> fires for disqualification reasons (gated by <code>EMAIL_TRIGGERING_OUTCOMES</code>). Permanent-suppression reasons block re-engagement tasks.</td>
+                          </tr>
+                          <tr className="bg-secondary/20">
+                            <td className="text-muted-foreground">—</td>
+                            <td className="font-medium text-foreground">Outcome: Underwriting Declined</td>
+                            <td><code className="text-foreground">outcome_status = underwriting_declined</code></td>
+                            <td className="text-muted-foreground"><strong className="text-foreground">send-application-declined</strong> + <strong className="text-foreground">send-outcome-email</strong>. Remediable reasons auto-create re-engagement tasks per <code>REENGAGEMENT_TASKS</code>.</td>
+                          </tr>
+                          <tr className="bg-secondary/20">
+                            <td className="text-muted-foreground">—</td>
+                            <td className="font-medium text-foreground">Outcome: Closed Lost / No Decision</td>
+                            <td><code className="text-foreground">outcome_status = closed_lost | no_decision</code></td>
+                            <td className="text-muted-foreground">No closure email to merchant (excluded from client email triggers). Re-engagement tasks auto-scheduled where reason is recoverable.</td>
+                          </tr>
+                          <tr className="bg-secondary/20">
+                            <td className="text-muted-foreground">—</td>
+                            <td className="font-medium text-foreground">Outcome: Account Closed (live)</td>
+                            <td><code className="text-foreground">account.status = dead</code></td>
+                            <td className="text-muted-foreground"><strong className="text-foreground">send-account-closed</strong> notifies the merchant of account closure on a live account.</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="bg-secondary/30 border-t border-border px-4 py-2 text-[11px] text-muted-foreground">
+                      Cross-cutting automations (any stage): task assignment emails, stage-change notifications (email + in-app + push), agenda notifications, notice-board DM/email, Gmail/Calendar sync, SLA escalation (amber 12h / red 24h).
+                    </div>
+                  </div>
+
                   {/* Stage 1: Discovery */}
                   <div className="mb-6 bg-secondary/30 rounded-none border border-border overflow-hidden">
                     <div className="bg-zinc-600/20 px-6 py-4 border-b border-border flex items-center gap-3">
@@ -1264,12 +1386,13 @@ Sales Support`,
                           <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Send <strong className="text-foreground">Step 1 — Intro & Discovery</strong> email template</span></li>
                           <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Document business type, monthly volume, current processor</span></li>
                           <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Identify processing needs: Gateway Only vs Full Processing</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Schedule a discovery call if needed (Step 1.2)</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Schedule a discovery call only if the prospect asks (Step 1.2)</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-[hsl(var(--gold))]">★</span><span><strong className="text-foreground">Preferred path:</strong> once you've established their requirements, defer the merchant to <a href="/merchant-apply" target="_blank" rel="noopener noreferrer" className="text-primary underline">/merchant-apply</a>. The form populates the CRM and auto-fires the <em>Application Received</em> and <em>Website Compliance Checklist</em> emails — no manual templates needed.</span></li>
                         </ul>
                       </div>
                       <div className="bg-muted/50 rounded-none p-3 text-sm">
                         <strong className="text-foreground">Advance to Qualified when:</strong>
-                        <span className="text-muted-foreground"> Business model understood, solution fit confirmed, merchant interested in proceeding.</span>
+                        <span className="text-muted-foreground"> Business model understood, solution fit confirmed, and the merchant has either submitted /merchant-apply or verbally committed to proceed.</span>
                       </div>
                     </div>
                   </div>
@@ -1296,14 +1419,16 @@ Sales Support`,
                         <ul className="space-y-2 text-sm text-muted-foreground">
                           <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Confirm merchant interest and commitment to proceed</span></li>
                           <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Set appropriate pipeline: <strong className="text-foreground">Processing</strong> or <strong className="text-foreground">Gateway Only</strong></span></li>
-                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Send <strong className="text-foreground">Step 2 — Request for Documents</strong> email</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Create tasks for document follow-up</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Darryn QA gate: Initial underwriting data review</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-[hsl(var(--gold))]">★</span><span><strong className="text-foreground">Preferred path:</strong> open the Documents tab and click <strong className="text-foreground">"Request Documents"</strong>. This fires the automated <em>Qualified Docs Request</em> email (templated, tracked, customisable subject/body) — use this instead of manually sending Step 2.</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span><em>Fallback only:</em> Step 2 — Request for Documents email template (manual copy/paste) if the automation isn't available or the merchant needs the pre-launch variant</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Moving the stage to Qualified also triggers the Qualified Docs Request flow if not already sent</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span>Create tasks for document follow-up; Darryn QA gate: initial underwriting data review</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-zinc-500">•</span><span><strong className="text-foreground">Do not</strong> generate a Quote yet — quotes are gated on full client info (see App Prep)</span></li>
                         </ul>
                       </div>
                       <div className="bg-muted/50 rounded-none p-3 text-sm">
                         <strong className="text-foreground">Advance to App Prep when:</strong>
-                        <span className="text-muted-foreground"> Document request sent and acknowledged. <strong>Gateway Only</strong> deals skip to Gateway Setup.</span>
+                        <span className="text-muted-foreground"> Documents have been requested (automation fired) and the merchant has acknowledged. <strong>Gateway Only</strong> deals skip directly to Gateway Setup — they are blocked from underwriting by design.</span>
                       </div>
                     </div>
                   </div>
@@ -1334,6 +1459,7 @@ Sales Support`,
                           <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Verify document completeness and quality</span></li>
                           <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Send <strong className="text-foreground">Step 3 — Application in Process</strong> when ready</span></li>
                           <li className="flex gap-2 items-start"><span className="text-slate-500">•</span><span>Record beneficial owners (≥ 25% equity required)</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-[hsl(var(--gold))]">★</span><span><strong className="text-foreground">Quote generation gate:</strong> only generate a Quote once you have <em>all</em> client info — monthly volume, average ticket, high ticket, card mix (CP / CNP / keyed), MCC, accepted card types, and current processor statements. Generating earlier produces unreliable pricing and erodes trust. Use the Quote Generator from the opportunity detail panel.</span></li>
                         </ul>
                       </div>
                       <div className="bg-[hsl(var(--gold))]/10 border border-[hsl(var(--gold))]/30 rounded-none p-3 text-sm">
@@ -1549,7 +1675,7 @@ Sales Support`,
                       </div>
                       <div className="bg-muted/50 rounded-none p-3 text-sm">
                         <strong className="text-foreground">Set outcome to Closed Won when:</strong>
-                        <span className="text-muted-foreground"> Merchant is live and billing. Hand off to support team (Sheiky).</span>
+                        <span className="text-muted-foreground"> Merchant is live and billing. Hand off to support team (Yaseen Sheik).</span>
                       </div>
                     </div>
                   </div>
@@ -1576,7 +1702,7 @@ Sales Support`,
                         <ul className="space-y-2 text-sm text-muted-foreground">
                           <li className="flex gap-2 items-start"><span className="text-emerald-500">•</span><span>Update account status to Active</span></li>
                           <li className="flex gap-2 items-start"><span className="text-emerald-500">•</span><span>Appears in <strong className="text-foreground">Live & Billing</strong> report</span></li>
-                          <li className="flex gap-2 items-start"><span className="text-emerald-500">•</span><span>Post-go-live support owned exclusively by Sheiky</span></li>
+                          <li className="flex gap-2 items-start"><span className="text-emerald-500">•</span><span>Post-go-live support owned exclusively by Yaseen Sheik</span></li>
                           <li className="flex gap-2 items-start"><span className="text-emerald-500">•</span><span>Transaction monitoring via NMI dashboard (Taryn)</span></li>
                         </ul>
                       </div>
@@ -1702,7 +1828,7 @@ Sales Support`,
                       </ul>
                       <div className="mt-4 p-3 rounded-none border border-purple-500/20 bg-purple-500/5">
                         <p className="text-xs text-muted-foreground">
-                          <strong className="text-foreground">Example:</strong> "Assign the ABC Corp deal to Wesley" or "Create a high priority task for Sheiky to follow up on documents for XYZ account."
+                          <strong className="text-foreground">Example:</strong> "Assign the ABC Corp deal to Jamie" or "Create a high priority task for Yaseen Sheik to follow up on documents for XYZ account."
                         </p>
                       </div>
                     </div>
@@ -2045,7 +2171,202 @@ Sales Support`,
                   </div>
                 </section>
 
-                {/* Appendices */}
+                {/* NMI Schedule A — Gateway & Processing Pricing Reference */}
+                <section id="nmi-pricing-schedule" className="bg-card rounded-none border-2 border-[hsl(var(--gold))]/40 p-8">
+                  <SectionHeader gold sectionId="nmi-pricing-schedule" sectionTitle="NMI Schedule A — Gateway & Processing Pricing">
+                    4.3 — NMI Schedule A — Gateway & Processing Pricing
+                  </SectionHeader>
+                  <p className="text-muted-foreground mb-6 italic border-l-4 border-[hsl(var(--gold))] pl-4 bg-[hsl(var(--gold))]/10 py-2 pr-2">
+                    Authoritative reference extracted from the signed NMI All-in-One Plan proposal for merchanthaus.io
+                    (effective 14 Nov 2025). All partner-side costs and merchant-facing rates feed the Quote Generator.
+                    Confidential — share externally only via formal quote.
+                  </p>
+
+                  {/* Schedule A — Base Rates */}
+                  <div className="mb-8">
+                    <h3 className="text-foreground font-bold text-base mb-3">Schedule A — Base Processing Rates</h3>
+                    <div className="overflow-x-auto border border-border rounded-none">
+                      <table className="w-full text-sm">
+                        <thead className="bg-secondary/50">
+                          <tr><th className="text-left p-3 font-semibold">Item</th><th className="text-right p-3 font-semibold">Rate</th></tr>
+                        </thead>
+                        <tbody>
+                          {NMI_SCHEDULE_A_RATES.map((r) => (
+                            <tr key={r.name} className="border-t border-border">
+                              <td className="p-3 text-muted-foreground">{r.name}</td>
+                              <td className="p-3 text-right font-mono text-foreground">{r.value}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Revenue-eligible fees */}
+                  <div className="mb-8">
+                    <h3 className="text-foreground font-bold text-base mb-1">Revenue-Eligible Fees</h3>
+                    <p className="text-xs text-muted-foreground mb-3">These costs are deducted before MerchantHaus's 30% revenue share is applied.</p>
+                    <div className="overflow-x-auto border border-border rounded-none">
+                      <table className="w-full text-sm">
+                        <thead className="bg-secondary/50">
+                          <tr>
+                            <th className="text-left p-3 font-semibold">Fee</th>
+                            <th className="text-right p-3 font-semibold">Partner Cost</th>
+                            <th className="text-right p-3 font-semibold">Merchant Rate</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {NMI_REVENUE_ELIGIBLE_FEES.map((r) => (
+                            <tr key={r.label} className="border-t border-border">
+                              <td className="p-3 text-muted-foreground">{r.label}</td>
+                              <td className="p-3 text-right font-mono">{r.partner}</td>
+                              <td className="p-3 text-right font-mono text-foreground">{r.merchant}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Non-revenue passthrough */}
+                  <div className="mb-8">
+                    <h3 className="text-foreground font-bold text-base mb-1">Passthrough Fees (Not Revenue-Eligible)</h3>
+                    <p className="text-xs text-muted-foreground mb-3">Billed to merchant; partner cost equals merchant rate — no MerchantHaus margin.</p>
+                    <div className="overflow-x-auto border border-border rounded-none">
+                      <table className="w-full text-sm">
+                        <thead className="bg-secondary/50">
+                          <tr>
+                            <th className="text-left p-3 font-semibold">Fee</th>
+                            <th className="text-right p-3 font-semibold">Partner Cost</th>
+                            <th className="text-right p-3 font-semibold">Merchant Rate</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {NMI_NON_REVENUE_FEES.map((r) => (
+                            <tr key={r.label} className="border-t border-border">
+                              <td className="p-3 text-muted-foreground">{r.label}</td>
+                              <td className="p-3 text-right font-mono">{r.partner}</td>
+                              <td className="p-3 text-right font-mono text-foreground">{r.merchant}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Gateway add-ons */}
+                  <div className="mb-8">
+                    <h3 className="text-foreground font-bold text-base mb-3">Gateway Features & Add-Ons</h3>
+                    <div className="overflow-x-auto border border-border rounded-none">
+                      <table className="w-full text-sm">
+                        <thead className="bg-secondary/50">
+                          <tr>
+                            <th className="text-left p-3 font-semibold">Group</th>
+                            <th className="text-left p-3 font-semibold">Feature</th>
+                            <th className="text-left p-3 font-semibold">Description</th>
+                            <th className="text-right p-3 font-semibold">Partner Cost</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {NMI_GATEWAY_FEATURES.map((f) => (
+                            <tr key={f.name} className="border-t border-border">
+                              <td className="p-3 text-xs uppercase tracking-wider text-[hsl(var(--gold))]">{f.group}</td>
+                              <td className="p-3 font-semibold text-foreground">{f.name}</td>
+                              <td className="p-3 text-muted-foreground text-xs">{f.description}</td>
+                              <td className="p-3 text-right font-mono text-xs">{f.partnerCost}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* One-time fees */}
+                  <div>
+                    <h3 className="text-foreground font-bold text-base mb-3">One-Time Service Fees</h3>
+                    <div className="grid sm:grid-cols-2 gap-2">
+                      {NMI_ONE_TIME_FEES.map((f) => (
+                        <div key={f.label} className="flex justify-between border border-border bg-secondary/30 px-3 py-2 text-sm">
+                          <span className="text-muted-foreground">{f.label}</span>
+                          <span className="font-mono text-foreground">{f.amount}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mt-6 text-xs text-muted-foreground border-t border-border pt-4">
+                    Source: NMI All-in-One Plan proposal, signed by Taryn Engledoe on 2025-11-14.
+                    Use these figures as the baseline for all merchant quotes generated through the
+                    Quote Generator.
+                  </div>
+                </section>
+
+                {/* Referral Program */}
+                <section id="referral-program" className="bg-card rounded-none border-2 border-[hsl(var(--gold))]/40 p-8">
+                  <SectionHeader gold sectionId="referral-program" sectionTitle="Referral Partner Program">
+                    Referral Partner Program
+                  </SectionHeader>
+                  <p className="text-sm text-muted-foreground mb-6">
+                    The MerchantHaus Referral Partner Program rewards partners who introduce qualified merchants.
+                    Terms below govern every active referrer profile and are enforced in the partner portal so
+                    earnings can never display above the stipulated caps.
+                  </p>
+
+                  <div className="grid md:grid-cols-2 gap-6 mb-6">
+                    <div className="bg-secondary/40 p-5 rounded-none border border-border">
+                      <h4 className="font-bold text-foreground mb-3 uppercase tracking-[0.2em] text-[11px]">Revenue Share</h4>
+                      <ul className="text-sm text-muted-foreground space-y-2">
+                        <li><strong className="text-foreground">50%</strong> of MerchantHaus's company commission, paid monthly per referred merchant.</li>
+                        <li>Calculated from net processor settlement after interchange, scheme fees, and processor cost.</li>
+                        <li>Earnings are visible in the partner portal at the close of each monthly cycle.</li>
+                      </ul>
+                    </div>
+                    <div className="bg-secondary/40 p-5 rounded-none border border-border">
+                      <h4 className="font-bold text-foreground mb-3 uppercase tracking-[0.2em] text-[11px]">Caps & Ceilings</h4>
+                      <ul className="text-sm text-muted-foreground space-y-2">
+                        <li><strong className="text-foreground">$500</strong> lifetime cap per referred account.</li>
+                        <li><strong className="text-foreground">10 accounts</strong> maximum eligible per partner.</li>
+                        <li><strong className="text-foreground">$5,000</strong> total program ceiling per partner ($500 × 10).</li>
+                        <li>Accounts beyond the 10-account ceiling are visible but ineligible for payout.</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="bg-[hsl(var(--gold))]/5 p-5 rounded-none border border-[hsl(var(--gold))]/40 mb-6">
+                    <h4 className="font-bold text-foreground mb-2 uppercase tracking-[0.2em] text-[11px]">Milestone Bonus</h4>
+                    <p className="text-sm text-muted-foreground">
+                      A <strong className="text-foreground">$500 bonus</strong> is paid for every{" "}
+                      <strong className="text-foreground">5 successfully boarded merchants</strong> (live and
+                      processing). Bonuses are paid in addition to commission revenue share and accumulate over
+                      the lifetime of the partnership.
+                    </p>
+                  </div>
+
+                  <div className="mb-6">
+                    <h4 className="font-bold text-foreground mb-3 uppercase tracking-[0.2em] text-[11px]">Calculation Model</h4>
+                    <div className="bg-secondary/40 p-4 rounded-none border border-border font-mono text-xs text-muted-foreground space-y-1">
+                      <div>per_account_payout = MIN(company_commission × 0.50, $500_remaining)</div>
+                      <div>lifetime_payout    = SUM(per_account_payout) up to 10 eligible accounts</div>
+                      <div>program_cap        = $500 × 10 = $5,000</div>
+                      <div>milestone_bonus    = FLOOR(successful_merchants / 5) × $500</div>
+                      <div>total_earnings     = MIN(lifetime_payout, $5,000) + milestone_bonus</div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 className="font-bold text-foreground mb-3 uppercase tracking-[0.2em] text-[11px]">Operating Rules</h4>
+                    <ol className="text-sm text-muted-foreground space-y-2 list-decimal pl-5">
+                      <li>Referrers submit leads through the Partner Portal at <code className="text-xs bg-secondary px-1.5 py-0.5">/affiliate/referral</code>; submissions automatically tag <code className="text-xs bg-secondary px-1.5 py-0.5">applications.referral_source</code> with the partner's name.</li>
+                      <li>The first 10 accounts (by earliest commission record date) are the eligible cohort. Subsequent accounts are tracked but display $0 with a "Beyond 10-account cap" badge.</li>
+                      <li>Per-account payouts are capped client-side and server-side; values can never exceed $500 per account or $5,000 in aggregate.</li>
+                      <li>Clawbacks apply within the standard 90-day window from a merchant's go-live date.</li>
+                      <li>Partners are notified of milestone bonus thresholds in the portal earnings dashboard.</li>
+                      <li>Program terms (rate, cap, ceiling, bonus) are stored on the <code className="text-xs bg-secondary px-1.5 py-0.5">referrers</code> record and can be adjusted per partner by Admin.</li>
+                    </ol>
+                  </div>
+                </section>
+
+
                 <section id="appendix" className="bg-secondary/50 rounded-none border border-border p-8">
                   <h2 className="font-['Playfair_Display'] text-xl font-bold text-foreground mb-6">
                     Appendix — SOP Structure
@@ -2350,15 +2671,15 @@ Sales Support`,
                     <div>
                       <h3 className="text-[hsl(var(--gold))] font-bold mb-3 text-base">7. Pipeline & Workflow</h3>
                       <div className="flex flex-wrap items-center gap-2 mb-4 text-xs font-bold">
-                        {["discovery", "qualification", "preboarding", "underwriting", "boarding", "live"].map((s, i) => (
+                        {["discovery", "qualified", "application_prep", "underwriting_review", "processor_approval", "gateway_submitted", "integration_setup", "testing", "go_live_ready", "closed_won"].map((s, i, arr) => (
                           <div key={s} className="flex items-center gap-2">
                             <code className="bg-background px-2 py-1 border border-border text-foreground">{s}</code>
-                            {i < 5 && <ArrowRight className="w-3 h-3 text-muted-foreground" />}
+                            {i < arr.length - 1 && <ArrowRight className="w-3 h-3 text-muted-foreground" />}
                           </div>
                         ))}
                       </div>
                       <ul className="space-y-1.5 text-muted-foreground">
-                        <li>• <strong className="text-foreground">Service Types:</strong> Processing, Gateway Only, Document Submission</li>
+                        <li>• <strong className="text-foreground">Service Types:</strong> Processing (10 stages) and Gateway Only (skips App Prep, Underwriting, Approved — blocked from underwriting by design)</li>
                         <li>• <strong className="text-foreground">SLA Tracking:</strong> Automatic 24-hour SLA tasks on stage entry</li>
                         <li>• <strong className="text-foreground">Realtime:</strong> Pipeline, chat, notifications use WebSocket subscriptions</li>
                         <li>• <strong className="text-foreground">Auto-assignment:</strong> Web submissions at 100% completion → support@merchanthaus.io</li>

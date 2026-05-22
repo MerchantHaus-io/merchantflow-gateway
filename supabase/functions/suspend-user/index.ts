@@ -14,17 +14,21 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Verify caller is admin via JWT or allow service_role
+    // Require a valid admin JWT — never trust missing/anon headers
+    const ADMIN_EMAILS = ["admin@merchanthaus.io", "jamie@merchanthaus.io", "onboarding@merchanthaus.io"];
     const authHeader = req.headers.get("Authorization");
-    if (authHeader) {
-      const token = authHeader.replace("Bearer ", "");
-      // Check if it's a user token (not service role)
-      const { data: { user: caller } } = await supabaseAdmin.auth.getUser(token);
-      if (caller) {
-        const adminEmails = ["admin@merchanthaus.io", "jamie@merchanthaus.io"];
-        if (!adminEmails.includes(caller.email || "")) throw new Error("Not admin");
-      }
-      // If no caller found, could be service_role - allow through
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const token = authHeader.replace("Bearer ", "").trim();
+    const { data: callerData, error: callerErr } = await supabaseAdmin.auth.getUser(token);
+    const callerEmail = (callerData?.user?.email ?? "").toLowerCase();
+    if (callerErr || !callerData?.user || !ADMIN_EMAILS.map(e => e.toLowerCase()).includes(callerEmail)) {
+      return new Response(JSON.stringify({ error: "Admin access required" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const { userId, action } = await req.json();

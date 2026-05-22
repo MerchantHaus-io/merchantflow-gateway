@@ -48,6 +48,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/contexts/AuthContext";
+import type { DocumentRow } from "@/types/db";
 import { useTasks } from "@/contexts/TasksContext";
 import { cn } from "@/lib/utils";
 import { 
@@ -72,6 +73,8 @@ import { CommunicationLogPanel } from "@/components/CommunicationLogPanel";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
 import { PortalActivationDialog } from "@/components/opportunity-detail/PortalActivationDialog";
+import { PricingBadges } from "@/components/PricingBadges";
+
 
 // Helper components
 const InfoItem = ({ label, value }: { label: string; value?: string | null }) => (
@@ -105,7 +108,20 @@ const EditField = ({
 
 // Emails component - shows client_interactions of type email for the account
 const EmailsSection = ({ accountId, opportunityId }: { accountId: string; opportunityId?: string }) => {
-  const [emails, setEmails] = useState<any[]>([]);
+  type EmailRow = {
+    id: string;
+    source: 'interaction' | 'gmail';
+    subject: string | null;
+    from: string;
+    to: string;
+    toName: string;
+    body: string;
+    status: string | null;
+    date: string | null;
+    channel: string | null;
+    resolution: string | null;
+  };
+  const [emails, setEmails] = useState<EmailRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -261,7 +277,7 @@ const EmailsSection = ({ accountId, opportunityId }: { accountId: string; opport
 
 // Documents component
 const DocumentsSection = ({ opportunityId }: { opportunityId: string }) => {
-  const [documents, setDocuments] = useState<any[]>([]);
+  const [documents, setDocuments] = useState<DocumentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
 
@@ -755,7 +771,7 @@ const OpportunityDetail = () => {
                       <div className="bg-primary/10 text-primary p-3 rounded-lg">
                         <Building2 className="h-6 w-6" />
                       </div>
-                      <div>
+                        <div>
                         <CardTitle className="text-2xl">{account?.name || 'Unknown Business'}</CardTitle>
                         <div className="flex items-center gap-3 mt-2">
                           <Badge 
@@ -765,6 +781,11 @@ const OpportunityDetail = () => {
                           >
                             {stageConfig.label}
                           </Badge>
+                          <PricingBadges
+                            pricingPlan={opportunity.pricing_plan}
+                            gatewayTier={opportunity.gateway_tier}
+                            size="sm"
+                          />
                           {opportunity.status === 'dead' && (
                             <div className="flex items-center gap-2">
                               <Badge variant="destructive">Archived</Badge>
@@ -1107,6 +1128,14 @@ const OpportunityDetail = () => {
                               <InfoItem label="Referral Source" value={opportunity.referral_source} />
                               <InfoItem label="Timezone" value={opportunity.timezone} />
                               <InfoItem label="Language" value={opportunity.language} />
+                              <div className="space-y-1">
+                                <p className="text-xs text-muted-foreground">Pricing Plan</p>
+                                <PricingBadges
+                                  pricingPlan={opportunity.pricing_plan}
+                                  gatewayTier={opportunity.gateway_tier}
+                                  size="sm"
+                                />
+                              </div>
                             </div>
                           )}
                         </div>

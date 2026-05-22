@@ -15,8 +15,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTasks } from "@/contexts/TasksContext";
 import DateRangeFilter from "@/components/DateRangeFilter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, ExternalLink, Eye } from "lucide-react";
+import { User, ExternalLink, Eye, Kanban, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/PageHeader";
 import { DateRange } from "react-day-picker";
 import { isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import GameSplash from "@/components/GameSplash";
@@ -63,7 +64,7 @@ type WizardPrefillForm = {
   website_url: string;
   username: string;
   current_processor: string;
-  documents: unknown[];
+  documents: any[];
   notes: string;
 };
 
@@ -511,24 +512,8 @@ const Index = () => {
     setLoading(false);
   };
 
-  useEffect(() => {
-    const now = Date.now();
-    opportunities.forEach(opportunity => {
-      if (opportunity.stage === 'discovery') {
-        const createdAt = new Date(opportunity.created_at).getTime();
-        const ageInHours = (now - createdAt) / (1000 * 60 * 60);
-        if (ageInHours >= 24) {
-          ensureSlaTask({
-            relatedOpportunityId: opportunity.id,
-            title: `24h follow-up: ${opportunity.account?.name || 'Application'}`,
-            description: 'Application has been waiting for review for 24 hours',
-            assignee: opportunity.assigned_to || user?.email || 'Unassigned',
-            source: 'sla'
-          });
-        }
-      }
-    });
-  }, [ensureSlaTask, opportunities, user?.email]);
+  // SLA follow-ups are surfaced as notifications only (see sla-escalation edge function).
+  // Auto-tasks were too noisy and have been removed from the task system.
 
   // Filter opportunities by date range and assignee
   const filteredOpportunities = useMemo(() => {
@@ -848,42 +833,48 @@ const Index = () => {
   }
   return (
       <AppLayout onNewApplication={() => setIsModalOpen(true)}>
-        <div className="flex-1 flex flex-col gap-2 sm:gap-3 p-2 sm:p-3 lg:p-4 min-h-0 overflow-hidden mobile-landscape:gap-2">
-        {(
-           <header className="h-12 flex items-center px-4 rounded-lg border shadow-sm gap-2 flex-shrink-0 sticky top-0 z-20 border-border/60 bg-card/90 dark:bg-card/80">
-            
-            <a
-              href="/merchant-apply"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="ml-1 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
-            >
-              <ExternalLink className="h-3 w-3" />
-              <span className="hidden sm:inline">Merchant Application</span>
-            </a>
-            <span className="hidden sm:inline-flex items-center text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full ml-2">
-              {filteredOpportunities.length} deals
-            </span>
-            <div className="ml-auto flex items-center gap-2">
-              <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
-                <SelectTrigger className="w-[140px] h-8 text-xs bg-background border-border">
-                  <User className="h-3 w-3 mr-1" />
-                  <SelectValue placeholder="Filter by..." />
-                </SelectTrigger>
-                <SelectContent className="bg-popover z-50">
-                  <SelectItem value="all">All Cards</SelectItem>
-                  <SelectItem value="mine">My Cards</SelectItem>
-                  {TEAM_MEMBERS.map((member) => (
-                    <SelectItem key={member} value={member}>
-                      {member}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} filterBy={filterBy} onFilterByChange={setFilterBy} />
-            </div>
-          </header>
-        )}
+        <div className="flex flex-col h-full overflow-hidden">
+          <PageHeader
+            icon={Kanban}
+            title="Pipeline"
+            color="primary"
+            actions={
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="hidden sm:inline-flex items-center text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                  {filteredOpportunities.length} deals
+                </span>
+                <a
+                  href="/merchant-apply"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hidden md:inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Merchant Application
+                </a>
+                <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
+                  <SelectTrigger className="w-[140px] h-8 text-xs bg-background border-border">
+                    <User className="h-3 w-3 mr-1" />
+                    <SelectValue placeholder="Filter by..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover z-50">
+                    <SelectItem value="all">All Cards</SelectItem>
+                    <SelectItem value="mine">My Cards</SelectItem>
+                    {TEAM_MEMBERS.map((member) => (
+                      <SelectItem key={member} value={member}>
+                        {member}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} filterBy={filterBy} onFilterByChange={setFilterBy} />
+                <Button size="sm" onClick={() => setIsModalOpen(true)}>
+                  <Plus className="h-4 w-4 mr-1" /> New Application
+                </Button>
+              </div>
+            }
+          />
+          <div className="flex-1 flex flex-col gap-2 sm:gap-3 p-2 sm:p-3 lg:p-4 min-h-0 overflow-hidden mobile-landscape:gap-2">
         <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
           {/* Pipeline board — takes ~75% of available space */}
           <div className="flex flex-col min-h-0" style={{ flex: '3 1 0%' }}>
@@ -938,7 +929,8 @@ const Index = () => {
             </div>
           )}
         </main>
-      </div>
+          </div>
+        </div>
 
       <NewApplicationModal open={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleNewApplication} />
 

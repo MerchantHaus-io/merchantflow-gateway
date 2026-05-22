@@ -42,6 +42,7 @@ import {
   AlertCircle,
   XCircle,
   MessageSquare,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import CommentsTab from "@/components/CommentsTab";
@@ -50,6 +51,10 @@ import { cn } from "@/lib/utils";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
 import { SortableTableHead } from "@/components/SortableTableHead";
+import { PageHeader } from "@/components/PageHeader";
+import { StatCard } from "@/components/StatCard";
+import { EmptyState } from "@/components/EmptyState";
+import { ListViewHeader } from "@/components/list-view/ListViewHeader";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -155,10 +160,68 @@ const Contacts = () => {
   const [editingContact, setEditingContact] = useState<ContactWithAccount | null>(null);
   const [isNewDialogOpen, setIsNewDialogOpen] = useState(false);
 
-  // Inline editing — same as original
+  // Inline single-field editing
   const [inlineEditId, setInlineEditId] = useState<string | null>(null);
   const [inlineEditField, setInlineEditField] = useState<string | null>(null);
   const [inlineEditValue, setInlineEditValue] = useState<string>('');
+
+  // Full row inline editing (replaces modal)
+  const [rowEditId, setRowEditId] = useState<string | null>(null);
+  const [rowEditData, setRowEditData] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    fax: '',
+    account_id: '',
+    assigned_to: '',
+  });
+  const [rowEditSaving, setRowEditSaving] = useState(false);
+
+  const startRowEdit = (contact: ContactWithAccount) => {
+    setRowEditId(contact.id);
+    setRowEditData({
+      first_name: contact.first_name || '',
+      last_name: contact.last_name || '',
+      email: contact.email || '',
+      phone: contact.phone || '',
+      fax: contact.fax || '',
+      account_id: contact.account_id || '',
+      assigned_to: contact.assigned_to || '',
+    });
+  };
+  const cancelRowEdit = () => setRowEditId(null);
+  const saveRowEdit = async () => {
+    if (!rowEditId) return;
+    setRowEditSaving(true);
+    const target = contacts.find(c => c.id === rowEditId);
+    const { error: cErr } = await supabase
+      .from('contacts')
+      .update({
+        first_name: rowEditData.first_name || null,
+        last_name: rowEditData.last_name || null,
+        email: rowEditData.email || null,
+        phone: rowEditData.phone || null,
+        fax: rowEditData.fax || null,
+        account_id: rowEditData.account_id || target?.account_id || null,
+      })
+      .eq('id', rowEditId);
+    if (cErr) {
+      toast.error('Failed to save contact');
+      setRowEditSaving(false);
+      return;
+    }
+    if (target?.opportunity_id) {
+      await supabase
+        .from('opportunities')
+        .update({ assigned_to: rowEditData.assigned_to || null })
+        .eq('id', target.opportunity_id);
+    }
+    toast.success('Contact updated');
+    setRowEditId(null);
+    setRowEditSaving(false);
+    fetchContacts();
+  };
 
   const startInlineEdit = (id: string, field: string, value: string) => {
     setInlineEditId(id);
@@ -637,20 +700,80 @@ const Contacts = () => {
   };
 
   // ─── Render ──────────────────────────────────────────────────────────────────
+  const selectedCount = selectedIds.size;
+  const visibleCount = filteredContacts.length;
+  const contactsStatusText = selectedCount > 0
+    ? `${selectedCount} item${selectedCount === 1 ? '' : 's'} selected`
+    : `${visibleCount} item${visibleCount === 1 ? '' : 's'} • Sorted by ${typeof sortField === 'string' ? sortField.charAt(0).toUpperCase() + sortField.slice(1).replace('_', ' ') : 'Name'}`;
+  const contactsViewLabel = quickFilter === 'unassigned'
+    ? 'Unassigned - Contacts'
+    : quickFilter === 'no_deal'
+      ? 'No Deal - Contacts'
+      : 'All - Contacts';
+
   return (
-    <AppLayout
-      pageTitle="Contacts"
-      headerActions={
-        <Button onClick={openNewDialog} className="gap-1.5">
-          <UserPlus className="h-4 w-4" />
-          New Contact
-        </Button>
-      }
-    >
-      <div className="flex flex-col h-full">
+    <AppLayout>
+      <div className="flex flex-col h-full overflow-hidden">
+        <ListViewHeader
+          icon={Users}
+          category="Contacts"
+          viewLabel={contactsViewLabel}
+          color="primary"
+          pinUrl="/contacts"
+          status={contactsStatusText}
+          views={[
+            { key: 'all', label: 'All - Contacts' },
+            { key: 'unassigned', label: 'Unassigned - Contacts' },
+            { key: 'no_deal', label: 'No Deal - Contacts' },
+          ]}
+          onViewChange={(k) => setQuickFilter(k as typeof quickFilter)}
+          actions={
+            <>
+              <Button variant="outline" size="sm" className="h-8 text-info border-info/30 hover:bg-info/10 hover:text-info">
+                <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Intelligence View
+              </Button>
+              <Button size="sm" onClick={openNewDialog} className="h-8 gap-1.5">
+                <UserPlus className="h-3.5 w-3.5" /> New
+              </Button>
+            </>
+          }
+        />
+
+        {/* KPI Cards — click to quick-filter */}
+        <div className="px-4 lg:px-6 pt-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 stagger-children">
+            <StatCard
+              label="Total Contacts"
+              value={loading ? "—" : stats.total}
+              icon={Users}
+              color="primary"
+              onClick={() => setQuickFilter('all')}
+            />
+            <StatCard
+              label="Unassigned"
+              value={loading ? "—" : stats.unassigned}
+              icon={AlertCircle}
+              color="warning"
+              onClick={() => setQuickFilter(quickFilter === 'unassigned' ? 'all' : 'unassigned')}
+            />
+            <StatCard
+              label="No Deal"
+              value={loading ? "—" : stats.noDeal}
+              icon={Link2}
+              color="muted"
+              onClick={() => setQuickFilter(quickFilter === 'no_deal' ? 'all' : 'no_deal')}
+            />
+            <StatCard
+              label="Live Clients"
+              value={loading ? "—" : stats.liveClients}
+              icon={TrendingUp}
+              color="success"
+            />
+          </div>
+        </div>
 
         {/* ══ Sticky Toolbar ═══════════════════════════════════════════════════ */}
-        <div className="px-4 lg:px-6 py-3 border-b border-border/60 bg-background/80 backdrop-blur-sm sticky top-0 z-10 space-y-3">
+        <div className="px-4 lg:px-6 pt-3 pb-3 mt-3 border-b border-border/60 bg-background/80 backdrop-blur-sm sticky top-0 z-10 space-y-3">
 
           {/* Row 1: search + filter dropdowns + view toggle */}
           <div className="flex items-center gap-2 flex-wrap">
@@ -738,62 +861,30 @@ const Contacts = () => {
             </div>
           </div>
 
-          {/* Row 2: stat / quick-filter pills */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <button
-              onClick={() => setQuickFilter('all')}
-              className={cn(
-                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors border",
-                quickFilter === 'all'
-                  ? "bg-foreground text-background border-foreground"
-                  : "text-muted-foreground border-border hover:text-foreground hover:border-foreground/30"
+          {/* Row 2: active quick-filter chip + result count */}
+          {(quickFilter !== 'all' || hasActiveFilters) && (
+            <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
+              {quickFilter === 'unassigned' && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-warning/10 text-warning border border-warning/30">
+                  <AlertCircle className="h-3 w-3" /> Showing unassigned
+                  <button onClick={() => setQuickFilter('all')} className="ml-1 hover:text-foreground" aria-label="Clear">
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
               )}
-            >
-              <Users className="h-3 w-3" />
-              {loading ? '…' : stats.total} Contacts
-            </button>
-
-            <button
-              onClick={() => setQuickFilter(quickFilter === 'unassigned' ? 'all' : 'unassigned')}
-              className={cn(
-                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors border",
-                quickFilter === 'unassigned'
-                  ? "bg-amber-500 text-white border-amber-500"
-                  : stats.unassigned > 0
-                    ? "text-amber-600 border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                    : "text-muted-foreground border-border"
+              {quickFilter === 'no_deal' && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-foreground border border-border">
+                  <Link2 className="h-3 w-3" /> Showing contacts without deals
+                  <button onClick={() => setQuickFilter('all')} className="ml-1 hover:text-foreground" aria-label="Clear">
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
               )}
-            >
-              <AlertCircle className="h-3 w-3" />
-              {loading ? '…' : stats.unassigned} Unassigned
-            </button>
-
-            <button
-              onClick={() => setQuickFilter(quickFilter === 'no_deal' ? 'all' : 'no_deal')}
-              className={cn(
-                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors border",
-                quickFilter === 'no_deal'
-                  ? "bg-foreground text-background border-foreground"
-                  : "text-muted-foreground border-border hover:text-foreground hover:border-foreground/30"
-              )}
-            >
-              <Link2 className="h-3 w-3" />
-              {loading ? '…' : stats.noDeal} No Deal
-            </button>
-
-            <span className="text-border mx-1 select-none">|</span>
-
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border text-emerald-600 border-emerald-200 dark:border-emerald-800">
-              <TrendingUp className="h-3 w-3" />
-              {loading ? '…' : stats.liveClients} Live
-            </span>
-
-            {hasActiveFilters && (
-              <span className="ml-auto text-xs text-muted-foreground">
+              <span className="ml-auto">
                 {filteredContacts.length} result{filteredContacts.length !== 1 ? 's' : ''}
               </span>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* ══ Bulk Actions Bar ══════════════════════════════════════════════════ */}
@@ -846,6 +937,7 @@ const Contacts = () => {
                         className={someOnPageSelected && !allOnPageSelected ? "data-[state=checked]:bg-primary/50" : ""}
                       />
                     </TableHead>
+                    <TableHead className="w-10 text-xs text-muted-foreground font-medium text-right pr-2">#</TableHead>
                     <SortableTableHead field="first_name" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Name</SortableTableHead>
                     <TableHead className="text-xs text-muted-foreground font-medium">Type</TableHead>
                     <SortableTableHead field="email" currentSortField={sortField} sortDirection={sortDirection} onSort={handleSort}>Email</SortableTableHead>
@@ -859,12 +951,122 @@ const Contacts = () => {
                 </TableHeader>
                 <TableBody>
                   {paginatedContacts.length ? (
-                    paginatedContacts.map((contact) => {
+                    paginatedContacts.map((contact, idx) => {
+                      const rowNumber = (currentPage - 1) * ITEMS_PER_PAGE + idx + 1;
                       const stageConfig = contact.stage ? STAGE_CONFIG[contact.stage as OpportunityStage] : null;
                       const contactType = getContactType(contact.stage);
                       const fullName = [contact.first_name, contact.last_name].filter(Boolean).join(' ');
                       const initials = [contact.first_name?.[0], contact.last_name?.[0]].filter(Boolean).join('').toUpperCase() || '?';
                       const avatarBg = avatarColor(fullName || contact.id);
+                      const isRowEditing = rowEditId === contact.id;
+
+                      if (isRowEditing) {
+                         return (
+                           <TableRow
+                             key={contact.id}
+                             className="bg-primary/5 hover:bg-primary/5"
+                             onKeyDown={(e) => {
+                               if (e.key === 'Enter' && !e.shiftKey) {
+                                 e.preventDefault();
+                                 if (!rowEditSaving) saveRowEdit();
+                               } else if (e.key === 'Escape') {
+                                 e.preventDefault();
+                                 if (!rowEditSaving) cancelRowEdit();
+                               }
+                             }}
+                           >
+                             <TableCell className="py-1 pl-3 w-8" />
+                            <TableCell className="py-1 text-right pr-2 text-[11px] text-muted-foreground tabular-nums">{rowNumber}</TableCell>
+                            <TableCell className="py-1">
+                              <div className="flex gap-1">
+                                <Input
+                                  autoFocus
+                                  placeholder="First"
+                                  value={rowEditData.first_name}
+                                  onChange={(e) => setRowEditData(d => ({ ...d, first_name: e.target.value }))}
+                                  className="h-7 text-xs px-2 w-20"
+                                />
+                                <Input
+                                  placeholder="Last"
+                                  value={rowEditData.last_name}
+                                  onChange={(e) => setRowEditData(d => ({ ...d, last_name: e.target.value }))}
+                                  className="h-7 text-xs px-2 w-20"
+                                />
+                              </div>
+                            </TableCell>
+                            <TableCell className="py-1">
+                              <span className="text-[10px] text-muted-foreground italic">editing…</span>
+                            </TableCell>
+                            <TableCell className="py-1">
+                              <Input
+                                type="email"
+                                placeholder="email"
+                                value={rowEditData.email}
+                                onChange={(e) => setRowEditData(d => ({ ...d, email: e.target.value }))}
+                                className="h-7 text-xs px-2 w-44"
+                              />
+                            </TableCell>
+                            <TableCell className="py-1">
+                              <Input
+                                placeholder="phone"
+                                value={rowEditData.phone}
+                                onChange={(e) => setRowEditData(d => ({ ...d, phone: e.target.value }))}
+                                className="h-7 text-xs px-2 w-32"
+                              />
+                            </TableCell>
+                            <TableCell className="py-1">
+                              <Select value={rowEditData.account_id} onValueChange={(v) => setRowEditData(d => ({ ...d, account_id: v }))}>
+                                <SelectTrigger className="h-7 text-xs w-40"><SelectValue placeholder="Account" /></SelectTrigger>
+                                <SelectContent className="bg-popover">
+                                  {accounts.map(a => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell className="py-1">
+                              {stageConfig ? (
+                                <span className="text-[11px] text-muted-foreground">{stageConfig.label}</span>
+                              ) : <span className="text-[11px] text-muted-foreground/40">—</span>}
+                            </TableCell>
+                            <TableCell className="py-1">
+                              <Select
+                                value={rowEditData.assigned_to || 'unassigned'}
+                                onValueChange={(v) => setRowEditData(d => ({ ...d, assigned_to: v === 'unassigned' ? '' : v }))}
+                              >
+                                <SelectTrigger className="h-7 text-xs w-32"><SelectValue placeholder="Owner" /></SelectTrigger>
+                                <SelectContent className="bg-popover">
+                                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                                  {TEAM_MEMBERS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell className="py-1">
+                              <Input
+                                placeholder="fax"
+                                value={rowEditData.fax}
+                                onChange={(e) => setRowEditData(d => ({ ...d, fax: e.target.value }))}
+                                className="h-7 text-xs px-2 w-24"
+                              />
+                            </TableCell>
+                            <TableCell className="py-1">
+                               <div className="flex items-center justify-end gap-2 pr-1">
+                                 <span className="hidden md:inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                                   <kbd className="font-mono bg-muted px-1 py-0.5 rounded border border-border">Enter</kbd>
+                                   <span>save</span>
+                                   <span className="opacity-50">·</span>
+                                   <kbd className="font-mono bg-muted px-1 py-0.5 rounded border border-border">Esc</kbd>
+                                   <span>cancel</span>
+                                 </span>
+                                 <Button size="sm" onClick={saveRowEdit} disabled={rowEditSaving} className="h-7 px-2 text-xs">
+                                   <Check className="h-3.5 w-3.5 mr-1" />Save
+                                 </Button>
+                                 <Button size="sm" variant="ghost" onClick={cancelRowEdit} disabled={rowEditSaving} className="h-7 px-2 text-xs">
+                                   <X className="h-3.5 w-3.5" />
+                                 </Button>
+                               </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      }
 
                       return (
                         <TableRow
@@ -882,14 +1084,14 @@ const Contacts = () => {
                               aria-label={`Select ${fullName || 'contact'}`}
                             />
                           </TableCell>
-
+                          <TableCell className="py-2 text-right pr-2 text-[11px] text-muted-foreground tabular-nums">{rowNumber}</TableCell>
                           {/* Name + colored avatar */}
                           <TableCell className="py-2">
                             <div className="flex items-center gap-2.5">
                               <div className={cn("w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0", avatarBg)}>
                                 {initials}
                               </div>
-                              <span className="text-sm font-medium truncate">
+                              <span className="text-sm font-normal text-info hover:underline truncate">
                                 {fullName || <span className="italic text-muted-foreground">Unnamed</span>}
                               </span>
                             </div>
@@ -1015,7 +1217,7 @@ const Contacts = () => {
                                   <Mail className="h-3.5 w-3.5 text-muted-foreground" />
                                 </a>
                               )}
-                              <button onClick={() => openEditDialog(contact)} className="p-1.5 rounded hover:bg-muted transition-colors" title="Edit">
+                              <button onClick={() => startRowEdit(contact)} className="p-1.5 rounded hover:bg-muted transition-colors" title="Edit">
                                 <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                               </button>
                               <DropdownMenu>
@@ -1031,7 +1233,7 @@ const Contacts = () => {
                                   <DropdownMenuItem onClick={() => { setSelectedContact(contact); setDetailTab('comments'); }}>
                                     <MessageSquare className="h-4 w-4 mr-2" />View Comments
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => openEditDialog(contact)}>
+                                  <DropdownMenuItem onClick={() => startRowEdit(contact)}>
                                     <Pencil className="h-4 w-4 mr-2" />Edit
                                   </DropdownMenuItem>
                                   {!contact.opportunity_id && contact.account_id && (
@@ -1055,14 +1257,17 @@ const Contacts = () => {
                     })
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={10} className="py-16 text-center">
-                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                          <Users className="h-8 w-8 opacity-20" />
-                          <p className="text-sm font-medium">No contacts found</p>
-                          {hasActiveFilters && (
-                            <button onClick={clearAllFilters} className="text-xs text-primary hover:underline">Clear filters</button>
-                          )}
-                        </div>
+                      <TableCell colSpan={11}>
+                        <EmptyState
+                          icon={Users}
+                          title="No contacts found"
+                          description={hasActiveFilters ? "Adjust your filters or create a new contact." : "Create a contact to get started."}
+                          actionLabel="New Contact"
+                          onAction={openNewDialog}
+                          secondaryLabel={hasActiveFilters ? "Clear filters" : undefined}
+                          onSecondary={hasActiveFilters ? clearAllFilters : undefined}
+                          size="sm"
+                        />
                       </TableCell>
                     </TableRow>
                   )}
@@ -1173,7 +1378,7 @@ const Contacts = () => {
                               <ArrowRightCircle className="h-3.5 w-3.5" />
                             </button>
                           )}
-                          <button onClick={() => openEditDialog(contact)}
+                          <button onClick={() => startRowEdit(contact)}
                             className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
@@ -1187,12 +1392,17 @@ const Contacts = () => {
                   </div>
                 );
               }) : (
-                <div className="col-span-full py-16 flex flex-col items-center gap-2 text-muted-foreground">
-                  <Users className="h-8 w-8 opacity-20" />
-                  <p className="text-sm font-medium">No contacts found</p>
-                  {hasActiveFilters && (
-                    <button onClick={clearAllFilters} className="text-xs text-primary hover:underline">Clear filters</button>
-                  )}
+                <div className="col-span-full">
+                  <EmptyState
+                    icon={Users}
+                    title="No contacts found"
+                    description={hasActiveFilters ? "Adjust your filters or create a new contact." : "Create a contact to get started."}
+                    actionLabel="New Contact"
+                    onAction={openNewDialog}
+                    secondaryLabel={hasActiveFilters ? "Clear filters" : undefined}
+                    onSecondary={hasActiveFilters ? clearAllFilters : undefined}
+                    size="sm"
+                  />
                 </div>
               )}
             </div>
@@ -1298,7 +1508,7 @@ const Contacts = () => {
                       size="sm"
                       variant="outline"
                       className="h-8 gap-1.5 text-xs"
-                      onClick={() => { setSelectedContact(null); openEditDialog(selectedContact); }}
+                      onClick={() => { setSelectedContact(null); setViewMode('table'); startRowEdit(selectedContact); }}
                     >
                       <Pencil className="h-3.5 w-3.5" />Edit
                     </Button>
@@ -1427,65 +1637,7 @@ const Contacts = () => {
         </SheetContent>
       </Sheet>
 
-      {/* ══ Edit Contact Dialog ═══════════════════════════════════════════════ */}
-      <Dialog open={!!editingContact} onOpenChange={(open) => { if (!open) setEditingContact(null); }}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <div className="flex items-center justify-between pr-6">
-              <DialogTitle>Edit Contact</DialogTitle>
-              <AutoSaveIndicator status={saveStatus} />
-            </div>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Account</Label>
-              <Select value={formData.account_id} onValueChange={(value) => setFormData({ ...formData, account_id: value })}>
-                <SelectTrigger className="bg-secondary"><SelectValue placeholder="Select account" /></SelectTrigger>
-                <SelectContent className="bg-popover">
-                  {accounts.map((a) => <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs">First Name</Label>
-                <Input value={formData.first_name} onChange={(e) => setFormData({ ...formData, first_name: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Last Name</Label>
-                <Input value={formData.last_name} onChange={(e) => setFormData({ ...formData, last_name: e.target.value })} />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Email</Label>
-              <Input type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Phone</Label>
-                <Input value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Fax</Label>
-                <Input value={formData.fax} onChange={(e) => setFormData({ ...formData, fax: e.target.value })} />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Assigned To</Label>
-              <Select value={formData.assigned_to || "unassigned"} onValueChange={(v) => setFormData({ ...formData, assigned_to: v === "unassigned" ? "" : v })}>
-                <SelectTrigger className="bg-secondary"><SelectValue placeholder="Select team member" /></SelectTrigger>
-                <SelectContent className="bg-popover">
-                  <SelectItem value="unassigned">Unassigned</SelectItem>
-                  {TEAM_MEMBERS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex justify-end pt-2">
-              <Button variant="outline" onClick={() => setEditingContact(null)}>Close</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Edit Contact dialog removed in favor of inline row editing */}
 
       {/* ══ New Contact Dialog ════════════════════════════════════════════════ */}
       <Dialog open={isNewDialogOpen} onOpenChange={setIsNewDialogOpen}>

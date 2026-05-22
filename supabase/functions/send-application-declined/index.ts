@@ -290,7 +290,7 @@ const handler = async (req: Request): Promise<Response> => {
             await sb.from("activities").insert({
               opportunity_id: opps[0].id,
               type: "email_notification_sent",
-              description: `📧 ${content.teamHeading.replace(/[⛔🚫] /, '')} notification sent to ${recipientName} (${recipientEmail}). Reason: ${outcomeReason}`,
+              description: `📧 ${content.teamHeading.replace(/[⛔🚫] /u, '')} notification sent to ${recipientName} (${recipientEmail}). Reason: ${outcomeReason}`,
               user_email: "system@ops.internal",
             });
           }

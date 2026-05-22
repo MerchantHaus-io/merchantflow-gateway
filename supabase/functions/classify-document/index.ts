@@ -15,8 +15,13 @@ const VALID_LABELS = [
   "VAR/Tear Sheet", "Signed Agreement", "Other",
 ];
 
+import { requireAuth } from "../_shared/require-auth.ts";
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const unauth = await requireAuth(req, corsHeaders);
+  if (unauth) return unauth;
 
   try {
     const { document_id } = await req.json();

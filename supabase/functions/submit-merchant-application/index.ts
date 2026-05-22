@@ -434,7 +434,7 @@ const InputSchema = z.discriminatedUnion("service_type", [
 // ─── File Upload Helper ───
 
 async function uploadFiles(
-  supabase: any,
+  supabase: unknown,
   applicationId: string,
   files: z.infer<typeof FileSchema>[],
   clientIp: string,
@@ -506,10 +506,15 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { client_ip, user_agent, ...formData } = body;
+    // Strip any client-supplied client_ip — it is forgeable. Use trusted headers.
+    const { client_ip: _ignoredIp, user_agent: bodyUserAgent, ...formData } = body;
     const parsed = InputSchema.parse(formData);
-    const clientIp = client_ip || "unknown";
-    const userAgent = user_agent || "unknown";
+    const clientIp =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("cf-connecting-ip") ||
+      req.headers.get("x-real-ip") ||
+      "unknown";
+    const userAgent = req.headers.get("user-agent") || bodyUserAgent || "unknown";
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -517,7 +522,7 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceKey);
 
     const applicationId = crypto.randomUUID();
-    const files = (parsed as any).files as z.infer<typeof FileSchema>[] | undefined;
+    const files = (parsed as unknown).files as z.infer<typeof FileSchema>[] | undefined;
 
     if (parsed.service_type === "document_submission") {
       const { error } = await supabase.from("applications").insert({
@@ -812,7 +817,7 @@ Deno.serve(async (req) => {
 
     console.error("submit-merchant-application error:", err);
     return new Response(
-      JSON.stringify({ error: (err as any)?.message || "Internal error" }),
+      JSON.stringify({ error: (err as unknown)?.message || "Internal error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

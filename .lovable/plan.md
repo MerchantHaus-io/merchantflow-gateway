@@ -1,54 +1,87 @@
+# Replace `unknown`/`any` casts with proper types
 
+The previous fix used a bulk `unknown → any` sed to unblock the build. The app currently compiles, but type safety was lost across ~60 files. This plan restores proper typing in waves so we don't reintroduce build breakage.
 
-# Give Atria Autonomous Avatar Control
+## Current state
 
-## What changes
-Atria's avatar in the Office Simulator currently wanders randomly between zones and her desk. This upgrade makes her behavior **context-aware and reactive** — she responds to chat activity, visits users who message her, uses interaction points purposefully, and exhibits personality.
+- `src/integrations/supabase/types.ts` is the generated source of truth (`Database`, `Tables<>`, `Enums<>`).
+- Most components now use `any` for: Supabase query results, catch errors, event payloads, state arrays.
+- A small number of legitimate `unknown` casts remain — Proxy in `activeClient.ts`, SSR storage shim, type-bridges for shape-incompatible DB rows.
 
-## Behavior model
+## Approach
 
-Atria will have a priority-based behavior queue:
+Refactor in 4 waves. After each wave: run `bunx tsc --noEmit`, fix fallout, commit.
 
-| Priority | Trigger | Behavior |
-|----------|---------|----------|
-| 1 (highest) | User sends message in `atria-ai` channel | Walk to that user's desk, face them, idle for a few seconds, then resume |
-| 2 | AI is "thinking" (response pending) | Walk to the whiteboard, face it, play typing animation |
-| 3 | Idle > 30s | Get coffee (walk to coffee machine, pause 4s, return) |
-| 4 | Idle > 60s | Visit a random team member's desk and idle briefly |
-| 5 (default) | No triggers | Current wander behavior (walk between zones, sit at desk) |
+### Wave 1 — Shared utilities (low risk, high leverage)
 
-When Atria arrives at a user's desk after a chat message, a small speech bubble will briefly appear above her head with "..." or a truncated snippet of her response.
+1. Create `src/types/db.ts` re-exporting common row types:
+   ```ts
+   import type { Tables, Enums } from "@/integrations/supabase/types";
+   export type Opportunity   = Tables<"opportunities">;
+   export type Account       = Tables<"accounts">;
+   export type Contact       = Tables<"contacts">;
+   export type Document      = Tables<"opportunity_documents">;
+   export type Interaction   = Tables<"client_interactions">;
+   export type Campaign      = Tables<"outreach_campaigns">;
+   export type CampaignContact = Tables<"outreach_campaign_contacts">;
+   // …etc
+   ```
+2. Add a narrow error helper in `src/lib/friendly-errors.ts`:
+   ```ts
+   export const errorMessage = (e: unknown): string =>
+     e instanceof Error ? e.message : typeof e === "string" ? e : "Unknown error";
+   ```
+3. Codemod every `catch (err: any) { … err.message }` → `catch (err) { … errorMessage(err) }`.
 
-## Technical approach
+### Wave 2 — Page-level state arrays (the noisy ones)
 
-### File: `src/components/chat/OfficeChat.tsx`
+Files with `useState<any[]>` / `useState<any>(null)` that map to a single table:
 
-1. **Extend `NPCWanderState`** with new states: `"walking_to_user"`, `"at_whiteboard"`, `"getting_coffee"`, `"visiting"`
-2. **Add `AtriaIntent` interface** tracking: target email, reason, and callback
-3. **Add intent queue** (`atriaIntentQueue`) to the state ref — the animation loop checks this each frame
-4. **New function `queueAtriaIntent()`** — pushes behavior onto the queue with priority sorting
-5. **Modify the Atria block** in the NPC movement section (lines ~1322-1370) to check the intent queue before falling back to random wander
-6. **Speech bubble**: Add a small canvas-rendered text sprite above Atria's head that fades in/out when she arrives at a destination
+- `OpportunityDetail.tsx` — `emails: Interaction[]`, `documents: Document[]`
+- `LiveAccountDetail.tsx` — `previewDoc: PreviewableDocument | null`
+- `LiveBilling.tsx` — `GroupedAccount.account/contact` → `Account | null`, `Contact | null`
+- `Reports.tsx` — `campaigns: Campaign[]`
+- `Outreach.tsx` / `OutreachDetail.tsx` — `Campaign`, `CampaignContact`
+- `Accounts.tsx`, `Opportunities.tsx`, `Contacts.tsx` — list rows
+- `Calendar.tsx`, `calendar/EventDetailSheet.tsx` — define a local `CalendarEvent` + `Attendee` interface (no DB table)
 
-### File: `src/components/AtriaFAB.tsx`
+Replace `any` with these types. Use `?? null` instead of optional-chaining-with-any.
 
-7. **Dispatch custom event** `"atriaIntent"` when the user sends a message, carrying `{ targetEmail: user.email, reason: "chat" }` — the OfficeChat listens for this and queues Atria walking to the sender's desk
+### Wave 3 — Supabase query result casts
 
-### Interaction point usage
+For joined queries that don't fit the generated row type, declare a local intersection instead of `as any`:
 
-- **Whiteboard**: Atria walks there when "thinking" — plays a subtle arm-raise animation
-- **Coffee machine**: Atria visits during long idle periods — pauses 4s, then picks a new target
-- **Team desks**: Atria occasionally visits a random online team member's desk and idles
+```ts
+type OppWithRelations = Opportunity & {
+  account: Account | null;
+  contact: Contact | null;
+};
+const { data } = await supabase.from("opportunities").select("*, account:accounts(*), contact:contacts(*)").returns<OppWithRelations[]>();
+```
 
-### Speech bubble implementation
+Apply to: `LiveBilling`, `Opportunities`, `Index`, `Home`, `Accounts`, `OpportunityDetailModal`, hooks under `src/hooks/`.
 
-A `THREE.Sprite` with a dynamically generated canvas texture:
-- White rounded rect background, dark text
-- Shows "..." while thinking, then first ~30 chars of response
-- Fades out after 3 seconds
-- Positioned at `y: 2.2` above Atria's mesh
+### Wave 4 — Event handler / payload types
 
-## Files modified
-- `src/components/chat/OfficeChat.tsx` — Enhanced Atria NPC logic, speech bubble sprite, intent queue
-- `src/components/AtriaFAB.tsx` — Dispatch `atriaIntent` event on message send
+- Realtime: `payload: RealtimePostgresChangesPayload<Tables<"x">>` from `@supabase/supabase-js`.
+- Chart `chart.tsx` formatter signatures — use Recharts' `TooltipProps`.
+- Quo API responses (`src/lib/api/quo.ts`) — declare interfaces matching the actual JSON.
 
+### Out of scope (intentionally keep `unknown`)
+
+- `activeClient.ts` Proxy generic forwarding.
+- SSR `Storage` shim in `impersonationClient.ts`.
+- Cross-shape bridge casts (`as unknown as OnboardingWizardState`) where the DB JSONB column legitimately doesn't match the runtime shape — these would need schema work first.
+- Edge functions (Deno) — separate pass; their `unknown` in catch blocks is the TS-recommended default.
+
+## Risks
+
+- Joined Supabase queries often have `null` relations that current `any` code accesses unguarded → fixing types will surface real null-deref bugs. We'll add `?.` and fallbacks as they appear.
+- `Tables<"…">` keys must match actual table names; if any have been renamed since type regen, regenerate types first.
+
+## Deliverable per wave
+
+- All edits + `bunx tsc --noEmit` clean.
+- No new `any` introduced; PR diff should show `any` count decreasing.
+
+Confirm and I'll start with Wave 1.

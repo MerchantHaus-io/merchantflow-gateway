@@ -74,7 +74,7 @@ async function notifyAllUsers(
 
 // ── Call Handlers ────────────────────────────────────────────────────
 
-async function handleCallEvent(supabase: ReturnType<typeof createClient>, eventType: string, callData: any) {
+async function handleCallEvent(supabase: ReturnType<typeof createClient>, eventType: string, callData: unknown) {
   const isIncoming = callData.direction === 'incoming';
   const externalNumber = isIncoming ? callData.from : callData.to;
   const participants = [callData.from, callData.to].filter(Boolean);
@@ -154,7 +154,7 @@ async function handleCallEvent(supabase: ReturnType<typeof createClient>, eventT
   }
 }
 
-async function handleCallRecording(supabase: ReturnType<typeof createClient>, callData: any) {
+async function handleCallRecording(supabase: ReturnType<typeof createClient>, callData: unknown) {
   const recordingMedia = callData.media;
   if (recordingMedia && Array.isArray(recordingMedia) && recordingMedia.length > 0) {
     const recordingUrl = recordingMedia[0]?.url || null;
@@ -165,7 +165,7 @@ async function handleCallRecording(supabase: ReturnType<typeof createClient>, ca
   }
 }
 
-async function handleCallSummary(supabase: ReturnType<typeof createClient>, payload: any) {
+async function handleCallSummary(supabase: ReturnType<typeof createClient>, payload: unknown) {
   const summaryData = payload.data?.object;
   const callId = summaryData?.callId || payload.data?.object?.id;
   if (callId) {
@@ -177,7 +177,7 @@ async function handleCallSummary(supabase: ReturnType<typeof createClient>, payl
   }
 }
 
-async function handleCallTranscript(supabase: ReturnType<typeof createClient>, payload: any) {
+async function handleCallTranscript(supabase: ReturnType<typeof createClient>, payload: unknown) {
   const transcriptData = payload.data?.object;
   const callId = transcriptData?.callId || payload.data?.object?.id;
   if (callId) {
@@ -190,7 +190,7 @@ async function handleCallTranscript(supabase: ReturnType<typeof createClient>, p
 
 // ── Message Handlers ─────────────────────────────────────────────────
 
-async function handleMessageEvent(supabase: ReturnType<typeof createClient>, eventType: string, msgData: any) {
+async function handleMessageEvent(supabase: ReturnType<typeof createClient>, eventType: string, msgData: unknown) {
   const isIncoming = msgData.direction === 'incoming';
   const externalNumber = isIncoming ? msgData.from : (Array.isArray(msgData.to) ? msgData.to[0] : msgData.to);
 
@@ -217,7 +217,7 @@ async function handleMessageEvent(supabase: ReturnType<typeof createClient>, eve
     contact_id: contactId,
     opportunity_id: opportunityId,
     account_id: accountId,
-    media_urls: msgData.media?.map((m: any) => m.url).filter(Boolean) || [],
+    media_urls: msgData.media?.map((m: unknown) => m.url).filter(Boolean) || [],
   };
 
   const { error } = await supabase.from('message_logs').upsert(messageLog, { onConflict: 'quo_message_id' });
@@ -272,7 +272,7 @@ Deno.serve(async (req) => {
 
   try {
     const payload = await req.json();
-    console.log('Quo webhook received:', JSON.stringify(payload).slice(0, 500));
+    console.log('Quo webhook received:', JSON.stringify({ type: payload?.type, hasData: !!payload?.data }));
 
     const supabase = getSupabase();
     const eventType = payload.type;

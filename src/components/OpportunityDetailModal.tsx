@@ -10,10 +10,12 @@ import { Opportunity, STAGE_CONFIG, Account, Contact, getServiceType, EMAIL_TO_U
 import { OutcomeSelector } from "./OutcomeSelector";
 import { OutcomeDisplaySection } from "./opportunity-detail/OutcomeDisplaySection";
 import { OUTCOME_REASONS, OUTCOME_STATUS_LABELS, EMAIL_TRIGGERING_OUTCOMES, PERMANENT_SUPPRESSION_REASONS, REENGAGEMENT_TASKS } from "@/config/outcomeReasons";
-import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, Zap, CreditCard, Loader2, Wand2, RotateCcw, Eye, Check, ExternalLink, ArrowLeft, MoreHorizontal } from "lucide-react";
+import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Trash2, Download, MessageSquare, Skull, AlertTriangle, ClipboardList, Zap, CreditCard, Loader2, Wand2, RotateCcw, Eye, Check, ExternalLink, ArrowLeft, MoreHorizontal, FileSpreadsheet } from "lucide-react";
+import { QuoteGeneratorDialog } from "./pricing/QuoteGeneratorDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { confirmAutoEmail } from "@/components/EmailSendConfirm";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -37,6 +39,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "./AutoSaveIndicator";
 import { StagePath } from "./opportunity-detail/StagePath";
+import { PricingBadges } from "./PricingBadges";
 import { ApplicationProgress } from "./opportunity-detail/ApplicationProgress";
 import { NotesSection } from "./opportunity-detail/NotesSection";
 import { OverviewUnderwritingSummary } from "./opportunity-detail/OverviewUnderwritingSummary";
@@ -91,54 +94,90 @@ const wizardProgressColor = (value: number) => {
 
 type WizardSectionKey = "business" | "legal" | "processing" | "documents";
 
+// Field keys MUST match the snake_case keys persisted by PreboardingWizard's form_state.
+// camelCase aliases are accepted for legacy form_state rows.
+const WIZARD_FIELD_ALIASES: Record<string, string[]> = {
+  dba_name: ["dbaName"],
+  product_description: ["products"],
+  nature_of_business: ["natureOfBusiness"],
+  dba_contact_first_name: ["dbaContactFirst"],
+  dba_contact_last_name: ["dbaContactLast"],
+  dba_contact_phone: ["dbaPhone"],
+  dba_contact_email: ["dbaEmail"],
+  dba_address_line1: ["dbaAddress"],
+  dba_city: ["dbaCity"],
+  dba_state: ["dbaState"],
+  dba_zip: ["dbaZip"],
+  legal_entity_name: ["legalEntityName"],
+  legal_phone: ["legalPhone"],
+  legal_email: ["legalEmail"],
+  federal_tax_id: ["tin"],
+  ownership_type: ["ownershipType"],
+  business_formation_date: ["formationDate"],
+  state_incorporated: ["stateIncorporated"],
+  legal_address_line1: ["legalAddress"],
+  legal_city: ["legalCity"],
+  legal_state: ["legalState"],
+  legal_zip: ["legalZip"],
+  monthly_volume: ["monthlyVolume"],
+  average_transaction: ["avgTicket"],
+  high_ticket: ["highTicket"],
+  percent_swiped: ["swipedPct"],
+  percent_keyed: ["keyedPct"],
+  percent_moto: ["motoPct"],
+  percent_ecommerce: ["ecomPct"],
+  percent_b2c: ["b2cPct"],
+  percent_b2b: ["b2bPct"],
+};
+
 const WIZARD_SECTIONS: { key: WizardSectionKey; label: string; fields: string[] }[] = [
   {
     key: "business",
     label: "Business profile",
     fields: [
-      "dbaName",
-      "products",
-      "natureOfBusiness",
-      "dbaContactFirst",
-      "dbaContactLast",
-      "dbaPhone",
-      "dbaEmail",
-      "dbaAddress",
-      "dbaCity",
-      "dbaState",
-      "dbaZip",
+      "dba_name",
+      "product_description",
+      "nature_of_business",
+      "dba_contact_first_name",
+      "dba_contact_last_name",
+      "dba_contact_phone",
+      "dba_contact_email",
+      "dba_address_line1",
+      "dba_city",
+      "dba_state",
+      "dba_zip",
     ],
   },
   {
     key: "legal",
     label: "Legal info",
     fields: [
-      "legalEntityName",
-      "legalPhone",
-      "legalEmail",
-      "tin",
-      "ownershipType",
-      "formationDate",
-      "stateIncorporated",
-      "legalAddress",
-      "legalCity",
-      "legalState",
-      "legalZip",
+      "legal_entity_name",
+      "legal_phone",
+      "legal_email",
+      "federal_tax_id",
+      "ownership_type",
+      "business_formation_date",
+      "state_incorporated",
+      "legal_address_line1",
+      "legal_city",
+      "legal_state",
+      "legal_zip",
     ],
   },
   {
     key: "processing",
     label: "Processing",
     fields: [
-      "monthlyVolume",
-      "avgTicket",
-      "highTicket",
-      "swipedPct",
-      "keyedPct",
-      "motoPct",
-      "ecomPct",
-      "b2cPct",
-      "b2bPct",
+      "monthly_volume",
+      "average_transaction",
+      "high_ticket",
+      "percent_swiped",
+      "percent_keyed",
+      "percent_moto",
+      "percent_ecommerce",
+      "percent_b2c",
+      "percent_b2b",
     ],
   },
   {
@@ -149,16 +188,24 @@ const WIZARD_SECTIONS: { key: WizardSectionKey; label: string; fields: string[] 
 ];
 
 const isWizardFieldComplete = (formState: Record<string, unknown>, field: string) => {
-  const value = formState[field];
-
   if (field === "documents") {
+    const value = formState["documents"];
     return Array.isArray(value) && value.length > 0;
   }
 
-  if (value === undefined || value === null) return false;
-  if (typeof value === "string") return value.trim().length > 0;
-  return Boolean(value);
+  const candidates = [field, ...(WIZARD_FIELD_ALIASES[field] ?? [])];
+  for (const key of candidates) {
+    const value = formState[key];
+    if (value === undefined || value === null) continue;
+    if (typeof value === "string") {
+      if (value.trim().length > 0) return true;
+      continue;
+    }
+    if (value) return true;
+  }
+  return false;
 };
+
 
 const computeWizardSectionProgress = (formState: Record<string, unknown>) =>
   WIZARD_SECTIONS.map((section) => {
@@ -287,6 +334,18 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
   const setWizardField = useCallback((key: string, value: string) => {
     setWizardFields(prev => ({ ...prev, [key]: value }));
   }, []);
+
+  // Quote generator dialog (wired to opportunity → prefill business + contact + volume)
+  const [showQuoteDialog, setShowQuoteDialog] = useState(false);
+  const quotePrefill = useMemo(() => ({
+    businessName: accountName || opportunity?.account?.name || "",
+    contactName: [firstName, lastName].filter(Boolean).join(" ").trim(),
+    email: email || opportunity?.contact?.email || "",
+    phone: phone || opportunity?.contact?.phone || "",
+    monthlyVolume: wizardFields?.monthly_volume || "",
+    averageTicket: wizardFields?.average_transaction || "",
+    notes: opportunity ? `Opportunity: ${opportunity.id}` : "",
+  }), [accountName, firstName, lastName, email, phone, wizardFields, opportunity]);
 
   // Combined form data for auto-save
   const formData = useMemo(() => ({
@@ -953,8 +1012,15 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
       if (actErr) console.error('Activity log failed:', actErr);
     });
 
-    // Step 3: Email invocation (fire-and-forget for email-triggering outcomes)
+    // Step 3: Email invocation (with confirmation prompt)
     if (EMAIL_TRIGGERING_OUTCOMES.includes(outcome)) {
+      const recipient = opportunity.contact?.email || "the merchant contact";
+      const ok = await confirmAutoEmail(
+        `A compliance outcome notification email will be sent to ${recipient}.`
+      );
+      if (!ok) {
+        toast.message("Outcome saved. Email skipped — send manually if required.");
+      } else {
       supabase.functions.invoke('send-outcome-email', {
         body: { opportunity_id: opportunity.id, outcome_status: outcome, outcome_reason: reason },
       }).then(({ error: emailErr }) => {
@@ -987,6 +1053,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
       }).catch((err) => {
         console.error('send-outcome-email invocation error:', err);
       });
+      }
     }
 
     // Step 4: Re-engagement task (skip for permanently suppressed reasons)
@@ -1233,6 +1300,20 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                         </TooltipTrigger>
                         <TooltipContent>Download Details</TooltipContent>
                       </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8 text-primary border-primary/40 hover:bg-primary/10"
+                            onClick={() => setShowQuoteDialog(true)}
+                          >
+                            <FileSpreadsheet className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Generate Quote</TooltipContent>
+                      </Tooltip>
                     </>
                   )}
 
@@ -1250,6 +1331,9 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={handleDownloadDetails}>
                           <Download className="h-4 w-4 mr-2" /> Download
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setShowQuoteDialog(true)}>
+                          <FileSpreadsheet className="h-4 w-4 mr-2" /> Generate Quote
                         </DropdownMenuItem>
                         {!opportunity.outcome_status && (
                           <DropdownMenuItem onClick={() => setShowMoveDialog(true)}>
@@ -1298,7 +1382,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
           )}
 
           {/* Stage Path — always visible */}
-          <div className="px-4 pb-2">
+          <div className="px-4 pb-2 space-y-2">
             {opportunity.outcome_status === 'closed_won' ? (
               <div className="rounded-lg bg-gradient-to-b from-emerald-50/60 via-emerald-100/30 to-transparent dark:from-emerald-500/10 dark:via-emerald-500/5 dark:to-transparent border border-emerald-200/40 dark:border-emerald-500/20 py-3 px-4">
                 <h3 className="text-emerald-600 dark:text-emerald-400 font-bold tracking-widest uppercase text-sm text-center">
@@ -1307,6 +1391,15 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
               </div>
             ) : (
               <StagePath opportunity={opportunity} />
+            )}
+            {(opportunity.pricing_plan || opportunity.gateway_tier) && (
+              <div className="flex justify-center">
+                <PricingBadges
+                  pricingPlan={opportunity.pricing_plan}
+                  gatewayTier={opportunity.gateway_tier}
+                  size="sm"
+                />
+              </div>
             )}
           </div>
 
@@ -1354,6 +1447,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                 opportunityId={opportunity.id}
                 opportunity={opportunity}
                 wizardProgress={wizardState?.progress ?? 0}
+                monthlyVolume={wizardFields?.monthly_volume}
                 onUpdate={onUpdate}
               />
             )}
@@ -1649,6 +1743,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
               opportunityId={opportunity.id}
               opportunity={opportunity}
               wizardProgress={wizardState?.progress ?? 0}
+              monthlyVolume={wizardFields?.monthly_volume}
               onUpdate={onUpdate}
             />
           )}
@@ -1840,6 +1935,13 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
           }}
         />
       )}
+
+      {/* Quote Generator — wired to opportunity, prefilled from account/contact/wizard */}
+      <QuoteGeneratorDialog
+        open={showQuoteDialog}
+        onOpenChange={setShowQuoteDialog}
+        initialClient={quotePrefill}
+      />
     </>
   );
 };

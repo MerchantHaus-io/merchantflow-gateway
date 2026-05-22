@@ -28,6 +28,13 @@ Deno.serve(async (req) => {
       return json({ error: "Unauthorized" }, 401);
     }
 
+    // Admin-only: irreversible destructive storage operation
+    const ADMIN_EMAILS = ['admin@merchanthaus.io', 'onboarding@merchanthaus.io', 'jamie@merchanthaus.io'];
+    if (!ADMIN_EMAILS.includes(user.email || '')) {
+      console.warn(`Forbidden shred-portal-documents attempt by ${user.email}`);
+      return json({ error: "Admin access required" }, 403);
+    }
+
     const { portal_merchant_id } = await req.json();
     if (!portal_merchant_id) {
       return json({ error: "portal_merchant_id is required" }, 400);
@@ -49,7 +56,7 @@ Deno.serve(async (req) => {
       .neq("status", "shredded")
       .not("storage_path", "is", null);
 
-    const paths = (docs || []).map((d: any) => d.storage_path).filter(Boolean);
+    const paths = (docs || []).map((d: unknown) => d.storage_path).filter(Boolean);
 
     if (paths.length > 0) {
       // Delete files from portal storage

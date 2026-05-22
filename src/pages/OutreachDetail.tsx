@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { format, formatDistanceToNow, addDays } from "date-fns";
 import { toast } from "sonner";
+import { confirmAutoEmail } from "@/components/EmailSendConfirm";
 import { cn } from "@/lib/utils";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -112,7 +113,7 @@ export default function OutreachDetail() {
   const [sending, setSending]             = useState(false);
   const [previewOpen, setPreviewOpen]     = useState(false);
   const [previewStep, setPreviewStep]     = useState<number>(1);
-  const [replyDialog, setReplyDialog]     = useState<any | null>(null);
+  const [replyDialog, setReplyDialog]     = useState<{ id: string; email?: string | null; reply_snippet?: string | null } | null>(null);
   const [replySnippet, setReplySnippet]   = useState("");
   const [convertingId, setConvertingId]   = useState<string | null>(null);
   const [search, setSearch]               = useState("");
@@ -192,7 +193,7 @@ export default function OutreachDetail() {
 
   const markStatus = useMutation({
     mutationFn: async ({ contactId, status }: { contactId: string; status: string }) => {
-      const updates: Record<string, any> = { status };
+      const updates: Record<string, unknown> = { status };
       if (status === "bounced")   updates.bounced_at   = new Date().toISOString();
       if (status === "replied")   updates.replied_at   = new Date().toISOString();
       if (status === "converted") updates.converted_at = new Date().toISOString();
@@ -260,6 +261,10 @@ export default function OutreachDetail() {
   // ── Send ──
   const sendStep = async (stepNumber: number) => {
     if (!id || !campaign) return;
+    const ok = await confirmAutoEmail(
+      `Outreach campaign step ${stepNumber} will send emails to all eligible contacts in this list.`
+    );
+    if (!ok) return;
     setSending(true);
     try {
       const { error } = await supabase.functions.invoke("send-outreach-emails", {

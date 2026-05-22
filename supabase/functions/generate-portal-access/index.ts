@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     // Fallback: check applications table
-    let merchantEmail: string | null = (opp?.contacts as any)?.email || null;
+    let merchantEmail: string | null = (opp?.contacts as unknown)?.email || null;
 
     if (!merchantEmail) {
       const { data: app } = await adminSupabase

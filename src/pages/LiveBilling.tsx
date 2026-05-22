@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search, Zap, CreditCard, Users, TrendingUp, Calendar, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { PricingBadges } from "@/components/PricingBadges";
 import { format } from "date-fns";
 import { getServiceType, TEAM_MEMBERS } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
@@ -20,13 +21,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 
-const TEAM_EMAIL_MAP: Record<string, string> = {
-  'Wesley': 'sales@merchanthaus.io',
-  'Jamie': 'jamie@merchanthaus.io',
-  'Darryn': 'admin@merchanthaus.io',
-  'Taryn': 'taryn@merchanthaus.io',
-  'Sheiky': 'support@merchanthaus.io',
-};
+import { NAME_TO_EMAIL } from "@/config/team";
+const TEAM_EMAIL_MAP: Record<string, string> = NAME_TO_EMAIL;
 
 interface GroupedAccount {
   account_id: string;
@@ -284,6 +280,12 @@ const LiveBilling = () => {
                       {g.contact?.first_name} {g.contact?.last_name}
                       {g.contact?.email && ` · ${g.contact.email}`}
                     </p>
+                    {(() => {
+                      const lead = g.opportunities?.[0] as any;
+                      return (lead?.pricing_plan || lead?.gateway_tier) ? (
+                        <PricingBadges pricingPlan={lead.pricing_plan} gatewayTier={lead.gateway_tier} />
+                      ) : null;
+                    })()}
                     <div className="flex items-center justify-between pt-1 border-t border-border/30">
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <Calendar className="h-3 w-3" />
@@ -328,6 +330,7 @@ const LiveBilling = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10 text-right pr-2">#</TableHead>
                    <TableHead>Account</TableHead>
                   <TableHead>Merchant ID</TableHead>
                   <TableHead>Contact</TableHead>
@@ -338,12 +341,13 @@ const LiveBilling = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((g) => {
+                {filtered.map((g, idx) => {
                   const assignedEmail = g.assigned_to ? TEAM_EMAIL_MAP[g.assigned_to] : null;
                   const avatarUrl = assignedEmail && avatars ? avatars[assignedEmail] : null;
 
                   return (
                     <TableRow key={g.account_id} className="hover:bg-amber-50/30 dark:hover:bg-amber-950/10 cursor-pointer" onClick={() => navigate(`/live-billing/${g.account_id}`)}>
+                      <TableCell className="text-right pr-2 text-[11px] text-muted-foreground tabular-nums">{idx + 1}</TableCell>
                       <TableCell className="font-medium">{g.account?.name || "Unknown"}</TableCell>
                       <TableCell>
                         {g.account?.nmi_merchant_id ? (

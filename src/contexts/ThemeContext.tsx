@@ -180,7 +180,7 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
 
   const setTransparencyEnabled = (enabled: boolean) => {
     setTransparencyEnabledState(enabled);
-    try { localStorage.setItem(TRANSPARENCY_KEY, String(enabled)); } catch {}
+    try { localStorage.setItem(TRANSPARENCY_KEY, String(enabled)); } catch { /* ignore */ }
   };
 
   useEffect(() => {
