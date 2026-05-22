@@ -485,7 +485,7 @@ const OpportunityDetail = () => {
             return {
               ...prev,
               stage: migrateStage(payload.new.stage) as OpportunityStage,
-              status: payload.new.status as 'active' | 'dead' | undefined,
+              status: payload.new.status as 'active' | 'dead' | 'won' | undefined,
               assigned_to: payload.new.assigned_to,
               sla_status: payload.new.sla_status,
               stage_entered_at: payload.new.stage_entered_at,

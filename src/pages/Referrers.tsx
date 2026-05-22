@@ -60,6 +60,14 @@ export default function Referrers() {
   const [impersonating, setImpersonating] = useState<string | null>(null);
 
   const handleImpersonate = async (row: ReferrerRow) => {
+    // Open the tab synchronously, while the click's user-activation context is
+    // still live. Browsers block window.open() that fires after an await, so
+    // the tab must be opened up-front and navigated once tokens arrive.
+    const popup = window.open("", "_blank");
+    if (!popup) {
+      toast.error("Popup blocked — allow popups for this site to use admin view");
+      return;
+    }
     setImpersonating(row.id);
     try {
       const { data, error } = await supabase.functions.invoke("impersonate-referrer", {
@@ -67,10 +75,12 @@ export default function Referrers() {
       });
       if (error || data?.error) {
         toast.error(data?.error || error?.message || "Failed to start admin view");
+        popup.close();
         return;
       }
       if (!data?.access_token || !data?.refresh_token) {
         toast.error("No session tokens returned");
+        popup.close();
         return;
       }
 
@@ -93,12 +103,15 @@ export default function Referrers() {
         localStorage.setItem(key, JSON.stringify(handoff));
       } catch {
         toast.error("Browser storage blocked — cannot start admin view");
+        popup.close();
         return;
       }
 
-      const url = `/affiliate?impersonate=${encodeURIComponent(row.id)}`;
-      window.open(url, "_blank", "noopener,noreferrer");
+      popup.location.href = `${window.location.origin}/affiliate?impersonate=${encodeURIComponent(row.id)}`;
       toast.success(`Opening admin view as ${row.full_name}`);
+    } catch (err) {
+      popup.close();
+      toast.error(err instanceof Error ? err.message : "Failed to start admin view");
     } finally {
       setImpersonating(null);
     }

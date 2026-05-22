@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import ForcePasswordChange from './ForcePasswordChange';
+import { isImpersonationTab } from '@/integrations/supabase/impersonationClient';
 import { toast } from 'sonner';
 
 interface ReferrerRouteProps {
@@ -45,7 +46,9 @@ export const ReferrerRoute = ({ children }: ReferrerRouteProps) => {
     return <Navigate to="/auth" replace />;
   }
 
-  if (mustChangePassword) {
+  // An admin viewing-as a referrer must not be forced to reset that referrer's
+  // password — the impersonation session inherits its must_change_password flag.
+  if (mustChangePassword && !isImpersonationTab()) {
     return <ForcePasswordChange />;
   }
 
