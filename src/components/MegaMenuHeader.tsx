@@ -14,6 +14,7 @@ import {
   Calculator,
   Activity,
   Sparkles,
+  GraduationCap,
   LogOut,
   ClipboardList,
   ListChecks,
@@ -152,6 +153,7 @@ const navMain: NavGroup[] = [
     icon: BookOpen,
     items: [
       { title: "SOP", url: "/sop", icon: BookOpen, description: "Standard operating procedures" },
+      { title: "Training", url: "/training", icon: GraduationCap, description: "Onboarding guide for the Ops Terminal" },
       { title: "CRM Updates", url: "/tools/terminal-updates", icon: Sparkles, description: "Latest changes & features" },
       { title: "Administration", url: "/admin/administration", icon: Activity, description: "Agenda, popups & session tracking" },
       { title: "Affiliates", url: "/admin/affiliates", icon: UserPlus, description: "External affiliate partners & commissions" },
