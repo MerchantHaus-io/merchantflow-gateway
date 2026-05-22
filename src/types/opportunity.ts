@@ -393,8 +393,7 @@ export const migrateStage = (stage: string): OpportunityStage => {
   const STAGE_MIGRATION: Record<string, OpportunityStage> = {
     'opportunities': 'application_prep',
     'application_started': 'discovery',
-    'live_activated': 'go_live_ready',
-    'closed_won': 'go_live_ready',
+    'live_activated': 'closed_won',
     'closed_lost': 'discovery',
   };
   return STAGE_MIGRATION[stage] || (stage as OpportunityStage);
