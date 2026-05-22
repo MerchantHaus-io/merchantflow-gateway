@@ -995,6 +995,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
       .eq('id', opportunity.id);
 
     if (error) {
+      console.error('Failed to record outcome:', error);
       toast.error("Failed to record outcome. Please try again.");
       return;
     }
@@ -1083,7 +1084,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
       outcome_notes: notes || null,
       outcome_closed_at: closedAt,
       outcome_closed_by: user?.email,
-      status: newStatus as 'active' | 'dead',
+      status: newStatus,
       ...(outcome === 'closed_won' ? { stage: 'closed_won' as OpportunityStage } : {}),
     });
 
