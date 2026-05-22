@@ -52,7 +52,7 @@ export interface Opportunity {
   account_id: string;
   contact_id: string;
   stage: OpportunityStage;
-  status?: 'active' | 'dead';
+  status?: 'active' | 'dead' | 'won';
   service_type?: ServiceType;
   source?: string | null;
   portal_merchant_id?: string | null;

@@ -249,7 +249,7 @@ const Index = () => {
       ...data,
       stage: migrateStage(data.stage) as OpportunityStage,
       service_type: data.service_type as ServiceType | undefined,
-      status: data.status as 'active' | 'dead' | undefined,
+      status: data.status as 'active' | 'dead' | 'won' | undefined,
       sla_status: data.sla_status as 'green' | 'amber' | 'red' | null | undefined,
       outcome_status: (data.outcome_status as OutcomeStatus | null) || undefined,
       account: data.account ? {
@@ -296,7 +296,7 @@ const Index = () => {
                 return {
                   ...opp,
                   stage: migrateStage(payload.new.stage) as OpportunityStage,
-                  status: payload.new.status as 'active' | 'dead' | undefined,
+                  status: payload.new.status as 'active' | 'dead' | 'won' | undefined,
                   assigned_to: payload.new.assigned_to,
                   sla_status: payload.new.sla_status as 'green' | 'amber' | 'red' | null | undefined,
                   stage_entered_at: payload.new.stage_entered_at,
@@ -359,7 +359,7 @@ const Index = () => {
     const typedOpportunity: Opportunity = {
       ...data,
       stage: migrateStage(data.stage) as OpportunityStage,
-      status: data.status as 'active' | 'dead' | undefined,
+      status: data.status as 'active' | 'dead' | 'won' | undefined,
       account: data.account
         ? {
             ...data.account,
@@ -453,7 +453,7 @@ const Index = () => {
       // Apply stage migration: 'opportunities' -> 'application_prep'
       stage: migrateStage(item.stage) as OpportunityStage,
       service_type: item.service_type as ServiceType | undefined,
-      status: item.status as 'active' | 'dead' | undefined,
+      status: item.status as 'active' | 'dead' | 'won' | undefined,
       sla_status: item.sla_status as 'green' | 'amber' | 'red' | null | undefined,
       outcome_status: (item.outcome_status as OutcomeStatus | null) || undefined,
       account: item.account ? {
