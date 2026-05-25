@@ -600,7 +600,7 @@ export function QuoteGeneratorDialog({
       sent_by: user?.id ?? null,
       sent_by_email: user?.email ?? null,
     };
-    return await supabase.from("quotes").insert(row);
+    return await (supabase as any).from("quotes").insert(row);
   };
 
   return (
