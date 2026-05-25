@@ -643,10 +643,10 @@ export function QuoteGeneratorDialog({
                           placeholder="(555) 123-4567" />
                       </div>
                       <div className="grid grid-cols-2 gap-3">
-                        <Field label="Monthly volume" value={client.monthlyVolume}
+                        <CurrencyField label="Monthly volume" value={client.monthlyVolume}
                           onChange={(v) => setClient({ ...client, monthlyVolume: v })}
                           placeholder="$50,000" />
-                        <Field label="Average ticket" value={client.averageTicket}
+                        <CurrencyField label="Average ticket" value={client.averageTicket}
                           onChange={(v) => setClient({ ...client, averageTicket: v })}
                           placeholder="$120" />
                       </div>
@@ -787,7 +787,10 @@ export function QuoteGeneratorDialog({
                               <Checkbox
                                 checked={l.enabled}
                                 onCheckedChange={(c) =>
-                                  updateLine(l.id, { enabled: !!c })
+                                  updateLine(l.id, {
+                                    enabled: !!c,
+                                    bundled: !!c && l.bundled,
+                                  })
                                 }
                               />
                             </td>
@@ -857,6 +860,11 @@ export function QuoteGeneratorDialog({
                   <Stat label="Monthly margin"
                     value={fmt(totals.monthlyMargin)}
                     accent />
+                  {enabledLines.some((l) => l.perEvent && !l.bundled) && (
+                    <p className="sm:col-span-3 text-[11px] text-muted-foreground pt-1 border-t">
+                      Totals reflect fixed monthly fees only. Per-event fees listed above are variable and billed based on actual transaction volume.
+                    </p>
+                  )}
                 </section>
               </div>
             </div>
@@ -1072,6 +1080,44 @@ function Field({
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+      />
+    </div>
+  );
+}
+
+function CurrencyField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  const handleBlur = () => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    const digits = trimmed.replace(/[^0-9.]/g, "");
+    const n = parseFloat(digits);
+    if (!Number.isFinite(n) || n <= 0) return;
+    const formatted = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: n < 100 ? 2 : 0,
+    }).format(n);
+    if (formatted !== trimmed) onChange(formatted);
+  };
+  return (
+    <div className="grid gap-1.5">
+      <Label>{label}</Label>
+      <Input
+        inputMode="decimal"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={handleBlur}
         placeholder={placeholder}
       />
     </div>
