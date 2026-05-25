@@ -774,10 +774,9 @@ const OpportunityDetail = () => {
                         <div>
                         <CardTitle className="text-2xl">{account?.name || 'Unknown Business'}</CardTitle>
                         <div className="flex items-center gap-3 mt-2">
-                          <Badge 
-                            variant="outline" 
-                            className={cn("font-medium", stageConfig.colorClass)}
-                            style={{ borderColor: stageConfig.color, color: stageConfig.color }}
+                          <Badge
+                            className={cn("font-medium border", stageConfig.headerClass)}
+                            style={{ borderColor: stageConfig.color }}
                           >
                             {stageConfig.label}
                           </Badge>
