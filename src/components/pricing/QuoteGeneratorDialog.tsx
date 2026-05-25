@@ -489,8 +489,13 @@ export function QuoteGeneratorDialog({
   };
 
   const handleSendEmail = async () => {
-    if (!client.email.trim()) {
+    const email = client.email.trim();
+    if (!email) {
       toast.error("Add a client email before sending.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error(`"${email}" doesn't look like a valid email address.`);
       return;
     }
     if (!client.businessName.trim()) {
