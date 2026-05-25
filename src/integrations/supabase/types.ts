@@ -2473,6 +2473,142 @@ export type Database = {
         }
         Relationships: []
       }
+      quotes: {
+        Row: {
+          accepted_at: string | null
+          account_id: string | null
+          annual_resale: number
+          billing_cycle: string
+          client_average_ticket: string | null
+          client_business_name: string | null
+          client_contact_name: string | null
+          client_email: string | null
+          client_monthly_volume: string | null
+          client_notes: string | null
+          client_phone: string | null
+          contact_id: string | null
+          created_at: string
+          id: string
+          lines_snapshot: Json
+          monthly_cost: number
+          monthly_margin: number
+          monthly_resale: number
+          opportunity_id: string | null
+          pdf_filename: string | null
+          quote_number: string
+          rejected_at: string | null
+          sender_company: string | null
+          sender_email: string | null
+          sender_name: string | null
+          sender_phone: string | null
+          sender_title: string | null
+          sent_at: string | null
+          sent_by: string | null
+          sent_by_email: string | null
+          status: string
+          tier_id: string
+          tier_name: string
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          account_id?: string | null
+          annual_resale?: number
+          billing_cycle?: string
+          client_average_ticket?: string | null
+          client_business_name?: string | null
+          client_contact_name?: string | null
+          client_email?: string | null
+          client_monthly_volume?: string | null
+          client_notes?: string | null
+          client_phone?: string | null
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          lines_snapshot?: Json
+          monthly_cost?: number
+          monthly_margin?: number
+          monthly_resale?: number
+          opportunity_id?: string | null
+          pdf_filename?: string | null
+          quote_number: string
+          rejected_at?: string | null
+          sender_company?: string | null
+          sender_email?: string | null
+          sender_name?: string | null
+          sender_phone?: string | null
+          sender_title?: string | null
+          sent_at?: string | null
+          sent_by?: string | null
+          sent_by_email?: string | null
+          status?: string
+          tier_id: string
+          tier_name: string
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          account_id?: string | null
+          annual_resale?: number
+          billing_cycle?: string
+          client_average_ticket?: string | null
+          client_business_name?: string | null
+          client_contact_name?: string | null
+          client_email?: string | null
+          client_monthly_volume?: string | null
+          client_notes?: string | null
+          client_phone?: string | null
+          contact_id?: string | null
+          created_at?: string
+          id?: string
+          lines_snapshot?: Json
+          monthly_cost?: number
+          monthly_margin?: number
+          monthly_resale?: number
+          opportunity_id?: string | null
+          pdf_filename?: string | null
+          quote_number?: string
+          rejected_at?: string | null
+          sender_company?: string | null
+          sender_email?: string | null
+          sender_name?: string | null
+          sender_phone?: string | null
+          sender_title?: string | null
+          sent_at?: string | null
+          sent_by?: string | null
+          sent_by_email?: string | null
+          status?: string
+          tier_id?: string
+          tier_name?: string
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotes_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       referrer_impersonation_logs: {
         Row: {
           admin_email: string
