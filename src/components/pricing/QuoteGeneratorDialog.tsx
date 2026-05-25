@@ -146,6 +146,10 @@ interface QuoteGeneratorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialClient?: Partial<ClientDetails>;
+  /** CRM linkage — when set, the persisted quote row is tied back to these records. */
+  opportunityId?: string | null;
+  accountId?: string | null;
+  contactId?: string | null;
 }
 
 export function QuoteGeneratorDialog({
@@ -154,6 +158,9 @@ export function QuoteGeneratorDialog({
   open,
   onOpenChange,
   initialClient,
+  opportunityId,
+  accountId,
+  contactId,
 }: QuoteGeneratorDialogProps) {
   const [client, setClient] = useState<ClientDetails>({ ...EMPTY_CLIENT });
   const [sender, setSender] = useState<SenderDetails>({ ...DEFAULT_QUOTE_SENDER });
@@ -533,13 +540,67 @@ export function QuoteGeneratorDialog({
       );
       if (error) throw error;
       if ((data as any)?.error) throw new Error(JSON.stringify((data as any).error));
-      toast.success(`Quote emailed to ${client.email}`);
+
+      const persistResult = await persistQuote("sent");
+      if (persistResult.error) {
+        // Email landed — don't roll back, but surface the persistence failure
+        // so the team knows the audit row is missing.
+        console.error("Quote sent but failed to persist:", persistResult.error);
+        toast.warning(
+          `Quote emailed to ${client.email}, but the record couldn't be saved (${persistResult.error.message}).`,
+        );
+      } else {
+        toast.success(`Quote emailed to ${client.email}`);
+      }
       onOpenChange(false);
     } catch (err: any) {
       toast.error(`Email failed: ${err?.message ?? err}`);
     } finally {
       setSending(false);
     }
+  };
+
+  const persistQuote = async (status: "draft" | "sent") => {
+    const now = new Date();
+    const validUntil = new Date(now);
+    validUntil.setDate(validUntil.getDate() + 30);
+
+    const { data: userData } = await supabase.auth.getUser();
+    const user = userData?.user ?? null;
+
+    const row = {
+      quote_number: quoteNumber,
+      opportunity_id: opportunityId ?? null,
+      account_id: accountId ?? null,
+      contact_id: contactId ?? null,
+      tier_id: tier.id,
+      tier_name: tier.name,
+      billing_cycle: billing,
+      status,
+      monthly_cost: +totals.monthlyCost.toFixed(2),
+      monthly_resale: +totals.monthlyResale.toFixed(2),
+      monthly_margin: +totals.monthlyMargin.toFixed(2),
+      annual_resale: +totals.annualResale.toFixed(2),
+      valid_until: validUntil.toISOString(),
+      pdf_filename: safeFilename(),
+      client_business_name: client.businessName || null,
+      client_contact_name: client.contactName || null,
+      client_email: client.email || null,
+      client_phone: client.phone || null,
+      client_monthly_volume: client.monthlyVolume || null,
+      client_average_ticket: client.averageTicket || null,
+      client_notes: client.notes || null,
+      sender_name: sender.name || null,
+      sender_title: sender.title || null,
+      sender_company: sender.company || null,
+      sender_email: sender.email || null,
+      sender_phone: sender.phone || null,
+      lines_snapshot: lines as any,
+      sent_at: status === "sent" ? now.toISOString() : null,
+      sent_by: user?.id ?? null,
+      sent_by_email: user?.email ?? null,
+    };
+    return await supabase.from("quotes").insert(row);
   };
 
   return (

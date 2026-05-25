@@ -348,6 +348,9 @@ export default function QuoteBuilder() {
           open={open}
           onOpenChange={setOpen}
           initialClient={initialClient}
+          opportunityId={selectedOpp?.id ?? null}
+          accountId={selectedOpp?.account?.id ?? null}
+          contactId={contactId || selectedOpp?.contact?.id || null}
         />
       )}
     </AppLayout>

@@ -1942,6 +1942,9 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
         open={showQuoteDialog}
         onOpenChange={setShowQuoteDialog}
         initialClient={quotePrefill}
+        opportunityId={opportunity?.id ?? null}
+        accountId={opportunity?.account?.id ?? null}
+        contactId={opportunity?.contact?.id ?? null}
       />
     </>
   );
