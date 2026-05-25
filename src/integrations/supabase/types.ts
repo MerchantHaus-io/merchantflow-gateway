@@ -1502,6 +1502,36 @@ export type Database = {
         }
         Relationships: []
       }
+      mcp_audit_log: {
+        Row: {
+          args: Json | null
+          created_at: string
+          error: string | null
+          id: string
+          result_summary: string | null
+          success: boolean
+          tool_name: string
+        }
+        Insert: {
+          args?: Json | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          result_summary?: string | null
+          success?: boolean
+          tool_name: string
+        }
+        Update: {
+          args?: Json | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          result_summary?: string | null
+          success?: boolean
+          tool_name?: string
+        }
+        Relationships: []
+      }
       merchant_consents: {
         Row: {
           accepted_at: string
