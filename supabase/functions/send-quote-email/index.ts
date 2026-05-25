@@ -54,7 +54,7 @@ const buildHtml = (req: QuoteEmailRequest) => `<!DOCTYPE html>
       <p style="margin:24px 0 4px;">Kind regards,</p>
       <p style="margin:0;font-weight:600;">${req.sender.name}</p>
       <p style="margin:0;color:#64748b;font-size:13px;">${req.sender.title} &middot; MerchantHaus LLC</p>
-      <p style="margin:0;color:#64748b;font-size:13px;">${req.sender.email} &middot; ${req.sender.phone}</p>
+      <p style="margin:0;color:#64748b;font-size:13px;">${[req.sender.email, req.sender.phone].filter((s) => s && s.trim()).join(" &middot; ")}</p>
     </div>
     <p style="text-align:center;color:#94a3b8;font-size:12px;margin:16px 0 0;">
       MerchantHaus LLC &middot; 1209 Mountain Road Pl NE Ste N, Albuquerque, NM 87110

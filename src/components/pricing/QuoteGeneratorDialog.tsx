@@ -146,6 +146,10 @@ interface QuoteGeneratorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialClient?: Partial<ClientDetails>;
+  /** CRM linkage — when set, the persisted quote row is tied back to these records. */
+  opportunityId?: string | null;
+  accountId?: string | null;
+  contactId?: string | null;
 }
 
 export function QuoteGeneratorDialog({
@@ -154,6 +158,9 @@ export function QuoteGeneratorDialog({
   open,
   onOpenChange,
   initialClient,
+  opportunityId,
+  accountId,
+  contactId,
 }: QuoteGeneratorDialogProps) {
   const [client, setClient] = useState<ClientDetails>({ ...EMPTY_CLIENT });
   const [sender, setSender] = useState<SenderDetails>({ ...DEFAULT_QUOTE_SENDER });
@@ -489,8 +496,13 @@ export function QuoteGeneratorDialog({
   };
 
   const handleSendEmail = async () => {
-    if (!client.email.trim()) {
+    const email = client.email.trim();
+    if (!email) {
       toast.error("Add a client email before sending.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error(`"${email}" doesn't look like a valid email address.`);
       return;
     }
     if (!client.businessName.trim()) {
@@ -528,13 +540,67 @@ export function QuoteGeneratorDialog({
       );
       if (error) throw error;
       if ((data as any)?.error) throw new Error(JSON.stringify((data as any).error));
-      toast.success(`Quote emailed to ${client.email}`);
+
+      const persistResult = await persistQuote("sent");
+      if (persistResult.error) {
+        // Email landed — don't roll back, but surface the persistence failure
+        // so the team knows the audit row is missing.
+        console.error("Quote sent but failed to persist:", persistResult.error);
+        toast.warning(
+          `Quote emailed to ${client.email}, but the record couldn't be saved (${persistResult.error.message}).`,
+        );
+      } else {
+        toast.success(`Quote emailed to ${client.email}`);
+      }
       onOpenChange(false);
     } catch (err: any) {
       toast.error(`Email failed: ${err?.message ?? err}`);
     } finally {
       setSending(false);
     }
+  };
+
+  const persistQuote = async (status: "draft" | "sent") => {
+    const now = new Date();
+    const validUntil = new Date(now);
+    validUntil.setDate(validUntil.getDate() + 30);
+
+    const { data: userData } = await supabase.auth.getUser();
+    const user = userData?.user ?? null;
+
+    const row = {
+      quote_number: quoteNumber,
+      opportunity_id: opportunityId ?? null,
+      account_id: accountId ?? null,
+      contact_id: contactId ?? null,
+      tier_id: tier.id,
+      tier_name: tier.name,
+      billing_cycle: billing,
+      status,
+      monthly_cost: +totals.monthlyCost.toFixed(2),
+      monthly_resale: +totals.monthlyResale.toFixed(2),
+      monthly_margin: +totals.monthlyMargin.toFixed(2),
+      annual_resale: +totals.annualResale.toFixed(2),
+      valid_until: validUntil.toISOString(),
+      pdf_filename: safeFilename(),
+      client_business_name: client.businessName || null,
+      client_contact_name: client.contactName || null,
+      client_email: client.email || null,
+      client_phone: client.phone || null,
+      client_monthly_volume: client.monthlyVolume || null,
+      client_average_ticket: client.averageTicket || null,
+      client_notes: client.notes || null,
+      sender_name: sender.name || null,
+      sender_title: sender.title || null,
+      sender_company: sender.company || null,
+      sender_email: sender.email || null,
+      sender_phone: sender.phone || null,
+      lines_snapshot: lines as any,
+      sent_at: status === "sent" ? now.toISOString() : null,
+      sent_by: user?.id ?? null,
+      sent_by_email: user?.email ?? null,
+    };
+    return await supabase.from("quotes").insert(row);
   };
 
   return (
@@ -638,10 +704,10 @@ export function QuoteGeneratorDialog({
                           placeholder="(555) 123-4567" />
                       </div>
                       <div className="grid grid-cols-2 gap-3">
-                        <Field label="Monthly volume" value={client.monthlyVolume}
+                        <CurrencyField label="Monthly volume" value={client.monthlyVolume}
                           onChange={(v) => setClient({ ...client, monthlyVolume: v })}
                           placeholder="$50,000" />
-                        <Field label="Average ticket" value={client.averageTicket}
+                        <CurrencyField label="Average ticket" value={client.averageTicket}
                           onChange={(v) => setClient({ ...client, averageTicket: v })}
                           placeholder="$120" />
                       </div>
@@ -782,7 +848,10 @@ export function QuoteGeneratorDialog({
                               <Checkbox
                                 checked={l.enabled}
                                 onCheckedChange={(c) =>
-                                  updateLine(l.id, { enabled: !!c })
+                                  updateLine(l.id, {
+                                    enabled: !!c,
+                                    bundled: !!c && l.bundled,
+                                  })
                                 }
                               />
                             </td>
@@ -852,6 +921,11 @@ export function QuoteGeneratorDialog({
                   <Stat label="Monthly margin"
                     value={fmt(totals.monthlyMargin)}
                     accent />
+                  {enabledLines.some((l) => l.perEvent && !l.bundled) && (
+                    <p className="sm:col-span-3 text-[11px] text-muted-foreground pt-1 border-t">
+                      Totals reflect fixed monthly fees only. Per-event fees listed above are variable and billed based on actual transaction volume.
+                    </p>
+                  )}
                 </section>
               </div>
             </div>
@@ -1067,6 +1141,44 @@ function Field({
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+      />
+    </div>
+  );
+}
+
+function CurrencyField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  const handleBlur = () => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    const digits = trimmed.replace(/[^0-9.]/g, "");
+    const n = parseFloat(digits);
+    if (!Number.isFinite(n) || n <= 0) return;
+    const formatted = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: n < 100 ? 2 : 0,
+    }).format(n);
+    if (formatted !== trimmed) onChange(formatted);
+  };
+  return (
+    <div className="grid gap-1.5">
+      <Label>{label}</Label>
+      <Input
+        inputMode="decimal"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={handleBlur}
         placeholder={placeholder}
       />
     </div>

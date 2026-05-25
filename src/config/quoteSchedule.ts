@@ -140,7 +140,7 @@ export const QUOTE_LINES: QuoteLineDefault[] = [
     description: "3D Secure liability shift on card-not-present. NMI partner cost $9/mo + $0.09/txn.",
   },
   {
-    id: "level_iii",
+    id: "level_3_advantage",
     label: "Level 3 Advantage",
     cost: 25,
     resale: 50,
@@ -247,7 +247,7 @@ export const NMI_ONE_TIME_FEES: { label: string; amount: string }[] = [
 
 /** Standard quote disclaimers shown in the preview/PDF and required for acceptance. */
 export const QUOTE_DISCLAIMERS = [
-  "Quote valid for thirty (30) (30) days from the date of issue. All pricing subject to underwriting approval.",
+  "Quote valid for thirty (30) days from the date of issue. All pricing subject to underwriting approval.",
   "The Monthly Cost is a fixed Flat Rate predicated on the transaction volumes and business model represented by Merchant as of the quote date. Provider reserves the right to review and renegotiate the Monthly Cost on thirty (30) days' written notice if processing volume materially changes (e.g., exceeds 50% of disclosed figures) or if the nature of business changes materially.",
   "This flat rate applies strictly to MerchantHaus Gateway Services and does not replace or fix the interchange and processing rates charged by the Merchant's processor.",
   "Per-event and per-transaction fees apply where listed in addition to monthly platform fees.",
