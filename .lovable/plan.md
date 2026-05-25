@@ -1,87 +1,77 @@
-# Replace `unknown`/`any` casts with proper types
 
-The previous fix used a bulk `unknown → any` sed to unblock the build. The app currently compiles, but type safety was lost across ~60 files. This plan restores proper typing in waves so we don't reintroduce build breakage.
+## Goal
 
-## Current state
+Expose this CRM as a remote MCP server so you can add it to Claude Desktop as a custom connector. The MCP URL will be:
 
-- `src/integrations/supabase/types.ts` is the generated source of truth (`Database`, `Tables<>`, `Enums<>`).
-- Most components now use `any` for: Supabase query results, catch errors, event payloads, state arrays.
-- A small number of legitimate `unknown` casts remain — Proxy in `activeClient.ts`, SSR storage shim, type-bridges for shape-incompatible DB rows.
-
-## Approach
-
-Refactor in 4 waves. After each wave: run `bunx tsc --noEmit`, fix fallout, commit.
-
-### Wave 1 — Shared utilities (low risk, high leverage)
-
-1. Create `src/types/db.ts` re-exporting common row types:
-   ```ts
-   import type { Tables, Enums } from "@/integrations/supabase/types";
-   export type Opportunity   = Tables<"opportunities">;
-   export type Account       = Tables<"accounts">;
-   export type Contact       = Tables<"contacts">;
-   export type Document      = Tables<"opportunity_documents">;
-   export type Interaction   = Tables<"client_interactions">;
-   export type Campaign      = Tables<"outreach_campaigns">;
-   export type CampaignContact = Tables<"outreach_campaign_contacts">;
-   // …etc
-   ```
-2. Add a narrow error helper in `src/lib/friendly-errors.ts`:
-   ```ts
-   export const errorMessage = (e: unknown): string =>
-     e instanceof Error ? e.message : typeof e === "string" ? e : "Unknown error";
-   ```
-3. Codemod every `catch (err: any) { … err.message }` → `catch (err) { … errorMessage(err) }`.
-
-### Wave 2 — Page-level state arrays (the noisy ones)
-
-Files with `useState<any[]>` / `useState<any>(null)` that map to a single table:
-
-- `OpportunityDetail.tsx` — `emails: Interaction[]`, `documents: Document[]`
-- `LiveAccountDetail.tsx` — `previewDoc: PreviewableDocument | null`
-- `LiveBilling.tsx` — `GroupedAccount.account/contact` → `Account | null`, `Contact | null`
-- `Reports.tsx` — `campaigns: Campaign[]`
-- `Outreach.tsx` / `OutreachDetail.tsx` — `Campaign`, `CampaignContact`
-- `Accounts.tsx`, `Opportunities.tsx`, `Contacts.tsx` — list rows
-- `Calendar.tsx`, `calendar/EventDetailSheet.tsx` — define a local `CalendarEvent` + `Attendee` interface (no DB table)
-
-Replace `any` with these types. Use `?? null` instead of optional-chaining-with-any.
-
-### Wave 3 — Supabase query result casts
-
-For joined queries that don't fit the generated row type, declare a local intersection instead of `as any`:
-
-```ts
-type OppWithRelations = Opportunity & {
-  account: Account | null;
-  contact: Contact | null;
-};
-const { data } = await supabase.from("opportunities").select("*, account:accounts(*), contact:contacts(*)").returns<OppWithRelations[]>();
+```
+https://cuqjaddtmkotgvfsgcol.supabase.co/functions/v1/mcp
 ```
 
-Apply to: `LiveBilling`, `Opportunities`, `Index`, `Home`, `Accounts`, `OpportunityDetailModal`, hooks under `src/hooks/`.
+Auth: a single static bearer token (your personal `MCP_BEARER_TOKEN` secret) — simplest setup for a single-user Claude Desktop connector, no OAuth dance, no user JWT plumbing.
 
-### Wave 4 — Event handler / payload types
+## Tools exposed (all)
 
-- Realtime: `payload: RealtimePostgresChangesPayload<Tables<"x">>` from `@supabase/supabase-js`.
-- Chart `chart.tsx` formatter signatures — use Recharts' `TooltipProps`.
-- Quo API responses (`src/lib/api/quo.ts`) — declare interfaces matching the actual JSON.
+**Read**
+- `search_accounts(query, limit)` — by name/email/MID
+- `get_account(id)` — full account incl. linked contacts + opportunities
+- `search_contacts(query, limit)`
+- `get_contact(id)`
+- `list_opportunities(stage?, assigned_to?, pipeline?, limit)`
+- `get_opportunity(id)` — incl. activities, notes, documents list, underwriting score
+- `list_tasks(assignee?, status?, limit)`
+- `get_pipeline_snapshot()` — count + value per stage
+- `list_recent_activities(opportunity_id?, limit)`
+- `list_referrers()` / `get_referrer(id)`
+- `list_web_submissions(status?, limit)`
+- `get_nmi_transactions(mid, days?)`
+- `get_commission_summary(period?)`
 
-### Out of scope (intentionally keep `unknown`)
+**Write**
+- `create_lead(name, email, phone?, company?, source?)`
+- `create_opportunity(account_id, contact_id, stage, pipeline, ...)`
+- `update_opportunity_stage(id, stage, reason?)`
+- `add_note(opportunity_id, body)`
+- `add_comment(account_id|opportunity_id, body)`
+- `log_activity(opportunity_id, type, description)`
+- `create_task(title, assignee, due_date?, opportunity_id?, priority?)`
+- `assign_opportunity(id, assignee_email)`
 
-- `activeClient.ts` Proxy generic forwarding.
-- SSR `Storage` shim in `impersonationClient.ts`.
-- Cross-shape bridge casts (`as unknown as OnboardingWizardState`) where the DB JSONB column legitimately doesn't match the runtime shape — these would need schema work first.
-- Edge functions (Deno) — separate pass; their `unknown` in catch blocks is the TS-recommended default.
+All writes use the Supabase **service role** server-side (since the bearer is yours), bypassing RLS — same posture as your existing admin edge functions.
 
-## Risks
+## Implementation
 
-- Joined Supabase queries often have `null` relations that current `any` code accesses unguarded → fixing types will surface real null-deref bugs. We'll add `?.` and fallbacks as they appear.
-- `Tables<"…">` keys must match actual table names; if any have been renamed since type regen, regenerate types first.
+**1. New edge function** `supabase/functions/mcp/index.ts`
 
-## Deliverable per wave
+- Uses `mcp-lite` (`npm:mcp-lite@^0.10.0`) with `StreamableHttpTransport` + Hono.
+- `verify_jwt = false` in `supabase/config.toml` (custom bearer auth in code).
+- Auth middleware: require `Authorization: Bearer <MCP_BEARER_TOKEN>` on every request; reject 401 otherwise.
+- Each tool handler instantiates a service-role Supabase client and runs scoped queries against the 3-table schema (accounts/contacts/opportunities) + adjacent tables (activities, notes, tasks, referrers, nmi_*).
+- Tool inputs validated via Zod; outputs returned as `{ content: [{ type: "text", text: JSON.stringify(...) }] }`.
+- CORS headers included so Claude's connector can negotiate.
 
-- All edits + `bunx tsc --noEmit` clean.
-- No new `any` introduced; PR diff should show `any` count decreasing.
+**2. Secret**
+- Add `MCP_BEARER_TOKEN` (I'll generate a strong random string and use `add_secret` so you paste it once).
 
-Confirm and I'll start with Wave 1.
+**3. Config**
+- Register the function in `supabase/config.toml` with `verify_jwt = false`.
+
+**4. Claude Desktop setup (after deploy)**
+
+In Claude Desktop → Settings → Connectors → Add custom connector:
+- **URL:** `https://cuqjaddtmkotgvfsgcol.supabase.co/functions/v1/mcp`
+- **Auth:** Custom header → `Authorization: Bearer <MCP_BEARER_TOKEN>`
+
+Then in any Claude chat the CRM tools appear under the connector.
+
+## Security notes
+
+- Bearer token acts as a full admin key — treat like a password. Never share. Rotate by updating the secret + reconfiguring Claude.
+- No per-user scoping (you said "all"); every call runs with service-role privileges.
+- All MCP calls are logged to a new `mcp_audit_log` table (tool name, args summary, timestamp) so you can review what Claude did.
+
+## Out of scope (for now)
+- OAuth / per-user JWT auth
+- Multi-tenant access (other team members getting their own MCP token)
+- Streaming/long-running tool outputs
+
+Happy to add either later.
