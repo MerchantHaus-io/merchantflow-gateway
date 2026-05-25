@@ -1,0 +1,2 @@
+ALTER TABLE public.opportunities DROP CONSTRAINT IF EXISTS opportunities_status_check;
+ALTER TABLE public.opportunities ADD CONSTRAINT opportunities_status_check CHECK (status = ANY (ARRAY['active'::text, 'dead'::text, 'won'::text]));
