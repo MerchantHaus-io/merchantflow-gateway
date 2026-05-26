@@ -25,6 +25,8 @@ const BRAND_RED = [200, 16, 46] as const; // MerchantHaus shield red
 const CALLOUT_BG = [248, 245, 245] as const;
 const ACCEPT_BG = [16, 18, 22] as const;
 const ACCEPT_TEXT = [255, 255, 255] as const;
+const LINK_BLUE = [33, 78, 168] as const;        // body-text link color (light pages)
+const LINK_ON_DARK = [180, 200, 255] as const;   // link color on dark backgrounds (CTA)
 
 const PAGE_W = 612;  // US Letter @ 72dpi
 const PAGE_H = 792;
@@ -126,6 +128,53 @@ function setStroke(doc: jsPDF, c: readonly [number, number, number]) {
 }
 function setText(doc: jsPDF, c: readonly [number, number, number]) {
   doc.setTextColor(c[0], c[1], c[2]);
+}
+
+/**
+ * Draw a string with a hyperlink annotation and a subtle underline so the
+ * reader can visually recognize it as interactive. Returns nothing — the
+ * caller is responsible for advancing the y-cursor as normal.
+ *
+ * Uses the current font/size set on the doc — set those before calling.
+ */
+function linkText(
+  doc: jsPDF,
+  text: string,
+  x: number,
+  y: number,
+  url: string,
+  opts: {
+    align?: "left" | "right" | "center";
+    underline?: boolean;
+    color?: readonly [number, number, number];
+  } = {},
+) {
+  const align = opts.align ?? "left";
+  const color = opts.color ?? LINK_BLUE;
+  const underline = opts.underline ?? true;
+
+  setText(doc, color);
+  doc.text(text, x, y, { align } as never);
+
+  // jsPDF doesn't expose getTextWidth at all font sizes consistently; use
+  // getStringUnitWidth × current size + scale factor for an accurate measure.
+  const w = (doc.getStringUnitWidth(text) * doc.getFontSize()) / 1; // 1pt = 1pt at unit:pt
+  let lx = x;
+  if (align === "right") lx = x - w;
+  if (align === "center") lx = x - w / 2;
+
+  if (underline) {
+    setStroke(doc, color);
+    doc.setLineWidth(0.4);
+    doc.line(lx, y + 1.5, lx + w, y + 1.5);
+  }
+
+  // Click target — slightly taller than the text for easier tapping
+  const h = doc.getFontSize() + 4;
+  doc.link(lx, y - h + 4, w, h, { url });
+
+  // Reset to default text color so callers don't inherit blue
+  setText(doc, INK);
 }
 
 /** Draws the small top metadata strip used on every interior page. */
@@ -415,19 +464,39 @@ async function renderCover(doc: jsPDF, q: QuotePdfInput, logoDataUri: string) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   setText(doc, MUTED);
-  const issuerLines = [
-    q.sender.address,
-    [q.sender.email, q.sender.phone].filter(Boolean).join("  ·  "),
-  ].filter(Boolean);
-  const recipientLines = [
-    q.client.contactName ? `Attn: ${q.client.contactName}` : "",
-    q.client.email,
-    q.client.phone,
-  ].filter(Boolean);
-  issuerLines.forEach((ln, i) => doc.text(ln, MARGIN, dpY + 28 + i * 11));
-  recipientLines.forEach((ln, i) =>
-    doc.text(ln, PAGE_W / 2 + 10, dpY + 28 + i * 11),
-  );
+
+  // Issuer block — address (plain), email (mailto), phone (tel)
+  let iy = dpY + 28;
+  if (q.sender.address) {
+    doc.text(q.sender.address, MARGIN, iy);
+    iy += 11;
+  }
+  if (q.sender.email) {
+    linkText(doc, q.sender.email, MARGIN, iy, `mailto:${q.sender.email}`);
+    iy += 11;
+  }
+  if (q.sender.phone) {
+    setText(doc, MUTED);
+    linkText(doc, q.sender.phone, MARGIN, iy, `tel:${q.sender.phone.replace(/\s+/g, "")}`);
+    iy += 11;
+  }
+
+  // Recipient block — attn (plain), email (mailto), phone (tel)
+  setText(doc, MUTED);
+  let ry = dpY + 28;
+  if (q.client.contactName) {
+    doc.text(`Attn: ${q.client.contactName}`, PAGE_W / 2 + 10, ry);
+    ry += 11;
+  }
+  if (q.client.email) {
+    linkText(doc, q.client.email, PAGE_W / 2 + 10, ry, `mailto:${q.client.email}`);
+    ry += 11;
+  }
+  if (q.client.phone) {
+    setText(doc, MUTED);
+    linkText(doc, q.client.phone, PAGE_W / 2 + 10, ry, `tel:${q.client.phone.replace(/\s+/g, "")}`);
+    ry += 11;
+  }
 
   pageFooter(doc, q.sender);
 }
@@ -750,13 +819,20 @@ function renderBillingTermsAndAcceptance(
     doc.setFontSize(18);
     doc.text("Sign instantly via secure link.", MARGIN + 18, y + 42);
 
-    setText(doc, [200, 205, 215] as unknown as readonly [number, number, number]);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
-    const urlLines = doc.splitTextToSize(q.acceptUrl, boxW - 36);
-    doc.text(urlLines.slice(0, 2), MARGIN + 18, y + 60);
-    // Make it an actual hyperlink
-    doc.link(MARGIN, y, boxW, boxH, { url: q.acceptUrl });
+    // Render the URL on a single line so it can carry a proper link annotation
+    // + underline. If it overflows the box width we still keep one visual line.
+    setText(doc, LINK_ON_DARK);
+    const url = q.acceptUrl;
+    doc.text(url, MARGIN + 18, y + 60);
+    // Manual underline (jsPDF has no text-decoration)
+    const urlW = (doc.getStringUnitWidth(url) * doc.getFontSize());
+    setStroke(doc, LINK_ON_DARK);
+    doc.setLineWidth(0.4);
+    doc.line(MARGIN + 18, y + 62, MARGIN + 18 + Math.min(urlW, boxW - 36), y + 62);
+    // Whole CTA box is the click target — easier to tap than the URL alone.
+    doc.link(MARGIN, y, boxW, boxH, { url });
     y += boxH + 18;
     setText(doc, INK);
   }
@@ -819,7 +895,9 @@ function renderBillingTermsAndAcceptance(
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   doc.text(q.sender.title, rx, y + 76);
-  if (q.sender.email) doc.text(q.sender.email, rx, y + 88);
+  if (q.sender.email) {
+    linkText(doc, q.sender.email, rx, y + 88, `mailto:${q.sender.email}`);
+  }
 
   // Terms version stamp (audit trail)
   setText(doc, MUTED);
@@ -1175,7 +1253,10 @@ function msaExhibitAndSignature(doc: jsPDF, m: MsaPdfInput, totalPages: number) 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   doc.text(m.signatory.title || "Authorized Signatory", MARGIN, y + 76);
-  doc.text(m.signatory.email, MARGIN, y + 88);
+  if (m.signatory.email) {
+    linkText(doc, m.signatory.email, MARGIN, y + 88, `mailto:${m.signatory.email}`);
+  }
+  setText(doc, MUTED);
   doc.text(`Accepted ${m.signatory.acceptedAtLabel}`, MARGIN, y + 100);
 
   // Provider column
@@ -1204,7 +1285,9 @@ function msaExhibitAndSignature(doc: jsPDF, m: MsaPdfInput, totalPages: number) 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   doc.text(m.sender.title, rx, y + 76);
-  if (m.sender.email) doc.text(m.sender.email, rx, y + 88);
+  if (m.sender.email) {
+    linkText(doc, m.sender.email, rx, y + 88, `mailto:${m.sender.email}`);
+  }
 
   // Audit footer
   const auditY = PAGE_H - 80;
