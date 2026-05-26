@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useAcceptedQuotesCount } from "@/hooks/useAcceptedQuotesCount";
 import { cn } from "@/lib/utils";
 
 // ── NAV ITEMS ──────────────────────────────────────────────────────────────
@@ -104,6 +105,7 @@ export function MobileBottomNav() {
   const [search, setSearch] = useState("");
   const { signOut } = useAuth();
   const { isAdmin } = useUserRole();
+  const { data: acceptedQuotesCount = 0 } = useAcceptedQuotesCount();
   const searchRef = useRef<HTMLInputElement>(null);
 
   const isActive = useCallback((url: string) => {
@@ -202,7 +204,7 @@ export function MobileBottomNav() {
               <span className="absolute top-0 left-1/2 -translate-x-1/2 h-[2px] w-8 rounded-full bg-teal" />
             )}
             {/* 2x2 grid icon */}
-            <div className="grid grid-cols-2 gap-[3px] h-[22px] w-[22px]">
+            <div className="relative grid grid-cols-2 gap-[3px] h-[22px] w-[22px]">
               {[0,1,2,3].map(i => (
                 <div key={i} className={cn(
                   "rounded-[2px] transition-all",
@@ -210,6 +212,14 @@ export function MobileBottomNav() {
                   open && "opacity-100"
                 )} />
               ))}
+              {acceptedQuotesCount > 0 && (
+                <span
+                  className="absolute -top-1.5 -right-2 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#c81030] px-1 text-[9px] font-bold leading-none text-white shrink-0 ring-2 ring-background"
+                  aria-label={`${acceptedQuotesCount} accepted quote${acceptedQuotesCount === 1 ? "" : "s"} ready for contract`}
+                >
+                  {acceptedQuotesCount > 99 ? "99+" : acceptedQuotesCount}
+                </span>
+              )}
             </div>
             <span>More</span>
           </button>
@@ -314,6 +324,8 @@ export function MobileBottomNav() {
                         <div className="grid grid-cols-4 gap-1.5">
                           {group.items.map(item => {
                             const active = !item.external && isActive(item.url);
+                            const showQuotesBadge =
+                              item.url === "/tools/quote-builder" && acceptedQuotesCount > 0;
                             return (
                               <button
                                 key={item.url}
@@ -324,10 +336,18 @@ export function MobileBottomNav() {
                                 )}
                               >
                                 <div className={cn(
-                                  "flex h-11 w-11 items-center justify-center rounded-xl",
+                                  "relative flex h-11 w-11 items-center justify-center rounded-xl",
                                   active ? "bg-teal text-teal-foreground" : "bg-muted"
                                 )}>
                                   <item.icon className="h-5 w-5" />
+                                  {showQuotesBadge && (
+                                    <span
+                                      className="absolute -top-1 -right-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#c81030] px-1 text-[9px] font-bold leading-none text-white shrink-0 ring-2 ring-background"
+                                      aria-label={`${acceptedQuotesCount} accepted quote${acceptedQuotesCount === 1 ? "" : "s"} ready for contract`}
+                                    >
+                                      {acceptedQuotesCount > 99 ? "99+" : acceptedQuotesCount}
+                                    </span>
+                                  )}
                                 </div>
                                 <span className="leading-tight text-center line-clamp-2">{item.title}</span>
                               </button>
