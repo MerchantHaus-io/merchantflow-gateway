@@ -245,15 +245,82 @@ export const NMI_ONE_TIME_FEES: { label: string; amount: string }[] = [
   { label: "Hardware Restocking Fee", amount: "25% / return" },
 ];
 
-/** Standard quote disclaimers shown in the preview/PDF and required for acceptance. */
-export const QUOTE_DISCLAIMERS = [
-  "Quote valid for thirty (30) days from the date of issue. All pricing subject to underwriting approval.",
-  "The Monthly Cost is a fixed Flat Rate predicated on the transaction volumes and business model represented by Merchant as of the quote date. Provider reserves the right to review and renegotiate the Monthly Cost on thirty (30) days' written notice if processing volume materially changes (e.g., exceeds 50% of disclosed figures) or if the nature of business changes materially.",
-  "This flat rate applies strictly to MerchantHaus Gateway Services and does not replace or fix the interchange and processing rates charged by the Merchant's processor.",
-  "Per-event and per-transaction fees apply where listed in addition to monthly platform fees.",
-  "Acceptance of this quote constitutes Merchant's agreement to the MerchantHaus Gateway Platform & Services Agreement, including the General Terms & Conditions (Indemnification, Limitation of Liability, Arbitration, Confidentiality, PCI DSS, and Term & Termination) attached as Appendix A.",
-  "Initial term: twelve (12) months. Merchant may terminate with thirty (30) days' written notice.",
+// ───────────────────────────────────────────────────────────────────────────
+// Ancillary fee defaults — disclosed on every quote even when waived.
+// Per Quotes/Contracts/Billing research report: chargebacks, PCI, and setup
+// must be explicitly disclosed (never silently embedded in margin or omitted).
+// ───────────────────────────────────────────────────────────────────────────
+
+export interface AncillaryFeeDefault {
+  id: "chargeback" | "pci" | "setup" | "return_payment";
+  label: string;
+  description: string;
+  amount: number;
+  cadence: "per_occurrence" | "monthly" | "annual" | "one_time";
+  waivedDescription?: string;
+}
+
+export const ANCILLARY_FEE_DEFAULTS: AncillaryFeeDefault[] = [
+  {
+    id: "chargeback",
+    label: "Chargeback Fee",
+    description: "Per chargeback or retrieval received, in addition to any network penalty pass-through.",
+    amount: 25,
+    cadence: "per_occurrence",
+    waivedDescription: "Pass-through only — no MerchantHaus markup applied.",
+  },
+  {
+    id: "pci",
+    label: "PCI Compliance Fee",
+    description: "Annual PCI attestation support, scan management, and compliance tooling.",
+    amount: 99,
+    cadence: "annual",
+    waivedDescription: "Waived — Merchant manages its own PCI attestation.",
+  },
+  {
+    id: "setup",
+    label: "Setup & Onboarding Fee",
+    description: "One-time gateway provisioning, processor connection, descriptor configuration, and white-glove activation.",
+    amount: 0,
+    cadence: "one_time",
+    waivedDescription: "Waived for this engagement.",
+  },
+  {
+    id: "return_payment",
+    label: "Return Payment Fee",
+    description: "Per failed ACH debit or returned card-on-file collection attempt.",
+    amount: 25,
+    cadence: "per_occurrence",
+  },
 ];
+
+/**
+ * Standard quote disclaimers shown in the preview/PDF and required for acceptance.
+ *
+ * Restructured per Quotes/Contracts/Billing report: every recurring fee gets a
+ * cadence, every operational control (UTC, dispute window, ACH authority,
+ * proration, fee-change, data security, exit) is named, and the "Included vs
+ * per-event" ambiguity is resolved up front.
+ */
+export const QUOTE_DISCLAIMERS = [
+  "Quote validity. This quote is valid for thirty (30) days from the date of issue. All pricing is subject to underwriting approval and accurate disclosure of the Merchant's processing profile.",
+  "Scope. Pricing covers MerchantHaus Gateway Services only — it does not include, fix, or replace interchange, assessments, scheme fees, or the processing rates charged by the Merchant's acquirer or processor, which are governed by separate agreement.",
+  "Bundled vs metered services. Items marked \"Included\" are bundled into the Platform Bundle at no additional charge. Per-event unit prices shown alongside bundled items are informational only and not billed unless the line is configured as metered in the Fee Schedule.",
+  "Volume basis. The Platform Bundle price assumes the disclosed monthly volume and average ticket. A sustained deviation of more than fifty percent (50%) over two consecutive months entitles Provider to a pricing review on thirty (30) days' written notice.",
+  "Ancillary fees. Chargeback, retrieval, return-payment, and network-penalty items are billed as incurred. PCI and setup fees are billed on the cadence shown in the Fee Schedule. All ancillary fees are disclosed on this quote — no undisclosed fees apply.",
+  "Billing cadence. Recurring fees are billed monthly in arrears, computed on UTC calendar boundaries, and debited on the first business day of the following month via ACH. Where accrued ancillary balances exceed $50, Provider may bill more frequently. One-time fees are due on signature or milestone achievement.",
+  "Payment method. Merchant authorizes Provider to debit the nominated bank account via ACH for sums due. A card-on-file may be retained as a fallback collection method where ACH fails. ACH authority is captured at acceptance.",
+  "Proration. Recurring fees prorate only in the first billing month following activation. One-time and ancillary fees do not prorate.",
+  "Fee changes. Provider may amend recurring fees on thirty (30) days' written notice. Third-party pass-through cost changes (interchange, assessments, network penalties) may flow through immediately where mandated externally.",
+  "Billing disputes. Merchant must raise billing objections in writing within thirty (30) days of the billing statement date, specifying the disputed line items and grounds. Charges not disputed within this window are deemed accepted.",
+  "PCI & data security. Each party shall maintain security measures appropriate to its role under PCI DSS. Merchant remains responsible for its own PCI scope, attestation, and the lawful handling of cardholder and customer data.",
+  "Term & termination. Initial term: twelve (12) months from activation, renewing monthly thereafter unless either party gives thirty (30) days' written notice. Provider may suspend or terminate immediately for fraud, excessive chargebacks, regulatory or card-network risk, or non-payment beyond a thirty (30) day cure period.",
+  "Data portability on exit. On termination, Provider will cooperate in good faith on orderly wind-down and the return or migration of Merchant data, subject to payment of accrued fees and any agreed migration charges.",
+  "Master Agreement. Acceptance of this quote constitutes the Merchant's binding agreement to the MerchantHaus Gateway Platform & Services Agreement (including Indemnification, Limitation of Liability, Arbitration, Confidentiality, and the obligations summarized above) attached or referenced as Appendix A.",
+];
+
+/** Terms version string baked into each acceptance audit record. Bump when QUOTE_DISCLAIMERS changes materially. */
+export const QUOTE_TERMS_VERSION = "2026.05.26";
 
 /** Roster of MerchantHaus senders that can be selected as "Prepared by".
  *  All fields remain editable in the Quote Generator after selection. */

@@ -17,8 +17,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import type jsPDF from "jspdf";
 
 import {
   Dialog,
@@ -51,15 +50,19 @@ import {
 } from "@/components/ui/select";
 import { TIERS, type PricingTier, type TierId } from "@/config/pricing";
 import {
+  ANCILLARY_FEE_DEFAULTS,
   DEFAULT_QUOTE_SENDER,
   QUOTE_DISCLAIMERS,
   QUOTE_LINES,
   QUOTE_SENDERS,
+  QUOTE_TERMS_VERSION,
   TIER_PLATFORM_FEE,
+  type AncillaryFeeDefault,
 } from "@/config/quoteSchedule";
 import { supabase } from "@/integrations/supabase/client";
 import { confirmAutoEmail } from "@/components/EmailSendConfirm";
 import quoteHeader from "@/assets/quote-header.png";
+import { buildEditorialQuotePdf, type QuotePdfInput } from "@/lib/quotePdf";
 
 type BillingCycle = "monthly" | "annual";
 
@@ -125,6 +128,47 @@ const buildQuoteNumber = () => {
   return `MH-${stamp}-${rand}`;
 };
 
+/** Generate a URL-safe acceptance token (~22 chars, ~128 bits of entropy). */
+const buildAcceptanceToken = (): string => {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+};
+
+const validThroughLabel = (sentAt: Date): string => {
+  const v = new Date(sentAt);
+  v.setDate(v.getDate() + 30);
+  return v.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};
+
+interface EditableAncillary {
+  id: AncillaryFeeDefault["id"];
+  label: string;
+  description: string;
+  cadence: AncillaryFeeDefault["cadence"];
+  amount: number;
+  enabled: boolean;
+  waivedDescription?: string;
+}
+
+const buildAncillaryDefaults = (): EditableAncillary[] =>
+  ANCILLARY_FEE_DEFAULTS.map((a) => ({
+    id: a.id,
+    label: a.label,
+    description: a.description,
+    cadence: a.cadence,
+    amount: a.amount,
+    enabled: true,
+    waivedDescription: a.waivedDescription,
+  }));
+
 const buildLinesForTier = (tierId: TierId): EditableLine[] =>
   QUOTE_LINES.map((l) => {
     const bundled = l.bundledIn.includes(tierId);
@@ -177,11 +221,20 @@ export function QuoteGeneratorDialog({
   const [lines, setLines] = useState<EditableLine[]>(
     buildLinesForTier((tierProp?.id as TierId) ?? "foundation"),
   );
+  const [ancillary, setAncillary] = useState<EditableAncillary[]>(
+    () => buildAncillaryDefaults(),
+  );
   const [quoteNumber] = useState<string>(() => buildQuoteNumber());
+  const [acceptanceToken] = useState<string>(() => buildAcceptanceToken());
   const [createdOn] = useState<string>(() => todayLabel());
   const [tab, setTab] = useState<"build" | "preview">("build");
   const [sending, setSending] = useState(false);
   const previewRef = useRef<HTMLDivElement | null>(null);
+
+  const acceptanceUrl = useMemo(
+    () => `${window.location.origin}/q/${acceptanceToken}`,
+    [acceptanceToken],
+  );
 
   // Re-sync when dialog opens with new context.
   useEffect(() => {
@@ -193,10 +246,22 @@ export function QuoteGeneratorDialog({
     setPlatformCost(TIER_PLATFORM_FEE[id].cost);
     setPlatformResale(TIER_PLATFORM_FEE[id].resale);
     setLines(buildLinesForTier(id));
+    setAncillary(buildAncillaryDefaults());
     setSender({ ...DEFAULT_QUOTE_SENDER });
     setTab("build");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  const updateAncillary = (id: AncillaryFeeDefault["id"], patch: Partial<EditableAncillary>) =>
+    setAncillary((prev) => prev.map((a) => (a.id === id ? { ...a, ...patch } : a)));
+
+  const oneTimeTotal = useMemo(
+    () =>
+      ancillary
+        .filter((a) => a.enabled && a.cadence === "one_time")
+        .reduce((s, a) => s + a.amount, 0),
+    [ancillary],
+  );
 
   // When the user changes plan tier inside the dialog, reset platform & lines.
   const onTierChange = (id: TierId) => {
@@ -258,220 +323,59 @@ export function QuoteGeneratorDialog({
     );
 
   // ---------- PDF ----------
+  /**
+   * Build the editorial-style PDF (cover → scope/pricing → billing/terms → acceptance).
+   * Layout/design lives in src/lib/quotePdf.ts; this just assembles the input.
+   */
   const buildPdf = async (): Promise<jsPDF> => {
-    const doc = new jsPDF({ unit: "pt", format: "letter" });
-    const pageW = doc.internal.pageSize.getWidth();
-    const margin = 40;
-    let cursor: number;
-
-    // Header image (full width band)
-    try {
-      const img = new Image();
-      img.src = quoteHeader;
-      await new Promise((res, rej) => {
-        img.onload = res;
-        img.onerror = rej;
-      });
-      const headerH = (img.height / img.width) * (pageW - margin * 2);
-      doc.addImage(img, "PNG", margin, 24, pageW - margin * 2, headerH);
-      cursor = 24 + headerH + 18;
-    } catch {
-      cursor = margin;
-    }
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(18);
-    doc.text("Gateway Services Quote", margin, cursor);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(110);
-    doc.text(`Quote #: ${quoteNumber}`, pageW - margin, cursor - 12, {
-      align: "right",
-    });
-    doc.text(`Date: ${createdOn}`, pageW - margin, cursor, { align: "right" });
-    cursor += 18;
-    doc.setTextColor(0);
-
-    // Parties
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.text("Prepared For", margin, cursor);
-    doc.text("Prepared By", pageW / 2 + 10, cursor);
-    cursor += 14;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    const left = [
-      client.businessName || "—",
-      client.contactName,
-      client.email,
-      client.phone,
-    ].filter(Boolean);
-    const right = [
-      sender.name,
-      sender.title,
-      sender.company,
-      sender.email,
-      sender.phone,
-    ].filter(Boolean);
-    const rows = Math.max(left.length, right.length);
-    for (let i = 0; i < rows; i++) {
-      if (left[i]) doc.text(left[i], margin, cursor + i * 12);
-      if (right[i]) doc.text(right[i], pageW / 2 + 10, cursor + i * 12);
-    }
-    cursor += rows * 12 + 8;
-
-    // Plan badge
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.text(
-      `Plan: ${tier.name} — ${billing === "annual" ? "Annual (17% off)" : "Monthly"}`,
-      margin,
-      cursor,
-    );
-    cursor += 14;
-
-    // Pricing table
-    const tableBody: string[][] = [
-      [
-        "Platform Bundle",
-        billing === "annual" ? "Annual billing" : "Monthly",
-        fmt(billedPlatform.resale) + "/mo",
-      ],
-    ];
-    enabledLines.forEach((l) => {
-      tableBody.push([
-        l.label + (l.bundled ? "  (included)" : ""),
-        l.perEvent
-          ? `${fmt(l.perEvent.resale)} ${l.perEvent.label}`
-          : l.description,
-        l.bundled ? "Included" : fmt(l.resale) + "/mo",
-      ]);
-    });
-
-    autoTable(doc, {
-      startY: cursor,
-      head: [["Item", "Detail", "Price"]],
-      body: tableBody,
-      styles: { fontSize: 9, cellPadding: 6 },
-      headStyles: { fillColor: [15, 23, 42], textColor: 255 },
-      columnStyles: { 2: { halign: "right", cellWidth: 90 } },
-      margin: { left: margin, right: margin },
-    });
-    // @ts-expect-error - lastAutoTable is added at runtime
-    cursor = doc.lastAutoTable.finalY + 12;
-
-    // Totals
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.text(
-      `Monthly Total: ${fmt(totals.monthlyResale)}`,
-      pageW - margin,
-      cursor,
-      { align: "right" },
-    );
-    cursor += 14;
-    doc.setFontSize(10);
-    doc.setTextColor(80);
-    doc.text(
-      `Annual Total: ${fmt(totals.annualResale)}`,
-      pageW - margin,
-      cursor,
-      { align: "right" },
-    );
-    cursor += 18;
-    doc.setTextColor(0);
-
-    // Volume context
-    if (client.monthlyVolume || client.averageTicket) {
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      doc.setTextColor(90);
-      const ctx = [
-        client.monthlyVolume && `Disclosed Monthly Volume: ${client.monthlyVolume}`,
-        client.averageTicket && `Average Ticket: ${client.averageTicket}`,
-      ]
-        .filter(Boolean)
-        .join("    •    ");
-      doc.text(ctx, margin, cursor);
-      cursor += 14;
-      doc.setTextColor(0);
-    }
-
-    // Notes
-    if (client.notes) {
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(10);
-      doc.text("Notes", margin, cursor);
-      cursor += 12;
-      doc.setFont("helvetica", "normal");
-      const wrapped = doc.splitTextToSize(client.notes, pageW - margin * 2);
-      doc.text(wrapped, margin, cursor);
-      cursor += wrapped.length * 11 + 6;
-    }
-
-    // Disclaimers
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.text("Terms, Disclaimers & Acceptance", margin, cursor);
-    cursor += 12;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8.5);
-    QUOTE_DISCLAIMERS.forEach((d, i) => {
-      const text = `${i + 1}. ${d}`;
-      const wrapped = doc.splitTextToSize(text, pageW - margin * 2);
-      // page break safeguard
-      if (cursor + wrapped.length * 10 > doc.internal.pageSize.getHeight() - 100) {
-        doc.addPage();
-        cursor = margin;
-      }
-      doc.text(wrapped, margin, cursor);
-      cursor += wrapped.length * 10 + 4;
-    });
-
-    // Signature block
-    if (cursor > doc.internal.pageSize.getHeight() - 120) {
-      doc.addPage();
-      cursor = margin;
-    }
-    cursor += 16;
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.text("Acceptance", margin, cursor);
-    cursor += 14;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.text(
-      "By signing below, Merchant accepts this quote and agrees to the MerchantHaus Gateway",
-      margin,
-      cursor,
-    );
-    cursor += 10;
-    doc.text(
-      "Platform & Services Agreement (Appendix A: General Terms & Conditions).",
-      margin,
-      cursor,
-    );
-    cursor += 22;
-    // Signature lines
-    doc.line(margin, cursor, margin + 220, cursor);
-    doc.line(pageW - margin - 160, cursor, pageW - margin, cursor);
-    cursor += 11;
-    doc.setFontSize(8);
-    doc.setTextColor(110);
-    doc.text("Authorized Signatory", margin, cursor);
-    doc.text("Date", pageW - margin - 160, cursor);
-
-    // Footer
-    doc.setTextColor(140);
-    doc.setFontSize(8);
-    doc.text(
-      `MerchantHaus LLC  •  ${sender.address}  •  Quote #${quoteNumber}`,
-      pageW / 2,
-      doc.internal.pageSize.getHeight() - 20,
-      { align: "center" },
-    );
-
-    return doc;
+    const now = new Date();
+    const pdfInput: QuotePdfInput = {
+      quoteNumber,
+      issuedLabel: createdOn,
+      validThroughLabel: validThroughLabel(now),
+      currency: "USD",
+      tierName: tier.name,
+      billingCycle: billing,
+      client: {
+        businessName: client.businessName || "Merchant",
+        contactName: client.contactName,
+        email: client.email,
+        phone: client.phone,
+        monthlyVolume: client.monthlyVolume,
+        averageTicket: client.averageTicket,
+        notes: client.notes,
+      },
+      sender,
+      platformBundleResale: billedPlatform.resale,
+      lines: enabledLines.map((l) => ({
+        id: l.id,
+        label: l.label,
+        description: l.description,
+        resale: l.resale,
+        bundled: l.bundled,
+        perEvent: l.perEvent
+          ? { label: l.perEvent.label, resale: l.perEvent.resale }
+          : undefined,
+      })),
+      ancillary: ancillary
+        .filter((a) => a.enabled)
+        .map((a) => ({
+          id: a.id,
+          label: a.label,
+          description: a.description,
+          amount: a.amount,
+          cadence: a.cadence,
+          waived: a.amount === 0,
+          waivedDescription: a.waivedDescription,
+        })),
+      totals: {
+        monthlyResale: totals.monthlyResale,
+        annualResale: totals.annualResale,
+        oneTime: oneTimeTotal,
+      },
+      acceptUrl: acceptanceUrl,
+    };
+    return await buildEditorialQuotePdf(pdfInput);
   };
 
   const safeFilename = () => {
@@ -534,6 +438,8 @@ export function QuoteGeneratorDialog({
             quoteNumber,
             pdfBase64: base64,
             pdfFilename: safeFilename(),
+            acceptUrl: acceptanceUrl,
+            validThroughLabel: validThroughLabel(new Date()),
             sender,
           },
         },
@@ -599,8 +505,15 @@ export function QuoteGeneratorDialog({
       sent_at: status === "sent" ? now.toISOString() : null,
       sent_by: user?.id ?? null,
       sent_by_email: user?.email ?? null,
+      // Token issued client-side so the PDF that goes out matches what we persist.
+      // For drafts we still persist the token but the merchant link won't be useful
+      // until the quote is actually sent.
+      acceptance_token: acceptanceToken,
+      acceptance_token_expires_at: validUntil.toISOString(),
     };
-    return await supabase.from("quotes").insert(row);
+    // Cast: the auto-generated Supabase types are regenerated separately;
+    // acceptance_token columns were added in the 20260526120000 migration.
+    return await supabase.from("quotes").insert(row as any);
   };
 
   return (
@@ -914,18 +827,85 @@ export function QuoteGeneratorDialog({
                   </div>
                 </section>
 
+                {/* Ancillary fee disclosures — chargeback, PCI, setup, return-payment */}
+                <section className="space-y-3">
+                  <div className="flex items-baseline justify-between">
+                    <h3 className="text-sm font-semibold">Ancillary fee disclosures</h3>
+                    <p className="text-[11px] text-muted-foreground">
+                      Always disclosed on the quote (even at $0). Set to 0 to mark as waived.
+                    </p>
+                  </div>
+                  <div className="rounded-md border overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/40 text-xs">
+                        <tr>
+                          <th className="text-left px-3 py-2 font-semibold w-[80px]">Disclose</th>
+                          <th className="text-left px-3 py-2 font-semibold">Fee</th>
+                          <th className="text-right px-3 py-2 font-semibold w-[120px]">Amount</th>
+                          <th className="text-right px-3 py-2 font-semibold w-[130px]">Cadence</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {ancillary.map((a) => (
+                          <tr key={a.id} className="border-t">
+                            <td className="p-2 align-top">
+                              <Checkbox
+                                checked={a.enabled}
+                                onCheckedChange={(c) => updateAncillary(a.id, { enabled: !!c })}
+                              />
+                            </td>
+                            <td className="p-2 align-top">
+                              <div className="font-medium">{a.label}</div>
+                              <div className="text-[11px] text-muted-foreground max-w-[420px]">
+                                {a.description}
+                              </div>
+                            </td>
+                            <td className="p-2 align-top text-right">
+                              <CompactNum
+                                value={a.amount}
+                                onChange={(v) => updateAncillary(a.id, { amount: v })}
+                              />
+                            </td>
+                            <td className="p-2 align-top text-right text-xs text-muted-foreground">
+                              {a.cadence.replace("_", " ")}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+
                 {/* Totals strip */}
-                <section className="rounded-lg border bg-card p-4 grid gap-2 sm:grid-cols-3 text-sm">
+                <section className="rounded-lg border bg-card p-4 grid gap-2 sm:grid-cols-4 text-sm">
                   <Stat label="Monthly cost" value={fmt(totals.monthlyCost)} muted />
                   <Stat label="Monthly resale" value={fmt(totals.monthlyResale)} bold />
                   <Stat label="Monthly margin"
                     value={fmt(totals.monthlyMargin)}
                     accent />
+                  <Stat label="One-time fees" value={fmt(oneTimeTotal)} />
                   {enabledLines.some((l) => l.perEvent && !l.bundled) && (
-                    <p className="sm:col-span-3 text-[11px] text-muted-foreground pt-1 border-t">
-                      Totals reflect fixed monthly fees only. Per-event fees listed above are variable and billed based on actual transaction volume.
+                    <p className="sm:col-span-4 text-[11px] text-muted-foreground pt-1 border-t">
+                      Totals reflect fixed monthly fees only. Per-event fees and ancillary "as incurred" items are variable and billed based on actual activity.
                     </p>
                   )}
+                </section>
+
+                {/* Acceptance URL preview */}
+                <section className="rounded-lg border bg-gradient-to-br from-neutral-900 to-neutral-800 text-white p-4 border-l-[3px] border-l-[#c81030]">
+                  <div className="text-[10px] font-bold tracking-[0.14em] text-[#c81030] mb-1">
+                    ACCEPT ONLINE — CTA EMBEDDED IN PDF & EMAIL
+                  </div>
+                  <div className="font-serif italic text-lg mb-2">
+                    Sign instantly via secure link.
+                  </div>
+                  <code className="text-[11px] text-neutral-300 break-all block bg-black/30 px-2 py-1.5 rounded">
+                    {acceptanceUrl}
+                  </code>
+                  <p className="text-[11px] text-neutral-400 mt-2">
+                    Token issued at quote creation. Expires when the quote does (30 days).
+                    Each acceptance writes an immutable audit row with IP, UA, and fee-schedule hash, and notifies {sender.email || "the sender"}.
+                  </p>
                 </section>
               </div>
             </div>

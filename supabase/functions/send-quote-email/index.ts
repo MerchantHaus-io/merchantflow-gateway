@@ -20,6 +20,8 @@ interface QuoteEmailRequest {
   quoteNumber: string;
   pdfBase64: string;
   pdfFilename: string;
+  acceptUrl?: string;
+  validThroughLabel?: string;
   sender: {
     name: string;
     title: string;
@@ -32,32 +34,43 @@ const sanitizeSubject = (s: string) => s.replace(/[\r\n]+/g, " ").trim();
 
 const buildHtml = (req: QuoteEmailRequest) => `<!DOCTYPE html>
 <html><head><meta charset="utf-8" /></head>
-<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#1f2937;margin:0;padding:0;background:#f3f4f6;">
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#101216;margin:0;padding:0;background:#f4f5f7;">
   <div style="max-width:640px;margin:0 auto;padding:24px;">
-    <div style="background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);color:#fff;padding:24px;border-radius:12px 12px 0 0;">
-      <h1 style="margin:0;font-size:22px;letter-spacing:0.3px;">MerchantHaus — Gateway Quote</h1>
-      <p style="margin:6px 0 0;font-size:14px;opacity:0.85;">Quote #${req.quoteNumber}</p>
+    <div style="background:#101216;color:#fff;padding:24px;border-radius:12px 12px 0 0;">
+      <div style="font-size:11px;letter-spacing:1.6px;color:#c81030;font-weight:700;">MERCHANTHAUS · GATEWAY QUOTE</div>
+      <h1 style="margin:8px 0 0;font-size:24px;letter-spacing:-0.3px;font-weight:700;">For ${req.businessName}</h1>
+      <p style="margin:6px 0 0;font-size:13px;opacity:0.7;font-family:'SF Mono',ui-monospace,monospace;">${req.quoteNumber}</p>
     </div>
-    <div style="background:#ffffff;padding:24px;border-radius:0 0 12px 12px;border:1px solid #e5e7eb;border-top:none;">
+    <div style="background:#ffffff;padding:28px 24px;border-radius:0 0 12px 12px;border:1px solid #e5e7eb;border-top:none;">
       <p style="margin:0 0 12px;">Hello ${req.clientName || "there"},</p>
       <p style="margin:0 0 16px;">
-        Please find attached your tailored MerchantHaus Gateway quote for
-        <strong>${req.businessName}</strong>.
+        Your tailored MerchantHaus Gateway quote is attached as a PDF. You can sign instantly using the secure link below, or print, sign, and return the PDF if you prefer.
       </p>
-      <table cellpadding="0" cellspacing="0" style="width:100%;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;margin:16px 0;">
-        <tr><td style="padding:12px 16px;color:#64748b;font-size:13px;">Plan</td><td style="padding:12px 16px;text-align:right;font-weight:600;">${req.tierName}</td></tr>
-        <tr><td style="padding:12px 16px;color:#64748b;font-size:13px;border-top:1px solid #e2e8f0;">Monthly Total</td><td style="padding:12px 16px;text-align:right;font-weight:700;border-top:1px solid #e2e8f0;">${req.monthlyTotal}</td></tr>
+      <table cellpadding="0" cellspacing="0" style="width:100%;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;margin:16px 0;">
+        <tr><td style="padding:12px 16px;color:#6e747c;font-size:13px;">Plan</td><td style="padding:12px 16px;text-align:right;font-weight:600;">${req.tierName}</td></tr>
+        <tr><td style="padding:12px 16px;color:#6e747c;font-size:13px;border-top:1px solid #e5e7eb;">Monthly Total</td><td style="padding:12px 16px;text-align:right;font-weight:700;border-top:1px solid #e5e7eb;">${req.monthlyTotal}</td></tr>
+        ${req.validThroughLabel ? `<tr><td style="padding:12px 16px;color:#6e747c;font-size:13px;border-top:1px solid #e5e7eb;">Valid through</td><td style="padding:12px 16px;text-align:right;border-top:1px solid #e5e7eb;">${req.validThroughLabel}</td></tr>` : ""}
       </table>
-      <p style="margin:16px 0 8px;font-size:14px;color:#475569;">
-        This quote is valid for thirty (30) days and is subject to underwriting approval. Acceptance constitutes agreement to the MerchantHaus Gateway Platform &amp; Services Agreement.
+
+      ${
+        req.acceptUrl
+          ? `<div style="margin:24px 0;">
+              <a href="${req.acceptUrl}" style="display:inline-block;background:#101216;color:#ffffff;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:600;font-size:15px;letter-spacing:0.2px;border-left:3px solid #c81030;">Accept &amp; Sign Online &rarr;</a>
+              <p style="margin:10px 0 0;color:#6e747c;font-size:12px;">Or copy this link: <span style="font-family:'SF Mono',ui-monospace,monospace;color:#101216;">${req.acceptUrl}</span></p>
+            </div>`
+          : ""
+      }
+
+      <p style="margin:16px 0 8px;font-size:13px;color:#6e747c;">
+        Acceptance constitutes the Merchant's agreement to the MerchantHaus Gateway Platform &amp; Services Agreement. The full Fee Schedule, billing cadence, dispute and termination terms, and PCI obligations are detailed inside the attached PDF.
       </p>
       <p style="margin:24px 0 4px;">Kind regards,</p>
       <p style="margin:0;font-weight:600;">${req.sender.name}</p>
-      <p style="margin:0;color:#64748b;font-size:13px;">${req.sender.title} &middot; MerchantHaus LLC</p>
-      <p style="margin:0;color:#64748b;font-size:13px;">${[req.sender.email, req.sender.phone].filter((s) => s && s.trim()).join(" &middot; ")}</p>
+      <p style="margin:0;color:#6e747c;font-size:13px;">${req.sender.title} &middot; MerchantHaus LLC</p>
+      <p style="margin:0;color:#6e747c;font-size:13px;">${[req.sender.email, req.sender.phone].filter((s) => s && s.trim()).join(" &middot; ")}</p>
     </div>
-    <p style="text-align:center;color:#94a3b8;font-size:12px;margin:16px 0 0;">
-      MerchantHaus LLC &middot; 1209 Mountain Road Pl NE Ste N, Albuquerque, NM 87110
+    <p style="text-align:center;color:#94a3b8;font-size:11px;margin:16px 0 0;letter-spacing:0.4px;">
+      MERCHANTHAUS LLC &middot; 1209 MOUNTAIN ROAD PL NE STE N, ALBUQUERQUE, NM 87110
     </p>
   </div>
 </body></html>`;
