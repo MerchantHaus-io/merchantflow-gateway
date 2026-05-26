@@ -54,9 +54,9 @@ export default function PortalCommissions() {
   });
 
   // Program rules from referrer profile (with safe fallbacks).
-  // NEW MODEL: 50% rev share, $500/account/MONTH recurring (no lifetime cap, no account ceiling).
+  // NEW MODEL: 50% rev share, $1,000/account/MONTH recurring (no lifetime cap, no account ceiling).
   const rate = referrer?.commission_rate ?? 0.5;
-  const monthlyCap = referrer?.monthly_cap_per_merchant ?? 500;
+  const monthlyCap = referrer?.monthly_cap_per_merchant ?? 1000;
   const bonusAmount = referrer?.bonus_amount ?? 500;
   const bonusMilestone = referrer?.bonus_milestone_count ?? 5;
 

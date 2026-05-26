@@ -52,8 +52,8 @@ export default function Referrers() {
     full_name: "",
     email: "",
     phone: "",
-    commission_rate: 0.10,
-    monthly_cap_per_merchant: 1500,
+    commission_rate: 0.50,
+    monthly_cap_per_merchant: 1000,
   });
   const [creating, setCreating] = useState(false);
   const [createdCredentials, setCreatedCredentials] = useState<{ email: string; password: string } | null>(null);
@@ -181,7 +181,7 @@ export default function Referrers() {
     }
 
     setCreatedCredentials({ email: createForm.email, password: data.temp_password });
-    setCreateForm({ full_name: "", email: "", phone: "", commission_rate: 0.10, monthly_cap_per_merchant: 1500 });
+    setCreateForm({ full_name: "", email: "", phone: "", commission_rate: 0.50, monthly_cap_per_merchant: 1000 });
     setCreateOpen(false);
     load();
   };
