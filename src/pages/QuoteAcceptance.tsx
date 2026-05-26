@@ -526,8 +526,14 @@ export default function QuoteAcceptance() {
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
+  // fixed inset-0 + overflow-y-auto escapes any parent app-shell layout
+  // (the dashboard chrome) and gives this public page its own scroll
+  // container. Matches the pattern used by TermsProcessing and Apply.
   return (
-    <div className="min-h-screen bg-[#fafafa] text-neutral-900 font-sans">
+    <div
+      className="fixed inset-0 z-50 bg-[#fafafa] text-neutral-900 font-sans overflow-y-auto overscroll-contain"
+      style={{ WebkitOverflowScrolling: "touch" }}
+    >
       {children}
     </div>
   );
