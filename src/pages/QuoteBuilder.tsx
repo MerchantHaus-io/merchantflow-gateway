@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { TIERS, type PricingTier } from "@/config/pricing";
 import { QuoteGeneratorDialog } from "@/components/pricing/QuoteGeneratorDialog";
+import { AcceptedQuotesPanel } from "@/components/pricing/AcceptedQuotesPanel";
 import { toast } from "sonner";
 
 type BillingCycle = "monthly" | "annual";
@@ -338,6 +339,8 @@ export default function QuoteBuilder() {
               </Button>
             </div>
           </div>
+
+          <AcceptedQuotesPanel />
         </div>
       </div>
 

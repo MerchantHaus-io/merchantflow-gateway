@@ -856,3 +856,409 @@ export async function buildEditorialQuotePdf(
 
   return doc;
 }
+
+// ─── Merchant Services Agreement (post-acceptance contract) ──────────────
+
+export interface MsaPdfInput {
+  agreementNumber: string;            // e.g. "MSA-MH-20260526-2401-A"
+  quoteNumber: string;                // back-reference to the accepted quote
+  effectiveDateLabel: string;         // acceptance_at, formatted
+  client: QuotePdfInput["client"];
+  sender: QuotePdfInput["sender"];
+  tierName: string;
+  billingCycle: "monthly" | "annual";
+  platformBundleResale: number;
+  lines: QuotePdfLine[];
+  ancillary: QuotePdfAncillary[];
+  totals: QuotePdfInput["totals"];
+  signatory: {
+    name: string;
+    title: string;
+    email: string;
+    acceptedAtLabel: string;
+    ipAddress: string | null;
+    feeScheduleHash: string;
+    termsVersion: string | null;
+  };
+}
+
+function msaCover(doc: jsPDF, m: MsaPdfInput, logoDataUri: string) {
+  // Tiny eyebrow strip
+  setText(doc, MUTED);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.5);
+  doc.text(
+    "MERCHANT SERVICES AGREEMENT  ·  EXECUTED COPY",
+    MARGIN,
+    48,
+    { charSpace: 1.2 } as never,
+  );
+
+  // Logo top right (best-effort)
+  if (logoDataUri) {
+    try {
+      const img = new Image();
+      img.src = logoDataUri;
+      // jsPDF.addImage is synchronous once decoded; we assume the cover quote
+      // has already pre-loaded the asset, so this rarely blocks.
+      doc.addImage(logoDataUri, "PNG", PAGE_W - MARGIN - 110, 38, 110, 24);
+    } catch {
+      // ignore
+    }
+  }
+
+  // Hero
+  const heroY = 240;
+  setText(doc, BRAND_RED);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.text("BETWEEN", MARGIN, heroY - 30, { charSpace: 1.6 } as never);
+  brandRule(doc, MARGIN, heroY - 22, 28);
+
+  setText(doc, INK);
+  doc.setFont("times", "bold");
+  doc.setFontSize(34);
+  const lineH = 36;
+  const issuerLines = doc.splitTextToSize(m.sender.company, PAGE_W - MARGIN * 2);
+  const recipientLines = doc.splitTextToSize(
+    m.client.businessName || "Merchant",
+    PAGE_W - MARGIN * 2,
+  );
+  let y = heroY + 6;
+  doc.text(issuerLines[0], MARGIN, y);
+  y += lineH;
+  // Ampersand divider
+  setText(doc, MUTED);
+  doc.setFont("times", "italic");
+  doc.setFontSize(28);
+  doc.text("&", MARGIN, y);
+  y += lineH - 4;
+  setText(doc, INK);
+  doc.setFont("times", "bold");
+  doc.setFontSize(34);
+  doc.text(recipientLines[0], MARGIN, y);
+
+  // Metadata grid
+  const metaY = PAGE_H - 170;
+  setStroke(doc, HAIRLINE);
+  doc.setLineWidth(0.4);
+  doc.line(MARGIN, metaY, PAGE_W - MARGIN, metaY);
+
+  const cols = [
+    { label: "Agreement №", value: m.agreementNumber },
+    { label: "Effective", value: m.effectiveDateLabel },
+    { label: "Source Quote", value: m.quoteNumber },
+    { label: "Currency", value: "USD" },
+  ];
+  const colW = (PAGE_W - MARGIN * 2) / cols.length;
+  cols.forEach((c, i) => {
+    const x = MARGIN + i * colW;
+    setText(doc, MUTED);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.text(c.label.toUpperCase(), x, metaY + 16, { charSpace: 1.4 } as never);
+    setText(doc, INK);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.text(c.value, x, metaY + 32);
+  });
+
+  // Recital
+  const recY = metaY + 60;
+  setText(doc, MUTED);
+  doc.setFont("times", "italic");
+  doc.setFontSize(11);
+  const recital = doc.splitTextToSize(
+    `This Merchant Services Agreement is entered into between ${m.sender.company} ("Provider") and ${m.client.businessName || "Merchant"} ("Merchant") as of ${m.effectiveDateLabel}, on the terms set out in Articles I–V and the Fee Schedule attached as Exhibit A. It supersedes any prior proposal but incorporates the commercial terms accepted in Quote ${m.quoteNumber}.`,
+    PAGE_W - MARGIN * 2,
+  );
+  doc.text(recital, MARGIN, recY);
+
+  pageFooter(doc, m.sender);
+}
+
+function msaArticles(doc: jsPDF, m: MsaPdfInput, totalPages: number) {
+  doc.addPage();
+  pageHeader(doc, m.agreementNumber, "Articles I–V", 2, totalPages);
+
+  let y = 78;
+  sectionMark(doc, "I", "Services", y);
+  y += 14;
+  brandRule(doc, MARGIN, y, 28);
+  y += 18;
+
+  y = displayHeadline(doc, ["Articles."], y + 6, 28);
+  y += 8;
+
+  const articles = [
+    {
+      n: "I",
+      title: "Services",
+      body:
+        `Provider will supply gateway access, payment processing connectivity, related support, and the optional services listed in Exhibit A. Acquiring, settlement, and chargeback handling continue through Merchant's processor under separate agreement.`,
+    },
+    {
+      n: "II",
+      title: "Fee Schedule & Billing",
+      body:
+        `Fees are set out in Exhibit A and distinguish third-party pass-through costs from Provider markups. Recurring fees bill monthly in arrears on UTC calendar boundaries and debit on the first business day of the following month via ACH. Accrued ancillary balances over $50 may bill more frequently. One-time fees are due at signature or milestone achievement. Merchant authorizes ACH debit and may designate a card-on-file as fallback.`,
+    },
+    {
+      n: "III",
+      title: "Term, Termination & Pricing Review",
+      body:
+        `Initial term is twelve (12) months from the Effective Date, renewing monthly thereafter unless either party gives thirty (30) days' written notice. Provider may suspend or terminate immediately for fraud, excessive chargebacks, regulatory or card-network risk, or non-payment beyond a thirty (30) day cure period. Provider may amend recurring fees on thirty (30) days' written notice; third-party pass-through changes may flow through immediately where externally mandated. A sustained deviation of more than fifty percent (50%) over two consecutive months from the disclosed volume entitles Provider to a pricing review.`,
+    },
+    {
+      n: "IV",
+      title: "PCI, Data Security & Disputes",
+      body:
+        `Each party shall maintain security measures appropriate to its role under PCI DSS and applicable law. Merchant remains responsible for its own PCI scope, attestation, and the lawful handling of cardholder and customer data. Billing objections must be raised in writing within thirty (30) days of the statement date, specifying the disputed line items and grounds; charges not disputed within this window are deemed accepted.`,
+    },
+    {
+      n: "V",
+      title: "Liability, Indemnity & Exit",
+      body:
+        `Except for fraud, willful misconduct, confidentiality breach, and unpaid fees, each party's aggregate liability is capped at the fees paid in the three (3) months preceding the claim. Merchant indemnifies Provider for fines, chargebacks, investigations and third-party claims arising from Merchant conduct, data breach, unlawful activity, or rule violations. On termination, Provider will cooperate in good faith on orderly wind-down and the return or migration of Merchant data, subject to payment of accrued fees and any agreed migration charges.`,
+    },
+  ];
+
+  articles.forEach((a) => {
+    if (y > PAGE_H - 140) {
+      pageFooter(doc, m.sender);
+      doc.addPage();
+      pageHeader(doc, m.agreementNumber, "Articles I–V (cont.)", 2, totalPages);
+      y = 78;
+    }
+    setText(doc, BRAND_RED);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.text(`ARTICLE ${a.n}`, MARGIN, y, { charSpace: 1.4 } as never);
+    setText(doc, INK);
+    doc.setFont("times", "bold");
+    doc.setFontSize(14);
+    doc.text(a.title, MARGIN + 56, y + 1);
+    y += 16;
+    setText(doc, MUTED);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9.5);
+    const body = doc.splitTextToSize(a.body, PAGE_W - MARGIN * 2);
+    doc.text(body, MARGIN, y);
+    y += body.length * 12 + 14;
+  });
+
+  pageFooter(doc, m.sender);
+}
+
+function msaExhibitAndSignature(doc: jsPDF, m: MsaPdfInput, totalPages: number) {
+  doc.addPage();
+  pageHeader(doc, m.agreementNumber, "Exhibit A · Signature", 3, totalPages);
+
+  let y = 78;
+  sectionMark(doc, "A", "Exhibit", y);
+  y += 14;
+  brandRule(doc, MARGIN, y, 28);
+  y += 18;
+
+  y = displayHeadline(doc, ["Fee Schedule."], y + 6, 28);
+  y += 6;
+
+  setText(doc, MUTED);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9.5);
+  const deck = doc.splitTextToSize(
+    `Accepted ${m.effectiveDateLabel} under Quote ${m.quoteNumber}. Bundled items are included in the Platform Bundle at no additional charge; metered items are billed per event at the unit price shown. Ancillary fees are billed on the cadence shown.`,
+    PAGE_W - MARGIN * 2,
+  );
+  doc.text(deck, MARGIN, y);
+  y += deck.length * 12 + 12;
+
+  // Fee table
+  const tableBody: string[][] = [
+    [
+      "Platform Bundle",
+      `${m.tierName} — ${m.billingCycle === "annual" ? "Annual billing" : "Monthly billing"}`,
+      `${money(m.platformBundleResale)} / mo`,
+    ],
+  ];
+  m.lines.forEach((l) => {
+    const detail = l.perEvent
+      ? `${l.description}\nUnit: ${money(l.perEvent.resale)} ${l.perEvent.label}`
+      : l.description;
+    tableBody.push([
+      l.label,
+      detail,
+      l.bundled ? "Included" : `${money(l.resale)} / mo`,
+    ]);
+  });
+  m.ancillary.forEach((a) => {
+    tableBody.push([
+      a.label,
+      a.description,
+      a.waived || a.amount === 0
+        ? (a.waivedDescription ?? "Waived")
+        : `${money(a.amount)} ${cadenceLabel(a.cadence)}`,
+    ]);
+  });
+
+  autoTable(doc, {
+    startY: y,
+    head: [["Item", "Detail", "Price"]],
+    body: tableBody,
+    theme: "plain",
+    styles: {
+      font: "helvetica",
+      fontSize: 8.5,
+      cellPadding: { top: 8, right: 8, bottom: 8, left: 0 },
+      textColor: INK as unknown as number[],
+      lineColor: HAIRLINE as unknown as number[],
+      lineWidth: 0,
+      valign: "top",
+    },
+    headStyles: {
+      fillColor: false as unknown as number[],
+      textColor: MUTED as unknown as number[],
+      fontStyle: "bold",
+      fontSize: 7.5,
+      cellPadding: { top: 6, right: 8, bottom: 8, left: 0 },
+      lineWidth: { bottom: 0.6, top: 0.6, left: 0, right: 0 },
+      lineColor: INK as unknown as number[],
+    },
+    bodyStyles: {
+      lineWidth: { bottom: 0.3, top: 0, left: 0, right: 0 },
+      lineColor: HAIRLINE as unknown as number[],
+    },
+    columnStyles: {
+      0: { fontStyle: "bold", cellWidth: 145 },
+      1: { textColor: MUTED as unknown as number[], cellWidth: "auto" },
+      2: { halign: "right", cellWidth: 110, fontStyle: "bold" },
+    },
+    margin: { left: MARGIN, right: MARGIN },
+    didParseCell: (data) => {
+      if (data.section === "head") {
+        data.cell.text = data.cell.text.map((t) => t.toUpperCase());
+      }
+    },
+  });
+  // @ts-expect-error - lastAutoTable is added at runtime
+  y = doc.lastAutoTable.finalY + 18;
+
+  // Signature block — pre-stamped from the acceptance audit
+  eyebrow(doc, "Executed by electronic acceptance", y);
+  y += 18;
+
+  const sigColW = (PAGE_W - MARGIN * 2 - 30) / 2;
+
+  // Merchant column — stamped
+  setStroke(doc, INK);
+  doc.setLineWidth(0.6);
+  doc.line(MARGIN, y + 28, MARGIN + sigColW, y + 28);
+  setText(doc, INK);
+  doc.setFont("times", "italic");
+  doc.setFontSize(16);
+  doc.text(`/s/  ${m.signatory.name}`, MARGIN, y + 22);
+  setText(doc, MUTED);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7);
+  doc.text(
+    `${(m.client.businessName || "MERCHANT").toUpperCase()}  ·  AUTHORIZED SIGNATORY`,
+    MARGIN,
+    y + 40,
+    { charSpace: 1.2 } as never,
+  );
+
+  setText(doc, INK);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.text(m.signatory.name, MARGIN, y + 64);
+  setText(doc, MUTED);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  doc.text(m.signatory.title || "Authorized Signatory", MARGIN, y + 76);
+  doc.text(m.signatory.email, MARGIN, y + 88);
+  doc.text(`Accepted ${m.signatory.acceptedAtLabel}`, MARGIN, y + 100);
+
+  // Provider column
+  const rx = MARGIN + sigColW + 30;
+  setStroke(doc, INK);
+  doc.line(rx, y + 28, rx + sigColW, y + 28);
+  setText(doc, INK);
+  doc.setFont("times", "italic");
+  doc.setFontSize(16);
+  doc.text(`/s/  ${m.sender.name}`, rx, y + 22);
+  setText(doc, MUTED);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7);
+  doc.text(
+    `${m.sender.company.toUpperCase()}  ·  AUTHORIZED SIGNATORY`,
+    rx,
+    y + 40,
+    { charSpace: 1.2 } as never,
+  );
+
+  setText(doc, INK);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.text(m.sender.name, rx, y + 64);
+  setText(doc, MUTED);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  doc.text(m.sender.title, rx, y + 76);
+  if (m.sender.email) doc.text(m.sender.email, rx, y + 88);
+
+  // Audit footer
+  const auditY = PAGE_H - 80;
+  setStroke(doc, HAIRLINE);
+  doc.setLineWidth(0.4);
+  doc.line(MARGIN, auditY, PAGE_W - MARGIN, auditY);
+  setText(doc, MUTED);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  doc.text(
+    `Audit · IP ${m.signatory.ipAddress ?? "—"}  ·  Terms version ${m.signatory.termsVersion ?? "—"}  ·  Fee schedule hash ${m.signatory.feeScheduleHash.substring(0, 24)}…`,
+    MARGIN,
+    auditY + 12,
+    { charSpace: 0.6 } as never,
+  );
+
+  pageFooter(doc, m.sender);
+}
+
+const money = (n: number) =>
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+  }).format(n);
+
+/**
+ * Build a 3-page Merchant Services Agreement PDF, pre-stamped with the
+ * acceptance audit so the operator can simply download and send.
+ *  Page 1 — Cover (parties, effective date, source-quote back-reference)
+ *  Page 2 — Articles I–V (services, fees, term, PCI, liability)
+ *  Page 3 — Exhibit A (accepted fee schedule) + e-signature page
+ */
+export async function buildMerchantServicesAgreementPdf(
+  m: MsaPdfInput,
+): Promise<jsPDF> {
+  const doc = new jsPDF({ unit: "pt", format: "letter" });
+  const totalPages = 3;
+
+  // Pre-load logo so the sync addImage call on the cover doesn't race.
+  try {
+    const img = new Image();
+    img.src = merchantHausLogo;
+    await new Promise((res, rej) => {
+      img.onload = res;
+      img.onerror = rej;
+    });
+  } catch {
+    // best-effort
+  }
+
+  msaCover(doc, m, merchantHausLogo);
+  msaArticles(doc, m, totalPages);
+  msaExhibitAndSignature(doc, m, totalPages);
+
+  return doc;
+}
