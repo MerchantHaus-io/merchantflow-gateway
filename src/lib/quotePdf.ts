@@ -16,6 +16,10 @@ import {
   QUOTE_DISCLAIMERS,
   QUOTE_TERMS_VERSION,
 } from "@/config/quoteSchedule";
+import {
+  TERMS_AND_CONDITIONS,
+  TERMS_PUBLIC_URL,
+} from "@/content/termsAndConditions";
 
 // ─── Brand palette (RGB tuples for jsPDF) ─────────────────────────────────
 const INK = [16, 18, 22] as const;       // near-black body
@@ -722,15 +726,19 @@ function renderBillingTermsAndAcceptance(
   const rightEnd = renderTermsCol(rightX, "Terms", termsItems);
   y = Math.max(leftEnd, rightEnd) + 8;
 
-  // Master Agreement callout
+  // Master Agreement callout — references the full T&Cs URL
   y = calloutBox(
     doc,
     "Master Agreement",
-    "Acceptance of this quote constitutes the Merchant's binding agreement to the MerchantHaus Gateway Platform & Services Agreement, including Indemnification, Limitation of Liability, Arbitration, Confidentiality, and the obligations summarized above, attached or referenced as Appendix A.",
+    `Acceptance of this quote constitutes the Merchant's binding agreement to the MerchantHaus Gateway Platform & Services Agreement, including Indemnification, Limitation of Liability, Arbitration, Confidentiality, and the obligations summarized above. The full executable text is published at ${TERMS_PUBLIC_URL} and is attached as Appendix B of the Merchant Services Agreement issued on acceptance.`,
     MARGIN,
     y,
     PAGE_W - MARGIN * 2,
   );
+  // Underlay a tappable link rectangle over the URL row of the callout.
+  // We don't know exactly where the URL wrapped, so make the entire callout
+  // box click-through to the T&Cs URL — same pattern as the Accept Online CTA.
+  doc.link(MARGIN, y - 60, PAGE_W - MARGIN * 2, 60, { url: TERMS_PUBLIC_URL });
 
   pageFooter(doc, q.sender);
 
@@ -1314,18 +1322,179 @@ const money = (n: number) =>
     minimumFractionDigits: 2,
   }).format(n);
 
+// ─── Appendix B — Full Terms & Conditions paginator ──────────────────────
+//
+// Walks the shared TERMS_AND_CONDITIONS array and paginates it into the
+// MSA PDF as Appendix B. Same source data as the website's /terms-processing
+// page. Handles page breaks mid-block by re-checking the y-cursor between
+// every line of body text.
+
+function renderFullTermsAndConditions(
+  doc: jsPDF,
+  agreementNumber: string,
+  sender: MsaPdfInput["sender"],
+): number {
+  // Each new page starts with the standard pageHeader. The first page also
+  // carries the appendix-section mark + display headline.
+  doc.addPage();
+  let pageNum = 4; // MSA pages 1-3 already rendered before this function runs
+  pageHeader(doc, agreementNumber, "Appendix B · Full Terms", pageNum, 0);
+
+  let y = 78;
+  sectionMark(doc, "B", "Appendix", y);
+  y += 14;
+  brandRule(doc, MARGIN, y, 28);
+  y += 18;
+
+  y = displayHeadline(doc, ["Full Terms &", "Conditions."], y + 6, 26);
+  y += 6;
+
+  setText(doc, MUTED);
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(8.5);
+  doc.text(
+    `The binding text of the Agreement. Also published at ${TERMS_PUBLIC_URL}.`,
+    MARGIN,
+    y + 6,
+  );
+  y += 22;
+  setText(doc, INK);
+
+  const usableHeight = PAGE_H - 60; // leave room for footer
+  const bodyWidth = PAGE_W - MARGIN * 2;
+
+  // Helpers — break to a new page when y would overrun.
+  const needSpace = (h: number) => {
+    if (y + h > usableHeight) {
+      pageFooter(doc, sender);
+      doc.addPage();
+      pageNum += 1;
+      pageHeader(doc, agreementNumber, "Appendix B · Full Terms (cont.)", pageNum, 0);
+      y = 60;
+    }
+  };
+
+  for (const block of TERMS_AND_CONDITIONS) {
+    switch (block.type) {
+      case "heading": {
+        // Headings get extra top padding + bottom padding
+        const size =
+          block.level === 1 ? 13 : block.level === 2 ? 11 : block.level === 3 ? 9.5 : 9;
+        const topPad = block.level <= 2 ? 16 : 10;
+        const bottomPad = 6;
+        needSpace(topPad + size + bottomPad);
+        y += topPad;
+        setText(doc, INK);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(size);
+        const lines = doc.splitTextToSize(block.text, bodyWidth);
+        for (const ln of lines) {
+          needSpace(size + 2);
+          doc.text(ln, MARGIN, y);
+          y += size + 2;
+        }
+        y += bottomPad;
+        break;
+      }
+      case "paragraph": {
+        setText(doc, INK);
+        doc.setFont("helvetica", block.allCaps ? "bold" : "normal");
+        doc.setFontSize(8);
+        const indent = block.indent ? 14 : 0;
+        const txt = block.allCaps ? block.text.toUpperCase() : block.text;
+        const lines = doc.splitTextToSize(txt, bodyWidth - indent);
+        for (const ln of lines) {
+          needSpace(10);
+          doc.text(ln, MARGIN + indent, y);
+          y += 10;
+        }
+        y += 6;
+        break;
+      }
+      case "definition": {
+        setText(doc, INK);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8);
+        const labelW =
+          (doc.getStringUnitWidth(`"${block.term}"`) * doc.getFontSize());
+        const labelText = `"${block.term}"`;
+        needSpace(10);
+        doc.text(labelText, MARGIN, y);
+        // Body wraps under the term label
+        doc.setFont("helvetica", "normal");
+        const bodyLines = doc.splitTextToSize(
+          ` ${block.body}`,
+          bodyWidth - labelW,
+        );
+        if (bodyLines.length > 0) {
+          // First line follows the label inline
+          doc.text(bodyLines[0], MARGIN + labelW, y);
+          y += 10;
+          // Subsequent lines start at left margin
+          for (let i = 1; i < bodyLines.length; i++) {
+            needSpace(10);
+            const rest = doc.splitTextToSize(bodyLines[i], bodyWidth);
+            for (const ln of rest) {
+              needSpace(10);
+              doc.text(ln, MARGIN, y);
+              y += 10;
+            }
+          }
+        } else {
+          y += 10;
+        }
+        y += 4;
+        break;
+      }
+      case "list": {
+        setText(doc, INK);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        const indent = 20;
+        block.items.forEach((item, idx) => {
+          const bullet =
+            block.style === "decimal" ? `${idx + 1}.` : "•";
+          needSpace(10);
+          setText(doc, MUTED);
+          doc.text(bullet, MARGIN + 4, y);
+          setText(doc, INK);
+          const lines = doc.splitTextToSize(item, bodyWidth - indent);
+          for (let i = 0; i < lines.length; i++) {
+            if (i > 0) needSpace(10);
+            doc.text(lines[i], MARGIN + indent, y);
+            y += 10;
+          }
+          y += 2;
+        });
+        y += 6;
+        break;
+      }
+    }
+  }
+
+  pageFooter(doc, sender);
+  return pageNum;
+}
+
 /**
- * Build a 3-page Merchant Services Agreement PDF, pre-stamped with the
- * acceptance audit so the operator can simply download and send.
- *  Page 1 — Cover (parties, effective date, source-quote back-reference)
- *  Page 2 — Articles I–V (services, fees, term, PCI, liability)
- *  Page 3 — Exhibit A (accepted fee schedule) + e-signature page
+ * Build a Merchant Services Agreement PDF, pre-stamped with the acceptance
+ * audit so the operator can simply download and send.
+ *
+ *  Page 1   — Cover (parties, effective date, source-quote back-reference)
+ *  Page 2   — Articles I–V (services, fees, term, PCI, liability) — summary
+ *  Page 3   — Exhibit A (accepted fee schedule) + e-signature page
+ *  Page 4+  — Appendix B — Full website T&Cs (single source of truth)
+ *
+ * Total page count is variable because Appendix B paginates as needed. The
+ * pageHeader on Appendix B pages shows "0" as the total because the final
+ * count isn't known until after rendering — acceptable since the front
+ * matter uses a fixed 3 + cover.
  */
 export async function buildMerchantServicesAgreementPdf(
   m: MsaPdfInput,
 ): Promise<jsPDF> {
   const doc = new jsPDF({ unit: "pt", format: "letter" });
-  const totalPages = 3;
+  const totalFrontPages = 3;
 
   // Pre-load logo so the sync addImage call on the cover doesn't race.
   try {
@@ -1340,8 +1509,10 @@ export async function buildMerchantServicesAgreementPdf(
   }
 
   msaCover(doc, m, merchantHausLogo);
-  msaArticles(doc, m, totalPages);
-  msaExhibitAndSignature(doc, m, totalPages);
+  msaArticles(doc, m, totalFrontPages);
+  msaExhibitAndSignature(doc, m, totalFrontPages);
+  // Appendix B — full website T&Cs, paginated
+  renderFullTermsAndConditions(doc, m.agreementNumber, m.sender);
 
   return doc;
 }
