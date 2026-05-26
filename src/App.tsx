@@ -56,6 +56,7 @@ import Transactions from "./pages/Transactions";
 import Calendar from "./pages/Calendar";
 import Commissions from "./pages/Commissions";
 import QuoteBuilder from "./pages/QuoteBuilder";
+import QuoteAcceptance from "./pages/QuoteAcceptance";
 import Referrers from "./pages/Referrers";
 import { ReferrerRoute } from "./components/ReferrerRoute";
 import PortalDashboard from "./pages/portal/PortalDashboard";
@@ -122,6 +123,7 @@ const App = () => (
                 <Route path="/merchant-apply" element={<MerchantApply />} />
                 <Route path="/terms-processing" element={<TermsProcessing />} />
                 <Route path="/support-request" element={<SupportRequest />} />
+                <Route path="/q/:token" element={<QuoteAcceptance />} />
                 <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
                 <Route path="/pipeline" element={<ProtectedRoute><Index /></ProtectedRoute>} />
                 <Route path="/dashboard" element={<ProtectedRoute><Home /></ProtectedRoute>} />
