@@ -181,7 +181,7 @@ export default function Referrers() {
     }
 
     setCreatedCredentials({ email: createForm.email, password: data.temp_password });
-    setCreateForm({ full_name: "", email: "", phone: "", commission_rate: 0.10, monthly_cap_per_merchant: 1500 });
+    setCreateForm({ full_name: "", email: "", phone: "", commission_rate: 0.50, monthly_cap_per_merchant: 1000 });
     setCreateOpen(false);
     load();
   };
