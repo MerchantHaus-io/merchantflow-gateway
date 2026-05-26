@@ -2473,8 +2473,94 @@ export type Database = {
         }
         Relationships: []
       }
+      quote_acceptances: {
+        Row: {
+          accepted_at: string
+          ach_account_holder: string | null
+          ach_account_last4: string | null
+          ach_account_type: string | null
+          ach_authorized: boolean
+          ach_bank_name: string | null
+          ach_routing_last4: string | null
+          agreed_to_msa: boolean
+          authority_to_bind: boolean
+          created_at: string
+          fee_schedule_hash: string | null
+          id: string
+          ip_address: unknown
+          notes: string | null
+          quote_id: string
+          signatory_email: string
+          signatory_name: string
+          signatory_title: string | null
+          terms_version: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          accepted_at?: string
+          ach_account_holder?: string | null
+          ach_account_last4?: string | null
+          ach_account_type?: string | null
+          ach_authorized?: boolean
+          ach_bank_name?: string | null
+          ach_routing_last4?: string | null
+          agreed_to_msa?: boolean
+          authority_to_bind?: boolean
+          created_at?: string
+          fee_schedule_hash?: string | null
+          id?: string
+          ip_address?: unknown
+          notes?: string | null
+          quote_id: string
+          signatory_email: string
+          signatory_name: string
+          signatory_title?: string | null
+          terms_version?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          accepted_at?: string
+          ach_account_holder?: string | null
+          ach_account_last4?: string | null
+          ach_account_type?: string | null
+          ach_authorized?: boolean
+          ach_bank_name?: string | null
+          ach_routing_last4?: string | null
+          agreed_to_msa?: boolean
+          authority_to_bind?: boolean
+          created_at?: string
+          fee_schedule_hash?: string | null
+          id?: string
+          ip_address?: unknown
+          notes?: string | null
+          quote_id?: string
+          signatory_email?: string
+          signatory_name?: string
+          signatory_title?: string | null
+          terms_version?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_acceptances_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quote_acceptance_summary"
+            referencedColumns: ["quote_id"]
+          },
+          {
+            foreignKeyName: "quote_acceptances_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quotes: {
         Row: {
+          acceptance_token: string | null
+          acceptance_token_expires_at: string | null
           accepted_at: string | null
           account_id: string | null
           annual_resale: number
@@ -2512,6 +2598,8 @@ export type Database = {
           valid_until: string | null
         }
         Insert: {
+          acceptance_token?: string | null
+          acceptance_token_expires_at?: string | null
           accepted_at?: string | null
           account_id?: string | null
           annual_resale?: number
@@ -2549,6 +2637,8 @@ export type Database = {
           valid_until?: string | null
         }
         Update: {
+          acceptance_token?: string | null
+          acceptance_token_expires_at?: string | null
           accepted_at?: string | null
           account_id?: string | null
           annual_resale?: number
@@ -3307,6 +3397,50 @@ export type Database = {
       }
     }
     Views: {
+      quote_acceptance_summary: {
+        Row: {
+          acceptance_id: string | null
+          accepted_at: string | null
+          account_id: string | null
+          ach_authorized: boolean | null
+          client_business_name: string | null
+          contact_id: string | null
+          fee_schedule_hash: string | null
+          ip_address: unknown
+          opportunity_id: string | null
+          quote_id: string | null
+          quote_number: string | null
+          sender_email: string | null
+          signatory_email: string | null
+          signatory_name: string | null
+          signatory_title: string | null
+          status: string | null
+          terms_version: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotes_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       referrer_commission_records: {
         Row: {
           account_id: string | null
