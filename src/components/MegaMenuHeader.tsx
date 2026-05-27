@@ -61,6 +61,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useAcceptedQuotesCount } from "@/hooks/useAcceptedQuotesCount";
 import { useTheme } from "@/contexts/ThemeContext";
 import { NotificationBell } from "@/components/NotificationBell";
 import { EMAIL_TO_USER } from "@/types/opportunity";
@@ -179,6 +180,10 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
   const [profileName, setProfileName] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
 
+  // Surfaces accepted-but-not-yet-contracted quotes as a badge on the
+  // Tools dropdown and the Quote Builder sub-item.
+  const { data: acceptedQuotesCount = 0 } = useAcceptedQuotesCount();
+
   useEffect(() => {
     const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener("fullscreenchange", onFsChange);
@@ -279,11 +284,12 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
             {navMain.map((item) => {
               if (item.items) {
                 const isTools = item.title === "Tools";
+                const showQuotesBadge = isTools && acceptedQuotesCount > 0;
                 return (
                   <NavigationMenuItem key={item.title}>
                     <NavigationMenuTrigger
                       className={cn(
-                        "h-9 px-3 text-sm bg-transparent rounded-md font-medium",
+                        "h-9 px-3 text-sm bg-transparent rounded-md font-medium relative",
                         isDark
                           ? "text-white/75 hover:text-white hover:bg-white/8 data-[state=open]:bg-white/10 data-[state=open]:text-white"
                           : "text-foreground/65 hover:text-foreground hover:bg-accent data-[state=open]:bg-accent data-[state=open]:text-accent-foreground"
@@ -291,6 +297,14 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                     >
                       <item.icon className="h-3.5 w-3.5 mr-1.5 shrink-0" />
                       {item.title}
+                      {showQuotesBadge && (
+                        <span
+                          className="ml-1.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#c81030] px-1 text-[10px] font-bold leading-none text-white shrink-0"
+                          aria-label={`${acceptedQuotesCount} accepted quote${acceptedQuotesCount === 1 ? "" : "s"} ready for contract`}
+                        >
+                          {acceptedQuotesCount > 99 ? "99+" : acceptedQuotesCount}
+                        </span>
+                      )}
                     </NavigationMenuTrigger>
                     <NavigationMenuContent>
                       <ul
@@ -336,8 +350,18 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                                   <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted/80">
                                     <subItem.icon className="h-3.5 w-3.5 text-muted-foreground" />
                                   </div>
-                                  <div className="min-w-0">
-                                    <div className="font-medium leading-none mb-0.5 text-[13px]">{subItem.title}</div>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="font-medium leading-none mb-0.5 text-[13px] flex items-center gap-1.5">
+                                      <span>{subItem.title}</span>
+                                      {subItem.url === "/tools/quote-builder" && acceptedQuotesCount > 0 && (
+                                        <span
+                                          className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#c81030] px-1 text-[10px] font-bold leading-none text-white shrink-0"
+                                          aria-label={`${acceptedQuotesCount} accepted quote${acceptedQuotesCount === 1 ? "" : "s"} ready for contract`}
+                                        >
+                                          {acceptedQuotesCount > 99 ? "99+" : acceptedQuotesCount}
+                                        </span>
+                                      )}
+                                    </div>
                                     {subItem.description && (
                                       <p className="text-[11px] leading-snug text-muted-foreground line-clamp-1">
                                         {subItem.description}

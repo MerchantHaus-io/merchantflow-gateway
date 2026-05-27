@@ -153,7 +153,11 @@ export default function QuoteBuilder() {
 
   const tier = TIERS.find((t) => t.id === tierId) ?? TIERS[1];
 
-  const canBuild = !!selectedOpp;
+  // Always allow building. When no opportunity is picked the dialog opens
+  // with blank client fields — useful for one-off quotes to prospects that
+  // aren't in the CRM yet. The persisted quote row carries null opportunity/
+  // account/contact FKs, which the migration already permits.
+  const canBuild = true;
 
   return (
     <AppLayout pageTitle="Quote Builder">
@@ -328,7 +332,12 @@ export default function QuoteBuilder() {
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2">
+            <div className="flex items-center justify-between gap-2 pt-2">
+              <p className="text-[11px] text-muted-foreground italic">
+                {selectedOpp
+                  ? `Linked to ${selectedOpp.account?.name ?? "opportunity"}`
+                  : "No opportunity selected — building a one-off quote"}
+              </p>
               <Button
                 disabled={!canBuild}
                 onClick={() => setOpen(true)}
