@@ -1038,7 +1038,7 @@ export function QuoteGeneratorDialog({
             Cancel
           </Button>
           {tab === "build" ? (
-            <Button onClick={() => setTab("preview")}>
+            <Button variant="secondary" onClick={() => setTab("preview")}>
               <FileSignature className="h-4 w-4 mr-2" /> Preview
             </Button>
           ) : (
@@ -1073,6 +1073,7 @@ export function QuoteGeneratorDialog({
                     onClick={handleSendEmail}
                     disabled={sending || tab === "preview"}
                     aria-disabled={sending || tab === "preview"}
+                    className="bg-neutral-900 hover:bg-neutral-800 text-white border-l-[3px] border-l-[#c81030]"
                   >
                     {sending ? (
                       <>
