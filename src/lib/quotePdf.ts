@@ -336,11 +336,22 @@ function statsStrip(
   doc.line(MARGIN, y, PAGE_W - MARGIN, y);
 
   const padTop = 14;
+  // Leave a little breathing room between columns so adjacent values can't
+  // visually collide if one runs long.
+  const maxValueW = colW - 8;
   stats.forEach((s, i) => {
     const x = MARGIN + i * colW;
     setText(doc, INK);
     doc.setFont("times", "bold");
-    doc.setFontSize(22);
+    // Shrink the value to fit its column (down to 12pt) before drawing,
+    // so long strings like "$82.17 / mo (annual)" don't bleed into the
+    // next column.
+    let valueSize = 22;
+    doc.setFontSize(valueSize);
+    while (valueSize > 12 && doc.getTextWidth(s.value) > maxValueW) {
+      valueSize -= 1;
+      doc.setFontSize(valueSize);
+    }
     doc.text(s.value, x, y + padTop + 18);
     setText(doc, MUTED);
     doc.setFont("helvetica", "normal");
@@ -530,13 +541,12 @@ function renderScopeAndPricing(doc: jsPDF, q: QuotePdfInput, totalPages: number)
   y += deck.length * 12 + 14;
 
   // Stats strip
-  const platformLabel =
-    q.billingCycle === "annual"
-      ? `${fmt(q.platformBundleResale)} / mo (annual)`
-      : `${fmt(q.platformBundleResale)} / mo`;
   y = statsStrip(doc, [
     { value: q.tierName, label: "Plan" },
-    { value: platformLabel, label: "Platform Bundle" },
+    {
+      value: `${fmt(q.platformBundleResale)} / mo`,
+      label: q.billingCycle === "annual" ? "Platform Bundle · Annual" : "Platform Bundle",
+    },
     { value: fmt(q.totals.monthlyResale), label: "Monthly Total" },
     { value: fmt(q.totals.annualResale), label: "Annualized" },
   ], y + 4);
