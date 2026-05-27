@@ -11,12 +11,6 @@ import {
   Sparkles,
   User,
 } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import type jsPDF from "jspdf";
 
 import {
@@ -52,7 +46,6 @@ import { TIERS, type PricingTier, type TierId } from "@/config/pricing";
 import {
   ANCILLARY_FEE_DEFAULTS,
   DEFAULT_QUOTE_SENDER,
-  QUOTE_DISCLAIMERS,
   QUOTE_LINES,
   QUOTE_SENDERS,
   QUOTE_TERMS_VERSION,
@@ -61,7 +54,6 @@ import {
 } from "@/config/quoteSchedule";
 import { supabase } from "@/integrations/supabase/client";
 import { confirmAutoEmail } from "@/components/EmailSendConfirm";
-import quoteHeader from "@/assets/quote-header.png";
 import { buildEditorialQuotePdf, type QuotePdfInput } from "@/lib/quotePdf";
 
 type BillingCycle = "monthly" | "annual";
@@ -230,6 +222,12 @@ export function QuoteGeneratorDialog({
   const [tab, setTab] = useState<"build" | "preview">("build");
   const [sending, setSending] = useState(false);
   const previewRef = useRef<HTMLDivElement | null>(null);
+  // Render the actual PDF (same template the email and download use) in
+  // the Preview tab. Avoids the inline-HTML drift problem where the tab
+  // preview diverged from buildEditorialQuotePdf.
+  const [previewBlobUrl, setPreviewBlobUrl] = useState<string | null>(null);
+  const [previewBuilding, setPreviewBuilding] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
 
   const acceptanceUrl = useMemo(
     () => `${window.location.origin}/q/${acceptanceToken}`,
@@ -377,6 +375,81 @@ export function QuoteGeneratorDialog({
     };
     return await buildEditorialQuotePdf(pdfInput);
   };
+
+  // Rebuild the PDF preview whenever the Preview tab is active and the
+  // inputs change. Debounced via the cancel flag so rapid edits don't
+  // queue up stale builds. Object URLs are revoked on supersede/unmount.
+  useEffect(() => {
+    if (tab !== "preview") return;
+    if (!client.businessName.trim()) {
+      setPreviewBlobUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+      setPreviewError(null);
+      return;
+    }
+    let cancelled = false;
+    setPreviewBuilding(true);
+    setPreviewError(null);
+    const timer = window.setTimeout(async () => {
+      try {
+        const doc = await buildPdf();
+        if (cancelled) return;
+        const blob = doc.output("blob") as Blob;
+        const url = URL.createObjectURL(blob);
+        setPreviewBlobUrl((prev) => {
+          if (prev) URL.revokeObjectURL(prev);
+          return url;
+        });
+      } catch (err: any) {
+        if (cancelled) return;
+        setPreviewError(err?.message ?? String(err));
+      } finally {
+        if (!cancelled) setPreviewBuilding(false);
+      }
+    }, 250);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+    // buildPdf closes over all the relevant inputs; we re-trigger when any
+    // of them change. Listing every primitive keeps the dep array honest.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    tab,
+    tier.id,
+    billing,
+    client.businessName,
+    client.contactName,
+    client.email,
+    client.phone,
+    client.monthlyVolume,
+    client.averageTicket,
+    client.notes,
+    sender.name,
+    sender.title,
+    sender.company,
+    sender.email,
+    sender.phone,
+    quoteNumber,
+    acceptanceUrl,
+    billedPlatform.resale,
+    totals.monthlyResale,
+    totals.annualResale,
+    oneTimeTotal,
+    enabledLines,
+    ancillary,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      setPreviewBlobUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+    };
+  }, []);
 
   const safeFilename = () => {
     const safe = (client.businessName || "merchant")
@@ -912,107 +985,49 @@ export function QuoteGeneratorDialog({
           </TabsContent>
 
           {/* ========== PREVIEW TAB ========== */}
-          <TabsContent value="preview" className="flex-1 min-h-0 m-0 overflow-auto overscroll-contain bg-muted/40" style={{ WebkitOverflowScrolling: "touch" }}>
-            <div className="h-full p-2 sm:p-0">
-              <div ref={previewRef} className="bg-white text-[#1f2937] mx-auto my-3 sm:my-6 w-[820px] max-w-none shadow-lg rounded-md overflow-hidden">
-                <img src={quoteHeader} alt="MerchantHaus" className="w-full block" />
-                <div className="px-8 pt-6 pb-8">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h2 className="text-xl font-bold tracking-tight">Gateway Services Quote</h2>
-                      <p className="text-xs text-muted-foreground">{tier.name} · {billing === "annual" ? "Annual billing" : "Monthly billing"}</p>
-                    </div>
-                    <div className="text-right text-xs">
-                      <div><span className="text-muted-foreground">Quote #</span> <span className="font-mono">{quoteNumber}</span></div>
-                      <div><span className="text-muted-foreground">Date</span> {createdOn}</div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-6 mt-5 text-sm">
-                    <div>
-                      <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">Prepared for</div>
-                      <div className="font-semibold">{client.businessName || "—"}</div>
-                      {client.contactName && <div>{client.contactName}</div>}
-                      {client.email && <div className="text-xs text-muted-foreground">{client.email}</div>}
-                      {client.phone && <div className="text-xs text-muted-foreground">{client.phone}</div>}
-                    </div>
-                    <div>
-                      <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">Prepared by</div>
-                      <div className="font-semibold">{sender.name}</div>
-                      <div className="text-xs">{sender.title} · {sender.company}</div>
-                      <div className="text-xs text-muted-foreground">{sender.email}</div>
-                      <div className="text-xs text-muted-foreground">{sender.phone}</div>
-                    </div>
-                  </div>
-
-                  <div className="relative mt-6 -mx-2 sm:mx-0">
-                    <div className="sm:hidden flex items-center justify-end gap-1 pr-1 pb-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                      <span>Swipe for more</span>
-                      <span aria-hidden>→</span>
-                    </div>
-                    <div className="overflow-x-auto border-t border-b">
-                    <table className="w-full min-w-[520px] text-sm">
-                      <thead className="bg-slate-900 text-white text-xs">
-                        <tr>
-                          <th className="text-left px-2 sm:px-3 py-2.5 whitespace-nowrap">Item</th>
-                          <th className="text-left px-2 sm:px-3 py-2.5 whitespace-nowrap">Detail</th>
-                          <th className="text-right px-2 sm:px-3 py-2.5 whitespace-nowrap w-[110px]">Price</th>
-                        </tr>
-                      </thead>
-                    <tbody>
-                      <tr className="border-b">
-                        <td className="p-2.5 font-medium">Platform Bundle ({tier.name})</td>
-                        <td className="p-2.5 text-xs text-muted-foreground">Gateway access, tokenization, PCI tools, support</td>
-                        <td className="p-2.5 text-right font-semibold">{fmt(billedPlatform.resale)}/mo</td>
-                      </tr>
-                      {enabledLines.map((l) => (
-                        <tr key={l.id} className="border-b">
-                          <td className="p-2.5">
-                            {l.label}
-                            {l.bundled && <span className="ml-2 text-[10px] uppercase tracking-wider text-emerald-700">Included</span>}
-                          </td>
-                          <td className="p-2.5 text-xs text-muted-foreground">
-                            {l.perEvent ? `${fmt(l.perEvent.resale)} ${l.perEvent.label}` : l.description}
-                          </td>
-                          <td className="p-2.5 text-right">{l.bundled ? "—" : `${fmt(l.resale)}/mo`}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  </div>
-                  <div className="sm:hidden pointer-events-none absolute top-6 right-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent" />
-                  </div>
-
-                  <div className="flex justify-end mt-4 text-sm">
-                    <div className="space-y-1 text-right">
-                      <div><span className="text-muted-foreground mr-3">Monthly Total</span><span className="font-bold text-lg">{fmt(totals.monthlyResale)}</span></div>
-                      <div className="text-xs text-muted-foreground">Annual Total: {fmt(totals.annualResale)}</div>
-                    </div>
-                  </div>
-
-                  <div className="mt-6">
-                    <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">Terms, Disclaimers &amp; Acceptance</div>
-                    <ol className="text-[11px] text-slate-600 space-y-1.5 list-decimal pl-4">
-                      {QUOTE_DISCLAIMERS.map((d, i) => <li key={i}>{d}</li>)}
-                    </ol>
-                  </div>
-
-                  <div className="mt-8 grid grid-cols-2 gap-8 text-xs">
-                    <div>
-                      <div className="border-b border-slate-400 h-8" />
-                      <div className="text-muted-foreground mt-1">Authorized Signatory</div>
-                    </div>
-                    <div>
-                      <div className="border-b border-slate-400 h-8" />
-                      <div className="text-muted-foreground mt-1">Date</div>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 text-[10px] text-center text-muted-foreground">
-                    MerchantHaus LLC · {sender.address} · Quote #{quoteNumber}
+          {/* Renders the same PDF that buildEditorialQuotePdf produces for
+              download / email, so the operator sees exactly what the merchant
+              will receive. No more hand-rolled HTML preview drifting from
+              the canonical PDF template. */}
+          <TabsContent value="preview" className="flex-1 min-h-0 m-0 overflow-hidden bg-muted/40">
+            <div ref={previewRef} className="h-full w-full flex flex-col">
+              {!client.businessName.trim() ? (
+                <div className="flex-1 flex items-center justify-center p-6 text-center">
+                  <div className="max-w-sm">
+                    <FileSignature className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
+                    <p className="text-sm font-medium">Add a business name to preview</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      The preview renders the exact PDF that gets emailed to the merchant.
+                    </p>
                   </div>
                 </div>
-              </div>
+              ) : previewError ? (
+                <div className="flex-1 flex items-center justify-center p-6 text-center">
+                  <div className="max-w-sm">
+                    <p className="text-sm font-medium text-destructive">Preview failed to build</p>
+                    <p className="text-xs text-muted-foreground mt-1">{previewError}</p>
+                  </div>
+                </div>
+              ) : previewBlobUrl ? (
+                <iframe
+                  key={previewBlobUrl}
+                  src={previewBlobUrl}
+                  title="Quote PDF preview"
+                  className="flex-1 w-full bg-white"
+                />
+              ) : (
+                <div className="flex-1 flex items-center justify-center p-6">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Mail className="h-4 w-4 animate-pulse" />
+                    Building preview…
+                  </div>
+                </div>
+              )}
+              {previewBuilding && previewBlobUrl && (
+                <div className="absolute top-3 right-3 text-[11px] bg-background/80 backdrop-blur px-2 py-1 rounded-md border shadow-sm flex items-center gap-1.5">
+                  <Mail className="h-3 w-3 animate-pulse" /> Updating…
+                </div>
+              )}
             </div>
           </TabsContent>
         </Tabs>
@@ -1021,7 +1036,7 @@ export function QuoteGeneratorDialog({
           <div className="px-3 sm:px-6 py-2 border-t bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 text-xs flex items-center gap-2">
             <Eye className="h-3.5 w-3.5 shrink-0" />
             <span className="font-medium">
-              Preview mode — nothing is emailed to the client. Return to{" "}
+              Preview only — this is the exact PDF that will be emailed. Return to{" "}
               <button
                 type="button"
                 onClick={() => setTab("build")}
@@ -1029,70 +1044,39 @@ export function QuoteGeneratorDialog({
               >
                 Edit
               </button>{" "}
-              to enable Send.
+              to send or download.
             </span>
           </div>
         )}
         <DialogFooter className="px-3 sm:px-6 py-3 border-t bg-background gap-2 flex-row flex-wrap [&>*]:flex-1 sm:[&>*]:flex-none">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           {tab === "build" ? (
-            <Button onClick={() => setTab("preview")}>
-              <FileSignature className="h-4 w-4 mr-2" /> Preview
-            </Button>
+            <>
+              <Button type="button" variant="outline" onClick={() => setTab("preview")}>
+                <FileSignature className="h-4 w-4 mr-2" /> Preview
+              </Button>
+              <Button type="button" variant="outline" onClick={handleDownloadPdf}>
+                <Download className="h-4 w-4 mr-2" /> Download PDF
+              </Button>
+              <Button type="button" onClick={handleSendEmail} disabled={sending}>
+                {sending ? (
+                  <>
+                    <Mail className="h-4 w-4 mr-2 animate-pulse" /> Sending…
+                  </>
+                ) : (
+                  <>
+                    <Send className="h-4 w-4 mr-2" /> Send to client
+                  </>
+                )}
+              </Button>
+            </>
           ) : (
-            <Button variant="outline" onClick={() => setTab("build")}>
-              <Pencil className="h-4 w-4 mr-2" /> Edit
+            <Button type="button" onClick={() => setTab("build")}>
+              <Pencil className="h-4 w-4 mr-2" /> Back to edit
             </Button>
           )}
-          <TooltipProvider delayDuration={150}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="contents">
-                  <Button
-                    variant="outline"
-                    onClick={handleDownloadPdf}
-                    disabled={tab === "preview"}
-                    aria-disabled={tab === "preview"}
-                  >
-                    <Download className="h-4 w-4 mr-2" /> Download PDF
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              {tab === "preview" && (
-                <TooltipContent side="top">
-                  Preview won't email or download. Switch to Edit to take action.
-                </TooltipContent>
-              )}
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="contents">
-                  <Button
-                    onClick={handleSendEmail}
-                    disabled={sending || tab === "preview"}
-                    aria-disabled={sending || tab === "preview"}
-                  >
-                    {sending ? (
-                      <>
-                        <Mail className="h-4 w-4 mr-2 animate-pulse" /> Sending…
-                      </>
-                    ) : (
-                      <>
-                        <Send className="h-4 w-4 mr-2" /> Send to client
-                      </>
-                    )}
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              {tab === "preview" && (
-                <TooltipContent side="top">
-                  Preview won't email the client. Switch to Edit to send.
-                </TooltipContent>
-              )}
-            </Tooltip>
-          </TooltipProvider>
         </DialogFooter>
       </DialogContent>
     </Dialog>
