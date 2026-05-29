@@ -259,11 +259,12 @@ export default function PortalCommissions() {
         </p>
       </Card>
 
-      {/* Totals */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-5">
+      {/* Totals — realized */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
         <Card className="p-4">
           <div className="text-xs uppercase tracking-wide text-muted-foreground">This period</div>
           <div className="text-2xl font-semibold mt-1 tabular-nums">{fmt(totals.periodTotal)}</div>
+          <div className="text-[10px] text-muted-foreground mt-1">settled</div>
         </Card>
         <Card className="p-4">
           <div className="text-xs uppercase tracking-wide text-muted-foreground">Lifetime earnings</div>
@@ -272,7 +273,10 @@ export default function PortalCommissions() {
         </Card>
         <Card className="p-4">
           <div className="text-xs uppercase tracking-wide text-muted-foreground">Active accounts</div>
-          <div className="text-2xl font-semibold mt-1 tabular-nums">{eligibleAccountCount}</div>
+          <div className="text-2xl font-semibold mt-1 tabular-nums">
+            {projection.liveCount}<span className="text-base text-muted-foreground"> live</span>
+            <span className="text-base text-muted-foreground"> · {projection.pipelineCount} pipeline</span>
+          </div>
           <div className="text-[10px] text-muted-foreground mt-1">
             {fmt(monthlyCap)} max per account / month
           </div>
@@ -285,6 +289,80 @@ export default function PortalCommissions() {
           </div>
         </Card>
       </div>
+
+      {/* Projection tiles */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
+        <Card className="p-4 border-[hsl(var(--gold))]/30">
+          <div className="text-xs uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+            <TrendingUp className="h-3.5 w-3.5" /> Projected monthly run-rate
+          </div>
+          <div className="text-2xl font-semibold mt-1 tabular-nums">{fmt(projection.liveMonthly)}</div>
+          <div className="text-[10px] text-muted-foreground mt-1">
+            from {projection.liveCount} live account{projection.liveCount === 1 ? "" : "s"} at 50% rev share, capped at {fmt(monthlyCap)}/mo each
+          </div>
+        </Card>
+        <Card className="p-4 bg-muted/30">
+          <div className="text-xs uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
+            <TrendingUp className="h-3.5 w-3.5" /> Pipeline potential / month
+          </div>
+          <div className="text-2xl font-semibold mt-1 tabular-nums">{fmt(projection.pipelineMonthly)}</div>
+          <div className="text-[10px] text-muted-foreground mt-1">
+            if all {projection.pipelineCount} in-pipeline account{projection.pipelineCount === 1 ? "" : "s"} activate
+          </div>
+        </Card>
+      </div>
+
+      {/* Projection breakdown */}
+      {projection.accounts.length > 0 && (
+        <Card className="mb-5 overflow-hidden">
+          <div className="px-4 py-3 border-b">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Projected monthly breakdown
+            </h2>
+          </div>
+          <ul className="divide-y">
+            {projection.accounts
+              .sort((a, b) => b.projected_payout - a.projected_payout)
+              .map((a) => (
+                <li key={a.account_id} className="px-4 py-3">
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div className="min-w-0">
+                      <div className="font-medium truncate">{a.company_name}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">
+                        {fmt(a.monthly_volume)} est. monthly volume{a.estimated ? " · estimate" : ""}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        className={
+                          a.status === "live"
+                            ? "text-emerald-700 border-emerald-300 dark:text-emerald-400"
+                            : "text-muted-foreground"
+                        }
+                      >
+                        {a.status === "live" ? "Live" : "In pipeline"}
+                      </Badge>
+                      {a.at_cap && (
+                        <Badge variant="outline" className="text-amber-700 border-amber-300 dark:text-amber-400">
+                          Cap hit
+                        </Badge>
+                      )}
+                      <div className="text-right">
+                        <div className="font-semibold tabular-nums">{fmt(a.projected_payout)}</div>
+                        <div className="text-[10px] text-muted-foreground">/ month projected</div>
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              ))}
+          </ul>
+          <div className="px-4 py-2 text-[11px] text-muted-foreground border-t">
+            Projections estimate monthly earnings using stated processing volume and the {fmtPct(rate)} rev share, capped at {fmt(monthlyCap)} per account per month. Actual payouts populate once merchants begin processing.
+          </div>
+        </Card>
+      )}
+
 
       {/* Period selector + per-merchant breakdown */}
       <div className="flex items-center gap-3 mb-3">
