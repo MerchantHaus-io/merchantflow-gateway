@@ -310,8 +310,28 @@ const Transactions = () => {
     else { setSortField(field); setSortDir("desc"); }
   };
 
-  const approvalRate = summary && summary.total_count > 0
-    ? ((summary.approved_count / summary.total_count) * 100).toFixed(1) : "0";
+  // Stats reflect the active filters (merchant, type, status, search)
+  const filteredSummary = useMemo(() => {
+    const approvedSet = new Set(["complete","pending","pendingsettlement","pending_settlement"]);
+    const refundSet = new Set(["refund","credit"]);
+    const s = { total_count: filtered.length, approved_count: 0, approved_amount: 0, refund_count: 0, refund_amount: 0, total_amount: 0 };
+    for (const tx of filtered) {
+      const amt = parseFloat(tx.amount || "0") || 0;
+      s.total_amount += amt;
+      if (approvedSet.has((tx.condition || "").toLowerCase())) {
+        s.approved_count += 1;
+        s.approved_amount += amt;
+      }
+      if (refundSet.has((tx.type || "").toLowerCase())) {
+        s.refund_count += 1;
+        s.refund_amount += amt;
+      }
+    }
+    return s;
+  }, [filtered]);
+
+  const approvalRate = filteredSummary.total_count > 0
+    ? ((filteredSummary.approved_count / filteredSummary.total_count) * 100).toFixed(1) : "0";
 
   // Lookup merchant names from CRM accounts first, then NMI boarding fallbacks
   const { data: merchantDirectory } = useQuery({
@@ -426,7 +446,7 @@ const Transactions = () => {
                   <div className="flex items-center gap-2 mb-1">
                     <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center"><Activity className="h-3.5 w-3.5 text-primary" /></div>
                   </div>
-                  <p className="text-xl font-bold">{summary?.total_count ?? 0}</p>
+                  <p className="text-xl font-bold">{filteredSummary.total_count}</p>
                   <p className="text-[10px] text-muted-foreground">Total Transactions</p>
                 </CardContent></Card>
                 <Card><CardContent className="p-3">
@@ -440,15 +460,15 @@ const Transactions = () => {
                   <div className="flex items-center gap-2 mb-1">
                     <div className="h-7 w-7 rounded-md bg-emerald-500/10 flex items-center justify-center"><DollarSign className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /></div>
                   </div>
-                  <p className="text-xl font-bold truncate">{formatCurrency(summary?.approved_amount ?? 0)}</p>
+                  <p className="text-xl font-bold truncate">{formatCurrency(filteredSummary.approved_amount)}</p>
                   <p className="text-[10px] text-muted-foreground">Approved Volume</p>
                 </CardContent></Card>
                 <Card><CardContent className="p-3">
                   <div className="flex items-center gap-2 mb-1">
                     <div className="h-7 w-7 rounded-md bg-amber-500/10 flex items-center justify-center"><ArrowDownRight className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" /></div>
                   </div>
-                  <p className="text-xl font-bold">{summary?.refund_count ?? 0}</p>
-                  <p className="text-[10px] text-muted-foreground">Refunds ({formatCurrency(summary?.refund_amount ?? 0)})</p>
+                  <p className="text-xl font-bold">{filteredSummary.refund_count}</p>
+                  <p className="text-[10px] text-muted-foreground">Refunds ({formatCurrency(filteredSummary.refund_amount)})</p>
                 </CardContent></Card>
                 <Card><CardContent className="p-3">
                   <div className="flex items-center gap-2 mb-1">
