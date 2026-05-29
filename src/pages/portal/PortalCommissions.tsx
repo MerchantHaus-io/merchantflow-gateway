@@ -33,6 +33,22 @@ const fmt = (v: number) =>
 
 const fmtPct = (v: number) => `${(v * 100).toFixed(1)}%`;
 
+type ProjAccount = {
+  account_id: string;
+  company_name: string;
+  status: "live" | "pipeline";
+  monthly_volume: number;
+  estimated: boolean;
+  projected_company_commission: number;
+  projected_payout: number;
+  at_cap: boolean;
+};
+
+const DEAD_OUTCOMES = new Set(["disqualified", "closed_lost", "no_decision", "underwriting_declined"]);
+const PROCESSING_RATE = 0.0292;
+const REV_SHARE = 0.30;
+const FALLBACK_VOLUME = 25000;
+
 export default function PortalCommissions() {
   const { referrer } = useAuth();
   const [selectedPeriodId, setSelectedPeriodId] = useState<string>("");
@@ -52,6 +68,87 @@ export default function PortalCommissions() {
       return (data ?? []) as unknown as PayoutRecord[];
     },
   });
+
+  const rate = referrer?.commission_rate ?? 0.5;
+  const monthlyCap = referrer?.monthly_cap_per_merchant ?? 1000;
+
+  // Projection data: referred accounts + most recent application monthly volume.
+  const { data: projectionAccounts } = useQuery({
+    queryKey: ["portal-projection", referrer?.id],
+    enabled: !!referrer?.id,
+    queryFn: async (): Promise<ProjAccount[]> => {
+      const { data: opps } = await supabase
+        .from("opportunities")
+        .select("account_id, status, outcome_status, stage, created_at, account:accounts(id, name, nmi_merchant_id)")
+        .eq("referrer_id", referrer!.id)
+        .order("created_at", { ascending: false });
+
+      const { data: apps } = await (supabase.from("applications") as any)
+        .select("monthly_volume, email, created_at")
+        .eq("referrer_id", referrer!.id)
+        .order("created_at", { ascending: false });
+
+      const volByEmail = new Map<string, number>();
+      for (const a of (apps as any[]) ?? []) {
+        const key = (a?.email ?? "").toString().toLowerCase();
+        if (!key) continue;
+        if (!volByEmail.has(key) && a?.monthly_volume) {
+          volByEmail.set(key, Number(a.monthly_volume));
+        }
+      }
+      // Weak fallback: use the most recent volume value submitted by this referrer.
+      let fallbackVol = 0;
+      for (const [, v] of volByEmail) { fallbackVol = v; break; }
+
+      const seen = new Set<string>();
+      const out: ProjAccount[] = [];
+      for (const o of (opps as any[]) ?? []) {
+        const acct = o?.account;
+        if (!acct?.id || seen.has(acct.id)) continue;
+        seen.add(acct.id);
+
+        const isDead =
+          o.status === "dead" ||
+          (o.outcome_status && DEAD_OUTCOMES.has(o.outcome_status));
+        if (isDead) continue;
+
+        const isLive = !!acct.nmi_merchant_id || o.stage === "closed_won" || o.outcome_status === "closed_won";
+
+        let vol = fallbackVol;
+        const estimated = vol === 0;
+        if (estimated) vol = FALLBACK_VOLUME;
+
+        const companyCommission = vol * PROCESSING_RATE * REV_SHARE;
+        const uncapped = companyCommission * rate;
+        const payout = Math.min(uncapped, monthlyCap);
+
+        out.push({
+          account_id: acct.id,
+          company_name: acct.name ?? "Merchant",
+          status: isLive ? "live" : "pipeline",
+          monthly_volume: vol,
+          estimated,
+          projected_company_commission: companyCommission,
+          projected_payout: payout,
+          at_cap: uncapped >= monthlyCap,
+        });
+      }
+      return out;
+    },
+  });
+
+  const projection = useMemo(() => {
+    const acc = projectionAccounts ?? [];
+    const live = acc.filter((a) => a.status === "live");
+    const pipeline = acc.filter((a) => a.status === "pipeline");
+    return {
+      liveCount: live.length,
+      pipelineCount: pipeline.length,
+      liveMonthly: live.reduce((s, a) => s + a.projected_payout, 0),
+      pipelineMonthly: pipeline.reduce((s, a) => s + a.projected_payout, 0),
+      accounts: acc,
+    };
+  }, [projectionAccounts]);
 
   // Program rules from referrer profile (with safe fallbacks).
   // NEW MODEL: 50% rev share, $1,000/account/MONTH recurring (no lifetime cap, no account ceiling).
