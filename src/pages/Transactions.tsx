@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AppLayout } from "@/components/AppLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -197,6 +197,9 @@ const Transactions = () => {
   const [commMonth, setCommMonth] = useState(() => new Date().getMonth() + 1);
   const [commYear, setCommYear] = useState(() => new Date().getFullYear());
   const [merchantSyncing, setMerchantSyncing] = useState(false);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 100;
+  useEffect(() => { setPage(1); }, [merchantFilter, typeFilter, statusFilter, search, datePreset, sortField, sortDir]);
 
   const { startDate, endDate } = getDateRange(datePreset);
 
@@ -537,102 +540,124 @@ const Transactions = () => {
                     </Select>
                   </div>
 
-                  <p className="text-xs text-muted-foreground">{filtered.length} of {txs.length} transactions</p>
+                  {(() => {
+                    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+                    const currentPage = Math.min(Math.max(1, page), totalPages);
+                    const startIdx = (currentPage - 1) * PAGE_SIZE;
+                    const endIdx = Math.min(startIdx + PAGE_SIZE, filtered.length);
+                    const pageRows = filtered.slice(startIdx, endIdx);
 
-                  {/* Table */}
-                  {filtered.length === 0 ? (
-                    <Card><CardContent className="p-8 text-center">
-                      <Activity className="h-8 w-8 mx-auto mb-2 text-muted-foreground/30" />
-                      <p className="text-sm font-medium">No transactions found</p>
-                      <p className="text-xs text-muted-foreground mt-1">Adjust filters or date range</p>
-                    </CardContent></Card>
-                  ) : isMobile ? (
-                    <div className="space-y-2">
-                      {filtered.slice(0, 100).map((tx, idx) => (
-                        <Card key={tx.id || idx} className="border-border/50">
-                          <CardContent className="p-3 space-y-1.5">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-semibold">${tx.amount || "0.00"}</span>
-                              <div className="flex items-center gap-1">{typeBadge(tx.type)}{conditionBadge(tx.condition)}</div>
-                            </div>
-                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              <span>{tx.customer_name || "—"}</span>
-                              <span>{tx.card_type}{tx.last_four ? ` ···${tx.last_four}` : ""}</span>
-                            </div>
-                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              <span className="text-[10px]">{getMerchantLabel(tx.merchant_id)} <span className="text-muted-foreground/60 font-mono">#{tx.merchant_id}</span></span>
-                              <span>{formatTxDate(tx.date)}</span>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  ) : (
-                    <Card>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="text-xs w-10 text-right pr-2">#</TableHead>
-                            <TableHead className="text-xs cursor-pointer select-none" onClick={() => toggleSort("date")}>
-                              <span className="flex items-center gap-1">Date {sortField==="date" && (sortDir==="desc" ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />)}</span>
-                            </TableHead>
-                            <TableHead className="text-xs">Merchant</TableHead>
-                            <TableHead className="text-xs">Customer</TableHead>
-                            <TableHead className="text-xs">Type</TableHead>
-                            <TableHead className="text-xs">Card</TableHead>
-                            <TableHead className="text-xs text-right cursor-pointer select-none" onClick={() => toggleSort("amount")}>
-                              <span className="flex items-center justify-end gap-1">Amount {sortField==="amount" && (sortDir==="desc" ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />)}</span>
-                            </TableHead>
-                            <TableHead className="text-xs">Status</TableHead>
-                            <TableHead className="text-xs w-8"></TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filtered.slice(0, 200).map((tx, idx) => (
-                            <>
-                              <TableRow key={tx.id || idx} className="cursor-pointer hover:bg-muted/30" onClick={() => setExpandedTx(expandedTx === tx.id ? null : tx.id)}>
-                                <TableCell className="text-[11px] text-muted-foreground tabular-nums text-right pr-2">{idx + 1}</TableCell>
-                                <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{formatTxDate(tx.date)}</TableCell>
-                                <TableCell className="text-xs max-w-[140px]">
-                                  <p className="font-medium truncate">{getMerchantLabel(tx.merchant_id)}</p>
-                                  <p className="text-[10px] text-muted-foreground font-mono">{tx.merchant_id}</p>
-                                </TableCell>
-                                <TableCell className="text-xs">{tx.customer_name || "—"}</TableCell>
-                                <TableCell>{typeBadge(tx.type)}</TableCell>
-                                <TableCell className="text-xs text-muted-foreground">{tx.card_type}{tx.last_four ? ` ···${tx.last_four}` : ""}</TableCell>
-                                <TableCell className="text-xs text-right font-semibold">${tx.amount || "0.00"}</TableCell>
-                                <TableCell>{conditionBadge(tx.condition)}</TableCell>
-                                <TableCell><ChevronDown className={cn("h-3 w-3 text-muted-foreground transition-transform", expandedTx === tx.id && "rotate-180")} /></TableCell>
-                              </TableRow>
-                              {expandedTx === tx.id && (
-                                <TableRow key={`${tx.id}-detail`}>
-                                  <TableCell colSpan={9} className="bg-muted/20 p-4">
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-                                      <div><span className="text-muted-foreground">Transaction ID</span><p className="font-mono font-medium">{tx.id}</p></div>
-                                      <div><span className="text-muted-foreground">Authorization</span><p className="font-mono font-medium">{tx.authorization || "—"}</p></div>
-                                      <div><span className="text-muted-foreground">Response</span><p className="font-medium">{tx.response_text || "—"} ({tx.response_code || "—"})</p></div>
-                                      <div><span className="text-muted-foreground">Processor</span><p className="font-medium">{tx.processor_id || "—"}</p></div>
-                                      <div><span className="text-muted-foreground">Email</span><p className="font-medium">{tx.customer_email || "—"}</p></div>
-                                      <div><span className="text-muted-foreground">Billing</span><p className="font-medium">{[tx.billing_city, tx.billing_state, tx.billing_zip].filter(Boolean).join(", ") || "—"}</p></div>
-                                      <div><span className="text-muted-foreground">AVS / CVV</span><p className="font-medium">{tx.avs_response || "—"} / {tx.cvv_response || "—"}</p></div>
-                                      <div><span className="text-muted-foreground">IP Address</span><p className="font-mono font-medium">{tx.ip_address || "—"}</p></div>
-                                      {tx.settlement_amount && <div><span className="text-muted-foreground">Settlement</span><p className="font-medium">${tx.settlement_amount} {tx.settlement_currency}</p></div>}
-                                      {tx.subscription_id && <div><span className="text-muted-foreground">Subscription</span><p className="font-mono font-medium">{tx.subscription_id}</p></div>}
-                                    </div>
-                                  </TableCell>
+                    const Pager = (
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <p className="text-xs text-muted-foreground">
+                          {filtered.length === 0 ? "0" : `${startIdx + 1}–${endIdx}`} of {filtered.length} transactions
+                          {filtered.length !== txs.length && <span className="text-muted-foreground/60"> (filtered from {txs.length})</span>}
+                        </p>
+                        {totalPages > 1 && (
+                          <div className="flex items-center gap-1">
+                            <Button variant="outline" size="sm" className="h-7 px-2 text-xs" disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)}>Prev</Button>
+                            <span className="text-xs text-muted-foreground px-2 tabular-nums">Page {currentPage} of {totalPages}</span>
+                            <Button variant="outline" size="sm" className="h-7 px-2 text-xs" disabled={currentPage >= totalPages} onClick={() => setPage(currentPage + 1)}>Next</Button>
+                          </div>
+                        )}
+                      </div>
+                    );
+
+                    return (
+                      <>
+                        {Pager}
+                        {filtered.length === 0 ? (
+                          <Card><CardContent className="p-8 text-center">
+                            <Activity className="h-8 w-8 mx-auto mb-2 text-muted-foreground/30" />
+                            <p className="text-sm font-medium">No transactions found</p>
+                            <p className="text-xs text-muted-foreground mt-1">Adjust filters or date range</p>
+                          </CardContent></Card>
+                        ) : isMobile ? (
+                          <div className="space-y-2">
+                            {pageRows.map((tx, idx) => (
+                              <Card key={tx.id || idx} className="border-border/50">
+                                <CardContent className="p-3 space-y-1.5">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-sm font-semibold">${tx.amount || "0.00"}</span>
+                                    <div className="flex items-center gap-1">{typeBadge(tx.type)}{conditionBadge(tx.condition)}</div>
+                                  </div>
+                                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                    <span>{tx.customer_name || "—"}</span>
+                                    <span>{tx.card_type}{tx.last_four ? ` ···${tx.last_four}` : ""}</span>
+                                  </div>
+                                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                    <span className="text-[10px]">{getMerchantLabel(tx.merchant_id)} <span className="text-muted-foreground/60 font-mono">#{tx.merchant_id}</span></span>
+                                    <span>{formatTxDate(tx.date)}</span>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        ) : (
+                          <Card>
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="text-xs w-10 text-right pr-2">#</TableHead>
+                                  <TableHead className="text-xs cursor-pointer select-none" onClick={() => toggleSort("date")}>
+                                    <span className="flex items-center gap-1">Date {sortField==="date" && (sortDir==="desc" ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />)}</span>
+                                  </TableHead>
+                                  <TableHead className="text-xs">Merchant</TableHead>
+                                  <TableHead className="text-xs">Customer</TableHead>
+                                  <TableHead className="text-xs">Type</TableHead>
+                                  <TableHead className="text-xs">Card</TableHead>
+                                  <TableHead className="text-xs text-right cursor-pointer select-none" onClick={() => toggleSort("amount")}>
+                                    <span className="flex items-center justify-end gap-1">Amount {sortField==="amount" && (sortDir==="desc" ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />)}</span>
+                                  </TableHead>
+                                  <TableHead className="text-xs">Status</TableHead>
+                                  <TableHead className="text-xs w-8"></TableHead>
                                 </TableRow>
-                              )}
-                            </>
-                          ))}
-                        </TableBody>
-                      </Table>
-                      {filtered.length > 200 && (
-                        <div className="p-3 text-center text-xs text-muted-foreground border-t border-border">
-                          Showing 200 of {filtered.length} transactions. Use filters to narrow results.
-                        </div>
-                      )}
-                    </Card>
-                  )}
+                              </TableHeader>
+                              <TableBody>
+                                {pageRows.map((tx, idx) => (
+                                  <>
+                                    <TableRow key={tx.id || idx} className="cursor-pointer hover:bg-muted/30" onClick={() => setExpandedTx(expandedTx === tx.id ? null : tx.id)}>
+                                      <TableCell className="text-[11px] text-muted-foreground tabular-nums text-right pr-2">{startIdx + idx + 1}</TableCell>
+                                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{formatTxDate(tx.date)}</TableCell>
+                                      <TableCell className="text-xs max-w-[140px]">
+                                        <p className="font-medium truncate">{getMerchantLabel(tx.merchant_id)}</p>
+                                        <p className="text-[10px] text-muted-foreground font-mono">{tx.merchant_id}</p>
+                                      </TableCell>
+                                      <TableCell className="text-xs">{tx.customer_name || "—"}</TableCell>
+                                      <TableCell>{typeBadge(tx.type)}</TableCell>
+                                      <TableCell className="text-xs text-muted-foreground">{tx.card_type}{tx.last_four ? ` ···${tx.last_four}` : ""}</TableCell>
+                                      <TableCell className="text-xs text-right font-semibold">${tx.amount || "0.00"}</TableCell>
+                                      <TableCell>{conditionBadge(tx.condition)}</TableCell>
+                                      <TableCell><ChevronDown className={cn("h-3 w-3 text-muted-foreground transition-transform", expandedTx === tx.id && "rotate-180")} /></TableCell>
+                                    </TableRow>
+                                    {expandedTx === tx.id && (
+                                      <TableRow key={`${tx.id}-detail`}>
+                                        <TableCell colSpan={9} className="bg-muted/20 p-4">
+                                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                                            <div><span className="text-muted-foreground">Transaction ID</span><p className="font-mono font-medium">{tx.id}</p></div>
+                                            <div><span className="text-muted-foreground">Authorization</span><p className="font-mono font-medium">{tx.authorization || "—"}</p></div>
+                                            <div><span className="text-muted-foreground">Response</span><p className="font-medium">{tx.response_text || "—"} ({tx.response_code || "—"})</p></div>
+                                            <div><span className="text-muted-foreground">Processor</span><p className="font-medium">{tx.processor_id || "—"}</p></div>
+                                            <div><span className="text-muted-foreground">Email</span><p className="font-medium">{tx.customer_email || "—"}</p></div>
+                                            <div><span className="text-muted-foreground">Billing</span><p className="font-medium">{[tx.billing_city, tx.billing_state, tx.billing_zip].filter(Boolean).join(", ") || "—"}</p></div>
+                                            <div><span className="text-muted-foreground">AVS / CVV</span><p className="font-medium">{tx.avs_response || "—"} / {tx.cvv_response || "—"}</p></div>
+                                            <div><span className="text-muted-foreground">IP Address</span><p className="font-mono font-medium">{tx.ip_address || "—"}</p></div>
+                                            {tx.settlement_amount && <div><span className="text-muted-foreground">Settlement</span><p className="font-medium">${tx.settlement_amount} {tx.settlement_currency}</p></div>}
+                                            {tx.subscription_id && <div><span className="text-muted-foreground">Subscription</span><p className="font-mono font-medium">{tx.subscription_id}</p></div>}
+                                          </div>
+                                        </TableCell>
+                                      </TableRow>
+                                    )}
+                                  </>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </Card>
+                        )}
+                        {totalPages > 1 && filtered.length > 0 && Pager}
+                      </>
+                    );
+                  })()}
                 </TabsContent>
 
                 {/* ── Analytics Tab ── */}
