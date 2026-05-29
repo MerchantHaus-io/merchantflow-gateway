@@ -310,8 +310,28 @@ const Transactions = () => {
     else { setSortField(field); setSortDir("desc"); }
   };
 
-  const approvalRate = summary && summary.total_count > 0
-    ? ((summary.approved_count / summary.total_count) * 100).toFixed(1) : "0";
+  // Stats reflect the active filters (merchant, type, status, search)
+  const filteredSummary = useMemo(() => {
+    const approvedSet = new Set(["complete","pending","pendingsettlement","pending_settlement"]);
+    const refundSet = new Set(["refund","credit"]);
+    const s = { total_count: filtered.length, approved_count: 0, approved_amount: 0, refund_count: 0, refund_amount: 0, total_amount: 0 };
+    for (const tx of filtered) {
+      const amt = parseFloat(tx.amount || "0") || 0;
+      s.total_amount += amt;
+      if (approvedSet.has((tx.condition || "").toLowerCase())) {
+        s.approved_count += 1;
+        s.approved_amount += amt;
+      }
+      if (refundSet.has((tx.type || "").toLowerCase())) {
+        s.refund_count += 1;
+        s.refund_amount += amt;
+      }
+    }
+    return s;
+  }, [filtered]);
+
+  const approvalRate = filteredSummary.total_count > 0
+    ? ((filteredSummary.approved_count / filteredSummary.total_count) * 100).toFixed(1) : "0";
 
   // Lookup merchant names from CRM accounts first, then NMI boarding fallbacks
   const { data: merchantDirectory } = useQuery({
