@@ -199,6 +199,7 @@ const Transactions = () => {
   const [merchantSyncing, setMerchantSyncing] = useState(false);
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 100;
+  useEffect(() => { setPage(1); }, [merchantFilter, typeFilter, statusFilter, search, datePreset, sortField, sortDir]);
 
   const { startDate, endDate } = getDateRange(datePreset);
 
