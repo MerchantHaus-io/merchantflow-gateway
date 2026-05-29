@@ -541,6 +541,8 @@ const Transactions = () => {
 
                   <p className="text-xs text-muted-foreground">{filtered.length} of {txs.length} transactions</p>
 
+                  {(() => { return null; })()}
+
                   {/* Table */}
                   {filtered.length === 0 ? (
                     <Card><CardContent className="p-8 text-center">
