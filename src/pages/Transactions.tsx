@@ -446,7 +446,7 @@ const Transactions = () => {
                   <div className="flex items-center gap-2 mb-1">
                     <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center"><Activity className="h-3.5 w-3.5 text-primary" /></div>
                   </div>
-                  <p className="text-xl font-bold">{summary?.total_count ?? 0}</p>
+                  <p className="text-xl font-bold">{filteredSummary.total_count}</p>
                   <p className="text-[10px] text-muted-foreground">Total Transactions</p>
                 </CardContent></Card>
                 <Card><CardContent className="p-3">
@@ -460,15 +460,15 @@ const Transactions = () => {
                   <div className="flex items-center gap-2 mb-1">
                     <div className="h-7 w-7 rounded-md bg-emerald-500/10 flex items-center justify-center"><DollarSign className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /></div>
                   </div>
-                  <p className="text-xl font-bold truncate">{formatCurrency(summary?.approved_amount ?? 0)}</p>
+                  <p className="text-xl font-bold truncate">{formatCurrency(filteredSummary.approved_amount)}</p>
                   <p className="text-[10px] text-muted-foreground">Approved Volume</p>
                 </CardContent></Card>
                 <Card><CardContent className="p-3">
                   <div className="flex items-center gap-2 mb-1">
                     <div className="h-7 w-7 rounded-md bg-amber-500/10 flex items-center justify-center"><ArrowDownRight className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" /></div>
                   </div>
-                  <p className="text-xl font-bold">{summary?.refund_count ?? 0}</p>
-                  <p className="text-[10px] text-muted-foreground">Refunds ({formatCurrency(summary?.refund_amount ?? 0)})</p>
+                  <p className="text-xl font-bold">{filteredSummary.refund_count}</p>
+                  <p className="text-[10px] text-muted-foreground">Refunds ({formatCurrency(filteredSummary.refund_amount)})</p>
                 </CardContent></Card>
                 <Card><CardContent className="p-3">
                   <div className="flex items-center gap-2 mb-1">
