@@ -197,6 +197,8 @@ const Transactions = () => {
   const [commMonth, setCommMonth] = useState(() => new Date().getMonth() + 1);
   const [commYear, setCommYear] = useState(() => new Date().getFullYear());
   const [merchantSyncing, setMerchantSyncing] = useState(false);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 100;
 
   const { startDate, endDate } = getDateRange(datePreset);
 
