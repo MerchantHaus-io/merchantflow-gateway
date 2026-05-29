@@ -539,12 +539,28 @@ const Transactions = () => {
                     </Select>
                   </div>
 
-                  <p className="text-xs text-muted-foreground">{filtered.length} of {txs.length} transactions</p>
+                  {(() => {
+                    const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+                    const currentPage = Math.min(page, totalPages);
+                    const startIdx = (currentPage - 1) * PAGE_SIZE;
+                    const endIdx = Math.min(startIdx + PAGE_SIZE, filtered.length);
+                    return (
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <p className="text-xs text-muted-foreground">
+                          {filtered.length === 0 ? 0 : `${startIdx + 1}–${endIdx}`} of {filtered.length} transactions
+                          {filtered.length !== txs.length && <span className="text-muted-foreground/60"> (filtered from {txs.length})</span>}
+                        </p>
+                        {totalPages > 1 && (
+                          <div className="flex items-center gap-1">
+                            <Button variant="outline" size="sm" className="h-7 px-2 text-xs" disabled={currentPage <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>Prev</Button>
+                            <span className="text-xs text-muted-foreground px-2 tabular-nums">Page {currentPage} of {totalPages}</span>
+                            <Button variant="outline" size="sm" className="h-7 px-2 text-xs" disabled={currentPage >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>Next</Button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
 
-                  {(() => { return null; })()}
-
-                  {/* Table */}
-                  {filtered.length === 0 ? (
                     <Card><CardContent className="p-8 text-center">
                       <Activity className="h-8 w-8 mx-auto mb-2 text-muted-foreground/30" />
                       <p className="text-sm font-medium">No transactions found</p>
