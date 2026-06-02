@@ -1284,6 +1284,9 @@ export function QuoteGeneratorDialog({
                     <div className="space-y-1 text-right">
                       <div><span className="text-muted-foreground mr-3">Monthly Total</span><span className="font-bold text-lg">{fmt(totals.monthlyResale)}</span></div>
                       <div className="text-xs text-muted-foreground">Annual Total: {fmt(totals.annualResale)}</div>
+                      {oneTimeTotal > 0 && (
+                        <div className="text-xs"><span className="text-muted-foreground mr-2">One-time fees due:</span><span className="font-semibold">{fmt(oneTimeTotal)}</span></div>
+                      )}
                     </div>
                   </div>
 
