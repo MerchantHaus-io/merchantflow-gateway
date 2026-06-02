@@ -538,6 +538,7 @@ export function QuoteGeneratorDialog({
           `Quote emailed to ${client.email}, but the record couldn't be saved (${persistResult.error.message}).`,
         );
       } else {
+        setFinalized(true);
         toast.success(`Quote emailed to ${client.email}`);
       }
       onOpenChange(false);
