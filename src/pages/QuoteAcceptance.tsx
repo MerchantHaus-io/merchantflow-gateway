@@ -119,10 +119,16 @@ export default function QuoteAcceptance() {
     };
   }, [token]);
 
+  type QuoteLine = PublicQuote["lines_snapshot"][number];
   const enabledLines = useMemo(
-    () => (quote?.lines_snapshot ?? []).filter((l) => l.enabled),
+    () => asArray<QuoteLine>(quote?.lines_snapshot).filter((l) => l && l.enabled),
     [quote],
   );
+
+  // Log payload to console for easier debugging if a downstream render crashes.
+  useEffect(() => {
+    if (quote) console.debug("[QuoteAcceptance] payload", quote);
+  }, [quote]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
