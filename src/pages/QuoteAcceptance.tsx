@@ -23,12 +23,6 @@ import { Select,
 } from "@/components/ui/select";
 import { asArray } from "@/lib/utils";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { CheckCircle2, Loader2, ShieldCheck, AlertTriangle } from "lucide-react";
 import merchantHausLogo from "@/assets/merchanthaus-logo.png";
 import { QUOTE_TERMS_VERSION } from "@/config/quoteSchedule";
