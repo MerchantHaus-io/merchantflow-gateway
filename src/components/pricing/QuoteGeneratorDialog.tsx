@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAutoSave } from "@/hooks/useAutoSave";
+import { assertValidQuoteWrite } from "@/lib/quote-schema";
 import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
 import {
   Building2,
@@ -589,8 +590,13 @@ export function QuoteGeneratorDialog({
         sender_company: sender.company || null,
         sender_email: sender.email || null,
         sender_phone: sender.phone || null,
-        lines_snapshot: {
-          lines,
+        // lines_snapshot MUST be a non-empty array of EditableLine items.
+        // The rest of the rep-customizable state (ancillary fees, gateway
+        // fees, activation, platform pricing) lives in `extras_snapshot`
+        // so it can be reloaded into the generator without corrupting the
+        // shape the public quote page iterates over.
+        lines_snapshot: lines as any,
+        extras_snapshot: {
           ancillary,
           gatewayFees,
           activation,
@@ -603,6 +609,10 @@ export function QuoteGeneratorDialog({
         acceptance_token: acceptanceToken,
         acceptance_token_expires_at: validUntil.toISOString(),
       };
+      // Hard-fail if the row would persist a malformed lines_snapshot.
+      // Better to surface a clear error here than to ship bad data that
+      // crashes the public acceptance page.
+      assertValidQuoteWrite(row);
       // Upsert by quote_number so auto-save reuses the same draft row and the
       // final "sent" insert flips the existing draft to sent.
       return await supabase

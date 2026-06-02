@@ -25,6 +25,7 @@ import {
   type MsaPdfInput,
 } from "@/lib/quotePdf";
 import { QUOTE_TERMS_VERSION } from "@/config/quoteSchedule";
+import { asArray } from "@/lib/utils";
 
 interface AcceptanceRow {
   quote_id: string;
@@ -252,8 +253,9 @@ function GenerateContractDialog({
 
   const buildMsaInput = (): MsaPdfInput | null => {
     if (!quote) return null;
-    const lines = (quote.lines_snapshot ?? [])
-      .filter((l) => l.enabled)
+    type LineSnap = NonNullable<typeof quote.lines_snapshot>[number];
+    const lines = asArray<LineSnap>(quote.lines_snapshot)
+      .filter((l) => l && l.enabled)
       .map((l) => ({
         id: l.id,
         label: l.label,
