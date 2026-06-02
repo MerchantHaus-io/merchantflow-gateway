@@ -15,13 +15,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
-import {
-  Select,
+import { Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { asArray } from "@/lib/utils";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { CheckCircle2, Loader2, ShieldCheck, AlertTriangle } from "lucide-react";
 import merchantHausLogo from "@/assets/merchanthaus-logo.png";
 import { QUOTE_TERMS_VERSION } from "@/config/quoteSchedule";
@@ -64,7 +65,7 @@ const fmt = (n: number) =>
     minimumFractionDigits: 2,
   }).format(n);
 
-export default function QuoteAcceptance() {
+function QuoteAcceptanceInner() {
   const { token } = useParams<{ token: string }>();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -118,10 +119,16 @@ export default function QuoteAcceptance() {
     };
   }, [token]);
 
+  type QuoteLine = PublicQuote["lines_snapshot"][number];
   const enabledLines = useMemo(
-    () => (quote?.lines_snapshot ?? []).filter((l) => l.enabled),
+    () => asArray<QuoteLine>(quote?.lines_snapshot).filter((l) => l && l.enabled),
     [quote],
   );
+
+  // Log payload to console for easier debugging if a downstream render crashes.
+  useEffect(() => {
+    if (quote) console.debug("[QuoteAcceptance] payload", quote);
+  }, [quote]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -536,5 +543,13 @@ function Shell({ children }: { children: React.ReactNode }) {
     >
       {children}
     </div>
+  );
+}
+
+export default function QuoteAcceptance() {
+  return (
+    <ErrorBoundary>
+      <QuoteAcceptanceInner />
+    </ErrorBoundary>
   );
 }
