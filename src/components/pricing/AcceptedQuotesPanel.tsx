@@ -25,6 +25,7 @@ import {
   type MsaPdfInput,
 } from "@/lib/quotePdf";
 import { QUOTE_TERMS_VERSION } from "@/config/quoteSchedule";
+import { asArray } from "@/lib/utils";
 
 interface AcceptanceRow {
   quote_id: string;
