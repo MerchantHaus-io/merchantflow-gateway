@@ -65,7 +65,7 @@ const fmt = (n: number) =>
     minimumFractionDigits: 2,
   }).format(n);
 
-export default function QuoteAcceptance() {
+function QuoteAcceptanceInner() {
   const { token } = useParams<{ token: string }>();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
