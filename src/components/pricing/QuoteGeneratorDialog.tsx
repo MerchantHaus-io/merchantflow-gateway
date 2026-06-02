@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAutoSave } from "@/hooks/useAutoSave";
+import { assertValidQuoteWrite } from "@/lib/quote-schema";
 import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
 import {
   Building2,
