@@ -3,7 +3,7 @@
 // Defaults match the Fee & Margin Schedule (Pricing.pdf) and are EDITABLE
 // in the Quote Generator UI before sending the quote.
 
-import type { TierId } from "./pricing";
+import type { TierId, GatewayFeeId } from "./pricing";
 
 export interface QuoteLineDefault {
   /** Stable id used as form key. */
@@ -30,6 +30,68 @@ export const TIER_PLATFORM_FEE: Record<TierId, { cost: number; resale: number }>
   growth:     { cost: 40, resale: 99 },
   scale:      { cost: 65, resale: 149 },
   enterprise: { cost: 95, resale: 249 }, // editable; "Custom" by default in UI
+};
+
+/**
+ * Configurable core gateway fees — a monthly gateway authentication/access fee
+ * and a per-transaction (per-authorization) fee. Both are opt-in: off by
+ * default on a new quote and toggled on + edited per quote in the generator.
+ * Suggested amounts track the NMI Schedule A economics referenced below.
+ */
+export interface GatewayFeeDefault {
+  id: GatewayFeeId;
+  label: string;
+  description: string;
+  /** Internal cost. $/month for monthly cadence, $/txn for per_transaction. */
+  cost: number;
+  /** Suggested resale to merchant (same unit as cost). */
+  resale: number;
+  cadence: "monthly" | "per_transaction";
+  /** Opt-in default — false means the rep must enable it per quote. */
+  enabledByDefault: boolean;
+}
+
+export const GATEWAY_FEE_DEFAULTS: GatewayFeeDefault[] = [
+  {
+    id: "gateway_auth",
+    label: "Gateway Auth Fee",
+    description:
+      "Monthly gateway authentication & access fee (NMI gateway monthly).",
+    cost: 5,
+    resale: 10,
+    cadence: "monthly",
+    enabledByDefault: false,
+  },
+  {
+    id: "per_transaction",
+    label: "Per-Transaction Fee",
+    description:
+      "Per-authorization gateway transaction fee, billed on actual volume.",
+    cost: 0.3,
+    resale: 0.3,
+    cadence: "per_transaction",
+    enabledByDefault: false,
+  },
+];
+
+/**
+ * Optional one-time activation fee. Off by default. When charged, the quote
+ * renders a Payment Instructions block (receiving-bank details come from
+ * src/config/paymentInstructions.ts — never hardcoded here).
+ */
+export interface ActivationFeeDefault {
+  label: string;
+  description: string;
+  amount: number;
+  cadence: "one_time";
+}
+
+export const ACTIVATION_FEE_DEFAULT: ActivationFeeDefault = {
+  label: "Gateway Activation Fee",
+  description:
+    "One-time gateway activation. The gateway account is activated upon receipt of payment.",
+  amount: 0,
+  cadence: "one_time",
 };
 
 export const QUOTE_LINES: QuoteLineDefault[] = [

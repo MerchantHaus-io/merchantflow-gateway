@@ -19,6 +19,13 @@ export interface PricingTier {
   bundledAddOnIds: AddOnId[];
 }
 
+/**
+ * Configurable core gateway fees, selectable + editable per quote in the
+ * Quote Generator. Distinct from the platform bundle and from per-feature
+ * add-ons. Schedule defaults (cost/resale) live in quoteSchedule.ts.
+ */
+export type GatewayFeeId = "gateway_auth" | "per_transaction";
+
 export type AddOnId =
   | "mobile_device"
   | "txt2pay_monthly"
