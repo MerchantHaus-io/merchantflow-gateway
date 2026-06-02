@@ -1238,6 +1238,42 @@ export function QuoteGeneratorDialog({
                           </td>
                         </tr>
                       ))}
+                      {activationCharged && (
+                        <tr className="border-b bg-amber-50/40">
+                          <td className="p-2.5 font-medium">{activation.label}</td>
+                          <td className="p-2.5 text-xs text-muted-foreground">
+                            {activation.description} · one-time
+                          </td>
+                          <td className="p-2.5 text-right font-semibold">
+                            {fmt(activation.amount)}
+                          </td>
+                        </tr>
+                      )}
+                      {ancillary.filter((a) => a.enabled).map((a) => {
+                        const waived = a.amount === 0;
+                        const cadenceLabel =
+                          a.cadence === "one_time" ? "one-time"
+                          : a.cadence === "monthly" ? "/mo"
+                          : a.cadence === "annual" ? "/yr"
+                          : "as incurred";
+                        return (
+                          <tr key={`anc-${a.id}`} className="border-b">
+                            <td className="p-2.5">{a.label}</td>
+                            <td className="p-2.5 text-xs text-muted-foreground">
+                              {waived && a.waivedDescription ? a.waivedDescription : a.description}
+                            </td>
+                            <td className="p-2.5 text-right">
+                              {waived ? (
+                                <span className="text-muted-foreground">Waived</span>
+                              ) : a.cadence === "one_time" ? (
+                                <span className="font-semibold">{fmt(a.amount)}</span>
+                              ) : (
+                                <span>{fmt(a.amount)} {cadenceLabel === "/mo" || cadenceLabel === "/yr" ? cadenceLabel : `· ${cadenceLabel}`}</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                   </div>
