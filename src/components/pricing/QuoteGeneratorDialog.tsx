@@ -669,6 +669,7 @@ export function QuoteGeneratorDialog({
               {createdOn}
             </Badge>
             <span className="ml-auto" />
+            <AutoSaveIndicator status={autoSaveStatus} />
             <Badge>{tier.name}</Badge>
           </div>
           <DialogDescription>
