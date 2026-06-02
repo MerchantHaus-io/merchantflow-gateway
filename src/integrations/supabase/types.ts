@@ -2574,6 +2574,7 @@ export type Database = {
           client_phone: string | null
           contact_id: string | null
           created_at: string
+          extras_snapshot: Json
           id: string
           lines_snapshot: Json
           monthly_cost: number
@@ -2613,6 +2614,7 @@ export type Database = {
           client_phone?: string | null
           contact_id?: string | null
           created_at?: string
+          extras_snapshot?: Json
           id?: string
           lines_snapshot?: Json
           monthly_cost?: number
@@ -2652,6 +2654,7 @@ export type Database = {
           client_phone?: string | null
           contact_id?: string | null
           created_at?: string
+          extras_snapshot?: Json
           id?: string
           lines_snapshot?: Json
           monthly_cost?: number
