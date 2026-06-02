@@ -4,7 +4,7 @@ import {
   Building2,
   Download,
   Eye,
-  FileSignature,
+  Landmark,
   Mail,
   Pencil,
   Send,
@@ -48,10 +48,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { TIERS, type PricingTier, type TierId } from "@/config/pricing";
+import { TIERS, type PricingTier, type TierId, type GatewayFeeId } from "@/config/pricing";
 import {
+  ACTIVATION_FEE_DEFAULT,
   ANCILLARY_FEE_DEFAULTS,
   DEFAULT_QUOTE_SENDER,
+  GATEWAY_FEE_DEFAULTS,
   QUOTE_DISCLAIMERS,
   QUOTE_LINES,
   QUOTE_SENDERS,
@@ -59,6 +61,10 @@ import {
   TIER_PLATFORM_FEE,
   type AncillaryFeeDefault,
 } from "@/config/quoteSchedule";
+import {
+  PAYMENT_INSTRUCTIONS,
+  hasPaymentInstructions,
+} from "@/config/paymentInstructions";
 import { supabase } from "@/integrations/supabase/client";
 import { confirmAutoEmail } from "@/components/EmailSendConfirm";
 import quoteHeader from "@/assets/quote-header.png";
@@ -169,6 +175,41 @@ const buildAncillaryDefaults = (): EditableAncillary[] =>
     waivedDescription: a.waivedDescription,
   }));
 
+interface EditableGatewayFee {
+  id: GatewayFeeId;
+  label: string;
+  description: string;
+  cost: number;
+  resale: number;
+  cadence: "monthly" | "per_transaction";
+  enabled: boolean;
+}
+
+const buildGatewayFees = (): EditableGatewayFee[] =>
+  GATEWAY_FEE_DEFAULTS.map((f) => ({
+    id: f.id,
+    label: f.label,
+    description: f.description,
+    cost: f.cost,
+    resale: f.resale,
+    cadence: f.cadence,
+    enabled: f.enabledByDefault,
+  }));
+
+interface EditableActivation {
+  enabled: boolean;
+  label: string;
+  description: string;
+  amount: number;
+}
+
+const buildActivation = (): EditableActivation => ({
+  enabled: false,
+  label: ACTIVATION_FEE_DEFAULT.label,
+  description: ACTIVATION_FEE_DEFAULT.description,
+  amount: ACTIVATION_FEE_DEFAULT.amount,
+});
+
 const buildLinesForTier = (tierId: TierId): EditableLine[] =>
   QUOTE_LINES.map((l) => {
     const bundled = l.bundledIn.includes(tierId);
@@ -224,6 +265,12 @@ export function QuoteGeneratorDialog({
   const [ancillary, setAncillary] = useState<EditableAncillary[]>(
     () => buildAncillaryDefaults(),
   );
+  const [gatewayFees, setGatewayFees] = useState<EditableGatewayFee[]>(
+    () => buildGatewayFees(),
+  );
+  const [activation, setActivation] = useState<EditableActivation>(
+    () => buildActivation(),
+  );
   const [quoteNumber] = useState<string>(() => buildQuoteNumber());
   const [acceptanceToken] = useState<string>(() => buildAcceptanceToken());
   const [createdOn] = useState<string>(() => todayLabel());
@@ -247,6 +294,8 @@ export function QuoteGeneratorDialog({
     setPlatformResale(TIER_PLATFORM_FEE[id].resale);
     setLines(buildLinesForTier(id));
     setAncillary(buildAncillaryDefaults());
+    setGatewayFees(buildGatewayFees());
+    setActivation(buildActivation());
     setSender({ ...DEFAULT_QUOTE_SENDER });
     setTab("build");
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -255,12 +304,22 @@ export function QuoteGeneratorDialog({
   const updateAncillary = (id: AncillaryFeeDefault["id"], patch: Partial<EditableAncillary>) =>
     setAncillary((prev) => prev.map((a) => (a.id === id ? { ...a, ...patch } : a)));
 
+  const updateGatewayFee = (id: GatewayFeeId, patch: Partial<EditableGatewayFee>) =>
+    setGatewayFees((prev) => prev.map((f) => (f.id === id ? { ...f, ...patch } : f)));
+
+  // An activation fee is "charged" only when the line is enabled with a > 0
+  // amount — that's the sole condition that surfaces the Payment Instructions.
+  const activationCharged = activation.enabled && activation.amount > 0;
+  const paymentReady = hasPaymentInstructions();
+  const showPaymentInstructions = activationCharged && paymentReady;
+
   const oneTimeTotal = useMemo(
     () =>
       ancillary
         .filter((a) => a.enabled && a.cadence === "one_time")
-        .reduce((s, a) => s + a.amount, 0),
-    [ancillary],
+        .reduce((s, a) => s + a.amount, 0) +
+      (activationCharged ? activation.amount : 0),
+    [ancillary, activationCharged, activation.amount],
   );
 
   // When the user changes plan tier inside the dialog, reset platform & lines.
@@ -293,8 +352,15 @@ export function QuoteGeneratorDialog({
       (s, l) => s + (l.bundled ? 0 : l.cost),
       0,
     );
-    const monthlyResale = billedPlatform.resale + lineResale;
-    const monthlyCost = billedPlatform.cost + lineCost;
+    // Only the monthly gateway fee folds into the recurring total; the
+    // per-transaction fee is variable and billed on actual volume.
+    const enabledGatewayMonthly = gatewayFees.filter(
+      (f) => f.enabled && f.cadence === "monthly",
+    );
+    const gatewayMonthlyResale = enabledGatewayMonthly.reduce((s, f) => s + f.resale, 0);
+    const gatewayMonthlyCost = enabledGatewayMonthly.reduce((s, f) => s + f.cost, 0);
+    const monthlyResale = billedPlatform.resale + lineResale + gatewayMonthlyResale;
+    const monthlyCost = billedPlatform.cost + lineCost + gatewayMonthlyCost;
     const monthlyMargin = monthlyResale - monthlyCost;
     return {
       lineResale,
@@ -304,7 +370,10 @@ export function QuoteGeneratorDialog({
       monthlyMargin,
       annualResale: monthlyResale * 12,
     };
-  }, [enabledLines, billedPlatform]);
+  }, [enabledLines, billedPlatform, gatewayFees]);
+
+  const enabledGatewayFees = gatewayFees.filter((f) => f.enabled);
+  const hasPerTxFee = enabledGatewayFees.some((f) => f.cadence === "per_transaction");
 
   const updateLine = (id: string, patch: Partial<EditableLine>) =>
     setLines((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } : l)));
@@ -347,6 +416,17 @@ export function QuoteGeneratorDialog({
       },
       sender,
       platformBundleResale: billedPlatform.resale,
+      gatewayFees: enabledGatewayFees.map((f) => ({
+        id: f.id,
+        label: f.label,
+        description: f.description,
+        resale: f.resale,
+        cadence: f.cadence,
+      })),
+      activation: activationCharged
+        ? { label: activation.label, amount: activation.amount }
+        : null,
+      paymentInstructions: showPaymentInstructions ? PAYMENT_INSTRUCTIONS : null,
       lines: enabledLines.map((l) => ({
         id: l.id,
         label: l.label,
@@ -545,7 +625,7 @@ export function QuoteGeneratorDialog({
                 <Pencil className="h-3.5 w-3.5 mr-1.5" /> Build
               </TabsTrigger>
               <TabsTrigger value="preview">
-                <FileSignature className="h-3.5 w-3.5 mr-1.5" /> Preview
+                <Eye className="h-3.5 w-3.5 mr-1.5" /> Preview
               </TabsTrigger>
             </TabsList>
           </div>
@@ -728,6 +808,61 @@ export function QuoteGeneratorDialog({
                   </div>
                 </section>
 
+                {/* Core gateway fees — configurable monthly auth + per-tx */}
+                <section className="space-y-3">
+                  <div className="flex items-baseline justify-between">
+                    <h3 className="text-sm font-semibold">Core gateway fees</h3>
+                    <p className="text-[11px] text-muted-foreground">
+                      Optional. Toggle on a monthly gateway auth fee and/or a per-transaction fee.
+                    </p>
+                  </div>
+                  <div className="rounded-md border overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/40 text-xs">
+                        <tr>
+                          <th className="text-left px-3 py-2 font-semibold w-[80px]">Include</th>
+                          <th className="text-left px-3 py-2 font-semibold">Fee</th>
+                          <th className="text-right px-3 py-2 font-semibold w-[90px]">Cost</th>
+                          <th className="text-right px-3 py-2 font-semibold w-[90px]">Resale</th>
+                          <th className="text-right px-3 py-2 font-semibold w-[90px]">Unit</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {gatewayFees.map((f) => (
+                          <tr key={f.id} className="border-t">
+                            <td className="p-2 align-top">
+                              <Checkbox
+                                checked={f.enabled}
+                                onCheckedChange={(c) => updateGatewayFee(f.id, { enabled: !!c })}
+                              />
+                            </td>
+                            <td className="p-2 align-top">
+                              <div className="font-medium">{f.label}</div>
+                              <div className="text-[11px] text-muted-foreground max-w-[420px]">
+                                {f.description}
+                              </div>
+                            </td>
+                            <td className="p-2 align-top text-right">
+                              <CompactNum value={f.cost}
+                                onChange={(v) => updateGatewayFee(f.id, { cost: v })} />
+                            </td>
+                            <td className="p-2 align-top text-right">
+                              <CompactNum value={f.resale}
+                                onChange={(v) => updateGatewayFee(f.id, { resale: v })} />
+                            </td>
+                            <td className="p-2 align-top text-right text-xs text-muted-foreground">
+                              {f.cadence === "monthly" ? "/mo" : "/txn"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    The monthly gateway auth fee is added to the recurring total. The per-transaction fee is variable and billed on actual volume.
+                  </p>
+                </section>
+
                 {/* Add-on lines */}
                 <section className="space-y-3">
                   <div className="flex items-baseline justify-between">
@@ -876,6 +1011,59 @@ export function QuoteGeneratorDialog({
                   </div>
                 </section>
 
+                {/* Activation fee — optional one-time; gates Payment Instructions */}
+                <section className="space-y-3">
+                  <div className="flex items-baseline justify-between">
+                    <h3 className="text-sm font-semibold">Activation fee</h3>
+                    <p className="text-[11px] text-muted-foreground">
+                      Optional one-time fee. When charged, the quote shows bank payment instructions.
+                    </p>
+                  </div>
+                  <div className="rounded-md border p-3 space-y-3">
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Checkbox
+                        checked={activation.enabled}
+                        onCheckedChange={(c) =>
+                          setActivation((a) => ({ ...a, enabled: !!c }))
+                        }
+                      />
+                      <span className="font-medium">Charge a one-time activation fee</span>
+                    </label>
+                    {activation.enabled && (
+                      <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+                        <div className="grid gap-1.5">
+                          <Label className="text-xs text-muted-foreground">Label</Label>
+                          <Input
+                            value={activation.label}
+                            onChange={(e) =>
+                              setActivation((a) => ({ ...a, label: e.target.value }))
+                            }
+                          />
+                        </div>
+                        <NumField
+                          label="Amount ($ one-time)"
+                          value={activation.amount}
+                          onChange={(v) => setActivation((a) => ({ ...a, amount: v }))}
+                        />
+                      </div>
+                    )}
+                    {activationCharged && !paymentReady && (
+                      <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                        ⚠ Receiving-bank details aren't configured, so Payment Instructions won't appear on this quote. Set the <code className="font-mono">VITE_MH_ACTIVATION_*</code> env vars to enable them.
+                      </p>
+                    )}
+                    {showPaymentInstructions && (
+                      <div className="rounded-md border bg-muted/30 p-3 text-xs space-y-1.5">
+                        <div className="font-semibold flex items-center gap-1.5">
+                          <Landmark className="h-3.5 w-3.5" /> Payment Instructions will appear on the quote
+                        </div>
+                        <PaymentInstructionsRows />
+                        <p className="text-muted-foreground">{PAYMENT_INSTRUCTIONS.activationNote}</p>
+                      </div>
+                    )}
+                  </div>
+                </section>
+
                 {/* Totals strip */}
                 <section className="rounded-lg border bg-card p-4 grid gap-2 sm:grid-cols-4 text-sm">
                   <Stat label="Monthly cost" value={fmt(totals.monthlyCost)} muted />
@@ -977,6 +1165,19 @@ export function QuoteGeneratorDialog({
                           <td className="p-2.5 text-right">{l.bundled ? "—" : `${fmt(l.resale)}/mo`}</td>
                         </tr>
                       ))}
+                      {enabledGatewayFees.map((f) => (
+                        <tr key={f.id} className="border-b">
+                          <td className="p-2.5">{f.label}</td>
+                          <td className="p-2.5 text-xs text-muted-foreground">
+                            {f.cadence === "per_transaction"
+                              ? `${fmt(f.resale)} per transaction · billed on actual volume`
+                              : f.description}
+                          </td>
+                          <td className="p-2.5 text-right">
+                            {f.cadence === "monthly" ? `${fmt(f.resale)}/mo` : `${fmt(f.resale)}/txn`}
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                   </div>
@@ -989,6 +1190,41 @@ export function QuoteGeneratorDialog({
                       <div className="text-xs text-muted-foreground">Annual Total: {fmt(totals.annualResale)}</div>
                     </div>
                   </div>
+
+                  {showPaymentInstructions && (
+                    <div className="mt-6 rounded-md border border-slate-300 bg-slate-50 p-4">
+                      <div className="text-[11px] uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1.5">
+                        <Landmark className="h-3.5 w-3.5" /> Payment Instructions
+                      </div>
+                      <div className="text-sm font-semibold mb-2">
+                        {activation.label}: {fmt(activation.amount)} <span className="font-normal text-slate-500">(one-time)</span>
+                      </div>
+                      <table className="text-xs">
+                        <tbody>
+                          <tr>
+                            <td className="pr-4 py-0.5 text-slate-500 align-top whitespace-nowrap">Bank</td>
+                            <td className="py-0.5">{PAYMENT_INSTRUCTIONS.bankName}</td>
+                          </tr>
+                          <tr>
+                            <td className="pr-4 py-0.5 text-slate-500 align-top whitespace-nowrap">Account name</td>
+                            <td className="py-0.5">
+                              {PAYMENT_INSTRUCTIONS.accountName}
+                              {PAYMENT_INSTRUCTIONS.signatory && ` (signatory: ${PAYMENT_INSTRUCTIONS.signatory})`}
+                            </td>
+                          </tr>
+                          <tr>
+                            <td className="pr-4 py-0.5 text-slate-500 align-top whitespace-nowrap">Routing</td>
+                            <td className="py-0.5 font-mono">{PAYMENT_INSTRUCTIONS.routingNumber}</td>
+                          </tr>
+                          <tr>
+                            <td className="pr-4 py-0.5 text-slate-500 align-top whitespace-nowrap">Account</td>
+                            <td className="py-0.5 font-mono">{PAYMENT_INSTRUCTIONS.accountNumber}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      <p className="text-xs text-slate-600 mt-2">{PAYMENT_INSTRUCTIONS.activationNote}</p>
+                    </div>
+                  )}
 
                   <div className="mt-6">
                     <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">Terms, Disclaimers &amp; Acceptance</div>
@@ -1039,7 +1275,7 @@ export function QuoteGeneratorDialog({
           </Button>
           {tab === "build" ? (
             <Button variant="secondary" onClick={() => setTab("preview")}>
-              <FileSignature className="h-4 w-4 mr-2" /> Preview
+              <Eye className="h-4 w-4 mr-2" /> Preview
             </Button>
           ) : (
             <Button variant="outline" onClick={() => setTab("build")}>
@@ -1101,6 +1337,40 @@ export function QuoteGeneratorDialog({
 }
 
 // ---------------- helpers ----------------
+
+/** Compact read-only render of the configured receiving-bank details. */
+function PaymentInstructionsRows() {
+  const p = PAYMENT_INSTRUCTIONS;
+  const rows: [string, string][] = [
+    ["Bank", p.bankName],
+    [
+      "Account name",
+      p.signatory ? `${p.accountName} (signatory: ${p.signatory})` : p.accountName,
+    ],
+    ["Routing", p.routingNumber],
+    ["Account", p.accountNumber],
+  ];
+  return (
+    <table>
+      <tbody>
+        {rows.map(([label, value]) => (
+          <tr key={label}>
+            <td className="pr-3 py-0.5 text-muted-foreground align-top whitespace-nowrap">
+              {label}
+            </td>
+            <td
+              className={
+                "py-0.5 " + (label === "Routing" || label === "Account" ? "font-mono" : "")
+              }
+            >
+              {value}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
 
 function Field({
   label,

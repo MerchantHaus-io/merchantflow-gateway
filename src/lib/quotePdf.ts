@@ -84,6 +84,25 @@ export interface QuotePdfInput {
   };
 
   platformBundleResale: number;
+  /** Configurable core gateway fees (enabled only): monthly auth + per-tx. */
+  gatewayFees?: {
+    id: string;
+    label: string;
+    description: string;
+    resale: number;
+    cadence: "monthly" | "per_transaction";
+  }[];
+  /** Set only when a one-time activation fee is charged. */
+  activation?: { label: string; amount: number } | null;
+  /** Receiving-bank details — present only when an activation fee is charged. */
+  paymentInstructions?: {
+    bankName: string;
+    accountName: string;
+    signatory: string;
+    routingNumber: string;
+    accountNumber: string;
+    activationNote: string;
+  } | null;
   lines: QuotePdfLine[];          // enabled lines only — bundled or metered
   ancillary: QuotePdfAncillary[]; // chargeback / PCI / setup / return-payment
   totals: {
@@ -571,6 +590,16 @@ function renderScopeAndPricing(doc: jsPDF, q: QuotePdfInput, totalPages: number)
       l.bundled ? "Included" : `${fmt(l.resale)} / mo`,
     ]);
   });
+  // Core gateway fees — monthly auth folds into the total; per-tx is metered
+  (q.gatewayFees ?? []).forEach((f) => {
+    const detail =
+      f.cadence === "per_transaction"
+        ? `${f.description}\nVariable — billed on actual transaction volume.`
+        : f.description;
+    const price =
+      f.cadence === "monthly" ? `${fmt(f.resale)} / mo` : `${fmt(f.resale)} / txn`;
+    tableBody.push([f.label, detail, price]);
+  });
   // Ancillary disclosures
   q.ancillary.forEach((a) => {
     tableBody.push([
@@ -636,6 +665,89 @@ function renderScopeAndPricing(doc: jsPDF, q: QuotePdfInput, totalPages: number)
   }
 
   pageFooter(doc, q.sender);
+}
+
+/**
+ * Receiving-bank "Payment Instructions" panel. Rendered on the Acceptance page
+ * only when the quote charges a one-time activation fee. Returns the y-cursor
+ * below the box.
+ */
+function paymentInstructionsBox(
+  doc: jsPDF,
+  p: NonNullable<QuotePdfInput["paymentInstructions"]>,
+  activationLabel: string,
+  activationAmount: number,
+  x: number,
+  y: number,
+  w: number,
+): number {
+  const padX = 14;
+  const padY = 12;
+  const labelW = 84;
+  const valX = x + padX + labelW;
+  const valW = w - padX * 2 - labelW;
+
+  const rows: [string, string][] = [
+    ["Bank", p.bankName],
+    [
+      "Account name",
+      p.signatory ? `${p.accountName} (signatory: ${p.signatory})` : p.accountName,
+    ],
+    ["Routing", p.routingNumber],
+    ["Account", p.accountNumber],
+  ];
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  const wrapped = rows.map(([, v]) => doc.splitTextToSize(v, valW));
+  const noteLines = doc.splitTextToSize(p.activationNote, w - padX * 2);
+
+  const titleH = 18;
+  const feeH = 16;
+  const rowsH = wrapped.reduce((s, lines) => s + Math.max(lines.length, 1) * 11, 0) + 4;
+  const noteH = noteLines.length * 10 + 4;
+  const totalH = padY + titleH + feeH + rowsH + noteH + padY;
+
+  setFill(doc, CALLOUT_BG);
+  setStroke(doc, HAIRLINE);
+  doc.setLineWidth(0.4);
+  doc.roundedRect(x, y, w, totalH, 3, 3, "FD");
+  setFill(doc, BRAND_RED);
+  doc.rect(x, y, 2.4, totalH, "F");
+
+  let cy = y + padY + 2;
+  setText(doc, MUTED);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(7.5);
+  doc.text("PAYMENT INSTRUCTIONS", x + padX, cy, { charSpace: 1.4 } as never);
+  cy += titleH;
+
+  setText(doc, INK);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.text(`${activationLabel}: ${fmt(activationAmount)} (one-time)`, x + padX, cy);
+  cy += feeH;
+
+  rows.forEach(([label], i) => {
+    const mono = label === "Routing" || label === "Account";
+    setText(doc, MUTED);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.text(label, x + padX, cy);
+    setText(doc, INK);
+    doc.setFont(mono ? "courier" : "helvetica", "normal");
+    doc.setFontSize(8.5);
+    doc.text(wrapped[i], valX, cy);
+    cy += Math.max(wrapped[i].length, 1) * 11;
+  });
+  cy += 4;
+
+  setText(doc, MUTED);
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(8);
+  doc.text(noteLines, x + padX, cy);
+
+  return y + totalH;
 }
 
 function renderBillingTermsAndAcceptance(
@@ -814,6 +926,20 @@ function renderBillingTermsAndAcceptance(
   });
   // @ts-expect-error - lastAutoTable is added at runtime
   y = doc.lastAutoTable.finalY + 22;
+
+  // Payment Instructions — only when a one-time activation fee is charged
+  if (q.activation && q.paymentInstructions) {
+    y =
+      paymentInstructionsBox(
+        doc,
+        q.paymentInstructions,
+        q.activation.label,
+        q.activation.amount,
+        MARGIN,
+        y,
+        PAGE_W - MARGIN * 2,
+      ) + 18;
+  }
 
   // Accept Online CTA box
   if (q.acceptUrl) {
