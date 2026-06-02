@@ -545,3 +545,11 @@ function Shell({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+
+export default function QuoteAcceptance() {
+  return (
+    <ErrorBoundary>
+      <QuoteAcceptanceInner />
+    </ErrorBoundary>
+  );
+}
