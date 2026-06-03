@@ -582,6 +582,32 @@ export function QuoteGeneratorDialog({
       sender_email: sender.email || null,
       sender_phone: sender.phone || null,
       lines_snapshot: lines as any,
+      // Full fee picture so the public acceptance page mirrors the PDF.
+      // lines_snapshot stays as-is for back-compat; everything else lives here.
+      fees_snapshot: {
+        gatewayFees: enabledGatewayFees.map((f) => ({
+          id: f.id,
+          label: f.label,
+          description: f.description,
+          resale: f.resale,
+          cadence: f.cadence,
+        })),
+        ancillary: ancillary
+          .filter((a) => a.enabled)
+          .map((a) => ({
+            id: a.id,
+            label: a.label,
+            description: a.description,
+            amount: a.amount,
+            cadence: a.cadence,
+            waived: a.amount === 0,
+            waivedDescription: a.waivedDescription,
+          })),
+        activation: activationCharged
+          ? { label: activation.label, amount: activation.amount }
+          : null,
+        oneTimeTotal,
+      } as any,
       sent_at: status === "sent" ? now.toISOString() : null,
       sent_by: user?.id ?? null,
       sent_by_email: user?.email ?? null,
