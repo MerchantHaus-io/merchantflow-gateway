@@ -85,7 +85,7 @@ async function handleLoad(
   const { data: quote, error } = await supabase
     .from("quotes")
     .select(
-      "id, quote_number, status, tier_id, tier_name, billing_cycle, monthly_resale, annual_resale, valid_until, acceptance_token_expires_at, client_business_name, client_contact_name, client_email, client_phone, client_monthly_volume, client_average_ticket, sender_name, sender_title, sender_company, sender_email, sender_phone, lines_snapshot, fees_snapshot, sent_at",
+      "id, quote_number, status, tier_id, tier_name, billing_cycle, monthly_resale, annual_resale, valid_until, acceptance_token_expires_at, client_business_name, client_contact_name, client_email, client_phone, client_monthly_volume, client_average_ticket, sender_name, sender_title, sender_company, sender_email, sender_phone, lines_snapshot, extras_snapshot, sent_at",
     )
     .eq("acceptance_token", token)
     .maybeSingle();
@@ -143,7 +143,7 @@ async function handleAccept(
   const { data: quote, error: loadErr } = await supabase
     .from("quotes")
     .select(
-      "id, quote_number, status, client_business_name, client_email, sender_email, sender_name, opportunity_id, account_id, contact_id, valid_until, acceptance_token_expires_at, lines_snapshot, fees_snapshot, monthly_resale, annual_resale, tier_name, billing_cycle",
+      "id, quote_number, status, client_business_name, client_email, sender_email, sender_name, opportunity_id, account_id, contact_id, valid_until, acceptance_token_expires_at, lines_snapshot, extras_snapshot, monthly_resale, annual_resale, tier_name, billing_cycle",
     )
     .eq("acceptance_token", token)
     .maybeSingle();
@@ -174,7 +174,7 @@ async function handleAccept(
   const feeScheduleHash = await sha256(
     JSON.stringify({
       lines: quote.lines_snapshot ?? [],
-      fees: quote.fees_snapshot ?? {},
+      extras: quote.extras_snapshot ?? {},
     }),
   );
 

@@ -15,13 +15,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
-import {
-  Select,
+import { Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { asArray } from "@/lib/utils";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { CheckCircle2, Loader2, ShieldCheck, AlertTriangle } from "lucide-react";
 import merchantHausLogo from "@/assets/merchanthaus-logo.png";
 import { QUOTE_TERMS_VERSION } from "@/config/quoteSchedule";
@@ -59,13 +60,17 @@ interface PublicQuote {
     enabled: boolean;
     bundled: boolean;
   }>;
-  fees_snapshot?: {
+  // Rep-customizable extras persisted by the Quote Generator. Arrays carry an
+  // `enabled` flag (unfiltered), so we filter to enabled items when rendering.
+  extras_snapshot?: {
     gatewayFees?: Array<{
       id: string;
       label: string;
       description: string;
+      cost?: number;
       resale: number;
       cadence: "monthly" | "per_transaction";
+      enabled?: boolean;
     }>;
     ancillary?: Array<{
       id: string;
@@ -73,11 +78,12 @@ interface PublicQuote {
       description: string;
       amount: number;
       cadence: "per_occurrence" | "monthly" | "annual" | "one_time";
-      waived?: boolean;
+      enabled?: boolean;
       waivedDescription?: string;
     }>;
-    activation?: { label: string; amount: number } | null;
-    oneTimeTotal?: number;
+    activation?: { enabled?: boolean; label: string; description?: string; amount: number } | null;
+    platformCost?: number;
+    platformResale?: number;
   } | null;
 }
 
@@ -88,7 +94,7 @@ const fmt = (n: number) =>
     minimumFractionDigits: 2,
   }).format(n);
 
-export default function QuoteAcceptance() {
+function QuoteAcceptanceInner() {
   const { token } = useParams<{ token: string }>();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -142,26 +148,30 @@ export default function QuoteAcceptance() {
     };
   }, [token]);
 
+  type QuoteLine = PublicQuote["lines_snapshot"][number];
   const enabledLines = useMemo(
-    () => (quote?.lines_snapshot ?? []).filter((l) => l.enabled),
+    () => asArray<QuoteLine>(quote?.lines_snapshot).filter((l) => l && l.enabled),
     [quote],
   );
 
-  const fees = quote?.fees_snapshot ?? {};
-  const gatewayFees = fees.gatewayFees ?? [];
-  const activation = fees.activation ?? null;
+  const extras = quote?.extras_snapshot ?? {};
+  const gatewayFees = (extras.gatewayFees ?? []).filter((f) => f.enabled);
+  const activation = extras.activation ?? null;
   // Ancillary one-time charges (e.g. Setup) plus the activation fee.
-  const oneTimeAncillary = (fees.ancillary ?? []).filter(
-    (a) => a.cadence === "one_time" && a.amount > 0,
+  const oneTimeAncillary = (extras.ancillary ?? []).filter(
+    (a) => a.enabled && a.cadence === "one_time" && a.amount > 0,
   );
-  const activationCharged = !!activation && activation.amount > 0;
+  const activationCharged = !!activation && !!activation.enabled && activation.amount > 0;
   const showPaymentInstructions = activationCharged && hasPaymentInstructions();
   const oneTimeTotal =
-    typeof fees.oneTimeTotal === "number"
-      ? fees.oneTimeTotal
-      : oneTimeAncillary.reduce((s, a) => s + a.amount, 0) +
-        (activationCharged ? activation!.amount : 0);
+    oneTimeAncillary.reduce((s, a) => s + a.amount, 0) +
+    (activationCharged ? activation!.amount : 0);
   const hasOneTime = oneTimeTotal > 0;
+
+  // Log payload to console for easier debugging if a downstream render crashes.
+  useEffect(() => {
+    if (quote) console.debug("[QuoteAcceptance] payload", quote);
+  }, [quote]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -659,5 +669,13 @@ function Shell({ children }: { children: React.ReactNode }) {
     >
       {children}
     </div>
+  );
+}
+
+export default function QuoteAcceptance() {
+  return (
+    <ErrorBoundary>
+      <QuoteAcceptanceInner />
+    </ErrorBoundary>
   );
 }

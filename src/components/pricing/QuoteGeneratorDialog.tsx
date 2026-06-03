@@ -1,5 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { assertValidQuoteWrite } from "@/lib/quote-schema";
+import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
 import {
   Building2,
   Download,
@@ -536,6 +539,7 @@ export function QuoteGeneratorDialog({
           `Quote emailed to ${client.email}, but the record couldn't be saved (${persistResult.error.message}).`,
         );
       } else {
+        setFinalized(true);
         toast.success(`Quote emailed to ${client.email}`);
       }
       onOpenChange(false);
@@ -546,81 +550,119 @@ export function QuoteGeneratorDialog({
     }
   };
 
-  const persistQuote = async (status: "draft" | "sent") => {
-    const now = new Date();
-    const validUntil = new Date(now);
-    validUntil.setDate(validUntil.getDate() + 30);
+  // Track whether the quote has been "sent" — once sent, auto-save stops
+  // touching the row (the sent snapshot is immutable from the rep's side).
+  const [finalized, setFinalized] = useState(false);
 
-    const { data: userData } = await supabase.auth.getUser();
-    const user = userData?.user ?? null;
+  const persistQuote = useCallback(
+    async (status: "draft" | "sent") => {
+      const now = new Date();
+      const validUntil = new Date(now);
+      validUntil.setDate(validUntil.getDate() + 30);
 
-    const row = {
-      quote_number: quoteNumber,
-      opportunity_id: opportunityId ?? null,
-      account_id: accountId ?? null,
-      contact_id: contactId ?? null,
-      tier_id: tier.id,
-      tier_name: tier.name,
-      billing_cycle: billing,
-      status,
-      monthly_cost: +totals.monthlyCost.toFixed(2),
-      monthly_resale: +totals.monthlyResale.toFixed(2),
-      monthly_margin: +totals.monthlyMargin.toFixed(2),
-      annual_resale: +totals.annualResale.toFixed(2),
-      valid_until: validUntil.toISOString(),
-      pdf_filename: safeFilename(),
-      client_business_name: client.businessName || null,
-      client_contact_name: client.contactName || null,
-      client_email: client.email || null,
-      client_phone: client.phone || null,
-      client_monthly_volume: client.monthlyVolume || null,
-      client_average_ticket: client.averageTicket || null,
-      client_notes: client.notes || null,
-      sender_name: sender.name || null,
-      sender_title: sender.title || null,
-      sender_company: sender.company || null,
-      sender_email: sender.email || null,
-      sender_phone: sender.phone || null,
-      lines_snapshot: lines as any,
-      // Full fee picture so the public acceptance page mirrors the PDF.
-      // lines_snapshot stays as-is for back-compat; everything else lives here.
-      fees_snapshot: {
-        gatewayFees: enabledGatewayFees.map((f) => ({
-          id: f.id,
-          label: f.label,
-          description: f.description,
-          resale: f.resale,
-          cadence: f.cadence,
-        })),
-        ancillary: ancillary
-          .filter((a) => a.enabled)
-          .map((a) => ({
-            id: a.id,
-            label: a.label,
-            description: a.description,
-            amount: a.amount,
-            cadence: a.cadence,
-            waived: a.amount === 0,
-            waivedDescription: a.waivedDescription,
-          })),
-        activation: activationCharged
-          ? { label: activation.label, amount: activation.amount }
-          : null,
-        oneTimeTotal,
-      } as any,
-      sent_at: status === "sent" ? now.toISOString() : null,
-      sent_by: user?.id ?? null,
-      sent_by_email: user?.email ?? null,
-      // Token issued client-side so the PDF that goes out matches what we persist.
-      // For drafts we still persist the token but the merchant link won't be useful
-      // until the quote is actually sent.
-      acceptance_token: acceptanceToken,
-      acceptance_token_expires_at: validUntil.toISOString(),
-    };
-    // Cast: the auto-generated Supabase types are regenerated separately;
-    // acceptance_token columns were added in the 20260526120000 migration.
-    return await supabase.from("quotes").insert(row as any);
-  };
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData?.user ?? null;
+
+      const row = {
+        quote_number: quoteNumber,
+        opportunity_id: opportunityId ?? null,
+        account_id: accountId ?? null,
+        contact_id: contactId ?? null,
+        tier_id: tier.id,
+        tier_name: tier.name,
+        billing_cycle: billing,
+        status,
+        monthly_cost: +totals.monthlyCost.toFixed(2),
+        monthly_resale: +totals.monthlyResale.toFixed(2),
+        monthly_margin: +totals.monthlyMargin.toFixed(2),
+        annual_resale: +totals.annualResale.toFixed(2),
+        valid_until: validUntil.toISOString(),
+        pdf_filename: safeFilename(),
+        client_business_name: client.businessName || null,
+        client_contact_name: client.contactName || null,
+        client_email: client.email || null,
+        client_phone: client.phone || null,
+        client_monthly_volume: client.monthlyVolume || null,
+        client_average_ticket: client.averageTicket || null,
+        client_notes: client.notes || null,
+        sender_name: sender.name || null,
+        sender_title: sender.title || null,
+        sender_company: sender.company || null,
+        sender_email: sender.email || null,
+        sender_phone: sender.phone || null,
+        // lines_snapshot MUST be a non-empty array of EditableLine items.
+        // The rest of the rep-customizable state (ancillary fees, gateway
+        // fees, activation, platform pricing) lives in `extras_snapshot`
+        // so it can be reloaded into the generator without corrupting the
+        // shape the public quote page iterates over.
+        lines_snapshot: lines as any,
+        extras_snapshot: {
+          ancillary,
+          gatewayFees,
+          activation,
+          platformCost,
+          platformResale,
+        } as any,
+        sent_at: status === "sent" ? now.toISOString() : null,
+        sent_by: status === "sent" ? user?.id ?? null : null,
+        sent_by_email: status === "sent" ? user?.email ?? null : null,
+        acceptance_token: acceptanceToken,
+        acceptance_token_expires_at: validUntil.toISOString(),
+      };
+      // Hard-fail if the row would persist a malformed lines_snapshot.
+      // Better to surface a clear error here than to ship bad data that
+      // crashes the public acceptance page.
+      assertValidQuoteWrite(row);
+      // Upsert by quote_number so auto-save reuses the same draft row and the
+      // final "sent" insert flips the existing draft to sent.
+      return await supabase
+        .from("quotes")
+        .upsert(row as any, { onConflict: "quote_number" });
+    },
+    [
+      quoteNumber, opportunityId, accountId, contactId, tier.id, tier.name,
+      billing, totals.monthlyCost, totals.monthlyResale, totals.monthlyMargin,
+      totals.annualResale, client, sender, lines, ancillary, gatewayFees,
+      activation, platformCost, platformResale, acceptanceToken,
+    ],
+  );
+
+  // ---------- Auto-save draft ----------
+  // Snapshot of everything the rep can edit. As soon as a business name is
+  // present (so we're not spamming empty drafts), debounced changes upsert a
+  // draft row. Stops once the quote is sent.
+  const autoSaveData = useMemo(
+    () => ({
+      client, sender, billing, selectedTierId,
+      platformCost, platformResale,
+      lines, ancillary, gatewayFees, activation,
+    }),
+    [
+      client, sender, billing, selectedTierId,
+      platformCost, platformResale,
+      lines, ancillary, gatewayFees, activation,
+    ],
+  );
+
+  const autoSaveEnabled = open && !finalized && !!client.businessName.trim();
+
+  const { status: autoSaveStatus, resetInitialData } = useAutoSave({
+    data: autoSaveData,
+    delay: 1000,
+    enabled: autoSaveEnabled,
+    onSave: async () => {
+      const { error } = await persistQuote("draft");
+      if (error) throw error;
+    },
+  });
+
+  // Reset baseline whenever the dialog opens (new quote context).
+  useEffect(() => {
+    if (open) {
+      setFinalized(false);
+      resetInitialData();
+    }
+  }, [open, resetInitialData]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -636,6 +678,7 @@ export function QuoteGeneratorDialog({
               {createdOn}
             </Badge>
             <span className="ml-auto" />
+            <AutoSaveIndicator status={autoSaveStatus} />
             <Badge>{tier.name}</Badge>
           </div>
           <DialogDescription>
@@ -1204,6 +1247,42 @@ export function QuoteGeneratorDialog({
                           </td>
                         </tr>
                       ))}
+                      {activationCharged && (
+                        <tr className="border-b bg-amber-50/40">
+                          <td className="p-2.5 font-medium">{activation.label}</td>
+                          <td className="p-2.5 text-xs text-muted-foreground">
+                            {activation.description} · one-time
+                          </td>
+                          <td className="p-2.5 text-right font-semibold">
+                            {fmt(activation.amount)}
+                          </td>
+                        </tr>
+                      )}
+                      {ancillary.filter((a) => a.enabled).map((a) => {
+                        const waived = a.amount === 0;
+                        const cadenceLabel =
+                          a.cadence === "one_time" ? "one-time"
+                          : a.cadence === "monthly" ? "/mo"
+                          : a.cadence === "annual" ? "/yr"
+                          : "as incurred";
+                        return (
+                          <tr key={`anc-${a.id}`} className="border-b">
+                            <td className="p-2.5">{a.label}</td>
+                            <td className="p-2.5 text-xs text-muted-foreground">
+                              {waived && a.waivedDescription ? a.waivedDescription : a.description}
+                            </td>
+                            <td className="p-2.5 text-right">
+                              {waived ? (
+                                <span className="text-muted-foreground">Waived</span>
+                              ) : a.cadence === "one_time" ? (
+                                <span className="font-semibold">{fmt(a.amount)}</span>
+                              ) : (
+                                <span>{fmt(a.amount)} {cadenceLabel === "/mo" || cadenceLabel === "/yr" ? cadenceLabel : `· ${cadenceLabel}`}</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                   </div>
@@ -1214,6 +1293,9 @@ export function QuoteGeneratorDialog({
                     <div className="space-y-1 text-right">
                       <div><span className="text-muted-foreground mr-3">Monthly Total</span><span className="font-bold text-lg">{fmt(totals.monthlyResale)}</span></div>
                       <div className="text-xs text-muted-foreground">Annual Total: {fmt(totals.annualResale)}</div>
+                      {oneTimeTotal > 0 && (
+                        <div className="text-xs"><span className="text-muted-foreground mr-2">One-time fees due:</span><span className="font-semibold">{fmt(oneTimeTotal)}</span></div>
+                      )}
                     </div>
                   </div>
 
