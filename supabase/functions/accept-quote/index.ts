@@ -85,7 +85,7 @@ async function handleLoad(
   const { data: quote, error } = await supabase
     .from("quotes")
     .select(
-      "id, quote_number, status, tier_id, tier_name, billing_cycle, monthly_resale, annual_resale, valid_until, acceptance_token_expires_at, client_business_name, client_contact_name, client_email, client_phone, client_monthly_volume, client_average_ticket, sender_name, sender_title, sender_company, sender_email, sender_phone, lines_snapshot, sent_at",
+      "id, quote_number, status, tier_id, tier_name, billing_cycle, monthly_resale, annual_resale, valid_until, acceptance_token_expires_at, client_business_name, client_contact_name, client_email, client_phone, client_monthly_volume, client_average_ticket, sender_name, sender_title, sender_company, sender_email, sender_phone, lines_snapshot, extras_snapshot, sent_at",
     )
     .eq("acceptance_token", token)
     .maybeSingle();
@@ -143,7 +143,7 @@ async function handleAccept(
   const { data: quote, error: loadErr } = await supabase
     .from("quotes")
     .select(
-      "id, quote_number, status, client_business_name, client_email, sender_email, sender_name, opportunity_id, account_id, contact_id, valid_until, acceptance_token_expires_at, lines_snapshot, monthly_resale, annual_resale, tier_name, billing_cycle",
+      "id, quote_number, status, client_business_name, client_email, sender_email, sender_name, opportunity_id, account_id, contact_id, valid_until, acceptance_token_expires_at, lines_snapshot, extras_snapshot, monthly_resale, annual_resale, tier_name, billing_cycle",
     )
     .eq("acceptance_token", token)
     .maybeSingle();
@@ -168,9 +168,14 @@ async function handleAccept(
     return json({ error: `Quote is ${quote.status}` }, 409);
   }
 
-  // Hash the fee schedule snapshot — locks in exactly what was accepted
+  // Hash the fee schedule snapshot — locks in exactly what was accepted.
+  // Covers both the add-on lines and the extended fee picture (core gateway
+  // fees, ancillary, activation) so a revision to either is auditable.
   const feeScheduleHash = await sha256(
-    JSON.stringify(quote.lines_snapshot ?? []),
+    JSON.stringify({
+      lines: quote.lines_snapshot ?? [],
+      extras: quote.extras_snapshot ?? {},
+    }),
   );
 
   // Capture client IP / UA (best-effort behind proxies)

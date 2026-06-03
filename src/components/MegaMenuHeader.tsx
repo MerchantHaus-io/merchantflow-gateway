@@ -92,6 +92,7 @@ const navMain: NavGroup[] = [
     items: [
       { title: "Pipeline Board", url: "/pipeline", icon: LayoutDashboard, description: "Opportunity kanban board" },
       { title: "All Opportunities", url: "/opportunities", icon: Briefcase, description: "Browse & search all opportunities" },
+      { title: "Quotes & Contracts", url: "/quotes-contracts", icon: FileSignature, description: "Quote & signature status across every opportunity" },
       { title: "Tasks", url: "/tasks", icon: ListChecks, description: "Manage your tasks" },
       { title: "Email Outreach", url: "/outreach", icon: Send, description: "Campaign tracker & email sender" },
       { title: "Web Submissions", url: "/admin/web-submissions", icon: Globe, description: "Incoming merchant applications" },

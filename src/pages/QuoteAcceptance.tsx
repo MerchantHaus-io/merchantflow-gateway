@@ -26,6 +26,10 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { CheckCircle2, Loader2, ShieldCheck, AlertTriangle } from "lucide-react";
 import merchantHausLogo from "@/assets/merchanthaus-logo.png";
 import { QUOTE_TERMS_VERSION } from "@/config/quoteSchedule";
+import {
+  PAYMENT_INSTRUCTIONS,
+  hasPaymentInstructions,
+} from "@/config/paymentInstructions";
 
 interface PublicQuote {
   id: string;
@@ -56,6 +60,31 @@ interface PublicQuote {
     enabled: boolean;
     bundled: boolean;
   }>;
+  // Rep-customizable extras persisted by the Quote Generator. Arrays carry an
+  // `enabled` flag (unfiltered), so we filter to enabled items when rendering.
+  extras_snapshot?: {
+    gatewayFees?: Array<{
+      id: string;
+      label: string;
+      description: string;
+      cost?: number;
+      resale: number;
+      cadence: "monthly" | "per_transaction";
+      enabled?: boolean;
+    }>;
+    ancillary?: Array<{
+      id: string;
+      label: string;
+      description: string;
+      amount: number;
+      cadence: "per_occurrence" | "monthly" | "annual" | "one_time";
+      enabled?: boolean;
+      waivedDescription?: string;
+    }>;
+    activation?: { enabled?: boolean; label: string; description?: string; amount: number } | null;
+    platformCost?: number;
+    platformResale?: number;
+  } | null;
 }
 
 const fmt = (n: number) =>
@@ -124,6 +153,20 @@ function QuoteAcceptanceInner() {
     () => asArray<QuoteLine>(quote?.lines_snapshot).filter((l) => l && l.enabled),
     [quote],
   );
+
+  const extras = quote?.extras_snapshot ?? {};
+  const gatewayFees = (extras.gatewayFees ?? []).filter((f) => f.enabled);
+  const activation = extras.activation ?? null;
+  // Ancillary one-time charges (e.g. Setup) plus the activation fee.
+  const oneTimeAncillary = (extras.ancillary ?? []).filter(
+    (a) => a.enabled && a.cadence === "one_time" && a.amount > 0,
+  );
+  const activationCharged = !!activation && !!activation.enabled && activation.amount > 0;
+  const showPaymentInstructions = activationCharged && hasPaymentInstructions();
+  const oneTimeTotal =
+    oneTimeAncillary.reduce((s, a) => s + a.amount, 0) +
+    (activationCharged ? activation!.amount : 0);
+  const hasOneTime = oneTimeTotal > 0;
 
   // Log payload to console for easier debugging if a downstream render crashes.
   useEffect(() => {
@@ -335,8 +378,91 @@ function QuoteAcceptanceInner() {
                   </td>
                 </tr>
               ))}
+              {gatewayFees.map((f) => (
+                <tr key={f.id} className="border-b border-neutral-200">
+                  <td className="py-3">{f.label}</td>
+                  <td className="py-3 text-neutral-500 text-xs">
+                    {f.cadence === "per_transaction"
+                      ? `${fmt(f.resale)} per transaction · billed on actual volume`
+                      : f.description}
+                  </td>
+                  <td className="py-3 text-right text-sm">
+                    {f.cadence === "monthly" ? `${fmt(f.resale)}/mo` : `${fmt(f.resale)}/txn`}
+                  </td>
+                </tr>
+              ))}
+              {oneTimeAncillary.map((a) => (
+                <tr key={a.id} className="border-b border-neutral-200">
+                  <td className="py-3">{a.label}</td>
+                  <td className="py-3 text-neutral-500 text-xs">{a.description}</td>
+                  <td className="py-3 text-right text-sm">{fmt(a.amount)} one-time</td>
+                </tr>
+              ))}
+              {activationCharged && (
+                <tr className="border-b border-neutral-200">
+                  <td className="py-3">{activation!.label}</td>
+                  <td className="py-3 text-neutral-500 text-xs">
+                    One-time gateway activation. Payable per the instructions below.
+                  </td>
+                  <td className="py-3 text-right text-sm">
+                    {fmt(activation!.amount)} one-time
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
+
+          {hasOneTime && (
+            <div className="flex justify-end mt-4">
+              <div className="text-sm text-neutral-600">
+                <span className="text-neutral-500 mr-3">One-time fees</span>
+                <span className="font-semibold text-neutral-900">{fmt(oneTimeTotal)}</span>
+              </div>
+            </div>
+          )}
+
+          {showPaymentInstructions && (
+            <div className="mt-8 rounded-lg border border-neutral-300 bg-neutral-50 p-5">
+              <div className="text-[10px] font-bold tracking-[0.16em] text-[#c81030] mb-3">
+                PAYMENT INSTRUCTIONS
+              </div>
+              <div className="text-sm font-semibold text-neutral-900 mb-3">
+                {activation!.label}: {fmt(activation!.amount)}{" "}
+                <span className="font-normal text-neutral-500">(one-time)</span>
+              </div>
+              <table className="text-sm">
+                <tbody>
+                  <tr>
+                    <td className="pr-5 py-1 text-neutral-500 align-top whitespace-nowrap">Bank</td>
+                    <td className="py-1 text-neutral-800">{PAYMENT_INSTRUCTIONS.bankName}</td>
+                  </tr>
+                  <tr>
+                    <td className="pr-5 py-1 text-neutral-500 align-top whitespace-nowrap">Account name</td>
+                    <td className="py-1 text-neutral-800">
+                      {PAYMENT_INSTRUCTIONS.accountName}
+                      {PAYMENT_INSTRUCTIONS.signatory &&
+                        ` (signatory: ${PAYMENT_INSTRUCTIONS.signatory})`}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="pr-5 py-1 text-neutral-500 align-top whitespace-nowrap">Routing</td>
+                    <td className="py-1 font-mono text-neutral-800">
+                      {PAYMENT_INSTRUCTIONS.routingNumber}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="pr-5 py-1 text-neutral-500 align-top whitespace-nowrap">Account</td>
+                    <td className="py-1 font-mono text-neutral-800">
+                      {PAYMENT_INSTRUCTIONS.accountNumber}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <p className="text-xs text-neutral-600 mt-3">
+                {PAYMENT_INSTRUCTIONS.activationNote}
+              </p>
+            </div>
+          )}
         </section>
 
         {/* Acceptance form */}

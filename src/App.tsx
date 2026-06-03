@@ -57,6 +57,7 @@ import Calendar from "./pages/Calendar";
 import Commissions from "./pages/Commissions";
 import QuoteBuilder from "./pages/QuoteBuilder";
 import QuoteAcceptance from "./pages/QuoteAcceptance";
+import QuotesContracts from "./pages/QuotesContracts";
 import Referrers from "./pages/Referrers";
 import { ReferrerRoute } from "./components/ReferrerRoute";
 import PortalDashboard from "./pages/portal/PortalDashboard";
@@ -129,6 +130,7 @@ const App = () => (
                 <Route path="/dashboard" element={<ProtectedRoute><Home /></ProtectedRoute>} />
                 <Route path="/opportunities" element={<ProtectedRoute><Opportunities /></ProtectedRoute>} />
                 <Route path="/opportunities/:id" element={<ProtectedRoute><OpportunityDetail /></ProtectedRoute>} />
+                <Route path="/quotes-contracts" element={<ProtectedRoute><QuotesContracts /></ProtectedRoute>} />
                 <Route path="/accounts" element={<ProtectedRoute><Accounts /></ProtectedRoute>} />
                 <Route path="/contacts" element={<ProtectedRoute><Contacts /></ProtectedRoute>} />
                 <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />

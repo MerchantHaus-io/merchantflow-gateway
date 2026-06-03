@@ -664,7 +664,6 @@ export function QuoteGeneratorDialog({
     }
   }, [open, resetInitialData]);
 
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl p-0 w-[100vw] sm:w-full h-[100dvh] sm:h-auto max-h-[100dvh] sm:max-h-[92vh] rounded-none sm:rounded-lg overflow-hidden flex flex-col">
