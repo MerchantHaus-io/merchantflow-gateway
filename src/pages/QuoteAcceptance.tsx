@@ -149,17 +149,39 @@ function QuoteAcceptanceInner() {
   }, [token]);
 
   type QuoteLine = PublicQuote["lines_snapshot"][number];
-  const enabledLines = useMemo(
-    () => asArray<QuoteLine>(quote?.lines_snapshot).filter((l) => l && l.enabled),
-    [quote],
-  );
+  type GatewayFee = NonNullable<NonNullable<PublicQuote["extras_snapshot"]>["gatewayFees"]>[number];
+  type Ancillary = NonNullable<NonNullable<PublicQuote["extras_snapshot"]>["ancillary"]>[number];
 
-  const extras = quote?.extras_snapshot ?? {};
-  const gatewayFees = (extras.gatewayFees ?? []).filter((f) => f.enabled);
+  // Legacy quotes wrote everything (lines + extras) into `lines_snapshot` as
+  // a single object, leaving `extras_snapshot` empty. Detect that shape and
+  // pull the embedded extras through so the page renders identically.
+  const rawLines = quote?.lines_snapshot as unknown;
+  const legacyEmbedded =
+    rawLines && !Array.isArray(rawLines) && typeof rawLines === "object"
+      ? (rawLines as Record<string, unknown>)
+      : null;
+
+  const enabledLines = useMemo(() => {
+    const arr = Array.isArray(rawLines)
+      ? (rawLines as QuoteLine[])
+      : asArray<QuoteLine>(legacyEmbedded?.lines);
+    return arr.filter((l) => l && l.enabled);
+  }, [rawLines, legacyEmbedded]);
+
+  const storedExtras = quote?.extras_snapshot ?? {};
+  const hasStoredExtras =
+    !!storedExtras &&
+    ((storedExtras.gatewayFees?.length ?? 0) > 0 ||
+      (storedExtras.ancillary?.length ?? 0) > 0 ||
+      !!storedExtras.activation);
+  const extras = (hasStoredExtras
+    ? storedExtras
+    : (legacyEmbedded ?? {})) as NonNullable<PublicQuote["extras_snapshot"]>;
+
+  const gatewayFees = asArray<GatewayFee>(extras.gatewayFees).filter((f) => f && f.enabled);
   const activation = extras.activation ?? null;
-  // Ancillary one-time charges (e.g. Setup) plus the activation fee.
-  const oneTimeAncillary = (extras.ancillary ?? []).filter(
-    (a) => a.enabled && a.cadence === "one_time" && a.amount > 0,
+  const oneTimeAncillary = asArray<Ancillary>(extras.ancillary).filter(
+    (a) => a && a.enabled && a.cadence === "one_time" && a.amount > 0,
   );
   const activationCharged = !!activation && !!activation.enabled && activation.amount > 0;
   const showPaymentInstructions = activationCharged && hasPaymentInstructions();
