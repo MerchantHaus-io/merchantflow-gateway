@@ -114,7 +114,7 @@ serve(async (req) => {
     // Accounts linked to a closed_won opportunity AND with an nmi_merchant_id set.
     const { data: liveOpps, error: oppsError } = await sb
       .from("opportunities")
-      .select("account_id, account:accounts!inner(id, name, nmi_merchant_id, commission_model, merchant_rate_pct, interchange_rate_pct, revenue_share_pct)")
+      .select("account_id, account:accounts!inner(id, name, nmi_merchant_id)")
       .eq("outcome_status", "closed_won");
 
     if (oppsError) throw new Error(`Failed to load live accounts: ${oppsError.message}`);
@@ -135,10 +135,10 @@ serve(async (req) => {
         accountByMid.set(mid, {
           id: acc.id,
           name: acc.name || mid,
-          commission_model: acc.commission_model || "gateway_only",
-          merchant_rate_pct: Number(acc.merchant_rate_pct) || 0,
-          interchange_rate_pct: Number(acc.interchange_rate_pct) || 0,
-          revenue_share_pct: Number(acc.revenue_share_pct) || 0,
+          commission_model: (acc as any).commission_model || "gateway_only",
+          merchant_rate_pct: Number((acc as any).merchant_rate_pct) || 0,
+          interchange_rate_pct: Number((acc as any).interchange_rate_pct) || 0,
+          revenue_share_pct: Number((acc as any).revenue_share_pct) || 0,
         });
       }
     }
