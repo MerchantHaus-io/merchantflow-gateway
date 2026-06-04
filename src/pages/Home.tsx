@@ -33,7 +33,6 @@ const groups: ShortcutGroup[] = [
       { title: "Email Outreach", description: "Campaign tracker & sender", url: "/outreach", icon: Send, color: "teal" },
       { title: "Web Submissions", description: "Incoming applications", url: "/admin/web-submissions", icon: Globe, color: "gold" },
       { title: "Tasks", description: "Team task board", url: "/tasks", icon: ListChecks, color: "success" },
-      { title: "Calendar", description: "Meetings & events", url: "/calendar", icon: CalendarDays, color: "teal" },
     ],
   },
   {
