@@ -2794,6 +2794,33 @@ export type Database = {
         }
         Relationships: []
       }
+      shared_todos: {
+        Row: {
+          completed_at: string | null
+          completed_by_email: string | null
+          created_at: string
+          created_by_email: string | null
+          id: string
+          title: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_by_email?: string | null
+          created_at?: string
+          created_by_email?: string | null
+          id?: string
+          title: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_by_email?: string | null
+          created_at?: string
+          created_by_email?: string | null
+          id?: string
+          title?: string
+        }
+        Relationships: []
+      }
       sop_change_requests: {
         Row: {
           created_at: string
