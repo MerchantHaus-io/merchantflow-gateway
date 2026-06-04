@@ -107,55 +107,8 @@ const borderColorMap: Record<string, string> = {
   warning: "border-warning",
 };
 
-// ── Next Meeting Chip (discreet inline widget) ──────────────
-function NextMeetingChip() {
-  const [event, setEvent] = useState<{ title: string; start_time: string; html_link: string | null } | null>(null);
-  const navigate = useNavigate();
 
-  useEffect(() => {
-    const now = new Date().toISOString();
-    const tomorrow = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
-    supabase
-      .from("calendar_events")
-      .select("title, start_time, html_link")
-      .gte("start_time", now)
-      .lte("start_time", tomorrow)
-      .eq("status", "confirmed")
-      .order("start_time", { ascending: true })
-      .limit(1)
-      .maybeSingle()
-      .then(({ data }) => { if (data) setEvent(data); });
-  }, []);
 
-  if (!event) return null;
-
-  const start = new Date(event.start_time);
-  const hoursUntil = differenceInHours(start, new Date());
-  const timeLabel = isToday(start)
-    ? format(start, "h:mm a")
-    : isTomorrow(start)
-      ? `Tomorrow ${format(start, "h:mm a")}`
-      : format(start, "EEE h:mm a");
-
-  const isUrgent = hoursUntil <= 1;
-
-  return (
-    <button
-      onClick={() => navigate("/calendar")}
-      className={cn(
-        "flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium transition-all",
-        "hover:bg-accent/40 cursor-pointer shrink-0",
-        isUrgent
-          ? "border-warning/50 bg-warning/10 text-warning"
-          : "border-border/40 bg-card/60 text-muted-foreground hover:text-foreground"
-      )}
-    >
-      <CalendarDays className="h-3.5 w-3.5 shrink-0" />
-      <span className="truncate max-w-[180px]">{event.title}</span>
-      <span className="text-[10px] opacity-70">{timeLabel}</span>
-    </button>
-  );
-}
 
 // ── Grid View (card layout) ─────────────────────────────────
 function GridView({ groups: g, activeGroup, isFavorite, onToggleFavorite }: { groups: ShortcutGroup[]; activeGroup: number; isFavorite: (url: string) => boolean; onToggleFavorite: (url: string) => void }) {
