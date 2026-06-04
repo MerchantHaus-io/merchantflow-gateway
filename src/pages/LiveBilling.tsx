@@ -239,7 +239,11 @@ const LiveBilling = () => {
           </Select>
         </div>
 
+        {/* Billing estimates from transaction data */}
+        <BillingEstimatesPanel accounts={filtered} />
+
         {/* Table */}
+
         {isLoading ? (
           <div className="space-y-3">
             {[...Array(5)].map((_, i) => (
