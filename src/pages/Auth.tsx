@@ -193,6 +193,7 @@ const Auth = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  className="text-black"
                 />
               </div>
               <div className="space-y-2">
@@ -206,7 +207,7 @@ const Auth = () => {
                     minLength={6}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pr-10"
+                    className="pr-10 text-black"
                   />
                   <button
                     type="button"
