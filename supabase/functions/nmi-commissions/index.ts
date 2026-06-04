@@ -114,7 +114,7 @@ serve(async (req) => {
     // Accounts linked to a closed_won opportunity AND with an nmi_merchant_id set.
     const { data: liveOpps, error: oppsError } = await sb
       .from("opportunities")
-      .select("account_id, account:accounts!inner(id, name, nmi_merchant_id, commission_model, merchant_rate_pct, interchange_rate_pct, revenue_share_pct)")
+      .select("account_id, account:accounts!inner(id, name, nmi_merchant_id)")
       .eq("outcome_status", "closed_won");
 
     if (oppsError) throw new Error(`Failed to load live accounts: ${oppsError.message}`);
