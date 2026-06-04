@@ -59,6 +59,8 @@ interface CommissionRecord {
   chargeback_fees: number;
   residual_amount: number;
   total_commission: number;
+  gateway_invoiced: number;
+  gateway_margin: number;
   volume_change_pct: number | null;
   commission_change_pct: number | null;
 }
@@ -166,9 +168,9 @@ export default function Commissions() {
   // Export CSV
   const exportCSV = () => {
     if (!records?.length) return;
-    const header = "Merchant,Merchant ID,Transactions,Volume,Fees,Commission,Change %";
+    const header = "Merchant,Merchant ID,Transactions,Volume,Processing Residual,Gateway Invoiced,Gateway Margin,Total Revenue,Change %";
     const rows = records.map((r) =>
-      [r.company_name, r.nmi_gateway_id, r.transaction_count, r.transaction_volume, r.transaction_fees, r.total_commission, r.commission_change_pct ?? ""].join(",")
+      [r.company_name, r.nmi_gateway_id, r.transaction_count, r.transaction_volume, r.total_commission, r.gateway_invoiced, r.gateway_margin, (r.total_commission + r.gateway_margin).toFixed(2), r.commission_change_pct ?? ""].join(",")
     );
     const csv = [header, ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -349,8 +351,10 @@ export default function Commissions() {
                     <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">MID</th>
                     <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Txns</th>
                     <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Volume</th>
-                    <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Fees</th>
-                    <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Commission</th>
+                    <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="Processing residual (Kurv markup × our split)">Processing</th>
+                    <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="Gateway invoiced to merchant (accepted quote monthly resale)">Gateway Inv.</th>
+                    <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="Our gateway margin (accepted quote monthly margin)">Gateway Margin</th>
+                    <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="Processing residual + gateway margin">Total</th>
                     <th className="text-right px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Trend</th>
                   </tr>
                 </thead>
@@ -374,9 +378,11 @@ export default function Commissions() {
                         <td className="px-4 py-3.5 font-mono text-xs text-muted-foreground">{r.nmi_gateway_id}</td>
                         <td className="px-4 py-3.5 text-right font-mono text-sm">{r.transaction_count.toLocaleString()}</td>
                         <td className="px-4 py-3.5 text-right font-mono text-sm">{fmt(r.transaction_volume)}</td>
-                        <td className="px-4 py-3.5 text-right font-mono text-sm">{fmt(r.transaction_fees)}</td>
+                        <td className="px-4 py-3.5 text-right font-mono text-sm">{fmt(r.total_commission)}</td>
+                        <td className="px-4 py-3.5 text-right font-mono text-sm text-muted-foreground">{fmt(r.gateway_invoiced)}</td>
+                        <td className="px-4 py-3.5 text-right font-mono text-sm">{fmt(r.gateway_margin)}</td>
                         <td className="px-4 py-3.5 text-right font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                          {fmt(r.total_commission)}
+                          {fmt(r.total_commission + r.gateway_margin)}
                         </td>
                         <td className="px-6 py-3.5 text-right">
                           {r.commission_change_pct != null ? (
