@@ -8,6 +8,7 @@ import { BroadcastPopup } from "@/components/BroadcastPopup";
 import { ComplianceBroadcast } from "@/components/ComplianceBroadcast";
 import { AtriaBroadcast } from "@/components/AtriaBroadcast";
 import { NMIBoardingBroadcast } from "@/components/NMIBoardingBroadcast";
+import { SharedTodoPopup } from "@/components/SharedTodoPopup";
 import { MobileAppDock } from "@/components/MobileAppDock";
 import { PageTransition } from "@/components/PageTransition";
 import { OfficeSimulatorOverlay } from "@/components/chat/OfficeSimulatorOverlay";
@@ -137,6 +138,7 @@ export function AppLayout({
       <ComplianceBroadcast />
       <AtriaBroadcast />
       <NMIBoardingBroadcast />
+      <SharedTodoPopup />
       {/* AtriaFAB removed — AI is now a tab inside FloatingChat */}
       {isMobile && !isChatRoute && <MobileAppDock />}
       <OfficeSimulatorOverlay />
