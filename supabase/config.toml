@@ -95,3 +95,7 @@ verify_jwt = false
 
 [functions.support-inbound-email]
 verify_jwt = false
+
+[functions.dev-autologin-credentials]
+verify_jwt = false
+

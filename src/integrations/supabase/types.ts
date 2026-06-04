@@ -2589,6 +2589,7 @@ export type Database = {
           client_phone: string | null
           contact_id: string | null
           created_at: string
+          extras_snapshot: Json
           id: string
           lines_snapshot: Json
           monthly_cost: number
@@ -2628,6 +2629,7 @@ export type Database = {
           client_phone?: string | null
           contact_id?: string | null
           created_at?: string
+          extras_snapshot?: Json
           id?: string
           lines_snapshot?: Json
           monthly_cost?: number
@@ -2667,6 +2669,7 @@ export type Database = {
           client_phone?: string | null
           contact_id?: string | null
           created_at?: string
+          extras_snapshot?: Json
           id?: string
           lines_snapshot?: Json
           monthly_cost?: number
@@ -2803,6 +2806,33 @@ export type Database = {
           phone?: string | null
           tier?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      shared_todos: {
+        Row: {
+          completed_at: string | null
+          completed_by_email: string | null
+          created_at: string
+          created_by_email: string | null
+          id: string
+          title: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_by_email?: string | null
+          created_at?: string
+          created_by_email?: string | null
+          id?: string
+          title: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_by_email?: string | null
+          created_at?: string
+          created_by_email?: string | null
+          id?: string
+          title?: string
         }
         Relationships: []
       }

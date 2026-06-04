@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
+import { BillingEstimatesPanel } from "@/components/BillingEstimatesPanel";
 
 import { NAME_TO_EMAIL } from "@/config/team";
 const TEAM_EMAIL_MAP: Record<string, string> = NAME_TO_EMAIL;
@@ -238,7 +239,11 @@ const LiveBilling = () => {
           </Select>
         </div>
 
+        {/* Billing estimates from transaction data */}
+        <BillingEstimatesPanel accounts={filtered} />
+
         {/* Table */}
+
         {isLoading ? (
           <div className="space-y-3">
             {[...Array(5)].map((_, i) => (
