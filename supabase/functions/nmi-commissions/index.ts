@@ -135,10 +135,10 @@ serve(async (req) => {
         accountByMid.set(mid, {
           id: acc.id,
           name: acc.name || mid,
-          commission_model: acc.commission_model || "gateway_only",
-          merchant_rate_pct: Number(acc.merchant_rate_pct) || 0,
-          interchange_rate_pct: Number(acc.interchange_rate_pct) || 0,
-          revenue_share_pct: Number(acc.revenue_share_pct) || 0,
+          commission_model: (acc as any).commission_model || "gateway_only",
+          merchant_rate_pct: Number((acc as any).merchant_rate_pct) || 0,
+          interchange_rate_pct: Number((acc as any).interchange_rate_pct) || 0,
+          revenue_share_pct: Number((acc as any).revenue_share_pct) || 0,
         });
       }
     }
