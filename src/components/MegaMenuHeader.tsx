@@ -289,6 +289,8 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                 return (
                   <NavigationMenuItem key={item.title}>
                     <NavigationMenuTrigger
+                      onPointerMove={(e) => e.preventDefault()}
+                      onPointerLeave={(e) => e.preventDefault()}
                       className={cn(
                         "h-9 px-3 text-sm bg-transparent rounded-md font-medium relative",
                         isDark
@@ -307,13 +309,17 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                         </span>
                       )}
                     </NavigationMenuTrigger>
-                    <NavigationMenuContent>
+                    <NavigationMenuContent
+                      onPointerEnter={(e) => e.preventDefault()}
+                      onPointerLeave={(e) => e.preventDefault()}
+                    >
                       <ul
                         className={cn(
                           "gap-1 p-2 glass-card",
-                          isTools ? "grid w-[500px] md:grid-cols-2" : "grid w-[340px] md:w-[420px] md:grid-cols-2"
+                          isTools ? "grid w-[520px] md:grid-cols-2" : "grid w-[360px] md:w-[440px] md:grid-cols-2"
                         )}
                       >
+
                         {item.items.map((subItem) => (
                           <li key={subItem.title}>
                             {subItem.external ? (

@@ -106,7 +106,7 @@ export default function Commissions() {
         .select("*")
         .eq("period_id", currentPeriod.id)
         .order("total_commission", { ascending: false });
-      return (data || []) as CommissionRecord[];
+      return (data || []) as unknown as CommissionRecord[];
     },
     enabled: !!currentPeriod,
   });
