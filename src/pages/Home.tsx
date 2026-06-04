@@ -371,18 +371,9 @@ export default function Home() {
                 Quick access to everything you need.
               </p>
             </div>
-            <NextMeetingChip />
-          </motion.div>
-
-          {/* Upcoming meetings widget */}
-          <motion.div
-            initial={{ opacity: 0, x: 12 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.15 }}
-          >
-            <UpcomingMeetingsWidget />
           </motion.div>
         </div>
+
 
         {/* Category tabs + layout toggle */}
         <div className="flex items-center justify-center gap-2 mb-2 flex-wrap overflow-visible">
