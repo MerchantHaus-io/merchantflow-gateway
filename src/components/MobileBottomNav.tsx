@@ -36,16 +36,20 @@ const GROUPS: { label: string; items: NavItem[] }[] = [
   {
     label: "Pipeline",
     items: [
-      { title: "Outreach", url: "/outreach", icon: Send },
+      { title: "Pipeline Board", url: "/pipeline", icon: LayoutDashboard },
+      { title: "All Opportunities", url: "/opportunities", icon: Briefcase },
+      { title: "Quotes & Contracts", url: "/quotes-contracts", icon: FileSignature },
+      { title: "Tasks", url: "/tasks", icon: ListChecks },
+      { title: "Email Outreach", url: "/outreach", icon: Send },
       { title: "Web Submissions", url: "/admin/web-submissions", icon: Globe },
     ],
   },
   {
     label: "CRM",
     items: [
+      { title: "Leads", url: "/leads", icon: UserPlus },
       { title: "Contacts", url: "/contacts", icon: Users },
       { title: "Documents", url: "/documents", icon: FileText },
-      { title: "Calendar", url: "/calendar", icon: Calendar },
       { title: "Notifications", url: "/notifications", icon: Bell },
     ],
   },
@@ -55,22 +59,29 @@ const GROUPS: { label: string; items: NavItem[] }[] = [
       { title: "Live & Billing", url: "/live-billing", icon: BadgeDollarSign },
       { title: "Transactions", url: "/reports/transactions", icon: CreditCard },
       { title: "Commissions", url: "/commissions", icon: BadgeDollarSign },
-      { title: "Processors", url: "/supported-processors", icon: CreditCard },
+      { title: "Supported Processors", url: "/supported-processors", icon: CreditCard },
+    ],
+  },
+  {
+    label: "Support",
+    items: [
+      { title: "Support Triage", url: "/support", icon: Activity },
+      { title: "Client Request Form", url: "/support-request", icon: FileText, external: true },
     ],
   },
   {
     label: "Reports",
     items: [
       { title: "Analytics", url: "/reports", icon: BarChart3 },
-      { title: "NMI Status", url: "https://statusgator.com/services/nmi", icon: Activity, external: true },
+      { title: "System Status", url: "https://statusgator.com/services/nmi", icon: Activity, external: true },
     ],
   },
   {
     label: "Tools",
     items: [
       { title: "Board Merchant", url: "/tools/nmi-boarding", icon: BadgeDollarSign },
-      { title: "Preboarding", url: "/tools/preboarding-wizard", icon: ClipboardList },
-      { title: "Revenue Calc", url: "/tools/revenue-calculator", icon: Calculator },
+      { title: "Pre-Qualification Wizard", url: "/tools/preboarding-wizard", icon: ClipboardList },
+      { title: "Revenue Calculator", url: "/tools/revenue-calculator", icon: Calculator },
       { title: "CSV Import", url: "/tools/csv-import", icon: FileSpreadsheet },
       { title: "Quote Builder", url: "/tools/quote-builder", icon: FileSignature },
     ],
@@ -79,13 +90,13 @@ const GROUPS: { label: string; items: NavItem[] }[] = [
     label: "Admin",
     items: [
       { title: "SOP", url: "/sop", icon: BookOpen },
+      { title: "Training", url: "/training", icon: BookOpen },
       { title: "CRM Updates", url: "/tools/terminal-updates", icon: Activity },
       { title: "Administration", url: "/admin/administration", icon: Activity },
       { title: "Affiliates", url: "/admin/affiliates", icon: Handshake },
       { title: "Data Export", url: "/admin/data-export", icon: Download },
-      { title: "Partner Guide", url: "/tools/gateway-guide", icon: CreditCard },
-      { title: "NMI Payments", url: "/tools/nmi-payments", icon: CreditCard },
-      { title: "Netlify", url: "/tools/netlify", icon: Cloud },
+      { title: "Merchant Portal Guide", url: "/tools/gateway-guide", icon: CreditCard },
+      { title: "Deployment", url: "/tools/netlify", icon: Cloud },
     ],
   },
   {
