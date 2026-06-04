@@ -22,6 +22,9 @@ export type Database = {
           country: string | null
           created_at: string
           id: string
+          kurv_per_txn_fee: number | null
+          kurv_residual_split: number | null
+          kurv_volume_rate_pct: number | null
           name: string
           nmi_merchant_id: string | null
           referrer_id: string | null
@@ -38,6 +41,9 @@ export type Database = {
           country?: string | null
           created_at?: string
           id?: string
+          kurv_per_txn_fee?: number | null
+          kurv_residual_split?: number | null
+          kurv_volume_rate_pct?: number | null
           name: string
           nmi_merchant_id?: string | null
           referrer_id?: string | null
@@ -54,6 +60,9 @@ export type Database = {
           country?: string | null
           created_at?: string
           id?: string
+          kurv_per_txn_fee?: number | null
+          kurv_residual_split?: number | null
+          kurv_volume_rate_pct?: number | null
           name?: string
           nmi_merchant_id?: string | null
           referrer_id?: string | null
@@ -1173,6 +1182,8 @@ export type Database = {
           commission_change_pct: number | null
           company_name: string | null
           created_at: string
+          gateway_invoiced: number
+          gateway_margin: number
           id: string
           monthly_fees: number | null
           nmi_gateway_id: string
@@ -1192,6 +1203,8 @@ export type Database = {
           commission_change_pct?: number | null
           company_name?: string | null
           created_at?: string
+          gateway_invoiced?: number
+          gateway_margin?: number
           id?: string
           monthly_fees?: number | null
           nmi_gateway_id: string
@@ -1211,6 +1224,8 @@ export type Database = {
           commission_change_pct?: number | null
           company_name?: string | null
           created_at?: string
+          gateway_invoiced?: number
+          gateway_margin?: number
           id?: string
           monthly_fees?: number | null
           nmi_gateway_id?: string

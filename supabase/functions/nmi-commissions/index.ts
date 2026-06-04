@@ -75,7 +75,7 @@ serve(async (req) => {
         console.log(`Dedup: skipping sync for ${requestMonth}/${requestYear}, last synced at ${recentSync.created_at}`);
         const { data: cachedRecords } = await sb
           .from("commission_records")
-          .select("nmi_gateway_id, company_name, transaction_count, transaction_volume, transaction_fees, chargeback_fees, residual_amount, total_commission")
+          .select("nmi_gateway_id, company_name, transaction_count, transaction_volume, transaction_fees, chargeback_fees, residual_amount, total_commission, gateway_invoiced, gateway_margin")
           .eq("period_id", (await sb.from("commission_periods")
             .select("id")
             .eq("period_start", startDate)
@@ -89,9 +89,11 @@ serve(async (req) => {
           fees: r.transaction_fees || 0,
           residual_amount: r.residual_amount || 0,
           total_commission: r.total_commission || 0,
+          gateway_invoiced: r.gateway_invoiced || 0,
+          gateway_margin: r.gateway_margin || 0,
           chargeback_amount: r.chargeback_fees || 0,
           refund_amount: 0,
-          status: (r.transaction_count || 0) > 0 ? "active" : "inactive",
+          status: (r.transaction_count || 0) > 0 || (r.gateway_invoiced || 0) > 0 ? "active" : "inactive",
           currency: "USD",
         }));
 
@@ -100,7 +102,7 @@ serve(async (req) => {
           year: requestYear,
           commissions,
           total_count: commissions.length,
-          summary: buildSummary(commissions.filter(c => c.transaction_count > 0 || c.gross_volume > 0)),
+          summary: buildSummary(commissions.filter(c => c.transaction_count > 0 || c.gross_volume > 0 || c.gateway_invoiced > 0)),
           truncated: false,
           cached: true,
           last_synced: recentSync.created_at,
@@ -114,7 +116,7 @@ serve(async (req) => {
     // Accounts linked to a closed_won opportunity AND with an nmi_merchant_id set.
     const { data: liveOpps, error: oppsError } = await sb
       .from("opportunities")
-      .select("account_id, account:accounts!inner(id, name, nmi_merchant_id, commission_model, merchant_rate_pct, interchange_rate_pct, revenue_share_pct)")
+      .select("account_id, account:accounts!inner(id, name, nmi_merchant_id, commission_model, kurv_volume_rate_pct, kurv_per_txn_fee, kurv_residual_split)")
       .eq("outcome_status", "closed_won");
 
     if (oppsError) throw new Error(`Failed to load live accounts: ${oppsError.message}`);
@@ -123,9 +125,10 @@ serve(async (req) => {
       id: string;
       name: string;
       commission_model: string;
-      merchant_rate_pct: number;
-      interchange_rate_pct: number;
-      revenue_share_pct: number;
+      // Kurv processing metrics (null when not yet configured for the merchant).
+      kurv_volume_rate_pct: number | null;
+      kurv_per_txn_fee: number | null;
+      kurv_residual_split: number;
     };
     const accountByMid = new Map<string, AccountInfo>();
     for (const opp of liveOpps || []) {
@@ -136,9 +139,9 @@ serve(async (req) => {
           id: acc.id,
           name: acc.name || mid,
           commission_model: acc.commission_model || "gateway_only",
-          merchant_rate_pct: Number(acc.merchant_rate_pct) || 0,
-          interchange_rate_pct: Number(acc.interchange_rate_pct) || 0,
-          revenue_share_pct: Number(acc.revenue_share_pct) || 0,
+          kurv_volume_rate_pct: acc.kurv_volume_rate_pct != null ? Number(acc.kurv_volume_rate_pct) : null,
+          kurv_per_txn_fee: acc.kurv_per_txn_fee != null ? Number(acc.kurv_per_txn_fee) : null,
+          kurv_residual_split: acc.kurv_residual_split != null ? Number(acc.kurv_residual_split) : 0.85,
         });
       }
     }
@@ -205,31 +208,63 @@ serve(async (req) => {
       console.warn("Affiliate roster lookup failed (non-fatal):", rosterErr);
     }
 
+    // ── Step 4b: Gateway figures from each account's ACCEPTED quote ──
+    // The gateway stream is independent of card volume: we invoice the quote's
+    // monthly_resale and keep the monthly_margin. Use the most recently accepted
+    // quote per account.
+    type GatewayInfo = { invoiced: number; margin: number };
+    const gatewayByAccount = new Map<string, GatewayInfo>();
+    const accountIds = [...accountByMid.values()].map((a) => a.id);
+    if (accountIds.length > 0) {
+      const { data: acceptedQuotes, error: quotesError } = await sb
+        .from("quotes")
+        .select("account_id, monthly_resale, monthly_margin, accepted_at")
+        .in("account_id", accountIds)
+        .eq("status", "accepted")
+        .order("accepted_at", { ascending: false });
+
+      if (quotesError) {
+        console.warn("Accepted-quote lookup failed (non-fatal):", quotesError.message);
+      } else {
+        for (const q of acceptedQuotes || []) {
+          const aid = String(q.account_id ?? "");
+          if (aid && !gatewayByAccount.has(aid)) {
+            gatewayByAccount.set(aid, {
+              invoiced: Number(q.monthly_resale) || 0,
+              margin: Number(q.monthly_margin) || 0,
+            });
+          }
+        }
+      }
+    }
+
     // ── Step 5: Build commission rows from our scoped accounts ──
-    // Per-account formula (processing model):
-    //   gross_fees      = volume × merchant_rate_pct / 100
-    //   gross_margin    = volume × (merchant_rate_pct − interchange_rate_pct) / 100
-    //   total_commission = gross_margin × revenue_share_pct / 100
-    // Gateway-only accounts produce no processing residual (commission = 0).
+    // Two independent streams per merchant:
+    //   Processing (Kurv residual):
+    //     markup     = volume × kurv_volume_rate_pct/100 + count × kurv_per_txn_fee
+    //     commission = markup × kurv_residual_split        (our share; EMS retail = 0.85)
+    //   Gateway (invoiced): from the account's accepted quote (resale & margin).
+    // Accounts without Kurv metrics produce no processing residual.
     const commissions = merchantIds.map((mid) => {
       const account = accountByMid.get(mid)!;
       const agg = aggByMid.get(mid)!;
       const displayName = account.name || nameOverride.get(mid) || mid;
 
-      let fees = 0;
-      let grossMargin = 0;
+      let markup = 0;
       let totalCommission = 0;
       let residualRate: number | null = null;
 
-      if (account.commission_model === "processing") {
-        const merchantRate = account.merchant_rate_pct / 100;
-        const interchangeRate = account.interchange_rate_pct / 100;
-        const revShare = account.revenue_share_pct / 100;
-        fees = agg.volume * merchantRate;
-        grossMargin = agg.volume * (merchantRate - interchangeRate);
-        totalCommission = grossMargin * revShare;
-        residualRate = (merchantRate - interchangeRate) * revShare;
+      const hasKurv = account.kurv_volume_rate_pct != null || account.kurv_per_txn_fee != null;
+      if (account.commission_model === "processing" && hasKurv) {
+        const volRate = (account.kurv_volume_rate_pct ?? 0) / 100;
+        const perTxn = account.kurv_per_txn_fee ?? 0;
+        const split = account.kurv_residual_split ?? 0.85;
+        markup = agg.volume * volRate + agg.count * perTxn;
+        totalCommission = markup * split;
+        residualRate = split;
       }
+
+      const gateway = gatewayByAccount.get(account.id) ?? { invoiced: 0, margin: 0 };
 
       return {
         account_id: account.id,
@@ -237,18 +272,20 @@ serve(async (req) => {
         company_name: displayName,
         transaction_count: agg.count,
         gross_volume: agg.volume,
-        fees: round2(fees),
-        residual_amount: round2(grossMargin),
+        fees: round2(markup),
+        residual_amount: round2(markup),
         residual_rate: residualRate,
         total_commission: round2(totalCommission),
+        gateway_invoiced: round2(gateway.invoiced),
+        gateway_margin: round2(gateway.margin),
         chargeback_amount: agg.chargebacks,
         refund_amount: agg.refunds,
-        status: agg.count > 0 ? "active" : "inactive",
+        status: agg.count > 0 || gateway.invoiced > 0 ? "active" : "inactive",
         currency: "USD",
       };
     });
 
-    const summary = buildSummary(commissions.filter(c => c.transaction_count > 0 || c.gross_volume > 0));
+    const summary = buildSummary(commissions.filter(c => c.transaction_count > 0 || c.gross_volume > 0 || c.gateway_invoiced > 0));
     const durationMs = Date.now() - startTime;
 
     // ── Step 6: Log the sync ──
@@ -301,6 +338,8 @@ serve(async (req) => {
               residual_rate: c.residual_rate,
               residual_amount: c.residual_amount,
               total_commission: c.total_commission,
+              gateway_invoiced: c.gateway_invoiced,
+              gateway_margin: c.gateway_margin,
             });
           }
 
@@ -359,14 +398,22 @@ function round2(n: number) {
 
 function buildSummary(commissions: unknown[]) {
   let total_commission = 0, total_volume = 0, total_fees = 0, total_chargebacks = 0, total_transactions = 0;
+  let total_gateway_invoiced = 0, total_gateway_margin = 0;
   for (const c of commissions) {
     total_commission += c.total_commission;
     total_volume += c.gross_volume;
     total_fees += c.fees;
     total_chargebacks += c.chargeback_amount;
     total_transactions += c.transaction_count;
+    total_gateway_invoiced += c.gateway_invoiced ?? 0;
+    total_gateway_margin += c.gateway_margin ?? 0;
   }
-  return { total_commission, total_volume, total_fees, total_refunds: 0, total_chargebacks, total_transactions, merchant_count: commissions.length };
+  return {
+    total_commission, total_volume, total_fees, total_refunds: 0, total_chargebacks, total_transactions,
+    total_gateway_invoiced, total_gateway_margin,
+    total_revenue: total_commission + total_gateway_margin,
+    merchant_count: commissions.length,
+  };
 }
 
 async function fetchTransactionsReport({
