@@ -20,8 +20,12 @@ interface DocumentPreviewDialogProps {
   bucket?: string;
 }
 
+const DOCX_MIME =
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
 const PREVIEWABLE_TYPES = [
   "application/pdf",
+  DOCX_MIME,
   "image/png",
   "image/jpeg",
   "image/jpg",
@@ -32,10 +36,38 @@ const PREVIEWABLE_TYPES = [
   "text/html",
 ];
 
+// Note: legacy ".doc" (binary Word) is intentionally excluded — mammoth only
+// parses the OOXML ".docx" format, so .doc falls back to download.
 function isPreviewable(contentType: string | null | undefined, fileName: string): boolean {
   if (contentType && PREVIEWABLE_TYPES.some((t) => contentType.startsWith(t))) return true;
   const ext = fileName.split(".").pop()?.toLowerCase();
-  return ["pdf", "png", "jpg", "jpeg", "gif", "webp", "svg", "txt", "html"].includes(ext || "");
+  return ["pdf", "docx", "png", "jpg", "jpeg", "gif", "webp", "svg", "txt", "html"].includes(
+    ext || "",
+  );
+}
+
+function isDocxFile(contentType: string | null | undefined, fileName: string): boolean {
+  if (contentType === DOCX_MIME) return true;
+  return fileName.split(".").pop()?.toLowerCase() === "docx";
+}
+
+// Wrap mammoth's HTML fragment in a minimal, readable document. Rendered inside
+// a sandboxed iframe (no allow-scripts), so any markup in a malicious .docx is
+// inert — this is the document equivalent of the native PDF/image viewers.
+function buildDocxDocument(bodyHtml: string): string {
+  const body = bodyHtml.trim() || "<p>This document appears to be empty.</p>";
+  return `<!doctype html><html><head><meta charset="utf-8">
+<style>
+  html,body{margin:0;background:#fff;color:#1a1a1a}
+  body{font:14px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+       padding:40px 48px;max-width:820px;margin:0 auto}
+  h1,h2,h3,h4{line-height:1.25;margin:1.4em 0 .5em}
+  h1{font-size:1.6em}h2{font-size:1.35em}h3{font-size:1.15em}
+  p{margin:.6em 0}img{max-width:100%;height:auto}
+  table{border-collapse:collapse;width:100%;margin:1em 0;font-size:.95em}
+  td,th{border:1px solid #d0d0d0;padding:6px 10px;text-align:left;vertical-align:top}
+  ul,ol{margin:.6em 0;padding-left:1.6em}a{color:#1d4ed8}
+</style></head><body>${body}</body></html>`;
 }
 
 export const DocumentPreviewDialog = ({
@@ -45,6 +77,7 @@ export const DocumentPreviewDialog = ({
   bucket = "opportunity-documents",
 }: DocumentPreviewDialogProps) => {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [docxHtml, setDocxHtml] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
 
@@ -57,6 +90,18 @@ export const DocumentPreviewDialog = ({
         .from(bucket)
         .download(doc.file_path);
       if (dlError || !data) throw dlError;
+
+      // DOCX: convert to HTML client-side (mammoth) so no document content is
+      // ever sent to a third-party viewer. Loaded lazily to keep it out of the
+      // main bundle.
+      if (isDocxFile(doc.content_type, doc.file_name)) {
+        const arrayBuffer = await data.arrayBuffer();
+        const mod = await import("mammoth/mammoth.browser");
+        const convertToHtml = mod.convertToHtml ?? mod.default?.convertToHtml;
+        const { value } = await convertToHtml({ arrayBuffer });
+        setDocxHtml(buildDocxDocument(value));
+      }
+
       const ct = doc.content_type || "application/octet-stream";
       const blob = new Blob([data], { type: ct });
       const url = URL.createObjectURL(blob);
@@ -98,6 +143,7 @@ export const DocumentPreviewDialog = ({
       URL.revokeObjectURL(blobUrl);
       setBlobUrl(null);
     }
+    if (!next) setDocxHtml(null);
     setError(false);
     onOpenChange(next);
   };
@@ -107,6 +153,7 @@ export const DocumentPreviewDialog = ({
   const isImage = doc?.content_type?.startsWith("image/") ||
     ["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext);
   const isPdf = doc?.content_type === "application/pdf" || ext === "pdf";
+  const isDocx = doc ? isDocxFile(doc.content_type, doc.file_name) : false;
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -175,6 +222,15 @@ export const DocumentPreviewDialog = ({
                   </Button>
                 </div>
               </object>
+            ) : isDocx ? (
+              docxHtml ? (
+                <iframe
+                  srcDoc={docxHtml}
+                  title={doc?.file_name || "Document preview"}
+                  sandbox=""
+                  className="w-full h-full border-0 bg-white"
+                />
+              ) : null
             ) : (
               <iframe
                 src={blobUrl}
