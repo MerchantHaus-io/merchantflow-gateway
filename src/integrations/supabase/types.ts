@@ -1841,6 +1841,150 @@ export type Database = {
         }
         Relationships: []
       }
+      kurv_application_submissions: {
+        Row: {
+          account_id: string | null
+          account_number_last4: string | null
+          account_type: string | null
+          address1: string
+          address2: string | null
+          average_ticket: number | null
+          bank_name: string | null
+          business_start_date: string | null
+          business_type: string | null
+          city: string
+          country: string
+          created_at: string
+          dba_name: string | null
+          ein_last4: string | null
+          email: string
+          error_message: string | null
+          first_name: string
+          high_ticket: number | null
+          id: string
+          kurv_application_id: string | null
+          kurv_response: Json | null
+          kurv_status: string
+          last_name: string
+          legal_name: string
+          mcc: string | null
+          monthly_volume: number | null
+          opportunity_id: string | null
+          owner_dob: string | null
+          ownership_percent: number | null
+          phone: string
+          routing_number_last4: string | null
+          ssn_last4: string | null
+          state: string
+          submitted_by: string
+          submitted_by_email: string
+          submitted_payload: Json | null
+          title: string | null
+          updated_at: string
+          website_url: string | null
+          zip: string
+        }
+        Insert: {
+          account_id?: string | null
+          account_number_last4?: string | null
+          account_type?: string | null
+          address1: string
+          address2?: string | null
+          average_ticket?: number | null
+          bank_name?: string | null
+          business_start_date?: string | null
+          business_type?: string | null
+          city: string
+          country?: string
+          created_at?: string
+          dba_name?: string | null
+          ein_last4?: string | null
+          email: string
+          error_message?: string | null
+          first_name: string
+          high_ticket?: number | null
+          id?: string
+          kurv_application_id?: string | null
+          kurv_response?: Json | null
+          kurv_status?: string
+          last_name: string
+          legal_name: string
+          mcc?: string | null
+          monthly_volume?: number | null
+          opportunity_id?: string | null
+          owner_dob?: string | null
+          ownership_percent?: number | null
+          phone: string
+          routing_number_last4?: string | null
+          ssn_last4?: string | null
+          state: string
+          submitted_by: string
+          submitted_by_email: string
+          submitted_payload?: Json | null
+          title?: string | null
+          updated_at?: string
+          website_url?: string | null
+          zip: string
+        }
+        Update: {
+          account_id?: string | null
+          account_number_last4?: string | null
+          account_type?: string | null
+          address1?: string
+          address2?: string | null
+          average_ticket?: number | null
+          bank_name?: string | null
+          business_start_date?: string | null
+          business_type?: string | null
+          city?: string
+          country?: string
+          created_at?: string
+          dba_name?: string | null
+          ein_last4?: string | null
+          email?: string
+          error_message?: string | null
+          first_name?: string
+          high_ticket?: number | null
+          id?: string
+          kurv_application_id?: string | null
+          kurv_response?: Json | null
+          kurv_status?: string
+          last_name?: string
+          legal_name?: string
+          mcc?: string | null
+          monthly_volume?: number | null
+          opportunity_id?: string | null
+          owner_dob?: string | null
+          ownership_percent?: number | null
+          phone?: string
+          routing_number_last4?: string | null
+          ssn_last4?: string | null
+          state?: string
+          submitted_by?: string
+          submitted_by_email?: string
+          submitted_payload?: Json | null
+          title?: string | null
+          updated_at?: string
+          website_url?: string | null
+          zip?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kurv_application_submissions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kurv_application_submissions_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       nmi_boarding_submissions: {
         Row: {
           account_id: string | null

@@ -35,6 +35,7 @@ const SEARCH_ITEMS: SearchItem[] = [
   { title: "Preboarding Wizard", url: "/tools/preboarding-wizard", icon: Sparkles, keywords: "onboarding setup" },
   { title: "Partner Portal Guide", url: "/tools/gateway-guide", icon: CreditCard, keywords: "nmi gateway guide" },
   { title: "NMI Boarding", url: "/tools/nmi-boarding", icon: CreditCard, keywords: "gateway merchant board" },
+  { title: "Kurv Application", url: "/tools/kurv-application", icon: Send, keywords: "kurv ems application underwriting submit merchant" },
   { title: "Terminal Updates", url: "/tools/terminal-updates", icon: Sparkles, keywords: "changelog features" },
   { title: "Netlify Hub", url: "/tools/netlify", icon: Cloud, keywords: "deployment audit" },
   { title: "Administration", url: "/admin/administration", icon: Activity, keywords: "login tracking admin agenda" },

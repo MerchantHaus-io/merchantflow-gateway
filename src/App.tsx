@@ -51,6 +51,7 @@ import Outreach from "./pages/Outreach";
 import OutreachDetail from "./pages/OutreachDetail";
 import NetlifyHub from "./pages/NetlifyHub";
 import NMIBoarding from "./pages/NMIBoarding";
+import KurvApplication from "./pages/KurvApplication";
 import Integrations from "./pages/Integrations";
 import Transactions from "./pages/Transactions";
 import Calendar from "./pages/Calendar";
@@ -165,6 +166,7 @@ const App = () => (
                 <Route path="/tools/terminal-updates" element={<ProtectedRoute><TerminalUpdates /></ProtectedRoute>} />
                 <Route path="/tools/netlify" element={<ProtectedRoute><NetlifyHub /></ProtectedRoute>} />
                 <Route path="/tools/nmi-boarding" element={<ProtectedRoute><NMIBoarding /></ProtectedRoute>} />
+                <Route path="/tools/kurv-application" element={<ProtectedRoute><KurvApplication /></ProtectedRoute>} />
                 <Route path="/supported-processors" element={<ProtectedRoute><SupportedProcessors /></ProtectedRoute>} />
                 <Route path="/outreach" element={<ProtectedRoute><Outreach /></ProtectedRoute>} />
                 <Route path="/outreach/:id" element={<ProtectedRoute><OutreachDetail /></ProtectedRoute>} />

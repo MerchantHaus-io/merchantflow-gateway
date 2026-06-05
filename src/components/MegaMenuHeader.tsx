@@ -143,6 +143,7 @@ const navMain: NavGroup[] = [
     icon: Wrench,
     items: [
       { title: "Board Merchant", url: "/tools/nmi-boarding", icon: BadgeDollarSign, description: "Board merchants via NMI gateway" },
+      { title: "Kurv Application", url: "/tools/kurv-application", icon: Send, description: "Submit merchant applications to Kurv (EMS) underwriting" },
       { title: "Pre-Qualification Wizard", url: "/tools/preboarding-wizard", icon: ClipboardList, description: "Application readiness form" },
       { title: "Revenue Calculator", url: "/tools/revenue-calculator", icon: Calculator, description: "Estimate processing revenue" },
       { title: "CSV Import", url: "/tools/csv-import", icon: FileSpreadsheet, description: "Bulk import data" },
