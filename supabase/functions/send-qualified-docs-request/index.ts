@@ -16,6 +16,7 @@ interface QualifiedRequest {
   contact_first_name: string;
   missing_documents?: string[];
   website_changes?: string[];
+  recommended_actions?: string[];
   custom_html?: string;
   custom_subject?: string;
 }
