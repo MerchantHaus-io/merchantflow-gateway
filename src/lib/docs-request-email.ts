@@ -141,6 +141,7 @@ export const buildDocsRequestHtml = ({
       <p>${introText}</p>
       ${docsBlock}
       ${websiteBlock}
+      ${actionsBlock}
       <p>${websiteOnly ? "Once those updates are live, just reply and we'll move straight to final approval." : "Please complete our secure merchant application form to upload your documents and provide the required business details:"}</p>
       <p style="text-align: center;">
         <a href="${applyUrl}" class="cta">${ctaLabel}</a>
