@@ -34,6 +34,7 @@ export const buildDocsRequestHtml = ({
   opportunityId,
   missingDocs,
   websiteChanges,
+  recommendedActions,
 }: DocsRequestEmailInput): string => {
   const applyUrl = opportunityId
     ? `${MERCHANT_APPLY_BASE}?opp_id=${encodeURIComponent(opportunityId)}&utm_source=email&utm_medium=docs_request&utm_campaign=qualified`
@@ -41,7 +42,8 @@ export const buildDocsRequestHtml = ({
 
   const hasDocs = !!(missingDocs && missingDocs.length > 0);
   const hasWebsite = !!(websiteChanges && websiteChanges.length > 0);
-  const websiteOnly = hasWebsite && !hasDocs;
+  const hasActions = !!(recommendedActions && recommendedActions.length > 0);
+  const websiteOnly = hasWebsite && !hasDocs && !hasActions;
 
   const docListHtml = hasDocs
     ? missingDocs!.map((d) => `<li>${d}</li>`).join("\n")
@@ -54,18 +56,24 @@ export const buildDocsRequestHtml = ({
     ? websiteChanges!.map((w) => `<li>${w}</li>`).join("\n")
     : "";
 
+  const actionListHtml = hasActions
+    ? recommendedActions!.map((a) => `<li>${a}</li>`).join("\n")
+    : "";
+
   let introText: string;
   if (websiteOnly) {
     introText = `Thank you for choosing us to process payments for <strong>${accountName}</strong>. Your documents are looking great — we're almost there. As part of our standard pre-approval check, we noticed a few small adjustments to your website that, once in place, would help us move you to a smooth, fast approval (typically within about a month).`;
-  } else if (hasDocs && hasWebsite) {
-    introText = `We're progressing with your merchant application for <strong>${accountName}</strong>. To wrap things up, we still need a few outstanding items below — and a couple of small website tweaks that will help your approval go through smoothly.`;
+  } else if (hasDocs && (hasWebsite || hasActions)) {
+    introText = `We're progressing with your merchant application for <strong>${accountName}</strong>. To wrap things up, we still need a few outstanding items below — along with a couple of small adjustments that will help your approval go through smoothly.`;
   } else if (hasDocs) {
     introText = `We're progressing with your merchant application for <strong>${accountName}</strong>. To continue, we still require the following outstanding documents:`;
+  } else if (hasActions && !hasWebsite) {
+    introText = `Thanks for your patience with the application for <strong>${accountName}</strong>. Our underwriting team has reviewed your file and outlined a few next steps below that will help us move to final approval.`;
   } else {
     introText = `Great news — we've reviewed your inquiry for <strong>${accountName}</strong> and we'd love to move forward. To proceed with your merchant application, we'll need the following documents:`;
   }
 
-  const docsBlock = hasDocs || !hasWebsite
+  const docsBlock = hasDocs || (!hasWebsite && !hasActions)
     ? `
       <p><strong>Documents we still need:</strong></p>
       <ul class="doc-list">
@@ -86,6 +94,19 @@ export const buildDocsRequestHtml = ({
         <p style="font-size: 13px; color:#52525b; margin-bottom: 0;">
           If anything here is unclear or you'd like a second pair of eyes on the wording, just reply to this email — we're happy to help draft policy text or point to good examples.
         </p>
+      </div>`
+    : "";
+
+  const actionsBlock = hasActions
+    ? `
+      <div class="website-block">
+        <p style="margin-top:0;"><strong>Recommended next steps from underwriting</strong></p>
+        <p style="margin: 6px 0 10px; font-size: 14px; color:#3f3f46;">
+          A few items our underwriting team highlighted while reviewing your file. Addressing these helps us move to approval without further back-and-forth:
+        </p>
+        <ul class="doc-list">
+          ${actionListHtml}
+        </ul>
       </div>`
     : "";
 
