@@ -324,6 +324,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
     contactFirstName: string;
     missingDocs: string[];
     websiteChanges: string[];
+    recommendedActions: string[];
   } | null>(null);
 
   const handleSendToMerchant = useCallback(async () => {
@@ -335,7 +336,13 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
       .filter((r) => !r.met)
       .map((r) => r.requirement + (r.detail ? ` — ${r.detail}` : ""));
 
-    if (missingDocs.length === 0 && websiteChanges.length === 0) {
+    // Filter recommended actions: only include merchant-facing items (skip internal ops chatter)
+    const INTERNAL_KEYWORDS = /\b(internal|underwriter|underwriting team|escalate|risk team|ops|csr|csm|reserve|file note|do not share)\b/i;
+    const recommendedActions = (report.recommended_actions || [])
+      .map((a) => (a || "").trim())
+      .filter((a) => a.length > 0 && !INTERNAL_KEYWORDS.test(a));
+
+    if (missingDocs.length === 0 && websiteChanges.length === 0 && recommendedActions.length === 0) {
       toast.info("Nothing outstanding to request — report is clean.");
       return;
     }
@@ -355,13 +362,14 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
       return;
     }
 
-    const subject = buildDocsRequestSubject(accountName, missingDocs, websiteChanges);
+    const subject = buildDocsRequestSubject(accountName, missingDocs, websiteChanges, recommendedActions);
     const html = buildDocsRequestHtml({
       firstName: contactFirstName,
       accountName,
       opportunityId,
       missingDocs,
       websiteChanges,
+      recommendedActions,
     });
 
     sendContextRef.current = {
@@ -370,6 +378,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
       contactFirstName,
       missingDocs,
       websiteChanges,
+      recommendedActions,
     };
     setPreviewSubject(subject);
     setPreviewBody(html);
