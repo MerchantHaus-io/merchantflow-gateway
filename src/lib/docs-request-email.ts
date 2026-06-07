@@ -9,18 +9,22 @@ export interface DocsRequestEmailInput {
   opportunityId?: string;
   missingDocs?: string[];
   websiteChanges?: string[];
+  recommendedActions?: string[];
 }
 
 export const buildDocsRequestSubject = (
   accountName: string,
   missingDocs?: string[],
   websiteChanges?: string[],
+  recommendedActions?: string[],
 ): string => {
   const hasDocs = !!(missingDocs && missingDocs.length > 0);
   const hasWebsite = !!(websiteChanges && websiteChanges.length > 0);
-  const websiteOnly = hasWebsite && !hasDocs;
+  const hasActions = !!(recommendedActions && recommendedActions.length > 0);
+  const websiteOnly = hasWebsite && !hasDocs && !hasActions;
   if (websiteOnly) return `A few quick website updates for a smooth approval — ${accountName}`;
-  if (hasDocs && hasWebsite) return `Next steps for your application — ${accountName}`;
+  if (hasDocs && (hasWebsite || hasActions)) return `Next steps for your application — ${accountName}`;
+  if (!hasDocs && hasActions) return `Next steps for your application — ${accountName}`;
   return `Action Required — Complete Your Merchant Application — ${accountName}`;
 };
 
