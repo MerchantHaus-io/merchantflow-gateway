@@ -400,6 +400,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
             contact_first_name: ctx.contactFirstName,
             missing_documents: ctx.missingDocs,
             website_changes: ctx.websiteChanges,
+            recommended_actions: ctx.recommendedActions,
             custom_subject: subject,
             custom_html: bodyHtml,
           },
