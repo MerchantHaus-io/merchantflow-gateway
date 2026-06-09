@@ -1091,7 +1091,11 @@ export interface MsaPdfInput {
   billingCycle: "monthly" | "annual";
   platformBundleResale: number;
   lines: QuotePdfLine[];
+  /** Core gateway fees (monthly auth / per-transaction), enabled on the quote. */
+  gatewayFees?: QuotePdfInput["gatewayFees"];
   ancillary: QuotePdfAncillary[];
+  /** One-time activation fee, set only when charged on the accepted quote. */
+  activation?: QuotePdfInput["activation"];
   totals: QuotePdfInput["totals"];
   signatory: {
     name: string;
@@ -1313,6 +1317,16 @@ function msaExhibitAndSignature(doc: jsPDF, m: MsaPdfInput, totalPages: number) 
       l.bundled ? "Included" : `${money(l.resale)} / mo`,
     ]);
   });
+  // Core gateway fees — monthly auth folds into the recurring total; per-tx is metered.
+  (m.gatewayFees ?? []).forEach((f) => {
+    const detail =
+      f.cadence === "per_transaction"
+        ? `${f.description}\nVariable — billed on actual transaction volume.`
+        : f.description;
+    const price =
+      f.cadence === "monthly" ? `${money(f.resale)} / mo` : `${money(f.resale)} / txn`;
+    tableBody.push([f.label, detail, price]);
+  });
   m.ancillary.forEach((a) => {
     tableBody.push([
       a.label,
@@ -1322,6 +1336,14 @@ function msaExhibitAndSignature(doc: jsPDF, m: MsaPdfInput, totalPages: number) 
         : `${money(a.amount)} ${cadenceLabel(a.cadence)}`,
     ]);
   });
+  // One-time activation fee — disclosed on the agreement when charged.
+  if (m.activation && m.activation.amount > 0) {
+    tableBody.push([
+      m.activation.label,
+      "One-time gateway activation. The gateway account is activated upon receipt of payment.",
+      `${money(m.activation.amount)} one-time`,
+    ]);
+  }
 
   autoTable(doc, {
     startY: y,

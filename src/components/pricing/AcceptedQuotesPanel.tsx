@@ -69,6 +69,29 @@ interface FullQuote {
     enabled: boolean;
     perEvent?: { label: string; resale: number };
   }>;
+  // Rep-customizable extras persisted by the Quote Generator. Mirrors the
+  // shape the public acceptance page reads — gateway fees, ancillary, and the
+  // optional one-time activation fee all live here (NOT in lines_snapshot).
+  extras_snapshot?: {
+    gatewayFees?: Array<{
+      id: string;
+      label: string;
+      description: string;
+      resale: number;
+      cadence: "monthly" | "per_transaction";
+      enabled?: boolean;
+    }>;
+    ancillary?: Array<{
+      id: string;
+      label: string;
+      description: string;
+      amount: number;
+      cadence: "per_occurrence" | "monthly" | "annual" | "one_time";
+      enabled?: boolean;
+      waivedDescription?: string;
+    }>;
+    activation?: { enabled?: boolean; label: string; description?: string; amount: number } | null;
+  } | null;
 }
 
 const fmt = (n: number) =>
@@ -234,7 +257,7 @@ function GenerateContractDialog({
       const { data, error } = await supabase
         .from("quotes")
         .select(
-          "id, quote_number, tier_name, billing_cycle, monthly_resale, annual_resale, client_business_name, client_contact_name, client_email, client_phone, sender_name, sender_title, sender_company, sender_email, sender_phone, lines_snapshot",
+          "id, quote_number, tier_name, billing_cycle, monthly_resale, annual_resale, client_business_name, client_contact_name, client_email, client_phone, sender_name, sender_title, sender_company, sender_email, sender_phone, lines_snapshot, extras_snapshot",
         )
         .eq("id", summary.quote_id)
         .maybeSingle();
@@ -264,9 +287,52 @@ function GenerateContractDialog({
         bundled: l.bundled,
         perEvent: l.perEvent,
       }));
+    // Pull the rep-customizable extras the merchant actually accepted. These
+    // live in `extras_snapshot` (never lines_snapshot), so the MSA must read
+    // them through to disclose the full fee schedule that was signed.
+    const extras = quote.extras_snapshot ?? {};
+    const gatewayFees = asArray<NonNullable<typeof extras.gatewayFees>[number]>(extras.gatewayFees)
+      .filter((f) => f && f.enabled)
+      .map((f) => ({
+        id: f.id,
+        label: f.label,
+        description: f.description,
+        resale: f.resale,
+        cadence: f.cadence,
+      }));
+    const ancillary = asArray<NonNullable<typeof extras.ancillary>[number]>(extras.ancillary)
+      .filter((a) => a && a.enabled)
+      .map((a) => ({
+        id: a.id,
+        label: a.label,
+        description: a.description,
+        amount: a.amount,
+        cadence: a.cadence,
+        waived: a.amount === 0,
+        waivedDescription: a.waivedDescription,
+      }));
+    const activationRaw = extras.activation ?? null;
+    const activationCharged =
+      !!activationRaw && !!activationRaw.enabled && activationRaw.amount > 0;
+    const activation = activationCharged
+      ? { label: activationRaw!.label, amount: activationRaw!.amount }
+      : null;
+    // One-time total = one-time ancillary items + activation fee.
+    const oneTime =
+      ancillary
+        .filter((a) => a.cadence === "one_time" && !a.waived)
+        .reduce((s, a) => s + a.amount, 0) +
+      (activationCharged ? activationRaw!.amount : 0);
+
+    // Monthly recurring gateway auth fees fold into the platform-bundle residual
+    // so the bundle line doesn't absorb them; metered/per-tx fees do not.
+    const gatewayMonthlyResale = gatewayFees
+      .filter((f) => f.cadence === "monthly")
+      .reduce((s, f) => s + f.resale, 0);
     const platformBundleResale =
       quote.monthly_resale -
-      lines.reduce((s, l) => s + (l.bundled ? 0 : l.resale), 0);
+      lines.reduce((s, l) => s + (l.bundled ? 0 : l.resale), 0) -
+      gatewayMonthlyResale;
     return {
       agreementNumber: `MSA-${quote.quote_number}`,
       quoteNumber: quote.quote_number,
@@ -289,11 +355,13 @@ function GenerateContractDialog({
       billingCycle: quote.billing_cycle,
       platformBundleResale,
       lines,
-      ancillary: [], // ancillary defaults aren't persisted on the quote row; v1 omits
+      gatewayFees,
+      ancillary,
+      activation,
       totals: {
         monthlyResale: quote.monthly_resale,
         annualResale: quote.annual_resale,
-        oneTime: 0,
+        oneTime,
       },
       signatory: {
         name: summary.signatory_name ?? "—",
