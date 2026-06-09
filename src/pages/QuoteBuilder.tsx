@@ -15,8 +15,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { TIERS, type PricingTier } from "@/config/pricing";
-import { QuoteGeneratorDialog } from "@/components/pricing/QuoteGeneratorDialog";
+import {
+  QuoteGeneratorDialog,
+  type DraftQuote,
+} from "@/components/pricing/QuoteGeneratorDialog";
 import { AcceptedQuotesPanel } from "@/components/pricing/AcceptedQuotesPanel";
+import { SavedDraftsPanel } from "@/components/pricing/SavedDraftsPanel";
 import { toast } from "sonner";
 
 type BillingCycle = "monthly" | "annual";
@@ -56,6 +60,10 @@ export default function QuoteBuilder() {
   const [monthlyVolume, setMonthlyVolume] = useState("");
   const [averageTicket, setAverageTicket] = useState("");
   const [open, setOpen] = useState(false);
+  // When set, the generator opens hydrated from this saved draft for editing.
+  const [editingDraft, setEditingDraft] = useState<DraftQuote | null>(null);
+  // Bumped when the dialog closes so the Saved drafts panel refetches.
+  const [draftsRefresh, setDraftsRefresh] = useState(0);
 
   useEffect(() => {
     (async () => {
@@ -340,7 +348,10 @@ export default function QuoteBuilder() {
               </p>
               <Button
                 disabled={!canBuild}
-                onClick={() => setOpen(true)}
+                onClick={() => {
+                  setEditingDraft(null);
+                  setOpen(true);
+                }}
                 className="gap-2"
               >
                 <FileSignature className="h-4 w-4" />
@@ -349,20 +360,57 @@ export default function QuoteBuilder() {
             </div>
           </div>
 
+          <SavedDraftsPanel
+            refreshSignal={draftsRefresh}
+            onEdit={(draft) => {
+              setEditingDraft(draft);
+              setOpen(true);
+            }}
+          />
+
           <AcceptedQuotesPanel />
         </div>
       </div>
 
       {open && (
         <QuoteGeneratorDialog
-          tier={tier}
-          billing={billing}
+          tier={
+            editingDraft
+              ? (TIERS.find((t) => t.id === editingDraft.tier_id) ?? tier)
+              : tier
+          }
+          billing={
+            editingDraft
+              ? editingDraft.billing_cycle === "annual"
+                ? "annual"
+                : "monthly"
+              : billing
+          }
           open={open}
-          onOpenChange={setOpen}
-          initialClient={initialClient}
-          opportunityId={selectedOpp?.id ?? null}
-          accountId={selectedOpp?.account?.id ?? null}
-          contactId={contactId || selectedOpp?.contact?.id || null}
+          onOpenChange={(v) => {
+            setOpen(v);
+            if (!v) {
+              // Closing — clear edit context and refresh the drafts list so a
+              // newly-saved (or just-sent) quote is reflected immediately.
+              setEditingDraft(null);
+              setDraftsRefresh((n) => n + 1);
+            }
+          }}
+          draft={editingDraft}
+          initialClient={editingDraft ? undefined : initialClient}
+          opportunityId={
+            editingDraft ? editingDraft.opportunity_id : (selectedOpp?.id ?? null)
+          }
+          accountId={
+            editingDraft
+              ? editingDraft.account_id
+              : (selectedOpp?.account?.id ?? null)
+          }
+          contactId={
+            editingDraft
+              ? editingDraft.contact_id
+              : contactId || selectedOpp?.contact?.id || null
+          }
         />
       )}
     </AppLayout>

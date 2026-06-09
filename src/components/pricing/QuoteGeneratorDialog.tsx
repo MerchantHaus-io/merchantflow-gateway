@@ -10,6 +10,7 @@ import {
   Landmark,
   Mail,
   Pencil,
+  Save,
   Send,
   Sparkles,
   User,
@@ -228,12 +229,54 @@ const buildLinesForTier = (tierId: TierId): EditableLine[] =>
     };
   });
 
+/**
+ * A previously-saved draft quote, loaded back into the generator so a rep can
+ * pick up where they left off. Carries the persisted snapshot (lines + extras)
+ * plus the original quote number / acceptance token so re-saving upserts the
+ * SAME row rather than spawning a duplicate.
+ */
+export interface DraftQuote {
+  id: string;
+  quote_number: string;
+  acceptance_token: string | null;
+  created_at: string;
+  updated_at?: string | null;
+  tier_id: string;
+  tier_name?: string | null;
+  billing_cycle: string;
+  status?: string;
+  monthly_resale?: number | null;
+  opportunity_id: string | null;
+  account_id: string | null;
+  contact_id: string | null;
+  client_business_name: string | null;
+  client_contact_name: string | null;
+  client_email: string | null;
+  client_phone: string | null;
+  client_monthly_volume: string | null;
+  client_average_ticket: string | null;
+  client_notes: string | null;
+  sender_name: string | null;
+  sender_title: string | null;
+  sender_company: string | null;
+  sender_email: string | null;
+  sender_phone: string | null;
+  lines_snapshot: unknown;
+  extras_snapshot: unknown;
+}
+
 interface QuoteGeneratorDialogProps {
   tier?: PricingTier;
   billing?: BillingCycle;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialClient?: Partial<ClientDetails>;
+  /**
+   * When set, the dialog hydrates from this saved draft instead of starting
+   * fresh — keeping its quote number, acceptance token, line items and extras
+   * so the rep can keep editing and re-save onto the same row.
+   */
+  draft?: DraftQuote | null;
   /** CRM linkage — when set, the persisted quote row is tied back to these records. */
   opportunityId?: string | null;
   accountId?: string | null;
@@ -246,6 +289,7 @@ export function QuoteGeneratorDialog({
   open,
   onOpenChange,
   initialClient,
+  draft,
   opportunityId,
   accountId,
   contactId,
@@ -274,11 +318,12 @@ export function QuoteGeneratorDialog({
   const [activation, setActivation] = useState<EditableActivation>(
     () => buildActivation(),
   );
-  const [quoteNumber] = useState<string>(() => buildQuoteNumber());
-  const [acceptanceToken] = useState<string>(() => buildAcceptanceToken());
-  const [createdOn] = useState<string>(() => todayLabel());
+  const [quoteNumber, setQuoteNumber] = useState<string>(() => buildQuoteNumber());
+  const [acceptanceToken, setAcceptanceToken] = useState<string>(() => buildAcceptanceToken());
+  const [createdOn, setCreatedOn] = useState<string>(() => todayLabel());
   const [tab, setTab] = useState<"build" | "preview">("build");
   const [sending, setSending] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
   const previewRef = useRef<HTMLDivElement | null>(null);
 
   const acceptanceUrl = useMemo(
@@ -286,9 +331,88 @@ export function QuoteGeneratorDialog({
     [acceptanceToken],
   );
 
-  // Re-sync when dialog opens with new context.
+  // Re-sync when dialog opens with new context. When a `draft` is supplied we
+  // rehydrate the full saved snapshot (so the rep continues exactly where they
+  // left off); otherwise we start a brand-new quote with fresh identifiers.
   useEffect(() => {
     if (!open) return;
+
+    if (draft) {
+      const id: TierId =
+        (draft.tier_id as TierId) in TIER_PLATFORM_FEE
+          ? (draft.tier_id as TierId)
+          : TIERS[0].id;
+      const extras = (draft.extras_snapshot ?? {}) as {
+        ancillary?: EditableAncillary[];
+        gatewayFees?: EditableGatewayFee[];
+        activation?: EditableActivation;
+        platformCost?: number;
+        platformResale?: number;
+      };
+      const storedLines = Array.isArray(draft.lines_snapshot)
+        ? (draft.lines_snapshot as EditableLine[])
+        : [];
+      // Recover the sender address (not persisted on the row) from the roster.
+      const matchedSender = QUOTE_SENDERS.find(
+        (s) => s.email && s.email === draft.sender_email,
+      );
+
+      setClient({
+        businessName: draft.client_business_name ?? "",
+        contactName: draft.client_contact_name ?? "",
+        email: draft.client_email ?? "",
+        phone: draft.client_phone ?? "",
+        monthlyVolume: draft.client_monthly_volume ?? "",
+        averageTicket: draft.client_average_ticket ?? "",
+        notes: draft.client_notes ?? "",
+      });
+      setSender({
+        name: draft.sender_name ?? "",
+        title: draft.sender_title ?? "",
+        company: draft.sender_company ?? DEFAULT_QUOTE_SENDER.company,
+        email: draft.sender_email ?? "",
+        phone: draft.sender_phone ?? "",
+        address: matchedSender?.address ?? DEFAULT_QUOTE_SENDER.address,
+      });
+      setSelectedTierId(id);
+      setBilling(draft.billing_cycle === "annual" ? "annual" : "monthly");
+      setPlatformCost(
+        typeof extras.platformCost === "number"
+          ? extras.platformCost
+          : TIER_PLATFORM_FEE[id].cost,
+      );
+      setPlatformResale(
+        typeof extras.platformResale === "number"
+          ? extras.platformResale
+          : TIER_PLATFORM_FEE[id].resale,
+      );
+      setLines(storedLines.length ? storedLines : buildLinesForTier(id));
+      setAncillary(
+        Array.isArray(extras.ancillary) && extras.ancillary.length
+          ? extras.ancillary
+          : buildAncillaryDefaults(),
+      );
+      setGatewayFees(
+        Array.isArray(extras.gatewayFees) && extras.gatewayFees.length
+          ? extras.gatewayFees
+          : buildGatewayFees(),
+      );
+      setActivation(extras.activation ?? buildActivation());
+      setQuoteNumber(draft.quote_number);
+      setAcceptanceToken(draft.acceptance_token ?? buildAcceptanceToken());
+      setCreatedOn(
+        draft.created_at
+          ? new Date(draft.created_at).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })
+          : todayLabel(),
+      );
+      setTab("build");
+      return;
+    }
+
     setClient({ ...EMPTY_CLIENT, ...(initialClient ?? {}) });
     const id: TierId = (tierProp?.id as TierId) ?? selectedTierId;
     setSelectedTierId(id);
@@ -300,6 +424,9 @@ export function QuoteGeneratorDialog({
     setGatewayFees(buildGatewayFees());
     setActivation(buildActivation());
     setSender({ ...DEFAULT_QUOTE_SENDER });
+    setQuoteNumber(buildQuoteNumber());
+    setAcceptanceToken(buildAcceptanceToken());
+    setCreatedOn(todayLabel());
     setTab("build");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
@@ -646,7 +773,7 @@ export function QuoteGeneratorDialog({
 
   const autoSaveEnabled = open && !finalized && !!client.businessName.trim();
 
-  const { status: autoSaveStatus, resetInitialData } = useAutoSave({
+  const { status: autoSaveStatus, resetInitialData, markSaved } = useAutoSave({
     data: autoSaveData,
     delay: 1000,
     enabled: autoSaveEnabled,
@@ -663,6 +790,29 @@ export function QuoteGeneratorDialog({
       resetInitialData();
     }
   }, [open, resetInitialData]);
+
+  // Explicit "Save draft" — persists the current state as a draft so the rep
+  // can close the dialog and resume editing later from the Saved drafts panel.
+  // Complements the silent auto-save by giving an unambiguous, confirmable
+  // action (and it works even if auto-save hasn't fired yet).
+  const handleSaveDraft = async () => {
+    if (!client.businessName.trim()) {
+      toast.error("Add a business name before saving the draft.");
+      return;
+    }
+    try {
+      setSavingDraft(true);
+      const { error } = await persistQuote("draft");
+      if (error) throw error;
+      // Re-baseline so auto-save doesn't immediately re-fire on the same data.
+      markSaved();
+      toast.success("Draft saved — reopen it any time from “Saved drafts”.");
+    } catch (err: any) {
+      toast.error(`Couldn't save draft: ${err?.message ?? err}`);
+    } finally {
+      setSavingDraft(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -1380,6 +1530,22 @@ export function QuoteGeneratorDialog({
         <DialogFooter className="px-3 sm:px-6 py-3 border-t bg-background gap-2 flex-row flex-wrap [&>*]:flex-1 sm:[&>*]:flex-none">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleSaveDraft}
+            disabled={savingDraft || finalized}
+            aria-disabled={savingDraft || finalized}
+          >
+            {savingDraft ? (
+              <>
+                <Save className="h-4 w-4 mr-2 animate-pulse" /> Saving…
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4 mr-2" /> Save draft
+              </>
+            )}
           </Button>
           {tab === "build" ? (
             <Button variant="secondary" onClick={() => setTab("preview")}>
