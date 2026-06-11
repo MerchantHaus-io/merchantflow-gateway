@@ -3,69 +3,73 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TasksProvider } from "@/contexts/TasksContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
-import Index from "./pages/Index";
-import Home from "./pages/Home";
-import NotFound from "./pages/NotFound";
-import Accounts from "./pages/Accounts";
-import Contacts from "./pages/Contacts";
-import Documents from "./pages/Documents";
-import Reports from "./pages/Reports";
-import Settings from "./pages/Settings";
-import TeamRoster from "./pages/TeamRoster";
-import Auth from "./pages/Auth";
-import Login from "./pages/Login";
-import ForgotPassword from "./pages/ForgotPassword";
-import UpdatePassword from "./pages/UpdatePassword";
-import Apply from "./pages/Apply";
-import Contact from "./pages/Contact";
-import SOP from "./pages/SOP";
-import Training from "./pages/Training";
-import RevenueCalculator from "./pages/RevenueCalculator";
-import PreboardingWizard from "./pages/PreboardingWizard";
-import Tasks from "./pages/Tasks";
-import MyTasks from "./pages/MyTasks";
-import CsvImport from "./pages/CsvImport";
-import Notifications from "./pages/Notifications";
-import DeletionRequests from "./pages/DeletionRequests";
-import DataExport from "./pages/DataExport";
-import Opportunities from "./pages/Opportunities";
-import OpportunityDetail from "./pages/OpportunityDetail";
-
-import NMIPaymentsExplained from "./pages/NMIPaymentsExplained";
-import GatewayGuide from "./pages/GatewayGuide";
-import Pricing from "./pages/Pricing";
-import TerminalUpdates from "./pages/TerminalUpdates";
-import WebSubmissions from "./pages/WebSubmissions";
-import MerchantApply from "./pages/MerchantApply";
-import TermsProcessing from "./pages/TermsProcessing";
-import LiveBilling from "./pages/LiveBilling";
-import LiveAccountDetail from "./pages/LiveAccountDetail";
-import SupportedProcessors from "./pages/SupportedProcessors";
-import Administration from "./pages/Administration";
-import Outreach from "./pages/Outreach";
-import OutreachDetail from "./pages/OutreachDetail";
-import NetlifyHub from "./pages/NetlifyHub";
-import NMIBoarding from "./pages/NMIBoarding";
-import Integrations from "./pages/Integrations";
-import Transactions from "./pages/Transactions";
-import Calendar from "./pages/Calendar";
-import Commissions from "./pages/Commissions";
-import QuoteBuilder from "./pages/QuoteBuilder";
-import QuoteAcceptance from "./pages/QuoteAcceptance";
-import QuotesContracts from "./pages/QuotesContracts";
-import Referrers from "./pages/Referrers";
 import { ReferrerRoute } from "./components/ReferrerRoute";
-import PortalDashboard from "./pages/portal/PortalDashboard";
-import PortalNewReferral from "./pages/portal/PortalNewReferral";
-import PortalCommissions from "./pages/portal/PortalCommissions";
-import SupportTriage from "./pages/SupportTriage";
-import SupportTicketDetail from "./pages/SupportTicketDetail";
-import SupportRequest from "./pages/SupportRequest";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+
+// Pages are lazy-loaded so each route ships as its own chunk, keeping the
+// initial bundle small and deferring heavy deps (three/jspdf/mammoth/recharts)
+// until the route that needs them is actually visited.
+const Index = lazy(() => import("./pages/Index"));
+const Home = lazy(() => import("./pages/Home"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const Accounts = lazy(() => import("./pages/Accounts"));
+const Contacts = lazy(() => import("./pages/Contacts"));
+const Documents = lazy(() => import("./pages/Documents"));
+const Reports = lazy(() => import("./pages/Reports"));
+const Settings = lazy(() => import("./pages/Settings"));
+const TeamRoster = lazy(() => import("./pages/TeamRoster"));
+const Auth = lazy(() => import("./pages/Auth"));
+const Login = lazy(() => import("./pages/Login"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const UpdatePassword = lazy(() => import("./pages/UpdatePassword"));
+const Apply = lazy(() => import("./pages/Apply"));
+const Contact = lazy(() => import("./pages/Contact"));
+const SOP = lazy(() => import("./pages/SOP"));
+const Training = lazy(() => import("./pages/Training"));
+const RevenueCalculator = lazy(() => import("./pages/RevenueCalculator"));
+const PreboardingWizard = lazy(() => import("./pages/PreboardingWizard"));
+const Tasks = lazy(() => import("./pages/Tasks"));
+const MyTasks = lazy(() => import("./pages/MyTasks"));
+const CsvImport = lazy(() => import("./pages/CsvImport"));
+const Notifications = lazy(() => import("./pages/Notifications"));
+const DeletionRequests = lazy(() => import("./pages/DeletionRequests"));
+const DataExport = lazy(() => import("./pages/DataExport"));
+const Opportunities = lazy(() => import("./pages/Opportunities"));
+const OpportunityDetail = lazy(() => import("./pages/OpportunityDetail"));
+const NMIPaymentsExplained = lazy(() => import("./pages/NMIPaymentsExplained"));
+const GatewayGuide = lazy(() => import("./pages/GatewayGuide"));
+const Pricing = lazy(() => import("./pages/Pricing"));
+const TerminalUpdates = lazy(() => import("./pages/TerminalUpdates"));
+const WebSubmissions = lazy(() => import("./pages/WebSubmissions"));
+const MerchantApply = lazy(() => import("./pages/MerchantApply"));
+const TermsProcessing = lazy(() => import("./pages/TermsProcessing"));
+const LiveBilling = lazy(() => import("./pages/LiveBilling"));
+const LiveAccountDetail = lazy(() => import("./pages/LiveAccountDetail"));
+const SupportedProcessors = lazy(() => import("./pages/SupportedProcessors"));
+const Administration = lazy(() => import("./pages/Administration"));
+const Outreach = lazy(() => import("./pages/Outreach"));
+const OutreachDetail = lazy(() => import("./pages/OutreachDetail"));
+const NetlifyHub = lazy(() => import("./pages/NetlifyHub"));
+const NMIBoarding = lazy(() => import("./pages/NMIBoarding"));
+const Integrations = lazy(() => import("./pages/Integrations"));
+const Transactions = lazy(() => import("./pages/Transactions"));
+const Calendar = lazy(() => import("./pages/Calendar"));
+const Commissions = lazy(() => import("./pages/Commissions"));
+const QuoteBuilder = lazy(() => import("./pages/QuoteBuilder"));
+const QuoteAcceptance = lazy(() => import("./pages/QuoteAcceptance"));
+const QuotesContracts = lazy(() => import("./pages/QuotesContracts"));
+const Referrers = lazy(() => import("./pages/Referrers"));
+const PortalDashboard = lazy(() => import("./pages/portal/PortalDashboard"));
+const PortalNewReferral = lazy(() => import("./pages/portal/PortalNewReferral"));
+const PortalCommissions = lazy(() => import("./pages/portal/PortalCommissions"));
+const SupportTriage = lazy(() => import("./pages/SupportTriage"));
+const SupportTicketDetail = lazy(() => import("./pages/SupportTicketDetail"));
+const SupportRequest = lazy(() => import("./pages/SupportRequest"));
 import { IncomingCallToast } from "./components/IncomingCallToast";
 import { IncomingMessageToast } from "./components/IncomingMessageToast";
 import { Dialler } from "./components/Dialler";
@@ -92,6 +96,12 @@ const InternalWidgets = () => {
   );
 };
 
+const RouteFallback = () => (
+  <div className="flex h-screen w-full items-center justify-center">
+    <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-primary" />
+  </div>
+);
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -113,6 +123,7 @@ const App = () => (
           <AuthProvider>
             <TasksProvider>
               <InternalWidgets />
+              <Suspense fallback={<RouteFallback />}>
               <Routes>
                 {/* Public routes */}
                 <Route path="/auth" element={<Auth />} />
@@ -186,6 +197,7 @@ const App = () => (
 
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              </Suspense>
             </TasksProvider>
           </AuthProvider>
           </ErrorBoundary>
