@@ -1390,8 +1390,9 @@ export default function OfficeChat({
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(W, H);
-    // Cap pixel ratio — chat view doesn't need retina rendering at full resolution
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    // Cap pixel ratio at 2 (full retina) for crisp rendering, while protecting
+    // very high-DPI screens (e.g. dpr 3 mobile) from an outsized perf hit.
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
     mountRef.current.appendChild(renderer.domElement);
 
@@ -1578,7 +1579,7 @@ export default function OfficeChat({
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     };
     window.addEventListener("resize", onResize);
 
