@@ -433,7 +433,11 @@ const LiveBilling = () => {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => navigate(`/live-billing/${g.account_id}#close`)}
+                              onClick={() => setCloseTarget({
+                                accountId: g.account_id,
+                                accountName: g.account?.name || "Unknown",
+                                nmiMerchantId: g.account?.nmi_merchant_id ?? null,
+                              })}
                             >
                               <XCircle className="h-4 w-4" />
                             </Button>
@@ -455,6 +459,15 @@ const LiveBilling = () => {
           onOpenChange={(o) => { if (!o) setLinkTarget(null); }}
           accountId={linkTarget.accountId}
           accountName={linkTarget.accountName}
+        />
+      )}
+      {closeTarget && (
+        <CloseAccountDialog
+          open={!!closeTarget}
+          onOpenChange={(o) => { if (!o) setCloseTarget(null); }}
+          accountId={closeTarget.accountId}
+          accountName={closeTarget.accountName}
+          nmiMerchantId={closeTarget.nmiMerchantId}
         />
       )}
     </AppLayout>
