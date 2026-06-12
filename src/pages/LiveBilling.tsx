@@ -329,22 +329,36 @@ const LiveBilling = () => {
                         )}
                       </div>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full mt-2 h-8 text-xs gap-1.5 text-destructive border-destructive/40 hover:bg-destructive/10"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCloseTarget({
-                          accountId: g.account_id,
-                          accountName: g.account?.name || "Unknown",
-                          nmiMerchantId: g.account?.nmi_merchant_id ?? null,
-                        });
-                      }}
-                    >
-                      <XCircle className="h-3.5 w-3.5" />
-                      Close Account
-                    </Button>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-xs gap-1.5"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setInvoiceTarget({ accountId: g.account_id, accountName: g.account?.name || "Unknown" });
+                        }}
+                      >
+                        <Receipt className="h-3.5 w-3.5" />
+                        Invoice
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-xs gap-1.5 text-destructive border-destructive/40 hover:bg-destructive/10"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCloseTarget({
+                            accountId: g.account_id,
+                            accountName: g.account?.name || "Unknown",
+                            nmiMerchantId: g.account?.nmi_merchant_id ?? null,
+                          });
+                        }}
+                      >
+                        <XCircle className="h-3.5 w-3.5" />
+                        Close
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               );
