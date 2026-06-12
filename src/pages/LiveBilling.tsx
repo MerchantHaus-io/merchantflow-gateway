@@ -10,9 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Zap, CreditCard, Users, TrendingUp, Calendar, XCircle, Link2 } from "lucide-react";
+import { Search, Zap, CreditCard, Users, TrendingUp, Calendar, XCircle, Link2, Receipt } from "lucide-react";
 import { LinkGatewayDialog } from "@/components/live-billing/LinkGatewayDialog";
 import { CloseAccountDialog } from "@/components/live-billing/CloseAccountDialog";
+import { BillingDocDialog } from "@/components/live-billing/BillingDocDialog";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { PricingBadges } from "@/components/PricingBadges";
@@ -43,6 +44,7 @@ const LiveBilling = () => {
   const [filterPipeline, setFilterPipeline] = useState<string>("all");
   const [linkTarget, setLinkTarget] = useState<{ accountId: string; accountName: string } | null>(null);
   const [closeTarget, setCloseTarget] = useState<{ accountId: string; accountName: string; nmiMerchantId?: string | null } | null>(null);
+  const [invoiceTarget, setInvoiceTarget] = useState<{ accountId: string; accountName: string } | null>(null);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { teamMemberName } = useAuth();
@@ -327,22 +329,36 @@ const LiveBilling = () => {
                         )}
                       </div>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full mt-2 h-8 text-xs gap-1.5 text-destructive border-destructive/40 hover:bg-destructive/10"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCloseTarget({
-                          accountId: g.account_id,
-                          accountName: g.account?.name || "Unknown",
-                          nmiMerchantId: g.account?.nmi_merchant_id ?? null,
-                        });
-                      }}
-                    >
-                      <XCircle className="h-3.5 w-3.5" />
-                      Close Account
-                    </Button>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-xs gap-1.5"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setInvoiceTarget({ accountId: g.account_id, accountName: g.account?.name || "Unknown" });
+                        }}
+                      >
+                        <Receipt className="h-3.5 w-3.5" />
+                        Invoice
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-xs gap-1.5 text-destructive border-destructive/40 hover:bg-destructive/10"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCloseTarget({
+                            accountId: g.account_id,
+                            accountName: g.account?.name || "Unknown",
+                            nmiMerchantId: g.account?.nmi_merchant_id ?? null,
+                          });
+                        }}
+                      >
+                        <XCircle className="h-3.5 w-3.5" />
+                        Close
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               );
@@ -427,23 +443,38 @@ const LiveBilling = () => {
                         )}
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => setCloseTarget({
-                                accountId: g.account_id,
-                                accountName: g.account?.name || "Unknown",
-                                nmiMerchantId: g.account?.nmi_merchant_id ?? null,
-                              })}
-                            >
-                              <XCircle className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Close Account</TooltipContent>
-                        </Tooltip>
+                        <div className="flex items-center gap-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                onClick={() => setInvoiceTarget({ accountId: g.account_id, accountName: g.account?.name || "Unknown" })}
+                              >
+                                <Receipt className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>New Invoice / Receipt</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => setCloseTarget({
+                                  accountId: g.account_id,
+                                  accountName: g.account?.name || "Unknown",
+                                  nmiMerchantId: g.account?.nmi_merchant_id ?? null,
+                                })}
+                              >
+                                <XCircle className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Close Account</TooltipContent>
+                          </Tooltip>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
@@ -468,6 +499,14 @@ const LiveBilling = () => {
           accountId={closeTarget.accountId}
           accountName={closeTarget.accountName}
           nmiMerchantId={closeTarget.nmiMerchantId}
+        />
+      )}
+      {invoiceTarget && (
+        <BillingDocDialog
+          open={!!invoiceTarget}
+          onOpenChange={(o) => { if (!o) setInvoiceTarget(null); }}
+          accountId={invoiceTarget.accountId}
+          accountName={invoiceTarget.accountName}
         />
       )}
     </AppLayout>

@@ -102,3 +102,6 @@ verify_jwt = false
 
 [functions.nmi-close-gateway]
 verify_jwt = false
+
+[functions.send-billing-doc]
+verify_jwt = false

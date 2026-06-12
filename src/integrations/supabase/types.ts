@@ -663,6 +663,141 @@ export type Database = {
           },
         ]
       }
+      billing_doc_sequences: {
+        Row: {
+          doc_type: string
+          last_value: number
+          year: number
+        }
+        Insert: {
+          doc_type: string
+          last_value?: number
+          year: number
+        }
+        Update: {
+          doc_type?: string
+          last_value?: number
+          year?: number
+        }
+        Relationships: []
+      }
+      billing_documents: {
+        Row: {
+          account_id: string
+          amount_paid: number
+          ancillary_fees: Json
+          billing_cycle: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          doc_number: string
+          doc_type: string
+          due_date: string | null
+          gateway_tier: string | null
+          id: string
+          issued_date: string
+          line_items: Json
+          merchant_email: string | null
+          merchant_name: string | null
+          merchant_phone: string | null
+          notes: string | null
+          opportunity_id: string | null
+          paid_date: string | null
+          pdf_path: string | null
+          period_end: string | null
+          period_start: string | null
+          sender: Json | null
+          sent_at: string | null
+          sent_to: string[] | null
+          status: string
+          subtotal: number
+          tax: number
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          amount_paid?: number
+          ancillary_fees?: Json
+          billing_cycle?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          doc_number: string
+          doc_type: string
+          due_date?: string | null
+          gateway_tier?: string | null
+          id?: string
+          issued_date?: string
+          line_items?: Json
+          merchant_email?: string | null
+          merchant_name?: string | null
+          merchant_phone?: string | null
+          notes?: string | null
+          opportunity_id?: string | null
+          paid_date?: string | null
+          pdf_path?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          sender?: Json | null
+          sent_at?: string | null
+          sent_to?: string[] | null
+          status?: string
+          subtotal?: number
+          tax?: number
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          amount_paid?: number
+          ancillary_fees?: Json
+          billing_cycle?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          doc_number?: string
+          doc_type?: string
+          due_date?: string | null
+          gateway_tier?: string | null
+          id?: string
+          issued_date?: string
+          line_items?: Json
+          merchant_email?: string | null
+          merchant_name?: string | null
+          merchant_phone?: string | null
+          notes?: string | null
+          opportunity_id?: string | null
+          paid_date?: string | null
+          pdf_path?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          sender?: Json | null
+          sent_at?: string | null
+          sent_to?: string[] | null
+          status?: string
+          subtotal?: number
+          tax?: number
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_documents_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_documents_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       broadcast_acknowledgments: {
         Row: {
           acknowledged_at: string
@@ -3552,6 +3687,10 @@ export type Database = {
       link_opportunity_to_referrer: {
         Args: { p_application_email: string; p_opportunity_id: string }
         Returns: undefined
+      }
+      next_billing_doc_number: {
+        Args: { p_doc_type: string; p_year: number }
+        Returns: string
       }
       post_system_chat_message: {
         Args: { p_channel_name?: string; p_content: string }

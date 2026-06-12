@@ -45,6 +45,7 @@ import logoDark from "@/assets/ps-terminal-logo.png";
 import logoLight from "@/assets/ps-terminal-logo.png";
 import liveBadge from "@/assets/live-badge.webp";
 import { CloseAccountDialog } from "@/components/live-billing/CloseAccountDialog";
+import { BillingDocsPanel } from "@/components/live-billing/BillingDocsPanel";
 
 import { NAME_TO_EMAIL } from "@/config/team";
 const TEAM_EMAIL_MAP: Record<string, string> = NAME_TO_EMAIL;
@@ -676,6 +677,11 @@ const LiveAccountDetail = () => {
               />
             </div>
           )}
+
+          {/* Invoices & Receipts */}
+          <div className="mt-6">
+            <BillingDocsPanel accountId={accountId!} accountName={account?.name || "Account"} />
+          </div>
 
           {/* Client Interaction Log */}
           <div className="mt-6">
