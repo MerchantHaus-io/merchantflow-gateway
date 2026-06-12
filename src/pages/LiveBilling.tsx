@@ -429,23 +429,38 @@ const LiveBilling = () => {
                         )}
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => setCloseTarget({
-                                accountId: g.account_id,
-                                accountName: g.account?.name || "Unknown",
-                                nmiMerchantId: g.account?.nmi_merchant_id ?? null,
-                              })}
-                            >
-                              <XCircle className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Close Account</TooltipContent>
-                        </Tooltip>
+                        <div className="flex items-center gap-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                onClick={() => setInvoiceTarget({ accountId: g.account_id, accountName: g.account?.name || "Unknown" })}
+                              >
+                                <Receipt className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>New Invoice / Receipt</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => setCloseTarget({
+                                  accountId: g.account_id,
+                                  accountName: g.account?.name || "Unknown",
+                                  nmiMerchantId: g.account?.nmi_merchant_id ?? null,
+                                })}
+                              >
+                                <XCircle className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Close Account</TooltipContent>
+                          </Tooltip>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
