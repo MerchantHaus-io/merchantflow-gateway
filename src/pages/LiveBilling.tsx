@@ -501,6 +501,14 @@ const LiveBilling = () => {
           nmiMerchantId={closeTarget.nmiMerchantId}
         />
       )}
+      {invoiceTarget && (
+        <BillingDocDialog
+          open={!!invoiceTarget}
+          onOpenChange={(o) => { if (!o) setInvoiceTarget(null); }}
+          accountId={invoiceTarget.accountId}
+          accountName={invoiceTarget.accountName}
+        />
+      )}
     </AppLayout>
   );
 };
