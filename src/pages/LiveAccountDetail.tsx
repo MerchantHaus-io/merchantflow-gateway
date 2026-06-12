@@ -678,6 +678,11 @@ const LiveAccountDetail = () => {
             </div>
           )}
 
+          {/* Invoices & Receipts */}
+          <div className="mt-6">
+            <BillingDocsPanel accountId={accountId!} accountName={account?.name || "Account"} />
+          </div>
+
           {/* Client Interaction Log */}
           <div className="mt-6">
             <ClientInteractionLog
