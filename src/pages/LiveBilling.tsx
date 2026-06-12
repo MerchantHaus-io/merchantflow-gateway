@@ -44,6 +44,7 @@ const LiveBilling = () => {
   const [filterPipeline, setFilterPipeline] = useState<string>("all");
   const [linkTarget, setLinkTarget] = useState<{ accountId: string; accountName: string } | null>(null);
   const [closeTarget, setCloseTarget] = useState<{ accountId: string; accountName: string; nmiMerchantId?: string | null } | null>(null);
+  const [invoiceTarget, setInvoiceTarget] = useState<{ accountId: string; accountName: string } | null>(null);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { teamMemberName } = useAuth();
