@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Zap, CreditCard, Users, TrendingUp, Calendar, XCircle } from "lucide-react";
+import { Search, Zap, CreditCard, Users, TrendingUp, Calendar, XCircle, Link2 } from "lucide-react";
+import { LinkGatewayDialog } from "@/components/live-billing/LinkGatewayDialog";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { PricingBadges } from "@/components/PricingBadges";
@@ -39,6 +40,7 @@ const LiveBilling = () => {
   const [search, setSearch] = useState("");
   const [filterAssignee, setFilterAssignee] = useState<string>("all");
   const [filterPipeline, setFilterPipeline] = useState<string>("all");
+  const [linkTarget, setLinkTarget] = useState<{ accountId: string; accountName: string } | null>(null);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { teamMemberName } = useAuth();
@@ -275,9 +277,20 @@ const LiveBilling = () => {
                         <h3 className="font-semibold text-sm text-foreground truncate">
                           {g.account?.name || "Unknown"}
                         </h3>
-                        {g.account?.nmi_merchant_id && (
+                        {g.account?.nmi_merchant_id ? (
                           <span className="text-[10px] font-mono text-muted-foreground">MID: {g.account.nmi_merchant_id}</span>
-                        )}
+                        ) : isAdmin ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setLinkTarget({ accountId: g.account_id, accountName: g.account?.name || "Unknown" });
+                            }}
+                            className="text-[10px] inline-flex items-center gap-1 text-amber-700 dark:text-amber-400 hover:underline"
+                          >
+                            <Link2 className="h-3 w-3" /> Link Gateway
+                          </button>
+                        ) : null}
                       </div>
                       <PipelineBadges pipelines={g.pipelines} />
                     </div>
@@ -354,9 +367,21 @@ const LiveBilling = () => {
                     <TableRow key={g.account_id} className="hover:bg-amber-50/30 dark:hover:bg-amber-950/10 cursor-pointer" onClick={() => navigate(`/live-billing/${g.account_id}`)}>
                       <TableCell className="text-right pr-2 text-[11px] text-muted-foreground tabular-nums">{idx + 1}</TableCell>
                       <TableCell className="font-medium">{g.account?.name || "Unknown"}</TableCell>
-                      <TableCell>
+                      <TableCell onClick={(e) => { if (!g.account?.nmi_merchant_id && isAdmin) e.stopPropagation(); }}>
                         {g.account?.nmi_merchant_id ? (
                           <span className="text-xs font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{g.account.nmi_merchant_id}</span>
+                        ) : isAdmin ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-6 text-[11px] gap-1 border-amber-400/40 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setLinkTarget({ accountId: g.account_id, accountName: g.account?.name || "Unknown" });
+                            }}
+                          >
+                            <Link2 className="h-3 w-3" /> Link Gateway
+                          </Button>
                         ) : (
                           <span className="text-xs text-muted-foreground/50">—</span>
                         )}
@@ -418,6 +443,14 @@ const LiveBilling = () => {
           </Card>
         )}
       </div>
+      {linkTarget && (
+        <LinkGatewayDialog
+          open={!!linkTarget}
+          onOpenChange={(o) => { if (!o) setLinkTarget(null); }}
+          accountId={linkTarget.accountId}
+          accountName={linkTarget.accountName}
+        />
+      )}
     </AppLayout>
   );
 };
