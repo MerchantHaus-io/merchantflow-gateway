@@ -58,6 +58,7 @@ const NetlifyHub = lazy(() => import("./pages/NetlifyHub"));
 const NMIBoarding = lazy(() => import("./pages/NMIBoarding"));
 const Integrations = lazy(() => import("./pages/Integrations"));
 const Transactions = lazy(() => import("./pages/Transactions"));
+const GatewayAccounts = lazy(() => import("./pages/GatewayAccounts"));
 const Calendar = lazy(() => import("./pages/Calendar"));
 const Commissions = lazy(() => import("./pages/Commissions"));
 const QuoteBuilder = lazy(() => import("./pages/QuoteBuilder"));
@@ -185,6 +186,7 @@ const App = () => (
                 <Route path="/commissions" element={<ProtectedRoute><Commissions /></ProtectedRoute>} />
                 <Route path="/admin/affiliates" element={<ProtectedRoute><Referrers /></ProtectedRoute>} />
                 <Route path="/admin/referrers" element={<Navigate to="/admin/affiliates" replace />} />
+                <Route path="/admin/gateway-accounts" element={<ProtectedRoute><GatewayAccounts /></ProtectedRoute>} />
 
                 {/* Affiliate portal — external partners */}
                 <Route path="/affiliate" element={<ReferrerRoute><PortalDashboard /></ReferrerRoute>} />
