@@ -10,9 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Zap, CreditCard, Users, TrendingUp, Calendar, XCircle, Link2 } from "lucide-react";
+import { Search, Zap, CreditCard, Users, TrendingUp, Calendar, XCircle, Link2, Receipt } from "lucide-react";
 import { LinkGatewayDialog } from "@/components/live-billing/LinkGatewayDialog";
 import { CloseAccountDialog } from "@/components/live-billing/CloseAccountDialog";
+import { BillingDocDialog } from "@/components/live-billing/BillingDocDialog";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { PricingBadges } from "@/components/PricingBadges";
