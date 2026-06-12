@@ -185,6 +185,7 @@ const App = () => (
                 <Route path="/commissions" element={<ProtectedRoute><Commissions /></ProtectedRoute>} />
                 <Route path="/admin/affiliates" element={<ProtectedRoute><Referrers /></ProtectedRoute>} />
                 <Route path="/admin/referrers" element={<Navigate to="/admin/affiliates" replace />} />
+                <Route path="/admin/gateway-accounts" element={<ProtectedRoute><GatewayAccounts /></ProtectedRoute>} />
 
                 {/* Affiliate portal — external partners */}
                 <Route path="/affiliate" element={<ReferrerRoute><PortalDashboard /></ReferrerRoute>} />
