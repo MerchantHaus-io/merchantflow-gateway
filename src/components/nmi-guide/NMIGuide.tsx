@@ -109,7 +109,7 @@ const HotspotImage = React.memo(({ screenshot }: { screenshot: ScreenshotSection
       {/* Image */}
       <div className="relative" ref={wrapRef} onClick={() => setActiveTip(null)}>
         {imgSrc
-          ? <img src={imgSrc} alt={screenshot.label} className="w-full block" draggable={false} />
+          ? <img src={imgSrc} alt={screenshot.label} loading="lazy" decoding="async" className="w-full block" draggable={false} />
           : (
             <div className="flex flex-col items-center justify-center gap-3 py-16" style={{ background: BG3 }}>
               <Camera className="h-10 w-10 opacity-30" style={{ color: G }} />
@@ -667,7 +667,7 @@ const WalkthroughPane = () => {
                 <div className="rounded-lg overflow-hidden relative" style={{ border: '1px solid hsl(var(--border))' }}>
                   {img ? (
                     <>
-                      <img src={img} alt={s.title} className="w-full block" draggable={false} />
+                      <img src={img} alt={s.title} loading="lazy" decoding="async" className="w-full block" draggable={false} />
                       <motion.div key={`${step}-hl`} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                         className="absolute pointer-events-none"
                         style={{
