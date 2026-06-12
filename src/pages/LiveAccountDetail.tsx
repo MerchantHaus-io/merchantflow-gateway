@@ -707,6 +707,16 @@ const LiveAccountDetail = () => {
       open={!!previewDoc}
       onOpenChange={(open) => { if (!open) setPreviewDoc(null); }}
     />
+    {account && (
+      <CloseAccountDialog
+        open={closeDialogOpen}
+        onOpenChange={setCloseDialogOpen}
+        accountId={accountId!}
+        accountName={account.name || "Unknown"}
+        nmiMerchantId={account.nmi_merchant_id ?? null}
+        onClosed={() => navigate("/live-billing")}
+      />
+    )}
     </>
   );
 };
