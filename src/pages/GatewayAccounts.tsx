@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, RefreshCw, Search } from "lucide-react";
+import { Loader2, RefreshCw, Search, Store } from "lucide-react";
 
 type Merchant = Record<string, any>;
 
@@ -82,8 +82,9 @@ export default function GatewayAccounts() {
     <AppLayout>
       <div className="container mx-auto px-4 py-6 space-y-6">
         <PageHeader
+          icon={Store}
           title="Gateway Accounts"
-          subtitle="All merchants on the secure portal — active, pending, test, and inactive"
+          description="All merchants on the secure portal — active, pending, test, and inactive"
         />
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

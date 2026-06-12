@@ -58,6 +58,7 @@ const NetlifyHub = lazy(() => import("./pages/NetlifyHub"));
 const NMIBoarding = lazy(() => import("./pages/NMIBoarding"));
 const Integrations = lazy(() => import("./pages/Integrations"));
 const Transactions = lazy(() => import("./pages/Transactions"));
+const GatewayAccounts = lazy(() => import("./pages/GatewayAccounts"));
 const Calendar = lazy(() => import("./pages/Calendar"));
 const Commissions = lazy(() => import("./pages/Commissions"));
 const QuoteBuilder = lazy(() => import("./pages/QuoteBuilder"));
