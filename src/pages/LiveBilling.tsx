@@ -443,6 +443,14 @@ const LiveBilling = () => {
           </Card>
         )}
       </div>
+      {linkTarget && (
+        <LinkGatewayDialog
+          open={!!linkTarget}
+          onOpenChange={(o) => { if (!o) setLinkTarget(null); }}
+          accountId={linkTarget.accountId}
+          accountName={linkTarget.accountName}
+        />
+      )}
     </AppLayout>
   );
 };
