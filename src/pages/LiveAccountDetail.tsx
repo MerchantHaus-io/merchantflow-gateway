@@ -44,6 +44,7 @@ import { AccountCommissionCard } from "@/components/AccountCommissionCard";
 import logoDark from "@/assets/ps-terminal-logo.png";
 import logoLight from "@/assets/ps-terminal-logo.png";
 import liveBadge from "@/assets/live-badge.webp";
+import { CloseAccountDialog } from "@/components/live-billing/CloseAccountDialog";
 
 import { NAME_TO_EMAIL } from "@/config/team";
 const TEAM_EMAIL_MAP: Record<string, string> = NAME_TO_EMAIL;
@@ -76,6 +77,7 @@ const LiveAccountDetail = () => {
   const queryClient = useQueryClient();
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<PreviewableDocument | null>(null);
+  const [closeDialogOpen, setCloseDialogOpen] = useState(false);
   const closeRef = useRef<HTMLDivElement>(null);
   const [closeHighlight, setCloseHighlight] = useState(false);
 
@@ -411,25 +413,11 @@ const LiveAccountDetail = () => {
               <Button
                 variant="outline"
                 size="sm"
-                className="shrink-0 text-muted-foreground hover:text-foreground"
-                onClick={async () => {
-                  if (!opportunities) return;
-                  for (const opp of opportunities) {
-                    await supabase
-                      .from("opportunities")
-                      .update({ status: "archived" })
-                      .eq("id", opp.id);
-                    await supabase.from("activities").insert({
-                      opportunity_id: opp.id,
-                      type: "archived",
-                      description: "Archived from Live & Billing",
-                    });
-                  }
-                  navigate("/live-billing");
-                }}
+                className="shrink-0 text-destructive border-destructive/40 hover:bg-destructive/10"
+                onClick={() => setCloseDialogOpen(true)}
               >
                 <Archive className="h-4 w-4 mr-1.5" />
-                <span className="hidden sm:inline">Archive</span>
+                <span className="hidden sm:inline">Close &amp; Archive</span>
               </Button>
             </div>
           </div>
@@ -719,6 +707,16 @@ const LiveAccountDetail = () => {
       open={!!previewDoc}
       onOpenChange={(open) => { if (!open) setPreviewDoc(null); }}
     />
+    {account && (
+      <CloseAccountDialog
+        open={closeDialogOpen}
+        onOpenChange={setCloseDialogOpen}
+        accountId={accountId!}
+        accountName={account.name || "Unknown"}
+        nmiMerchantId={account.nmi_merchant_id ?? null}
+        onClosed={() => navigate("/live-billing")}
+      />
+    )}
     </>
   );
 };

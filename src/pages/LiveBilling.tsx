@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, Zap, CreditCard, Users, TrendingUp, Calendar, XCircle, Link2 } from "lucide-react";
 import { LinkGatewayDialog } from "@/components/live-billing/LinkGatewayDialog";
+import { CloseAccountDialog } from "@/components/live-billing/CloseAccountDialog";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { PricingBadges } from "@/components/PricingBadges";
@@ -41,6 +42,7 @@ const LiveBilling = () => {
   const [filterAssignee, setFilterAssignee] = useState<string>("all");
   const [filterPipeline, setFilterPipeline] = useState<string>("all");
   const [linkTarget, setLinkTarget] = useState<{ accountId: string; accountName: string } | null>(null);
+  const [closeTarget, setCloseTarget] = useState<{ accountId: string; accountName: string; nmiMerchantId?: string | null } | null>(null);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { teamMemberName } = useAuth();
@@ -331,7 +333,11 @@ const LiveBilling = () => {
                       className="w-full mt-2 h-8 text-xs gap-1.5 text-destructive border-destructive/40 hover:bg-destructive/10"
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/live-billing/${g.account_id}#close`);
+                        setCloseTarget({
+                          accountId: g.account_id,
+                          accountName: g.account?.name || "Unknown",
+                          nmiMerchantId: g.account?.nmi_merchant_id ?? null,
+                        });
                       }}
                     >
                       <XCircle className="h-3.5 w-3.5" />
@@ -427,7 +433,11 @@ const LiveBilling = () => {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => navigate(`/live-billing/${g.account_id}#close`)}
+                              onClick={() => setCloseTarget({
+                                accountId: g.account_id,
+                                accountName: g.account?.name || "Unknown",
+                                nmiMerchantId: g.account?.nmi_merchant_id ?? null,
+                              })}
                             >
                               <XCircle className="h-4 w-4" />
                             </Button>
@@ -449,6 +459,15 @@ const LiveBilling = () => {
           onOpenChange={(o) => { if (!o) setLinkTarget(null); }}
           accountId={linkTarget.accountId}
           accountName={linkTarget.accountName}
+        />
+      )}
+      {closeTarget && (
+        <CloseAccountDialog
+          open={!!closeTarget}
+          onOpenChange={(o) => { if (!o) setCloseTarget(null); }}
+          accountId={closeTarget.accountId}
+          accountName={closeTarget.accountName}
+          nmiMerchantId={closeTarget.nmiMerchantId}
         />
       )}
     </AppLayout>
