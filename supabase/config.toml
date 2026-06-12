@@ -99,3 +99,6 @@ verify_jwt = false
 [functions.dev-autologin-credentials]
 verify_jwt = false
 
+
+[functions.nmi-close-gateway]
+verify_jwt = false
