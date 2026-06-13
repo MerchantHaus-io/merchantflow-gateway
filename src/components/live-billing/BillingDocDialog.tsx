@@ -539,7 +539,12 @@ export const BillingDocDialog = ({ open, onOpenChange, accountId, accountName, d
                   </PopoverContent>
                 </Popover>
                 <div className="text-sm">
+                  <span className="text-muted-foreground mr-3">Total</span>
+                  <span className="font-bold tabular-nums">${total.toFixed(2)}</span>
+                </div>
+              </div>
             </div>
+
 
             <div>
               <Label className="text-xs">Notes (printed on PDF)</Label>
