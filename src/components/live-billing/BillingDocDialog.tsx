@@ -150,6 +150,25 @@ export const BillingDocDialog = ({ open, onOpenChange, accountId, accountName, d
       { label: "Custom line", description: "", qty: 1, unit_price: 0, amount: 0 },
     ]);
 
+  const [catalogOpen, setCatalogOpen] = useState(false);
+  const catalog = useMemo(() => buildBillingCatalog(), []);
+  const grouped = useMemo(() => {
+    const byGroup = new Map<CatalogGroup, typeof catalog>();
+    for (const item of catalog) {
+      const arr = byGroup.get(item.group) ?? [];
+      arr.push(item);
+      byGroup.set(item.group, arr);
+    }
+    return [...byGroup.entries()];
+  }, [catalog]);
+
+  const addCatalogItem = (id: string) => {
+    const item = catalog.find((c) => c.id === id);
+    if (!item) return;
+    setLines((prev) => [...prev, catalogItemToLine(item)]);
+    setCatalogOpen(false);
+  };
+
   const buildPdfInput = (docNumber: string) => ({
     docType,
     docNumber,
