@@ -16,6 +16,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { buildBillingDocPdf, blobToBase64, type BillingDocLine } from "@/lib/billingDocPdf";
 import { buildScheduleLines } from "@/lib/billingDocSchedule";
+import { buildBillingCatalog, catalogItemToLine, type CatalogGroup } from "@/lib/billingDocCatalog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import type { TierId } from "@/config/pricing";
 
 interface Props {
