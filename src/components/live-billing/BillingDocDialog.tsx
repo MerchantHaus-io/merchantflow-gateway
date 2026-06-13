@@ -16,6 +16,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { buildBillingDocPdf, blobToBase64, type BillingDocLine } from "@/lib/billingDocPdf";
 import { buildScheduleLines } from "@/lib/billingDocSchedule";
+import { buildBillingCatalog, catalogItemToLine, type CatalogGroup } from "@/lib/billingDocCatalog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import type { TierId } from "@/config/pricing";
 
 interface Props {
@@ -146,6 +149,25 @@ export const BillingDocDialog = ({ open, onOpenChange, accountId, accountName, d
       ...prev,
       { label: "Custom line", description: "", qty: 1, unit_price: 0, amount: 0 },
     ]);
+
+  const [catalogOpen, setCatalogOpen] = useState(false);
+  const catalog = useMemo(() => buildBillingCatalog(), []);
+  const grouped = useMemo(() => {
+    const byGroup = new Map<CatalogGroup, typeof catalog>();
+    for (const item of catalog) {
+      const arr = byGroup.get(item.group) ?? [];
+      arr.push(item);
+      byGroup.set(item.group, arr);
+    }
+    return [...byGroup.entries()];
+  }, [catalog]);
+
+  const addCatalogItem = (id: string) => {
+    const item = catalog.find((c) => c.id === id);
+    if (!item) return;
+    setLines((prev) => [...prev, catalogItemToLine(item)]);
+    setCatalogOpen(false);
+  };
 
   const buildPdfInput = (docNumber: string) => ({
     docType,
@@ -468,15 +490,61 @@ export const BillingDocDialog = ({ open, onOpenChange, accountId, accountName, d
                 </TableBody>
               </Table>
               <div className="border-t p-2 flex items-center justify-between bg-muted/20">
-                <Button variant="ghost" size="sm" onClick={addLine}>
-                  <Plus className="h-3.5 w-3.5 mr-1" /> Add line
-                </Button>
+                <Popover open={catalogOpen} onOpenChange={setCatalogOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <Plus className="h-3.5 w-3.5 mr-1" /> Add line
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="w-[420px] p-0">
+                    <Command>
+                      <CommandInput placeholder="Search gateway items, NMI fees…" />
+                      <CommandList className="max-h-[360px]">
+                        <CommandEmpty>No matches.</CommandEmpty>
+                        <CommandGroup heading="Custom">
+                          <CommandItem
+                            value="custom-line"
+                            onSelect={() => { addLine(); setCatalogOpen(false); }}
+                          >
+                            <Plus className="h-3.5 w-3.5 mr-2" /> Blank custom line
+                          </CommandItem>
+                        </CommandGroup>
+                        {grouped.map(([group, items]) => (
+                          <CommandGroup key={group} heading={group}>
+                            {items.map((it) => (
+                              <CommandItem
+                                key={it.id}
+                                value={`${group} ${it.label}`}
+                                onSelect={() => addCatalogItem(it.id)}
+                                className="flex items-start gap-2"
+                              >
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-medium truncate">{it.label}</div>
+                                  {it.description && (
+                                    <div className="text-[11px] text-muted-foreground line-clamp-1">
+                                      {it.description}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="text-xs tabular-nums text-muted-foreground whitespace-nowrap">
+                                  ${it.unit_price.toFixed(2)}
+                                  {it.cadence ? ` · ${it.cadence.replace(/_/g, " ")}` : ""}
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        ))}
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <div className="text-sm">
                   <span className="text-muted-foreground mr-3">Total</span>
                   <span className="font-bold tabular-nums">${total.toFixed(2)}</span>
                 </div>
               </div>
             </div>
+
 
             <div>
               <Label className="text-xs">Notes (printed on PDF)</Label>
