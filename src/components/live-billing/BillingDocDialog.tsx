@@ -490,14 +490,55 @@ export const BillingDocDialog = ({ open, onOpenChange, accountId, accountName, d
                 </TableBody>
               </Table>
               <div className="border-t p-2 flex items-center justify-between bg-muted/20">
-                <Button variant="ghost" size="sm" onClick={addLine}>
-                  <Plus className="h-3.5 w-3.5 mr-1" /> Add line
-                </Button>
+                <Popover open={catalogOpen} onOpenChange={setCatalogOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <Plus className="h-3.5 w-3.5 mr-1" /> Add line
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="start" className="w-[420px] p-0">
+                    <Command>
+                      <CommandInput placeholder="Search gateway items, NMI fees…" />
+                      <CommandList className="max-h-[360px]">
+                        <CommandEmpty>No matches.</CommandEmpty>
+                        <CommandGroup heading="Custom">
+                          <CommandItem
+                            value="custom-line"
+                            onSelect={() => { addLine(); setCatalogOpen(false); }}
+                          >
+                            <Plus className="h-3.5 w-3.5 mr-2" /> Blank custom line
+                          </CommandItem>
+                        </CommandGroup>
+                        {grouped.map(([group, items]) => (
+                          <CommandGroup key={group} heading={group}>
+                            {items.map((it) => (
+                              <CommandItem
+                                key={it.id}
+                                value={`${group} ${it.label}`}
+                                onSelect={() => addCatalogItem(it.id)}
+                                className="flex items-start gap-2"
+                              >
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-medium truncate">{it.label}</div>
+                                  {it.description && (
+                                    <div className="text-[11px] text-muted-foreground line-clamp-1">
+                                      {it.description}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="text-xs tabular-nums text-muted-foreground whitespace-nowrap">
+                                  ${it.unit_price.toFixed(2)}
+                                  {it.cadence ? ` · ${it.cadence.replace(/_/g, " ")}` : ""}
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        ))}
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <div className="text-sm">
-                  <span className="text-muted-foreground mr-3">Total</span>
-                  <span className="font-bold tabular-nums">${total.toFixed(2)}</span>
-                </div>
-              </div>
             </div>
 
             <div>
