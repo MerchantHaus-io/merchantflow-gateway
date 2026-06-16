@@ -129,9 +129,9 @@ const Opportunities = () => {
         .from('opportunities')
         .select(`
           *,
-          account:accounts(*),
-          contact:contacts(*),
-          wizard_state:onboarding_wizard_states(*)
+          account:accounts(name, status),
+          contact:contacts(email, first_name, last_name),
+          wizard_state:onboarding_wizard_states(progress)
         `)
         .order('updated_at', { ascending: false });
 

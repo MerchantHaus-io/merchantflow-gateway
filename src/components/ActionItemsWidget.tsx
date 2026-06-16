@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { isEmailAllowed } from "@/types/opportunity";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { confirmAutoEmail } from "@/components/EmailSendConfirm";
@@ -78,7 +79,8 @@ export function ActionItemsWidget() {
   useEffect(() => {
     if (!user) return;
     supabase.from("profiles").select("id, email, full_name").then(({ data }) => {
-      if (data) setProfiles(data);
+      // Internal directory only — exclude affiliate/referrer accounts.
+      if (data) setProfiles(data.filter((p) => isEmailAllowed(p.email)));
     });
   }, [user]);
 

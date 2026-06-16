@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { isEmailAllowed } from "@/types/opportunity";
 import OfficeChat, { ChatMessage, RemotePosition, ActionItemNote, registerOfficeAvatar } from "./OfficeChat";
 
 /**
@@ -136,7 +137,8 @@ export default function OfficeChatWrapper() {
       const now = Date.now();
       const map: Record<string, boolean> = {};
       data.forEach((p) => {
-        if (p.email) {
+        // Office sim is internal-only — skip affiliate/referrer accounts.
+        if (p.email && isEmailAllowed(p.email)) {
           const lastSeen = p.last_seen ? new Date(p.last_seen).getTime() : 0;
           map[p.email] = now - lastSeen < 120000;
         }
