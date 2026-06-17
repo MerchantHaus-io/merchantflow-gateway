@@ -85,14 +85,6 @@ export let TEAM_ROSTER: TeamMemberRecord[] = [
     active: true,
     colorToken: "border-border",
   },
-  {
-    id: "wesley",
-    email: "sales@merchanthaus.io",
-    displayName: "Wesley",
-    title: "Sales (inactive)",
-    active: false,
-    colorToken: "border-team-wesley",
-  },
 ];
 
 /** Listeners notified after the roster is replaced (so React views refresh). */
