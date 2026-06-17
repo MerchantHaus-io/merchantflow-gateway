@@ -57,15 +57,13 @@ export function MobileAppDock() {
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tabRef = useRef<HTMLButtonElement>(null);
 
-  // Hide dock when any sub-app opens, show when it closes
+  // Dock stays persistent — no auto-hide when sub-apps open.
+  // Listeners still close the fan but keep the dock visible.
   useEffect(() => {
-    const hide = () => { setHidden(true); setIsOpen(false); };
-    const show = () => setHidden(false);
-    window.addEventListener("dockAppOpened", hide);
-    window.addEventListener("dockAppClosed", show);
+    const closeFan = () => setIsOpen(false);
+    window.addEventListener("dockAppOpened", closeFan);
     return () => {
-      window.removeEventListener("dockAppOpened", hide);
-      window.removeEventListener("dockAppClosed", show);
+      window.removeEventListener("dockAppOpened", closeFan);
     };
   }, []);
 

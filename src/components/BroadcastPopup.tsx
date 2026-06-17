@@ -6,8 +6,6 @@ import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 
 const BROADCAST_KEY = "eob-update-2026-02-20";
-const BROADCAST_CREATED = new Date("2026-02-20T00:00:00Z");
-const BROADCAST_EXPIRY_DAYS = 7;
 
 const BROADCAST_MESSAGE = `Please update all current accounts accordingly before the end of business today.
 
@@ -25,13 +23,7 @@ export function BroadcastPopup() {
   useEffect(() => {
     if (!user) return;
 
-    // Check if broadcast has expired (older than 7 days)
-    const now = new Date();
-    const expiryDate = new Date(BROADCAST_CREATED);
-    expiryDate.setDate(expiryDate.getDate() + BROADCAST_EXPIRY_DAYS);
-    if (now > expiryDate) return;
-
-    // Check if user already acknowledged
+    // Notice stays persistent until the user acknowledges it (no auto-expiry).
     supabase
       .from("broadcast_acknowledgments")
       .select("id")
@@ -105,7 +97,7 @@ export function BroadcastPopup() {
                 {acknowledging ? "Confirming…" : "I've read this — Confirm"}
               </Button>
               <p className="text-[10px] text-muted-foreground text-center mt-2">
-                This notice will appear until confirmed or for 7 days
+                This notice will keep appearing until confirmed
               </p>
             </div>
           </motion.div>
