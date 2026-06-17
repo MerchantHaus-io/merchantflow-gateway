@@ -23,13 +23,7 @@ export function BroadcastPopup() {
   useEffect(() => {
     if (!user) return;
 
-    // Check if broadcast has expired (older than 7 days)
-    const now = new Date();
-    const expiryDate = new Date(BROADCAST_CREATED);
-    expiryDate.setDate(expiryDate.getDate() + BROADCAST_EXPIRY_DAYS);
-    if (now > expiryDate) return;
-
-    // Check if user already acknowledged
+    // Notice stays persistent until the user acknowledges it (no auto-expiry).
     supabase
       .from("broadcast_acknowledgments")
       .select("id")
