@@ -9,7 +9,7 @@ import { buildDocsRequestHtml, buildDocsRequestSubject } from "@/lib/docs-reques
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { EMAIL_TO_USER } from "@/types/opportunity";
+import { EMAIL_TO_USER, isEmailAllowed } from "@/types/opportunity";
 import {
   Wand2, Loader2, CheckCircle2, XCircle, AlertTriangle, ChevronDown, ChevronUp, Eye, Clock, User, Globe, FileText, Tag, BarChart3, Shield, Search, Scale, Pin, Send,
 } from "lucide-react";
@@ -156,7 +156,9 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
 
   useEffect(() => {
     supabase.from("profiles").select("id, email, full_name").then(({ data }) => {
-      if (data) setProfiles(data);
+      // Restrict pin-to-notice-board assignees to internal staff only — referrers must
+      // never appear here.
+      if (data) setProfiles(data.filter((p) => isEmailAllowed(p.email || "")));
     });
   }, []);
 

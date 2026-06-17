@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { confirmAutoEmail } from "@/components/EmailSendConfirm";
 import { playNoticeBoardSound } from "@/hooks/useNotificationSound";
+import { isEmailAllowed } from "@/types/opportunity";
 
 interface ActionItem {
   id: string;
@@ -78,7 +79,9 @@ export function ActionItemsWidget() {
   useEffect(() => {
     if (!user) return;
     supabase.from("profiles").select("id, email, full_name").then(({ data }) => {
-      if (data) setProfiles(data);
+      // Notice board / action items are an internal tool. Filter out referral partners
+      // and any other non-staff accounts so they don't appear in tagging or assignee lists.
+      if (data) setProfiles(data.filter((p) => isEmailAllowed(p.email || "")));
     });
   }, [user]);
 
