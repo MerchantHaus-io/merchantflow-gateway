@@ -6,8 +6,6 @@ import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 
 const BROADCAST_KEY = "eob-update-2026-02-20";
-const BROADCAST_CREATED = new Date("2026-02-20T00:00:00Z");
-const BROADCAST_EXPIRY_DAYS = 7;
 
 const BROADCAST_MESSAGE = `Please update all current accounts accordingly before the end of business today.
 
