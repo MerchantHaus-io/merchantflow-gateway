@@ -105,3 +105,6 @@ verify_jwt = false
 
 [functions.send-billing-doc]
 verify_jwt = false
+
+[functions.inactive-user-reminder]
+verify_jwt = false
