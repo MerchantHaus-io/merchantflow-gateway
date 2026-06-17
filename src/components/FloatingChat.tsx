@@ -797,8 +797,7 @@ const FloatingChat: React.FC = () => {
             "fixed bottom-0 right-6 z-[35] w-[220px] h-11 rounded-t-xl flex items-center gap-3 px-4",
             "bg-[hsl(var(--wa-header))] text-[hsl(var(--wa-header-foreground))]",
             "shadow-xl hover:shadow-2xl hover:brightness-110 transition-all duration-300 ease-out",
-            "border border-b-0 border-[hsl(var(--wa-divider))]",
-            "translate-y-[calc(100%-6px)] hover:translate-y-0"
+            "border border-b-0 border-[hsl(var(--wa-divider))]"
           )}
         >
           <MessageCircle className="h-5 w-5 shrink-0" />
