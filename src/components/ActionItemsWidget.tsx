@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { confirmAutoEmail } from "@/components/EmailSendConfirm";
 import { playNoticeBoardSound } from "@/hooks/useNotificationSound";
+import { isEmailAllowed } from "@/types/opportunity";
 
 interface ActionItem {
   id: string;
