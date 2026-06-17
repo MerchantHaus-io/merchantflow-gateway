@@ -97,7 +97,7 @@ export function BroadcastPopup() {
                 {acknowledging ? "Confirming…" : "I've read this — Confirm"}
               </Button>
               <p className="text-[10px] text-muted-foreground text-center mt-2">
-                This notice will appear until confirmed or for 7 days
+                This notice will keep appearing until confirmed
               </p>
             </div>
           </motion.div>
