@@ -239,7 +239,7 @@ const KurvDashboard = () => {
                       </TableHeader>
                       <TableBody>
                         {filtered.map((m) => (
-                          <TableRow key={m.id} className="cursor-pointer" onClick={() => setTxMid(m.mid) || setTab("transactions")}>
+                          <TableRow key={m.id} className="cursor-pointer" onClick={() => { setTxMid(m.mid); setTab("transactions"); }}>
                             <TableCell className="font-mono text-xs">{m.mid}</TableCell>
                             <TableCell>{m.dba_name ?? "—"}</TableCell>
                             <TableCell>{m.legal_name ?? "—"}</TableCell>
