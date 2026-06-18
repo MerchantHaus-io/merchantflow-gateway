@@ -16,6 +16,7 @@ export function NMIBoardingBroadcast() {
   const navigate = useNavigate();
   const [visible, setVisible] = useState(false);
   const [acknowledging, setAcknowledging] = useState(false);
+  const slotOk = useBroadcastSlot(BROADCAST_KEY, 3, visible);
 
   useEffect(() => {
     if (!user) return;
