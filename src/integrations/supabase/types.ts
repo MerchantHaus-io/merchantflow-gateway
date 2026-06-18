@@ -1637,6 +1637,230 @@ export type Database = {
         }
         Relationships: []
       }
+      kurv_api_tokens: {
+        Row: {
+          created_at: string
+          environment: string
+          expires_at: string
+          id: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          environment: string
+          expires_at: string
+          id?: string
+          token: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          environment?: string
+          expires_at?: string
+          id?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      kurv_deal_submissions: {
+        Row: {
+          created_at: string
+          deal_id: string | null
+          deal_type: string
+          error: string | null
+          id: string
+          idempotency_key: string | null
+          opportunity_id: string | null
+          payload: Json
+          response: Json | null
+          status: string
+          submitted_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          deal_id?: string | null
+          deal_type: string
+          error?: string | null
+          id?: string
+          idempotency_key?: string | null
+          opportunity_id?: string | null
+          payload?: Json
+          response?: Json | null
+          status?: string
+          submitted_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          deal_id?: string | null
+          deal_type?: string
+          error?: string | null
+          id?: string
+          idempotency_key?: string | null
+          opportunity_id?: string | null
+          payload?: Json
+          response?: Json | null
+          status?: string
+          submitted_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kurv_deal_submissions_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kurv_merchants: {
+        Row: {
+          account_id: string | null
+          boarded_at: string | null
+          created_at: string
+          dba_name: string | null
+          id: string
+          last_synced_at: string
+          legal_name: string | null
+          mcc: string | null
+          mid: string
+          opportunity_id: string | null
+          processor: string | null
+          raw: Json
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          boarded_at?: string | null
+          created_at?: string
+          dba_name?: string | null
+          id?: string
+          last_synced_at?: string
+          legal_name?: string | null
+          mcc?: string | null
+          mid: string
+          opportunity_id?: string | null
+          processor?: string | null
+          raw?: Json
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          boarded_at?: string | null
+          created_at?: string
+          dba_name?: string | null
+          id?: string
+          last_synced_at?: string
+          legal_name?: string | null
+          mcc?: string | null
+          mid?: string
+          opportunity_id?: string | null
+          processor?: string | null
+          raw?: Json
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kurv_merchants_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kurv_merchants_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "opportunities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kurv_sync_logs: {
+        Row: {
+          created_at: string
+          details: Json | null
+          duration_ms: number | null
+          error: string | null
+          id: string
+          job: string
+          rows_processed: number | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          job: string
+          rows_processed?: number | null
+          status: string
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          duration_ms?: number | null
+          error?: string | null
+          id?: string
+          job?: string
+          rows_processed?: number | null
+          status?: string
+        }
+        Relationships: []
+      }
+      kurv_transactions_daily: {
+        Row: {
+          business_date: string
+          created_at: string
+          deposit_amount: number | null
+          id: string
+          interchange_amount: number | null
+          last_synced_at: string
+          mid: string
+          raw: Json
+          refunds_amount: number | null
+          refunds_count: number | null
+          sales_amount: number | null
+          sales_count: number | null
+        }
+        Insert: {
+          business_date: string
+          created_at?: string
+          deposit_amount?: number | null
+          id?: string
+          interchange_amount?: number | null
+          last_synced_at?: string
+          mid: string
+          raw?: Json
+          refunds_amount?: number | null
+          refunds_count?: number | null
+          sales_amount?: number | null
+          sales_count?: number | null
+        }
+        Update: {
+          business_date?: string
+          created_at?: string
+          deposit_amount?: number | null
+          id?: string
+          interchange_amount?: number | null
+          last_synced_at?: string
+          mid?: string
+          raw?: Json
+          refunds_amount?: number | null
+          refunds_count?: number | null
+          sales_amount?: number | null
+          sales_count?: number | null
+        }
+        Relationships: []
+      }
       lead_referrers: {
         Row: {
           created_at: string
