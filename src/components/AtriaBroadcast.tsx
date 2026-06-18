@@ -42,6 +42,7 @@ export function AtriaBroadcast() {
   const { user } = useAuth();
   const [visible, setVisible] = useState(false);
   const [acknowledging, setAcknowledging] = useState(false);
+  const slotOk = useBroadcastSlot(BROADCAST_KEY, 4, visible);
 
   useEffect(() => {
     if (!user) return;
