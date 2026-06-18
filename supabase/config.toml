@@ -108,3 +108,18 @@ verify_jwt = false
 
 [functions.inactive-user-reminder]
 verify_jwt = false
+
+[functions.kurv-list-merchants]
+verify_jwt = false
+
+[functions.kurv-board-deal]
+verify_jwt = false
+
+[functions.kurv-deal-status]
+verify_jwt = false
+
+[functions.kurv-transactions]
+verify_jwt = false
+
+[functions.kurv-lookups]
+verify_jwt = false
