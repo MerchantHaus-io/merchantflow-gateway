@@ -94,7 +94,7 @@ export function ComplianceBroadcast() {
 
   return (
     <AnimatePresence>
-      {visible && (
+      {visible && slotOk && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
