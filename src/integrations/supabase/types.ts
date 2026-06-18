@@ -1637,6 +1637,33 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_referrers: {
+        Row: {
+          created_at: string
+          id: string
+          institution: string | null
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          institution?: string | null
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          institution?: string | null
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       mcp_audit_log: {
         Row: {
           args: Json | null
@@ -2225,6 +2252,7 @@ export type Database = {
           gateway_tier: string | null
           id: string
           language: string | null
+          lead_referrer_id: string | null
           outcome_closed_at: string | null
           outcome_closed_by: string | null
           outcome_notes: string | null
@@ -2255,6 +2283,7 @@ export type Database = {
           gateway_tier?: string | null
           id?: string
           language?: string | null
+          lead_referrer_id?: string | null
           outcome_closed_at?: string | null
           outcome_closed_by?: string | null
           outcome_notes?: string | null
@@ -2285,6 +2314,7 @@ export type Database = {
           gateway_tier?: string | null
           id?: string
           language?: string | null
+          lead_referrer_id?: string | null
           outcome_closed_at?: string | null
           outcome_closed_by?: string | null
           outcome_notes?: string | null
@@ -2319,6 +2349,13 @@ export type Database = {
             columns: ["contact_id"]
             isOneToOne: false
             referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_lead_referrer_id_fkey"
+            columns: ["lead_referrer_id"]
+            isOneToOne: false
+            referencedRelation: "lead_referrers"
             referencedColumns: ["id"]
           },
           {

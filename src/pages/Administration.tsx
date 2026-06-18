@@ -8,6 +8,7 @@ import { BroadcastAckPanel } from "@/components/BroadcastAckPanel";
 import { AgendaManager } from "@/components/admin/AgendaManager";
 import { AdminPopupManager } from "@/components/admin/AdminPopupManager";
 import { UserRoleManager } from "@/components/admin/UserRoleManager";
+import { LeadReferrerManager } from "@/components/admin/LeadReferrerManager";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -91,6 +92,9 @@ const Administration = () => {
 
         {/* Team & Roles Management */}
         <UserRoleManager />
+
+        {/* Lead Referrers Directory */}
+        <LeadReferrerManager />
 
         {/* Agenda / Ideation Management */}
         <AgendaManager />
