@@ -5,6 +5,7 @@ import { CheckCircle2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { motion, AnimatePresence } from "framer-motion";
+import { useBroadcastSlot } from "@/components/BroadcastQueue";
 
 const BROADCAST_KEY = "compliance-controls-2026-03-12";
 const BROADCAST_CREATED = new Date("2026-03-12T00:00:00Z");
@@ -53,6 +54,7 @@ export function ComplianceBroadcast() {
   const [visible, setVisible] = useState(false);
   const [acknowledging, setAcknowledging] = useState(false);
   const [checked, setChecked] = useState<Record<string, boolean>>({});
+  const slotOk = useBroadcastSlot(BROADCAST_KEY, 1, visible);
 
   const allChecked = CONTROLS.every((c) => checked[c.id]);
 
@@ -92,7 +94,7 @@ export function ComplianceBroadcast() {
 
   return (
     <AnimatePresence>
-      {visible && (
+      {visible && slotOk && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

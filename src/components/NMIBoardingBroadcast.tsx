@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { CheckCircle2, Zap, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
+import { useBroadcastSlot } from "@/components/BroadcastQueue";
 
 const BROADCAST_KEY = "nmi-boarding-live-2026-03-28";
 const BROADCAST_CREATED = new Date("2026-03-28T00:00:00Z");
@@ -15,6 +16,7 @@ export function NMIBoardingBroadcast() {
   const navigate = useNavigate();
   const [visible, setVisible] = useState(false);
   const [acknowledging, setAcknowledging] = useState(false);
+  const slotOk = useBroadcastSlot(BROADCAST_KEY, 3, visible);
 
   useEffect(() => {
     if (!user) return;
@@ -56,7 +58,7 @@ export function NMIBoardingBroadcast() {
 
   return (
     <AnimatePresence>
-      {visible && (
+      {visible && slotOk && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

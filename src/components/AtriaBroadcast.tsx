@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { CheckCircle2, Bot, Sparkles, MessageSquare, FileText, Phone, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
+import { useBroadcastSlot } from "@/components/BroadcastQueue";
 
 const BROADCAST_KEY = "atria-abilities-2026-03-13";
 const BROADCAST_CREATED = new Date("2026-03-13T00:00:00Z");
@@ -41,6 +42,7 @@ export function AtriaBroadcast() {
   const { user } = useAuth();
   const [visible, setVisible] = useState(false);
   const [acknowledging, setAcknowledging] = useState(false);
+  const slotOk = useBroadcastSlot(BROADCAST_KEY, 4, visible);
 
   useEffect(() => {
     if (!user) return;
@@ -77,7 +79,7 @@ export function AtriaBroadcast() {
 
   return (
     <AnimatePresence>
-      {visible && (
+      {visible && slotOk && (
         <>
           {/* Backdrop */}
           <motion.div
