@@ -102,7 +102,7 @@ export function LeadReferrerManager() {
         if (error) throw error;
         toast.success("Referrer updated");
       } else {
-        const { error } = await supabase.from("lead_referrers" as never).insert(payload);
+        const { error } = await (supabase as any).from("lead_referrers").insert(payload);
         if (error) throw error;
         toast.success("Referrer added");
       }
@@ -118,7 +118,7 @@ export function LeadReferrerManager() {
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
-      const { error } = await supabase.from("lead_referrers" as never).delete().eq("id", deleteId);
+      const { error } = await (supabase as any).from("lead_referrers").delete().eq("id", deleteId);
       if (error) throw error;
       toast.success("Referrer removed");
       setDeleteId(null);
