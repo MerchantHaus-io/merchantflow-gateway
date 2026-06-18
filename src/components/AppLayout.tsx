@@ -134,11 +134,13 @@ export function AppLayout({
       <MobileBottomNav />
       <FloatingChat />
       <ActionItemsWidget />
-      <BroadcastPopup />
-      <ComplianceBroadcast />
-      <AtriaBroadcast />
-      <NMIBoardingBroadcast />
-      <SharedTodoPopup />
+      <BroadcastQueueProvider>
+        <ComplianceBroadcast />
+        <BroadcastPopup />
+        <NMIBoardingBroadcast />
+        <AtriaBroadcast />
+        <SharedTodoPopup />
+      </BroadcastQueueProvider>
       {/* AtriaFAB removed — AI is now a tab inside FloatingChat */}
       {isMobile && !isChatRoute && <MobileAppDock />}
       <OfficeSimulatorOverlay />
