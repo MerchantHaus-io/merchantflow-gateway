@@ -1,90 +1,83 @@
-## Goal
+## Kurv (EMS MyPortfolio) Integration
 
-Add invoice + receipt generation to Live & Billing, per merchant, using the exact same gateway pricing schedule, brand styling, PDF layout, and email pipeline as the existing Quote Builder. Staff can preview, download, and email the document; a history is kept on each account.
+A standalone dashboard at `/tools/kurv` that mirrors the NMI tooling pattern. Sandbox-first (`apitest.emscorporate.com`) with an env-driven flip to production (`api.emscorporate.com`). All API calls proxied through Lovable Cloud edge functions — credentials never touch the browser.
 
-## What gets built
+---
 
-### 1. Data model (one new table)
+### 1. Credentials & environment
 
-`billing_documents` — one row per invoice or receipt, with line items stored as JSONB (no extra child table needed; mirrors how draft quotes are stored).
+Add three secrets via the secrets tool:
+- `KURV_API_USERNAME` — `Merchanthaus_Test_API`
+- `KURV_API_PASSWORD` — you provide securely
+- `KURV_API_ENV` — `sandbox` (later `production`)
 
-Columns (domain-specific):
-- `account_id` (FK → accounts)
-- `opportunity_id` (nullable, FK → opportunities, when scoped to a single deal)
-- `doc_type` — `'invoice' | 'receipt'`
-- `doc_number` — human readable, e.g. `INV-2026-00042` / `RCT-2026-00042`
-- `status` — `'draft' | 'issued' | 'sent' | 'paid' | 'void'`
-- `issued_date`, `due_date`, `paid_date`, `period_start`, `period_end`
-- `currency`, `subtotal`, `tax`, `total`, `amount_paid`
-- `gateway_tier` — `foundation | growth | scale | enterprise` (drives schedule defaults)
-- `billing_cycle` — `monthly | annual`
-- `line_items` (jsonb) — array of `{ id, label, description, qty, unit_price, amount, cadence, bundled, perEvent? }`
-- `ancillary_fees` (jsonb) — same shape as the quote ancillary block
-- `notes`, `merchant_name`, `merchant_email`, `merchant_phone`
-- `sender` (jsonb) — name/title/company/email/phone (matches quote sender block)
-- `pdf_path` (storage path inside `opportunity-documents`), `sent_at`, `sent_to[]`
-- `created_by`, `created_at`, `updated_at`
+Edge functions resolve base URL from `KURV_API_ENV`:
+- sandbox → `https://apitest.emscorporate.com`
+- production → `https://api.emscorporate.com`
 
-RLS: authenticated team can read/insert/update; service_role full. Standard public-schema GRANTs.
+Token handling: cache the JWT (and its expiry) in a new `kurv_api_tokens` table (single row, service-role only). Re-acquire via the Token Acquisition endpoint when expired. Never expose username/password/token to the client.
 
-### 2. Shared PDF builder
+### 2. Database (one migration)
 
-`src/lib/billingDocPdf.ts` — new module that reuses every brand constant from `quotePdf.ts` (INK, MUTED, HAIRLINE, BRAND_RED, CALLOUT_BG, page geometry, Times display headings, MerchantHaus shield, hairline rules, autotable styling). Same 3-section editorial flow as the quote PDF, repurposed:
+- `kurv_merchants` — synced roster: `mid`, `dba_name`, `legal_name`, `status`, `mcc`, `processor`, `boarded_at`, `last_synced_at`, plus a `raw jsonb` mirror of the EMS payload. Optional `opportunity_id` / `account_id` FKs for CRM linkage.
+- `kurv_deal_submissions` — every boarding submission: `opportunity_id`, `deal_id` (returned by EMS), `deal_type` (`signed` | `unsigned`), `status`, `submitted_by`, `payload jsonb`, `response jsonb`, `error`, timestamps.
+- `kurv_transactions_daily` — denormalized cache of daily batch/deposit summaries per MID for fast dashboard reads.
+- `kurv_api_tokens` — `token`, `expires_at`. Service-role only.
+- `kurv_sync_logs` — run history for roster + transaction syncs (mirrors `commission_sync_logs`).
 
-- **Cover band**: logo + `INVOICE` / `RECEIPT` eyebrow, document number, issued date, due/paid date, period covered.
-- **Bill-to / From** two-column block (identical to the quote client/sender layout).
-- **Line items table** (jspdf-autotable) — pulls defaults from `TIER_PLATFORM_FEE`, `QUOTE_LINES`, `GATEWAY_FEE_DEFAULTS`, `ANCILLARY_FEE_DEFAULTS` based on the merchant's `gateway_tier` so invoices and receipts mirror the quote schedule exactly.
-- **Totals block** with subtotal / tax / total; for receipts, an `Amount Paid` row and `PAID` stamp.
-- **Footer**: standard quote disclaimers (reused subset) + terms-version line.
+RLS: all tables readable by `authenticated`; writes restricted to service_role (edge functions). Standard `GRANT` block on each. Admins-only mutations on `kurv_deal_submissions` from the client (only edge functions insert).
 
-### 3. Email pipeline
+### 3. Edge functions
 
-New edge function `supabase/functions/send-billing-doc/index.ts`:
-- Auth-required (JWT validated in code).
-- Accepts `{ docId, recipients[], message? }`.
-- Loads the row, regenerates the PDF server-side via a shared template (or downloads `pdf_path` from storage when present), and sends via Resend using the existing enterprise email template (dark gradient header, no emojis, sanitized subject) — same brand styling as `send-quote-email`.
-- Stamps `sent_at`, appends to `sent_to`, logs to `client_interactions` for the timeline.
+All register in `supabase/config.toml` with `verify_jwt = false` and validate the caller JWT in-code via `_shared/require-auth.ts`.
 
-Registered in `supabase/config.toml`.
+- `kurv-token` *(internal helper, not exposed)* — acquires/refreshes JWT, persists in `kurv_api_tokens`.
+- `kurv-list-merchants` — calls `POST /reference/list-merchants`, upserts into `kurv_merchants`, writes a `kurv_sync_logs` row.
+- `kurv-get-merchant` — pass-through wrapper for `Get Specific Merchant`.
+- `kurv-board-deal` — accepts wizard payload, posts to `Submit Signed Deal V2` or `Submit Unsigned Deal`, records in `kurv_deal_submissions`. Supports document attachments via `Add Documents`.
+- `kurv-deal-status` — polls `Get Deal Status`, updates submission row.
+- `kurv-transactions` — fetches Daily/Monthly Batch + Deposit summaries for a MID range, caches into `kurv_transactions_daily`.
+- `kurv-chargebacks` — list chargeback summaries/details on demand.
+- `kurv-merchant-statement` — fetches and streams the PDF statement (base64 → blob) for a MID/month.
+- `kurv-lookups` — proxies the reusable reference lists (MCCs, owner titles, ownership types, sales people, address/bank validators) used inside the wizard.
 
-### 4. Dialog component
+Optional cron (via `pg_cron`):
+- daily roster sync at 06:00 CT → `kurv-list-merchants`
+- hourly transaction refresh during business hours → `kurv-transactions` for active MIDs
 
-`src/components/live-billing/BillingDocDialog.tsx` — single dialog that handles both invoice and receipt creation (toggle at the top). Mirrors the editorial styling of `QuoteGeneratorDialog`.
+### 4. Frontend — `/tools/kurv`
 
-Auto-fill flow:
-1. Reads `accounts.nmi_merchant_id` + the account's latest opportunity for `gateway_tier`, `pricing_plan`, `billing_cycle`.
-2. Pulls last-period NMI transaction summary already cached in the project for that MID to set `period_start/end`, txn count, and volume.
-3. Builds the line-item list from `TIER_PLATFORM_FEE[tier]`, opportunity-selected add-ons (when known) and applicable `GATEWAY_FEE_DEFAULTS` (gateway auth monthly + per-transaction × txn count).
-4. Adds disclosed ancillary fees (chargeback, PCI, setup, return-payment) flagged waived when not used.
-5. Staff can edit any line, qty, unit price; totals recalculate live.
+New route gated by `ProtectedRoute` + `InternalWidgets` visibility (internal-only). Mirrors NMI Boarding's structure but lives as its own dashboard tab so it does not interfere with NMI flows.
 
-Actions: **Save draft**, **Download PDF**, **Send email** (opens preview confirm per existing email workflow), **Mark paid** (receipts).
+Layout (single page with internal tabs):
 
-### 5. Entry points on Live & Billing
+1. **Overview** — KPIs: total active MIDs, MTD volume, MTD transactions, open deals, recent chargebacks. Recent deal submissions table.
+2. **Boarding Wizard** — multi-step form (Merchant → Owners → Bank → Pricing → Equipment → Review). Inline lookups call `kurv-lookups`. Two submit modes: **Save as Unsigned Deal** (editable) or **Submit Signed Deal**. Optional link to a CRM opportunity to auto-populate.
+3. **Merchants** — searchable table backed by `kurv_merchants`. Row drawer shows EMS metadata, link to CRM account if matched, "Pull statement" button, and a transactions panel.
+4. **Transactions** — MID picker + date range → daily/monthly batch + deposit summaries with totals and an interchange breakdown.
+5. **Disputes** — chargeback summaries + drill-down to chargeback details.
+6. **Deals** — submission log from `kurv_deal_submissions` with status polling and document attach.
 
-- **Row action** on `LiveBilling.tsx` (desktop table + mobile card): new `Invoice` icon button next to `Close Account`, opens `BillingDocDialog` for that account.
-- **Account detail** (`LiveAccountDetail.tsx`): new **Billing Docs** tab/section showing history (date, number, type, status, total, recipient) with `New Invoice` / `New Receipt` buttons and per-row actions (view PDF, resend, mark paid, void).
+Shared UI follows the Dark Luxury Tech system already in place (Syne headers, Playfair italics, shimmer buttons, no transparency-breaking effects).
 
-### 6. History list component
+### 5. Announcement & navigation
 
-`src/components/live-billing/BillingDocsList.tsx` — used by the detail page. Columns: number, type chip, period, total, status badge, sent-to, actions.
+- Add Kurv link to the Tools menu (alongside NMI Boarding).
+- New `KurvBoardingBroadcast` popup (priority 6) registered with `BroadcastQueue` so it does not clash with existing popups.
 
-## Technical notes
+### 6. Out of scope for v1 (call out for follow-up)
 
-- PDF lib: existing `jspdf` + `jspdf-autotable` (already bundled for quotes) — no new deps.
-- All PDFs uploaded to existing `opportunity-documents` bucket under `billing/{account_id}/{doc_number}.pdf`.
-- Doc-number sequence: per-year sequence via Postgres function `next_billing_doc_number(doc_type, year)` backed by a small `billing_doc_sequence` table or `pg_sequences`.
-- Timezone: all displayed dates rendered in `America/Chicago` with the `CT` suffix (project standard).
-- Currency: USD by default; Canadian-track accounts auto-flip to CAD via the existing locale flag.
-- No marketing content in emails; transactional only, branded enterprise template.
+- True webhook receiver: EMS docs do not advertise outbound webhooks; we will poll deal status and run scheduled syncs. If/when EMS exposes webhooks, add `kurv-webhook` edge function.
+- Commission reconciliation across NMI + Kurv into a unified residual view.
 
-## Out of scope (for this pass)
+---
 
-- Recurring/auto-generated invoices on a cron (can be added once the manual flow ships).
-- Card-on-file collection of the invoice amount.
-- Stripe/Paddle payment links.
-- Pulling actual NMI transaction breakdowns (`per-tx`, `voice auth`, etc.) — initial cut uses the cached monthly summary already in the CRM, then we can deepen to event-level fees in a follow-up.
+### Technical notes
 
-## Approval
+- Token cache: row-level lock via `SELECT ... FOR UPDATE` inside the helper to avoid stampede on token refresh.
+- All EMS responses stored verbatim in `raw jsonb` so we can re-derive fields without re-syncing.
+- Idempotency keys on `kurv_deal_submissions` (`opportunity_id` + `deal_type` + hash of payload) to prevent duplicate submits.
+- Rate limiting: simple in-function 1 req/sec backoff if EMS returns 429.
+- Auth scheme confirmed from docs: `POST /token` with `{UserName, Password}` → JWT in `Authorization: Bearer <jwt>` on subsequent calls. Tokens are short-lived; refresh on expiry.
 
-Confirm the plan and I'll ship the migration, edge function, dialog, history view, entry points, and styling in one pass.
+I will request `KURV_API_PASSWORD` (and confirm the username) via the secure secrets prompt once you approve this plan, before writing the edge functions.
