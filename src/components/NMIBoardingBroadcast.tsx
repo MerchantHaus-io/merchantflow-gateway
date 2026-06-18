@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { CheckCircle2, Zap, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
+import { useBroadcastSlot } from "@/components/BroadcastQueue";
 
 const BROADCAST_KEY = "nmi-boarding-live-2026-03-28";
 const BROADCAST_CREATED = new Date("2026-03-28T00:00:00Z");
