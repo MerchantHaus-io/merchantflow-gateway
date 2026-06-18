@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserPlus, Loader2, Mail, Inbox } from "lucide-react";
 import { toast } from "sonner";
+import { LeadReferrerSelect } from "@/components/LeadReferrerSelect";
 
 type LeadType = "manual" | "outreach";
 
@@ -18,6 +19,7 @@ export function NewLeadDialog() {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [leadType, setLeadType] = useState<LeadType>("manual");
+  const [leadReferrerId, setLeadReferrerId] = useState<string | null>(null);
   const [form, setForm] = useState({
     first_name: "",
     last_name: "",
@@ -43,6 +45,7 @@ export function NewLeadDialog() {
   const reset = () => {
     setForm({ first_name: "", last_name: "", email: "", company: "", phone: "", notes: "", campaign_id: "" });
     setLeadType("manual");
+    setLeadReferrerId(null);
   };
 
   const handleSubmitManual = async () => {
@@ -91,6 +94,7 @@ export function NewLeadDialog() {
           contact_id: contact.id,
           stage: "discovery",
           referral_source: "Manual Lead",
+          ...(leadReferrerId ? ({ lead_referrer_id: leadReferrerId } as Record<string, unknown>) : {}),
         });
       if (oErr) throw oErr;
 
