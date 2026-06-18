@@ -7,11 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { RefreshCw, Zap, Search, FileText, DollarSign, ListChecks, Loader2 } from "lucide-react";
 import { format } from "date-fns";
+import { KurvBoardingWizard } from "@/components/kurv/KurvBoardingWizard";
 
 interface KurvMerchant {
   id: string; mid: string; dba_name: string | null; legal_name: string | null;
