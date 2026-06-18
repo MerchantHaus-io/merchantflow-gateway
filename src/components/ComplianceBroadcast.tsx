@@ -5,6 +5,7 @@ import { CheckCircle2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { motion, AnimatePresence } from "framer-motion";
+import { useBroadcastSlot } from "@/components/BroadcastQueue";
 
 const BROADCAST_KEY = "compliance-controls-2026-03-12";
 const BROADCAST_CREATED = new Date("2026-03-12T00:00:00Z");
