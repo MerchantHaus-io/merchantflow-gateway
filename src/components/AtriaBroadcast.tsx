@@ -79,7 +79,7 @@ export function AtriaBroadcast() {
 
   return (
     <AnimatePresence>
-      {visible && (
+      {visible && slotOk && (
         <>
           {/* Backdrop */}
           <motion.div
