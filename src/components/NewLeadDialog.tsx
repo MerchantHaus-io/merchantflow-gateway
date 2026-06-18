@@ -206,10 +206,16 @@ export function NewLeadDialog() {
           </div>
 
           {leadType === "manual" && (
-            <div className="space-y-1.5">
-              <Label htmlFor="phone" className="text-xs text-muted-foreground">Phone</Label>
-              <Input id="phone" type="tel" placeholder="(555) 123-4567" maxLength={30} value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
-            </div>
+            <>
+              <div className="space-y-1.5">
+                <Label htmlFor="phone" className="text-xs text-muted-foreground">Phone</Label>
+                <Input id="phone" type="tel" placeholder="(555) 123-4567" maxLength={30} value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Referrer</Label>
+                <LeadReferrerSelect value={leadReferrerId} onChange={setLeadReferrerId} />
+              </div>
+            </>
           )}
 
           {leadType === "outreach" && (
