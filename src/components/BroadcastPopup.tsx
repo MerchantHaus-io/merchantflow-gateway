@@ -19,8 +19,9 @@ If anything's unclear, message me.
 
 export function BroadcastPopup() {
   const { user } = useAuth();
-  const [visible, setVisible] = useState(false);
+  const [eligible, setEligible] = useState(false);
   const [acknowledging, setAcknowledging] = useState(false);
+  const slotOk = useBroadcastSlot(BROADCAST_KEY, 2, eligible);
 
   useEffect(() => {
     if (!user) return;
@@ -33,24 +34,31 @@ export function BroadcastPopup() {
       .eq("user_id", user.id)
       .maybeSingle()
       .then(({ data }) => {
-        if (!data) setVisible(true);
+        if (!data) setEligible(true);
       });
   }, [user]);
 
   const handleAcknowledge = async () => {
     if (!user) return;
     setAcknowledging(true);
-    await supabase.from("broadcast_acknowledgments").insert({
+    const { error } = await supabase.from("broadcast_acknowledgments").insert({
       broadcast_key: BROADCAST_KEY,
       user_id: user.id,
       user_email: user.email || "",
     });
-    setVisible(false);
     setAcknowledging(false);
+    if (error) {
+      console.error("[BroadcastPopup] ack failed", error);
+      toast.error("Couldn't save acknowledgment — please try again");
+      return;
+    }
+    setEligible(false);
   };
 
   // Dismiss without acknowledging — will reappear on next session
-  const handleDismiss = () => setVisible(false);
+  const handleDismiss = () => setEligible(false);
+
+  const visible = eligible && slotOk;
 
   return (
     <AnimatePresence>
