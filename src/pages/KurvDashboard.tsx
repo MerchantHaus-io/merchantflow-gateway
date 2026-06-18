@@ -30,17 +30,7 @@ const KurvDashboard = () => {
   const [search, setSearch] = useState("");
   const [syncing, setSyncing] = useState(false);
 
-  // Boarding form
-  const [dealJson, setDealJson] = useState<string>(JSON.stringify({
-    DBAName: "",
-    LegalName: "",
-    MCC: "",
-    Owners: [{ FirstName: "", LastName: "", SSN: "", Title: "", OwnershipPct: 100 }],
-    BankAccount: { Routing: "", Account: "" },
-  }, null, 2));
-  const [dealType, setDealType] = useState<"unsigned" | "signed">("unsigned");
-  const [opportunityId, setOpportunityId] = useState("");
-  const [submittingDeal, setSubmittingDeal] = useState(false);
+  // (Boarding handled by wizard component)
 
   // Transactions
   const [txMid, setTxMid] = useState("");
