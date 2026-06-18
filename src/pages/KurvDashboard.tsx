@@ -7,11 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { RefreshCw, Zap, Search, FileText, DollarSign, ListChecks, Loader2 } from "lucide-react";
 import { format } from "date-fns";
+import { KurvBoardingWizard } from "@/components/kurv/KurvBoardingWizard";
 
 interface KurvMerchant {
   id: string; mid: string; dba_name: string | null; legal_name: string | null;
@@ -30,17 +30,7 @@ const KurvDashboard = () => {
   const [search, setSearch] = useState("");
   const [syncing, setSyncing] = useState(false);
 
-  // Boarding form
-  const [dealJson, setDealJson] = useState<string>(JSON.stringify({
-    DBAName: "",
-    LegalName: "",
-    MCC: "",
-    Owners: [{ FirstName: "", LastName: "", SSN: "", Title: "", OwnershipPct: 100 }],
-    BankAccount: { Routing: "", Account: "" },
-  }, null, 2));
-  const [dealType, setDealType] = useState<"unsigned" | "signed">("unsigned");
-  const [opportunityId, setOpportunityId] = useState("");
-  const [submittingDeal, setSubmittingDeal] = useState(false);
+  // (Boarding handled by wizard component)
 
   // Transactions
   const [txMid, setTxMid] = useState("");
@@ -72,21 +62,7 @@ const KurvDashboard = () => {
     } finally { setSyncing(false); }
   };
 
-  const submitDeal = async () => {
-    setSubmittingDeal(true);
-    try {
-      const payload = JSON.parse(dealJson);
-      const { data, error } = await supabase.functions.invoke("kurv-board-deal", {
-        body: { deal_type: dealType, opportunity_id: opportunityId || null, payload },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      toast.success(`Deal submitted (${data?.submission?.deal_id ?? "no ID returned"})`);
-      await loadLocal();
-    } catch (e: any) {
-      toast.error(e?.message ?? "Deal submission failed");
-    } finally { setSubmittingDeal(false); }
-  };
+  // submitDeal removed — handled by wizard
 
   const loadTransactions = async () => {
     if (!txMid) { toast.error("MID is required"); return; }
@@ -166,45 +142,7 @@ const KurvDashboard = () => {
 
           {/* BOARDING */}
           <TabsContent value="board" className="space-y-4 mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Submit Deal to Kurv</CardTitle>
-                <CardDescription>
-                  V1: raw JSON payload editor against the EMS{" "}
-                  <code>Submit{dealType === "signed" ? "Signed" : "Unsigned"}Deal</code> endpoint.
-                  A guided wizard ships next — for now, paste/edit the deal payload directly from the EMS API reference.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <div>
-                    <Label>Deal Type</Label>
-                    <select
-                      value={dealType}
-                      onChange={(e) => setDealType(e.target.value as any)}
-                      className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
-                    >
-                      <option value="unsigned">Unsigned (editable)</option>
-                      <option value="signed">Signed (final)</option>
-                    </select>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <Label>Linked Opportunity ID (optional)</Label>
-                    <Input value={opportunityId} onChange={(e) => setOpportunityId(e.target.value)} placeholder="uuid of CRM opportunity" />
-                  </div>
-                </div>
-                <div>
-                  <Label>Deal Payload (JSON)</Label>
-                  <Textarea value={dealJson} onChange={(e) => setDealJson(e.target.value)} rows={18} className="font-mono text-xs" />
-                </div>
-                <div className="flex justify-end">
-                  <Button onClick={submitDeal} disabled={submittingDeal} className="gap-2">
-                    {submittingDeal ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
-                    Submit {dealType === "signed" ? "Signed" : "Unsigned"} Deal
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <KurvBoardingWizard onSubmitted={loadLocal} />
           </TabsContent>
 
           {/* MERCHANTS */}
