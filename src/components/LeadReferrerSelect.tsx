@@ -45,7 +45,7 @@ export function LeadReferrerSelect({
     queryKey: ["lead-referrers-active"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("lead_referrers" as never)
+        .from("lead_referrers" as any)
         .select("id,name,institution,is_active")
         .eq("is_active", true)
         .order("name", { ascending: true });

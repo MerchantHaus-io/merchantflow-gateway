@@ -59,7 +59,7 @@ export function LeadReferrerManager() {
     queryKey: ["lead-referrers-admin"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("lead_referrers" as never)
+        .from("lead_referrers" as any)
         .select("*")
         .order("name", { ascending: true });
       if (error) throw error;
@@ -96,7 +96,7 @@ export function LeadReferrerManager() {
       };
       if (draft.id) {
         const { error } = await supabase
-          .from("lead_referrers" as never)
+          .from("lead_referrers" as any)
           .update(payload)
           .eq("id", draft.id);
         if (error) throw error;
@@ -130,7 +130,7 @@ export function LeadReferrerManager() {
 
   const toggleActive = async (r: LeadReferrer) => {
     const { error } = await supabase
-      .from("lead_referrers" as never)
+      .from("lead_referrers" as any)
       .update({ is_active: !r.is_active })
       .eq("id", r.id);
     if (error) {
