@@ -56,6 +56,7 @@ const Outreach = lazy(() => import("./pages/Outreach"));
 const OutreachDetail = lazy(() => import("./pages/OutreachDetail"));
 const NetlifyHub = lazy(() => import("./pages/NetlifyHub"));
 const NMIBoarding = lazy(() => import("./pages/NMIBoarding"));
+const KurvDashboard = lazy(() => import("./pages/KurvDashboard"));
 const Integrations = lazy(() => import("./pages/Integrations"));
 const Transactions = lazy(() => import("./pages/Transactions"));
 const GatewayAccounts = lazy(() => import("./pages/GatewayAccounts"));
@@ -177,6 +178,7 @@ const App = () => (
                 <Route path="/tools/terminal-updates" element={<ProtectedRoute><TerminalUpdates /></ProtectedRoute>} />
                 <Route path="/tools/netlify" element={<ProtectedRoute><NetlifyHub /></ProtectedRoute>} />
                 <Route path="/tools/nmi-boarding" element={<ProtectedRoute><NMIBoarding /></ProtectedRoute>} />
+                <Route path="/tools/kurv" element={<ProtectedRoute><KurvDashboard /></ProtectedRoute>} />
                 <Route path="/supported-processors" element={<ProtectedRoute><SupportedProcessors /></ProtectedRoute>} />
                 <Route path="/outreach" element={<ProtectedRoute><Outreach /></ProtectedRoute>} />
                 <Route path="/outreach/:id" element={<ProtectedRoute><OutreachDetail /></ProtectedRoute>} />
