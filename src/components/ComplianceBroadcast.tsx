@@ -54,6 +54,7 @@ export function ComplianceBroadcast() {
   const [visible, setVisible] = useState(false);
   const [acknowledging, setAcknowledging] = useState(false);
   const [checked, setChecked] = useState<Record<string, boolean>>({});
+  const slotOk = useBroadcastSlot(BROADCAST_KEY, 1, visible);
 
   const allChecked = CONTROLS.every((c) => checked[c.id]);
 
