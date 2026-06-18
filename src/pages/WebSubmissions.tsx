@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/select";
 import type { Tables } from "@/integrations/supabase/types";
 import JSZip from "jszip";
+import { LeadReferrerSelect } from "@/components/LeadReferrerSelect";
 
 type Application = Tables<"applications">;
 type Account = Tables<"accounts">;
@@ -135,7 +136,7 @@ export default function WebSubmissions() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [isConverting, setIsConverting] = useState<string | null>(null);
-  const [referralPrompt, setReferralPrompt] = useState<{ app: Application; isReferral: boolean; referredBy: string } | null>(null);
+  const [referralPrompt, setReferralPrompt] = useState<{ app: Application; isReferral: boolean; referredBy: string; leadReferrerId: string | null } | null>(null);
   const [assignPrompt, setAssignPrompt] = useState<Application | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
@@ -183,7 +184,7 @@ export default function WebSubmissions() {
   };
 
   const promptReferralAndConvert = (app: Application) => {
-    setReferralPrompt({ app, isReferral: false, referredBy: '' });
+    setReferralPrompt({ app, isReferral: false, referredBy: '', leadReferrerId: null });
   };
 
   // --- Assign to Account logic ---
@@ -324,7 +325,7 @@ export default function WebSubmissions() {
     }
   };
 
-  const convertToPipeline = async (app: Application, referralSource?: string) => {
+  const convertToPipeline = async (app: Application, referralSource?: string, leadReferrerId?: string | null) => {
     setIsConverting(app.id);
 
     try {
@@ -517,6 +518,8 @@ export default function WebSubmissions() {
           username: isGatewayOnly ? (app.notes?.match(/Username:\s*([^.]+)/)?.[1]?.trim() || null) : null,
            
           ...(appReferrerId ? { referrer_id: appReferrerId } as any : {}),
+           
+          ...(leadReferrerId ? { lead_referrer_id: leadReferrerId } as any : {}),
            
           ...(autoTier ? { gateway_tier: autoTier } as any : {}),
            
@@ -1177,7 +1180,7 @@ export default function WebSubmissions() {
                 </div>
                 {referralPrompt.isReferral && (
                   <div className="space-y-2">
-                    <Label htmlFor="referredBy">Who referred them?</Label>
+                    <Label htmlFor="referredBy">Who referred them? (free text)</Label>
                     <Input
                       id="referredBy"
                       value={referralPrompt.referredBy}
@@ -1187,14 +1190,23 @@ export default function WebSubmissions() {
                     />
                   </div>
                 )}
+                <div className="space-y-2">
+                  <Label>Referrer (from directory)</Label>
+                  <LeadReferrerSelect
+                    value={referralPrompt.leadReferrerId}
+                    onChange={(id) => setReferralPrompt(prev => prev ? { ...prev, leadReferrerId: id } : null)}
+                  />
+                  <p className="text-[11px] text-muted-foreground">Optional — links the deal to a managed bank/partner contact.</p>
+                </div>
                 <div className="flex justify-end gap-2 pt-2 border-t border-border">
                   <Button variant="outline" onClick={() => setReferralPrompt(null)}>Cancel</Button>
                   <Button
                     onClick={() => {
                       const source = referralPrompt.isReferral ? referralPrompt.referredBy : undefined;
                       const app = referralPrompt.app;
+                      const lrId = referralPrompt.leadReferrerId;
                       setReferralPrompt(null);
-                      convertToPipeline(app, source || undefined);
+                      convertToPipeline(app, source || undefined, lrId);
                     }}
                   >
                     Convert to Pipeline
