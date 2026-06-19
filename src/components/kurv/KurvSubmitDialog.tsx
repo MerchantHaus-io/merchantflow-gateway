@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, AlertCircle, CheckCircle2, Copy, Send } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle2, Copy, Send, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -25,9 +25,11 @@ export const KurvSubmitDialog = ({ open, onOpenChange, opportunityId, accountNam
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [validating, setValidating] = useState(false);
+  const [emsResult, setEmsResult] = useState<any>(null);
 
   useEffect(() => {
-    if (!open) { setPreview(null); return; }
+    if (!open) { setPreview(null); setEmsResult(null); return; }
     setLoading(true);
     supabase.functions
       .invoke("kurv-build-payload", { body: { opportunity_id: opportunityId } })
