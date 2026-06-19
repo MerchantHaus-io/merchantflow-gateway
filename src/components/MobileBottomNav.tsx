@@ -80,6 +80,7 @@ const GROUPS: { label: string; items: NavItem[] }[] = [
     label: "Tools",
     items: [
       { title: "Board Merchant", url: "/tools/nmi-boarding", icon: BadgeDollarSign },
+      { title: "Kurv / MyPortfolio", url: "/tools/kurv", icon: BadgeDollarSign },
       { title: "Pre-Qualification Wizard", url: "/tools/preboarding-wizard", icon: ClipboardList },
       { title: "Revenue Calculator", url: "/tools/revenue-calculator", icon: Calculator },
       { title: "CSV Import", url: "/tools/csv-import", icon: FileSpreadsheet },
