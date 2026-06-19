@@ -407,6 +407,7 @@ const OpportunityDetail = () => {
   const [reactivateConfirm, setReactivateConfirm] = useState<{ assignee: string } | null>(null);
   const [showPipelineSwitch, setShowPipelineSwitch] = useState(false);
   const [showActivationDialog, setShowActivationDialog] = useState(false);
+  const [showKurvDialog, setShowKurvDialog] = useState(false);
   // Form state
   const [accountName, setAccountName] = useState("");
   const [website, setWebsite] = useState("");
