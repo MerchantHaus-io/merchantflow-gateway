@@ -877,6 +877,23 @@ const OpportunityDetail = () => {
                             </Tooltip>
                           )}
 
+                          {/* Submit to Kurv */}
+                          {opportunity.service_type !== "gateway_only" && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  className="text-sky-600 dark:text-sky-400 border-sky-600/30"
+                                  onClick={() => setShowKurvDialog(true)}
+                                >
+                                  <Send className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Submit to Kurv (EMS)</TooltipContent>
+                            </Tooltip>
+                          )}
+
                           {/* Activate on Portal */}
                           {isAdmin && opportunity.portal_merchant_id && (
                             <Tooltip>
