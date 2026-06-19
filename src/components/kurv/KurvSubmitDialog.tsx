@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, AlertCircle, CheckCircle2, Copy, Send } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle2, Copy, Send, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -25,9 +25,11 @@ export const KurvSubmitDialog = ({ open, onOpenChange, opportunityId, accountNam
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [validating, setValidating] = useState(false);
+  const [emsResult, setEmsResult] = useState<any>(null);
 
   useEffect(() => {
-    if (!open) { setPreview(null); return; }
+    if (!open) { setPreview(null); setEmsResult(null); return; }
     setLoading(true);
     supabase.functions
       .invoke("kurv-build-payload", { body: { opportunity_id: opportunityId } })
@@ -58,6 +60,21 @@ export const KurvSubmitDialog = ({ open, onOpenChange, opportunityId, accountNam
     if ((data as any)?.error) { toast.error((data as any).error); return; }
     toast.success(`Submitted ${dealType} deal to Kurv`);
     onOpenChange(false);
+  };
+
+  const handleValidate = async (dealType: "unsigned" | "signed") => {
+    if (!preview) return;
+    setValidating(true);
+    setEmsResult(null);
+    const { data, error } = await supabase.functions.invoke("kurv-validate-deal", {
+      body: { deal_type: dealType, payload: preview.payload },
+    });
+    setValidating(false);
+    if (error) { toast.error(error.message); return; }
+    setEmsResult(data);
+    if ((data as any)?.unsupported) toast.warning("EMS validate endpoint not available in this environment");
+    else if ((data as any)?.ok) toast.success("EMS validation passed");
+    else toast.error(`EMS returned ${((data as any)?.issues?.length ?? 0)} validation issue(s)`);
   };
 
   return (
@@ -115,6 +132,33 @@ export const KurvSubmitDialog = ({ open, onOpenChange, opportunityId, accountNam
               </div>
             )}
 
+            {emsResult && (
+              <div className={`border rounded p-3 space-y-1 ${
+                emsResult.unsupported ? "border-muted bg-muted/30" :
+                emsResult.ok ? "border-emerald-500/40 bg-emerald-500/5" :
+                "border-destructive/40 bg-destructive/5"
+              }`}>
+                <div className="text-sm font-medium flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4" />
+                  EMS validation
+                  {emsResult.endpoint && <span className="font-mono text-xs text-muted-foreground">{emsResult.endpoint} → {emsResult.status}</span>}
+                </div>
+                {emsResult.unsupported && (
+                  <div className="text-xs text-muted-foreground">EMS does not expose a validate endpoint in this environment. Tried: {emsResult.attempts?.map((a: any) => `${a.endpoint} (${a.status})`).join(", ")}</div>
+                )}
+                {Array.isArray(emsResult.issues) && emsResult.issues.length > 0 && (
+                  <ul className="text-xs space-y-0.5 ml-6 list-disc">
+                    {emsResult.issues.map((i: any, idx: number) => (
+                      <li key={idx}>{i.field && <span className="font-mono">{i.field}</span>}{i.field ? " — " : ""}{i.message}</li>
+                    ))}
+                  </ul>
+                )}
+                {emsResult.ok && (!emsResult.issues || emsResult.issues.length === 0) && (
+                  <div className="text-xs text-emerald-600 dark:text-emerald-400">EMS accepted the payload — no field errors.</div>
+                )}
+              </div>
+            )}
+
             <div className="flex-1 min-h-0 border rounded">
               <ScrollArea className="h-full">
                 <pre className="text-[11px] p-3 font-mono whitespace-pre-wrap break-all">
@@ -135,6 +179,14 @@ export const KurvSubmitDialog = ({ open, onOpenChange, opportunityId, accountNam
             }}
           >
             <Copy className="h-4 w-4 mr-1.5" /> Copy JSON
+          </Button>
+          <Button
+            variant="outline"
+            disabled={!preview || validating}
+            onClick={() => handleValidate("unsigned")}
+          >
+            {validating ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <ShieldCheck className="h-4 w-4 mr-1.5" />}
+            Validate with EMS
           </Button>
           <Button
             variant="outline"
