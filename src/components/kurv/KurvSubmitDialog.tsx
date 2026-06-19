@@ -62,6 +62,21 @@ export const KurvSubmitDialog = ({ open, onOpenChange, opportunityId, accountNam
     onOpenChange(false);
   };
 
+  const handleValidate = async (dealType: "unsigned" | "signed") => {
+    if (!preview) return;
+    setValidating(true);
+    setEmsResult(null);
+    const { data, error } = await supabase.functions.invoke("kurv-validate-deal", {
+      body: { deal_type: dealType, payload: preview.payload },
+    });
+    setValidating(false);
+    if (error) { toast.error(error.message); return; }
+    setEmsResult(data);
+    if ((data as any)?.unsupported) toast.warning("EMS validate endpoint not available in this environment");
+    else if ((data as any)?.ok) toast.success("EMS validation passed");
+    else toast.error(`EMS returned ${((data as any)?.issues?.length ?? 0)} validation issue(s)`);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
