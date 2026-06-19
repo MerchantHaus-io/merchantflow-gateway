@@ -73,6 +73,7 @@ import { CommunicationLogPanel } from "@/components/CommunicationLogPanel";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
 import { PortalActivationDialog } from "@/components/opportunity-detail/PortalActivationDialog";
+import { KurvSubmitDialog } from "@/components/kurv/KurvSubmitDialog";
 import { PricingBadges } from "@/components/PricingBadges";
 
 
