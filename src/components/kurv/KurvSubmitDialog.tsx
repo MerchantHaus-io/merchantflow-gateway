@@ -132,6 +132,33 @@ export const KurvSubmitDialog = ({ open, onOpenChange, opportunityId, accountNam
               </div>
             )}
 
+            {emsResult && (
+              <div className={`border rounded p-3 space-y-1 ${
+                emsResult.unsupported ? "border-muted bg-muted/30" :
+                emsResult.ok ? "border-emerald-500/40 bg-emerald-500/5" :
+                "border-destructive/40 bg-destructive/5"
+              }`}>
+                <div className="text-sm font-medium flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4" />
+                  EMS validation
+                  {emsResult.endpoint && <span className="font-mono text-xs text-muted-foreground">{emsResult.endpoint} → {emsResult.status}</span>}
+                </div>
+                {emsResult.unsupported && (
+                  <div className="text-xs text-muted-foreground">EMS does not expose a validate endpoint in this environment. Tried: {emsResult.attempts?.map((a: any) => `${a.endpoint} (${a.status})`).join(", ")}</div>
+                )}
+                {Array.isArray(emsResult.issues) && emsResult.issues.length > 0 && (
+                  <ul className="text-xs space-y-0.5 ml-6 list-disc">
+                    {emsResult.issues.map((i: any, idx: number) => (
+                      <li key={idx}>{i.field && <span className="font-mono">{i.field}</span>}{i.field ? " — " : ""}{i.message}</li>
+                    ))}
+                  </ul>
+                )}
+                {emsResult.ok && (!emsResult.issues || emsResult.issues.length === 0) && (
+                  <div className="text-xs text-emerald-600 dark:text-emerald-400">EMS accepted the payload — no field errors.</div>
+                )}
+              </div>
+            )}
+
             <div className="flex-1 min-h-0 border rounded">
               <ScrollArea className="h-full">
                 <pre className="text-[11px] p-3 font-mono whitespace-pre-wrap break-all">
