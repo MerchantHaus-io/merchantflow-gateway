@@ -35,6 +35,7 @@ import {
   ClipboardList,
   ListChecks,
   Zap,
+  Send,
   CreditCard,
   Calendar,
   Clock,
@@ -73,6 +74,7 @@ import { CommunicationLogPanel } from "@/components/CommunicationLogPanel";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
 import { PortalActivationDialog } from "@/components/opportunity-detail/PortalActivationDialog";
+import { KurvSubmitDialog } from "@/components/kurv/KurvSubmitDialog";
 import { PricingBadges } from "@/components/PricingBadges";
 
 
@@ -406,6 +408,7 @@ const OpportunityDetail = () => {
   const [reactivateConfirm, setReactivateConfirm] = useState<{ assignee: string } | null>(null);
   const [showPipelineSwitch, setShowPipelineSwitch] = useState(false);
   const [showActivationDialog, setShowActivationDialog] = useState(false);
+  const [showKurvDialog, setShowKurvDialog] = useState(false);
   // Form state
   const [accountName, setAccountName] = useState("");
   const [website, setWebsite] = useState("");
@@ -875,6 +878,23 @@ const OpportunityDetail = () => {
                             </Tooltip>
                           )}
 
+                          {/* Submit to Kurv */}
+                          {opportunity.service_type !== "gateway_only" && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  className="text-sky-600 dark:text-sky-400 border-sky-600/30"
+                                  onClick={() => setShowKurvDialog(true)}
+                                >
+                                  <Send className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Submit to Kurv (EMS)</TooltipContent>
+                            </Tooltip>
+                          )}
+
                           {/* Activate on Portal */}
                           {isAdmin && opportunity.portal_merchant_id && (
                             <Tooltip>
@@ -1298,6 +1318,14 @@ const OpportunityDetail = () => {
           portalMerchantId={opportunity.portal_merchant_id}
           accountName={account?.name}
           onSuccess={() => fetchOpportunity()}
+        />
+      )}
+      {opportunity && (
+        <KurvSubmitDialog
+          open={showKurvDialog}
+          onOpenChange={setShowKurvDialog}
+          opportunityId={opportunity.id}
+          accountName={account?.name}
         />
       )}
     </AppLayout>

@@ -123,3 +123,6 @@ verify_jwt = false
 
 [functions.kurv-lookups]
 verify_jwt = false
+
+[functions.kurv-build-payload]
+verify_jwt = false
