@@ -249,16 +249,16 @@ const FloatingChat: React.FC = () => {
     const lastReadTimestamps = getChannelLastRead();
     const counts: Record<string, number> = {};
     const channelIds = channels.map(ch => ch.id);
-    const { data, error } = await supabase.from("chat_messages").select("channel_id").in("channel_id", channelIds).neq("user_id", user.id);
+    // Single query with created_at lets us compute every channel's unread count
+    // client-side, instead of an extra count query per channel with a last-read.
+    const { data, error } = await supabase.from("chat_messages").select("channel_id, created_at").in("channel_id", channelIds).neq("user_id", user.id);
     if (error || !data) return;
-    data.forEach(msg => { const lastRead = lastReadTimestamps[msg.channel_id]; if (!lastRead) counts[msg.channel_id] = (counts[msg.channel_id] || 0) + 1; });
-    const channelsWithLastRead = channels.filter(ch => lastReadTimestamps[ch.id]);
-    if (channelsWithLastRead.length > 0) {
-      for (const ch of channelsWithLastRead) {
-        const { count } = await supabase.from("chat_messages").select("id", { count: "exact", head: true }).eq("channel_id", ch.id).neq("user_id", user.id).gt("created_at", lastReadTimestamps[ch.id]);
-        counts[ch.id] = count || 0;
+    data.forEach(msg => {
+      const lastRead = lastReadTimestamps[msg.channel_id];
+      if (!lastRead || new Date(msg.created_at) > new Date(lastRead)) {
+        counts[msg.channel_id] = (counts[msg.channel_id] || 0) + 1;
       }
-    }
+    });
     setChannelUnreadCounts(counts);
   }, [user, channels, getChannelLastRead]);
 

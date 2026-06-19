@@ -48,23 +48,7 @@ import JSZip from "jszip";
 type Application = Tables<"applications">;
 type Account = Tables<"accounts">;
 
-function ApplicationDocsBadge({ applicationId }: { applicationId: string; source?: string | null }) {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    const checkDocs = async () => {
-      try {
-        // Check application_documents table (both portal and web form docs)
-        const { count: dbCount } = await supabase
-          .from("application_documents")
-          .select("id", { count: "exact", head: true })
-          .eq("application_id", applicationId);
-        setCount(dbCount ?? 0);
-      } catch {
-        setCount(0);
-      }
-    };
-    checkDocs();
-  }, [applicationId]);
+function ApplicationDocsBadge({ count }: { count: number }) {
   if (count === 0) return <span className="text-xs text-muted-foreground">—</span>;
   return (
     <Badge variant="outline" className="gap-1">
@@ -132,6 +116,9 @@ const isDocSubmission = (app: Application) => app.service_type === "document_sub
 
 export default function WebSubmissions() {
   const [apps, setApps] = useState<Application[]>([]);
+  // Doc counts keyed by application id, fetched in one batched query (avoids an
+  // N+1 where every row queried application_documents on its own).
+  const [docCounts, setDocCounts] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [isConverting, setIsConverting] = useState<string | null>(null);
@@ -164,6 +151,21 @@ export default function WebSubmissions() {
       });
     } else {
       setApps(data || []);
+      // Batch-load document counts for all submissions in a single query.
+      const ids = (data || []).map((a) => a.id);
+      if (ids.length > 0) {
+        const { data: docRows } = await supabase
+          .from("application_documents")
+          .select("application_id")
+          .in("application_id", ids);
+        const counts: Record<string, number> = {};
+        (docRows || []).forEach((d) => {
+          counts[d.application_id] = (counts[d.application_id] || 0) + 1;
+        });
+        setDocCounts(counts);
+      } else {
+        setDocCounts({});
+      }
     }
     setIsLoading(false);
   };
@@ -791,7 +793,7 @@ export default function WebSubmissions() {
                            : "-"}
                        </TableCell>
                        <TableCell>
-                         <ApplicationDocsBadge applicationId={app.id} source={(app as any).source} />
+                         <ApplicationDocsBadge count={docCounts[app.id] ?? 0} />
                        </TableCell>
                        <TableCell>{getStatusBadge(app.status)}</TableCell>
                       <TableCell className="text-right space-x-2">
