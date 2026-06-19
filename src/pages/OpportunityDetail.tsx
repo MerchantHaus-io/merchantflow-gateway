@@ -1320,6 +1320,14 @@ const OpportunityDetail = () => {
           onSuccess={() => fetchOpportunity()}
         />
       )}
+      {opportunity && (
+        <KurvSubmitDialog
+          open={showKurvDialog}
+          onOpenChange={setShowKurvDialog}
+          opportunityId={opportunity.id}
+          accountName={account?.name}
+        />
+      )}
     </AppLayout>
   );
 };
