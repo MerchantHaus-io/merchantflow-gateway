@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
     if (contact?.email) {
       const { data: appRow } = await sb
         .from("applications")
-        .select("id, legal_business_name, dba_name, federal_tax_id, business_type, mcc_code, monthly_volume, average_ticket, high_ticket, website, address1, address2, city, state, zip, email, phone")
+        .select("id, legal_name, dba_name, federal_tax_id, business_type, business_structure, monthly_volume, avg_ticket, high_ticket, ecommerce_percent, in_person_percent, keyed_percent, website, address, address2, city, state, zip, email, phone, owner_name, owner_title, owner_dob, owner_address, owner_city, owner_state, owner_zip, state_of_incorporation, date_established")
         .ilike("email", contact.email)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -81,16 +81,16 @@ Deno.serve(async (req) => {
 
     // ---- Build EMS-shaped payload (PascalCase, best-effort) ----
     const dbaName = pick<string>(merchant?.dba_name, application?.dba_name, account?.name);
-    const legalName = pick<string>(merchant?.legal_entity_name, application?.legal_business_name, account?.name);
+    const legalName = pick<string>(merchant?.legal_entity_name, application?.legal_name, account?.name);
     const tin = pick<string>(merchant?.federal_tax_id, application?.federal_tax_id);
-    const mcc = pick<string>(merchant?.sic_mcc_code, application?.mcc_code);
+    const mcc = pick<string>(merchant?.sic_mcc_code);
     const monthlyVolume = num(merchant?.monthly_volume ?? application?.monthly_volume);
-    const avgTicket = num(merchant?.average_transaction ?? application?.average_ticket);
+    const avgTicket = num(merchant?.average_transaction ?? application?.avg_ticket);
     const highTicket = num(merchant?.high_ticket ?? application?.high_ticket);
     const website = pick<string>(merchant?.website_url, application?.website, account?.website);
 
     const dbaAddress = {
-      Line1: pick(merchant?.dba_address_line1, application?.address1, account?.address1),
+      Line1: pick(merchant?.dba_address_line1, application?.address, account?.address1),
       Line2: pick(merchant?.dba_address_line2, application?.address2, account?.address2),
       City:  pick(merchant?.dba_city, application?.city, account?.city),
       State: pick(merchant?.dba_state, application?.state, account?.state),
@@ -132,14 +132,29 @@ Deno.serve(async (req) => {
       })),
     ];
 
+    // Fallback owner from application's owner_* fields when no structured owners exist
+    if (owners.length === 0 && application?.owner_name) {
+      owners.push({
+        FullName: application.owner_name,
+        Title: application.owner_title,
+        OwnershipPercent: 100,
+        DateOfBirth: application.owner_dob,
+        Address: {
+          Line1: application.owner_address, City: application.owner_city,
+          State: application.owner_state, Zip: application.owner_zip, Country: "US",
+        },
+        SSN: null,
+      } as any);
+    }
+
     const payload = {
       Merchant: {
         DbaName: dbaName,
         LegalName: legalName,
         FederalTaxId: tin,
-        BusinessType: merchant?.ownership_type ?? application?.business_type,
-        FormationDate: merchant?.business_formation_date,
-        StateOfIncorporation: merchant?.state_incorporated,
+        BusinessType: merchant?.ownership_type ?? application?.business_structure ?? application?.business_type,
+        FormationDate: pick(merchant?.business_formation_date, application?.date_established),
+        StateOfIncorporation: pick(merchant?.state_incorporated, application?.state_of_incorporation),
         Mcc: mcc,
         Website: website,
         DbaAddress: dbaAddress,
@@ -163,9 +178,9 @@ Deno.serve(async (req) => {
         MonthlyVolume: monthlyVolume,
         AverageTicket: avgTicket,
         HighTicket: highTicket,
-        PercentSwiped: num(merchant?.percent_swiped),
-        PercentKeyed: num(merchant?.percent_keyed),
-        PercentEcommerce: num(merchant?.percent_ecommerce),
+        PercentSwiped: num(merchant?.percent_swiped ?? application?.in_person_percent),
+        PercentKeyed: num(merchant?.percent_keyed ?? application?.keyed_percent),
+        PercentEcommerce: num(merchant?.percent_ecommerce ?? application?.ecommerce_percent),
         PercentMoto: num(merchant?.percent_moto),
       },
       Pricing: {
