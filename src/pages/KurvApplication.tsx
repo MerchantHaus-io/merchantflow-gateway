@@ -128,6 +128,9 @@ const KurvApplication = () => {
   const [opportunities, setOpportunities] = useState<OpportunityOption[]>([]);
   const [selectedOpportunityId, setSelectedOpportunityId] = useState<string>("");
   const [loadingOpps, setLoadingOpps] = useState(true);
+  // Saved Pre-Qualification Wizard form_state keyed by opportunity id
+  const [wizardByOpp, setWizardByOpp] = useState<Record<string, any>>({});
+  const [syncedFromWizard, setSyncedFromWizard] = useState(false);
 
   useEffect(() => {
     const fetchOpportunities = async () => {
@@ -160,6 +163,22 @@ const KurvApplication = () => {
           accountWebsite: opp.accounts?.website,
         }));
         setOpportunities(mapped);
+
+        // Pull saved Pre-Qualification Wizard data so it can pre-fill the application
+        const oppIds = mapped.map((o) => o.id);
+        if (oppIds.length) {
+          const { data: wiz } = await supabase
+            .from("onboarding_wizard_states")
+            .select("opportunity_id, form_state")
+            .in("opportunity_id", oppIds);
+          if (wiz) {
+            const map: Record<string, any> = {};
+            wiz.forEach((w: any) => {
+              if (w.form_state) map[w.opportunity_id] = w.form_state;
+            });
+            setWizardByOpp(map);
+          }
+        }
       }
       setLoadingOpps(false);
     };
@@ -168,25 +187,42 @@ const KurvApplication = () => {
 
   const handleSelectOpportunity = (oppId: string) => {
     setSelectedOpportunityId(oppId);
+    setSyncedFromWizard(false);
     if (oppId === "none") return;
     const opp = opportunities.find((o) => o.id === oppId);
     if (!opp) return;
+
+    // Pre-Qualification Wizard form_state takes priority, then account/contact records.
+    const w = wizardByOpp[oppId] || {};
+    const hasWizard = Object.keys(w).length > 0;
+
     setForm((prev) => ({
       ...prev,
-      legal_name: opp.accountName || prev.legal_name,
-      first_name: opp.contactFirstName || prev.first_name,
-      last_name: opp.contactLastName || prev.last_name,
-      email: opp.contactEmail || prev.email,
-      phone: opp.contactPhone || prev.phone,
-      address1: opp.accountAddress1 || prev.address1,
-      address2: opp.accountAddress2 || prev.address2,
-      city: opp.accountCity || prev.city,
-      state: opp.accountState || prev.state,
-      zip: opp.accountZip || prev.zip,
-      country: opp.accountCountry || prev.country,
-      website_url: opp.accountWebsite || prev.website_url,
+      legal_name: w.legal_entity_name || opp.accountName || prev.legal_name,
+      dba_name: w.dba_name || prev.dba_name,
+      business_type: w.ownership_type || prev.business_type,
+      mcc: w.sic_mcc_code || prev.mcc,
+      business_start_date: w.business_formation_date || prev.business_start_date,
+      ein: w.federal_tax_id || prev.ein,
+      website_url: w.website_url || opp.accountWebsite || prev.website_url,
+      first_name: w.dba_contact_first_name || opp.contactFirstName || prev.first_name,
+      last_name: w.dba_contact_last_name || opp.contactLastName || prev.last_name,
+      email: w.dba_contact_email || opp.contactEmail || prev.email,
+      phone: w.dba_contact_phone || opp.contactPhone || prev.phone,
+      address1: w.legal_address_line1 || w.dba_address_line1 || opp.accountAddress1 || prev.address1,
+      address2: w.legal_address_line2 || w.dba_address_line2 || opp.accountAddress2 || prev.address2,
+      city: w.legal_city || w.dba_city || opp.accountCity || prev.city,
+      state: w.legal_state || w.dba_state || opp.accountState || prev.state,
+      zip: w.legal_zip || w.dba_zip || opp.accountZip || prev.zip,
+      country: w.dba_country || opp.accountCountry || prev.country,
+      average_ticket: w.average_transaction || prev.average_ticket,
+      high_ticket: w.high_ticket || prev.high_ticket,
+      monthly_volume: w.monthly_volume || prev.monthly_volume,
     }));
-    toast.success("Opportunity data synced to application");
+    setSyncedFromWizard(hasWizard);
+    toast.success(hasWizard
+      ? "Synced from your Pre-Qualification Wizard"
+      : "Opportunity data synced to application");
   };
 
   const update = (field: keyof FormData, value: string) =>
@@ -360,7 +396,11 @@ const KurvApplication = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-[10px] text-muted-foreground">Selecting an opportunity will auto-populate known fields from your CRM.</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {syncedFromWizard
+                      ? "✓ Pre-filled from this opportunity's Pre-Qualification Wizard — review and complete any remaining fields."
+                      : "Auto-fills from the opportunity's Pre-Qualification Wizard data when available, otherwise from the account & contact record."}
+                  </p>
                 </div>
 
                 <Separator />
