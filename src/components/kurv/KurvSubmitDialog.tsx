@@ -182,6 +182,14 @@ export const KurvSubmitDialog = ({ open, onOpenChange, opportunityId, accountNam
           </Button>
           <Button
             variant="outline"
+            disabled={!preview || validating}
+            onClick={() => handleValidate("unsigned")}
+          >
+            {validating ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <ShieldCheck className="h-4 w-4 mr-1.5" />}
+            Validate with EMS
+          </Button>
+          <Button
+            variant="outline"
             disabled={!canSubmit || submitting}
             onClick={() => handleSubmit("unsigned")}
           >
