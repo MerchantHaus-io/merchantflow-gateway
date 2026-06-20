@@ -22,8 +22,15 @@ const corsHeaders = {
 //   KURV_USERNAME  — API username, if Kurv issues one (used for "basic" auth and
 //                    surfaced in the payload as `username`)
 //   KURV_AGENT_ID  — optional agent / ISO office identifier, if Kurv requires it
+//
+// Known sandbox values (provided by Kurv):
+//   Sandbox base host : https://apitest.emscorporate.com  (production differs)
+//   API username      : Merchanthaus_Test_API  → set as KURV_USERNAME
+// Set KURV_API_URL to the FULL create-application endpoint (base + path) once the
+// path is confirmed from the docs. NOTE: the EMS estate is US-geofenced, so this
+// request must egress from a US IP (see KURV_PROXY_URL / US relay).
 // ───────────────────────────────────────────────────────────────────────────
-const DEFAULT_KURV_API_URL = 'https://apidocs.emscorporate.com/api/applications';
+const DEFAULT_KURV_API_URL = 'https://apitest.emscorporate.com';
 
 function buildAuthHeaders(apiKey: string, username?: string): Record<string, string> {
   const scheme = (Deno.env.get('KURV_AUTH_SCHEME') || 'bearer').toLowerCase();
