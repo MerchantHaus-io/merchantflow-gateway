@@ -19,17 +19,23 @@ const corsHeaders = {
 //   KURV_API_KEY   — the API token Kurv provides (required to go live)
 //   KURV_API_URL   — application-submission endpoint (overrides the default)
 //   KURV_AUTH_SCHEME — "bearer" (default) | "apikey" | "basic"
+//   KURV_USERNAME  — API username, if Kurv issues one (used for "basic" auth and
+//                    surfaced in the payload as `username`)
 //   KURV_AGENT_ID  — optional agent / ISO office identifier, if Kurv requires it
 // ───────────────────────────────────────────────────────────────────────────
 const DEFAULT_KURV_API_URL = 'https://apidocs.emscorporate.com/api/applications';
 
-function buildAuthHeaders(apiKey: string): Record<string, string> {
+function buildAuthHeaders(apiKey: string, username?: string): Record<string, string> {
   const scheme = (Deno.env.get('KURV_AUTH_SCHEME') || 'bearer').toLowerCase();
   switch (scheme) {
     case 'apikey':
       return { 'X-API-Key': apiKey };
-    case 'basic':
-      return { 'Authorization': `Basic ${apiKey}` };
+    case 'basic': {
+      // If a username is supplied, encode "username:token"; otherwise assume the
+      // token is already a pre-encoded basic credential.
+      const value = username ? btoa(`${username}:${apiKey}`) : apiKey;
+      return { 'Authorization': `Basic ${value}` };
+    }
     case 'bearer':
     default:
       return { 'Authorization': `Bearer ${apiKey}` };
@@ -140,8 +146,10 @@ serve(async (req) => {
     // the gated apidocs.emscorporate.com schema. When Kurv supplies the docs,
     // adjust only this object — persistence and the UI are schema-agnostic.
     const agentId = Deno.env.get('KURV_AGENT_ID') || undefined;
+    const apiUsername = Deno.env.get('KURV_USERNAME') || undefined;
     const kurvPayload: Record<string, unknown> = {
       agentId,
+      username: apiUsername,
       business: {
         legalName: legal_name,
         dbaName: dba_name || legal_name,
@@ -251,7 +259,7 @@ serve(async (req) => {
       const kurvResponse = await fetch(KURV_API_URL, {
         method: 'POST',
         headers: {
-          ...buildAuthHeaders(KURV_API_KEY),
+          ...buildAuthHeaders(KURV_API_KEY, apiUsername),
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },

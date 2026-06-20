@@ -123,7 +123,7 @@ const KurvApplication = () => {
   const [step, setStep] = useState<Step>("business");
   const [form, setForm] = useState<FormData>(initialFormData);
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<{ success: boolean; pending?: boolean; application_id?: string; error?: string } | null>(null);
+  const [result, setResult] = useState<{ success: boolean; pending?: boolean; application_id?: string; error?: string; raw?: any } | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [opportunities, setOpportunities] = useState<OpportunityOption[]>([]);
   const [selectedOpportunityId, setSelectedOpportunityId] = useState<string>("");
@@ -262,13 +262,13 @@ const KurvApplication = () => {
       if (error) throw error;
 
       if (data?.success) {
-        setResult({ success: true, application_id: data.application_id });
+        setResult({ success: true, application_id: data.application_id, raw: data.kurv_response });
         toast.success(`Application submitted to Kurv${data.application_id ? ` — ID: ${data.application_id}` : ""}`);
       } else if (data?.pending_credentials) {
         setResult({ success: false, pending: true, error: data.error });
         toast.info("Saved as draft — Kurv API access not configured yet");
       } else {
-        setResult({ success: false, error: data?.error || "Unknown error from Kurv" });
+        setResult({ success: false, error: data?.error || "Unknown error from Kurv", raw: data?.kurv_response });
         toast.error(`Submission failed: ${data?.error}`);
       }
     } catch (err: any) {
@@ -356,6 +356,17 @@ const KurvApplication = () => {
                   <Button variant="outline" size="sm" className="mt-2" onClick={resetForm}>
                     Submit Another Application
                   </Button>
+                )}
+                {/* Raw Kurv response — invaluable while calibrating the live API contract */}
+                {result.raw != null && (
+                  <details className="mt-2">
+                    <summary className="text-[11px] text-muted-foreground cursor-pointer select-none">
+                      View raw Kurv response
+                    </summary>
+                    <pre className="mt-1.5 max-h-64 overflow-auto rounded-md bg-muted/60 p-2 text-[10px] leading-relaxed text-foreground whitespace-pre-wrap break-all">
+                      {typeof result.raw === "string" ? result.raw : JSON.stringify(result.raw, null, 2)}
+                    </pre>
+                  </details>
                 )}
               </div>
             </CardContent>
