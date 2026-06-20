@@ -16,36 +16,39 @@ const corsHeaders = {
 // and docs arrive — nothing downstream needs to change.
 //
 // Set these as Supabase function secrets:
-//   KURV_API_KEY   — the API token Kurv provides (required to go live)
+//   KURV_USERNAME  — API username (used for "basic" auth; also sent in payload)
+//   KURV_PASSWORD  — API password for "basic" auth (preferred credential)
+//   KURV_API_KEY   — API token, when using "bearer"/"apikey" instead of a password
 //   KURV_API_URL   — application-submission endpoint (overrides the default)
-//   KURV_AUTH_SCHEME — "bearer" (default) | "apikey" | "basic"
-//   KURV_USERNAME  — API username, if Kurv issues one (used for "basic" auth and
-//                    surfaced in the payload as `username`)
+//   KURV_AUTH_SCHEME — "basic" (default for username+password) | "bearer" | "apikey"
 //   KURV_AGENT_ID  — optional agent / ISO office identifier, if Kurv requires it
 //
 // Known sandbox values (provided by Kurv):
 //   Sandbox base host : https://apitest.emscorporate.com  (production differs)
 //   API username      : Merchanthaus_Test_API  → set as KURV_USERNAME
+//   API password      : (provided by Kurv)      → set as KURV_PASSWORD
+//   Auth scheme       : basic  → set KURV_AUTH_SCHEME=basic
 // Set KURV_API_URL to the FULL create-application endpoint (base + path) once the
 // path is confirmed from the docs. NOTE: the EMS estate is US-geofenced, so this
 // request must egress from a US IP (see KURV_PROXY_URL / US relay).
 // ───────────────────────────────────────────────────────────────────────────
 const DEFAULT_KURV_API_URL = 'https://apitest.emscorporate.com';
 
-function buildAuthHeaders(apiKey: string, username?: string): Record<string, string> {
-  const scheme = (Deno.env.get('KURV_AUTH_SCHEME') || 'bearer').toLowerCase();
+function buildAuthHeaders(secret: string, username?: string): Record<string, string> {
+  // Default to basic — Kurv issues a username + password for the sandbox.
+  const scheme = (Deno.env.get('KURV_AUTH_SCHEME') || 'basic').toLowerCase();
   switch (scheme) {
     case 'apikey':
-      return { 'X-API-Key': apiKey };
-    case 'basic': {
-      // If a username is supplied, encode "username:token"; otherwise assume the
-      // token is already a pre-encoded basic credential.
-      const value = username ? btoa(`${username}:${apiKey}`) : apiKey;
+      return { 'X-API-Key': secret };
+    case 'bearer':
+      return { 'Authorization': `Bearer ${secret}` };
+    case 'basic':
+    default: {
+      // With a username, encode "username:password"; otherwise assume the secret
+      // is already a pre-encoded basic credential.
+      const value = username ? btoa(`${username}:${secret}`) : secret;
       return { 'Authorization': `Basic ${value}` };
     }
-    case 'bearer':
-    default:
-      return { 'Authorization': `Bearer ${apiKey}` };
   }
 }
 
@@ -198,7 +201,9 @@ serve(async (req) => {
     if (maskedPayload.bankAccount?.routingNumber) maskedPayload.bankAccount.routingNumber = `***${last4(routing_number) ?? ''}`;
     if (maskedPayload.bankAccount?.accountNumber) maskedPayload.bankAccount.accountNumber = `***${last4(account_number) ?? ''}`;
 
-    const KURV_API_KEY = Deno.env.get('KURV_API_KEY');
+    // Basic auth uses the password; bearer/apikey schemes use the token. Either
+    // one being present counts as "credentials configured".
+    const KURV_CREDENTIAL = Deno.env.get('KURV_PASSWORD') || Deno.env.get('KURV_API_KEY');
     const KURV_API_URL = Deno.env.get('KURV_API_URL') || DEFAULT_KURV_API_URL;
 
     // Shared record skeleton persisted regardless of outcome.
@@ -239,11 +244,11 @@ serve(async (req) => {
     };
 
     // ── Credentials not configured yet → save as a draft, don't fail loudly ──
-    if (!KURV_API_KEY) {
+    if (!KURV_CREDENTIAL) {
       const draftRecord = {
         ...baseRecord,
         kurv_status: 'pending_credentials',
-        error_message: 'KURV_API_KEY is not configured yet — application saved as a draft. Add the Kurv API token to go live.',
+        error_message: 'Kurv credentials are not configured yet — application saved as a draft. Add KURV_PASSWORD (or KURV_API_KEY) to go live.',
       };
       const saved = await upsertSubmission(supabaseAdmin, submission_id, draftRecord);
       return new Response(JSON.stringify({
@@ -266,7 +271,7 @@ serve(async (req) => {
       const kurvResponse = await fetch(KURV_API_URL, {
         method: 'POST',
         headers: {
-          ...buildAuthHeaders(KURV_API_KEY, apiUsername),
+          ...buildAuthHeaders(KURV_CREDENTIAL, apiUsername),
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
