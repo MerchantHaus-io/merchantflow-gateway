@@ -6,51 +6,34 @@ const corsHeaders = {
 };
 
 // ───────────────────────────────────────────────────────────────────────────
-// Kurv / EMS Onboarding API configuration
+// Kurv / EMS "MyPortfolio" Developer API — Deal (merchant application) submission
+// Docs: https://apidocs.emscorporate.com/docs/getting-started
 //
-// The Kurv "Onboarding and Transaction Data API Suite" (docs:
-// https://apidocs.emscorporate.com/docs/getting-started) is partner-gated. The
-// exact base URL, auth scheme, endpoint path and payload schema are confirmed
-// only once Kurv issues developer credentials. Everything that is specific to
-// Kurv's contract lives in this block so it is a one-line swap when the token
-// and docs arrive — nothing downstream needs to change.
+// Auth is a JWT token-exchange flow:
+//   1. POST {UserName, Password} to /API/Token/GET  → { Token, Expires } (24h, UTC)
+//   2. Send `Authorization: Bearer <Token>` on every subsequent call.
+// Applications are submitted as a "Signed Deal": POST /api/v2/Deals/Signed.
 //
-// Set these as Supabase function secrets:
-//   KURV_USERNAME  — API username (used for "basic" auth; also sent in payload)
-//   KURV_PASSWORD  — API password for "basic" auth (preferred credential)
-//   KURV_API_KEY   — API token, when using "bearer"/"apikey" instead of a password
-//   KURV_API_URL   — application-submission endpoint (overrides the default)
-//   KURV_AUTH_SCHEME — "basic" (default for username+password) | "bearer" | "apikey"
-//   KURV_AGENT_ID  — optional agent / ISO office identifier, if Kurv requires it
+// Supabase function secrets:
+//   KURV_USERNAME  — API username (e.g. Merchanthaus_Test_API)         [required]
+//   KURV_PASSWORD  — API password                                       [required]
+//   KURV_BASE_URL  — base host (default sandbox apitest.emscorporate.com)
+//   KURV_OFFICE    — Office code the deal belongs to (must belong to user) [required]
+//   KURV_BRANCH    — 4-digit branch code                                [optional]
+//   KURV_REP       — 4-digit rep code                                   [optional]
+//   KURV_PARTNER   — 4-digit partner office                             [optional]
 //
-// Known sandbox values (provided by Kurv):
-//   Sandbox base host : https://apitest.emscorporate.com  (production differs)
-//   API username      : Merchanthaus_Test_API  → set as KURV_USERNAME
-//   API password      : (provided by Kurv)      → set as KURV_PASSWORD
-//   Auth scheme       : basic  → set KURV_AUTH_SCHEME=basic
-// Set KURV_API_URL to the FULL create-application endpoint (base + path) once the
-// path is confirmed from the docs. NOTE: the EMS estate is US-geofenced, so this
-// request must egress from a US IP (see KURV_PROXY_URL / US relay).
+// NOTE: the EMS estate is US-geofenced — this function must egress from a US IP.
+//
+// CALIBRATION: the inner object schemas (MerchantData / BankData / Owners /
+// DealProcessing / Pricings / Equipments) and the ID-based lookups (MccId,
+// OwnershipType, Owner Title) are not yet fully documented. The sandbox returns
+// a 400 with a `{ Title, Errors[] }` body listing exactly what is wrong — that
+// response is surfaced in the UI so the payload can be tightened iteratively.
 // ───────────────────────────────────────────────────────────────────────────
-const DEFAULT_KURV_API_URL = 'https://apitest.emscorporate.com';
-
-function buildAuthHeaders(secret: string, username?: string): Record<string, string> {
-  // Default to basic — Kurv issues a username + password for the sandbox.
-  const scheme = (Deno.env.get('KURV_AUTH_SCHEME') || 'basic').toLowerCase();
-  switch (scheme) {
-    case 'apikey':
-      return { 'X-API-Key': secret };
-    case 'bearer':
-      return { 'Authorization': `Bearer ${secret}` };
-    case 'basic':
-    default: {
-      // With a username, encode "username:password"; otherwise assume the secret
-      // is already a pre-encoded basic credential.
-      const value = username ? btoa(`${username}:${secret}`) : secret;
-      return { 'Authorization': `Basic ${value}` };
-    }
-  }
-}
+const DEFAULT_BASE_URL = 'https://apitest.emscorporate.com';
+const TOKEN_PATH = '/API/Token/GET';
+const SUBMIT_PATH = '/api/v2/Deals/Signed';
 
 const last4 = (v: unknown): string | null => {
   if (!v) return null;
@@ -63,6 +46,33 @@ const numOrNull = (v: unknown): number | null => {
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
 };
+
+// Module-level token cache — reused across warm invocations until ~1 min before
+// expiry (tokens are valid 24h; Expires is UTC).
+let cachedToken: { token: string; expiresMs: number } | null = null;
+
+async function getKurvToken(baseUrl: string, username: string, password: string): Promise<string> {
+  const now = Date.now();
+  if (cachedToken && cachedToken.expiresMs - 60_000 > now) return cachedToken.token;
+
+  const res = await fetch(`${baseUrl}${TOKEN_PATH}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify({ UserName: username, Password: password }),
+  });
+  const text = await res.text();
+  let data: Record<string, unknown> = {};
+  try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
+
+  const jwt = (data?.Token as string) || (data?.token as string);
+  if (!res.ok || !jwt) {
+    const detail = (data?.Title as string) || (data?.message as string) || text?.slice(0, 300);
+    throw new Error(`Kurv token request failed (HTTP ${res.status}): ${detail || 'no token returned'}`);
+  }
+  const expiresMs = data?.Expires ? Date.parse(data.Expires as string) : now + 23 * 3600 * 1000;
+  cachedToken = { token: jwt, expiresMs: Number.isFinite(expiresMs) ? expiresMs : now + 23 * 3600 * 1000 };
+  return jwt;
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -139,6 +149,8 @@ serve(async (req) => {
       routing_number,
       account_number,
       account_type = 'checking',
+      // Optional underwriting notes
+      udw_notes,
     } = body;
 
     // ── Validate required fields ──
@@ -151,60 +163,73 @@ serve(async (req) => {
       });
     }
 
-    // ── Build the Kurv application payload ──
-    // NOTE: field names below are our best mapping pending verification against
-    // the gated apidocs.emscorporate.com schema. When Kurv supplies the docs,
-    // adjust only this object — persistence and the UI are schema-agnostic.
-    const agentId = Deno.env.get('KURV_AGENT_ID') || undefined;
-    const apiUsername = Deno.env.get('KURV_USERNAME') || undefined;
-    const kurvPayload: Record<string, unknown> = {
-      agentId,
-      username: apiUsername,
-      business: {
-        legalName: legal_name,
-        dbaName: dba_name || legal_name,
-        businessType: business_type || undefined,
-        mcc: mcc || undefined,
-        startDate: business_start_date || undefined,
-        ein: ein || undefined,
-        website: website_url || undefined,
-        address: { address1, address2: address2 || undefined, city, state, zip, country },
-        phone,
+    // ── Build the Signed Deal (v2) envelope ──
+    // The top-level field names match the documented contract. Inner objects are
+    // best-effort pending the (still-gated) Deal Submission Guide; the sandbox's
+    // 400 `Errors[]` response drives the remaining field-name calibration.
+    const office = Deno.env.get('KURV_OFFICE') || undefined;
+    const branch = Deno.env.get('KURV_BRANCH') || undefined;
+    const rep = Deno.env.get('KURV_REP') || undefined;
+    const partner = Deno.env.get('KURV_PARTNER') || undefined;
+
+    const dealPayload: Record<string, unknown> = {
+      Office: office,
+      Branch: branch,
+      Rep: rep,
+      Partner: partner,
+      UniqueId: opportunity_id || undefined,
+      UDWNotes: udw_notes || undefined,
+      MerchantData: {
+        DBA: dba_name || legal_name,
+        LegalName: legal_name,
+        FederalTaxId: ein || undefined,
+        MccId: numOrNull(mcc) ?? undefined,            // expects an MccId from /api/v1/MCCs
+        OwnershipType: business_type || undefined,     // expects an Id from /api/v1/OwnershipTypes
+        BusinessStartDate: business_start_date || undefined,
+        Website: website_url || undefined,
+        Phone: phone,
+        Email: email,
+        Address: { Address1: address1, Address2: address2 || undefined, City: city, State: state, Zip: zip },
+        AverageTicket: numOrNull(average_ticket) ?? undefined,
+        HighTicket: numOrNull(high_ticket) ?? undefined,
+        MonthlyVolume: numOrNull(monthly_volume) ?? undefined,
       },
-      principal: {
-        firstName: first_name,
-        lastName: last_name,
-        title: title || undefined,
-        email,
-        phone,
-        dateOfBirth: owner_dob || undefined,
-        ssn: ssn || undefined,
-        ownershipPercent: numOrNull(ownership_percent) ?? undefined,
-      },
-      processing: {
-        averageTicket: numOrNull(average_ticket) ?? undefined,
-        highTicket: numOrNull(high_ticket) ?? undefined,
-        monthlyVolume: numOrNull(monthly_volume) ?? undefined,
-      },
-      bankAccount: (routing_number && account_number) ? {
-        bankName: bank_name || undefined,
-        routingNumber: routing_number,
-        accountNumber: account_number,
-        accountType: account_type,
+      Owners: [
+        {
+          FirstName: first_name,
+          LastName: last_name,
+          Title: title || undefined,                   // expects an Id from /api/v1/OwnerTitles
+          Email: email,
+          Phone: phone,
+          DOB: owner_dob || undefined,
+          SSN: ssn || undefined,
+          OwnershipPercent: numOrNull(ownership_percent) ?? undefined,
+          Address: { Address1: address1, Address2: address2 || undefined, City: city, State: state, Zip: zip },
+        },
+      ],
+      BankData: (routing_number && account_number) ? {
+        BankName: bank_name || undefined,
+        RoutingNum: routing_number,
+        AccountNum: account_number,
+        AccountType: account_type,
       } : undefined,
+      DealProcessing: {},   // TODO: schema pending Deal Submission Guide
+      Pricings: {},         // TODO: schema pending Deal Submission Guide
+      Equipments: {},       // TODO: schema pending Deal Submission Guide
+      Documents: [],        // TODO: base64 document objects (see /api/v1/Documents)
     };
 
     // A masked copy for our own audit record — never persist raw EIN/SSN/account.
-    const maskedPayload = JSON.parse(JSON.stringify(kurvPayload));
-    if (maskedPayload.business?.ein) maskedPayload.business.ein = `***${last4(ein) ?? ''}`;
-    if (maskedPayload.principal?.ssn) maskedPayload.principal.ssn = `***${last4(ssn) ?? ''}`;
-    if (maskedPayload.bankAccount?.routingNumber) maskedPayload.bankAccount.routingNumber = `***${last4(routing_number) ?? ''}`;
-    if (maskedPayload.bankAccount?.accountNumber) maskedPayload.bankAccount.accountNumber = `***${last4(account_number) ?? ''}`;
+    const maskedPayload = JSON.parse(JSON.stringify(dealPayload));
+    if (maskedPayload.MerchantData?.FederalTaxId) maskedPayload.MerchantData.FederalTaxId = `***${last4(ein) ?? ''}`;
+    if (maskedPayload.Owners?.[0]?.SSN) maskedPayload.Owners[0].SSN = `***${last4(ssn) ?? ''}`;
+    if (maskedPayload.BankData?.RoutingNum) maskedPayload.BankData.RoutingNum = `***${last4(routing_number) ?? ''}`;
+    if (maskedPayload.BankData?.AccountNum) maskedPayload.BankData.AccountNum = `***${last4(account_number) ?? ''}`;
 
-    // Basic auth uses the password; bearer/apikey schemes use the token. Either
-    // one being present counts as "credentials configured".
-    const KURV_CREDENTIAL = Deno.env.get('KURV_PASSWORD') || Deno.env.get('KURV_API_KEY');
-    const KURV_API_URL = Deno.env.get('KURV_API_URL') || DEFAULT_KURV_API_URL;
+    const KURV_USERNAME = Deno.env.get('KURV_USERNAME');
+    const KURV_PASSWORD = Deno.env.get('KURV_PASSWORD');
+    const baseUrl = (Deno.env.get('KURV_BASE_URL') || DEFAULT_BASE_URL).replace(/\/$/, '');
+    const submitUrl = `${baseUrl}${SUBMIT_PATH}`;
 
     // Shared record skeleton persisted regardless of outcome.
     const baseRecord = {
@@ -244,38 +269,55 @@ serve(async (req) => {
     };
 
     // ── Credentials not configured yet → save as a draft, don't fail loudly ──
-    if (!KURV_CREDENTIAL) {
-      const draftRecord = {
+    if (!KURV_USERNAME || !KURV_PASSWORD) {
+      const saved = await upsertSubmission(supabaseAdmin, submission_id, {
         ...baseRecord,
         kurv_status: 'pending_credentials',
-        error_message: 'Kurv credentials are not configured yet — application saved as a draft. Add KURV_PASSWORD (or KURV_API_KEY) to go live.',
-      };
-      const saved = await upsertSubmission(supabaseAdmin, submission_id, draftRecord);
+        error_message: 'Kurv credentials not configured — application saved as a draft. Add KURV_USERNAME and KURV_PASSWORD to go live.',
+      });
       return new Response(JSON.stringify({
         success: false,
         pending_credentials: true,
         submission_id: saved?.id,
-        error: 'Kurv API access is not configured yet. The application has been saved as a draft and can be re-submitted once the API token is added.',
+        error: 'Kurv API access is not configured yet. The application has been saved as a draft and can be re-submitted once credentials are added.',
       }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // ── Submit to Kurv / EMS ──
-    console.log('Submitting application to Kurv:', { legal_name, opportunity_id, account_id });
+    // ── 1. Acquire a JWT token ──
+    let jwt: string;
+    try {
+      jwt = await getKurvToken(baseUrl, KURV_USERNAME, KURV_PASSWORD);
+    } catch (authErr) {
+      const msg = authErr instanceof Error ? authErr.message : 'Kurv authentication failed';
+      const saved = await upsertSubmission(supabaseAdmin, submission_id, {
+        ...baseRecord,
+        kurv_status: 'failed',
+        error_message: msg,
+        kurv_response: { stage: 'token', error: msg },
+      });
+      return new Response(JSON.stringify({ success: false, submission_id: saved?.id, error: msg, kurv_response: { stage: 'token', error: msg } }), {
+        status: 422,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // ── 2. Submit the signed deal ──
+    console.log('Submitting deal to Kurv:', { legal_name, office, opportunity_id, account_id });
     let kurvData: Record<string, unknown> = {};
     let kurvOk = false;
     let httpStatus = 0;
     try {
-      const kurvResponse = await fetch(KURV_API_URL, {
+      const kurvResponse = await fetch(submitUrl, {
         method: 'POST',
         headers: {
-          ...buildAuthHeaders(KURV_CREDENTIAL, apiUsername),
+          'Authorization': `Bearer ${jwt}`,
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: JSON.stringify(kurvPayload),
+        body: JSON.stringify(dealPayload),
       });
       httpStatus = kurvResponse.status;
       const text = await kurvResponse.text();
@@ -286,23 +328,23 @@ serve(async (req) => {
       kurvOk = false;
     }
 
-    // Defensive: Kurv's identifier field name is unverified — try common shapes.
-    const applicationId =
-      (kurvData?.applicationId as string) ||
-      (kurvData?.application_id as string) ||
-      (kurvData?.id as string) ||
-      ((kurvData?.data as Record<string, unknown>)?.id as string) ||
+    // Success returns an EMS deal id (e.g. "H-2597"); errors return { Title, Errors[] }.
+    const dealId =
+      (kurvData?.EMSDealId as string) ||
+      (kurvData?.DealId as string) ||
+      (kurvData?.Id as string) ||
       null;
 
+    const errorList = Array.isArray(kurvData?.Errors) ? (kurvData.Errors as string[]) : [];
     const errorMessage = kurvOk ? null : (
-      (kurvData?.message as string) ||
-      (kurvData?.error as string) ||
-      `HTTP ${httpStatus || 'error'}`
+      errorList.length
+        ? `${(kurvData?.Title as string) || 'Submission rejected'}: ${errorList.join('; ')}`
+        : (kurvData?.Title as string) || (kurvData?.Message as string) || (kurvData?.message as string) || `HTTP ${httpStatus || 'error'}`
     );
 
     const saved = await upsertSubmission(supabaseAdmin, submission_id, {
       ...baseRecord,
-      kurv_application_id: applicationId,
+      kurv_application_id: dealId,
       kurv_status: kurvOk ? 'submitted' : 'failed',
       kurv_response: kurvData,
       error_message: errorMessage,
@@ -310,7 +352,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({
       success: kurvOk,
-      application_id: applicationId,
+      application_id: dealId,
       submission_id: saved?.id,
       kurv_response: kurvData,
       error: errorMessage,
@@ -320,7 +362,7 @@ serve(async (req) => {
     });
 
   } catch (err) {
-    console.error('Kurv application submission error:', err);
+    console.error('Kurv deal submission error:', err);
     return new Response(JSON.stringify({ error: err instanceof Error ? err.message : 'Unknown error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
