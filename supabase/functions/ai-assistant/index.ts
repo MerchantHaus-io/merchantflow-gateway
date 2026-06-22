@@ -161,6 +161,7 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
     activitiesRes,
     nmiBoardingRes,
     clientInteractionsRes,
+    callLogsRes,
   ] = await Promise.all([
     // Pipeline stage counts
     supabase.from("opportunities").select("id, stage, status, assigned_to, account_id"),
@@ -190,6 +191,8 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
     supabase.from("nmi_boarding_submissions").select("id, opportunity_id, account_id, company_name, dba_name, nmi_status, nmi_gateway_id, error_message, submitted_by_email, created_at").order("created_at", { ascending: false }).limit(25),
     // Client interactions
     supabase.from("client_interactions").select("account_id, interaction_type, subject, status, priority, outcome, notes, created_by_email, created_at, follow_up_at").order("created_at", { ascending: false }).limit(30),
+    // Quo call logs (recent calls with contacts)
+    supabase.from("call_logs").select("id, contact_id, opportunity_id, account_id, direction, status, duration, phone_number, initiated_by, answered_at, completed_at, summary, next_steps, notes, created_at").order("created_at", { ascending: false }).limit(75),
   ]);
 
   // Pipeline summary
