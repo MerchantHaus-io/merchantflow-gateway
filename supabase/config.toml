@@ -129,3 +129,6 @@ verify_jwt = false
 
 [functions.kurv-validate-deal]
 verify_jwt = false
+
+[functions.quo-sync-calls]
+verify_jwt = false
