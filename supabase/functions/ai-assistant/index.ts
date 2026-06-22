@@ -424,6 +424,9 @@ ${boardingRoster || "  No boarding submissions"}
 CLIENT INTERACTIONS (${allInteractions.length} recent):
 ${interactionRoster || "  No interactions logged"}
 
+QUO CALL LOGS (${allCalls.length} most recent calls, newest first — timestamps in Central Time):
+${callRoster || "  No call activity logged"}
+
 OPEN TASKS (${tasksRes.data?.length || 0}):
 ${openTasks || "  None"}
 
