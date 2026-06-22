@@ -358,6 +358,34 @@ async function buildCRMContext(supabase: ReturnType<typeof createClient>): Promi
     })
     .join("\n");
 
+  // Quo call logs — map contact_id to contact name+email
+  const contactById: Record<string, unknown> = {};
+  for (const c of allContacts) contactById[String((c as unknown).id)] = c;
+  const allCalls = callLogsRes.data || [];
+  const fmtDur = (s: number | null | undefined) => {
+    if (!s || s <= 0) return "0s";
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return m ? `${m}m${r}s` : `${r}s`;
+  };
+  const callRoster = allCalls
+    .map((c: unknown) => {
+      const when = c.answered_at || c.created_at;
+      const date = when ? new Date(when).toLocaleString("en-US", { timeZone: "America/Chicago" }) + " CT" : "unknown";
+      const ct = c.contact_id ? contactById[String(c.contact_id)] : null;
+      const contactName = ct ? `${[ct.first_name, ct.last_name].filter(Boolean).join(" ") || "Unnamed"} [contact:${ct.id}]` : "Unknown contact";
+      const acctName = c.account_id ? (accountIdToName[c.account_id] || "Unknown Account") : "—";
+      const dir = c.direction === "inbound" ? "📞 IN" : c.direction === "outbound" ? "📲 OUT" : c.direction || "?";
+      const status = c.status || "unknown";
+      const phone = c.phone_number || "no#";
+      const who = c.initiated_by ? ` by ${c.initiated_by}` : "";
+      const summary = c.summary ? ` | Summary: ${String(c.summary).slice(0, 200)}` : "";
+      const next = c.next_steps ? ` | Next: ${String(c.next_steps).slice(0, 120)}` : "";
+      const notes = c.notes ? ` | Notes: ${String(c.notes).slice(0, 120)}` : "";
+      return `  ${date} | ${dir} ${status} ${fmtDur(c.duration)} | ${phone} | ${contactName} @ ${acctName}${who}${summary}${next}${notes}`;
+    })
+    .join("\n");
+
   return `
 
 ━━━ LIVE CRM DATA SNAPSHOT ━━━
