@@ -132,3 +132,9 @@ verify_jwt = false
 
 [functions.quo-sync-calls]
 verify_jwt = false
+
+[functions.backup-snapshot-to-drive]
+verify_jwt = false
+
+[functions.backup-flush-changes]
+verify_jwt = false
