@@ -1,0 +1,1 @@
+UPDATE public.admin_popups SET is_active = false WHERE created_at < now() - interval '7 days' AND is_active = true;
