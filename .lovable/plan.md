@@ -1,83 +1,44 @@
-## Kurv (EMS MyPortfolio) Integration
+Generate a comprehensive markdown document of the Lovable Cloud database and ship it as a downloadable artifact.
 
-A standalone dashboard at `/tools/kurv` that mirrors the NMI tooling pattern. Sandbox-first (`apitest.emscorporate.com`) with an env-driven flip to production (`api.emscorporate.com`). All API calls proxied through Lovable Cloud edge functions — credentials never touch the browser.
+## What the document will contain
 
----
+1. **Overview** — table count, schema summary, generation timestamp (Central Time).
+2. **Tables** — one section per table in `public`:
+   - Columns: name, type, nullable, default, identity/PK marker
+   - Primary key and unique constraints
+   - Foreign keys (with referenced table/column and on-delete behavior)
+   - Indexes (non-PK)
+   - RLS enabled? yes/no
+   - RLS policies: name, command (SELECT/INSERT/UPDATE/DELETE), roles, `USING` and `WITH CHECK` expressions
+   - Grants per role
+3. **Enums** — every custom enum type and its values (e.g. `app_role`).
+4. **Functions** — every `public.*` function: signature, return type, language, security mode, search_path, and full body in a fenced SQL block. Grouped by purpose (auth/role, notifications, triggers, business logic, utilities).
+5. **Triggers** — table-by-table list of triggers (name, timing, event, function called). Built from `information_schema.triggers` since the metadata panel shows none registered through the migration system.
+6. **Outcomes / business rules captured in SQL** — pulled from function bodies:
+   - Referrer payout formula (50% rev share, $500 cap)
+   - Stage-change side effects (DM, push, email, `stage_entered_at`)
+   - Application secrets purge on `underwriting`
+   - Office avatar auto-provisioning rules
+   - Billing doc numbering scheme
+   - Support ticket numbering / lifecycle
+7. **Storage buckets** — `avatars`, `opportunity-documents`, `chat-attachments` with public/private status.
+8. **Edge function registry** — names + `verify_jwt` flag from `supabase/config.toml`.
+9. **Cron jobs** — `pg_cron` jobs (e.g. `quo-sync-calls-hourly`) with schedule and SQL command.
+10. **Linter snapshot** — current Supabase security linter findings as an appendix so any open issues are visible alongside the schema.
 
-### 1. Credentials & environment
+## How it will be produced
 
-Add three secrets via the secrets tool:
-- `KURV_API_USERNAME` — `Merchanthaus_Test_API`
-- `KURV_API_PASSWORD` — you provide securely
-- `KURV_API_ENV` — `sandbox` (later `production`)
+- Run a batch of read-only `supabase--read_query` calls against `information_schema`, `pg_catalog`, `pg_policies`, `pg_proc`, `pg_trigger`, `pg_constraint`, `pg_indexes`, `cron.job`, and `storage.buckets`.
+- Read `supabase/config.toml` for edge function metadata.
+- Assemble the markdown locally and write to `/mnt/documents/database-schema.md`.
+- Emit a `<presentation-artifact>` tag so you can preview/download it.
 
-Edge functions resolve base URL from `KURV_API_ENV`:
-- sandbox → `https://apitest.emscorporate.com`
-- production → `https://api.emscorporate.com`
+## Out of scope
 
-Token handling: cache the JWT (and its expiry) in a new `kurv_api_tokens` table (single row, service-role only). Re-acquire via the Token Acquisition endpoint when expired. Never expose username/password/token to the client.
+- No schema or policy changes — read-only export.
+- Migration history files themselves are not inlined; only the live database state is captured.
+- `auth.*`, `storage.*`, `realtime.*`, `vault.*` internals are excluded (managed by Supabase) except for the public storage bucket list.
 
-### 2. Database (one migration)
+## Deliverable
 
-- `kurv_merchants` — synced roster: `mid`, `dba_name`, `legal_name`, `status`, `mcc`, `processor`, `boarded_at`, `last_synced_at`, plus a `raw jsonb` mirror of the EMS payload. Optional `opportunity_id` / `account_id` FKs for CRM linkage.
-- `kurv_deal_submissions` — every boarding submission: `opportunity_id`, `deal_id` (returned by EMS), `deal_type` (`signed` | `unsigned`), `status`, `submitted_by`, `payload jsonb`, `response jsonb`, `error`, timestamps.
-- `kurv_transactions_daily` — denormalized cache of daily batch/deposit summaries per MID for fast dashboard reads.
-- `kurv_api_tokens` — `token`, `expires_at`. Service-role only.
-- `kurv_sync_logs` — run history for roster + transaction syncs (mirrors `commission_sync_logs`).
-
-RLS: all tables readable by `authenticated`; writes restricted to service_role (edge functions). Standard `GRANT` block on each. Admins-only mutations on `kurv_deal_submissions` from the client (only edge functions insert).
-
-### 3. Edge functions
-
-All register in `supabase/config.toml` with `verify_jwt = false` and validate the caller JWT in-code via `_shared/require-auth.ts`.
-
-- `kurv-token` *(internal helper, not exposed)* — acquires/refreshes JWT, persists in `kurv_api_tokens`.
-- `kurv-list-merchants` — calls `POST /reference/list-merchants`, upserts into `kurv_merchants`, writes a `kurv_sync_logs` row.
-- `kurv-get-merchant` — pass-through wrapper for `Get Specific Merchant`.
-- `kurv-board-deal` — accepts wizard payload, posts to `Submit Signed Deal V2` or `Submit Unsigned Deal`, records in `kurv_deal_submissions`. Supports document attachments via `Add Documents`.
-- `kurv-deal-status` — polls `Get Deal Status`, updates submission row.
-- `kurv-transactions` — fetches Daily/Monthly Batch + Deposit summaries for a MID range, caches into `kurv_transactions_daily`.
-- `kurv-chargebacks` — list chargeback summaries/details on demand.
-- `kurv-merchant-statement` — fetches and streams the PDF statement (base64 → blob) for a MID/month.
-- `kurv-lookups` — proxies the reusable reference lists (MCCs, owner titles, ownership types, sales people, address/bank validators) used inside the wizard.
-
-Optional cron (via `pg_cron`):
-- daily roster sync at 06:00 CT → `kurv-list-merchants`
-- hourly transaction refresh during business hours → `kurv-transactions` for active MIDs
-
-### 4. Frontend — `/tools/kurv`
-
-New route gated by `ProtectedRoute` + `InternalWidgets` visibility (internal-only). Mirrors NMI Boarding's structure but lives as its own dashboard tab so it does not interfere with NMI flows.
-
-Layout (single page with internal tabs):
-
-1. **Overview** — KPIs: total active MIDs, MTD volume, MTD transactions, open deals, recent chargebacks. Recent deal submissions table.
-2. **Boarding Wizard** — multi-step form (Merchant → Owners → Bank → Pricing → Equipment → Review). Inline lookups call `kurv-lookups`. Two submit modes: **Save as Unsigned Deal** (editable) or **Submit Signed Deal**. Optional link to a CRM opportunity to auto-populate.
-3. **Merchants** — searchable table backed by `kurv_merchants`. Row drawer shows EMS metadata, link to CRM account if matched, "Pull statement" button, and a transactions panel.
-4. **Transactions** — MID picker + date range → daily/monthly batch + deposit summaries with totals and an interchange breakdown.
-5. **Disputes** — chargeback summaries + drill-down to chargeback details.
-6. **Deals** — submission log from `kurv_deal_submissions` with status polling and document attach.
-
-Shared UI follows the Dark Luxury Tech system already in place (Syne headers, Playfair italics, shimmer buttons, no transparency-breaking effects).
-
-### 5. Announcement & navigation
-
-- Add Kurv link to the Tools menu (alongside NMI Boarding).
-- New `KurvBoardingBroadcast` popup (priority 6) registered with `BroadcastQueue` so it does not clash with existing popups.
-
-### 6. Out of scope for v1 (call out for follow-up)
-
-- True webhook receiver: EMS docs do not advertise outbound webhooks; we will poll deal status and run scheduled syncs. If/when EMS exposes webhooks, add `kurv-webhook` edge function.
-- Commission reconciliation across NMI + Kurv into a unified residual view.
-
----
-
-### Technical notes
-
-- Token cache: row-level lock via `SELECT ... FOR UPDATE` inside the helper to avoid stampede on token refresh.
-- All EMS responses stored verbatim in `raw jsonb` so we can re-derive fields without re-syncing.
-- Idempotency keys on `kurv_deal_submissions` (`opportunity_id` + `deal_type` + hash of payload) to prevent duplicate submits.
-- Rate limiting: simple in-function 1 req/sec backoff if EMS returns 429.
-- Auth scheme confirmed from docs: `POST /token` with `{UserName, Password}` → JWT in `Authorization: Bearer <jwt>` on subsequent calls. Tokens are short-lived; refresh on expiry.
-
-I will request `KURV_API_PASSWORD` (and confirm the username) via the secure secrets prompt once you approve this plan, before writing the edge functions.
+A single file: `database-schema.md` (≈ a few hundred KB depending on policy/function volume) available as a downloadable artifact in chat.
