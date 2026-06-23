@@ -9,6 +9,7 @@ import { AgendaManager } from "@/components/admin/AgendaManager";
 import { AdminPopupManager } from "@/components/admin/AdminPopupManager";
 import { UserRoleManager } from "@/components/admin/UserRoleManager";
 import { LeadReferrerManager } from "@/components/admin/LeadReferrerManager";
+import { BackupStatusCard } from "@/components/admin/BackupStatusCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -95,6 +96,9 @@ const Administration = () => {
 
         {/* Lead Referrers Directory */}
         <LeadReferrerManager />
+
+        {/* Google Drive Backups */}
+        <BackupStatusCard />
 
         {/* Agenda / Ideation Management */}
         <AgendaManager />
