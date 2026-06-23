@@ -21,11 +21,18 @@ export function AdminPopupDisplay() {
   const fetchPendingPopup = useCallback(async () => {
     if (!user) return;
 
-    // Get all active popups
+    const nowIso = new Date().toISOString();
+    // Only show popups created in the last 7 days that haven't expired.
+    // Prevents stale notices from re-appearing for new users or after long absences.
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
     const { data: popups } = await supabase
       .from("admin_popups")
-      .select("id, title, content, min_display_seconds")
-      .eq("is_active", true);
+      .select("id, title, content, min_display_seconds, expires_at, created_at")
+      .eq("is_active", true)
+      .gte("created_at", sevenDaysAgo)
+      .or(`expires_at.is.null,expires_at.gt.${nowIso}`);
+
 
     if (!popups || popups.length === 0) return;
 
