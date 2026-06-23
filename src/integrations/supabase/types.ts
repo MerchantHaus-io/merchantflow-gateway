@@ -569,6 +569,87 @@ export type Database = {
         }
         Relationships: []
       }
+      backup_change_queue: {
+        Row: {
+          created_at: string
+          flushed_at: string | null
+          id: number
+          op: string
+          payload: Json
+          row_pk: string | null
+          table_name: string
+        }
+        Insert: {
+          created_at?: string
+          flushed_at?: string | null
+          id?: number
+          op: string
+          payload: Json
+          row_pk?: string | null
+          table_name: string
+        }
+        Update: {
+          created_at?: string
+          flushed_at?: string | null
+          id?: number
+          op?: string
+          payload?: Json
+          row_pk?: string | null
+          table_name?: string
+        }
+        Relationships: []
+      }
+      backup_runs: {
+        Row: {
+          bytes: number | null
+          drive_file_id: string | null
+          drive_file_name: string | null
+          drive_web_link: string | null
+          duration_ms: number | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          kind: string
+          rows_flushed: number | null
+          started_at: string
+          status: string
+          table_counts: Json | null
+          triggered_by: string | null
+        }
+        Insert: {
+          bytes?: number | null
+          drive_file_id?: string | null
+          drive_file_name?: string | null
+          drive_web_link?: string | null
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          kind: string
+          rows_flushed?: number | null
+          started_at?: string
+          status: string
+          table_counts?: Json | null
+          triggered_by?: string | null
+        }
+        Update: {
+          bytes?: number | null
+          drive_file_id?: string | null
+          drive_file_name?: string | null
+          drive_web_link?: string | null
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          kind?: string
+          rows_flushed?: number | null
+          started_at?: string
+          status?: string
+          table_counts?: Json | null
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
       bank_accounts: {
         Row: {
           account_holder_name: string | null
