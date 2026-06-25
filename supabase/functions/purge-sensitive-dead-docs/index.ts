@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
       rowsRemoved = count ?? ids.length;
     }
 
-    console.log(`purge-sensitive-dead-docs by ${user.email}: ${rowsRemoved} rows, ${storageRemoved} files, ${totalBytes} bytes`);
+    console.log(`purge-sensitive-dead-docs by ${invokerEmail}: ${rowsRemoved} rows, ${storageRemoved} files, ${totalBytes} bytes`);
 
     return new Response(JSON.stringify({
       ok: true, dry_run: false,
