@@ -30,6 +30,16 @@ const config: CapacitorConfig = {
   android: {
     backgroundColor: '#0F172A',
     allowMixedContent: true,
+    webContentsDebuggingEnabled: false,
+    captureInput: true,
+    useLegacyBridge: false,
+    overrideUserAgent: undefined,
+    appendUserAgent: 'OpsTerminalAndroid',
+    // Ensure in-app WebView is used (no Chrome Custom Tabs / browser URL bar)
+    loggingBehavior: 'production',
+    buildOptions: {
+      releaseType: 'AAB',
+    },
   },
   ios: {
     contentInset: 'always',
