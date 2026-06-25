@@ -229,14 +229,20 @@ serve(async (req) => {
     });
 
     if (resendResponse.ok) {
+      const sentAt = new Date().toISOString();
+      // Stamp the adverse action notice timestamp — starts the 12-month document retention window.
+      await supabase
+        .from('opportunities')
+        .update({ adverse_action_sent_at: sentAt })
+        .eq('id', opportunity_id);
       await supabase.from('activities').insert({
         opportunity_id,
         type: 'email_sent',
-        description: `Compliance notification sent to ${contact.email} — Outcome: ${outcome_status}`,
+        description: `Compliance notification (adverse action notice) sent to ${contact.email} — Outcome: ${outcome_status}. Document retention clock started; auto-purge in 12 months.`,
         user_email: 'system',
-        created_at: new Date().toISOString(),
+        created_at: sentAt,
       });
-      return new Response(JSON.stringify({ ok: true }), {
+      return new Response(JSON.stringify({ ok: true, adverse_action_sent_at: sentAt }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     } else {
