@@ -11,11 +11,6 @@ const cors = {
 };
 
 const RETENTION_MONTHS = 12;
-const ADMIN_EMAILS = [
-  "admin@merchanthaus.io",
-  "jamie@merchanthaus.io",
-  "onboarding@merchanthaus.io",
-];
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -41,9 +36,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const dryRun: boolean = body.dry_run !== false; // default to dry run for safety
-    if (!dryRun && !ADMIN_EMAILS.includes(user.email ?? "")) {
-      return json({ error: "Admin access required to execute purge" }, 403);
-    }
+
 
     const sb = createClient(
       Deno.env.get("SUPABASE_URL")!,
