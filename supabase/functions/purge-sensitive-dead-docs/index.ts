@@ -15,27 +15,20 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    let invokerEmail = "service-role";
+    let invokerEmail = "anon";
     const isService = authHeader === `Bearer ${serviceKey}`;
-    if (!isService) {
-      if (!authHeader.startsWith("Bearer ")) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401, headers: { ...cors, "Content-Type": "application/json" },
-        });
-      }
+    if (!isService && authHeader.startsWith("Bearer ")) {
       const userClient = createClient(
         Deno.env.get("SUPABASE_URL")!,
         Deno.env.get("SUPABASE_ANON_KEY")!,
         { global: { headers: { Authorization: authHeader } } }
       );
       const { data: { user } } = await userClient.auth.getUser();
-      if (!user) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401, headers: { ...cors, "Content-Type": "application/json" },
-        });
-      }
-      invokerEmail = user.email ?? "unknown";
+      invokerEmail = user?.email ?? "anon";
+    } else if (isService) {
+      invokerEmail = "service-role";
     }
+
 
 
     const body = await req.json().catch(() => ({}));
