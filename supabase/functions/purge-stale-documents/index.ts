@@ -11,11 +11,6 @@ const cors = {
 };
 
 const RETENTION_MONTHS = 12;
-const ADMIN_EMAILS = [
-  "admin@merchanthaus.io",
-  "jamie@merchanthaus.io",
-  "onboarding@merchanthaus.io",
-];
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
