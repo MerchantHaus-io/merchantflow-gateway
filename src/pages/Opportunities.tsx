@@ -495,6 +495,15 @@ const Opportunities = () => {
                   <SelectItem value="gateway_only">Gateway</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={outcomeFilter} onValueChange={setOutcomeFilter}>
+                <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue placeholder="Outcome" /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="all">All Outcomes</SelectItem>
+                  {Object.entries(OUTCOME_CONFIG).map(([key, config]) => (
+                    <SelectItem key={key} value={key} className="text-xs">{config.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           )}
 
