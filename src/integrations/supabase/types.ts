@@ -2550,6 +2550,7 @@ export type Database = {
       opportunities: {
         Row: {
           account_id: string
+          adverse_action_sent_at: string | null
           agree_to_terms: boolean | null
           assigned_to: string | null
           contact_id: string
@@ -2581,6 +2582,7 @@ export type Database = {
         }
         Insert: {
           account_id: string
+          adverse_action_sent_at?: string | null
           agree_to_terms?: boolean | null
           assigned_to?: string | null
           contact_id: string
@@ -2612,6 +2614,7 @@ export type Database = {
         }
         Update: {
           account_id?: string
+          adverse_action_sent_at?: string | null
           agree_to_terms?: boolean | null
           assigned_to?: string | null
           contact_id?: string
