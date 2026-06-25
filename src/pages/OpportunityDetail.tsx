@@ -282,6 +282,8 @@ const DocumentsSection = ({ opportunityId }: { opportunityId: string }) => {
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
+  const [showDeleteAllDialog, setShowDeleteAllDialog] = useState(false);
 
   useEffect(() => {
     const fetchDocs = async () => {
@@ -330,6 +332,41 @@ const DocumentsSection = ({ opportunityId }: { opportunityId: string }) => {
     toast.success('Downloads complete');
   };
 
+  const handleDeleteAll = async () => {
+    if (documents.length === 0) return;
+    setIsDeletingAll(true);
+    const deletedIds: string[] = [];
+    let failed = 0;
+
+    for (const doc of documents) {
+      try {
+        const { error: storageError } = await supabase.storage
+          .from('opportunity-documents')
+          .remove([doc.file_path]);
+        if (storageError) {
+          console.warn('Storage removal failed for', doc.file_name, storageError);
+        }
+        const { error: dbError } = await supabase
+          .from('documents')
+          .delete()
+          .eq('id', doc.id);
+        if (dbError) {
+          failed++;
+          continue;
+        }
+        deletedIds.push(doc.id);
+      } catch {
+        failed++;
+      }
+    }
+
+    setDocuments((prev) => prev.filter((d) => !deletedIds.includes(d.id)));
+    setIsDeletingAll(false);
+    setShowDeleteAllDialog(false);
+    if (deletedIds.length > 0) toast.success(`${deletedIds.length} document(s) deleted`);
+    if (failed > 0) toast.error(`Failed to delete ${failed} document(s)`);
+  };
+
   if (loading) return <Skeleton className="h-20 w-full" />;
 
   if (documents.length === 0) {
@@ -343,7 +380,17 @@ const DocumentsSection = ({ opportunityId }: { opportunityId: string }) => {
 
   return (
     <div className="space-y-2">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowDeleteAllDialog(true)}
+          disabled={isDeletingAll || isDownloadingAll}
+          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+        >
+          <Trash2 className="h-4 w-4 mr-1" />
+          Delete all
+        </Button>
         <Button
           variant="outline"
           size="sm"
@@ -421,6 +468,28 @@ const DocumentsSection = ({ opportunityId }: { opportunityId: string }) => {
         </div>
       ))}
 
+      <AlertDialog open={showDeleteAllDialog} onOpenChange={setShowDeleteAllDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete all documents?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove {documents.length} document(s) from this opportunity, including the files in storage. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowDeleteAllDialog(false)} disabled={isDeletingAll}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAll}
+              disabled={isDeletingAll}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeletingAll ? 'Deleting...' : 'Delete all'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
