@@ -228,6 +228,11 @@ const Opportunities = () => {
       filtered = filtered.filter(opp => getServiceType(opp) === pipelineFilter);
     }
 
+    // Outcome filter
+    if (outcomeFilter !== "all") {
+      filtered = filtered.filter(opp => opp.outcome_status === outcomeFilter);
+    }
+
     // Sort
     filtered.sort((a, b) => {
       let comparison = 0;
