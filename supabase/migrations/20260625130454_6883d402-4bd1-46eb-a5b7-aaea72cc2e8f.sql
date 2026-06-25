@@ -1,0 +1,3 @@
+ALTER TABLE public.opportunities ADD COLUMN IF NOT EXISTS adverse_action_sent_at timestamptz;
+COMMENT ON COLUMN public.opportunities.adverse_action_sent_at IS 'Timestamp when an adverse action notice (ECOA/FCRA) was issued to the applicant. Used as the start of the 12-month document retention window.';
+CREATE INDEX IF NOT EXISTS idx_opportunities_aan_sent_at ON public.opportunities(adverse_action_sent_at) WHERE adverse_action_sent_at IS NOT NULL;
