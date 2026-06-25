@@ -1,6 +1,9 @@
-// Purges documents tied to opportunities that were closed without approval
+// Purges documents tied to opportunities that received an adverse action notice
 // (status='dead': covers closed_lost, disqualified, no_decision, underwriting_declined)
-// AND have not been touched for 12+ months. Approved/won deals are NEVER purged.
+// EXACTLY 12 months after the adverse action notice (AAN) was issued.
+// Falls back to opportunity.updated_at for legacy 'dead' records that pre-date AAN stamping.
+// Approved/won deals are NEVER purged.
+// Runs daily via pg_cron AND can be invoked manually from the Administration page.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -23,37 +26,46 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
+    // Allow scheduled (cron) invocation with service-role bearer; otherwise require a user session.
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const isScheduled =
+      authHeader === `Bearer ${serviceKey}` ||
+      authHeader === `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}` &&
+        (req.headers.get("x-scheduled") === "true");
 
-    const userClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
-    const { data: { user } } = await userClient.auth.getUser();
-    if (!user) return json({ error: "Unauthorized" }, 401);
+    let invokerEmail = "cron@system";
+    if (!isScheduled) {
+      if (!authHeader.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
+      const userClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: authHeader } } }
+      );
+      const { data: { user } } = await userClient.auth.getUser();
+      if (!user) return json({ error: "Unauthorized" }, 401);
+      invokerEmail = user.email ?? "unknown";
+    }
 
     const body = await req.json().catch(() => ({}));
-    const dryRun: boolean = body.dry_run !== false; // default to dry run for safety
+    // Default: dry-run for manual UI calls; live for scheduled cron.
+    const dryRun: boolean = body.dry_run !== undefined ? !!body.dry_run : !isScheduled;
 
+    const sb = createClient(Deno.env.get("SUPABASE_URL")!, serviceKey);
 
-    const sb = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    // Cutoff = 12 months ago
+    // Cutoff = exactly 12 months ago (from now).
     const cutoff = new Date();
     cutoff.setMonth(cutoff.getMonth() - RETENTION_MONTHS);
     const cutoffIso = cutoff.toISOString();
 
-    // Find eligible opportunities (dead + stale)
+    // Find eligible opportunities:
+    //  - status='dead', AND
+    //  - adverse_action_sent_at <= cutoff, OR (legacy) adverse_action_sent_at is null AND updated_at <= cutoff
     const { data: opps, error: oppErr } = await sb
       .from("opportunities")
-      .select("id, account_id, status, outcome_reason, updated_at")
+      .select("id, account_id, status, outcome_reason, updated_at, adverse_action_sent_at")
       .eq("status", "dead")
-      .lt("updated_at", cutoffIso);
+      .or(`adverse_action_sent_at.lte.${cutoffIso},and(adverse_action_sent_at.is.null,updated_at.lte.${cutoffIso})`);
 
     if (oppErr) throw oppErr;
 
@@ -68,6 +80,7 @@ Deno.serve(async (req) => {
         deleted: 0,
       });
     }
+
 
     // Fetch documents for those opps
     const { data: docs, error: docErr } = await sb
