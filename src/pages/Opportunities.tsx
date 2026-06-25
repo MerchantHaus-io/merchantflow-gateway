@@ -94,6 +94,7 @@ const Opportunities = () => {
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
   const [pipelineFilter, setPipelineFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [outcomeFilter, setOutcomeFilter] = useState<string>("all");
   const [sortField, setSortField] = useState<SortField>('updated');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [showNewModal, setShowNewModal] = useState(false);
@@ -227,6 +228,11 @@ const Opportunities = () => {
       filtered = filtered.filter(opp => getServiceType(opp) === pipelineFilter);
     }
 
+    // Outcome filter
+    if (outcomeFilter !== "all") {
+      filtered = filtered.filter(opp => opp.outcome_status === outcomeFilter);
+    }
+
     // Sort
     filtered.sort((a, b) => {
       let comparison = 0;
@@ -263,7 +269,7 @@ const Opportunities = () => {
     });
 
     return filtered;
-  }, [opportunities, searchQuery, stageFilter, ownerFilter, pipelineFilter, statusFilter, viewTab, sortField, sortDirection, tasks]);
+  }, [opportunities, searchQuery, stageFilter, ownerFilter, pipelineFilter, statusFilter, outcomeFilter, viewTab, sortField, sortDirection, tasks]);
 
   // Stats
   const stats = useMemo(() => {
@@ -451,9 +457,9 @@ const Opportunities = () => {
             onToggleFilters={() => setShowFilters(v => !v)}
             filtersActive={showFilters}
             leftControls={
-              (stageFilter !== 'all' || ownerFilter !== 'all' || pipelineFilter !== 'all' || searchQuery) && (
+              (stageFilter !== 'all' || ownerFilter !== 'all' || pipelineFilter !== 'all' || outcomeFilter !== 'all' || searchQuery) && (
                 <button
-                  onClick={() => { setStageFilter('all'); setOwnerFilter('all'); setPipelineFilter('all'); setSearchQuery(''); }}
+                  onClick={() => { setStageFilter('all'); setOwnerFilter('all'); setPipelineFilter('all'); setOutcomeFilter('all'); setSearchQuery(''); }}
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Clear filters ×
@@ -487,6 +493,15 @@ const Opportunities = () => {
                   <SelectItem value="all">All Pipelines</SelectItem>
                   <SelectItem value="processing">Processing</SelectItem>
                   <SelectItem value="gateway_only">Gateway</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={outcomeFilter} onValueChange={setOutcomeFilter}>
+                <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue placeholder="Outcome" /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="all">All Outcomes</SelectItem>
+                  {Object.entries(OUTCOME_CONFIG).map(([key, config]) => (
+                    <SelectItem key={key} value={key} className="text-xs">{config.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
