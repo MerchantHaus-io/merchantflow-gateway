@@ -335,7 +335,7 @@ const DocumentsSection = ({ opportunityId }: { opportunityId: string }) => {
   const handleDeleteAll = async () => {
     if (documents.length === 0) return;
     setIsDeletingAll(true);
-    let deleted = 0;
+    const deletedIds: string[] = [];
     let failed = 0;
 
     for (const doc of documents) {
@@ -354,18 +354,17 @@ const DocumentsSection = ({ opportunityId }: { opportunityId: string }) => {
           failed++;
           continue;
         }
-        deleted++;
+        deletedIds.push(doc.id);
       } catch {
         failed++;
       }
     }
 
+    setDocuments((prev) => prev.filter((d) => !deletedIds.includes(d.id)));
     setIsDeletingAll(false);
     setShowDeleteAllDialog(false);
-    setDocuments((prev) => (deleted === documents.length ? [] : prev.filter((d) => !deleted || d.file_path)));
-    if (deleted > 0) toast.success(`${deleted} document(s) deleted`);
+    if (deletedIds.length > 0) toast.success(`${deletedIds.length} document(s) deleted`);
     if (failed > 0) toast.error(`Failed to delete ${failed} document(s)`);
-    if (deleted === documents.length) setDocuments([]);
   };
 
   if (loading) return <Skeleton className="h-20 w-full" />;
