@@ -101,6 +101,10 @@ const Administration = () => {
         {/* Google Drive Backups */}
         <BackupStatusCard />
 
+        {/* Document Retention (12-month purge for non-approved deals) */}
+        <DocumentRetentionCard />
+
+
         {/* Agenda / Ideation Management */}
         <AgendaManager />
 
