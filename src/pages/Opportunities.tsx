@@ -269,7 +269,7 @@ const Opportunities = () => {
     });
 
     return filtered;
-  }, [opportunities, searchQuery, stageFilter, ownerFilter, pipelineFilter, statusFilter, viewTab, sortField, sortDirection, tasks]);
+  }, [opportunities, searchQuery, stageFilter, ownerFilter, pipelineFilter, statusFilter, outcomeFilter, viewTab, sortField, sortDirection, tasks]);
 
   // Stats
   const stats = useMemo(() => {
