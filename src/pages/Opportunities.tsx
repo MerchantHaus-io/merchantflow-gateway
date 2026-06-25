@@ -457,9 +457,9 @@ const Opportunities = () => {
             onToggleFilters={() => setShowFilters(v => !v)}
             filtersActive={showFilters}
             leftControls={
-              (stageFilter !== 'all' || ownerFilter !== 'all' || pipelineFilter !== 'all' || searchQuery) && (
+              (stageFilter !== 'all' || ownerFilter !== 'all' || pipelineFilter !== 'all' || outcomeFilter !== 'all' || searchQuery) && (
                 <button
-                  onClick={() => { setStageFilter('all'); setOwnerFilter('all'); setPipelineFilter('all'); setSearchQuery(''); }}
+                  onClick={() => { setStageFilter('all'); setOwnerFilter('all'); setPipelineFilter('all'); setOutcomeFilter('all'); setSearchQuery(''); }}
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Clear filters ×
