@@ -89,20 +89,54 @@ const Opportunities = () => {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [stageFilter, setStageFilter] = useState<string>("all");
-  const [ownerFilter, setOwnerFilter] = useState<string>("all");
-  const [pipelineFilter, setPipelineFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [outcomeFilter, setOutcomeFilter] = useState<string>("all");
-  const [sortField, setSortField] = useState<SortField>('updated');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  // Persist filters across navigation (e.g. drilling into an account & clicking Back)
+  const FILTERS_STORAGE_KEY = 'opportunities:filters:v1';
+  const persisted = (() => {
+    try {
+      const raw = sessionStorage.getItem(FILTERS_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  })();
+
+  const [searchQuery, setSearchQuery] = useState<string>(persisted.searchQuery ?? "");
+  const [stageFilter, setStageFilter] = useState<string>(persisted.stageFilter ?? "all");
+  const [ownerFilter, setOwnerFilter] = useState<string>(persisted.ownerFilter ?? "all");
+  const [pipelineFilter, setPipelineFilter] = useState<string>(persisted.pipelineFilter ?? "all");
+  const [statusFilter, setStatusFilter] = useState<string>(persisted.statusFilter ?? "all");
+  const [outcomeFilter, setOutcomeFilter] = useState<string>(persisted.outcomeFilter ?? "all");
+  const [sortField, setSortField] = useState<SortField>(persisted.sortField ?? 'updated');
+  const [sortDirection, setSortDirection] = useState<SortDirection>(persisted.sortDirection ?? 'desc');
   const [showNewModal, setShowNewModal] = useState(false);
-  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
-  const [viewTab, setViewTab] = useState<'all' | 'archive'>('all');
+  const [viewMode, setViewMode] = useState<'table' | 'cards'>(persisted.viewMode ?? 'table');
+  const [viewTab, setViewTab] = useState<'all' | 'archive'>(persisted.viewTab ?? 'all');
   const [reactivateConfirm, setReactivateConfirm] = useState<{ opp: Opportunity; assignee: string } | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState<boolean>(persisted.showFilters ?? false);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        FILTERS_STORAGE_KEY,
+        JSON.stringify({
+          searchQuery,
+          stageFilter,
+          ownerFilter,
+          pipelineFilter,
+          statusFilter,
+          outcomeFilter,
+          sortField,
+          sortDirection,
+          viewMode,
+          viewTab,
+          showFilters,
+        }),
+      );
+    } catch {
+      /* ignore quota errors */
+    }
+  }, [searchQuery, stageFilter, ownerFilter, pipelineFilter, statusFilter, outcomeFilter, sortField, sortDirection, viewMode, viewTab, showFilters]);
 
   const toggleRowSelect = (id: string) => {
     setSelectedIds(prev => {
