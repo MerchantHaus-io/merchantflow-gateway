@@ -363,31 +363,64 @@ const DocumentsSection = ({ opportunityId }: { opportunityId: string }) => {
               <p className="text-xs text-muted-foreground">{doc.document_type || 'Unassigned'}</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={async () => {
-            try {
-              const { data, error } = await supabase.storage
-                .from('opportunity-documents')
-                .download(doc.file_path);
-              if (error || !data) {
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" onClick={async () => {
+              try {
+                const { data, error } = await supabase.storage
+                  .from('opportunity-documents')
+                  .download(doc.file_path);
+                if (error || !data) {
+                  toast.error(`Failed to download ${doc.file_name}`);
+                  return;
+                }
+                const url = URL.createObjectURL(data);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = doc.file_name;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+              } catch {
                 toast.error(`Failed to download ${doc.file_name}`);
-                return;
               }
-              const url = URL.createObjectURL(data);
-              const link = document.createElement('a');
-              link.href = url;
-              link.download = doc.file_name;
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-              URL.revokeObjectURL(url);
-            } catch {
-              toast.error(`Failed to download ${doc.file_name}`);
-            }
-          }}>
-            <Download className="h-4 w-4" />
-          </Button>
+            }}>
+              <Download className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-destructive hover:text-destructive"
+              onClick={async () => {
+                if (!confirm(`Delete "${doc.file_name}"? This cannot be undone.`)) return;
+                try {
+                  const { error: storageError } = await supabase.storage
+                    .from('opportunity-documents')
+                    .remove([doc.file_path]);
+                  if (storageError) {
+                    console.warn('Storage removal failed:', storageError);
+                  }
+                  const { error: dbError } = await supabase
+                    .from('documents')
+                    .delete()
+                    .eq('id', doc.id);
+                  if (dbError) {
+                    toast.error('Failed to delete document');
+                    return;
+                  }
+                  setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
+                  toast.success('Document deleted');
+                } catch {
+                  toast.error('Failed to delete document');
+                }
+              }}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       ))}
+
     </div>
   );
 };
