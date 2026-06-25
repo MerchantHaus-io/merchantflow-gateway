@@ -129,7 +129,7 @@ Deno.serve(async (req) => {
     }
 
     console.log(
-      `purge-stale-documents by ${user.email}: ${rowsRemoved} rows, ${storageRemoved} files, ${totalBytes} bytes`
+      `purge-stale-documents by ${invokerEmail}: ${rowsRemoved} rows, ${storageRemoved} files, ${totalBytes} bytes`
     );
 
     return json({
