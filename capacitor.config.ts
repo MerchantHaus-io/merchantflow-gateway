@@ -7,6 +7,16 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://d4e766df-1ab4-4f95-a16a-4c8c4222778a.lovableproject.com?forceHideBadge=true',
     cleartext: true,
+    androidScheme: 'https',
+    iosScheme: 'https',
+    // Allow navigation to the Lovable preview & published domains inside the in-app WebView
+    // (prevents Android from opening the system browser, which would show a URL bar)
+    allowNavigation: [
+      '*.lovableproject.com',
+      '*.lovable.app',
+      '*.supabase.co',
+      'd4e766df-1ab4-4f95-a16a-4c8c4222778a.lovableproject.com',
+    ],
   },
   plugins: {
     SplashScreen: {
@@ -30,6 +40,16 @@ const config: CapacitorConfig = {
   android: {
     backgroundColor: '#0F172A',
     allowMixedContent: true,
+    webContentsDebuggingEnabled: false,
+    captureInput: true,
+    useLegacyBridge: false,
+    overrideUserAgent: undefined,
+    appendUserAgent: 'OpsTerminalAndroid',
+    // Ensure in-app WebView is used (no Chrome Custom Tabs / browser URL bar)
+    loggingBehavior: 'production',
+    buildOptions: {
+      releaseType: 'AAB',
+    },
   },
   ios: {
     contentInset: 'always',
