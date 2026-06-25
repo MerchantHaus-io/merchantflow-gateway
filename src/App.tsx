@@ -79,6 +79,7 @@ import { CommandPalette } from "./components/CommandPalette";
 import { KeyboardShortcutsModal } from "./components/KeyboardShortcutsModal";
 import { AdminPopupDisplay } from "./components/AdminPopupDisplay";
 import { EmailSendConfirm } from "./components/EmailSendConfirm";
+import { PatchNotesPopup } from "./components/PatchNotesPopup";
 
 const PUBLIC_ROUTES = ['/auth', '/login', '/contact', '/apply', '/merchant-apply', '/forgot-password', '/update-password', '/terms-processing', '/affiliate', '/portal', '/support-request'];
 
@@ -93,6 +94,7 @@ const InternalWidgets = () => {
       <CommandPalette />
       <KeyboardShortcutsModal />
       <AdminPopupDisplay />
+      <PatchNotesPopup />
       <EmailSendConfirm />
     </>
   );
