@@ -138,3 +138,6 @@ verify_jwt = false
 
 [functions.backup-flush-changes]
 verify_jwt = false
+
+[functions.send-ticket-status-email]
+verify_jwt = false
