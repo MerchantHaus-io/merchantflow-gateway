@@ -5,8 +5,8 @@ import {
   isValidEmail,
   matchAccountByEmail,
 } from "../_shared/support-intake.ts";
+import { sendGmail } from "../_shared/gmail-send.ts";
 
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const SUPPORT_INBOX = Deno.env.get("SUPPORT_INBOX_EMAIL") || "support@merchanthaus.io";
 
 const corsHeaders = {
@@ -30,26 +30,14 @@ const escapeHtml = (str: string): string =>
     .replace(/'/g, "&#39;");
 
 const sendEmail = async (to: string, subject: string, html: string, replyTo?: string) => {
-  if (!RESEND_API_KEY) {
-    console.warn("RESEND_API_KEY not set — skipping email to", to);
-    return;
-  }
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from: `Merchant Haus Support <${SUPPORT_INBOX}>`,
-        to: [to],
-        subject,
-        html,
-        reply_to: replyTo || SUPPORT_INBOX,
-      }),
-    });
-    if (!res.ok) console.error("Resend send failed:", await res.text());
-  } catch (err) {
-    console.error("Resend send error:", err);
-  }
+  const result = await sendGmail({
+    from: `Merchant Haus Support <${SUPPORT_INBOX}>`,
+    to,
+    subject,
+    html,
+    replyTo: replyTo || SUPPORT_INBOX,
+  });
+  if (!result.ok) console.error("Gmail send failed:", result.error);
 };
 
 serve(async (req) => {
