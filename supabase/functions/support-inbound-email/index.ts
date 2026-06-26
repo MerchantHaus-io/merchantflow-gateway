@@ -99,23 +99,15 @@ const parseInbound = async (req: Request): Promise<ParsedEmail> => {
 };
 
 const sendEmail = async (to: string, subject: string, html: string) => {
-  if (!RESEND_API_KEY || !to) return;
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from: `Merchant Haus Support <${SUPPORT_INBOX}>`,
-        to: [to],
-        subject,
-        html,
-        reply_to: SUPPORT_INBOX,
-      }),
-    });
-    if (!res.ok) console.error("Resend send failed:", await res.text());
-  } catch (err) {
-    console.error("Resend send error:", err);
-  }
+  if (!to) return;
+  const result = await sendGmail({
+    from: `Merchant Haus Support <${SUPPORT_INBOX}>`,
+    to,
+    subject,
+    html,
+    replyTo: SUPPORT_INBOX,
+  });
+  if (!result.ok) console.error("Gmail send failed:", result.error);
 };
 
 serve(async (req) => {
