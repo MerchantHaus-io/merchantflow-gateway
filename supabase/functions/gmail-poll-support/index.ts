@@ -97,7 +97,11 @@ serve(async (req) => {
     );
 
     // List unread messages addressed to the support alias, last 2 days.
-    const q = encodeURIComponent("to:support@merchanthaus.io is:unread newer_than:2d");
+    // Use `deliveredto:` so we catch mail delivered via the collaborative group
+    // alias even when the address is on Cc/Bcc rather than the To header.
+    const q = encodeURIComponent(
+      "(deliveredto:support@merchanthaus.io OR to:support@merchanthaus.io OR cc:support@merchanthaus.io) is:unread newer_than:2d",
+    );
     const listRes = await gmailFetch(`/users/me/messages?maxResults=25&q=${q}`);
     if (!listRes.ok) {
       const t = await listRes.text();
