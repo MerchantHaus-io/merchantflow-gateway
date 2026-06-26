@@ -168,6 +168,34 @@ const SupportTicketDetail = () => {
       `${authorName} released the ticket.`,
     );
 
+  const handleStatusChange = async (newStatus: string) => {
+    if (!ticket) return;
+    const prevStatus = ticket.status;
+    await updateTicket(
+      { status: newStatus },
+      "status",
+      `Status changed to "${statusMeta(newStatus).label}" by ${authorName}.`,
+    );
+    // Only email on actual lifecycle transitions and when we have a requester email.
+    if (prevStatus !== newStatus && ticket.requester_email) {
+      try {
+        const { error } = await supabase.functions.invoke("send-ticket-status-email", {
+          body: {
+            ticket_id: ticket.id,
+            new_status: newStatus,
+            changed_by_name: authorName,
+          },
+        });
+        if (error) throw error;
+        toast.success(`Status email sent to ${ticket.requester_email}`);
+      } catch (err) {
+        console.error("Failed to send status email:", err);
+        toast.error("Status updated, but the email notification failed.");
+      }
+    }
+  };
+
+
   const sendReply = async () => {
     if (!id || !reply.trim()) return;
     setSending(true);
@@ -374,7 +402,7 @@ const SupportTicketDetail = () => {
                   <Select
                     value={ticket.status}
                     onValueChange={(v) =>
-                      updateTicket({ status: v }, "status", `Status changed to "${statusMeta(v).label}" by ${authorName}.`)
+                      handleStatusChange(v)
                     }
                     disabled={savingField === "status"}
                   >

@@ -155,9 +155,12 @@ serve(async (req) => {
             author_type: "customer",
             author_name: name,
           });
-          if (existing.status === "closed") {
-            await supabase.from("support_tickets").update({ status: "open" }).eq("id", existing.id);
-          }
+          const patch: Record<string, unknown> = {
+            gmail_thread_id: m.threadId,
+            gmail_message_id: messageId || null,
+          };
+          if (existing.status === "closed") patch.status = "open";
+          await supabase.from("support_tickets").update(patch).eq("id", existing.id);
           results.push({ id: m.id, threaded: existing.ticket_number });
         }
       } else {
@@ -176,6 +179,8 @@ serve(async (req) => {
             requester_email: email,
             account_id,
             contact_id,
+            gmail_thread_id: m.threadId,
+            gmail_message_id: messageId || null,
           })
           .select("id, ticket_number")
           .single();
