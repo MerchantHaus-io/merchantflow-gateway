@@ -3406,6 +3406,8 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string | null
+          gmail_message_id: string | null
+          gmail_thread_id: string | null
           id: string
           priority: string
           requester_email: string
@@ -3428,6 +3430,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          gmail_message_id?: string | null
+          gmail_thread_id?: string | null
           id?: string
           priority?: string
           requester_email: string
@@ -3450,6 +3454,8 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          gmail_message_id?: string | null
+          gmail_thread_id?: string | null
           id?: string
           priority?: string
           requester_email?: string
