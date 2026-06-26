@@ -179,6 +179,8 @@ serve(async (req) => {
             requester_email: email,
             account_id,
             contact_id,
+            gmail_thread_id: m.threadId,
+            gmail_message_id: messageId || null,
           })
           .select("id, ticket_number")
           .single();
