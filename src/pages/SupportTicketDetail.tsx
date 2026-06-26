@@ -402,7 +402,7 @@ const SupportTicketDetail = () => {
                   <Select
                     value={ticket.status}
                     onValueChange={(v) =>
-                      updateTicket({ status: v }, "status", `Status changed to "${statusMeta(v).label}" by ${authorName}.`)
+                      handleStatusChange(v)
                     }
                     disabled={savingField === "status"}
                   >
