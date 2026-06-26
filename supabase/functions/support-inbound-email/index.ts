@@ -23,8 +23,8 @@ import {
   stripHtml,
   stripQuotedReply,
 } from "../_shared/support-intake.ts";
+import { sendGmail } from "../_shared/gmail-send.ts";
 
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const SUPPORT_INBOX = Deno.env.get("SUPPORT_INBOX_EMAIL") || "support@merchanthaus.io";
 const INBOUND_SECRET = Deno.env.get("SUPPORT_INBOUND_SECRET");
 
