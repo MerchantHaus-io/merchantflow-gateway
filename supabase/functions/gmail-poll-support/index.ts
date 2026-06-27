@@ -130,9 +130,38 @@ serve(async (req) => {
       const messageId = headerVal(payload, "Message-ID");
       const email = extractEmailAddress(fromRaw);
       const name = extractDisplayName(fromRaw) || email;
+      const isInternal = !!email && email.endsWith("@merchanthaus.io");
 
-      // Skip mail we sent ourselves and obvious bounces/auto-replies.
-      if (!email || email.endsWith("@merchanthaus.io")) {
+      // Idempotency: if we've already ingested this exact Gmail message, skip it.
+      // Avoids duplicate ticket creation when polling overlaps or includeRead=1 re-runs.
+      if (messageId) {
+        const { data: dupe } = await supabase
+          .from("support_tickets")
+          .select("ticket_number")
+          .eq("gmail_message_id", messageId)
+          .maybeSingle();
+        if (dupe) {
+          await gmailFetch(`/users/me/messages/${m.id}/modify`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ removeLabelIds: ["UNREAD"] }),
+          });
+          results.push({ id: m.id, skipped: "duplicate", ticket: dupe.ticket_number });
+          continue;
+        }
+      }
+
+      const { text, html } = extractBody(payload);
+      const body = text || (html ? stripHtml(html) : "");
+      const cleanBody = stripQuotedReply(body) || "(no message body)";
+
+      const ref = findTicketNumber(subject) || findTicketNumber(body.slice(0, 800));
+
+      // For internal senders (teammates replying via the support group alias),
+      // thread onto the referenced MH-#### ticket as an internal note rather
+      // than creating a new ticket. Internal sender with no MH-#### ref is
+      // treated as a loop / self-send and skipped.
+      if (isInternal && !ref) {
         await gmailFetch(`/users/me/messages/${m.id}/modify`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -141,12 +170,6 @@ serve(async (req) => {
         results.push({ id: m.id, skipped: "internal sender" });
         continue;
       }
-
-      const { text, html } = extractBody(payload);
-      const body = text || (html ? stripHtml(html) : "");
-      const cleanBody = stripQuotedReply(body) || "(no message body)";
-
-      const ref = findTicketNumber(subject) || findTicketNumber(body.slice(0, 800));
 
       if (ref) {
         const { data: existing } = await supabase
@@ -159,15 +182,15 @@ serve(async (req) => {
           await supabase.from("support_ticket_comments").insert({
             ticket_id: existing.id,
             body: cleanBody,
-            is_internal: false,
-            author_type: "customer",
+            is_internal: isInternal,
+            author_type: isInternal ? "agent" : "customer",
             author_name: name,
           });
           const patch: Record<string, unknown> = {
             gmail_thread_id: m.threadId,
             gmail_message_id: messageId || null,
           };
-          if (existing.status === "closed") patch.status = "open";
+          if (!isInternal && existing.status === "closed") patch.status = "open";
           await supabase.from("support_tickets").update(patch).eq("id", existing.id);
           results.push({ id: m.id, threaded: existing.ticket_number });
         }
