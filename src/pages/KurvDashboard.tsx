@@ -55,10 +55,16 @@ const KurvDashboard = () => {
     try {
       const { data, error } = await supabase.functions.invoke("kurv-list-merchants", { body: {} });
       if (error) throw error;
+      if (data?.error) throw new Error(data.error + (data.status ? ` (HTTP ${data.status})` : ""));
       toast.success(`Synced ${data?.upserted ?? 0} merchants from Kurv`);
       await loadLocal();
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to sync Kurv roster");
+      const msg = String(e?.message ?? "");
+      if (/522|connection timed out|timeout|edge function returned a non-2xx/i.test(msg)) {
+        toast.error("Kurv sandbox is unreachable (upstream timeout). Showing cached roster — try again shortly.");
+      } else {
+        toast.error(msg || "Failed to sync Kurv roster");
+      }
     } finally { setSyncing(false); }
   };
 
