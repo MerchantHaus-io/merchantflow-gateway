@@ -19,9 +19,13 @@ export type Database = {
           address1: string | null
           address2: string | null
           city: string | null
+          commission_model: string
           country: string | null
           created_at: string
           id: string
+          kurv_per_txn_fee: number | null
+          kurv_residual_split: number | null
+          kurv_volume_rate_pct: number | null
           name: string
           nmi_merchant_id: string | null
           referrer_id: string | null
@@ -35,9 +39,13 @@ export type Database = {
           address1?: string | null
           address2?: string | null
           city?: string | null
+          commission_model?: string
           country?: string | null
           created_at?: string
           id?: string
+          kurv_per_txn_fee?: number | null
+          kurv_residual_split?: number | null
+          kurv_volume_rate_pct?: number | null
           name: string
           nmi_merchant_id?: string | null
           referrer_id?: string | null
@@ -51,9 +59,13 @@ export type Database = {
           address1?: string | null
           address2?: string | null
           city?: string | null
+          commission_model?: string
           country?: string | null
           created_at?: string
           id?: string
+          kurv_per_txn_fee?: number | null
+          kurv_residual_split?: number | null
+          kurv_volume_rate_pct?: number | null
           name?: string
           nmi_merchant_id?: string | null
           referrer_id?: string | null
