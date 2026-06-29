@@ -141,7 +141,7 @@ Resend (email), Netlify (hosting), GitHub (source control), OpenPhone (telephony
 - Chat & direct messages
 - Document upload and contact editing
 - Cannot manage roles, approve deletions, or export master data
-- **Users:** support@merchanthaus.io, sales@merchanthaus.io, taryn@merchanthaus.io
+- **Users:** support@merchanthaus.io, support@merchanthaus.io, taryn@merchanthaus.io
 
 ### Access Control Architecture
 - **Allowlist:** Only 5 authorized emails can authenticate (\`ALLOWED_EMAILS\` constant + \`isEmailAllowed()\` utility)
@@ -1157,7 +1157,7 @@ Sales Support`,
                         <strong className="text-foreground text-sm">12. Contact Form Notification (to sales@)</strong>
                         <span className="text-[11px] uppercase tracking-wider text-muted-foreground bg-background px-2 py-0.5 border border-border">Fires: someone submits the public /contact form</span>
                       </div>
-                      <p className="text-sm text-muted-foreground mt-2"><strong className="text-foreground">What it says:</strong> Pings <strong>sales@merchanthaus.io</strong> with the inquirer's name, email, and message so we can follow up.</p>
+                      <p className="text-sm text-muted-foreground mt-2"><strong className="text-foreground">What it says:</strong> Pings <strong>support@merchanthaus.io</strong> with the inquirer's name, email, and message so we can follow up.</p>
                     </div>
                     <div className="bg-secondary/50 p-4 border border-border">
                       <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -2983,11 +2983,11 @@ Sales Support`,
                               <CollapsibleContent>
                                 <div className="mt-3 bg-background border border-border rounded-lg p-4 text-xs text-muted-foreground space-y-2">
                                   <p className="text-foreground font-semibold text-sm">Subject: Thank you for contacting Merchant Haus</p>
-                                  <p className="text-[10px] text-muted-foreground">From: sales@merchanthaus.io</p>
+                                  <p className="text-[10px] text-muted-foreground">From: support@merchanthaus.io</p>
                                   <hr className="border-border" />
                                   <p>Hi [First Name],</p>
                                   <p>Thank you for reaching out to Merchant Haus. We've received your inquiry and a member of our sales team will be in touch with you shortly.</p>
-                                  <p>In the meantime, if you have any additional questions, feel free to reply to this email or contact us at <strong>sales@merchanthaus.io</strong>.</p>
+                                  <p>In the meantime, if you have any additional questions, feel free to reply to this email or contact us at <strong>support@merchanthaus.io</strong>.</p>
                                   <p className="text-foreground">Kind regards,<br /><strong>The Merchant Haus Team</strong></p>
                                 </div>
                               </CollapsibleContent>
