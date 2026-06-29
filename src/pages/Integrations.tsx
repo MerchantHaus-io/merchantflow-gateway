@@ -19,10 +19,8 @@ type GoogleToken = {
 
 // Mailboxes the team relies on for inbound merchant docs / sync
 const TRACKED_MAILBOXES: { email: string; label: string; purpose: string }[] = [
-  { email: "sales@merchanthaus.io", label: "Sales", purpose: "Inbound merchant referrals & document attachments" },
-  { email: "darryn@merchanthaus.io", label: "Darryn", purpose: "QA, complex sales & underwriting correspondence" },
-  { email: "admin@merchanthaus.io", label: "Admin", purpose: "Internal coordination & calendar invitations" },
-  { email: "onboarding@merchanthaus.io", label: "Onboarding", purpose: "Merchant onboarding correspondence" },
+  { email: "support@merchanthaus.io", label: "Support", purpose: "Inbound support tickets, merchant referrals & document attachments" },
+  { email: "admin@merchanthaus.io", label: "Admin (Darryn)", purpose: "QA, complex sales, underwriting & internal coordination" },
 ];
 
 function getTokenStatus(token: GoogleToken | undefined): "missing" | "expired" | "expiring" | "active" {
@@ -83,16 +81,8 @@ export default function Integrations() {
     }
   }
 
-  // Find the sales@ token specifically for the prominent banner
-  const salesToken = tokens.find(
-    (t) => t.user_email.toLowerCase() === "sales@merchanthaus.io"
-  );
-  const salesStatus = getTokenStatus(salesToken);
-  const showSalesBanner = !loading && (salesStatus === "expired" || salesStatus === "missing" || salesStatus === "expiring");
-
-  // Other mailboxes that need attention (besides sales@ which gets its own banner)
+  // Mailboxes that need attention
   const otherExpired = TRACKED_MAILBOXES
-    .filter((m) => m.email !== "sales@merchanthaus.io")
     .map((m) => ({ ...m, token: tokens.find((t) => t.user_email.toLowerCase() === m.email.toLowerCase()) }))
     .filter((m) => {
       const s = getTokenStatus(m.token);
@@ -109,57 +99,7 @@ export default function Integrations() {
         />
 
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-          {/* Prominent sales@ reconnect banner */}
-          {showSalesBanner && (
-            <Alert
-              variant={salesStatus === "expiring" ? "default" : "destructive"}
-              className="border-2 shadow-lg"
-            >
-              <AlertTriangle className="h-5 w-5" />
-              <AlertTitle className="text-base font-semibold">
-                {salesStatus === "missing" && "sales@merchanthaus.io is not connected"}
-                {salesStatus === "expired" && "sales@merchanthaus.io Gmail token has expired"}
-                {salesStatus === "expiring" && "sales@merchanthaus.io Gmail token expires soon"}
-              </AlertTitle>
-              <AlertDescription className="mt-2 space-y-3">
-                <p className="text-sm">
-                  {salesStatus === "missing" && (
-                    <>The Sales mailbox isn't linked to the CRM. Inbound merchant emails and attachments from <strong>sales@merchanthaus.io</strong> won't sync until it's connected.</>
-                  )}
-                  {salesStatus === "expired" && (
-                    <>
-                      The Google authorization for <strong>sales@merchanthaus.io</strong> expired{" "}
-                      {salesToken ? formatDistanceToNow(new Date(salesToken.expires_at), { addSuffix: true }) : ""}.
-                      New merchant emails and document attachments will not be pulled into opportunities until it's reconnected.
-                    </>
-                  )}
-                  {salesStatus === "expiring" && (
-                    <>
-                      The Google authorization for <strong>sales@merchanthaus.io</strong> expires{" "}
-                      {salesToken ? formatDistanceToNow(new Date(salesToken.expires_at), { addSuffix: true }) : "soon"}.
-                      Reconnect now to avoid sync interruptions.
-                    </>
-                  )}
-                </p>
-                <div className="flex flex-wrap items-center gap-2 pt-1">
-                  <Button
-                    size="sm"
-                    onClick={() => handleConnect("sales@merchanthaus.io")}
-                    disabled={connecting}
-                    className="gap-2"
-                  >
-                    <RefreshCw className={`h-4 w-4 ${connecting ? "animate-spin" : ""}`} />
-                    Reconnect sales@merchanthaus.io
-                  </Button>
-                  {user?.email?.toLowerCase() !== "sales@merchanthaus.io" && (
-                    <span className="text-xs opacity-80">
-                      You'll need to sign in to the CRM as <strong>sales@merchanthaus.io</strong> first.
-                    </span>
-                  )}
-                </div>
-              </AlertDescription>
-            </Alert>
-          )}
+
 
           {/* Secondary banner for other expired mailboxes */}
           {otherExpired.length > 0 && (
