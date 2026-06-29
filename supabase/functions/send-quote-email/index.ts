@@ -95,10 +95,10 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "MerchantHaus <sales@merchanthaus.io>",
+        from: "MerchantHaus <support@merchanthaus.io>",
         to: [body.to],
         cc,
-        reply_to: body.sender?.email || "sales@merchanthaus.io",
+        reply_to: body.sender?.email || "support@merchanthaus.io",
         subject,
         html: buildHtml(body),
         attachments: [

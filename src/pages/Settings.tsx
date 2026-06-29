@@ -200,19 +200,31 @@ const Settings = () => {
 
   const handleSaveProfile = async () => {
     if (!user) return;
-    
+    const trimmedName = fullName.trim();
+    const trimmedPhone = phone.trim();
+    if (!trimmedName) {
+      toast.error("Full name cannot be empty");
+      return;
+    }
+
     setIsSaving(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("profiles")
-        .update({ full_name: fullName, phone })
-        .eq("id", user.id);
+        .update({ full_name: trimmedName, phone: trimmedPhone })
+        .eq("id", user.id)
+        .select("full_name, phone")
+        .single();
 
       if (error) throw error;
+      if (!data) throw new Error("Profile row not found — please sign out and back in.");
+
+      setFullName(data.full_name || "");
+      setPhone(data.phone || "");
       toast.success("Profile saved successfully!");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving profile:", error);
-      toast.error("Failed to save profile");
+      toast.error(error?.message ? `Save failed: ${error.message}` : "Failed to save profile");
     } finally {
       setIsSaving(false);
     }

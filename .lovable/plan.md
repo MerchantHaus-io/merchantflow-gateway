@@ -1,55 +1,58 @@
-## Goal
-Whenever we ship changes to the Ops Terminal, the Android APK should pick them up automatically — both the new code AND a visible "what's new" patch-note popup on next launch.
 
-## How updates already reach the APK
-The current `capacitor.config.ts` sets `server.url` to the Lovable preview domain. That means the APK is essentially a wrapper around the live web app — **as soon as we Publish from Lovable, the APK loads the new build on next open**. No Play Store resubmission required for frontend changes; backend/edge functions deploy automatically.
+## Root causes confirmed
 
-So "pushing updates" is already solved. What's missing is the **user-facing patch notes** part.
+**1. "Claimed as admin, assigned to Jamie"**
+Jamie's roster entry lists `admin@merchanthaus.io` as an alias — in both `src/config/team.ts` (line 47) **and** the `team_roster` DB row. So `getTeamMemberFromEmail("admin@merchanthaus.io")` matches Jamie *before* Darryn's real entry, and the claim writes `assigned_to_name: "Jamie"`.
 
-## What I'll build: Automatic in-app patch notes
+**2. `sales@merchanthaus.io` still wired in**
+Profile row still exists, plus references in: `ai-assistant`, `send-quote-email`, `send-qualified-docs-request`, `accept-quote`, `send-contact-form-email`, `send-application-declined`, `send-account-closed`, `google-gmail-sync`, `Integrations.tsx`, `Contact.tsx`.
 
-### 1. `release_notes` table (Lovable Cloud)
-```
-id, version (text), title, body (markdown),
-published_at, created_by, is_mobile_highlighted (bool)
-```
-RLS: any authenticated user can read; only admin emails can insert/update.
+**3. Profile save**
+Schema (`full_name`, `phone`) and RLS (`UPDATE ... USING auth.uid() = id`) are both correct, so the most likely failure is the toast firing on a silent error path. Plan adds proper diagnostics and a re-fetch after save to confirm persistence.
 
-### 2. Auto-generation hook
-A new edge function `publish-release-note` that:
-- Accepts a title + body (or auto-derives from the latest AI Terminal Update changelog entry — we already have that pipeline per memory: `terminal-update-automation`).
-- Inserts a row in `release_notes` and stamps `published_at = now()`.
-- Sets a `current_version` key in a tiny `app_meta` table so clients can detect "new since last seen".
+---
 
-Wire this into the existing Terminal Update changelog flow so **every changelog the AI assistant ships automatically becomes a release note** — no extra step from you.
+## Changes
 
-### 3. `<PatchNotesPopup />` component
-- Mounts globally (inside the authenticated app shell).
-- On app open, reads `localStorage.lastSeenReleaseId`.
-- Queries `release_notes` for any rows newer than that ID.
-- If found, shows a polished modal styled in the Dark Luxury Tech aesthetic:
-  - Version + date header
-  - Markdown body
-  - "Got it" CTA → writes the latest ID to `localStorage`.
-- On Capacitor (detected via `Capacitor.isNativePlatform()`), uses a slightly larger mobile-optimized layout and respects safe-area insets.
+### A. Fix the alias bug (one-line root fix)
+- **`src/config/team.ts`** — remove `"admin@merchanthaus.io"` from Jamie's `aliases`.
+- **Migration** — `UPDATE public.team_roster SET aliases = '{}' WHERE id = 'jamie';`
 
-### 4. Admin manual override (optional but cheap)
-Small card on `/admin` → "Publish Release Note" with title + markdown body, in case you want to ship a note **without** a code change.
+After this, `admin@merchanthaus.io` resolves to **Darryn** everywhere (claim, comments, system notes, calendar columns, opportunity assignment).
 
-## Why this works end-to-end for the APK
-- Frontend code updates → already automatic via Lovable preview-hosted WebView.
-- Patch notes content → lives in the database, so it appears in the APK the moment the row is inserted (no APK rebuild, no Play Store review).
-- The APK only needs to be rebuilt/resubmitted if we change **native** config (icons, permissions, Capacitor plugins) — not for normal feature work or release notes.
+### B. Harden every claim/assign site to use canonical resolver
+Replace the `teamMemberName || user.email || "Agent"` fallback with `resolveDisplayName(user.email) ?? teamMemberName ?? user.email` so a stale `teamMemberName` from context can never overwrite an authoritative roster lookup.
 
-## Files to add / change
-- `supabase/migrations/<ts>_release_notes.sql` — table + RLS + grants
-- `supabase/functions/publish-release-note/index.ts` — insert helper, callable from existing changelog automation
-- `supabase/config.toml` — register the new function
-- `src/components/PatchNotesPopup.tsx` — global modal
-- `src/App.tsx` (or current shell) — mount the popup once
-- `src/components/admin/ReleaseNotePublisher.tsx` — manual entry card
-- Hook into existing terminal-update changelog flow so it calls `publish-release-note` automatically
+- `src/pages/SupportTicketDetail.tsx` — `claim()` and `authorName`
+- `src/pages/SupportTriage.tsx` — `handleClaim()`
 
-## Out of scope (ask if you want these)
-- True OTA bundle updates (Capacitor Live Updates / Capgo) — not needed while `server.url` points at Lovable.
-- Push notifications for new release notes (would require Firebase setup).
+### C. Deregister `sales@merchanthaus.io`
+- **Migration**
+  - Delete `profiles` row for `sales@merchanthaus.io`
+  - Delete `user_roles` rows, `team_roster` row if any, and the `auth.users` row
+  - (Tasks/opps were already reassigned in the prior cleanup)
+- **Edge functions** — swap outbound `from` / `reply_to` / cc lists from `sales@merchanthaus.io` to `support@merchanthaus.io`:
+  - `send-quote-email`, `accept-quote`, `send-qualified-docs-request`, `send-contact-form-email`, `send-application-declined`, `send-account-closed`
+- **`ai-assistant/index.ts`** — drop the Wesley/sales entry and the "shared mailbox" line.
+- **`google-gmail-sync/index.ts`** — remove `sales@merchanthaus.io` from the synced mailbox list.
+- **`src/pages/Integrations.tsx`** — remove the Sales mailbox connection card + related status logic.
+- **`src/pages/Contact.tsx`** — public contact address changes from `sales@` to `support@`.
+
+### D. Profile save repair
+- **`src/pages/Settings.tsx#handleSaveProfile`**
+  - Trim inputs; reject empty `full_name`.
+  - Use `.select().single()` after `.update()` so RLS failures surface as a real error instead of a silent success.
+  - Re-hydrate local state from the returned row and bust `teamMemberName` cache by emitting an auth context refresh.
+  - On error, show `error.message` in the toast (not just "Failed to save profile") so we can see what's actually failing for the user next time.
+- Verify after deploy by saving the admin profile and confirming the row updates in DB.
+
+---
+
+## Verification
+
+1. Sign in as `admin@merchanthaus.io`, open any unassigned support ticket, claim it → expect `assigned_to_name = "Darryn"`.
+2. Trigger any outbound email (quote, declined, etc.) → `From:` header reads `support@merchanthaus.io`.
+3. Edit name/phone in Settings → toast confirms, row persists across reload, header shows new name.
+4. `SELECT * FROM profiles WHERE email = 'sales@merchanthaus.io'` returns 0 rows.
+
+No UI redesign, no business-logic changes outside the above.

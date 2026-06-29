@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-const TARGET_MAILBOX = "sales@merchanthaus.io";
+const TARGET_MAILBOX = "support@merchanthaus.io";
 const DISMISS_KEY = "gmail-reconnect-banner-dismissed-sales";
 // Re-show 30 minutes after dismissal so the user isn't nagged constantly,
 // but also doesn't miss it for the rest of the session.

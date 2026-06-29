@@ -130,7 +130,7 @@ const Contact = () => {
                 {formStatus === 'error' && (
                   <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
                     <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    <span>Something went wrong. Please try again or email us directly at <a href="mailto:sales@merchanthaus.io" className="font-medium underline">sales@merchanthaus.io</a>.</span>
+                    <span>Something went wrong. Please try again or email us directly at <a href="mailto:support@merchanthaus.io" className="font-medium underline">support@merchanthaus.io</a>.</span>
                   </div>
                 )}
 
@@ -192,13 +192,13 @@ const Contact = () => {
             <aside className="space-y-3 md:space-y-4">
               <div className="bg-card rounded-xl md:rounded-2xl border border-border shadow-sm p-4 md:p-5 space-y-4">
                 <p className="text-sm font-semibold text-foreground">Prefer to reach us directly?</p>
-                <a href="mailto:sales@merchanthaus.io" className="flex items-center gap-3 group">
+                <a href="mailto:support@merchanthaus.io" className="flex items-center gap-3 group">
                   <span className="w-9 h-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
                     <Mail className="w-4 h-4" />
                   </span>
                   <span className="min-w-0">
                     <span className="block text-[11px] uppercase tracking-wider text-muted-foreground">Email</span>
-                    <span className="block text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">sales@merchanthaus.io</span>
+                    <span className="block text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">support@merchanthaus.io</span>
                   </span>
                 </a>
                 <a href="https://merchanthaus.io" target="_blank" rel="noreferrer" className="flex items-center gap-3 group">

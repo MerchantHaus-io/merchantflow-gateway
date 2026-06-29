@@ -142,7 +142,7 @@ export const DocumentsTab = ({ opportunityId, serviceType }: DocumentsTabProps) 
 <ul>${docListHtml}</ul>
 <p>Please complete our secure merchant application form to upload your documents and provide the required business details:</p>
 <p style="text-align: center;"><a href="https://ops-terminal.lovable.app/merchant-apply" style="display:inline-block;background:#18181b;color:#ffffff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;">Complete Merchant Application</a></p>
-<p>If you have any questions about the required documents or the application process, don't hesitate to reach out to us at <a href="mailto:sales@merchanthaus.io">sales@merchanthaus.io</a>.</p>
+<p>If you have any questions about the required documents or the application process, don't hesitate to reach out to us at <a href="mailto:support@merchanthaus.io">support@merchanthaus.io</a>.</p>
 <p style="margin-top: 24px;">Kind regards,<br><strong>The Merchant Haus Team</strong></p>`;
   };
 

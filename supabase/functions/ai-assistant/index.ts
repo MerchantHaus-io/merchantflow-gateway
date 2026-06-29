@@ -15,14 +15,14 @@ const AI_BOT_NAME = "Atria";
 const TEAM_ROSTER: Array<{ email: string; name: string; active: boolean }> = [
   { email: "jamie@merchanthaus.io", name: "Jamie", active: true },
   { email: "admin@merchanthaus.io", name: "Darryn", active: true },
-  { email: "onboarding@merchanthaus.io", name: "Darryn", active: true },
   { email: "support@merchanthaus.io", name: "Yaseen Sheik", active: true },
   { email: "taryn@merchanthaus.io", name: "Taryn Engledoe", active: true },
-  { email: "sales@merchanthaus.io", name: "Wesley", active: false },
+  { email: "jude@merchanthaus.io", name: "Jude", active: true },
+  { email: "xavier@merchanthaus.io", name: "Xavier Rooza", active: true },
 ];
 const ACTIVE_TEAM_LINE = TEAM_ROSTER.filter(m => m.active)
   .map(m => `${m.email} (${m.name})`).join(", ");
-const INACTIVE_NAMES = TEAM_ROSTER.filter(m => !m.active).map(m => m.name).join(", ");
+const INACTIVE_NAMES = TEAM_ROSTER.filter(m => !m.active).map(m => m.name).join(", ") || "(none)";
 
 const BASE_SYSTEM_PROMPT = `You are Atria — a knowledgeable teammate on an ISO (Independent Sales Organization) team. Think of yourself as the colleague who always has the answer AND can take action.
 
@@ -57,7 +57,7 @@ ACTIONS:
 - When running underwriting validation, you check document completeness against the required checklist and beneficial owner requirements, then save a validation report.
 - When updating records, you can change fields like name, website, city, state, status on accounts; first_name, last_name, email, phone on contacts; and service_type, referral_source, language, timezone on opportunities.
 - When adding notes, they are saved as comments on the opportunity and logged as activity.
-- Team members you can assign to: ${ACTIVE_TEAM_LINE}. Note: sales@merchanthaus.io is a shared mailbox managed by the team — not a specific user. Inactive (do not assign new work): ${INACTIVE_NAMES}.
+- Team members you can assign to: ${ACTIVE_TEAM_LINE}. Inactive (do not assign new work): ${INACTIVE_NAMES}.
 - Valid pipeline stages: discovery, qualified, app_prep, underwriting, approved, gateway_setup, integration, testing, go_live_ready.
 - Valid opportunity outcomes (terminal — removes from active board): closed_won, closed_lost, disqualified, no_decision, underwriting_declined.
 - Valid opportunity statuses: active, dead, closed-lost.

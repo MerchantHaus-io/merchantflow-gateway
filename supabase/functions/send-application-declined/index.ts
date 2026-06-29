@@ -243,7 +243,7 @@ const handler = async (req: Request): Promise<Response> => {
     const teamRecipients = [
       "support@merchanthaus.io",
       "admin@merchanthaus.io",
-      "sales@merchanthaus.io",
+      "support@merchanthaus.io",
     ];
 
     const teamEmailResponse = await fetch("https://api.resend.com/emails", {

@@ -119,7 +119,7 @@ const buildClientConfirmationHtml = (firstName: string): string => `
     <div class="content">
       <p>Hi ${escapeHtml(firstName)},</p>
       <p>Thank you for reaching out to Merchant Haus. We've received your inquiry and a member of our sales team will be in touch with you shortly.</p>
-      <p>In the meantime, if you have any additional questions, feel free to reply to this email or contact us at <a href="mailto:sales@merchanthaus.io">sales@merchanthaus.io</a>.</p>
+      <p>In the meantime, if you have any additional questions, feel free to reply to this email or contact us at <a href="mailto:support@merchanthaus.io">support@merchanthaus.io</a>.</p>
       <p style="margin-top: 24px;">Kind regards,<br><strong>The Merchant Haus Team</strong></p>
     </div>
     <div class="footer">
@@ -160,8 +160,8 @@ const handler = async (req: Request): Promise<Response> => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Merchant Haus <sales@merchanthaus.io>",
-        to: ["sales@merchanthaus.io"],
+        from: "Merchant Haus <support@merchanthaus.io>",
+        to: ["support@merchanthaus.io"],
         subject: `New Inquiry: ${data.first_name} ${data.last_name} — ${data.email}`,
         html: buildSalesNotificationHtml(data),
         reply_to: data.email,
@@ -181,11 +181,11 @@ const handler = async (req: Request): Promise<Response> => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Merchant Haus <sales@merchanthaus.io>",
+        from: "Merchant Haus <support@merchanthaus.io>",
         to: [data.email],
         subject: "Thank you for contacting Merchant Haus",
         html: buildClientConfirmationHtml(data.first_name),
-        reply_to: "sales@merchanthaus.io",
+        reply_to: "support@merchanthaus.io",
       }),
     });
 

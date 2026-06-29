@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { resolveDisplayName } from "@/config/team";
 import { AppLayout } from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -69,7 +70,7 @@ const SupportTicketDetail = () => {
   const [sending, setSending] = useState(false);
   const [savingField, setSavingField] = useState<string | null>(null);
 
-  const authorName = teamMemberName || user?.email || "Agent";
+  const authorName = resolveDisplayName(user?.email) ?? teamMemberName ?? user?.email ?? "Agent";
 
   const { data: ticket, isLoading } = useQuery({
     queryKey: ["support-ticket", id],

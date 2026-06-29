@@ -444,7 +444,7 @@ export const QUOTE_SENDERS: QuoteSender[] = [
     name: "MerchantHaus Sales",
     title: "Sales Team",
     company: MH_COMPANY,
-    email: "sales@merchanthaus.io",
+    email: "support@merchanthaus.io",
     phone: "",
     address: MH_ADDRESS,
   },

@@ -11,7 +11,7 @@ const TEAM_EMAILS = [
   "admin@merchanthaus.io",
   "jamie@merchanthaus.io",
   "support@merchanthaus.io",
-  "sales@merchanthaus.io",
+  "support@merchanthaus.io",
   "taryn@merchanthaus.io",
 ];
 

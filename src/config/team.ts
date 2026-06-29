@@ -44,7 +44,6 @@ export let TEAM_ROSTER: TeamMemberRecord[] = [
   {
     id: "jamie",
     email: "jamie@merchanthaus.io",
-    aliases: ["admin@merchanthaus.io"],
     displayName: "Jamie",
     title: "CEO",
     active: true,

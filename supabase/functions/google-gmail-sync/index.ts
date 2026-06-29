@@ -116,10 +116,11 @@ function extractAttachmentInfo(payload: unknown): { name: string; mimeType: stri
 // Team emails to exclude from lead creation
 const TEAM_EMAILS = [
   "admin@merchanthaus.io",
-  "onboarding@merchanthaus.io",
   "support@merchanthaus.io",
-  "sales@merchanthaus.io",
   "taryn@merchanthaus.io",
+  "jamie@merchanthaus.io",
+  "jude@merchanthaus.io",
+  "xavier@merchanthaus.io",
 ];
 
 // Domains/patterns that should never create leads (newsletters, services, etc.)
