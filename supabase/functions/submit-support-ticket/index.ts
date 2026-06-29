@@ -6,6 +6,7 @@ import {
   matchAccountByEmail,
 } from "../_shared/support-intake.ts";
 import { sendGmail } from "../_shared/gmail-send.ts";
+import { escapeHtml, infoCard, renderBrandedEmail } from "../_shared/email-layout.ts";
 
 const SUPPORT_INBOX = Deno.env.get("SUPPORT_INBOX_EMAIL") || "support@merchanthaus.io";
 
@@ -20,14 +21,6 @@ const json = (body: unknown, status = 200) =>
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
-
-const escapeHtml = (str: string): string =>
-  String(str ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
 
 const sendEmail = async (to: string, subject: string, html: string, replyTo?: string) => {
   const result = await sendGmail({
@@ -87,37 +80,54 @@ serve(async (req) => {
       return json({ error: "Could not create ticket" }, 500);
     }
 
-    // Confirmation to the client.
+    // Confirmation to the client — branded, on-message.
+    const firstName = name.split(/\s+/)[0] || name;
     await sendEmail(
       email,
       `[${ticket.ticket_number}] We've received your support request`,
-      `<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:560px;margin:0 auto;color:#18181b">
-        <h2 style="font-size:18px">Your support request has been logged</h2>
-        <p>Hi ${escapeHtml(name)},</p>
-        <p>Thanks for getting in touch. Your ticket reference is
-          <strong>${escapeHtml(ticket.ticket_number)}</strong>. Our team will pick it up shortly.</p>
-        <p style="background:#f4f4f5;border-radius:8px;padding:12px 14px">
-          <strong>${escapeHtml(subject)}</strong><br>
-          <span style="white-space:pre-wrap;color:#3f3f46">${escapeHtml(description)}</span>
-        </p>
-        <p style="color:#71717a;font-size:13px">Reply to this email to add more information to your ticket.</p>
-        <p style="color:#71717a;font-size:13px">— Merchant Haus Support</p>
-      </div>`,
+      renderBrandedEmail({
+        eyebrow: "Support",
+        preheader: `We've logged your request — your reference is ${ticket.ticket_number}.`,
+        signOff: "The Merchant Haus Support Team",
+        body: `
+          <p style="margin:0 0 16px;">Hi ${escapeHtml(firstName)},</p>
+          <p style="margin:0 0 16px;">Thanks for getting in touch. Your request has been logged and our support team will be on it shortly — we'll keep you posted at every step.</p>
+          ${infoCard([
+            { label: "Ticket reference", value: `<strong>${escapeHtml(ticket.ticket_number)}</strong>` },
+            { label: "Subject", value: escapeHtml(subject) },
+            {
+              label: "Your message",
+              value: `<span style="white-space:pre-wrap;color:#3f3f46;">${escapeHtml(description)}</span>`,
+            },
+          ])}
+          <p style="margin:0 0 16px;">There's nothing more you need to do right now. If you'd like to add details or attachments, just <strong>reply to this email</strong> — everything you send stays attached to the same ticket.</p>
+        `,
+      }),
     );
 
     // Notify the support inbox so it also threads into the desk.
     await sendEmail(
       SUPPORT_INBOX,
       `[${ticket.ticket_number}] New ${category} request: ${subject}`,
-      `<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:560px;margin:0 auto;color:#18181b">
-        <h2 style="font-size:16px">New support ticket via web form</h2>
-        <p><strong>Ticket:</strong> ${escapeHtml(ticket.ticket_number)}<br>
-           <strong>Category:</strong> ${escapeHtml(category)}<br>
-           <strong>From:</strong> ${escapeHtml(name)} &lt;${escapeHtml(email)}&gt;<br>
-           ${businessName ? `<strong>Business:</strong> ${escapeHtml(businessName)}<br>` : ""}
-           <strong>Subject:</strong> ${escapeHtml(subject)}</p>
-        <p style="white-space:pre-wrap;color:#3f3f46">${escapeHtml(description)}</p>
-      </div>`,
+      renderBrandedEmail({
+        eyebrow: "New support ticket",
+        preheader: `${category} request from ${name}: ${subject}`,
+        signOff: "Merchant Haus Support Desk",
+        body: `
+          <p style="margin:0 0 16px;">A new support ticket has come in via the web form.</p>
+          ${infoCard([
+            { label: "Ticket", value: `<strong>${escapeHtml(ticket.ticket_number)}</strong>` },
+            { label: "Category", value: escapeHtml(category) },
+            { label: "From", value: `${escapeHtml(name)} &lt;<a href="mailto:${escapeHtml(email)}" style="color:#18181b;">${escapeHtml(email)}</a>&gt;` },
+            ...(businessName ? [{ label: "Business", value: escapeHtml(businessName) }] : []),
+            { label: "Subject", value: escapeHtml(subject) },
+            {
+              label: "Description",
+              value: `<span style="white-space:pre-wrap;color:#3f3f46;">${escapeHtml(description)}</span>`,
+            },
+          ])}
+        `,
+      }),
       email,
     );
 
