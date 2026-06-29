@@ -141,7 +141,7 @@ const buildDocsRequestHtml = (
       <p style="text-align: center;">
         <a href="${applyUrl}" class="cta">${ctaLabel}</a>
       </p>
-      <p>Any questions about the items above or the application process — just reach out at <a href="mailto:sales@merchanthaus.io">sales@merchanthaus.io</a>. We're here to help.</p>
+      <p>Any questions about the items above or the application process — just reach out at <a href="mailto:support@merchanthaus.io">support@merchanthaus.io</a>. We're here to help.</p>
       <p style="margin-top: 24px;">Kind regards,<br><strong>The Merchant Haus Team</strong></p>
     </div>
     <div class="footer">
@@ -202,7 +202,7 @@ const handler = async (req: Request): Promise<Response> => {
         to: [contact_email],
         subject: finalSubject,
         html: finalHtml,
-        reply_to: "sales@merchanthaus.io",
+        reply_to: "support@merchanthaus.io",
       }),
     });
 

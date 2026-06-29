@@ -278,9 +278,9 @@ async function handleAccept(
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: "MerchantHaus <sales@merchanthaus.io>",
+          from: "MerchantHaus <support@merchanthaus.io>",
           to: [quote.client_email],
-          reply_to: quote.sender_email ?? "sales@merchanthaus.io",
+          reply_to: quote.sender_email ?? "support@merchanthaus.io",
           subject: `Acceptance confirmed — MerchantHaus Quote ${quote.quote_number}`,
           html: merchantConfirmationHtml({
             quoteNumber: quote.quote_number,
@@ -369,7 +369,7 @@ function merchantConfirmationHtml(p: {
     <div style="padding:24px;font-size:14px;line-height:1.6;">
       <p style="margin:0 0 12px;">We've received your acceptance of MerchantHaus quote <strong>${p.quoteNumber}</strong>. A copy of the signed quote and the supporting Master Agreement will arrive shortly from ${p.senderName || "your MerchantHaus contact"}.</p>
       <p style="margin:0 0 12px;">Gateway provisioning typically begins within five (5) business days. We'll reach out with onboarding next steps — including any remaining ACH authorization or processor configuration.</p>
-      <p style="margin:16px 0 4px;color:#6e747c;font-size:13px;">Questions? Reply to this email or contact ${p.senderEmail || "sales@merchanthaus.io"}.</p>
+      <p style="margin:16px 0 4px;color:#6e747c;font-size:13px;">Questions? Reply to this email or contact ${p.senderEmail || "support@merchanthaus.io"}.</p>
     </div>
   </div>
 </body></html>`;
