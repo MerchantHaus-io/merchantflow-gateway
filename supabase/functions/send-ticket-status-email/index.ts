@@ -4,6 +4,13 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendGmail } from "../_shared/gmail-send.ts";
+import {
+  type BadgeTone,
+  escapeHtml,
+  infoCard,
+  renderBrandedEmail,
+  statusBadge,
+} from "../_shared/email-layout.ts";
 
 const SUPPORT_INBOX = Deno.env.get("SUPPORT_INBOX_EMAIL") || "support@merchanthaus.io";
 
@@ -18,28 +25,23 @@ const json = (b: unknown, s = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-const escapeHtml = (s: string) =>
-  String(s ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-
 // Friendly labels for the three lifecycle states.
-const STATUS_COPY: Record<string, { label: string; intro: string }> = {
+const STATUS_COPY: Record<string, { label: string; intro: string; tone: BadgeTone }> = {
   open: {
     label: "Open",
     intro: "We've reopened your support ticket and a team member will be in touch shortly.",
+    tone: "info",
   },
   in_progress: {
-    label: "Pending",
+    label: "In progress",
     intro: "Your ticket is now being worked on. We'll follow up as soon as we have an update.",
+    tone: "pending",
   },
   closed: {
     label: "Resolved",
     intro:
       "Your ticket has been marked as resolved. If anything is still outstanding, simply reply to this email and we'll reopen it.",
+    tone: "success",
   },
 };
 
@@ -72,20 +74,23 @@ serve(async (req) => {
     const cleanSubject = String(ticket.subject || "Support request").replace(/^\s*(re|fwd?):\s*/i, "").trim();
     const subject = `Re: [${ticket.ticket_number}] ${cleanSubject}`;
 
-    const html = `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width:560px; margin:0 auto; padding:24px; color:#111;">
-        <p style="margin:0 0 12px;">Hi ${escapeHtml(ticket.requester_name || "there")},</p>
-        <p style="margin:0 0 16px; font-size:15px; line-height:1.55;">${escapeHtml(copy.intro)}</p>
-        <div style="border:1px solid #e5e7eb; border-radius:8px; padding:14px 16px; background:#f9fafb; margin:16px 0;">
-          <div style="font-size:12px; color:#6b7280; letter-spacing:.04em; text-transform:uppercase;">Ticket ${escapeHtml(ticket.ticket_number)}</div>
-          <div style="font-size:15px; margin-top:4px;"><strong>Status:</strong> ${escapeHtml(copy.label)}</div>
-          <div style="font-size:13px; margin-top:4px; color:#374151;">Subject: ${escapeHtml(cleanSubject)}</div>
-        </div>
-        ${note ? `<p style="margin:0 0 16px; font-size:14px; line-height:1.55; white-space:pre-wrap;">${escapeHtml(String(note))}</p>` : ""}
-        <p style="margin:16px 0 0; font-size:13px; color:#6b7280;">Reply to this email to add a note — it will be attached to your existing ticket automatically.</p>
-        <p style="margin:24px 0 0; font-size:13px; color:#6b7280;">— ${escapeHtml(changed_by_name || "Merchant Haus Support")}</p>
-      </div>
-    `;
+    const firstName = String(ticket.requester_name || "there").split(/\s+/)[0] || "there";
+    const html = renderBrandedEmail({
+      eyebrow: "Ticket update",
+      preheader: `${ticket.ticket_number}: ${copy.label} — ${cleanSubject}`,
+      signOff: changed_by_name || "The Merchant Haus Support Team",
+      body: `
+        <p style="margin:0 0 16px;">Hi ${escapeHtml(firstName)},</p>
+        <p style="margin:0 0 16px;">${escapeHtml(copy.intro)}</p>
+        ${infoCard([
+          { label: "Ticket reference", value: `<strong>${escapeHtml(ticket.ticket_number)}</strong>` },
+          { label: "Status", value: statusBadge(copy.label, copy.tone) },
+          { label: "Subject", value: escapeHtml(cleanSubject) },
+        ])}
+        ${note ? `<p style="margin:0 0 16px;white-space:pre-wrap;">${escapeHtml(String(note))}</p>` : ""}
+        <p style="margin:0 0 16px;">Reply to this email to add a note — it will be attached to your existing ticket automatically.</p>
+      `,
+    });
 
     const result = await sendGmail({
       from: `Merchant Haus Support <${SUPPORT_INBOX}>`,
