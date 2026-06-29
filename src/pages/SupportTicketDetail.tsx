@@ -69,7 +69,7 @@ const SupportTicketDetail = () => {
   const [sending, setSending] = useState(false);
   const [savingField, setSavingField] = useState<string | null>(null);
 
-  const authorName = teamMemberName || user?.email || "Agent";
+  const authorName = resolveDisplayName(user?.email) ?? teamMemberName ?? user?.email ?? "Agent";
 
   const { data: ticket, isLoading } = useQuery({
     queryKey: ["support-ticket", id],

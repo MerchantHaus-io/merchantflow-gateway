@@ -121,7 +121,7 @@ const SupportTriage = () => {
         .from("support_tickets")
         .update({
           assigned_to: user.id,
-          assigned_to_name: teamMemberName || user.email || "Agent",
+          assigned_to_name: resolveDisplayName(user.email) ?? teamMemberName ?? user.email ?? "Agent",
           assigned_to_email: user.email ?? null,
           status: ticket.status === "open" ? "in_progress" : ticket.status,
         })
