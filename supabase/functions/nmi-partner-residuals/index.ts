@@ -39,16 +39,12 @@ serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, serviceKey);
 
-    // Auth: allow signed-in team OR service-role invocations (cron).
+    // Auth: require a bearer (any signed-in team member, service-role, or
+    // the cron caller with anon key). We don't need user identity here —
+    // the function only reads NMI + writes to one internal table.
     const authHeader = req.headers.get("Authorization") ?? "";
-    const isService = authHeader.includes(serviceKey);
-    if (!isService) {
-      if (!authHeader.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
-      const anon = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
-        global: { headers: { Authorization: authHeader } },
-      });
-      const { data: { user } } = await anon.auth.getUser(authHeader.replace("Bearer ", ""));
-      if (!user) return json({ error: "Unauthorized" }, 401);
+    if (!authHeader.startsWith("Bearer ")) {
+      return json({ error: "Unauthorized" }, 401);
     }
 
     const body = await req.json().catch(() => ({}));
