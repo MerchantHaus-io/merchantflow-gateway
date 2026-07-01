@@ -2440,6 +2440,71 @@ export type Database = {
           },
         ]
       }
+      nmi_partner_residuals: {
+        Row: {
+          account_id: string | null
+          assessments: number | null
+          company_name: string | null
+          created_at: string
+          gateway_fees: number | null
+          gross_volume: number | null
+          id: string
+          interchange_cost: number | null
+          nmi_merchant_id: string
+          partner_residual: number | null
+          period_month: string
+          processor_fees: number | null
+          raw: Json | null
+          synced_at: string
+          transaction_count: number | null
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          assessments?: number | null
+          company_name?: string | null
+          created_at?: string
+          gateway_fees?: number | null
+          gross_volume?: number | null
+          id?: string
+          interchange_cost?: number | null
+          nmi_merchant_id: string
+          partner_residual?: number | null
+          period_month: string
+          processor_fees?: number | null
+          raw?: Json | null
+          synced_at?: string
+          transaction_count?: number | null
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          assessments?: number | null
+          company_name?: string | null
+          created_at?: string
+          gateway_fees?: number | null
+          gross_volume?: number | null
+          id?: string
+          interchange_cost?: number | null
+          nmi_merchant_id?: string
+          partner_residual?: number | null
+          period_month?: string
+          processor_fees?: number | null
+          raw?: Json | null
+          synced_at?: string
+          transaction_count?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nmi_partner_residuals_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
