@@ -125,7 +125,7 @@ export default function Commissions() {
     ? ((currentPeriod.total_volume - prevPeriod.total_volume) / (prevPeriod.total_volume || 1)) * 100
     : null;
 
-  // Sync mutation
+  // Sync mutation (our internal estimate)
   const syncMutation = useMutation({
     mutationFn: async ({ forceSync = false }: { forceSync?: boolean } = {}) => {
       const { data, error } = await supabase.functions.invoke("nmi-commissions", {
@@ -147,6 +147,49 @@ export default function Commissions() {
     onError: (err: any) => {
       toast.error(`Sync failed: ${err.message || "Unknown error"}`);
     },
+  });
+
+  // NMI actual partner residuals for the selected month
+  const periodMonthIso = `${selYear}-${String(selMonth).padStart(2, "0")}-01`;
+  const { data: residuals } = useQuery({
+    queryKey: ["nmi-partner-residuals", periodMonthIso],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("nmi_partner_residuals")
+        .select("nmi_merchant_id, account_id, company_name, partner_residual, gross_volume, transaction_count, synced_at")
+        .eq("period_month", periodMonthIso);
+      return (data ?? []) as Array<{
+        nmi_merchant_id: string;
+        account_id: string | null;
+        company_name: string | null;
+        partner_residual: number;
+        gross_volume: number;
+        transaction_count: number;
+        synced_at: string;
+      }>;
+    },
+  });
+
+  const residualByMid = new Map((residuals ?? []).map((r) => [r.nmi_merchant_id, r]));
+
+  const pullActualsMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("nmi-partner-residuals", {
+        body: { month: `${selYear}-${String(selMonth).padStart(2, "0")}` },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data: any) => {
+      const n = data?.persisted ?? 0;
+      if (n === 0 && data?.last_error) {
+        toast.warning(`NMI returned no residual rows yet for this month. (${data.last_error})`);
+      } else {
+        toast.success(`Pulled ${n} residual row${n === 1 ? "" : "s"} from NMI (${data?.source ?? "?"}).`);
+      }
+      queryClient.invalidateQueries({ queryKey: ["nmi-partner-residuals"] });
+    },
+    onError: (err: any) => toast.error(`NMI actuals pull failed: ${err.message || "Unknown"}`),
   });
 
   // Build trend data from periods
