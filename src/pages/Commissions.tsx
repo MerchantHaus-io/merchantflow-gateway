@@ -125,7 +125,7 @@ export default function Commissions() {
     ? ((currentPeriod.total_volume - prevPeriod.total_volume) / (prevPeriod.total_volume || 1)) * 100
     : null;
 
-  // Sync mutation
+  // Sync mutation (our internal estimate)
   const syncMutation = useMutation({
     mutationFn: async ({ forceSync = false }: { forceSync?: boolean } = {}) => {
       const { data, error } = await supabase.functions.invoke("nmi-commissions", {
@@ -147,6 +147,49 @@ export default function Commissions() {
     onError: (err: any) => {
       toast.error(`Sync failed: ${err.message || "Unknown error"}`);
     },
+  });
+
+  // NMI actual partner residuals for the selected month
+  const periodMonthIso = `${selYear}-${String(selMonth).padStart(2, "0")}-01`;
+  const { data: residuals } = useQuery({
+    queryKey: ["nmi-partner-residuals", periodMonthIso],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("nmi_partner_residuals")
+        .select("nmi_merchant_id, account_id, company_name, partner_residual, gross_volume, transaction_count, synced_at")
+        .eq("period_month", periodMonthIso);
+      return (data ?? []) as Array<{
+        nmi_merchant_id: string;
+        account_id: string | null;
+        company_name: string | null;
+        partner_residual: number;
+        gross_volume: number;
+        transaction_count: number;
+        synced_at: string;
+      }>;
+    },
+  });
+
+  const residualByMid = new Map((residuals ?? []).map((r) => [r.nmi_merchant_id, r]));
+
+  const pullActualsMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("nmi-partner-residuals", {
+        body: { month: `${selYear}-${String(selMonth).padStart(2, "0")}` },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data: any) => {
+      const n = data?.persisted ?? 0;
+      if (n === 0 && data?.last_error) {
+        toast.warning(`NMI returned no residual rows yet for this month. (${data.last_error})`);
+      } else {
+        toast.success(`Pulled ${n} residual row${n === 1 ? "" : "s"} from NMI (${data?.source ?? "?"}).`);
+      }
+      queryClient.invalidateQueries({ queryKey: ["nmi-partner-residuals"] });
+    },
+    onError: (err: any) => toast.error(`NMI actuals pull failed: ${err.message || "Unknown"}`),
   });
 
   // Build trend data from periods
@@ -212,6 +255,16 @@ export default function Commissions() {
             </Button>
             <Button size="sm" variant="outline" onClick={() => syncMutation.mutate({ forceSync: true })} disabled={syncMutation.isPending}>
               Force Sync
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => pullActualsMutation.mutate()}
+              disabled={pullActualsMutation.isPending}
+              title="Fetch NMI's published partner residual report for the selected month"
+            >
+              <RefreshCw className={`h-4 w-4 mr-1 ${pullActualsMutation.isPending ? "animate-spin" : ""}`} />
+              {pullActualsMutation.isPending ? "Pulling…" : "Pull NMI Actuals"}
             </Button>
           </div>
         </div>
@@ -354,7 +407,8 @@ export default function Commissions() {
                     <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="Processing residual (Kurv markup × our split)">Processing</th>
                     <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="Gateway invoiced to merchant (accepted quote monthly resale)">Gateway Inv.</th>
                     <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="Our gateway margin (accepted quote monthly margin)">Gateway Margin</th>
-                    <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="Processing residual + gateway margin">Total</th>
+                    <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="Processing residual + gateway margin">Est. Total</th>
+                    <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="Actual partner residual reported by NMI for this month">NMI Actual</th>
                     <th className="text-right px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Trend</th>
                   </tr>
                 </thead>
@@ -383,6 +437,22 @@ export default function Commissions() {
                         <td className="px-4 py-3.5 text-right font-mono text-sm">{fmt(r.gateway_margin)}</td>
                         <td className="px-4 py-3.5 text-right font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400">
                           {fmt(r.total_commission + r.gateway_margin)}
+                        </td>
+                        <td className="px-4 py-3.5 text-right font-mono text-sm">
+                          {(() => {
+                            const actual = residualByMid.get(r.nmi_gateway_id);
+                            if (!actual) {
+                              return <span className="text-xs text-muted-foreground">—</span>;
+                            }
+                            return (
+                              <span className="inline-flex flex-col items-end gap-0.5">
+                                <span className="text-blue-600 dark:text-blue-400 font-medium">{fmt(actual.partner_residual)}</span>
+                                <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-blue-500/40 text-blue-600 dark:text-blue-400">
+                                  {actual.account_id ? "Matched" : "Unmatched"}
+                                </Badge>
+                              </span>
+                            );
+                          })()}
                         </td>
                         <td className="px-6 py-3.5 text-right">
                           {r.commission_change_pct != null ? (

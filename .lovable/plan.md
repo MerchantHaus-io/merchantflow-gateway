@@ -1,58 +1,44 @@
+## Goal
 
-## Root causes confirmed
+Right now `nmi-commissions` **computes** commissions locally by taking each merchant's transaction volume/count and multiplying by rates we stored on the account (`kurv_volume_rate_pct`, `kurv_per_txn_fee`, `kurv_residual_split`). That's an estimate — not what NMI actually paid us.
 
-**1. "Claimed as admin, assigned to Jamie"**
-Jamie's roster entry lists `admin@merchanthaus.io` as an alias — in both `src/config/team.ts` (line 47) **and** the `team_roster` DB row. So `getTeamMemberFromEmail("admin@merchanthaus.io")` matches Jamie *before* Darryn's real entry, and the claim writes `assigned_to_name: "Jamie"`.
+You want the same treatment as transactions: hit NMI's Partner API, pull the **actual commission / residual report NMI issues to us**, store it, and surface it in the terminal.
 
-**2. `sales@merchanthaus.io` still wired in**
-Profile row still exists, plus references in: `ai-assistant`, `send-quote-email`, `send-qualified-docs-request`, `accept-quote`, `send-contact-form-email`, `send-application-declined`, `send-account-closed`, `google-gmail-sync`, `Integrations.tsx`, `Contact.tsx`.
+## What I'll build
 
-**3. Profile save**
-Schema (`full_name`, `phone`) and RLS (`UPDATE ... USING auth.uid() = id`) are both correct, so the most likely failure is the toast firing on a silent error path. Plan adds proper diagnostics and a re-fetch after save to confirm persistence.
+### 1. New edge function: `nmi-partner-residuals`
+- Auth against Partner v4 with `NMI_API_KEY` (same key used by `nmi-transactions`).
+- Call NMI's partner residual/commission report endpoint (v4 `/residuals` / `/reports/residuals`, with fallback to v3 `/affiliate/reports` if v4 returns empty — same pattern we already use for the merchant roster).
+- Accept `?month=YYYY-MM` (default = previous complete month, since NMI publishes residuals ~mid-following-month).
+- Return one row per merchant per month: `nmi_merchant_id`, `company_name`, `gross_volume`, `transaction_count`, `interchange`, `assessments`, `processor_fees`, `gateway_fees`, `partner_residual` (what NMI paid us), plus the raw JSON for audit.
 
----
+### 2. New table: `nmi_partner_residuals`
+Columns: `id`, `period_month` (date, first-of-month), `nmi_merchant_id`, `account_id` (nullable FK, resolved by MID lookup), `company_name`, `gross_volume`, `transaction_count`, `interchange_cost`, `assessments`, `processor_fees`, `gateway_fees`, `partner_residual`, `raw` (jsonb), `synced_at`. Unique on `(period_month, nmi_merchant_id)` for idempotent upserts. RLS: read = authenticated; write = service_role only.
 
-## Changes
+### 3. Sync scheduling
+- Add a `pg_cron` job that runs `nmi-partner-residuals` daily at ~08:00 CT — cheap, idempotent, and catches NMI's mid-month publish without us babysitting it.
+- Keep the existing on-demand "Sync" button behavior — the Commissions page will also trigger a fetch for the currently viewed month.
 
-### A. Fix the alias bug (one-line root fix)
-- **`src/config/team.ts`** — remove `"admin@merchanthaus.io"` from Jamie's `aliases`.
-- **Migration** — `UPDATE public.team_roster SET aliases = '{}' WHERE id = 'jamie';`
+### 4. UI wiring on the Commissions page
+- Add a **"NMI Actuals"** column next to today's computed "Estimated Commission" so we can see estimate vs. actual side-by-side and spot drift.
+- Show a small badge on each row: `Matched` (MID → account resolved), `Unmatched` (residual came in for a MID not in our accounts — needs mapping).
+- Month picker at the top; defaults to last published month.
 
-After this, `admin@merchanthaus.io` resolves to **Darryn** everywhere (claim, comments, system notes, calendar columns, opportunity assignment).
+### 5. Account detail
+- On `LiveAccountDetail`, add a compact "NMI Residuals (last 6 months)" strip pulled from `nmi_partner_residuals` for that account's MID.
 
-### B. Harden every claim/assign site to use canonical resolver
-Replace the `teamMemberName || user.email || "Agent"` fallback with `resolveDisplayName(user.email) ?? teamMemberName ?? user.email` so a stale `teamMemberName` from context can never overwrite an authoritative roster lookup.
+## What I'm NOT changing
 
-- `src/pages/SupportTicketDetail.tsx` — `claim()` and `authorName`
-- `src/pages/SupportTriage.tsx` — `handleClaim()`
+- The existing `commission_records` / `commission_periods` estimate flow stays — that's still useful for in-month forecasting before NMI publishes.
+- The referrer payout logic (`compute_referrer_payout`) is untouched — this is NMI→us, not us→referrers.
+- Commission-model settings on accounts (gateway_only vs processing) stay.
 
-### C. Deregister `sales@merchanthaus.io`
-- **Migration**
-  - Delete `profiles` row for `sales@merchanthaus.io`
-  - Delete `user_roles` rows, `team_roster` row if any, and the `auth.users` row
-  - (Tasks/opps were already reassigned in the prior cleanup)
-- **Edge functions** — swap outbound `from` / `reply_to` / cc lists from `sales@merchanthaus.io` to `support@merchanthaus.io`:
-  - `send-quote-email`, `accept-quote`, `send-qualified-docs-request`, `send-contact-form-email`, `send-application-declined`, `send-account-closed`
-- **`ai-assistant/index.ts`** — drop the Wesley/sales entry and the "shared mailbox" line.
-- **`google-gmail-sync/index.ts`** — remove `sales@merchanthaus.io` from the synced mailbox list.
-- **`src/pages/Integrations.tsx`** — remove the Sales mailbox connection card + related status logic.
-- **`src/pages/Contact.tsx`** — public contact address changes from `sales@` to `support@`.
+## Open question before I build
 
-### D. Profile save repair
-- **`src/pages/Settings.tsx#handleSaveProfile`**
-  - Trim inputs; reject empty `full_name`.
-  - Use `.select().single()` after `.update()` so RLS failures surface as a real error instead of a silent success.
-  - Re-hydrate local state from the returned row and bust `teamMemberName` cache by emitting an auth context refresh.
-  - On error, show `error.message` in the toast (not just "Failed to save profile") so we can see what's actually failing for the user next time.
-- Verify after deploy by saving the admin profile and confirming the row updates in DB.
+NMI's partner residual endpoint name/path varies by portal generation. Two quick options:
 
----
+**A.** I ship it assuming Partner v4 `/residuals` with a v3 `/affiliate/residuals` fallback, log both responses, and we correct once we see live data. Fastest path.
 
-## Verification
+**B.** You paste the exact residual/commission report endpoint from your NMI partner portal docs (or a sample response), and I map fields precisely on the first pass.
 
-1. Sign in as `admin@merchanthaus.io`, open any unassigned support ticket, claim it → expect `assigned_to_name = "Darryn"`.
-2. Trigger any outbound email (quote, declined, etc.) → `From:` header reads `support@merchanthaus.io`.
-3. Edit name/phone in Settings → toast confirms, row persists across reload, header shows new name.
-4. `SELECT * FROM profiles WHERE email = 'sales@merchanthaus.io'` returns 0 rows.
-
-No UI redesign, no business-logic changes outside the above.
+I'd recommend **A** unless you already have the endpoint handy — the fallback + raw-JSON persistence means we won't lose data even if the first mapping is off.
