@@ -407,7 +407,8 @@ export default function Commissions() {
                     <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="Processing residual (Kurv markup × our split)">Processing</th>
                     <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="Gateway invoiced to merchant (accepted quote monthly resale)">Gateway Inv.</th>
                     <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="Our gateway margin (accepted quote monthly margin)">Gateway Margin</th>
-                    <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="Processing residual + gateway margin">Total</th>
+                    <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="Processing residual + gateway margin">Est. Total</th>
+                    <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="Actual partner residual reported by NMI for this month">NMI Actual</th>
                     <th className="text-right px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Trend</th>
                   </tr>
                 </thead>
