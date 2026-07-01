@@ -8,8 +8,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Max inbound PDF size (base64 inflates ~33%, gateway limits apply).
-const MAX_BYTES = 12 * 1024 * 1024;
+// Max inbound file size. Matches the 8MB inline-base64 cap the ai-assistant
+// function uses for the same Lovable AI gateway (base64 inflates ~33%).
+const MAX_BYTES = 8 * 1024 * 1024;
 
 /**
  * analyze-statement
@@ -40,7 +41,7 @@ serve(async (req) => {
     const b64 = commaIdx >= 0 ? file_base64.slice(commaIdx + 1) : file_base64;
     if ((b64.length * 3) / 4 > MAX_BYTES) {
       return new Response(
-        JSON.stringify({ error: "File too large (max 12MB). Try a single statement PDF." }),
+        JSON.stringify({ error: "File too large (max 8MB). Try a single statement PDF." }),
         { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Building2, FileSignature, Search, User, ScanSearch } from "lucide-react";
 
 import { AppLayout } from "@/components/AppLayout";
@@ -68,6 +68,7 @@ export default function QuoteBuilder() {
   const [draftsRefresh, setDraftsRefresh] = useState(0);
   // Prefill handed over from the Statement Analyzer (business name + volume).
   const location = useLocation();
+  const navigate = useNavigate();
   const [prefill, setPrefill] = useState<{
     businessName?: string;
     email?: string;
@@ -94,9 +95,10 @@ export default function QuoteBuilder() {
         phone: p.phone ? String(p.phone) : undefined,
       });
     }
-    // Clear history state so a refresh doesn't re-apply the prefill.
-    window.history.replaceState({}, "");
-  }, [location.state]);
+    // Clear the navigation state (via the router, not raw history) so a refresh
+    // or back/forward doesn't re-apply the prefill over the user's edits.
+    navigate(location.pathname + location.search, { replace: true, state: null });
+  }, [location.state, location.pathname, location.search, navigate]);
 
   useEffect(() => {
     (async () => {

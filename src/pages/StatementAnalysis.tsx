@@ -17,7 +17,7 @@ import {
 } from "@/lib/statement-analysis";
 import { generateStatementProposalPdf, ProposalMeta } from "@/lib/statementProposalPdf";
 
-const MAX_FILE_MB = 12;
+const MAX_FILE_MB = 8;
 
 const CATEGORY_LABELS: Record<FeeCategory, string> = {
   interchange: "Interchange",

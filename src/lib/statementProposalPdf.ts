@@ -158,8 +158,18 @@ export async function generateStatementProposalPdf(
   // @ts-expect-error - lastAutoTable is added at runtime by jspdf-autotable
   cursorY = doc.lastAutoTable.finalY + 24;
 
+  // Start a fresh page whenever the cursor is too low to fit `needed` points
+  // of upcoming content above the footer band.
+  const ensureSpace = (needed: number) => {
+    if (cursorY + needed > 700) {
+      doc.addPage();
+      cursorY = 60;
+    }
+  };
+
   // ─── Flags / what we found ───────────────────────────────────────────────
   if (r.flags.length > 0) {
+    ensureSpace(40);
     doc.setTextColor(...INK);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
@@ -168,12 +178,12 @@ export async function generateStatementProposalPdf(
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
-    doc.setTextColor(...INK);
     for (const flag of r.flags) {
+      const lines = doc.splitTextToSize(flag, PAGE_W - MARGIN * 2 - 14);
+      ensureSpace(lines.length * 12 + 4);
       doc.setTextColor(...BRAND_RED);
       doc.text("•", MARGIN, cursorY);
       doc.setTextColor(...INK);
-      const lines = doc.splitTextToSize(flag, PAGE_W - MARGIN * 2 - 14);
       doc.text(lines, MARGIN + 14, cursorY);
       cursorY += lines.length * 12 + 4;
     }
@@ -181,7 +191,8 @@ export async function generateStatementProposalPdf(
   }
 
   // ─── Junk fee list ───────────────────────────────────────────────────────
-  if (r.junkFeeItems.length > 0 && cursorY < 660) {
+  if (r.junkFeeItems.length > 0) {
+    ensureSpace(48);
     doc.setTextColor(...INK);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
@@ -189,7 +200,7 @@ export async function generateStatementProposalPdf(
     cursorY += 8;
     autoTable(doc, {
       startY: cursorY,
-      margin: { left: MARGIN, right: MARGIN },
+      margin: { left: MARGIN, right: MARGIN, bottom: 80 },
       theme: "plain",
       body: r.junkFeeItems.map((i) => [i.label, fmtCurrency(i.amount)]),
       styles: { font: "helvetica", fontSize: 8.5, cellPadding: 3, textColor: INK },
@@ -200,6 +211,10 @@ export async function generateStatementProposalPdf(
   }
 
   // ─── Footer note ─────────────────────────────────────────────────────────
+  // Keep the footer band clear of body content on the final page.
+  if (cursorY > 690) {
+    doc.addPage();
+  }
   doc.setDrawColor(...HAIRLINE);
   doc.setLineWidth(0.5);
   doc.line(MARGIN, 726, PAGE_W - MARGIN, 726);
