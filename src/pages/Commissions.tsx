@@ -438,6 +438,22 @@ export default function Commissions() {
                         <td className="px-4 py-3.5 text-right font-mono text-sm font-medium text-emerald-600 dark:text-emerald-400">
                           {fmt(r.total_commission + r.gateway_margin)}
                         </td>
+                        <td className="px-4 py-3.5 text-right font-mono text-sm">
+                          {(() => {
+                            const actual = residualByMid.get(r.nmi_gateway_id);
+                            if (!actual) {
+                              return <span className="text-xs text-muted-foreground">—</span>;
+                            }
+                            return (
+                              <span className="inline-flex flex-col items-end gap-0.5">
+                                <span className="text-blue-600 dark:text-blue-400 font-medium">{fmt(actual.partner_residual)}</span>
+                                <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 border-blue-500/40 text-blue-600 dark:text-blue-400">
+                                  {actual.account_id ? "Matched" : "Unmatched"}
+                                </Badge>
+                              </span>
+                            );
+                          })()}
+                        </td>
                         <td className="px-6 py-3.5 text-right">
                           {r.commission_change_pct != null ? (
                             <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${r.commission_change_pct >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
