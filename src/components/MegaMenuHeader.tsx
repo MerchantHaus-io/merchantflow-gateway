@@ -38,6 +38,7 @@ import {
   LifeBuoy,
   MessageSquarePlus,
   LayoutGrid,
+  ScanSearch,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -147,6 +148,7 @@ const navMain: NavGroup[] = [
       { title: "Board Merchant", url: "/tools/nmi-boarding", icon: BadgeDollarSign, description: "Board merchants via NMI gateway" },
       { title: "Kurv / MyPortfolio", url: "/tools/kurv", icon: BadgeDollarSign, description: "EMS boarding, roster & transactions" },
       { title: "Pre-Qualification Wizard", url: "/tools/preboarding-wizard", icon: ClipboardList, description: "Application readiness form" },
+      { title: "Statement Analyzer", url: "/tools/statement-analysis", icon: ScanSearch, description: "Analyze a statement, benchmark fees & build a savings proposal" },
       { title: "Revenue Calculator", url: "/tools/revenue-calculator", icon: Calculator, description: "Estimate processing revenue" },
       { title: "CSV Import", url: "/tools/csv-import", icon: FileSpreadsheet, description: "Bulk import data" },
       { title: "Quote Builder", url: "/tools/quote-builder", icon: FileSignature, description: "Generate gateway quotes from an opportunity" },

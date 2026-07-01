@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Building2, FileSignature, Search, User } from "lucide-react";
+import { useLocation } from "react-router-dom";
+import { Building2, FileSignature, Search, User, ScanSearch } from "lucide-react";
 
 import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { TIERS, type PricingTier } from "@/config/pricing";
+import { tierFromVolume } from "@/lib/pricing-tier";
 import {
   QuoteGeneratorDialog,
   type DraftQuote,
@@ -64,6 +66,37 @@ export default function QuoteBuilder() {
   const [editingDraft, setEditingDraft] = useState<DraftQuote | null>(null);
   // Bumped when the dialog closes so the Saved drafts panel refetches.
   const [draftsRefresh, setDraftsRefresh] = useState(0);
+  // Prefill handed over from the Statement Analyzer (business name + volume).
+  const location = useLocation();
+  const [prefill, setPrefill] = useState<{
+    businessName?: string;
+    email?: string;
+    phone?: string;
+  } | null>(null);
+
+  // Consume a one-off prefill passed via navigation state (e.g. from the
+  // Statement Analyzer "Build quote" handoff). We only seed the free-form
+  // fields; picking an opportunity later still overrides them.
+  useEffect(() => {
+    const p = (location.state as { prefill?: Record<string, unknown> } | null)?.prefill;
+    if (!p) return;
+    if (typeof p.monthlyVolume === "string" || typeof p.monthlyVolume === "number") {
+      const v = String(p.monthlyVolume);
+      setMonthlyVolume(v);
+      const t = tierFromVolume(v);
+      if (t) setTierId(t);
+    }
+    if (p.averageTicket != null) setAverageTicket(String(p.averageTicket));
+    if (p.businessName || p.email || p.phone) {
+      setPrefill({
+        businessName: p.businessName ? String(p.businessName) : undefined,
+        email: p.email ? String(p.email) : undefined,
+        phone: p.phone ? String(p.phone) : undefined,
+      });
+    }
+    // Clear history state so a refresh doesn't re-apply the prefill.
+    window.history.replaceState({}, "");
+  }, [location.state]);
 
   useEffect(() => {
     (async () => {
@@ -157,7 +190,17 @@ export default function QuoteBuilder() {
         averageTicket,
         notes: "",
       }
-    : undefined;
+    : prefill
+      ? {
+          businessName: prefill.businessName || "",
+          contactName: "",
+          email: prefill.email || "",
+          phone: prefill.phone || "",
+          monthlyVolume,
+          averageTicket,
+          notes: "",
+        }
+      : undefined;
 
   const tier = TIERS.find((t) => t.id === tierId) ?? TIERS[1];
 
@@ -181,6 +224,18 @@ export default function QuoteBuilder() {
               PDF you can preview, download, or email.
             </p>
           </div>
+
+          {prefill?.businessName && !selectedOpp && (
+            <div className="flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
+              <ScanSearch className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+              <p className="text-xs text-foreground">
+                Prefilled from the Statement Analyzer for{" "}
+                <span className="font-semibold">{prefill.businessName}</span>
+                {monthlyVolume ? ` at ${monthlyVolume} monthly volume` : ""}. Pick an opportunity to
+                link this quote, or build it as a one-off.
+              </p>
+            </div>
+          )}
 
           <div className="rounded-2xl border border-border bg-card p-6 space-y-5">
             <div>
@@ -344,7 +399,9 @@ export default function QuoteBuilder() {
               <p className="text-[11px] text-muted-foreground italic">
                 {selectedOpp
                   ? `Linked to ${selectedOpp.account?.name ?? "opportunity"}`
-                  : "No opportunity selected — building a one-off quote"}
+                  : prefill?.businessName
+                    ? `Prefilled from Statement Analyzer — ${prefill.businessName}`
+                    : "No opportunity selected — building a one-off quote"}
               </p>
               <Button
                 disabled={!canBuild}
