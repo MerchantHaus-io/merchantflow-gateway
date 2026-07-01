@@ -256,6 +256,16 @@ export default function Commissions() {
             <Button size="sm" variant="outline" onClick={() => syncMutation.mutate({ forceSync: true })} disabled={syncMutation.isPending}>
               Force Sync
             </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => pullActualsMutation.mutate()}
+              disabled={pullActualsMutation.isPending}
+              title="Fetch NMI's published partner residual report for the selected month"
+            >
+              <RefreshCw className={`h-4 w-4 mr-1 ${pullActualsMutation.isPending ? "animate-spin" : ""}`} />
+              {pullActualsMutation.isPending ? "Pulling…" : "Pull NMI Actuals"}
+            </Button>
           </div>
         </div>
 
