@@ -211,16 +211,22 @@ const Settings = () => {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .update({ full_name: trimmedName, phone: trimmedPhone })
-        .eq("id", user.id)
+        .upsert(
+          {
+            id: user.id,
+            email: user.email,
+            full_name: trimmedName,
+            phone: trimmedPhone,
+          },
+          { onConflict: "id" }
+        )
         .select("full_name, phone")
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
-      if (!data) throw new Error("Profile row not found — please sign out and back in.");
 
-      setFullName(data.full_name || "");
-      setPhone(data.phone || "");
+      setFullName(data?.full_name || trimmedName);
+      setPhone(data?.phone || trimmedPhone);
       toast.success("Profile saved successfully!");
     } catch (error: any) {
       console.error("Error saving profile:", error);
