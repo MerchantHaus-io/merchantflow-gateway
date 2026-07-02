@@ -218,14 +218,30 @@ const Settings = () => {
     }
   }, [user]);
 
+  const validation = useMemo(
+    () => profileSchema.safeParse({ fullName, phone }),
+    [fullName, phone]
+  );
+  const fieldErrors = useMemo(() => {
+    if (validation.success) return { fullName: undefined, phone: undefined } as Record<string, string | undefined>;
+    const errs: Record<string, string | undefined> = {};
+    for (const issue of validation.error.issues) {
+      const key = issue.path[0] as string;
+      if (!errs[key]) errs[key] = issue.message;
+    }
+    return errs;
+  }, [validation]);
+
   const handleSaveProfile = async () => {
     if (!user) return;
-    const trimmedName = fullName.trim();
-    const trimmedPhone = phone.trim();
-    if (!trimmedName) {
-      toast.error("Full name cannot be empty");
+
+    const parsed = profileSchema.safeParse({ fullName, phone });
+    if (!parsed.success) {
+      const first = parsed.error.issues[0]?.message ?? "Please fix the highlighted fields";
+      toast.error(first);
       return;
     }
+    const { fullName: trimmedName, phone: trimmedPhone } = parsed.data;
 
     setIsSaving(true);
     try {
@@ -255,6 +271,7 @@ const Settings = () => {
       setIsSaving(false);
     }
   };
+
 
   const handleForcePasswordReset = async () => {
     setIsResetting(true);
