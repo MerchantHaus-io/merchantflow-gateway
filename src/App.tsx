@@ -63,6 +63,7 @@ const GatewayAccounts = lazy(() => import("./pages/GatewayAccounts"));
 const Calendar = lazy(() => import("./pages/Calendar"));
 const Commissions = lazy(() => import("./pages/Commissions"));
 const QuoteBuilder = lazy(() => import("./pages/QuoteBuilder"));
+const StatementAnalysis = lazy(() => import("./pages/StatementAnalysis"));
 const QuoteAcceptance = lazy(() => import("./pages/QuoteAcceptance"));
 const QuotesContracts = lazy(() => import("./pages/QuotesContracts"));
 const Referrers = lazy(() => import("./pages/Referrers"));
@@ -157,6 +158,7 @@ const App = () => (
                 <Route path="/tools/preboarding-wizard" element={<ProtectedRoute><PreboardingWizard /></ProtectedRoute>} />
                 <Route path="/tools/csv-import" element={<ProtectedRoute><CsvImport /></ProtectedRoute>} />
                 <Route path="/tools/quote-builder" element={<ProtectedRoute><QuoteBuilder /></ProtectedRoute>} />
+                <Route path="/tools/statement-analysis" element={<ProtectedRoute><StatementAnalysis /></ProtectedRoute>} />
                 <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
                 <Route path="/my-tasks" element={<ProtectedRoute><MyTasks /></ProtectedRoute>} />
                 <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />

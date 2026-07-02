@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Search, LayoutDashboard, Briefcase, ListChecks, Building2, Users,
   FileText, BarChart3, Settings, BookOpen, Calculator, Send, Globe,
-  BadgeDollarSign, Cloud, CreditCard, Activity, Sparkles, UserPlus,
+  BadgeDollarSign, Cloud, CreditCard, Activity, Sparkles, UserPlus, ScanSearch,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +27,7 @@ const SEARCH_ITEMS: SearchItem[] = [
   { title: "Commissions", url: "/commissions", icon: BadgeDollarSign, keywords: "commission partner earnings residual" },
   { title: "Settings", url: "/settings", icon: Settings, keywords: "profile preferences theme" },
   { title: "SOP", url: "/sop", icon: BookOpen, keywords: "procedures guide how to" },
+  { title: "Statement Analyzer", url: "/tools/statement-analysis", icon: ScanSearch, keywords: "statement analysis fee benchmark savings proposal pdf overcharge" },
   { title: "Revenue Calculator", url: "/tools/revenue-calculator", icon: Calculator, keywords: "money estimate" },
   { title: "Quote Builder", url: "/tools/quote-builder", icon: Calculator, keywords: "quote pricing pdf gateway" },
   { title: "Email Outreach", url: "/outreach", icon: Send, keywords: "campaigns email marketing" },
