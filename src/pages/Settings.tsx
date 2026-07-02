@@ -554,11 +554,21 @@ const Settings = () => {
                       id="fullName"
                       placeholder="Enter your full name"
                       value={fullName}
+                      maxLength={80}
+                      aria-invalid={!!fieldErrors.fullName}
+                      aria-describedby={fieldErrors.fullName ? "fullName-error" : "fullName-hint"}
                       onChange={(e) => setFullName(e.target.value)}
+                      className={fieldErrors.fullName ? "border-destructive focus-visible:ring-destructive" : ""}
                     />
-                    <p className="text-xs text-muted-foreground">
-                      This name will be displayed in chat and throughout the app
-                    </p>
+                    {fieldErrors.fullName ? (
+                      <p id="fullName-error" className="text-xs text-destructive">
+                        {fieldErrors.fullName}
+                      </p>
+                    ) : (
+                      <p id="fullName-hint" className="text-xs text-muted-foreground">
+                        This name will be displayed in chat and throughout the app
+                      </p>
+                    )}
                   </div>
 
                   {/* Phone Setting */}
@@ -567,16 +577,32 @@ const Settings = () => {
                     <Input
                       id="phone"
                       type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
                       placeholder="Enter your contact number"
                       value={phone}
+                      maxLength={20}
+                      aria-invalid={!!fieldErrors.phone}
+                      aria-describedby={fieldErrors.phone ? "phone-error" : "phone-hint"}
                       onChange={(e) => setPhone(e.target.value)}
+                      className={fieldErrors.phone ? "border-destructive focus-visible:ring-destructive" : ""}
                     />
-                    <p className="text-xs text-muted-foreground">
-                      Your phone number will be visible to other team members
-                    </p>
+                    {fieldErrors.phone ? (
+                      <p id="phone-error" className="text-xs text-destructive">
+                        {fieldErrors.phone}
+                      </p>
+                    ) : (
+                      <p id="phone-hint" className="text-xs text-muted-foreground">
+                        Optional. Visible to other team members.
+                      </p>
+                    )}
                   </div>
 
-                  <Button onClick={handleSaveProfile} disabled={isSaving} className="w-full sm:w-auto">
+                  <Button
+                    onClick={handleSaveProfile}
+                    disabled={isSaving || !validation.success}
+                    className="w-full sm:w-auto"
+                  >
                     {isSaving ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
@@ -584,6 +610,7 @@ const Settings = () => {
                     )}
                     <span className="ml-2">Save Profile</span>
                   </Button>
+
                 </CardContent>
               </Card>
 
