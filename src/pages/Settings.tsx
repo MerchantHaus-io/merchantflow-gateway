@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { z } from "zod";
 import { AppLayout } from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme, THEME_OPTIONS, ThemeVariant } from "@/contexts/ThemeContext";
@@ -17,6 +18,25 @@ import JSZip from "jszip";
 import { Switch } from "@/components/ui/switch";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import AvatarCropDialog from "@/components/AvatarCropDialog";
+
+const profileSchema = z.object({
+  fullName: z
+    .string()
+    .trim()
+    .min(2, { message: "Display name must be at least 2 characters" })
+    .max(80, { message: "Display name must be less than 80 characters" })
+    .regex(/^[\p{L}\p{M}0-9 '.\-]+$/u, {
+      message: "Only letters, numbers, spaces, apostrophes, periods and hyphens are allowed",
+    }),
+  phone: z
+    .string()
+    .trim()
+    .max(20, { message: "Phone must be less than 20 characters" })
+    .refine((v) => v === "" || /^\+?[0-9\s().\-]{7,20}$/.test(v), {
+      message: "Enter a valid phone number (7–20 digits, may include + ( ) - spaces)",
+    }),
+});
+
 
 // Theme variant icons mapping
 const VARIANT_ICONS: Record<ThemeVariant, React.ReactNode> = {
