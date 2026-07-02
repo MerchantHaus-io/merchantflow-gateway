@@ -435,7 +435,7 @@ export const QUOTE_SENDERS: QuoteSender[] = [
     name: rnq("yaseen") ?? "Yaseen Sheik",
     title: "Support Lead",
     company: MH_COMPANY,
-    email: req("yaseen") ?? "support@merchanthaus.io",
+    email: req("yaseen") ?? "jessie@merchanthaus.io",
     phone: "",
     address: MH_ADDRESS,
   },
