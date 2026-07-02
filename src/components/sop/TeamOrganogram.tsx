@@ -245,7 +245,6 @@ export const TeamOrganogram = () => {
               <li>• <strong>Darryn's QA gate at Qualified</strong> — all underwriting review starts here</li>
               <li>• <strong>Card assignment = 100% action ownership</strong> — if assigned to you, you deal with it</li>
               <li>• <strong>Post-go-live support</strong> — Sheiky exclusively</li>
-              <li>• <strong>Outreach campaigns</strong> — Wesley exclusively</li>
               <li>• <strong>NMI & affiliate relationships</strong> — Taryn exclusively</li>
             </ul>
           </div>
@@ -256,7 +255,7 @@ export const TeamOrganogram = () => {
               All process and policy decisions are made by <strong>majority vote</strong> among the following voting members:
             </p>
             <div className="flex flex-wrap gap-1 mb-2">
-              {["Jamie", "Darryn", "Sheiky", "Wesley"].map((name) => (
+              {["Jamie", "Darryn", "Sheiky"].map((name) => (
                 <Badge key={name} variant="secondary" className="text-xs">{name}</Badge>
               ))}
             </div>

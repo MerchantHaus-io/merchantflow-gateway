@@ -46,7 +46,6 @@ const MEMBER_PALETTE: Record<string, { bg: string; text: string }> = {
   taryn:  { bg: "bg-blue-100   dark:bg-blue-900/30",   text: "text-blue-700   dark:text-blue-300" },
   yaseen: { bg: "bg-violet-100 dark:bg-violet-900/30", text: "text-violet-700 dark:text-violet-300" },
   neil:   { bg: "bg-cyan-100   dark:bg-cyan-900/30",   text: "text-cyan-700   dark:text-cyan-300" },
-  wesley: { bg: "bg-red-100    dark:bg-red-900/30",    text: "text-red-700    dark:text-red-300" },
 };
 
 const TEAM_COLORS: Record<string, { border: string; bg: string; text: string }> = (() => {

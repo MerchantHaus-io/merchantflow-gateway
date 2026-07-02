@@ -267,8 +267,6 @@ The current team and how a typical day looks:
 | **Yaseen Sheik** | Support Lead | Work the [Support Triage](/support) queue; claim & resolve tickets; escalate stuck deals |
 | **Taryn Engledoe** | Affiliate & Partner Manager | Manage [Affiliates](/admin/affiliates); reconcile [Commissions](/commissions) and [Live & Billing](/live-billing) |
 
-*(Wesley is on the roster as inactive Sales.)*
-
 ---
 
 ## 12. Watch the SLA Lights
