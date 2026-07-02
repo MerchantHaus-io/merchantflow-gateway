@@ -98,6 +98,9 @@ serve(async (req) => {
       subject,
       html,
       replyTo: SUPPORT_INBOX,
+      // BCC the shared support alias so every team member with access to
+      // support@ sees the outbound update in the shared Gmail inbox.
+      bcc: SUPPORT_INBOX,
       threadId: ticket.gmail_thread_id ?? undefined,
       inReplyTo: ticket.gmail_message_id ?? undefined,
       references: ticket.gmail_message_id ?? undefined,

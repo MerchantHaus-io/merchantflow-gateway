@@ -17,6 +17,8 @@ export interface GmailSendOpts {
   to: string;
   subject: string;
   html: string;
+  cc?: string | string[];
+  bcc?: string | string[];
   replyTo?: string;
   inReplyTo?: string;    // RFC Message-ID for threading
   references?: string;
@@ -30,6 +32,9 @@ export async function sendGmail(opts: GmailSendOpts): Promise<{ ok: boolean; err
     return { ok: false, error: "Gmail connector not configured" };
   }
 
+  const joinAddr = (v?: string | string[]) =>
+    Array.isArray(v) ? v.filter(Boolean).join(", ") : (v || "");
+
   const headers: string[] = [
     `From: ${opts.from}`,
     `To: ${opts.to}`,
@@ -37,6 +42,10 @@ export async function sendGmail(opts: GmailSendOpts): Promise<{ ok: boolean; err
     'MIME-Version: 1.0',
     'Content-Type: text/html; charset="UTF-8"',
   ];
+  const cc = joinAddr(opts.cc);
+  const bcc = joinAddr(opts.bcc);
+  if (cc) headers.push(`Cc: ${cc}`);
+  if (bcc) headers.push(`Bcc: ${bcc}`);
   if (opts.replyTo) headers.push(`Reply-To: ${opts.replyTo}`);
   if (opts.inReplyTo) headers.push(`In-Reply-To: ${opts.inReplyTo}`);
   if (opts.references) headers.push(`References: ${opts.references}`);
