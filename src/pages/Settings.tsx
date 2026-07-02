@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { z } from "zod";
 import { AppLayout } from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme, THEME_OPTIONS, ThemeVariant } from "@/contexts/ThemeContext";
@@ -17,6 +18,25 @@ import JSZip from "jszip";
 import { Switch } from "@/components/ui/switch";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import AvatarCropDialog from "@/components/AvatarCropDialog";
+
+const profileSchema = z.object({
+  fullName: z
+    .string()
+    .trim()
+    .min(2, { message: "Display name must be at least 2 characters" })
+    .max(80, { message: "Display name must be less than 80 characters" })
+    .regex(/^[\p{L}\p{M}0-9 '.\-]+$/u, {
+      message: "Only letters, numbers, spaces, apostrophes, periods and hyphens are allowed",
+    }),
+  phone: z
+    .string()
+    .trim()
+    .max(20, { message: "Phone must be less than 20 characters" })
+    .refine((v) => v === "" || /^\+?[0-9\s().\-]{7,20}$/.test(v), {
+      message: "Enter a valid phone number (7–20 digits, may include + ( ) - spaces)",
+    }),
+});
+
 
 // Theme variant icons mapping
 const VARIANT_ICONS: Record<ThemeVariant, React.ReactNode> = {
@@ -198,14 +218,30 @@ const Settings = () => {
     }
   }, [user]);
 
+  const validation = useMemo(
+    () => profileSchema.safeParse({ fullName, phone }),
+    [fullName, phone]
+  );
+  const fieldErrors = useMemo(() => {
+    if (validation.success) return { fullName: undefined, phone: undefined } as Record<string, string | undefined>;
+    const errs: Record<string, string | undefined> = {};
+    for (const issue of validation.error.issues) {
+      const key = issue.path[0] as string;
+      if (!errs[key]) errs[key] = issue.message;
+    }
+    return errs;
+  }, [validation]);
+
   const handleSaveProfile = async () => {
     if (!user) return;
-    const trimmedName = fullName.trim();
-    const trimmedPhone = phone.trim();
-    if (!trimmedName) {
-      toast.error("Full name cannot be empty");
+
+    const parsed = profileSchema.safeParse({ fullName, phone });
+    if (!parsed.success) {
+      const first = parsed.error.issues[0]?.message ?? "Please fix the highlighted fields";
+      toast.error(first);
       return;
     }
+    const { fullName: trimmedName, phone: trimmedPhone } = parsed.data;
 
     setIsSaving(true);
     try {
@@ -235,6 +271,7 @@ const Settings = () => {
       setIsSaving(false);
     }
   };
+
 
   const handleForcePasswordReset = async () => {
     setIsResetting(true);
@@ -517,11 +554,21 @@ const Settings = () => {
                       id="fullName"
                       placeholder="Enter your full name"
                       value={fullName}
+                      maxLength={80}
+                      aria-invalid={!!fieldErrors.fullName}
+                      aria-describedby={fieldErrors.fullName ? "fullName-error" : "fullName-hint"}
                       onChange={(e) => setFullName(e.target.value)}
+                      className={fieldErrors.fullName ? "border-destructive focus-visible:ring-destructive" : ""}
                     />
-                    <p className="text-xs text-muted-foreground">
-                      This name will be displayed in chat and throughout the app
-                    </p>
+                    {fieldErrors.fullName ? (
+                      <p id="fullName-error" className="text-xs text-destructive">
+                        {fieldErrors.fullName}
+                      </p>
+                    ) : (
+                      <p id="fullName-hint" className="text-xs text-muted-foreground">
+                        This name will be displayed in chat and throughout the app
+                      </p>
+                    )}
                   </div>
 
                   {/* Phone Setting */}
@@ -530,16 +577,32 @@ const Settings = () => {
                     <Input
                       id="phone"
                       type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
                       placeholder="Enter your contact number"
                       value={phone}
+                      maxLength={20}
+                      aria-invalid={!!fieldErrors.phone}
+                      aria-describedby={fieldErrors.phone ? "phone-error" : "phone-hint"}
                       onChange={(e) => setPhone(e.target.value)}
+                      className={fieldErrors.phone ? "border-destructive focus-visible:ring-destructive" : ""}
                     />
-                    <p className="text-xs text-muted-foreground">
-                      Your phone number will be visible to other team members
-                    </p>
+                    {fieldErrors.phone ? (
+                      <p id="phone-error" className="text-xs text-destructive">
+                        {fieldErrors.phone}
+                      </p>
+                    ) : (
+                      <p id="phone-hint" className="text-xs text-muted-foreground">
+                        Optional. Visible to other team members.
+                      </p>
+                    )}
                   </div>
 
-                  <Button onClick={handleSaveProfile} disabled={isSaving} className="w-full sm:w-auto">
+                  <Button
+                    onClick={handleSaveProfile}
+                    disabled={isSaving || !validation.success}
+                    className="w-full sm:w-auto"
+                  >
                     {isSaving ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
@@ -547,6 +610,7 @@ const Settings = () => {
                     )}
                     <span className="ml-2">Save Profile</span>
                   </Button>
+
                 </CardContent>
               </Card>
 
