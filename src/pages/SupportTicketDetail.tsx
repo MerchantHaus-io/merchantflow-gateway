@@ -150,17 +150,38 @@ const SupportTicketDetail = () => {
     }
   };
 
-  const claim = () =>
-    updateTicket(
+  const claim = async () => {
+    if (!ticket) return;
+    // Claiming an open ticket moves it into "in_progress" — the moment the
+    // client should be told their request has been allocated to an agent.
+    const startsWork = ticket.status === "open";
+    await updateTicket(
       {
         assigned_to: user?.id ?? null,
         assigned_to_name: authorName,
         assigned_to_email: user?.email ?? null,
-        status: ticket?.status === "open" ? "in_progress" : ticket?.status,
+        status: startsWork ? "in_progress" : ticket.status,
       },
       "assignee",
       `${authorName} claimed the ticket.`,
     );
+    if (startsWork && ticket.requester_email) {
+      try {
+        const { error } = await supabase.functions.invoke("send-ticket-status-email", {
+          body: {
+            ticket_id: ticket.id,
+            new_status: "in_progress",
+            changed_by_name: authorName,
+          },
+        });
+        if (error) throw error;
+        toast.success(`Allocation email sent to ${ticket.requester_email}`);
+      } catch (err) {
+        console.error("Failed to send allocation email:", err);
+        toast.error("Ticket claimed, but the client notification failed.");
+      }
+    }
+  };
 
   const release = () =>
     updateTicket(

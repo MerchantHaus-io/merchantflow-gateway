@@ -117,18 +117,34 @@ const SupportTriage = () => {
   const handleClaim = async (ticket: TicketRow) => {
     if (!user) return;
     setClaimingId(ticket.id);
+    // Claiming an open ticket starts work on it — notify the client it's been allocated.
+    const startsWork = ticket.status === "open";
+    const claimedBy = resolveDisplayName(user.email) ?? teamMemberName ?? user.email ?? "Agent";
     try {
       const { error } = await supabase
         .from("support_tickets")
         .update({
           assigned_to: user.id,
-          assigned_to_name: resolveDisplayName(user.email) ?? teamMemberName ?? user.email ?? "Agent",
+          assigned_to_name: claimedBy,
           assigned_to_email: user.email ?? null,
-          status: ticket.status === "open" ? "in_progress" : ticket.status,
+          status: startsWork ? "in_progress" : ticket.status,
         })
         .eq("id", ticket.id);
       if (error) throw error;
       toast.success(`You claimed ${ticket.ticket_number}`);
+      if (startsWork && ticket.requester_email) {
+        const { error: emailErr } = await supabase.functions.invoke("send-ticket-status-email", {
+          body: {
+            ticket_id: ticket.id,
+            new_status: "in_progress",
+            changed_by_name: claimedBy,
+          },
+        });
+        if (emailErr) {
+          console.error("Failed to send allocation email:", emailErr);
+          toast.error("Ticket claimed, but the client notification failed.");
+        }
+      }
       queryClient.invalidateQueries({ queryKey: ["support-tickets"] });
     } catch (err) {
       console.error("Failed to claim ticket:", err);
