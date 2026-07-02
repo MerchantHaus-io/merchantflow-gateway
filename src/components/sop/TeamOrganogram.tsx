@@ -245,7 +245,6 @@ export const TeamOrganogram = () => {
               <li>• <strong>Darryn's QA gate at Qualified</strong> — all underwriting review starts here</li>
               <li>• <strong>Card assignment = 100% action ownership</strong> — if assigned to you, you deal with it</li>
               <li>• <strong>Post-go-live support</strong> — Sheiky exclusively</li>
-              <li>• <strong>Outreach campaigns</strong> — Wesley exclusively</li>
               <li>• <strong>NMI & affiliate relationships</strong> — Taryn exclusively</li>
             </ul>
           </div>
