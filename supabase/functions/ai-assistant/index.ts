@@ -15,7 +15,7 @@ const AI_BOT_NAME = "Atria";
 const TEAM_ROSTER: Array<{ email: string; name: string; active: boolean }> = [
   { email: "jamie@merchanthaus.io", name: "Jamie", active: true },
   { email: "admin@merchanthaus.io", name: "Darryn", active: true },
-  { email: "support@merchanthaus.io", name: "Yaseen Sheik", active: true },
+  { email: "jessie@merchanthaus.io", name: "Yaseen Sheik", active: true },
   { email: "taryn@merchanthaus.io", name: "Taryn Engledoe", active: true },
   { email: "jude@merchanthaus.io", name: "Jude", active: true },
   { email: "xavier@merchanthaus.io", name: "Xavier Rooza", active: true },
