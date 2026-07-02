@@ -60,7 +60,8 @@ export let TEAM_ROSTER: TeamMemberRecord[] = [
   },
   {
     id: "yaseen",
-    email: "support@merchanthaus.io",
+    email: "jessie@merchanthaus.io",
+    aliases: ["support@merchanthaus.io"],
     displayName: "Yaseen Sheik",
     title: "Support Lead",
     active: true,
