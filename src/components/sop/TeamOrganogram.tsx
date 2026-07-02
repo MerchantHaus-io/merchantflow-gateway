@@ -255,7 +255,7 @@ export const TeamOrganogram = () => {
               All process and policy decisions are made by <strong>majority vote</strong> among the following voting members:
             </p>
             <div className="flex flex-wrap gap-1 mb-2">
-              {["Jamie", "Darryn", "Sheiky", "Wesley"].map((name) => (
+              {["Jamie", "Darryn", "Sheiky"].map((name) => (
                 <Badge key={name} variant="secondary" className="text-xs">{name}</Badge>
               ))}
             </div>
