@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import {
   ScanSearch, Upload, FileText, Loader2, CheckCircle2, AlertTriangle,
   TrendingDown, Sparkles, Plus, Trash2, FileDown, RotateCcw, ShieldCheck, Pencil,
-  FileSignature,
+  FileSignature, Link2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -34,13 +34,12 @@ const RISK_STYLES: Record<string, string> = {
   high: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30",
 };
 
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(new Error("Failed to read file"));
-    reader.readAsDataURL(file);
-  });
+const STATEMENT_PREFIX = "statement-analysis/";
+const BUCKET = "opportunity-documents";
+
+interface OppOption {
+  id: string;
+  name: string;
 }
 
 const StatementAnalysis = () => {
@@ -57,6 +56,28 @@ const StatementAnalysis = () => {
   const [assumptions, setAssumptions] = useState<BenchmarkAssumptions>(DEFAULT_ASSUMPTIONS);
   const [showAssumptions, setShowAssumptions] = useState(false);
   const [exporting, setExporting] = useState(false);
+
+  // Optional opportunity to attach the generated proposal to.
+  const [opps, setOpps] = useState<OppOption[]>([]);
+  const [linkOppId, setLinkOppId] = useState<string>("");
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("opportunities")
+        .select("id, account:accounts(name)")
+        .order("updated_at", { ascending: false })
+        .limit(500);
+      if (data) {
+        setOpps(
+          (data as Array<{ id: string; account: { name: string } | null }>).map((o) => ({
+            id: o.id,
+            name: o.account?.name || "Untitled opportunity",
+          })),
+        );
+      }
+    })();
+  }, []);
 
   const result = useMemo(
     () => (statement ? benchmarkStatement(statement, assumptions) : null),
@@ -77,10 +98,22 @@ const StatementAnalysis = () => {
     setLoading(true);
     setStatement(null);
     setFileName(file.name);
+    // Upload to a temp location; the edge function reads it via a signed URL
+    // and deletes it after extraction. We also clean up here if the call never
+    // reaches the function (e.g. network failure) to avoid orphaned files.
+    const safeName = file.name.replace(/[^a-z0-9.\-_]+/gi, "_");
+    const path = `${STATEMENT_PREFIX}${crypto.randomUUID()}_${safeName}`;
+    let uploaded = false;
     try {
-      const dataUrl = await readFileAsDataUrl(file);
+      const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, {
+        contentType: file.type || "application/pdf",
+        upsert: false,
+      });
+      if (upErr) throw new Error(`Upload failed: ${upErr.message}`);
+      uploaded = true;
+
       const { data, error } = await supabase.functions.invoke("analyze-statement", {
-        body: { file_base64: dataUrl, file_name: file.name },
+        body: { file_path: path, file_name: file.name },
       });
       if (error) {
         // Edge function returns JSON error bodies on non-2xx.
@@ -94,6 +127,8 @@ const StatementAnalysis = () => {
         } catch { /* ignore */ }
         throw new Error(msg);
       }
+      // The function deletes the temp file on its side once extraction runs.
+      uploaded = false;
       if (data?.error) throw new Error(data.error);
 
       const s = data?.statement as ExtractedStatement | undefined;
@@ -115,6 +150,8 @@ const StatementAnalysis = () => {
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Analysis failed");
       setFileName(null);
+      // Best-effort cleanup if the function never got a chance to delete it.
+      if (uploaded) await supabase.storage.from(BUCKET).remove([path]).catch(() => {});
     } finally {
       setLoading(false);
     }
@@ -184,14 +221,41 @@ const StatementAnalysis = () => {
       };
       const doc = await generateStatementProposalPdf(statement, result, meta);
       const safe = (meta.merchantName || "merchant").replace(/[^a-z0-9]+/gi, "-").toLowerCase();
-      doc.save(`savings-proposal-${safe}.pdf`);
-      toast.success("Branded proposal downloaded.");
+      const fileNameOut = `savings-proposal-${safe}.pdf`;
+      doc.save(fileNameOut);
+
+      // Optionally attach the proposal to an opportunity's documents.
+      if (linkOppId) {
+        const blob = doc.output("blob") as Blob;
+        const path = `${linkOppId}/${Date.now()}_${fileNameOut}`;
+        const { error: upErr } = await supabase.storage
+          .from(BUCKET)
+          .upload(path, blob, { contentType: "application/pdf", upsert: false });
+        if (upErr) throw new Error(`Saved locally, but attaching to opportunity failed: ${upErr.message}`);
+        const { error: dbErr } = await supabase.from("documents").insert({
+          opportunity_id: linkOppId,
+          file_name: fileNameOut,
+          file_path: path,
+          file_size: blob.size,
+          content_type: "application/pdf",
+          uploaded_by: user?.email,
+          document_type: "Supporting Documents",
+        });
+        if (dbErr) {
+          await supabase.storage.from(BUCKET).remove([path]).catch(() => {});
+          throw new Error(`Saved locally, but recording it on the opportunity failed: ${dbErr.message}`);
+        }
+        const oppName = opps.find((o) => o.id === linkOppId)?.name || "the opportunity";
+        toast.success(`Proposal downloaded and saved to ${oppName}.`);
+      } else {
+        toast.success("Branded proposal downloaded.");
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to build proposal");
     } finally {
       setExporting(false);
     }
-  }, [statement, result, teamMemberName, user]);
+  }, [statement, result, teamMemberName, user, linkOppId, opps]);
 
   const buildQuote = useCallback(() => {
     if (!statement || !result) return;
@@ -453,31 +517,48 @@ const StatementAnalysis = () => {
               {/* RIGHT: benchmark dashboard */}
               <div className="lg:col-span-2 space-y-6">
                 {/* Actions */}
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="text-xs text-muted-foreground">
-                    {fileName && <span className="inline-flex items-center gap-1"><FileText className="h-3 w-3" />{fileName}</span>}
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="text-xs text-muted-foreground">
+                      {fileName && <span className="inline-flex items-center gap-1"><FileText className="h-3 w-3" />{fileName}</span>}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={reset}
+                        className="inline-flex items-center gap-2 border border-border text-foreground rounded-lg px-3 py-2 text-sm hover:bg-muted transition-colors"
+                      >
+                        <RotateCcw className="h-4 w-4" /> New statement
+                      </button>
+                      <button
+                        onClick={buildQuote}
+                        className="inline-flex items-center gap-2 border border-border text-foreground rounded-lg px-3 py-2 text-sm hover:bg-muted transition-colors"
+                      >
+                        <FileSignature className="h-4 w-4" /> Build quote
+                      </button>
+                      <button
+                        onClick={exportProposal}
+                        disabled={exporting}
+                        className="inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-lg px-4 py-2 text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
+                      >
+                        {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+                        Generate branded proposal
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={reset}
-                      className="inline-flex items-center gap-2 border border-border text-foreground rounded-lg px-3 py-2 text-sm hover:bg-muted transition-colors"
+                  {/* Attach the generated proposal to an opportunity's documents */}
+                  <div className="flex items-center gap-2 justify-end">
+                    <Link2 className="h-3.5 w-3.5 text-muted-foreground" />
+                    <label className="text-xs text-muted-foreground">Attach proposal to</label>
+                    <select
+                      className={cn(inputCls, "w-64")}
+                      value={linkOppId}
+                      onChange={(e) => setLinkOppId(e.target.value)}
                     >
-                      <RotateCcw className="h-4 w-4" /> New statement
-                    </button>
-                    <button
-                      onClick={buildQuote}
-                      className="inline-flex items-center gap-2 border border-border text-foreground rounded-lg px-3 py-2 text-sm hover:bg-muted transition-colors"
-                    >
-                      <FileSignature className="h-4 w-4" /> Build quote
-                    </button>
-                    <button
-                      onClick={exportProposal}
-                      disabled={exporting}
-                      className="inline-flex items-center gap-2 bg-primary text-primary-foreground rounded-lg px-4 py-2 text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-60"
-                    >
-                      {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-                      Generate branded proposal
-                    </button>
+                      <option value="">Don't attach (download only)</option>
+                      {opps.map((o) => (
+                        <option key={o.id} value={o.id}>{o.name}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
