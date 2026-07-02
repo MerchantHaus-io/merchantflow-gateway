@@ -64,7 +64,7 @@ All colors MUST be HSL.
     --canvas-border: 240 6% 96%;
 
     /* Team member colors - Chakra spectrum */
-    --team-wesley: 0 84% 60%;      /* Red - Root */
+    --team-root: 0 84% 60%;      /* Red - Root */
     --team-jamie: 48 96% 53%;      /* Yellow - Solar Plexus */
     --team-darryn: 142 71% 45%;    /* Green - Heart */
     --team-taryn: 199 89% 48%;     /* Blue - Throat */
@@ -72,8 +72,8 @@ All colors MUST be HSL.
     --team-sales: 25 95% 53%;      /* Orange - Sales team */
 
     /* Pipeline stage colors (mapped to team owners) */
-    --stage-lead: var(--team-wesley);
-    --stage-contacted: var(--team-wesley);
+    --stage-lead: var(--team-root);
+    --stage-contacted: var(--team-root);
     --stage-application: var(--team-sales);
     --stage-underwriting: var(--team-sales);
     --stage-approval: var(--team-jamie);
@@ -281,7 +281,7 @@ All colors MUST be HSL.
     --ring: 348 83% 47%;
 
     /* Team member colors - Chakra spectrum */
-    --team-wesley: 0 84% 60%;      /* Red - Root */
+    --team-root: 0 84% 60%;      /* Red - Root */
     --team-jamie: 48 96% 53%;      /* Yellow - Solar Plexus */
     --team-darryn: 142 71% 45%;    /* Green - Heart */
     --team-taryn: 199 89% 48%;     /* Blue - Throat */
@@ -289,8 +289,8 @@ All colors MUST be HSL.
     --team-sales: 25 95% 53%;      /* Orange - Sales team */
 
     /* Pipeline stage colors (mapped to team owners) */
-    --stage-lead: var(--team-wesley);
-    --stage-contacted: var(--team-wesley);
+    --stage-lead: var(--team-root);
+    --stage-contacted: var(--team-root);
     --stage-application: var(--team-sales);
     --stage-underwriting: var(--team-sales);
     --stage-approval: var(--team-jamie);
@@ -537,7 +537,7 @@ All colors MUST be HSL.
     --ring: 0 0% 50%;
 
     /* Team colors - greyscale for mono */
-    --team-wesley: 0 0% 45%;
+    --team-root: 0 0% 45%;
     --team-jamie: 0 0% 65%;
     --team-darryn: 0 0% 55%;
     --team-taryn: 0 0% 50%;
@@ -617,7 +617,7 @@ All colors MUST be HSL.
     --ring: 348 83% 47%;
 
     /* Team member colors - same as dark mode for consistency */
-    --team-wesley: 0 84% 60%;
+    --team-root: 0 84% 60%;
     --team-jamie: 48 96% 53%;
     --team-darryn: 142 71% 45%;
     --team-taryn: 199 89% 48%;
@@ -625,8 +625,8 @@ All colors MUST be HSL.
     --team-sales: 25 95% 53%;
 
     /* Pipeline stage colors */
-    --stage-lead: var(--team-wesley);
-    --stage-contacted: var(--team-wesley);
+    --stage-lead: var(--team-root);
+    --stage-contacted: var(--team-root);
     --stage-application: var(--team-sales);
     --stage-underwriting: var(--team-sales);
     --stage-approval: var(--team-jamie);
@@ -879,7 +879,7 @@ All colors MUST be HSL.
     --ring: 0 0% 50%;
 
     /* Team colors - greyscale for mono */
-    --team-wesley: 0 0% 35%;
+    --team-root: 0 0% 35%;
     --team-jamie: 0 0% 55%;
     --team-darryn: 0 0% 45%;
     --team-taryn: 0 0% 40%;
@@ -956,7 +956,7 @@ All colors MUST be HSL.
     --ring: 0 0% 60%;
 
     /* Team colors — muted retro tones */
-    --team-wesley: 0 40% 50%;
+    --team-root: 0 40% 50%;
     --team-jamie: 45 45% 50%;
     --team-darryn: 120 30% 42%;
     --team-taryn: 210 30% 50%;

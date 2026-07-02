@@ -168,7 +168,7 @@ export default {
           declined: 'hsl(var(--stage-declined))'
         },
         team: {
-          wesley: 'hsl(var(--team-wesley))',
+          root: 'hsl(var(--team-root))',
           jamie: 'hsl(var(--team-jamie))',
           darryn: 'hsl(var(--team-darryn))',
           taryn: 'hsl(var(--team-taryn))',
