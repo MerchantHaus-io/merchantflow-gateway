@@ -73,6 +73,7 @@ const PortalCommissions = lazy(() => import("./pages/portal/PortalCommissions"))
 const SupportTriage = lazy(() => import("./pages/SupportTriage"));
 const SupportTicketDetail = lazy(() => import("./pages/SupportTicketDetail"));
 const SupportRequest = lazy(() => import("./pages/SupportRequest"));
+const MigrationChecklist = lazy(() => import("./pages/MigrationChecklist"));
 import { IncomingCallToast } from "./components/IncomingCallToast";
 import { IncomingMessageToast } from "./components/IncomingMessageToast";
 import { Dialler } from "./components/Dialler";
@@ -164,6 +165,7 @@ const App = () => (
                 <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
                 <Route path="/admin/deletion-requests" element={<ProtectedRoute><DeletionRequests /></ProtectedRoute>} />
                 <Route path="/admin/data-export" element={<ProtectedRoute><DataExport /></ProtectedRoute>} />
+                <Route path="/admin/migration" element={<ProtectedRoute><MigrationChecklist /></ProtectedRoute>} />
                 
                 <Route path="/admin/web-submissions" element={<ProtectedRoute><WebSubmissions /></ProtectedRoute>} />
                 <Route path="/admin/administration" element={<ProtectedRoute><Administration /></ProtectedRoute>} />
