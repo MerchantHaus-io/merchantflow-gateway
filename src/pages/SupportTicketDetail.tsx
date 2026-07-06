@@ -220,12 +220,14 @@ const SupportTicketDetail = () => {
 
   const sendReply = async () => {
     if (!id || !reply.trim()) return;
+    const message = reply.trim();
+    const wasInternal = isInternal;
     setSending(true);
     try {
       const { error } = await supabase.from("support_ticket_comments").insert({
         ticket_id: id,
-        body: reply.trim(),
-        is_internal: isInternal,
+        body: message,
+        is_internal: wasInternal,
         author_type: "agent",
         author_id: user?.id ?? null,
         author_name: authorName,
@@ -234,7 +236,21 @@ const SupportTicketDetail = () => {
       setReply("");
       setIsInternal(false);
       queryClient.invalidateQueries({ queryKey: ["support-ticket-comments", id] });
-      toast.success(isInternal ? "Internal note added" : "Reply added");
+
+      // A public reply is emailed to the requester; an internal note is not.
+      if (!wasInternal && ticket?.requester_email) {
+        const { error: emailErr } = await supabase.functions.invoke("send-ticket-reply", {
+          body: { ticket_id: id, body: message, agent_name: authorName },
+        });
+        if (emailErr) {
+          console.error("Failed to email reply:", emailErr);
+          toast.warning("Reply saved, but the email to the customer failed to send.");
+        } else {
+          toast.success(`Reply emailed to ${ticket.requester_email}`);
+        }
+      } else {
+        toast.success("Internal note added");
+      }
     } catch (err) {
       console.error("Failed to add comment:", err);
       toast.error("Could not post your message.");

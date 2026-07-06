@@ -13,8 +13,11 @@ import {
   stripHtml,
   stripQuotedReply,
 } from "../_shared/support-intake.ts";
+import { sendGmail } from "../_shared/gmail-send.ts";
+import { escapeHtml, infoCard, renderBrandedEmail } from "../_shared/email-layout.ts";
 
 const GATEWAY = "https://connector-gateway.lovable.dev/google_mail/gmail/v1";
+const SUPPORT_INBOX = Deno.env.get("SUPPORT_INBOX_EMAIL") || "support@merchanthaus.io";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -219,6 +222,42 @@ serve(async (req) => {
           results.push({ id: m.id, error: error.message });
           continue;
         }
+
+        // Acknowledge the requester so an email-sourced ticket gets the same
+        // "we've received your request" confirmation the web form sends. Sent
+        // as a reply on their own thread; failure must not block polling.
+        try {
+          const cleanSubject = subject.replace(/^\s*(re|fwd?):\s*/i, "").trim() || "your request";
+          const firstName = (name || "there").split(/\s+/)[0] || "there";
+          const ackHtml = renderBrandedEmail({
+            eyebrow: "Support",
+            preheader: `We've logged your request — your reference is ${ticket.ticket_number}.`,
+            signOff: "The Merchant Haus Support Team",
+            body: `
+              <p style="margin:0 0 16px;">Hi ${escapeHtml(firstName)},</p>
+              <p style="margin:0 0 16px;">Thanks for getting in touch. We've logged your email as a support ticket and our team will be on it shortly — we'll keep you posted at every step.</p>
+              ${infoCard([
+                { label: "Ticket reference", value: `<strong>${escapeHtml(ticket.ticket_number)}</strong>` },
+                { label: "Subject", value: escapeHtml(cleanSubject) },
+              ])}
+              <p style="margin:0 0 16px;">There's nothing more you need to do right now. To add anything, just reply to this email and it stays attached to the same ticket.</p>
+            `,
+          });
+          const ack = await sendGmail({
+            from: `Merchant Haus Support <${SUPPORT_INBOX}>`,
+            to: email,
+            subject: `Re: [${ticket.ticket_number}] ${cleanSubject}`,
+            html: ackHtml,
+            replyTo: SUPPORT_INBOX,
+            threadId: m.threadId,
+            inReplyTo: messageId || undefined,
+            references: messageId || undefined,
+          });
+          if (!ack.ok) console.error("Ack email failed:", ack.error);
+        } catch (ackErr) {
+          console.error("Ack email threw:", ackErr);
+        }
+
         results.push({ id: m.id, created: ticket.ticket_number, messageId });
       }
 

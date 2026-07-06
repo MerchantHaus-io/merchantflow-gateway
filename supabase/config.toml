@@ -144,3 +144,6 @@ verify_jwt = false
 
 [functions.send-ticket-status-email]
 verify_jwt = false
+
+[functions.send-ticket-reply]
+verify_jwt = false
