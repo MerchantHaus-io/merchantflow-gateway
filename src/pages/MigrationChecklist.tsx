@@ -256,6 +256,32 @@ export default function MigrationChecklist() {
     if (confirm("Reset all checklist progress?")) setChecked({});
   };
 
+  const downloadMarkdown = (filename: string, title: string, stepIds: string[]) => {
+    const lines: string[] = [`# ${title}`, ""];
+    for (const step of STEPS.filter((s) => stepIds.includes(s.id))) {
+      lines.push(`## ${step.title}`, "", step.intro, "");
+      for (const task of step.tasks) {
+        lines.push(`- **${task.label}**`);
+        if (task.detail) lines.push(`  - ${task.detail}`);
+        if (task.code) {
+          lines.push("", "  ```bash", ...task.code.split("\n").map((l) => `  ${l}`), "  ```", "");
+        }
+      }
+      lines.push("");
+    }
+    const blob = new Blob([lines.join("\n")], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast({ title: "Downloaded", description: filename });
+  };
+
+
   if (loading) {
     return (
       <AppLayout>
@@ -325,8 +351,35 @@ export default function MigrationChecklist() {
                 <ExternalLink className="mr-1 h-3.5 w-3.5" /> docs/MIGRATION.md
               </a>
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                downloadMarkdown(
+                  "schema-replay-commands.md",
+                  "Schema replay commands",
+                  ["schema"],
+                )
+              }
+            >
+              <Download className="mr-1 h-3.5 w-3.5" /> Replay commands
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                downloadMarkdown(
+                  "edge-function-redeploy.md",
+                  "Edge function redeploy steps",
+                  ["functions", "secrets"],
+                )
+              }
+            >
+              <Download className="mr-1 h-3.5 w-3.5" /> Redeploy steps
+            </Button>
           </div>
         </header>
+
 
         {/* Constraints */}
         <Alert>
