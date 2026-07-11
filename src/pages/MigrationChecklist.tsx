@@ -351,8 +351,35 @@ export default function MigrationChecklist() {
                 <ExternalLink className="mr-1 h-3.5 w-3.5" /> docs/MIGRATION.md
               </a>
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                downloadMarkdown(
+                  "schema-replay-commands.md",
+                  "Schema replay commands",
+                  ["schema"],
+                )
+              }
+            >
+              <Download className="mr-1 h-3.5 w-3.5" /> Replay commands
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                downloadMarkdown(
+                  "edge-function-redeploy.md",
+                  "Edge function redeploy steps",
+                  ["functions", "secrets"],
+                )
+              }
+            >
+              <Download className="mr-1 h-3.5 w-3.5" /> Redeploy steps
+            </Button>
           </div>
         </header>
+
 
         {/* Constraints */}
         <Alert>
