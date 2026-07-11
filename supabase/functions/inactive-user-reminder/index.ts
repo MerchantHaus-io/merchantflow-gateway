@@ -17,6 +17,10 @@ const corsHeaders = {
 const LOGIN_URL = "https://ops-terminal.lovable.app/auth";
 const FROM = "Merchant Haus Ops <ops@merchanthaus.io>";
 
+// Only these mailbox aliases receive login-inactivity reminders.
+// Shared aliases like sales@ and support@ are intentionally excluded.
+const ALIAS_ALLOWLIST = new Set(["jessie", "taryn", "xavier", "jude", "admin"]);
+
 // Subtract N business days from a date (skips Sat/Sun)
 function subtractBusinessDays(from: Date, n: number): Date {
   const d = new Date(from);
