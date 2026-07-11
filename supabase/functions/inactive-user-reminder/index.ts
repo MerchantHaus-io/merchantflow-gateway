@@ -83,6 +83,8 @@ serve(async (req) => {
     for (const u of data.users) {
       const email = (u.email || "").toLowerCase();
       if (!email.endsWith("@merchanthaus.io")) continue;
+      const alias = email.split("@")[0].toLowerCase();
+      if (!ALIAS_ALLOWLIST.has(alias)) continue; // skip shared aliases (sales@, support@, etc.)
       if (u.banned_until && new Date(u.banned_until) > now) continue;
       const last = u.last_sign_in_at ? new Date(u.last_sign_in_at) : null;
       if (!last) continue; // skip never-signed-in invites
