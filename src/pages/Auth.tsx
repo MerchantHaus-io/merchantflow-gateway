@@ -137,8 +137,7 @@ const Auth = () => {
 
   return (
     <main
-      className="min-h-screen flex flex-col items-center justify-center px-4 relative overflow-hidden"
-      style={{ background: '#ffffff', color: 'oklch(0.129 0.042 264.695)' }}
+      className="auth-page min-h-screen flex flex-col items-center justify-center px-4 relative overflow-hidden"
     >
       <style>{`
         @keyframes auth-sweep {
