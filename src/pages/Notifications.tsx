@@ -22,8 +22,34 @@ interface Notification {
 
 const Notifications = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Infer an in-app route from a notification's title/message when no explicit link exists
+  const inferLink = (n: Notification): string | null => {
+    if (n.link) return n.link;
+    const text = `${n.title ?? ''} ${n.message ?? ''}`.toLowerCase();
+    const map: Array<[RegExp, string]> = [
+      [/\btask(s)?\b/, '/my-tasks'],
+      [/\bcalendar|meeting|event\b/, '/calendar'],
+      [/\bopportun|pipeline|deal\b/, '/opportunities'],
+      [/\baccount\b/, '/accounts'],
+      [/\bcontact\b/, '/contacts'],
+      [/\bcommission\b/, '/commissions'],
+      [/\bquote|contract\b/, '/quotes-contracts'],
+      [/\breferr(er|al)\b/, '/referrers'],
+      [/\bsupport|ticket\b/, '/support-triage'],
+      [/\bbilling|invoice|live account\b/, '/live-billing'],
+      [/\bdocument\b/, '/documents'],
+      [/\bintegration|gmail|google\b/, '/integrations'],
+      [/\bsetting|profile|avatar\b/, '/settings'],
+      [/\bpatch note|terminal update|what's new\b/, '/terminal-updates'],
+      [/\bnmi|gateway\b/, '/gateway-accounts'],
+    ];
+    for (const [re, path] of map) if (re.test(text)) return path;
+    return null;
+  };
 
   useEffect(() => {
     if (!user) return;
