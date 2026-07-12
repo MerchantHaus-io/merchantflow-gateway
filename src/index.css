@@ -2405,3 +2405,56 @@ html:not(.transparency-enabled) {
   animation-play-state: paused;
   transform: rotateX(8deg) rotateY(-12deg) rotateZ(2deg) translateY(-6px) scale(1.04);
 }
+
+/* ═══ Auth page — scoped high-contrast light theme ═══
+   The Auth page forces a white background so it must carry its own
+   light tokens regardless of the user's selected global theme.
+   All foreground/primary values are chosen to pass WCAG AA against
+   the white background, including the muted text used for hints and
+   the tab bar which is otherwise forced to a dark terminal style by
+   the global `[role="tablist"]` override.
+*/
+.auth-page {
+  --background: 0 0% 100%;
+  --foreground: 210 30% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 210 30% 10%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 210 30% 10%;
+  --primary: 204 98% 35%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 25% 95%;
+  --secondary-foreground: 210 30% 10%;
+  --muted: 210 20% 94%;
+  --muted-foreground: 210 15% 35%;
+  --accent: 204 98% 35%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 72% 45%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 210 20% 75%;
+  --input: 210 20% 75%;
+  --ring: 204 98% 35%;
+
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+/* Restore readable light tabs inside the auth page */
+.auth-page [role="tablist"] {
+  background: hsl(var(--muted));
+  border-color: hsl(var(--border));
+}
+.auth-page [role="tab"] {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.875rem;
+  letter-spacing: 0.01em;
+}
+.auth-page [role="tab"][data-state="active"] {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+.auth-page [role="tab"]:hover:not([data-state="active"]) {
+  background: hsl(var(--background) / 0.7);
+  color: hsl(var(--foreground));
+}
