@@ -221,8 +221,8 @@ export function IconRailSidebar() {
 
           // Items groups → hover flyout with sub-items.
           if (group.items && group.items.length > 0) {
-            return (
-              <HoverCard key={group.title} openDelay={80} closeDelay={120}>
+            const hoverCard = (
+              <HoverCard openDelay={80} closeDelay={120}>
                 <HoverCardTrigger asChild>{trigger}</HoverCardTrigger>
                 <HoverCardContent
                   side="right"
@@ -230,6 +230,7 @@ export function IconRailSidebar() {
                   sideOffset={8}
                   className="w-64 p-2"
                 >
+
                   <div className="px-2 py-1.5 mb-1 border-b border-border/50">
                     <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">
                       {group.title}
