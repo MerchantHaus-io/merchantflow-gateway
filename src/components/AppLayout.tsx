@@ -1,6 +1,7 @@
 import { ReactNode, useRef, useCallback, lazy, Suspense } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { MegaMenuHeader } from "@/components/MegaMenuHeader";
+import { IconRailSidebar } from "@/components/IconRailSidebar";
 import FloatingChat from "@/components/FloatingChat";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { ActionItemsWidget } from "@/components/ActionItemsWidget";
