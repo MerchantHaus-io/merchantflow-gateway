@@ -294,7 +294,18 @@ export function IconRailSidebar() {
                 </HoverCardContent>
               </HoverCard>
             );
+
+            if (collapsed) {
+              return (
+                <Tooltip key={group.title}>
+                  <TooltipTrigger asChild>{hoverCard}</TooltipTrigger>
+                  <TooltipContent side="right">{group.title}</TooltipContent>
+                </Tooltip>
+              );
+            }
+            return <div key={group.title}>{hoverCard}</div>;
           }
+
 
           // Plain item — tooltip when collapsed.
           if (collapsed) {
