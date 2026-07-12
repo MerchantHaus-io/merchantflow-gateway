@@ -178,7 +178,7 @@ export function IconRailSidebar() {
           : "bg-background/85 text-foreground backdrop-blur-xl"
       )}
     >
-      <nav className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-2 px-2 space-y-1">
+      <nav className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-3 px-2.5 space-y-1.5">
         {navMain.map((group) => {
           const active = isGroupActive(group);
           const showBadge = group.title === "Tools" && acceptedQuotesCount > 0;
@@ -189,8 +189,8 @@ export function IconRailSidebar() {
               aria-label={group.title}
               className={({ isActive }) =>
                 cn(
-                  "group relative flex items-center rounded-md text-[13px] font-medium tracking-tight transition-colors w-full",
-                  collapsed ? "h-10 justify-center px-0" : "h-9 gap-3 px-2.5",
+                  "group relative flex items-center rounded-lg text-[13px] font-medium tracking-tight transition-colors w-full",
+                  collapsed ? "h-11 justify-center px-0" : "h-10 gap-3 px-3",
                   (isActive || active)
                     ? isDark
                       ? "bg-white/10 text-white"
@@ -213,7 +213,7 @@ export function IconRailSidebar() {
                 )}
               </div>
               {!collapsed && (
-                <span className="min-w-0 flex-1 truncate whitespace-nowrap leading-none">
+                <span className="min-w-0 flex-1 truncate whitespace-nowrap leading-tight">
                   {group.title}
                 </span>
               )}
