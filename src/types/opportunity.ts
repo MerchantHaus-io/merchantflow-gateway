@@ -167,13 +167,20 @@ export const resolveDisplayName = (value: string | null | undefined): string => 
   return value;
 };
 
+// Extra individually-approved emails outside the roster / merchanthaus.io domain.
+export const EXTRA_ALLOWED_EMAILS: string[] = [
+  'darryn182@gmail.com',
+];
+
 // Helper to check if email is allowed - explicit team roster + anyone on the merchanthaus.io domain
 export const isEmailAllowed = (email: string | undefined | null): boolean => {
   if (!email) return false;
   const normalized = email.toLowerCase().trim();
   if (ALLOWED_EMAILS.includes(normalized)) return true;
+  if (EXTRA_ALLOWED_EMAILS.includes(normalized)) return true;
   return normalized.endsWith('@merchanthaus.io');
 };
+
 
 export const STAGE_CONFIG: Record<
   OpportunityStage,
