@@ -2431,8 +2431,8 @@ html:not(.transparency-enabled) {
   --accent-foreground: 0 0% 100%;
   --destructive: 0 72% 45%;
   --destructive-foreground: 0 0% 100%;
-  --border: 210 20% 75%;
-  --input: 210 20% 75%;
+  --border: 210 20% 55%;
+  --input: 210 20% 55%;
   --ring: 204 98% 35%;
 
   background: hsl(var(--background));
