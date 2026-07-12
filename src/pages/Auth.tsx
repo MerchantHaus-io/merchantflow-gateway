@@ -232,12 +232,12 @@ const Auth = () => {
                 </div>
               </div>
               <TabsContent value="signin" className="m-0">
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button type="submit" className="w-full h-11 disabled:opacity-60" disabled={isLoading}>
                   {isLoading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Signing in…</>) : 'Sign in'}
                 </Button>
               </TabsContent>
               <TabsContent value="signup" className="m-0">
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button type="submit" className="w-full h-11 disabled:opacity-60" disabled={isLoading}>
                   {isLoading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating account…</>) : 'Create account'}
                 </Button>
               </TabsContent>
