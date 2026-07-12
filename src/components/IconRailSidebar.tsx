@@ -187,7 +187,6 @@ export function IconRailSidebar() {
             <NavLink
               to={group.url}
               aria-label={group.title}
-              title={collapsed ? group.title : undefined}
               className={({ isActive }) =>
                 cn(
                   "group relative flex items-center rounded-md text-[13px] font-medium tracking-tight transition-colors w-full",
@@ -298,27 +297,11 @@ export function IconRailSidebar() {
               </HoverCard>
             );
 
-            if (collapsed) {
-              return (
-                <Tooltip key={group.title}>
-                  <TooltipTrigger asChild>{hoverCard}</TooltipTrigger>
-                  <TooltipContent side="right">{group.title}</TooltipContent>
-                </Tooltip>
-              );
-            }
             return <div key={group.title}>{hoverCard}</div>;
           }
 
 
-          // Plain item — tooltip when collapsed.
-          if (collapsed) {
-            return (
-              <Tooltip key={group.title}>
-                <TooltipTrigger asChild>{trigger}</TooltipTrigger>
-                <TooltipContent side="right">{group.title}</TooltipContent>
-              </Tooltip>
-            );
-          }
+          // Plain item.
           return <div key={group.title}>{trigger}</div>;
         })}
       </nav>
