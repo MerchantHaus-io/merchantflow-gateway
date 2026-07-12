@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { playNotificationSound } from '@/hooks/useNotificationSound';
 import { resolveNotificationRoute } from '@/lib/notification-routes';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Notification {
   id: string;
@@ -30,6 +31,7 @@ interface Notification {
 export const NotificationBell = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const [hasAvatar, setHasAvatar] = useState(true);
@@ -171,7 +173,7 @@ export const NotificationBell = () => {
   const handleNotificationClick = async (notification: Notification) => {
     await markAsRead(notification.id);
     setOpen(false);
-    const target = resolveNotificationRoute(notification);
+    const target = resolveNotificationRoute(notification, { mobile: isMobile });
     if (target) navigate(target);
   };
 
