@@ -13,6 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { playNotificationSound } from '@/hooks/useNotificationSound';
+import { resolveNotificationRoute } from '@/lib/notification-routes';
 
 interface Notification {
   id: string;
@@ -170,9 +171,8 @@ export const NotificationBell = () => {
   const handleNotificationClick = async (notification: Notification) => {
     await markAsRead(notification.id);
     setOpen(false);
-    if (notification.link) {
-      navigate(notification.link);
-    }
+    const target = resolveNotificationRoute(notification);
+    if (target) navigate(target);
   };
 
   const markAllAsRead = async () => {
