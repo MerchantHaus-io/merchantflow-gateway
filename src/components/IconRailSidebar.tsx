@@ -170,16 +170,15 @@ export function IconRailSidebar() {
     <aside
       role="navigation"
       aria-label="Primary"
+      style={{ width: collapsed ? 56 : 232 }}
       className={cn(
         "hidden lg:flex flex-col shrink-0 border-r border-border/40 transition-[width] duration-200 ease-out",
-        collapsed ? "w-14" : "w-56",
         isDark
           ? "bg-[hsl(217_33%_11%/0.92)] text-white backdrop-blur-[20px]"
           : "bg-background/85 text-foreground backdrop-blur-xl"
       )}
     >
-
-      <nav className="flex-1 min-h-0 overflow-y-auto py-2 px-1.5 space-y-0.5">
+      <nav className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-2 px-2 space-y-1">
         {navMain.map((group) => {
           const active = isGroupActive(group);
           const showBadge = group.title === "Tools" && acceptedQuotesCount > 0;
@@ -189,23 +188,22 @@ export function IconRailSidebar() {
               to={group.url}
               aria-label={group.title}
               title={collapsed ? group.title : undefined}
-
               className={({ isActive }) =>
                 cn(
-                  "group relative flex items-center gap-2.5 rounded-md text-sm font-medium transition-colors",
-                  collapsed ? "h-10 w-10 mx-auto justify-center" : "h-9 px-2.5",
+                  "group relative flex items-center rounded-md text-[13px] font-medium tracking-tight transition-colors w-full",
+                  collapsed ? "h-10 justify-center px-0" : "h-9 gap-3 px-2.5",
                   (isActive || active)
                     ? isDark
                       ? "bg-white/10 text-white"
                       : "bg-accent text-accent-foreground"
                     : isDark
-                    ? "text-white/70 hover:text-white hover:bg-white/8"
-                    : "text-foreground/70 hover:text-foreground hover:bg-accent"
+                    ? "text-white/75 hover:text-white hover:bg-white/8"
+                    : "text-foreground/75 hover:text-foreground hover:bg-accent"
                 )
               }
             >
-              <div className="relative shrink-0">
-                <group.icon className="h-4 w-4" />
+              <div className="relative shrink-0 flex items-center justify-center">
+                <group.icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
                 {showBadge && (
                   <span
                     className="absolute -top-1.5 -right-2 inline-flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-[#c81030] px-1 text-[9px] font-bold leading-none text-white"
@@ -215,9 +213,14 @@ export function IconRailSidebar() {
                   </span>
                 )}
               </div>
-              {!collapsed && <span className="truncate">{group.title}</span>}
+              {!collapsed && (
+                <span className="min-w-0 flex-1 truncate whitespace-nowrap leading-none">
+                  {group.title}
+                </span>
+              )}
             </NavLink>
           );
+
 
           // Items groups → hover flyout with sub-items.
           if (group.items && group.items.length > 0) {
