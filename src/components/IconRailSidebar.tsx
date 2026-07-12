@@ -168,6 +168,8 @@ export function IconRailSidebar() {
 
   return (
     <aside
+      role="navigation"
+      aria-label="Primary"
       className={cn(
         "hidden lg:flex flex-col shrink-0 border-r border-border/40 transition-[width] duration-200 ease-out",
         collapsed ? "w-14" : "w-56",
@@ -176,6 +178,7 @@ export function IconRailSidebar() {
           : "bg-background/85 text-foreground backdrop-blur-xl"
       )}
     >
+
       <nav className="flex-1 min-h-0 overflow-y-auto py-2 px-1.5 space-y-0.5">
         {navMain.map((group) => {
           const active = isGroupActive(group);
@@ -184,6 +187,9 @@ export function IconRailSidebar() {
           const trigger = (
             <NavLink
               to={group.url}
+              aria-label={group.title}
+              title={collapsed ? group.title : undefined}
+
               className={({ isActive }) =>
                 cn(
                   "group relative flex items-center gap-2.5 rounded-md text-sm font-medium transition-colors",
@@ -215,8 +221,8 @@ export function IconRailSidebar() {
 
           // Items groups → hover flyout with sub-items.
           if (group.items && group.items.length > 0) {
-            return (
-              <HoverCard key={group.title} openDelay={80} closeDelay={120}>
+            const hoverCard = (
+              <HoverCard openDelay={80} closeDelay={120}>
                 <HoverCardTrigger asChild>{trigger}</HoverCardTrigger>
                 <HoverCardContent
                   side="right"
@@ -224,6 +230,7 @@ export function IconRailSidebar() {
                   sideOffset={8}
                   className="w-64 p-2"
                 >
+
                   <div className="px-2 py-1.5 mb-1 border-b border-border/50">
                     <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">
                       {group.title}
@@ -287,7 +294,18 @@ export function IconRailSidebar() {
                 </HoverCardContent>
               </HoverCard>
             );
+
+            if (collapsed) {
+              return (
+                <Tooltip key={group.title}>
+                  <TooltipTrigger asChild>{hoverCard}</TooltipTrigger>
+                  <TooltipContent side="right">{group.title}</TooltipContent>
+                </Tooltip>
+              );
+            }
+            return <div key={group.title}>{hoverCard}</div>;
           }
+
 
           // Plain item — tooltip when collapsed.
           if (collapsed) {
