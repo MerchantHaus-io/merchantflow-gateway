@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Mail, Phone, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { isHiddenUser } from "@/lib/hidden-users";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface UserProfile {
   id: string;
