@@ -244,10 +244,10 @@ const Auth = () => {
             </fieldset>
           </form>
 
-          <div className="relative my-4">
+          <div className="relative my-5">
             <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
             <div className="relative flex justify-center">
-              <span className="px-3 text-[10px] uppercase tracking-[0.28em] text-muted-foreground" style={{ background: '#ffffff' }}>or</span>
+              <span className="px-3 text-[11px] uppercase tracking-[0.2em] text-muted-foreground bg-background">or</span>
             </div>
           </div>
 
