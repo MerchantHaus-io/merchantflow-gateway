@@ -254,7 +254,7 @@ const Auth = () => {
           <Button
             type="button"
             variant="outline"
-            className="w-full h-11 bg-background text-foreground border-2 border-foreground/40 hover:bg-accent hover:text-accent-foreground disabled:opacity-60"
+            className="w-full h-11 bg-background text-foreground border-2 border-border hover:bg-accent hover:text-accent-foreground disabled:opacity-60"
             onClick={handleGoogleSignIn}
             disabled={isLoading}
           >
