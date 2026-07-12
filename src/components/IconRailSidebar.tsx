@@ -306,7 +306,7 @@ export function IconRailSidebar() {
         })}
       </nav>
 
-      <div className="border-t border-border/40 p-1.5">
+      <div className="border-t border-border/40 p-2.5">
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -314,8 +314,8 @@ export function IconRailSidebar() {
               size="sm"
               onClick={() => setCollapsed((c) => !c)}
               className={cn(
-                "w-full h-9 rounded-md",
-                collapsed ? "justify-center px-0" : "justify-start px-2.5",
+                "w-full h-10 rounded-lg",
+                collapsed ? "justify-center px-0" : "justify-start px-3",
                 isDark
                   ? "text-white/60 hover:text-white hover:bg-white/8"
                   : "text-muted-foreground hover:text-foreground hover:bg-accent"
@@ -327,7 +327,7 @@ export function IconRailSidebar() {
               ) : (
                 <>
                   <ChevronsLeft className="h-4 w-4 mr-2" />
-                  <span className="text-xs">Collapse</span>
+                  <span className="text-xs font-medium">Collapse</span>
                 </>
               )}
             </Button>
