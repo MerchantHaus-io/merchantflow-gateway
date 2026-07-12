@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Bell, Check, Trash2 } from 'lucide-react';
+import { Bell, Check, Trash2, ArrowUpRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -21,8 +22,34 @@ interface Notification {
 
 const Notifications = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Infer an in-app route from a notification's title/message when no explicit link exists
+  const inferLink = (n: Notification): string | null => {
+    if (n.link) return n.link;
+    const text = `${n.title ?? ''} ${n.message ?? ''}`.toLowerCase();
+    const map: Array<[RegExp, string]> = [
+      [/\btask(s)?\b/, '/my-tasks'],
+      [/\bcalendar|meeting|event\b/, '/calendar'],
+      [/\bopportun|pipeline|deal\b/, '/opportunities'],
+      [/\baccount\b/, '/accounts'],
+      [/\bcontact\b/, '/contacts'],
+      [/\bcommission\b/, '/commissions'],
+      [/\bquote|contract\b/, '/quotes-contracts'],
+      [/\breferr(er|al)\b/, '/referrers'],
+      [/\bsupport|ticket\b/, '/support-triage'],
+      [/\bbilling|invoice|live account\b/, '/live-billing'],
+      [/\bdocument\b/, '/documents'],
+      [/\bintegration|gmail|google\b/, '/integrations'],
+      [/\bsetting|profile|avatar\b/, '/settings'],
+      [/\bpatch note|terminal update|what's new\b/, '/terminal-updates'],
+      [/\bnmi|gateway\b/, '/gateway-accounts'],
+    ];
+    for (const [re, path] of map) if (re.test(text)) return path;
+    return null;
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -95,12 +122,24 @@ const Notifications = () => {
             </Card>
           ) : (
             <div className="space-y-3">
-              {notifications.map((notification) => (
+              {notifications.map((notification) => {
+                const targetLink = inferLink(notification);
+                const openLink = () => {
+                  if (!targetLink) return;
+                  if (!notification.read) markAsRead(notification.id);
+                  navigate(targetLink);
+                };
+                return (
                 <Card
                   key={notification.id}
+                  onClick={targetLink ? openLink : undefined}
+                  role={targetLink ? 'link' : undefined}
+                  tabIndex={targetLink ? 0 : undefined}
+                  onKeyDown={targetLink ? (e) => { if (e.key === 'Enter') openLink(); } : undefined}
                   className={cn(
                     'transition-colors',
-                    !notification.read && 'border-primary/50 bg-primary/5'
+                    !notification.read && 'border-primary/50 bg-primary/5',
+                    targetLink && 'cursor-pointer hover:bg-muted/40'
                   )}
                 >
                   <CardContent className="p-4">
@@ -116,7 +155,10 @@ const Notifications = () => {
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <h3 className="font-semibold">{notification.title}</h3>
+                          <h3 className="font-semibold flex items-center gap-1.5">
+                            {notification.title}
+                            {targetLink && <ArrowUpRight className="h-3.5 w-3.5 text-primary/70" />}
+                          </h3>
                           <span className="text-xs text-muted-foreground whitespace-nowrap">
                             {format(new Date(notification.created_at), 'MMM d, h:mm a')}
                           </span>
@@ -124,11 +166,21 @@ const Notifications = () => {
                         <p className="text-sm text-muted-foreground mt-1">
                           {notification.message}
                         </p>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
-                        </p>
+                        <div className="flex items-center justify-between gap-2 mt-2">
+                          <p className="text-xs text-muted-foreground">
+                            {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                          </p>
+                          {targetLink && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); openLink(); }}
+                              className="text-xs font-medium text-primary hover:underline"
+                            >
+                              Open {targetLink}
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                         {!notification.read && (
                           <Button
                             variant="ghost"
@@ -149,7 +201,8 @@ const Notifications = () => {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
