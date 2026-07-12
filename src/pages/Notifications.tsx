@@ -9,6 +9,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow, format } from 'date-fns';
 import { toast } from 'sonner';
+import { resolveNotificationRoute } from '@/lib/notification-routes';
 
 interface Notification {
   id: string;
@@ -18,6 +19,7 @@ interface Notification {
   read: boolean;
   link: string | null;
   created_at: string;
+  notification_category?: string | null;
 }
 
 const Notifications = () => {
