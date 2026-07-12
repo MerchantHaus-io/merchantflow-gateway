@@ -168,6 +168,8 @@ export function IconRailSidebar() {
 
   return (
     <aside
+      role="navigation"
+      aria-label="Primary"
       className={cn(
         "hidden lg:flex flex-col shrink-0 border-r border-border/40 transition-[width] duration-200 ease-out",
         collapsed ? "w-14" : "w-56",
@@ -176,6 +178,7 @@ export function IconRailSidebar() {
           : "bg-background/85 text-foreground backdrop-blur-xl"
       )}
     >
+
       <nav className="flex-1 min-h-0 overflow-y-auto py-2 px-1.5 space-y-0.5">
         {navMain.map((group) => {
           const active = isGroupActive(group);
