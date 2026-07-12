@@ -1,6 +1,7 @@
 import { ReactNode, useRef, useCallback, lazy, Suspense } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { MegaMenuHeader } from "@/components/MegaMenuHeader";
+import { IconRailSidebar } from "@/components/IconRailSidebar";
 import FloatingChat from "@/components/FloatingChat";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { ActionItemsWidget } from "@/components/ActionItemsWidget";
@@ -88,7 +89,10 @@ export function AppLayout({
       )}
       <MegaMenuHeader onNewApplication={onNewApplication} />
       <GmailReconnectBanner />
-      <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
+      <div className="flex-1 flex min-h-0 overflow-hidden">
+        <IconRailSidebar />
+        <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
+
         {(pageTitle || headerActions) && (
           <div className="gradient-header px-4 lg:px-6 py-3">
             <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -131,7 +135,9 @@ export function AppLayout({
             {children}
           </PageTransition>
         </div>
-      </main>
+        </main>
+      </div>
+
       <MobileBottomNav />
       <FloatingChat />
       <ActionItemsWidget />
