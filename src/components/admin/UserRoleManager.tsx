@@ -46,6 +46,8 @@ export const UserRoleManager = () => {
       .filter((p) => {
         // Internal staff only: email must pass the staff allowlist...
         if (!isEmailAllowed(p.email)) return false;
+        // Hidden users (e.g. the app author) are invisible to everyone except themselves.
+        if (isHiddenUser(p.email) && p.id !== user?.id) return false;
         // ...and must not belong to a referral partner account.
         if (referrerAuthIds.has(p.id)) return false;
         if (p.email && referrerEmails.has(p.email.toLowerCase())) return false;
