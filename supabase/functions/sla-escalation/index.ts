@@ -94,7 +94,7 @@ serve(async (req) => {
                 title: "🔴 SLA Breach",
                 message: `${accountName} has been in ${opp.stage} for ${daysInStage} days. Action required.`,
                 type: "task",
-                link: "/",
+                link: `/opportunities/${opp.id}`,
               });
             }
           }
