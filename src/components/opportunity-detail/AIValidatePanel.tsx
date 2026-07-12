@@ -159,7 +159,7 @@ export const AIValidatePanel = ({ opportunityId }: AIValidatePanelProps) => {
     supabase.from("profiles").select("id, email, full_name").then(({ data }) => {
       // Restrict pin-to-notice-board assignees to internal staff only — referrers must
       // never appear here.
-      if (data) setProfiles(data.filter((p) => isEmailAllowed(p.email || "")));
+      if (data) setProfiles(data.filter((p) => isEmailAllowed(p.email || "") && !isHiddenUser(p.email)));
     });
   }, []);
 
