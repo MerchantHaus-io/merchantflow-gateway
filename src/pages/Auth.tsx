@@ -167,7 +167,7 @@ const Auth = () => {
           <span className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
             merchanthaus.io
           </span>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight text-foreground">
+          <h1 className="mt-3 text-[1.75rem] leading-tight font-bold tracking-tight text-foreground">
             Your Operations Terminal
           </h1>
           <p className="mt-2 text-base text-muted-foreground">
