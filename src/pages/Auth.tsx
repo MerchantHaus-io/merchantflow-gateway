@@ -196,7 +196,7 @@ const Auth = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password" className="!text-sm !font-medium !tracking-normal !normal-case text-foreground">Password</Label>
+                <Label htmlFor="password" className="!text-sm !font-semibold !tracking-normal !normal-case text-foreground">Password</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -206,7 +206,7 @@ const Auth = () => {
                     minLength={6}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="h-11 bg-white border border-slate-300 rounded-md px-3 pr-10 text-slate-900 placeholder:text-slate-400 shadow-sm focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary"
+                    className="h-11 bg-background border border-input rounded-md px-3 pr-10 text-foreground placeholder:text-muted-foreground shadow-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-ring font-normal"
                   />
                   <button
                     type="button"
