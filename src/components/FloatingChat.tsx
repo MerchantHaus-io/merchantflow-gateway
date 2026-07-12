@@ -208,6 +208,7 @@ const FloatingChat: React.FC = () => {
     const users: OnlineUser[] = (data || [])
       .filter(p => {
         if (p.id === user?.id) return false;
+        if (isHiddenUser(p.email) && p.id !== user?.id) return false;
         if (!isEmailAllowed(p.email)) return false;
         const email = p.email?.toLowerCase() || '';
         if (seenEmails.has(email)) return false;
