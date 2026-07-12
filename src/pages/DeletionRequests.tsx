@@ -109,7 +109,8 @@ const DeletionRequests = () => {
         message: action === 'approve'
           ? `Your request to delete "${request.entity_name}" has been approved and the ${request.entity_type} has been deleted.`
           : `Your request to delete "${request.entity_name}" has been rejected.`,
-        type: action === 'approve' ? 'success' : 'warning',
+        type: 'deletion_request',
+        link: '/admin/deletion-requests',
       });
 
       toast.success(`Request ${action === 'approve' ? 'approved' : 'rejected'}`);
