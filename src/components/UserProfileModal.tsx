@@ -38,6 +38,7 @@ const formatLastSeen = (lastSeen: string | null): string => {
 };
 
 export function UserProfileModal({ open, onOpenChange, userId, email }: UserProfileModalProps) {
+  const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -53,14 +54,21 @@ export function UserProfileModal({ open, onOpenChange, userId, email }: UserProf
         query = query.eq("email", email);
       }
       const { data } = await query.maybeSingle();
-      setProfile(data as UserProfile | null);
+      const row = data as UserProfile | null;
+      // Hidden users are invisible to everyone except themselves.
+      if (row && isHiddenUser(row.email) && row.id !== user?.id) {
+        setProfile(null);
+      } else {
+        setProfile(row);
+      }
       setLoading(false);
     };
 
     fetchProfile();
-  }, [open, userId, email]);
+  }, [open, userId, email, user?.id]);
 
   const displayName = profile?.full_name || profile?.email?.split("@")[0] || "User";
+
   const initials = displayName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
   const lastSeenText = formatLastSeen(profile?.last_seen ?? null);
   const isOnline = lastSeenText === "Online now";
