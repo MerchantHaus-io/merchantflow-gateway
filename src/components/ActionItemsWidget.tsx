@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { confirmAutoEmail } from "@/components/EmailSendConfirm";
 import { playNoticeBoardSound } from "@/hooks/useNotificationSound";
 import { isEmailAllowed } from "@/types/opportunity";
+import { isHiddenUser } from "@/lib/hidden-users";
 
 interface ActionItem {
   id: string;
