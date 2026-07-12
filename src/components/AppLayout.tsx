@@ -135,7 +135,9 @@ export function AppLayout({
             {children}
           </PageTransition>
         </div>
-      </main>
+        </main>
+      </div>
+
       <MobileBottomNav />
       <FloatingChat />
       <ActionItemsWidget />
