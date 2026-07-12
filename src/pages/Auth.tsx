@@ -137,8 +137,7 @@ const Auth = () => {
 
   return (
     <main
-      className="min-h-screen flex flex-col items-center justify-center px-4 relative overflow-hidden"
-      style={{ background: '#ffffff', color: 'oklch(0.129 0.042 264.695)' }}
+      className="auth-page min-h-screen flex flex-col items-center justify-center px-4 relative overflow-hidden"
     >
       <style>{`
         @keyframes auth-sweep {
@@ -164,14 +163,14 @@ const Auth = () => {
       />
 
       <div className="relative w-full max-w-sm">
-        <div className="text-center mb-6">
-          <span className="text-xs uppercase tracking-[0.3em] text-muted-foreground normal-case-none">
+        <div className="text-center mb-8">
+          <span className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
             merchanthaus.io
           </span>
-          <h1 className="mt-2 text-2xl font-semibold text-foreground">
+          <h1 className="mt-3 text-[1.75rem] leading-tight font-bold tracking-tight text-foreground">
             Your Operations Terminal
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-2 text-base text-muted-foreground">
             Sign in or create an account to continue.
           </p>
         </div>
@@ -185,7 +184,7 @@ const Auth = () => {
           <form onSubmit={submit} className="mt-6 space-y-4">
             <fieldset disabled={isLoading} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="!text-sm !font-medium !tracking-normal !normal-case text-foreground">Email</Label>
+                <Label htmlFor="email" className="!text-sm !font-semibold !tracking-normal !normal-case text-foreground">Email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -193,11 +192,11 @@ const Auth = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="h-11 bg-white border border-slate-300 rounded-md px-3 text-slate-900 placeholder:text-slate-400 shadow-sm focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary"
+                  className="h-11 bg-background border border-input rounded-md px-3 text-foreground placeholder:text-muted-foreground shadow-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-ring font-normal"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password" className="!text-sm !font-medium !tracking-normal !normal-case text-foreground">Password</Label>
+                <Label htmlFor="password" className="!text-sm !font-semibold !tracking-normal !normal-case text-foreground">Password</Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -207,7 +206,7 @@ const Auth = () => {
                     minLength={6}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="h-11 bg-white border border-slate-300 rounded-md px-3 pr-10 text-slate-900 placeholder:text-slate-400 shadow-sm focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary"
+                    className="h-11 bg-background border border-input rounded-md px-3 pr-10 text-foreground placeholder:text-muted-foreground shadow-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-ring font-normal"
                   />
                   <button
                     type="button"
@@ -233,29 +232,29 @@ const Auth = () => {
                 </div>
               </div>
               <TabsContent value="signin" className="m-0">
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button type="submit" className="w-full h-11 disabled:opacity-60" disabled={isLoading}>
                   {isLoading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Signing in…</>) : 'Sign in'}
                 </Button>
               </TabsContent>
               <TabsContent value="signup" className="m-0">
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button type="submit" className="w-full h-11 disabled:opacity-60" disabled={isLoading}>
                   {isLoading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating account…</>) : 'Create account'}
                 </Button>
               </TabsContent>
             </fieldset>
           </form>
 
-          <div className="relative my-4">
+          <div className="relative my-5">
             <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>
             <div className="relative flex justify-center">
-              <span className="px-3 text-[10px] uppercase tracking-[0.28em] text-muted-foreground" style={{ background: '#ffffff' }}>or</span>
+              <span className="px-3 text-[11px] uppercase tracking-[0.2em] text-muted-foreground bg-background">or</span>
             </div>
           </div>
 
           <Button
             type="button"
             variant="outline"
-            className="w-full h-10 bg-background text-foreground border-2 border-foreground/40 hover:bg-accent hover:text-accent-foreground"
+            className="w-full h-11 bg-background text-foreground border-2 border-border hover:bg-accent hover:text-accent-foreground disabled:opacity-60"
             onClick={handleGoogleSignIn}
             disabled={isLoading}
           >
