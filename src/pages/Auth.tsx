@@ -164,13 +164,13 @@ const Auth = () => {
 
       <div className="relative w-full max-w-sm">
         <div className="text-center mb-8">
-          <span className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
-            merchanthaus.io
-          </span>
-          <h1 className="mt-3 text-[1.75rem] leading-tight font-bold tracking-tight text-foreground">
-            Your Operations Terminal
+          <h1 className="text-[1.75rem] leading-tight font-bold tracking-tight text-foreground">
+            The Ops-Terminal
           </h1>
-          <p className="mt-2 text-base text-muted-foreground">
+          <p className="mt-2 text-sm uppercase tracking-[0.25em] text-muted-foreground">
+            by Merchanthaus.io
+          </p>
+          <p className="mt-3 text-base text-muted-foreground">
             Sign in or create an account to continue.
           </p>
         </div>
