@@ -187,6 +187,9 @@ export function IconRailSidebar() {
           const trigger = (
             <NavLink
               to={group.url}
+              aria-label={group.title}
+              title={collapsed ? group.title : undefined}
+
               className={({ isActive }) =>
                 cn(
                   "group relative flex items-center gap-2.5 rounded-md text-sm font-medium transition-colors",
