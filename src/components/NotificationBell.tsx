@@ -171,9 +171,8 @@ export const NotificationBell = () => {
   const handleNotificationClick = async (notification: Notification) => {
     await markAsRead(notification.id);
     setOpen(false);
-    if (notification.link) {
-      navigate(notification.link);
-    }
+    const target = resolveNotificationRoute(notification);
+    if (target) navigate(target);
   };
 
   const markAllAsRead = async () => {
