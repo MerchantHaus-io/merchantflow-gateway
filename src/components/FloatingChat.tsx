@@ -18,6 +18,7 @@ import { useChatNotifications } from "@/hooks/useChatNotifications";
 import { useConnectionStatus, useTypingIndicator, validateMessage } from "@/hooks/useChatUtils";
 import { useChatSounds } from "@/hooks/useChatSounds";
 import { isEmailAllowed } from "@/types/opportunity";
+import { isHiddenUser } from "@/lib/hidden-users";
 import { useAIAssistant } from "@/hooks/useAIAssistant";
 import { UserProfileModal } from "@/components/UserProfileModal";
 
