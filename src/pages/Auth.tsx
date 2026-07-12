@@ -184,7 +184,7 @@ const Auth = () => {
           <form onSubmit={submit} className="mt-6 space-y-4">
             <fieldset disabled={isLoading} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="!text-sm !font-medium !tracking-normal !normal-case text-foreground">Email</Label>
+                <Label htmlFor="email" className="!text-sm !font-semibold !tracking-normal !normal-case text-foreground">Email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -192,7 +192,7 @@ const Auth = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="h-11 bg-white border border-slate-300 rounded-md px-3 text-slate-900 placeholder:text-slate-400 shadow-sm focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary"
+                  className="h-11 bg-background border border-input rounded-md px-3 text-foreground placeholder:text-muted-foreground shadow-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-ring font-normal"
                 />
               </div>
               <div className="space-y-2">
