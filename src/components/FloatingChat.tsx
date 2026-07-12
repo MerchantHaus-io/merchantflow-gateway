@@ -18,6 +18,7 @@ import { useChatNotifications } from "@/hooks/useChatNotifications";
 import { useConnectionStatus, useTypingIndicator, validateMessage } from "@/hooks/useChatUtils";
 import { useChatSounds } from "@/hooks/useChatSounds";
 import { isEmailAllowed } from "@/types/opportunity";
+import { isHiddenUser } from "@/lib/hidden-users";
 import { useAIAssistant } from "@/hooks/useAIAssistant";
 import { UserProfileModal } from "@/components/UserProfileModal";
 
@@ -207,6 +208,7 @@ const FloatingChat: React.FC = () => {
     const users: OnlineUser[] = (data || [])
       .filter(p => {
         if (p.id === user?.id) return false;
+        if (isHiddenUser(p.email) && p.id !== user?.id) return false;
         if (!isEmailAllowed(p.email)) return false;
         const email = p.email?.toLowerCase() || '';
         if (seenEmails.has(email)) return false;

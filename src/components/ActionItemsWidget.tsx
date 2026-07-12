@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { confirmAutoEmail } from "@/components/EmailSendConfirm";
 import { playNoticeBoardSound } from "@/hooks/useNotificationSound";
 import { isEmailAllowed } from "@/types/opportunity";
+import { isHiddenUser } from "@/lib/hidden-users";
 
 interface ActionItem {
   id: string;
@@ -81,7 +82,7 @@ export function ActionItemsWidget() {
     supabase.from("profiles").select("id, email, full_name").then(({ data }) => {
       // Notice board / action items are an internal tool. Filter out referral partners
       // and any other non-staff accounts so they don't appear in tagging or assignee lists.
-      if (data) setProfiles(data.filter((p) => isEmailAllowed(p.email || "")));
+      if (data) setProfiles(data.filter((p) => isEmailAllowed(p.email || "") && (!isHiddenUser(p.email) || p.id === user?.id)));
     });
   }, [user]);
 
