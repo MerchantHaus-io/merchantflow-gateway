@@ -13,6 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { playNotificationSound } from '@/hooks/useNotificationSound';
+import { resolveNotificationRoute } from '@/lib/notification-routes';
 
 interface Notification {
   id: string;
