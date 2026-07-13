@@ -51,6 +51,14 @@ import type { SupportTicket, SupportTicketComment } from "@/types/db";
 type TicketWithRelations = SupportTicket & {
   account: { id: string; name: string } | null;
   contact: { id: string; first_name: string | null; last_name: string | null; email: string | null; phone: string | null } | null;
+} & { archived_at?: string | null };
+
+const daysUntilArchive = (closedAt: string | null | undefined): number | null => {
+  if (!closedAt) return null;
+  const days = Math.ceil(
+    (new Date(closedAt).getTime() + 7 * 24 * 60 * 60 * 1000 - Date.now()) / (24 * 60 * 60 * 1000),
+  );
+  return days;
 };
 
 const SOURCE_LABELS: Record<string, string> = {
