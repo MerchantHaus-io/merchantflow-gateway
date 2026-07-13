@@ -101,7 +101,7 @@ export const QUOTE_LINES: QuoteLineDefault[] = [
     cost: 2.5,
     resale: 10,
     bundledIn: ["foundation", "growth", "scale", "enterprise"],
-    description: "Swiped/dipped/keyed mobile acceptance via card reader. NMI partner cost $2.50/mo/device.",
+    description: "Swiped/dipped/keyed mobile acceptance via card reader.",
   },
   {
     id: "cloud_device",
@@ -109,7 +109,7 @@ export const QUOTE_LINES: QuoteLineDefault[] = [
     cost: 8,
     resale: 20,
     bundledIn: [],
-    description: "Cloud-connected POS hardware for in-person EMV/contactless. NMI partner cost $8.00/mo/device.",
+    description: "Cloud-connected POS hardware for in-person EMV/contactless.",
   },
   {
     id: "tap_to_pay",
@@ -118,7 +118,7 @@ export const QUOTE_LINES: QuoteLineDefault[] = [
     resale: 0,
     perEvent: { label: "per Tap to Pay txn", cost: 0.10, resale: 0.25 },
     bundledIn: [],
-    description: "Turn mobile devices into contactless payment terminals. NMI partner cost $0.10/txn.",
+    description: "Turn mobile devices into contactless payment terminals.",
   },
   {
     id: "txt2pay",
@@ -127,7 +127,7 @@ export const QUOTE_LINES: QuoteLineDefault[] = [
     resale: 10,
     perEvent: { label: "per conversation", cost: 0.18, resale: 0.30 },
     bundledIn: ["foundation", "growth", "scale", "enterprise"],
-    description: "Pay-by-text payment links. NMI partner cost $5/mo + $0.18/txn.",
+    description: "Pay-by-text payment links.",
   },
   {
     id: "electronic_invoicing",
@@ -136,7 +136,7 @@ export const QUOTE_LINES: QuoteLineDefault[] = [
     resale: 10,
     perEvent: { label: "per invoice create/edit/delete", cost: 0.05, resale: 0.15 },
     bundledIn: ["foundation", "growth", "scale", "enterprise"],
-    description: "Digital invoices with embedded payment links. NMI partner cost $5/mo + $0.05/event.",
+    description: "Digital invoices with embedded payment links.",
   },
   {
     id: "card_updater",
@@ -199,7 +199,7 @@ export const QUOTE_LINES: QuoteLineDefault[] = [
     resale: 19,
     perEvent: { label: "per 3DS txn", cost: 0.09, resale: 0.20 },
     bundledIn: [],
-    description: "3D Secure liability shift on card-not-present. NMI partner cost $9/mo + $0.09/txn.",
+    description: "3D Secure liability shift on card-not-present.",
   },
   {
     id: "level_3_advantage",
@@ -208,7 +208,7 @@ export const QUOTE_LINES: QuoteLineDefault[] = [
     resale: 50,
     perEvent: { label: "per Level III txn", cost: 0.25, resale: 0.50 },
     bundledIn: ["scale", "enterprise"],
-    description: "B2B/B2G interchange optimization. NMI partner: $25 setup + $25/mo + $0.25/txn.",
+    description: "B2B/B2G interchange optimization.",
   },
   {
     id: "shopify",
@@ -217,7 +217,7 @@ export const QUOTE_LINES: QuoteLineDefault[] = [
     resale: 20,
     perEvent: { label: "% of Shopify txn volume", cost: 0.0035, resale: 0.0075 },
     bundledIn: ["scale", "enterprise"],
-    description: "Shopify gateway connector. NMI partner: $10/mo + 0.35% per txn.",
+    description: "Shopify gateway connector.",
   },
 ];
 
