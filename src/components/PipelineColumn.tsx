@@ -101,43 +101,52 @@ const PipelineColumn = ({
         }
       }}
     >
-      {/* Column Header — full-width solid pill */}
+      {/* Column Header — hairline precision: typographic mark + gold underline */}
       {!hideHeader && (
-        <div className="flex-shrink-0 px-1.5 py-1.5">
+        <div className="flex-shrink-0 px-2 pt-2 pb-3">
           <div
             className={cn(
-              "w-full flex items-center justify-between gap-1.5 px-3 py-2 rounded-lg font-bold uppercase tracking-wide",
-              isCompact ? "text-[8px]" : "text-[10px] sm:text-xs"
+              "w-full flex items-end justify-between gap-2 pb-2 border-b",
+              count > 0 ? "border-[hsl(var(--gold)/0.55)]" : "border-border/40"
             )}
-            style={{
-              color: "#FFFFFF",
-              backgroundColor: config.color || "hsl(var(--primary))",
-              borderBottom: `2px solid ${config.color || "hsl(var(--primary))"}`,
-            }}
           >
-            <span className="inline-flex items-center gap-1.5 truncate">
+            <span
+              className={cn(
+                "font-pipeline-mono font-bold uppercase text-foreground truncate",
+                isCompact ? "text-[9px] tracking-[0.14em]" : "text-[10px] sm:text-[11px] tracking-[0.16em]"
+              )}
+            >
               {config.label}
             </span>
-            <span className="inline-flex items-center gap-1.5 shrink-0">
-              <span key={count} className="font-black animate-count inline-block">{count}</span>
+            <span className="inline-flex items-baseline gap-2 shrink-0">
+              <span
+                key={count}
+                className={cn(
+                  "font-pipeline-mono uppercase animate-count",
+                  count > 0 ? "text-[hsl(var(--gold))]" : "text-muted-foreground/60",
+                  isCompact ? "text-[8px]" : "text-[9px] sm:text-[10px]"
+                )}
+              >
+                {count} {count === 1 ? "DEAL" : "DEALS"}
+              </span>
+              {!isCompact && columnValue > 0 && (
+                <span className="font-pipeline-mono font-medium text-[10px] text-foreground/85 truncate max-w-[90px]">
+                  {formatCurrency(columnValue)}
+                </span>
+              )}
               {stage === "discovery" && onAddNew && (
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-5 w-5 bg-indigo-600 hover:bg-indigo-700 hover:shadow-[0_0_12px_hsl(var(--primary)/0.4)] text-white rounded-full shadow-sm ml-1 transition-all"
+                  className="h-4 w-4 -mb-0.5 text-[hsl(var(--gold))] hover:text-[hsl(var(--gold))] hover:bg-[hsl(var(--gold)/0.1)] rounded-sm transition-all"
                   onClick={onAddNew}
+                  aria-label="Add deal"
                 >
                   <Plus className="h-3 w-3" />
                 </Button>
               )}
             </span>
           </div>
-          {/* Column monetary value */}
-          {!isCompact && columnValue > 0 && (
-            <div className="mt-1 px-1 text-[10px] font-semibold text-muted-foreground truncate">
-              {formatCurrency(columnValue)}
-            </div>
-          )}
         </div>
       )}
 
@@ -152,11 +161,11 @@ const PipelineColumn = ({
         {opportunities.length === 0 ? (
           <div
             className={cn(
-              "flex items-center justify-center text-muted-foreground/50 border border-dashed border-border/40 rounded-lg font-medium",
+              "flex items-center justify-center text-muted-foreground/50 border border-dashed border-border/30 rounded-sm font-pipeline-mono uppercase tracking-[0.14em]",
               isCompact ? "h-10 text-[8px]" : "h-14 text-[9px]"
             )}
           >
-            Drop here
+            No active deals
           </div>
         ) : (
           opportunities.map((opportunity) => (

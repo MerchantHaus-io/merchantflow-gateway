@@ -247,14 +247,15 @@ const OpportunityCard = ({
         onClick={() => { if (!isDraggingRef.current) onClick(); }}
         className={cn(
           "cursor-grab active:cursor-grabbing group touch-manipulation relative",
-          "rounded-xl",
+          "rounded-md transition-all duration-200",
+          "hover:-translate-y-[1px]",
           isGreyed
-            ? "pipeline-card-muted border-l-[3px] border-l-transparent bg-zinc-500 dark:bg-zinc-700 opacity-60"
+            ? "pipeline-card-muted border-l-[2px] border-l-transparent bg-zinc-500/90 dark:bg-zinc-700/90 opacity-60"
             : isClosedWon
-              ? "pipeline-card-live bg-gradient-to-br from-amber-50 via-yellow-50/80 to-amber-100/60 dark:from-amber-950/40 dark:via-yellow-950/30 dark:to-amber-900/20"
+              ? "pipeline-card-live border border-amber-500/30 hover:border-amber-500/60 bg-gradient-to-br from-amber-50 via-yellow-50/80 to-amber-100/60 dark:from-amber-950/40 dark:via-yellow-950/30 dark:to-amber-900/20"
               : isComplete
-                ? "pipeline-card border-l-[3px] border-l-emerald-500 bg-emerald-600 dark:bg-emerald-700"
-                : cn("pipeline-card border-l-[3px]", teamColors.border, "bg-card")
+                ? "pipeline-card border-l-[2px] border-l-emerald-500 border border-emerald-500/30 hover:border-emerald-400/60 bg-emerald-600/95 dark:bg-emerald-700/95"
+                : cn("pipeline-card border border-border/50 hover:border-[hsl(var(--gold)/0.55)] border-l-[2px] bg-card", teamColors.border)
         )}
       >
         {/* Delete button — fades in on hover (hidden when greyed) */}
@@ -284,14 +285,14 @@ const OpportunityCard = ({
           {/* Account name */}
           <div className="flex items-start justify-between gap-1">
             <h3 className={cn(
-              "font-semibold text-xs leading-tight flex-1 min-w-0 transition-colors",
-              isGreyed ? "text-white" : isComplete ? "text-white" : "text-foreground group-hover:text-indigo-500 dark:group-hover:text-indigo-400"
+              "font-pipeline-sans font-semibold text-[13px] leading-tight tracking-tight flex-1 min-w-0 transition-colors",
+              isGreyed ? "text-white" : isComplete ? "text-white" : "text-foreground group-hover:text-[hsl(var(--gold))]"
             )}>
               {account?.name || "Unknown"}
             </h3>
             {!isGreyed && (
               <span className={cn(
-                "flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 mt-0.5",
+                "flex items-center gap-0.5 font-pipeline-mono text-[9px] font-bold px-1.5 py-0.5 rounded-sm border shrink-0 mt-0.5 uppercase tracking-wider",
                 serviceType === "gateway_only"
                   ? "text-teal-600 dark:text-teal-400 border-teal-500/40 bg-teal-500/10"
                   : "text-indigo-600 dark:text-indigo-400 border-indigo-500/40 bg-indigo-500/10"
@@ -306,7 +307,7 @@ const OpportunityCard = ({
 
           {/* Contact name */}
           {contactName && (
-            <p className={cn("text-[10px] truncate flex items-center gap-1", isGreyed ? "text-white/70" : "text-muted-foreground")}>
+            <p className={cn("font-pipeline-mono text-[10px] uppercase tracking-wider truncate flex items-center gap-1", isGreyed ? "text-white/70" : "text-muted-foreground")}>
               <User className="h-2.5 w-2.5 shrink-0" />
               {contactName}
             </p>
@@ -361,7 +362,7 @@ const OpportunityCard = ({
             {!isGreyed && (
               <div className="flex items-center gap-1.5 min-w-0">
                 <span key={dealValue} className={cn(
-                  "font-mono font-semibold text-[10px] truncate animate-count",
+                  "font-pipeline-mono font-semibold text-[10px] truncate animate-count tracking-tight",
                   isComplete ? "text-white/90" : "text-[hsl(var(--gold))]"
                 )}>
                   {dealValue > 0 ? formatCurrency(dealValue) : "—"}
