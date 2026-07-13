@@ -102,6 +102,7 @@ async function sendWebPush(
 }
 
 import { requireAuth } from "../_shared/require-auth.ts";
+import { BLOCKED_RECIPIENT_EMAILS } from "../_shared/blocked-emails.ts";
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -120,14 +121,27 @@ serve(async (req: Request) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
     const { userId, userIds, title, body, data, url }: PushNotificationRequest = await req.json();
-    
+
     // Get target user IDs
-    const targetUserIds = userIds || (userId ? [userId] : []);
-    
+    let targetUserIds = userIds || (userId ? [userId] : []);
+
+    // Filter out blocked test/silent recipient user IDs
+    if (targetUserIds.length > 0 && BLOCKED_RECIPIENT_EMAILS.length > 0) {
+      const { data: blockedProfiles } = await supabase
+        .from('profiles')
+        .select('id')
+        .in('email', BLOCKED_RECIPIENT_EMAILS)
+        .in('id', targetUserIds);
+      const blockedIds = new Set((blockedProfiles ?? []).map((p) => p.id));
+      if (blockedIds.size > 0) {
+        targetUserIds = targetUserIds.filter((id) => !blockedIds.has(id));
+      }
+    }
+
     if (targetUserIds.length === 0) {
       return new Response(
-        JSON.stringify({ error: 'No target users specified' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ message: 'No eligible target users', sent: 0 }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     

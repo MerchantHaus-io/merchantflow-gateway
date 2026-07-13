@@ -4,6 +4,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendGmail } from "../_shared/gmail-send.ts";
+import { isBlockedRecipient } from "../_shared/blocked-emails.ts";
 import {
   type BadgeTone,
   escapeHtml,
@@ -70,6 +71,9 @@ serve(async (req) => {
     if (error) return json({ error: error.message }, 500);
     if (!ticket) return json({ error: "Ticket not found" }, 404);
     if (!ticket.requester_email) return json({ error: "Ticket has no requester email" }, 400);
+    if (isBlockedRecipient(ticket.requester_email)) {
+      return json({ skipped: true, reason: "blocked_recipient" });
+    }
 
     const cleanSubject = String(ticket.subject || "Support request").replace(/^\s*(re|fwd?):\s*/i, "").trim();
     const subject = `Re: [${ticket.ticket_number}] ${cleanSubject}`;

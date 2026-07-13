@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isBlockedRecipient } from "../_shared/blocked-emails.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,8 +23,9 @@ serve(async (req) => {
     const twentyThreeHoursFromNow = new Date(now.getTime() + 23 * 60 * 60 * 1000);
     const fortyFiveMinFromNow = new Date(now.getTime() + 45 * 60 * 1000);
 
-    // Get all team profiles for notifications
-    const { data: profiles } = await supabase.from("profiles").select("id, email");
+    // Get all team profiles for notifications (excluding silenced test accounts)
+    const { data: allProfiles } = await supabase.from("profiles").select("id, email");
+    const profiles = (allProfiles ?? []).filter((p) => !isBlockedRecipient(p.email));
     if (!profiles || profiles.length === 0) {
       return new Response(JSON.stringify({ success: true, sent: 0 }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
