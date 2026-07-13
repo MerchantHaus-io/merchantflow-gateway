@@ -7,7 +7,6 @@ import {
   Users,
   FileText,
   BarChart3,
-  Settings,
   Plus,
   BookOpen,
   Wrench,
@@ -15,11 +14,9 @@ import {
   Activity,
   Sparkles,
   GraduationCap,
-  LogOut,
   ClipboardList,
   ListChecks,
   FileSpreadsheet,
-  Trash2,
   Download,
   Briefcase,
   Sun,
@@ -47,7 +44,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
   NavigationMenu,
@@ -58,16 +54,11 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useAuth } from "@/contexts/AuthContext";
-import { useUserRole } from "@/hooks/useUserRole";
 import { useAcceptedQuotesCount } from "@/hooks/useAcceptedQuotesCount";
 import { useTheme } from "@/contexts/ThemeContext";
 import { NotificationBell } from "@/components/NotificationBell";
-import { EMAIL_TO_USER } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
 import sidebarIcon from "@/assets/sidebar-icon.webp";
 
 interface NavItem {
@@ -181,12 +172,8 @@ interface MegaMenuHeaderProps {
 }
 
 export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }: MegaMenuHeaderProps) {
-  const { user, signOut } = useAuth();
-  const { isAdmin } = useUserRole();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [profileName, setProfileName] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
 
   // Surfaces accepted-but-not-yet-contracted quotes as a badge on the
@@ -198,47 +185,6 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
     document.addEventListener("fullscreenchange", onFsChange);
     return () => document.removeEventListener("fullscreenchange", onFsChange);
   }, []);
-
-  useEffect(() => {
-    if (!user) return;
-
-    const fetchProfile = async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("avatar_url, full_name")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (data) {
-        setAvatarUrl(data.avatar_url);
-        setProfileName(data.full_name);
-      }
-    };
-
-    fetchProfile();
-
-    const channel = supabase
-      .channel("header-profile-sync")
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "profiles",
-          filter: `id=eq.${user.id}`,
-        },
-        (payload) => {
-          const updated = payload.new as { avatar_url: string | null; full_name: string | null };
-          setAvatarUrl(updated.avatar_url);
-          setProfileName(updated.full_name);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user]);
 
   const handleNewClick = (type: "opportunity" | "account" | "contact") => {
     switch (type) {
@@ -256,14 +202,6 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
         break;
     }
   };
-
-  const handleLogout = async () => {
-    await signOut();
-    navigate("/auth");
-  };
-
-  const userEmail = user?.email?.toLowerCase() || "";
-  const displayName = profileName || EMAIL_TO_USER[userEmail] || user?.email?.split("@")[0] || "User";
 
   const isDark = theme === 'dark';
 
@@ -386,62 +324,6 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
             <TooltipContent side="bottom">{isDark ? "Light mode" : "Dark mode"}</TooltipContent>
           </Tooltip>
 
-          {/* Profile dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className={cn(
-                  "h-9 gap-2 pl-1.5 pr-2.5 rounded-md",
-                  isDark
-                    ? "text-white/75 hover:text-white hover:bg-white/10"
-                    : "text-foreground/75 hover:text-foreground hover:bg-accent"
-                )}
-              >
-                <Avatar className="h-7 w-7 ring-1 ring-border/50 shrink-0">
-                  <AvatarImage src={avatarUrl || undefined} alt={displayName} className="object-cover" />
-                  <AvatarFallback className="text-[10px] font-bold bg-primary/15 text-primary">
-                    {displayName.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="hidden md:inline text-sm">{displayName}</span>
-                <ChevronDown className="h-3 w-3 hidden md:inline opacity-50" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52">
-              {/* User info header */}
-              <div className="px-3 py-2.5 border-b border-border/50 mb-1">
-                <div className="flex items-center gap-2">
-                  <p className="text-xs font-semibold">{displayName}</p>
-                  <span className="live-dot shrink-0" />
-                </div>
-                <p className="text-[11px] text-muted-foreground truncate mt-0.5">{user?.email}</p>
-              </div>
-              <DropdownMenuItem asChild>
-                <RouterNavLink to="/settings" className="cursor-pointer">
-                  <Settings className="h-4 w-4 mr-2 text-muted-foreground" />
-                  Settings
-                </RouterNavLink>
-              </DropdownMenuItem>
-              {isAdmin && (
-                <DropdownMenuItem asChild>
-                  <RouterNavLink to="/admin/deletion-requests" className="cursor-pointer">
-                    <Trash2 className="h-4 w-4 mr-2 text-muted-foreground" />
-                    Deletion Requests
-                  </RouterNavLink>
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={handleLogout}
-                className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       </div>
     </header>

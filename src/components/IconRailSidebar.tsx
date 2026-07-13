@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   BookMarked,
@@ -30,13 +30,28 @@ import {
   ScanSearch,
   ChevronsLeft,
   ChevronsRight,
+  Settings,
+  LogOut,
+  Trash2,
   type LucideIcon,
 } from "lucide-react";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAcceptedQuotesCount } from "@/hooks/useAcceptedQuotesCount";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { useUserRole } from "@/hooks/useUserRole";
+import { supabase } from "@/integrations/supabase/client";
+import { EMAIL_TO_USER } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
@@ -149,6 +164,9 @@ export function IconRailSidebar() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const { isAdmin } = useUserRole();
   const { data: acceptedQuotesCount = 0 } = useAcceptedQuotesCount();
 
   const [collapsed, setCollapsed] = useState<boolean>(() => {
@@ -157,9 +175,61 @@ export function IconRailSidebar() {
     return stored === null ? true : stored === "1";
   });
 
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [profileName, setProfileName] = useState<string | null>(null);
+
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, collapsed ? "1" : "0");
   }, [collapsed]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchProfile = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("avatar_url, full_name")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (data) {
+        setAvatarUrl(data.avatar_url);
+        setProfileName(data.full_name);
+      }
+    };
+
+    fetchProfile();
+
+    const channel = supabase
+      .channel("rail-profile-sync")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "profiles",
+          filter: `id=eq.${user.id}`,
+        },
+        (payload) => {
+          const updated = payload.new as { avatar_url: string | null; full_name: string | null };
+          setAvatarUrl(updated.avatar_url);
+          setProfileName(updated.full_name);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/auth");
+  };
+
+  const userEmail = user?.email?.toLowerCase() || "";
+  const displayName = profileName || EMAIL_TO_USER[userEmail] || user?.email?.split("@")[0] || "User";
 
   const isGroupActive = (group: NavGroup) => {
     if (location.pathname === group.url) return true;
@@ -305,6 +375,73 @@ export function IconRailSidebar() {
           return <div key={group.title}>{trigger}</div>;
         })}
       </nav>
+
+      {/* Profile menu */}
+      <div className="border-t border-border/40 p-2.5 space-y-1.5">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label="Profile menu"
+              className={cn(
+                "w-full rounded-lg transition-colors",
+                collapsed ? "h-11 justify-center px-0" : "h-10 gap-3 px-3 justify-start",
+                isDark
+                  ? "text-white/75 hover:text-white hover:bg-white/8"
+                  : "text-foreground/75 hover:text-foreground hover:bg-accent"
+              )}
+            >
+              <Avatar className={cn("ring-1 ring-border/50 shrink-0", collapsed ? "h-7 w-7" : "h-7 w-7")}>
+                <AvatarImage src={avatarUrl || undefined} alt={displayName} className="object-cover" />
+                <AvatarFallback className="text-[10px] font-bold bg-primary/15 text-primary">
+                  {displayName.slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              {!collapsed && (
+                <>
+                  <span className="min-w-0 flex-1 truncate whitespace-nowrap text-[13px] font-medium tracking-tight leading-tight text-left">
+                    {displayName}
+                  </span>
+                  <ChevronsRight className="h-3 w-3 opacity-50 shrink-0 -rotate-90" />
+                </>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side={collapsed ? "right" : "top"} align={collapsed ? "end" : "start"} className="w-52" sideOffset={8}>
+            {/* User info header */}
+            <div className="px-3 py-2.5 border-b border-border/50 mb-1">
+              <div className="flex items-center gap-2">
+                <p className="text-xs font-semibold">{displayName}</p>
+                <span className="live-dot shrink-0" />
+              </div>
+              <p className="text-[11px] text-muted-foreground truncate mt-0.5">{user?.email}</p>
+            </div>
+            <DropdownMenuItem asChild>
+              <NavLink to="/settings" className="cursor-pointer">
+                <Settings className="h-4 w-4 mr-2 text-muted-foreground" />
+                Settings
+              </NavLink>
+            </DropdownMenuItem>
+            {isAdmin && (
+              <DropdownMenuItem asChild>
+                <NavLink to="/admin/deletion-requests" className="cursor-pointer">
+                  <Trash2 className="h-4 w-4 mr-2 text-muted-foreground" />
+                  Deletion Requests
+                </NavLink>
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={handleLogout}
+              className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
       <div className="border-t border-border/40 p-2.5">
         <Tooltip>
