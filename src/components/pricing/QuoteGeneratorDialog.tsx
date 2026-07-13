@@ -1398,7 +1398,7 @@ export function QuoteGeneratorDialog({
                         </tr>
                       ))}
                       {activationCharged && (
-                        <tr className="border-b bg-amber-50/40">
+                        <tr className="border-b">
                           <td className="p-2.5 font-medium">{activation.label}</td>
                           <td className="p-2.5 text-xs text-muted-foreground">
                             {activation.description} · one-time
