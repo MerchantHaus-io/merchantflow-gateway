@@ -408,7 +408,7 @@ export function IconRailSidebar() {
               )}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent side={collapsed ? "right" : "top"} align={collapsed ? "start" : "start"} className="w-52" sideOffset={8}>
+          <DropdownMenuContent side={collapsed ? "right" : "top"} align={collapsed ? "end" : "start"} className="w-52" sideOffset={8}>
             {/* User info header */}
             <div className="px-3 py-2.5 border-b border-border/50 mb-1">
               <div className="flex items-center gap-2">
