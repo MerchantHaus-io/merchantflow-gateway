@@ -459,9 +459,21 @@ const SupportTriage = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={cn("text-xs", st.badgeClass)}>
-                          {st.label}
-                        </Badge>
+                        <div className="flex flex-col gap-1 items-start">
+                          <Badge variant="outline" className={cn("text-xs", st.badgeClass)}>
+                            {t.archived_at ? "Archived" : st.label}
+                          </Badge>
+                          {!t.archived_at && t.status === "closed" && (() => {
+                            const d = daysUntilArchive(t.closed_at);
+                            if (d === null) return null;
+                            return (
+                              <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                                <Clock className="h-2.5 w-2.5" />
+                                {d <= 0 ? "archiving soon" : `archives in ${d}d`}
+                              </span>
+                            );
+                          })()}
+                        </div>
                       </TableCell>
                       <TableCell>
                         {t.assigned_to ? (
