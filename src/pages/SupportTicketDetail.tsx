@@ -30,6 +30,9 @@ import {
   Lock,
   CalendarDays,
   Phone,
+  Archive,
+  ArchiveRestore,
+  Clock,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
@@ -48,6 +51,14 @@ import type { SupportTicket, SupportTicketComment } from "@/types/db";
 type TicketWithRelations = SupportTicket & {
   account: { id: string; name: string } | null;
   contact: { id: string; first_name: string | null; last_name: string | null; email: string | null; phone: string | null } | null;
+} & { archived_at?: string | null };
+
+const daysUntilArchive = (closedAt: string | null | undefined): number | null => {
+  if (!closedAt) return null;
+  const days = Math.ceil(
+    (new Date(closedAt).getTime() + 7 * 24 * 60 * 60 * 1000 - Date.now()) / (24 * 60 * 60 * 1000),
+  );
+  return days;
 };
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -190,6 +201,20 @@ const SupportTicketDetail = () => {
       `${authorName} released the ticket.`,
     );
 
+  const archiveNow = () =>
+    updateTicket(
+      { archived_at: new Date().toISOString() } as Partial<SupportTicket>,
+      "archive",
+      `${authorName} archived the ticket.`,
+    );
+
+  const unarchive = () =>
+    updateTicket(
+      { archived_at: null } as Partial<SupportTicket>,
+      "archive",
+      `${authorName} restored the ticket from archive.`,
+    );
+
   const handleStatusChange = async (newStatus: string) => {
     if (!ticket) return;
     const prevStatus = ticket.status;
@@ -288,10 +313,26 @@ const SupportTicketDetail = () => {
               <Badge variant="outline" className={cn("text-xs", priorityMeta(ticket.priority).badgeClass)}>
                 {priorityMeta(ticket.priority).label} priority
               </Badge>
+              {ticket.archived_at && (
+                <Badge variant="outline" className="text-xs gap-1 border-slate-400/40 text-slate-500 dark:text-slate-400 bg-slate-400/10">
+                  <Archive className="h-3 w-3" />
+                  Archived {format(new Date(ticket.archived_at), "MMM d, yyyy")}
+                </Badge>
+              )}
               <span className="text-xs text-muted-foreground ml-auto">
                 {SOURCE_LABELS[ticket.source] ?? ticket.source}
               </span>
             </div>
+            {!ticket.archived_at && ticket.status === "closed" && (() => {
+              const d = daysUntilArchive(ticket.closed_at);
+              if (d === null) return null;
+              return (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Clock className="h-3.5 w-3.5" />
+                  {d <= 0 ? "This ticket will be archived shortly." : `Auto-archives in ${d} day${d === 1 ? "" : "s"}.`}
+                </div>
+              );
+            })()}
             <h1 className="text-lg lg:text-xl font-semibold text-foreground">{ticket.subject}</h1>
           </CardContent>
         </Card>
@@ -522,6 +563,46 @@ const SupportTicketDetail = () => {
                       Claim this ticket
                     </Button>
                   )}
+                </div>
+
+                <Separator />
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Archive</Label>
+                  {ticket.archived_at ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full"
+                      onClick={unarchive}
+                      disabled={savingField === "archive"}
+                    >
+                      {savingField === "archive" ? (
+                        <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                      ) : (
+                        <ArchiveRestore className="h-4 w-4 mr-1.5" />
+                      )}
+                      Restore from archive
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full text-muted-foreground"
+                      onClick={archiveNow}
+                      disabled={savingField === "archive"}
+                    >
+                      {savingField === "archive" ? (
+                        <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                      ) : (
+                        <Archive className="h-4 w-4 mr-1.5" />
+                      )}
+                      Archive now
+                    </Button>
+                  )}
+                  <p className="text-[10px] text-muted-foreground/80">
+                    Closed tickets archive automatically after 7 days.
+                  </p>
                 </div>
               </CardContent>
             </Card>
