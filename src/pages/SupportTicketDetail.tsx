@@ -201,6 +201,20 @@ const SupportTicketDetail = () => {
       `${authorName} released the ticket.`,
     );
 
+  const archiveNow = () =>
+    updateTicket(
+      { archived_at: new Date().toISOString() } as Partial<SupportTicket>,
+      "archive",
+      `${authorName} archived the ticket.`,
+    );
+
+  const unarchive = () =>
+    updateTicket(
+      { archived_at: null } as Partial<SupportTicket>,
+      "archive",
+      `${authorName} restored the ticket from archive.`,
+    );
+
   const handleStatusChange = async (newStatus: string) => {
     if (!ticket) return;
     const prevStatus = ticket.status;
