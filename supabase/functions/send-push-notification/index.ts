@@ -102,6 +102,7 @@ async function sendWebPush(
 }
 
 import { requireAuth } from "../_shared/require-auth.ts";
+import { BLOCKED_RECIPIENT_EMAILS } from "../_shared/blocked-emails.ts";
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
