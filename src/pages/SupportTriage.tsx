@@ -356,7 +356,7 @@ const SupportTriage = () => {
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs font-mono text-muted-foreground">{t.ticket_number}</span>
                       <Badge variant="outline" className={cn("text-xs", st.badgeClass)}>
-                        {st.label}
+                        {t.archived_at ? "Archived" : st.label}
                       </Badge>
                     </div>
                     <h3 className="font-semibold text-sm text-foreground">{t.subject}</h3>
