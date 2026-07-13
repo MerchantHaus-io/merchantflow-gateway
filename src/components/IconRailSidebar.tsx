@@ -164,6 +164,9 @@ export function IconRailSidebar() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const { isAdmin } = useUserRole();
   const { data: acceptedQuotesCount = 0 } = useAcceptedQuotesCount();
 
   const [collapsed, setCollapsed] = useState<boolean>(() => {
@@ -172,9 +175,61 @@ export function IconRailSidebar() {
     return stored === null ? true : stored === "1";
   });
 
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [profileName, setProfileName] = useState<string | null>(null);
+
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, collapsed ? "1" : "0");
   }, [collapsed]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchProfile = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("avatar_url, full_name")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (data) {
+        setAvatarUrl(data.avatar_url);
+        setProfileName(data.full_name);
+      }
+    };
+
+    fetchProfile();
+
+    const channel = supabase
+      .channel("rail-profile-sync")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "profiles",
+          filter: `id=eq.${user.id}`,
+        },
+        (payload) => {
+          const updated = payload.new as { avatar_url: string | null; full_name: string | null };
+          setAvatarUrl(updated.avatar_url);
+          setProfileName(updated.full_name);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/auth");
+  };
+
+  const userEmail = user?.email?.toLowerCase() || "";
+  const displayName = profileName || EMAIL_TO_USER[userEmail] || user?.email?.split("@")[0] || "User";
 
   const isGroupActive = (group: NavGroup) => {
     if (location.pathname === group.url) return true;
