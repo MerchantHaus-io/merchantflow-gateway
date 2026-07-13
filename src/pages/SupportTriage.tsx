@@ -217,7 +217,7 @@ const SupportTriage = () => {
     >
       <div className="p-4 lg:p-6 space-y-6">
         {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4">
           <StatCard
             icon={<Inbox className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />}
             value={stats.open}
@@ -242,16 +242,30 @@ const SupportTriage = () => {
             label="Closed"
             tone="bg-muted"
           />
+          <StatCard
+            icon={<Archive className="h-5 w-5 text-muted-foreground" />}
+            value={stats.archived}
+            label="Archived"
+            tone="bg-muted"
+          />
         </div>
 
         {/* Tabs */}
         <Tabs value={view} onValueChange={(v) => setView(v as typeof view)}>
           <TabsList>
-            <TabsTrigger value="all">All Tickets</TabsTrigger>
+            <TabsTrigger value="all">Active</TabsTrigger>
             <TabsTrigger value="unassigned">Unassigned</TabsTrigger>
             <TabsTrigger value="mine">My Tickets</TabsTrigger>
+            <TabsTrigger value="archived">
+              <Archive className="h-3.5 w-3.5 mr-1.5" />
+              Archived
+            </TabsTrigger>
           </TabsList>
         </Tabs>
+
+        <p className="text-[11px] text-muted-foreground -mt-3">
+          Closed tickets are automatically archived 7 days after they're closed.
+        </p>
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3">
