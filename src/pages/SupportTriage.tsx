@@ -332,9 +332,11 @@ const SupportTriage = () => {
               <Inbox className="h-8 w-8 mx-auto text-muted-foreground/50" />
               <p className="text-muted-foreground">No tickets here</p>
               <p className="text-xs text-muted-foreground/70">
-                {view === "mine"
-                  ? "You haven't claimed any tickets yet."
-                  : "New tickets from staff, the web form and the support inbox land here."}
+                {view === "archived"
+                  ? "Closed tickets are archived here 7 days after closing."
+                  : view === "mine"
+                    ? "You haven't claimed any tickets yet."
+                    : "New tickets from staff, the web form and the support inbox land here."}
               </p>
             </CardContent>
           </Card>
