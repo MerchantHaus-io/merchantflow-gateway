@@ -362,7 +362,7 @@ const OpportunityCard = ({
             {!isGreyed && (
               <div className="flex items-center gap-1.5 min-w-0">
                 <span key={dealValue} className={cn(
-                  "font-mono font-semibold text-[10px] truncate animate-count",
+                  "font-pipeline-mono font-semibold text-[10px] truncate animate-count tracking-tight",
                   isComplete ? "text-white/90" : "text-[hsl(var(--gold))]"
                 )}>
                   {dealValue > 0 ? formatCurrency(dealValue) : "—"}
