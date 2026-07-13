@@ -36,7 +36,18 @@ import {
 } from "@/lib/support";
 import type { SupportTicket } from "@/types/db";
 
-type TicketRow = SupportTicket & { account: { id: string; name: string } | null };
+type TicketRow = SupportTicket & {
+  account: { id: string; name: string } | null;
+  archived_at?: string | null;
+};
+
+const daysUntilArchive = (closedAt: string | null | undefined): number | null => {
+  if (!closedAt) return null;
+  const closed = new Date(closedAt).getTime();
+  const archiveAt = closed + 7 * 24 * 60 * 60 * 1000;
+  const days = Math.ceil((archiveAt - Date.now()) / (24 * 60 * 60 * 1000));
+  return days;
+};
 
 const getInitials = (name: string) =>
   name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
