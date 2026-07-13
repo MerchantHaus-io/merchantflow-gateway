@@ -324,62 +324,6 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
             <TooltipContent side="bottom">{isDark ? "Light mode" : "Dark mode"}</TooltipContent>
           </Tooltip>
 
-          {/* Profile dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className={cn(
-                  "h-9 gap-2 pl-1.5 pr-2.5 rounded-md",
-                  isDark
-                    ? "text-white/75 hover:text-white hover:bg-white/10"
-                    : "text-foreground/75 hover:text-foreground hover:bg-accent"
-                )}
-              >
-                <Avatar className="h-7 w-7 ring-1 ring-border/50 shrink-0">
-                  <AvatarImage src={avatarUrl || undefined} alt={displayName} className="object-cover" />
-                  <AvatarFallback className="text-[10px] font-bold bg-primary/15 text-primary">
-                    {displayName.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="hidden md:inline text-sm">{displayName}</span>
-                <ChevronDown className="h-3 w-3 hidden md:inline opacity-50" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52">
-              {/* User info header */}
-              <div className="px-3 py-2.5 border-b border-border/50 mb-1">
-                <div className="flex items-center gap-2">
-                  <p className="text-xs font-semibold">{displayName}</p>
-                  <span className="live-dot shrink-0" />
-                </div>
-                <p className="text-[11px] text-muted-foreground truncate mt-0.5">{user?.email}</p>
-              </div>
-              <DropdownMenuItem asChild>
-                <RouterNavLink to="/settings" className="cursor-pointer">
-                  <Settings className="h-4 w-4 mr-2 text-muted-foreground" />
-                  Settings
-                </RouterNavLink>
-              </DropdownMenuItem>
-              {isAdmin && (
-                <DropdownMenuItem asChild>
-                  <RouterNavLink to="/admin/deletion-requests" className="cursor-pointer">
-                    <Trash2 className="h-4 w-4 mr-2 text-muted-foreground" />
-                    Deletion Requests
-                  </RouterNavLink>
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={handleLogout}
-                className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       </div>
     </header>
