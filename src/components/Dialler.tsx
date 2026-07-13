@@ -235,7 +235,7 @@ export const Dialler = () => {
   return (
     <>
       {/* Trigger: Desktop only — mobile uses MobileAppDock */}
-      {!open && !isMobile && (
+      {!open && !isMobile && !TRI_TAB_DOCK_ENABLED && (
         <button
           onClick={() => setOpen(true)}
           className={cn(
