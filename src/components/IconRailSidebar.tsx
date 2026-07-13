@@ -30,6 +30,9 @@ import {
   ScanSearch,
   ChevronsLeft,
   ChevronsRight,
+  Settings,
+  LogOut,
+  Trash2,
   type LucideIcon,
 } from "lucide-react";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
