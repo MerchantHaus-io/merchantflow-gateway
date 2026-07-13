@@ -313,10 +313,26 @@ const SupportTicketDetail = () => {
               <Badge variant="outline" className={cn("text-xs", priorityMeta(ticket.priority).badgeClass)}>
                 {priorityMeta(ticket.priority).label} priority
               </Badge>
+              {ticket.archived_at && (
+                <Badge variant="outline" className="text-xs gap-1 border-slate-400/40 text-slate-500 dark:text-slate-400 bg-slate-400/10">
+                  <Archive className="h-3 w-3" />
+                  Archived {format(new Date(ticket.archived_at), "MMM d, yyyy")}
+                </Badge>
+              )}
               <span className="text-xs text-muted-foreground ml-auto">
                 {SOURCE_LABELS[ticket.source] ?? ticket.source}
               </span>
             </div>
+            {!ticket.archived_at && ticket.status === "closed" && (() => {
+              const d = daysUntilArchive(ticket.closed_at);
+              if (d === null) return null;
+              return (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Clock className="h-3.5 w-3.5" />
+                  {d <= 0 ? "This ticket will be archived shortly." : `Auto-archives in ${d} day${d === 1 ? "" : "s"}.`}
+                </div>
+              );
+            })()}
             <h1 className="text-lg lg:text-xl font-semibold text-foreground">{ticket.subject}</h1>
           </CardContent>
         </Card>
