@@ -141,6 +141,7 @@ export function AppLayout({
       <MobileBottomNav />
       <FloatingChat />
       <ActionItemsWidget />
+      <PersistentTriTabDock />
       <BroadcastQueueProvider>
         <ComplianceBroadcast />
         <BroadcastPopup />
