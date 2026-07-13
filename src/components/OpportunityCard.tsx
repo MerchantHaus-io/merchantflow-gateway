@@ -247,14 +247,15 @@ const OpportunityCard = ({
         onClick={() => { if (!isDraggingRef.current) onClick(); }}
         className={cn(
           "cursor-grab active:cursor-grabbing group touch-manipulation relative",
-          "rounded-xl",
+          "rounded-md transition-all duration-200",
+          "hover:-translate-y-[1px]",
           isGreyed
-            ? "pipeline-card-muted border-l-[3px] border-l-transparent bg-zinc-500 dark:bg-zinc-700 opacity-60"
+            ? "pipeline-card-muted border-l-[2px] border-l-transparent bg-zinc-500/90 dark:bg-zinc-700/90 opacity-60"
             : isClosedWon
-              ? "pipeline-card-live bg-gradient-to-br from-amber-50 via-yellow-50/80 to-amber-100/60 dark:from-amber-950/40 dark:via-yellow-950/30 dark:to-amber-900/20"
+              ? "pipeline-card-live border border-amber-500/30 hover:border-amber-500/60 bg-gradient-to-br from-amber-50 via-yellow-50/80 to-amber-100/60 dark:from-amber-950/40 dark:via-yellow-950/30 dark:to-amber-900/20"
               : isComplete
-                ? "pipeline-card border-l-[3px] border-l-emerald-500 bg-emerald-600 dark:bg-emerald-700"
-                : cn("pipeline-card border-l-[3px]", teamColors.border, "bg-card")
+                ? "pipeline-card border-l-[2px] border-l-emerald-500 border border-emerald-500/30 hover:border-emerald-400/60 bg-emerald-600/95 dark:bg-emerald-700/95"
+                : cn("pipeline-card border border-border/50 hover:border-[hsl(var(--gold)/0.55)] border-l-[2px] bg-card", teamColors.border)
         )}
       >
         {/* Delete button — fades in on hover (hidden when greyed) */}
