@@ -3473,6 +3473,7 @@ export type Database = {
       support_tickets: {
         Row: {
           account_id: string | null
+          archived_at: string | null
           assigned_to: string | null
           assigned_to_email: string | null
           assigned_to_name: string | null
@@ -3497,6 +3498,7 @@ export type Database = {
         }
         Insert: {
           account_id?: string | null
+          archived_at?: string | null
           assigned_to?: string | null
           assigned_to_email?: string | null
           assigned_to_name?: string | null
@@ -3521,6 +3523,7 @@ export type Database = {
         }
         Update: {
           account_id?: string | null
+          archived_at?: string | null
           assigned_to?: string | null
           assigned_to_email?: string | null
           assigned_to_name?: string | null
@@ -4078,6 +4081,7 @@ export type Database = {
       }
     }
     Functions: {
+      archive_stale_closed_tickets: { Args: never; Returns: number }
       current_referrer_id: { Args: never; Returns: string }
       ensure_office_avatar: {
         Args: { p_email: string }
