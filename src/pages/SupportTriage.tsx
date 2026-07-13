@@ -58,7 +58,7 @@ const SupportTriage = () => {
   const isMobile = useIsMobile();
   const { user, teamMemberName } = useAuth();
 
-  const [view, setView] = useState<"all" | "unassigned" | "mine">("all");
+  const [view, setView] = useState<"all" | "unassigned" | "mine" | "archived">("all");
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
