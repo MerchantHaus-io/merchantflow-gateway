@@ -7,7 +7,6 @@ import {
   Users,
   FileText,
   BarChart3,
-  Settings,
   Plus,
   BookOpen,
   Wrench,
@@ -15,11 +14,9 @@ import {
   Activity,
   Sparkles,
   GraduationCap,
-  LogOut,
   ClipboardList,
   ListChecks,
   FileSpreadsheet,
-  Trash2,
   Download,
   Briefcase,
   Sun,
@@ -47,7 +44,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
   NavigationMenu,
@@ -58,16 +54,11 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useAuth } from "@/contexts/AuthContext";
-import { useUserRole } from "@/hooks/useUserRole";
 import { useAcceptedQuotesCount } from "@/hooks/useAcceptedQuotesCount";
 import { useTheme } from "@/contexts/ThemeContext";
 import { NotificationBell } from "@/components/NotificationBell";
-import { EMAIL_TO_USER } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
 import sidebarIcon from "@/assets/sidebar-icon.webp";
 
 interface NavItem {
