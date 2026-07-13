@@ -14,6 +14,7 @@ import { quoApi, type QuoPhoneNumber, type QuoCall } from "@/lib/api/quo";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
+import { TRI_TAB_DOCK_ENABLED } from "@/lib/tri-tab-dock";
 
 interface MatchedContact {
   id: string;
