@@ -200,6 +200,14 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    if (isBlockedRecipient(recipientEmail)) {
+      console.log(`Blocked recipient — skipping send to ${recipientEmail}`);
+      return new Response(
+        JSON.stringify({ skipped: true, reason: "blocked_recipient" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     if (!RESEND_API_KEY) {
       console.error("RESEND_API_KEY is not configured");
       return new Response(
