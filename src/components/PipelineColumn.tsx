@@ -161,11 +161,11 @@ const PipelineColumn = ({
         {opportunities.length === 0 ? (
           <div
             className={cn(
-              "flex items-center justify-center text-muted-foreground/50 border border-dashed border-border/40 rounded-lg font-medium",
+              "flex items-center justify-center text-muted-foreground/50 border border-dashed border-border/30 rounded-sm font-pipeline-mono uppercase tracking-[0.14em]",
               isCompact ? "h-10 text-[8px]" : "h-14 text-[9px]"
             )}
           >
-            Drop here
+            No active deals
           </div>
         ) : (
           opportunities.map((opportunity) => (
