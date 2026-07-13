@@ -251,7 +251,7 @@ export function ActionItemsWidget() {
       />
 
       {/* Desktop: tab bar / Mobile: controlled by MobileAppDock (no FAB here) */}
-      {!isMobile && !isOpen ? (
+      {!isMobile && !isOpen && !TRI_TAB_DOCK_ENABLED ? (
         <button
           onClick={() => setIsOpen(true)}
           className={cn(
