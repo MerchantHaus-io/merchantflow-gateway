@@ -96,18 +96,25 @@ const SupportTriage = () => {
 
   const stats = useMemo(() => {
     const list = tickets ?? [];
+    const active = list.filter((t) => !t.archived_at);
     return {
-      open: list.filter((t) => t.status === "open").length,
-      inProgress: list.filter((t) => t.status === "in_progress").length,
-      unassigned: list.filter((t) => !t.assigned_to && t.status !== "closed").length,
-      closed: list.filter((t) => t.status === "closed").length,
+      open: active.filter((t) => t.status === "open").length,
+      inProgress: active.filter((t) => t.status === "in_progress").length,
+      unassigned: active.filter((t) => !t.assigned_to && t.status !== "closed").length,
+      closed: active.filter((t) => t.status === "closed").length,
+      archived: list.filter((t) => !!t.archived_at).length,
     };
   }, [tickets]);
 
   const filtered = useMemo(() => {
     let list = tickets ?? [];
-    if (view === "unassigned") list = list.filter((t) => !t.assigned_to && t.status !== "closed");
-    if (view === "mine") list = list.filter((t) => t.assigned_to === user?.id);
+    if (view === "archived") {
+      list = list.filter((t) => !!t.archived_at);
+    } else {
+      list = list.filter((t) => !t.archived_at);
+      if (view === "unassigned") list = list.filter((t) => !t.assigned_to && t.status !== "closed");
+      if (view === "mine") list = list.filter((t) => t.assigned_to === user?.id);
+    }
 
     const q = search.trim().toLowerCase();
     return list.filter((t) => {
