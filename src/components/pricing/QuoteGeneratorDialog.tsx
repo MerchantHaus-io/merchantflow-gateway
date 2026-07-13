@@ -1357,13 +1357,13 @@ export function QuoteGeneratorDialog({
                       <span>Swipe for more</span>
                       <span aria-hidden>→</span>
                     </div>
-                    <div className="overflow-x-auto border-t border-b">
+                    <div className="overflow-x-auto border-t border-b border-slate-200 [&_tbody_tr]:!bg-transparent [&_tbody_tr:hover]:!bg-transparent [&_thead_tr]:!bg-transparent">
                     <table className="w-full min-w-[520px] text-sm">
-                      <thead className="bg-slate-900 text-white text-xs">
+                      <thead className="text-[11px] uppercase tracking-[0.14em] text-slate-500 border-b border-slate-200">
                         <tr>
-                          <th className="text-left px-2 sm:px-3 py-2.5 whitespace-nowrap">Item</th>
-                          <th className="text-left px-2 sm:px-3 py-2.5 whitespace-nowrap">Detail</th>
-                          <th className="text-right px-2 sm:px-3 py-2.5 whitespace-nowrap w-[110px]">Price</th>
+                          <th className="text-left px-2 sm:px-3 py-2.5 whitespace-nowrap font-semibold">Item</th>
+                          <th className="text-left px-2 sm:px-3 py-2.5 whitespace-nowrap font-semibold">Detail</th>
+                          <th className="text-right px-2 sm:px-3 py-2.5 whitespace-nowrap w-[110px] font-semibold">Price</th>
                         </tr>
                       </thead>
                     <tbody>
@@ -1398,7 +1398,7 @@ export function QuoteGeneratorDialog({
                         </tr>
                       ))}
                       {activationCharged && (
-                        <tr className="border-b bg-amber-50/40">
+                        <tr className="border-b">
                           <td className="p-2.5 font-medium">{activation.label}</td>
                           <td className="p-2.5 text-xs text-muted-foreground">
                             {activation.description} · one-time
