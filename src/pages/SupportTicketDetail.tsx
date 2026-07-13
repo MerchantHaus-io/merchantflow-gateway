@@ -564,6 +564,46 @@ const SupportTicketDetail = () => {
                     </Button>
                   )}
                 </div>
+
+                <Separator />
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Archive</Label>
+                  {ticket.archived_at ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full"
+                      onClick={unarchive}
+                      disabled={savingField === "archive"}
+                    >
+                      {savingField === "archive" ? (
+                        <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                      ) : (
+                        <ArchiveRestore className="h-4 w-4 mr-1.5" />
+                      )}
+                      Restore from archive
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full text-muted-foreground"
+                      onClick={archiveNow}
+                      disabled={savingField === "archive"}
+                    >
+                      {savingField === "archive" ? (
+                        <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                      ) : (
+                        <Archive className="h-4 w-4 mr-1.5" />
+                      )}
+                      Archive now
+                    </Button>
+                  )}
+                  <p className="text-[10px] text-muted-foreground/80">
+                    Closed tickets archive automatically after 7 days.
+                  </p>
+                </div>
               </CardContent>
             </Card>
 
