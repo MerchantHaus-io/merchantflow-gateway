@@ -792,7 +792,7 @@ const FloatingChat: React.FC = () => {
   return (
     <TooltipProvider>
       {/* Desktop trigger only — mobile uses MobileAppDock */}
-      {!isOpen && !isMobile && (
+      {!isOpen && !isMobile && !TRI_TAB_DOCK_ENABLED && (
         <button
           onClick={() => setIsOpen(true)}
           className={cn(
