@@ -248,7 +248,7 @@ export function IconRailSidebar() {
           : "bg-background/85 text-foreground backdrop-blur-xl"
       )}
     >
-      <nav className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-3 px-2.5 space-y-1.5">
+      <nav className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-3 px-2.5 space-y-3">
         {navMain.map((group) => {
           const active = isGroupActive(group);
           const showBadge = group.title === "Tools" && acceptedQuotesCount > 0;
