@@ -20,6 +20,7 @@ import {
   TERMS_AND_CONDITIONS,
   TERMS_PUBLIC_URL,
 } from "@/content/termsAndConditions";
+import { stripInternalCostRefs } from "@/lib/redactCost";
 
 // ─── Brand palette (RGB tuples for jsPDF) ─────────────────────────────────
 const INK = [16, 18, 22] as const;       // near-black body
@@ -581,9 +582,12 @@ function renderScopeAndPricing(doc: jsPDF, q: QuotePdfInput, totalPages: number)
     ],
   ];
   q.lines.forEach((l) => {
+    // Scrub any partner-cost/markup disclosure that may survive in a persisted
+    // snapshot before it reaches the merchant-facing PDF (see redactCost.ts).
+    const desc = stripInternalCostRefs(l.description);
     const detail = l.perEvent
-      ? `${l.description}\nUnit: ${fmt(l.perEvent.resale)} ${l.perEvent.label}`
-      : l.description;
+      ? `${desc}\nUnit: ${fmt(l.perEvent.resale)} ${l.perEvent.label}`
+      : desc;
     tableBody.push([
       l.label,
       detail,
@@ -592,10 +596,11 @@ function renderScopeAndPricing(doc: jsPDF, q: QuotePdfInput, totalPages: number)
   });
   // Core gateway fees — monthly auth folds into the total; per-tx is metered
   (q.gatewayFees ?? []).forEach((f) => {
+    const desc = stripInternalCostRefs(f.description);
     const detail =
       f.cadence === "per_transaction"
-        ? `${f.description}\nVariable — billed on actual transaction volume.`
-        : f.description;
+        ? `${desc}\nVariable — billed on actual transaction volume.`
+        : desc;
     const price =
       f.cadence === "monthly" ? `${fmt(f.resale)} / mo` : `${fmt(f.resale)} / txn`;
     tableBody.push([f.label, detail, price]);
@@ -604,7 +609,7 @@ function renderScopeAndPricing(doc: jsPDF, q: QuotePdfInput, totalPages: number)
   q.ancillary.forEach((a) => {
     tableBody.push([
       a.label,
-      a.description,
+      stripInternalCostRefs(a.description),
       ancillaryPrice(a),
     ]);
   });
@@ -1308,9 +1313,12 @@ function msaExhibitAndSignature(doc: jsPDF, m: MsaPdfInput, totalPages: number) 
     ],
   ];
   m.lines.forEach((l) => {
+    // Scrub partner-cost/markup text from the (possibly pre-fix) accepted-quote
+    // snapshot before it is written into the executed contract's Exhibit A.
+    const desc = stripInternalCostRefs(l.description);
     const detail = l.perEvent
-      ? `${l.description}\nUnit: ${money(l.perEvent.resale)} ${l.perEvent.label}`
-      : l.description;
+      ? `${desc}\nUnit: ${money(l.perEvent.resale)} ${l.perEvent.label}`
+      : desc;
     tableBody.push([
       l.label,
       detail,
@@ -1319,10 +1327,11 @@ function msaExhibitAndSignature(doc: jsPDF, m: MsaPdfInput, totalPages: number) 
   });
   // Core gateway fees — monthly auth folds into the recurring total; per-tx is metered.
   (m.gatewayFees ?? []).forEach((f) => {
+    const desc = stripInternalCostRefs(f.description);
     const detail =
       f.cadence === "per_transaction"
-        ? `${f.description}\nVariable — billed on actual transaction volume.`
-        : f.description;
+        ? `${desc}\nVariable — billed on actual transaction volume.`
+        : desc;
     const price =
       f.cadence === "monthly" ? `${money(f.resale)} / mo` : `${money(f.resale)} / txn`;
     tableBody.push([f.label, detail, price]);
@@ -1330,7 +1339,7 @@ function msaExhibitAndSignature(doc: jsPDF, m: MsaPdfInput, totalPages: number) 
   m.ancillary.forEach((a) => {
     tableBody.push([
       a.label,
-      a.description,
+      stripInternalCostRefs(a.description),
       a.waived || a.amount === 0
         ? (a.waivedDescription ?? "Waived")
         : `${money(a.amount)} ${cadenceLabel(a.cadence)}`,

@@ -5,6 +5,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import merchantHausLogo from "@/assets/merchanthaus-logo.png";
+import { stripInternalCostRefs } from "@/lib/redactCost";
 
 // ─── Brand palette (RGB tuples for jsPDF) ─────────────────────────────────
 const INK = [16, 18, 22] as const;
@@ -222,12 +223,17 @@ export async function buildBillingDocPdf(input: BillingDocPdfInput): Promise<Blo
   autoTable(doc, {
     startY: y,
     head: [["Description", "Qty", "Unit", "Amount"]],
-    body: input.lines.map((l) => [
-      l.description ? `${l.label}\n${l.description}` : l.label,
-      String(l.qty),
-      formatMoney(l.unit_price, input.currency),
-      formatMoney(l.amount, input.currency),
-    ]),
+    body: input.lines.map((l) => {
+      // Scrub partner-cost/markup text (e.g. from a pre-fix catalog snapshot)
+      // before it prints on the merchant invoice.
+      const desc = stripInternalCostRefs(l.description);
+      return [
+        desc ? `${l.label}\n${desc}` : l.label,
+        String(l.qty),
+        formatMoney(l.unit_price, input.currency),
+        formatMoney(l.amount, input.currency),
+      ];
+    }),
     theme: "plain",
     styles: {
       font: "helvetica",
