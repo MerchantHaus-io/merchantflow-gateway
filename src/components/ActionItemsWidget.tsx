@@ -15,6 +15,7 @@ import { confirmAutoEmail } from "@/components/EmailSendConfirm";
 import { playNoticeBoardSound } from "@/hooks/useNotificationSound";
 import { isEmailAllowed } from "@/types/opportunity";
 import { isHiddenUser } from "@/lib/hidden-users";
+import { TRI_TAB_DOCK_ENABLED } from "@/lib/tri-tab-dock";
 
 interface ActionItem {
   id: string;
