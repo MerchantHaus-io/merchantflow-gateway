@@ -285,14 +285,14 @@ const OpportunityCard = ({
           {/* Account name */}
           <div className="flex items-start justify-between gap-1">
             <h3 className={cn(
-              "font-semibold text-xs leading-tight flex-1 min-w-0 transition-colors",
-              isGreyed ? "text-white" : isComplete ? "text-white" : "text-foreground group-hover:text-indigo-500 dark:group-hover:text-indigo-400"
+              "font-pipeline-sans font-semibold text-[13px] leading-tight tracking-tight flex-1 min-w-0 transition-colors",
+              isGreyed ? "text-white" : isComplete ? "text-white" : "text-foreground group-hover:text-[hsl(var(--gold))]"
             )}>
               {account?.name || "Unknown"}
             </h3>
             {!isGreyed && (
               <span className={cn(
-                "flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 mt-0.5",
+                "flex items-center gap-0.5 font-pipeline-mono text-[9px] font-bold px-1.5 py-0.5 rounded-sm border shrink-0 mt-0.5 uppercase tracking-wider",
                 serviceType === "gateway_only"
                   ? "text-teal-600 dark:text-teal-400 border-teal-500/40 bg-teal-500/10"
                   : "text-indigo-600 dark:text-indigo-400 border-indigo-500/40 bg-indigo-500/10"
@@ -307,7 +307,7 @@ const OpportunityCard = ({
 
           {/* Contact name */}
           {contactName && (
-            <p className={cn("text-[10px] truncate flex items-center gap-1", isGreyed ? "text-white/70" : "text-muted-foreground")}>
+            <p className={cn("font-pipeline-mono text-[10px] uppercase tracking-wider truncate flex items-center gap-1", isGreyed ? "text-white/70" : "text-muted-foreground")}>
               <User className="h-2.5 w-2.5 shrink-0" />
               {contactName}
             </p>
