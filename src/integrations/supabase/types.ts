@@ -4115,6 +4115,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin_email: { Args: never; Returns: boolean }
+      is_blocked_recipient: { Args: { _email: string }; Returns: boolean }
       is_referrer: { Args: never; Returns: boolean }
       link_opportunity_to_referrer: {
         Args: { p_application_email: string; p_opportunity_id: string }
