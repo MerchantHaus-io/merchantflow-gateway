@@ -137,7 +137,7 @@ export function buildBillingCatalog(): CatalogItem[] {
       id: `nmi-rev-${idx}`,
       group: "NMI Schedule A — Revenue",
       label: f.label,
-      description: `Merchant rate: ${f.merchant} (partner cost ${f.partner}).`,
+      description: `Merchant rate: ${f.merchant}.`,
       unit_price: parseAmount(f.merchant),
       qty: f.category === "monthly" || f.category === "one_time" ? 1 : 0,
       cadence: f.category,
