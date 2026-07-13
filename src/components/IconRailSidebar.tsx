@@ -376,6 +376,73 @@ export function IconRailSidebar() {
         })}
       </nav>
 
+      {/* Profile menu */}
+      <div className="border-t border-border/40 p-2.5 space-y-1.5">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label="Profile menu"
+              className={cn(
+                "w-full rounded-lg transition-colors",
+                collapsed ? "h-11 justify-center px-0" : "h-10 gap-3 px-3 justify-start",
+                isDark
+                  ? "text-white/75 hover:text-white hover:bg-white/8"
+                  : "text-foreground/75 hover:text-foreground hover:bg-accent"
+              )}
+            >
+              <Avatar className={cn("ring-1 ring-border/50 shrink-0", collapsed ? "h-7 w-7" : "h-7 w-7")}>
+                <AvatarImage src={avatarUrl || undefined} alt={displayName} className="object-cover" />
+                <AvatarFallback className="text-[10px] font-bold bg-primary/15 text-primary">
+                  {displayName.slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              {!collapsed && (
+                <>
+                  <span className="min-w-0 flex-1 truncate whitespace-nowrap text-[13px] font-medium tracking-tight leading-tight text-left">
+                    {displayName}
+                  </span>
+                  <ChevronsRight className="h-3 w-3 opacity-50 shrink-0 -rotate-90" />
+                </>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side={collapsed ? "right" : "top"} align={collapsed ? "start" : "start"} className="w-52" sideOffset={8}>
+            {/* User info header */}
+            <div className="px-3 py-2.5 border-b border-border/50 mb-1">
+              <div className="flex items-center gap-2">
+                <p className="text-xs font-semibold">{displayName}</p>
+                <span className="live-dot shrink-0" />
+              </div>
+              <p className="text-[11px] text-muted-foreground truncate mt-0.5">{user?.email}</p>
+            </div>
+            <DropdownMenuItem asChild>
+              <NavLink to="/settings" className="cursor-pointer">
+                <Settings className="h-4 w-4 mr-2 text-muted-foreground" />
+                Settings
+              </NavLink>
+            </DropdownMenuItem>
+            {isAdmin && (
+              <DropdownMenuItem asChild>
+                <NavLink to="/admin/deletion-requests" className="cursor-pointer">
+                  <Trash2 className="h-4 w-4 mr-2 text-muted-foreground" />
+                  Deletion Requests
+                </NavLink>
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={handleLogout}
+              className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
       <div className="border-t border-border/40 p-2.5">
         <Tooltip>
           <TooltipTrigger asChild>
