@@ -21,6 +21,7 @@ import { isEmailAllowed } from "@/types/opportunity";
 import { isHiddenUser } from "@/lib/hidden-users";
 import { useAIAssistant } from "@/hooks/useAIAssistant";
 import { UserProfileModal } from "@/components/UserProfileModal";
+import { TRI_TAB_DOCK_ENABLED } from "@/lib/tri-tab-dock";
 
 import { ChatSidebar } from "@/components/chat/ChatSidebar";
 import { ChatBubble } from "@/components/chat/ChatBubble";
@@ -792,7 +793,7 @@ const FloatingChat: React.FC = () => {
   return (
     <TooltipProvider>
       {/* Desktop trigger only — mobile uses MobileAppDock */}
-      {!isOpen && !isMobile && (
+      {!isOpen && !isMobile && !TRI_TAB_DOCK_ENABLED && (
         <button
           onClick={() => setIsOpen(true)}
           className={cn(

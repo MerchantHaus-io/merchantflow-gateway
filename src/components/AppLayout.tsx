@@ -5,6 +5,7 @@ import { IconRailSidebar } from "@/components/IconRailSidebar";
 import FloatingChat from "@/components/FloatingChat";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { ActionItemsWidget } from "@/components/ActionItemsWidget";
+import { PersistentTriTabDock } from "@/components/PersistentTriTabDock";
 import { BroadcastPopup } from "@/components/BroadcastPopup";
 import { ComplianceBroadcast } from "@/components/ComplianceBroadcast";
 import { AtriaBroadcast } from "@/components/AtriaBroadcast";
@@ -141,6 +142,7 @@ export function AppLayout({
       <MobileBottomNav />
       <FloatingChat />
       <ActionItemsWidget />
+      <PersistentTriTabDock />
       <BroadcastQueueProvider>
         <ComplianceBroadcast />
         <BroadcastPopup />
