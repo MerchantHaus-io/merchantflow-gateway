@@ -172,12 +172,8 @@ interface MegaMenuHeaderProps {
 }
 
 export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }: MegaMenuHeaderProps) {
-  const { user, signOut } = useAuth();
-  const { isAdmin } = useUserRole();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [profileName, setProfileName] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
 
   // Surfaces accepted-but-not-yet-contracted quotes as a badge on the
@@ -189,47 +185,6 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
     document.addEventListener("fullscreenchange", onFsChange);
     return () => document.removeEventListener("fullscreenchange", onFsChange);
   }, []);
-
-  useEffect(() => {
-    if (!user) return;
-
-    const fetchProfile = async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("avatar_url, full_name")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (data) {
-        setAvatarUrl(data.avatar_url);
-        setProfileName(data.full_name);
-      }
-    };
-
-    fetchProfile();
-
-    const channel = supabase
-      .channel("header-profile-sync")
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "profiles",
-          filter: `id=eq.${user.id}`,
-        },
-        (payload) => {
-          const updated = payload.new as { avatar_url: string | null; full_name: string | null };
-          setAvatarUrl(updated.avatar_url);
-          setProfileName(updated.full_name);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user]);
 
   const handleNewClick = (type: "opportunity" | "account" | "contact") => {
     switch (type) {
@@ -247,14 +202,6 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
         break;
     }
   };
-
-  const handleLogout = async () => {
-    await signOut();
-    navigate("/auth");
-  };
-
-  const userEmail = user?.email?.toLowerCase() || "";
-  const displayName = profileName || EMAIL_TO_USER[userEmail] || user?.email?.split("@")[0] || "User";
 
   const isDark = theme === 'dark';
 
