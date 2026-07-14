@@ -1401,6 +1401,8 @@ export type Database = {
           commission_change_pct: number | null
           company_name: string | null
           created_at: string
+          gateway_invoiced: number
+          gateway_margin: number
           id: string
           monthly_fees: number | null
           nmi_gateway_id: string
@@ -1420,6 +1422,8 @@ export type Database = {
           commission_change_pct?: number | null
           company_name?: string | null
           created_at?: string
+          gateway_invoiced?: number
+          gateway_margin?: number
           id?: string
           monthly_fees?: number | null
           nmi_gateway_id: string
@@ -1439,6 +1443,8 @@ export type Database = {
           commission_change_pct?: number | null
           company_name?: string | null
           created_at?: string
+          gateway_invoiced?: number
+          gateway_margin?: number
           id?: string
           monthly_fees?: number | null
           nmi_gateway_id?: string
@@ -4083,6 +4089,7 @@ export type Database = {
     Functions: {
       archive_stale_closed_tickets: { Args: never; Returns: number }
       current_referrer_id: { Args: never; Returns: string }
+      current_user_email: { Args: never; Returns: string }
       ensure_office_avatar: {
         Args: { p_email: string }
         Returns: {
@@ -4116,6 +4123,7 @@ export type Database = {
       }
       is_admin_email: { Args: never; Returns: boolean }
       is_blocked_recipient: { Args: { _email: string }; Returns: boolean }
+      is_merchanthaus_staff: { Args: never; Returns: boolean }
       is_referrer: { Args: never; Returns: boolean }
       link_opportunity_to_referrer: {
         Args: { p_application_email: string; p_opportunity_id: string }
