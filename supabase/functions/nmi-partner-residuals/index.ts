@@ -78,7 +78,7 @@ serve(async (req) => {
 
     // 1) Partner Query API — XML residual_summary on the white-label domain
     for (const base of [PARTNER_BASE, SECURE_BASE]) {
-      const attempt = await fetchQueryPhpResiduals(base, nmiKey, y, m);
+      const attempt = await fetchQueryPhpResiduals(base, queryKey!, y, m);
       attempts.push(attempt.log);
       if (attempt.rows.length) {
         rows = attempt.rows;
@@ -89,7 +89,7 @@ serve(async (req) => {
 
     // 2) v4 JSON residuals (portal-generation-dependent)
     if (!rows.length) {
-      const attempt = await fetchV4Residuals(nmiKey, y, m);
+      const attempt = await fetchV4Residuals(nmiKey!, y, m);
       attempts.push(...attempt.logs);
       if (attempt.rows.length) {
         rows = attempt.rows;
