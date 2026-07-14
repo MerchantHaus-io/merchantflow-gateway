@@ -77,7 +77,8 @@ export function PersistentTriTabDock() {
 
   return (
     <div
-      className="fixed bottom-0 left-1/2 -translate-x-1/2 z-[35] flex items-end shadow-2xl rounded-t-xl overflow-hidden"
+      className="fixed bottom-0 lg:bottom-0 left-1/2 -translate-x-1/2 z-[55] flex items-end shadow-2xl rounded-t-xl overflow-hidden"
+      style={{ bottom: "calc(var(--tri-tab-dock-offset, 0px) + env(safe-area-inset-bottom, 0px))" }}
       role="toolbar"
       aria-label="Persistent workspace tabs"
     >
