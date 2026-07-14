@@ -141,8 +141,11 @@ serve(async (req) => {
       attempts,
       last_error:
         rows.length === 0
-          ? "NMI returned no residual rows from any endpoint. See `attempts` for status codes — most partner portals require the Reporting API to be explicitly enabled on your key by NMI support."
+          ? (attempts.some((a) => /API key not found/i.test(a.note ?? ""))
+              ? "NMI rejected the API key on the Partner Reporting API (query.php). The Reporting/Query API uses a DIFFERENT key from the v3 Boarding / v4 Partner key. Add a secret named NMI_PARTNER_QUERY_KEY with the Partner Reporting key from your NMI Partner Portal (Settings → Security Keys → Reporting API)."
+              : "NMI returned no residual rows from any endpoint. See `attempts` for status codes — most partner portals require the Reporting API to be explicitly enabled on your key by NMI support.")
           : null,
+      using_dedicated_query_key: Boolean(Deno.env.get("NMI_PARTNER_QUERY_KEY")),
     });
   } catch (err) {
     console.error("nmi-partner-residuals error:", err);
