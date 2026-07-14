@@ -47,7 +47,13 @@ serve(async (req) => {
 
   try {
     const nmiKey = Deno.env.get("NMI_API_KEY");
-    if (!nmiKey) throw new Error("NMI_API_KEY is not configured");
+    // The Partner Portal Query/Reporting API (query.php?report_type=residual_summary)
+    // uses a DIFFERENT security key than the v3 Boarding / v4 Partner API key.
+    // NMI issues it separately as the "Partner Reporting Key" / Query API key.
+    // Prefer it when present; fall back to NMI_API_KEY only so the request
+    // still runs and returns a diagnostic instead of silently doing nothing.
+    const queryKey = Deno.env.get("NMI_PARTNER_QUERY_KEY") || nmiKey;
+    if (!nmiKey && !queryKey) throw new Error("NMI_API_KEY is not configured");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
