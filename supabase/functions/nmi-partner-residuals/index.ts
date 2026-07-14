@@ -47,7 +47,13 @@ serve(async (req) => {
 
   try {
     const nmiKey = Deno.env.get("NMI_API_KEY");
-    if (!nmiKey) throw new Error("NMI_API_KEY is not configured");
+    // The Partner Portal Query/Reporting API (query.php?report_type=residual_summary)
+    // uses a DIFFERENT security key than the v3 Boarding / v4 Partner API key.
+    // NMI issues it separately as the "Partner Reporting Key" / Query API key.
+    // Prefer it when present; fall back to NMI_API_KEY only so the request
+    // still runs and returns a diagnostic instead of silently doing nothing.
+    const queryKey = Deno.env.get("NMI_PARTNER_QUERY_KEY") || nmiKey;
+    if (!nmiKey && !queryKey) throw new Error("NMI_API_KEY is not configured");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -72,7 +78,7 @@ serve(async (req) => {
 
     // 1) Partner Query API — XML residual_summary on the white-label domain
     for (const base of [PARTNER_BASE, SECURE_BASE]) {
-      const attempt = await fetchQueryPhpResiduals(base, nmiKey, y, m);
+      const attempt = await fetchQueryPhpResiduals(base, queryKey!, y, m);
       attempts.push(attempt.log);
       if (attempt.rows.length) {
         rows = attempt.rows;
@@ -83,7 +89,7 @@ serve(async (req) => {
 
     // 2) v4 JSON residuals (portal-generation-dependent)
     if (!rows.length) {
-      const attempt = await fetchV4Residuals(nmiKey, y, m);
+      const attempt = await fetchV4Residuals(nmiKey!, y, m);
       attempts.push(...attempt.logs);
       if (attempt.rows.length) {
         rows = attempt.rows;
@@ -135,8 +141,11 @@ serve(async (req) => {
       attempts,
       last_error:
         rows.length === 0
-          ? "NMI returned no residual rows from any endpoint. See `attempts` for status codes — most partner portals require the Reporting API to be explicitly enabled on your key by NMI support."
+          ? (attempts.some((a) => /API key not found/i.test(a.note ?? ""))
+              ? "NMI rejected the API key on the Partner Reporting API (query.php). The Reporting/Query API uses a DIFFERENT key from the v3 Boarding / v4 Partner key. Add a secret named NMI_PARTNER_QUERY_KEY with the Partner Reporting key from your NMI Partner Portal (Settings → Security Keys → Reporting API)."
+              : "NMI returned no residual rows from any endpoint. See `attempts` for status codes — most partner portals require the Reporting API to be explicitly enabled on your key by NMI support.")
           : null,
+      using_dedicated_query_key: Boolean(Deno.env.get("NMI_PARTNER_QUERY_KEY")),
     });
   } catch (err) {
     console.error("nmi-partner-residuals error:", err);
