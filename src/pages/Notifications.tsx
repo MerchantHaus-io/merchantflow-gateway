@@ -157,7 +157,7 @@ const Notifications = () => {
                               onClick={(e) => { e.stopPropagation(); openLink(); }}
                               className="text-xs font-medium text-primary hover:underline"
                             >
-                              Open {targetLink}
+                              Open
                             </button>
                           )}
                         </div>
