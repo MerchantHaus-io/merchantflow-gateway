@@ -182,8 +182,16 @@ export default function Commissions() {
     },
     onSuccess: (data: any) => {
       const n = data?.persisted ?? 0;
-      if (n === 0 && data?.last_error) {
-        toast.warning(`NMI returned no residual rows yet for this month. (${data.last_error})`);
+      if (n === 0) {
+        const attempts = Array.isArray(data?.attempts) ? data.attempts : [];
+        const summary = attempts
+          .map((a: any) => `${a.endpoint} → ${a.status ?? "err"}${a.rows ? ` (${a.rows})` : ""}`)
+          .join(" · ");
+        console.warn("[nmi-partner-residuals] no rows", data);
+        toast.warning("NMI returned no residual rows for this month.", {
+          description: summary || data?.last_error || "Reporting API likely not enabled on this partner key.",
+          duration: 12000,
+        });
       } else {
         toast.success(`Pulled ${n} residual row${n === 1 ? "" : "s"} from NMI (${data?.source ?? "?"}).`);
       }
