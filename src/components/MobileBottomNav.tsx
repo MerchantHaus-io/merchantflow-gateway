@@ -170,7 +170,7 @@ export function MobileBottomNav() {
   return (
     <>
       {/* ── FIXED TAB BAR ── */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden" style={{
+      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden" style={{
         background: "hsl(var(--background) / 0.8)",
         backdropFilter: "blur(20px) saturate(180%)",
         WebkitBackdropFilter: "blur(20px) saturate(180%)",
@@ -249,7 +249,7 @@ export function MobileBottomNav() {
           <>
             {/* Backdrop */}
             <motion.div
-              className="fixed inset-0 z-[60] lg:hidden"
+              className="fixed inset-0 z-[60] md:hidden"
               style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -259,7 +259,7 @@ export function MobileBottomNav() {
 
             {/* Sheet */}
             <motion.div
-              className="fixed bottom-0 left-0 right-0 z-[70] lg:hidden rounded-t-2xl overflow-hidden flex flex-col"
+              className="fixed bottom-0 left-0 right-0 z-[70] md:hidden rounded-t-2xl overflow-hidden flex flex-col"
               style={{
                 background: "hsl(var(--card))",
                 border: "1px solid hsl(var(--border))",
