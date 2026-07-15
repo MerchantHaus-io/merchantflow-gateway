@@ -128,9 +128,25 @@ serve(async (req) => {
       const msg = await msgRes.json();
       const payload: GmailPart = msg.payload ?? {};
 
-      const fromRaw = headerVal(payload, "From");
+      let fromRaw = headerVal(payload, "From");
       const subject = headerVal(payload, "Subject") || "(no subject)";
       const messageId = headerVal(payload, "Message-ID");
+      const replyToRaw = headerVal(payload, "Reply-To");
+      const returnPath = headerVal(payload, "Return-Path");
+
+      // Google Groups collaborative inbox (support@merchanthaus.io) rewrites
+      // the From header to the group alias itself on delivery. Detect that
+      // (From = the alias, or Return-Path is a group bounce address) and
+      // fall back to Reply-To for the real external sender.
+      const fromEmail = extractEmailAddress(fromRaw).toLowerCase();
+      const inboxLower = SUPPORT_INBOX.toLowerCase();
+      const isGroupRewrite =
+        fromEmail === inboxLower ||
+        /support\+bnc[a-z0-9]+@merchanthaus\.io/i.test(returnPath);
+      if (isGroupRewrite && replyToRaw && extractEmailAddress(replyToRaw)) {
+        fromRaw = replyToRaw;
+      }
+
       const email = extractEmailAddress(fromRaw);
       const name = extractDisplayName(fromRaw) || email;
       const isInternal = !!email && email.endsWith("@merchanthaus.io");
