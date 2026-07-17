@@ -10,8 +10,7 @@ import {
   extractEmailAddress,
   findTicketNumber,
   matchAccountByEmail,
-  stripHtml,
-  stripQuotedReply,
+  sanitizeInboundBody,
 } from "../_shared/support-intake.ts";
 import { sendGmail } from "../_shared/gmail-send.ts";
 import { escapeHtml, infoCard, renderBrandedEmail } from "../_shared/email-layout.ts";
