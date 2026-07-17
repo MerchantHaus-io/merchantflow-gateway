@@ -20,8 +20,7 @@ import {
   extractEmailAddress,
   findTicketNumber,
   matchAccountByEmail,
-  stripHtml,
-  stripQuotedReply,
+  sanitizeInboundBody,
 } from "../_shared/support-intake.ts";
 import { sendGmail } from "../_shared/gmail-send.ts";
 
@@ -58,7 +57,8 @@ const pick = (obj: Record<string, unknown>, keys: string[]): string => {
 interface ParsedEmail {
   fromRaw: string;
   subject: string;
-  body: string;
+  text: string;
+  html: string;
 }
 
 const parseInbound = async (req: Request): Promise<ParsedEmail> => {
@@ -93,9 +93,8 @@ const parseInbound = async (req: Request): Promise<ParsedEmail> => {
 
   const text = pick(data, ["text", "TextBody", "plain", "body-plain", "body", "stripped-text"]);
   const html = pick(data, ["html", "HtmlBody", "body-html"]);
-  const body = text || (html ? stripHtml(html) : "");
 
-  return { fromRaw, subject, body };
+  return { fromRaw, subject, text, html };
 };
 
 const sendEmail = async (to: string, subject: string, html: string) => {
@@ -122,7 +121,7 @@ serve(async (req) => {
       }
     }
 
-    const { fromRaw, subject, body } = await parseInbound(req);
+    const { fromRaw, subject, text, html } = await parseInbound(req);
     const email = extractEmailAddress(fromRaw);
     const name = extractDisplayName(fromRaw) || email;
 
@@ -131,14 +130,14 @@ serve(async (req) => {
       return json({ ok: true, skipped: "no sender" });
     }
 
-    const cleanBody = stripQuotedReply(body) || "(no message body)";
+    const cleanBody = sanitizeInboundBody(text, html);
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
     // ── Thread onto an existing ticket if the message references one. ──
-    const ref = findTicketNumber(subject) || findTicketNumber(body.slice(0, 800));
+    const ref = findTicketNumber(subject) || findTicketNumber((text || html || "").slice(0, 800));
     if (ref) {
       const { data: existing } = await supabase
         .from("support_tickets")

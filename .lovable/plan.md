@@ -1,100 +1,60 @@
+## Why the dashboard looks messy
 
-# Migration off Lovable Cloud → your own Supabase project
+I pulled the latest email-sourced tickets. The `description` column stores whatever the poller extracts, and the detail view just dumps it into a `whitespace-pre-wrap` `<p>`. The recent tickets show three concrete pollution patterns coming through untouched:
 
-## Constraints you should know first
+1. **Unfilled template tokens** from marketing platforms — `${buttontext}`, `<[[${btn_link}]]>`, `<[[https://…]]>` — appear as raw text mid-body.
+2. **Tracking URLs** from HubSpot / Marketo / SendGrid wrappers — 400-character `info.nuvei.com/e3t/Ctc/…` links pasted inline blow out the layout and hide the actual sentence.
+3. **Marketing chrome** — "View in browser", "View as webpage", "Unsubscribe", footer address blocks, `© 2026 …` — kept in full because `stripQuotedReply` only trims replies, not headers/footers.
 
-- This app runs on **Lovable Cloud**, which manages the underlying Supabase project on your behalf. Because of that:
-  - The project ref, URL, owning organization, and Supabase dashboard access are **not exposed** to you or to me.
-  - A native Supabase **org-to-org transfer is not available** for Cloud-managed projects.
-  - The `SUPABASE_SERVICE_ROLE_KEY` and the database password are **not retrievable** on Cloud — not by you, not by me.
-- Therefore the migration is a **rebuild-and-replay** into a brand-new Supabase project you own, followed by a data export handled by Lovable support.
+On top of that the dashboard renders raw text, so real URLs aren't clickable, whitespace runs (`\n\n\n`, NBSPs, zero-width chars) survive, and quoted-printable soft-wrap artifacts (`=\n`, `=20`) occasionally slip through when the text/plain part is missing and we fall back to the HTML strip.
 
-## Target end state
+The MH-1008 ticket (real customer, `darryn182@gmail.com`) is clean — so the pipeline works; it's marketing/newsletter mail that exposes the gaps. Fixing this cleans real inbound too.
 
-- A new Supabase project in **your** Supabase organization holds the schema, functions, storage buckets, and data.
-- This repo is moved off Lovable Cloud and points its client at the new project via `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY`.
-- All third-party integrations (Google, NMI, Kurv, Quo, Portal, Resend, VAPID push, encryption) are re-wired against the new project's edge functions.
+## Proposed changes
 
-## Migration steps
+### 1. Extend `stripHtml` / add `sanitizeInboundBody` in `supabase/functions/_shared/support-intake.ts`
+A single new helper that runs on every intake path (Gmail poller + inbound webhook). It layers:
+- **Template-token strip** — drop lines matching `${…}`, `[[…]]`, or `<\[\[.*?\]\]>` fragments. Also strip Mustache-style `{{…}}` remnants.
+- **Tracking-URL shortening** — detect long redirect URLs (`info.*/e3t/`, `list-manage.com`, `sendgrid.net/ls/click`, `hubspotlinks.com`, `mandrillapp.com/track`) and either drop bare-line links or replace with `[link]`. Preserve real anchors.
+- **Marketing-chrome strip** — drop lines matching a small allow-list of newsletter boilerplate: `View in browser`, `View as webpage`, `Unsubscribe`, `Manage preferences`, `You are receiving…`, `© 20xx …`, and standalone postal-address footers (heuristic: 2–3 consecutive short lines ending in a US state + ZIP or country).
+- **Quoted-printable cleanup** — collapse `=\r?\n` soft breaks, decode common `=XX` sequences when the text obviously wasn't decoded upstream.
+- **Whitespace normalisation** — replace NBSP/zero-width chars with regular spaces, collapse runs of blank lines to a single blank line, trim.
+- **Length cap** — hard cap description at ~8 KB (keep the head, append `[…truncated]`). Prevents 8 KB Nuvei blasts from dominating the dashboard row.
 
-### 1. Stand up the new Supabase project (you, in your org)
-- Create a new project in your Supabase org. Region should match your users (US).
-- From Settings → API, grab: `Project URL`, `anon` (publishable) key, `service_role` key, `Project ref`.
-- From Settings → Database, grab the connection string and DB password.
-- Note these somewhere safe — do not paste values into this chat.
+Order matters: strip HTML → decode QP → drop template tokens → drop tracking URLs → drop marketing chrome → strip quoted reply → normalise whitespace → cap length.
 
-### 2. Replay schema
-- The `supabase/migrations/*.sql` files in this repo are the source of truth for the schema (tables, RLS policies, GRANTs, functions, triggers).
-- Run them in order against the new project (Supabase CLI: `supabase link` + `supabase db push`, or paste each migration into the SQL editor in filename order).
-- Verify: all 71 `public` tables exist, RLS is enabled, and policies + GRANTs are present.
+Existing exports (`stripHtml`, `stripQuotedReply`) stay so nothing else breaks; the new `sanitizeInboundBody(rawText, rawHtml)` composes them.
 
-### 3. Recreate storage buckets
-Create these buckets in the new project with the same public/private settings:
-- `avatars` — public
-- `opportunity-documents` — private
-- `chat-attachments` — private
+### 2. Wire it into both intake paths
+- `supabase/functions/gmail-poll-support/index.ts`: replace the current `body = text || (html ? stripHtml(html) : "")` + `stripQuotedReply(body)` with `sanitizeInboundBody(text, html)`.
+- `supabase/functions/support-inbound-email/index.ts`: same swap in `parseInbound` / just before insert.
 
-### 4. Deploy edge functions
-- All function code lives under `supabase/functions/*` in this repo.
-- Deploy with `supabase functions deploy <name>` for each folder (there are ~80).
-- `supabase/config.toml` already carries the per-function `verify_jwt` settings — keep it.
+### 3. Backfill existing tickets (one-off)
+A single migration that re-runs the sanitiser against `support_tickets.description` for `source = 'email'` rows where the description matches known noise markers (`${`, `[[`, `View in browser`, etc.). Runs once, idempotent — safe to re-run.
+(Cleanest to do this in a small edge function called manually rather than SQL, since the sanitiser is TS. I'll add a `sanitize-existing-tickets` one-shot function guarded by a header secret.)
 
-### 5. Recreate secrets in the new project
-You'll set these in Supabase → Project Settings → Edge Functions → Secrets. Values come from you / the original provider consoles — I will not print any values.
+### 4. Dashboard rendering upgrade in `src/pages/SupportTicketDetail.tsx`
+Small, presentation-only:
+- Replace the raw `<p>` with a helper that:
+  - `whitespace-pre-wrap` still preserves paragraphs.
+  - Auto-links bare URLs (safe regex → `<a target="_blank" rel="noopener">`).
+  - Truncates displayed URL text to ~60 chars with an ellipsis; full URL stays in `href`.
+  - Wraps long unbroken tokens with `break-words`/`overflow-wrap: anywhere` so tracking URLs (if any survive) don't stretch the card.
+- Also show a "Show original" toggle that reveals the pre-sanitise body — kept in a new nullable column `description_raw` so ops can inspect what came in when triage is unsure. (Optional; happy to skip if you want to keep the schema untouched.)
 
-Auto-provided by Supabase (do not set manually):
-- `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_DB_URL`, `SUPABASE_JWKS`, `SUPABASE_PUBLISHABLE_KEY(S)`, `SUPABASE_SECRET_KEYS`
+### 5. Not doing
+- Full HTML rendering of the ticket body — too much attack surface (marketing HTML is a mess and would need DOMPurify + iframe sandboxing). Sanitised plain text with clickable links is the right level.
+- Blocking newsletter senders outright — that's a separate "filter marketing at the inbox" conversation; today's fix makes them at least readable in the desk.
 
-Third-party (re-obtain from each provider's dashboard):
-- `RESEND_API_KEY` — from resend.com
-- `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET` — from Google Cloud Console (also update the OAuth redirect URIs to the new function URLs)
-- `GOOGLE_MAIL_API_KEY`, `GOOGLE_DRIVE_API_KEY` — Google connector-managed today; you'll re-issue from Google Cloud
-- `NMI_API_KEY` — from NMI partner portal
-- `KURV_API_ENV`, `KURV_API_USERNAME`, `KURV_API_PASSWORD` — from EMS Corporate
-- `QUO_API_KEY` — from OpenPhone/Quo
-- `PORTAL_SUPABASE_URL`, `PORTAL_SUPABASE_ANON_KEY`, `PORTAL_SERVICE_ROLE_KEY`, `PORTAL_WEBHOOK_SECRET` — from the merchant portal Supabase project you already own
-- `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` — reuse existing values if you have them, otherwise regenerate (invalidates existing push subscribers)
+## Files touched
+- `supabase/functions/_shared/support-intake.ts` — add `sanitizeInboundBody` + helpers.
+- `supabase/functions/gmail-poll-support/index.ts` — use it.
+- `supabase/functions/support-inbound-email/index.ts` — use it.
+- `src/pages/SupportTicketDetail.tsx` — auto-link + wrap the description block (small render helper, no new deps).
+- (Optional) `supabase/functions/sanitize-existing-tickets/index.ts` — one-shot backfill, `supabase/config.toml` entry for it, and a new nullable `description_raw text` column via migration if you want the "Show original" toggle.
 
-Generate fresh in the new project:
-- `ENCRYPTION_KEY` — used for AES-256-GCM application-secret encryption. **If you regenerate this, previously encrypted `application_secrets` rows become unreadable.** Prefer reusing the current value; obtain it via the Lovable support export below.
-- `DEV_AUTOLOGIN_EMAIL`, `DEV_AUTOLOGIN_PASSWORD` — optional dev-only helpers; set new values.
+## Verification
+- Unit test the new `sanitizeInboundBody` against fixture strings taken from MH-1010, MH-1011, MH-1012 — assert the tokens/tracking links/chrome are gone and the real sentences survive.
+- Manually trigger `gmail-poll-support` with `?includeRead=1` on a small window and spot-check the new descriptions in the dashboard.
 
-Not applicable in the new project:
-- `LOVABLE_API_KEY` — Lovable Cloud-only. If you keep using Lovable AI features, you'll need to keep a Lovable Cloud footprint for that gateway or replace the AI calls (currently used by `ai-assistant`, `polish-email`, `analyze-statement`, `classify-document`, `generate-profile-avatars`) with direct OpenAI/Gemini keys.
-
-### 6. Data export (requires Lovable support)
-Because the DB URL and service_role for the Cloud-managed project aren't exposed, request a data export:
-
-- Open **Cloud tab → Advanced settings → Export data** in Lovable, OR
-- Email Lovable support and request:
-  1. A `pg_dump` of the `public` schema (data + sequences) for project ref `cuqjaddtmkotgvfsgcol`.
-  2. A copy of the storage bucket contents for `avatars`, `opportunity-documents`, `chat-attachments`.
-  3. The current value of the `ENCRYPTION_KEY` secret (so encrypted `application_secrets` remain decryptable).
-  4. The current `VAPID_PRIVATE_KEY` / `VAPID_PUBLIC_KEY` (to preserve existing push subscriptions).
-
-Load the dump into the new project after step 2 (schema) is complete, and upload the bucket contents into the buckets from step 3.
-
-### 7. Point the app at the new project
-Update the frontend env vars used by `src/integrations/supabase/client.ts`:
-- `VITE_SUPABASE_URL` → new project URL
-- `VITE_SUPABASE_PUBLISHABLE_KEY` → new anon key
-- `VITE_SUPABASE_PROJECT_ID` → new project ref
-- `VITE_VAPID_PUBLIC_KEY` → matching VAPID public key
-
-Two options for hosting the app itself:
-- **A. Move hosting off Lovable entirely** — build with the new env vars and deploy to Netlify (repo already has `netlify.toml`) or Vercel. Cleanest cut.
-- **B. Keep the Lovable editor but connect the Supabase Integration** to your new project (this replaces Lovable Cloud for this project). Note: once Lovable Cloud is enabled it cannot be *disabled* on this specific project, so a truly clean cut usually means option A.
-
-### 8. Post-cutover checklist
-- Re-run migrations against a staging copy first to confirm the SQL is clean.
-- Test auth (email/password, Google), pipeline CRUD, quote acceptance, NMI/Kurv/Quo webhooks, Gmail sync, portal magic links, push notifications.
-- Update OAuth redirect URIs (Google) and any inbound webhook URLs (NMI, Quo, Resend, Portal) to the new function base URL.
-- Rotate `ENCRYPTION_KEY` **only after** confirming no encrypted rows remain.
-
-## What I need from you before build mode
-Confirm which of these you want me to prepare in the repo during build:
-1. A single-file `docs/MIGRATION.md` capturing the above as an actionable checklist you can hand to whoever runs the migration.
-2. A `scripts/apply-migrations.sh` helper that walks `supabase/migrations/` in order against a target `DATABASE_URL`.
-3. An `.env.production.example` with the new required frontend variables filled in with placeholders.
-
-I'll only touch documentation/tooling — no schema, function, or app-code changes are needed for the migration itself since the code is already portable.
+Say the word and I'll ship #1–#4 (skip the optional `description_raw` column unless you want that toggle).

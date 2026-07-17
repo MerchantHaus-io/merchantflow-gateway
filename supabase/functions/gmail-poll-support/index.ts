@@ -10,8 +10,7 @@ import {
   extractEmailAddress,
   findTicketNumber,
   matchAccountByEmail,
-  stripHtml,
-  stripQuotedReply,
+  sanitizeInboundBody,
 } from "../_shared/support-intake.ts";
 import { sendGmail } from "../_shared/gmail-send.ts";
 import { escapeHtml, infoCard, renderBrandedEmail } from "../_shared/email-layout.ts";
@@ -171,10 +170,10 @@ serve(async (req) => {
       }
 
       const { text, html } = extractBody(payload);
-      const body = text || (html ? stripHtml(html) : "");
-      const cleanBody = stripQuotedReply(body) || "(no message body)";
+      const cleanBody = sanitizeInboundBody(text, html);
+      const rawForRef = text || html || "";
 
-      const ref = findTicketNumber(subject) || findTicketNumber(body.slice(0, 800));
+      const ref = findTicketNumber(subject) || findTicketNumber(rawForRef.slice(0, 800));
 
       // For internal senders (teammates replying via the support group alias),
       // thread onto the referenced MH-#### ticket as an internal note rather
