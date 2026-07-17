@@ -57,7 +57,8 @@ const pick = (obj: Record<string, unknown>, keys: string[]): string => {
 interface ParsedEmail {
   fromRaw: string;
   subject: string;
-  body: string;
+  text: string;
+  html: string;
 }
 
 const parseInbound = async (req: Request): Promise<ParsedEmail> => {
