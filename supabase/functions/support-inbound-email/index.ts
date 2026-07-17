@@ -121,7 +121,7 @@ serve(async (req) => {
       }
     }
 
-    const { fromRaw, subject, body } = await parseInbound(req);
+    const { fromRaw, subject, text, html } = await parseInbound(req);
     const email = extractEmailAddress(fromRaw);
     const name = extractDisplayName(fromRaw) || email;
 
@@ -130,7 +130,7 @@ serve(async (req) => {
       return json({ ok: true, skipped: "no sender" });
     }
 
-    const cleanBody = stripQuotedReply(body) || "(no message body)";
+    const cleanBody = sanitizeInboundBody(text, html);
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
