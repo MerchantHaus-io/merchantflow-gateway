@@ -150,3 +150,6 @@ verify_jwt = false
 
 [functions.send-ticket-reply]
 verify_jwt = false
+
+[functions.sanitize-existing-tickets]
+verify_jwt = false
