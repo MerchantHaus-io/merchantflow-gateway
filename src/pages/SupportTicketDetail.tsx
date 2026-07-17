@@ -70,6 +70,30 @@ const SOURCE_LABELS: Record<string, string> = {
 const initials = (name: string) =>
   name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "?";
 
+const URL_RE = /(https?:\/\/[^\s<>()]+[^\s<>().,;:!?'"])/gi;
+
+/** Render plain text with clickable links; long link labels are truncated. */
+const renderLinkedText = (text: string): React.ReactNode => {
+  const parts = text.split(URL_RE);
+  return parts.map((part, i) => {
+    if (i % 2 === 1) {
+      const label = part.length > 60 ? part.slice(0, 57) + "…" : part;
+      return (
+        <a
+          key={i}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary underline underline-offset-2 hover:opacity-80"
+        >
+          {label}
+        </a>
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
+};
+
 const SupportTicketDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
