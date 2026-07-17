@@ -93,9 +93,8 @@ const parseInbound = async (req: Request): Promise<ParsedEmail> => {
 
   const text = pick(data, ["text", "TextBody", "plain", "body-plain", "body", "stripped-text"]);
   const html = pick(data, ["html", "HtmlBody", "body-html"]);
-  const body = text || (html ? stripHtml(html) : "");
 
-  return { fromRaw, subject, body };
+  return { fromRaw, subject, text, html };
 };
 
 const sendEmail = async (to: string, subject: string, html: string) => {
