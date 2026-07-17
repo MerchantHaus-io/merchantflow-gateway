@@ -103,6 +103,95 @@ export const stripQuotedReply = (text: string): string => {
   return out.join("\n").trim() || String(text || "").trim();
 };
 
+/** Decode quoted-printable soft breaks + escaped chars that sometimes survive. */
+const decodeQuotedPrintable = (s: string): string =>
+  s
+    .replace(/=\r?\n/g, "")
+    .replace(/=([0-9A-Fa-f]{2})/g, (_m, hex) => {
+      try {
+        return String.fromCharCode(parseInt(hex, 16));
+      } catch {
+        return _m;
+      }
+    });
+
+/** Remove unfilled marketing template tokens like ${foo}, {{foo}}, [[foo]], <[[…]]>. */
+const stripTemplateTokens = (s: string): string =>
+  s
+    .replace(/<\[\[[\s\S]*?\]\]>/g, "")
+    .replace(/\[\[[\s\S]*?\]\]/g, "")
+    .replace(/\$\{[^}\n]{0,120}\}/g, "")
+    .replace(/\{\{[^}\n]{0,120}\}\}/g, "");
+
+/** Shorten obvious tracking / redirect URLs so they don't dominate the body. */
+const shortenTrackingUrls = (s: string): string => {
+  const TRACKERS = [
+    /https?:\/\/[^\s<>()]*\/e3t\/[^\s<>()]+/gi,          // HubSpot
+    /https?:\/\/[^\s<>()]*list-manage\.com\/[^\s<>()]+/gi, // Mailchimp
+    /https?:\/\/[^\s<>()]*sendgrid\.net\/ls\/click[^\s<>()]*/gi,
+    /https?:\/\/[^\s<>()]*hubspotlinks\.com\/[^\s<>()]+/gi,
+    /https?:\/\/[^\s<>()]*mandrillapp\.com\/track[^\s<>()]*/gi,
+    /https?:\/\/click\.[^\s<>()]+/gi,
+    /https?:\/\/[^\s<>()]*\/wf\/click\?[^\s<>()]+/gi,
+    /https?:\/\/[^\s<>()]{200,}/gi,                       // any absurdly long link
+  ];
+  let out = s;
+  for (const re of TRACKERS) out = out.replace(re, "[link]");
+  return out;
+};
+
+/** Drop common newsletter chrome lines (view in browser / unsubscribe / © footer / address). */
+const stripMarketingChrome = (s: string): string => {
+  const CHROME = [
+    /^\s*view (in|as) (browser|webpage|a webpage)\b.*$/i,
+    /^\s*view online\b.*$/i,
+    /^\s*unsubscribe\b.*$/i,
+    /^\s*manage (your )?preferences\b.*$/i,
+    /^\s*update (your )?preferences\b.*$/i,
+    /^\s*you (are|'re) receiving this\b.*$/i,
+    /^\s*©\s*20\d{2}[\s\S]{0,200}$/i,
+    /^\s*copyright\s*©?\s*20\d{2}\b.*$/i,
+    /^\s*forward to a friend\b.*$/i,
+    /^\s*add us to your address book\b.*$/i,
+    /^\s*privacy policy\b.*$/i,
+    /^\s*sent (to|by)\b.*$/i,
+  ];
+  return s
+    .split("\n")
+    .filter((line) => !CHROME.some((re) => re.test(line)))
+    .join("\n");
+};
+
+/** Collapse invisible/zero-width chars and blank-line runs. */
+const normalizeWhitespace = (s: string): string =>
+  s
+    .replace(/\u00A0/g, " ")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/^\s+|\s+$/g, "");
+
+const MAX_DESCRIPTION_CHARS = 8000;
+
+/**
+ * Full sanitisation pass for inbound email bodies. Prefer plain text; fall
+ * back to HTML → text. Removes template tokens, tracking URLs, marketing
+ * chrome, quoted replies and normalises whitespace. Caps to 8 KB.
+ */
+export const sanitizeInboundBody = (rawText: string, rawHtml: string): string => {
+  let body = rawText && rawText.trim() ? rawText : (rawHtml ? stripHtml(rawHtml) : "");
+  body = decodeQuotedPrintable(body);
+  body = stripTemplateTokens(body);
+  body = shortenTrackingUrls(body);
+  body = stripMarketingChrome(body);
+  body = stripQuotedReply(body);
+  body = normalizeWhitespace(body);
+  if (body.length > MAX_DESCRIPTION_CHARS) {
+    body = body.slice(0, MAX_DESCRIPTION_CHARS).trimEnd() + "\n\n[…truncated]";
+  }
+  return body || "(no message body)";
+};
+
 /**
  * Match an inbound requester email to an existing CRM account + contact.
  * Returns ids when a contact with that email exists.
