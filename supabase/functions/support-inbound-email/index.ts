@@ -137,7 +137,7 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
     // ── Thread onto an existing ticket if the message references one. ──
-    const ref = findTicketNumber(subject) || findTicketNumber(body.slice(0, 800));
+    const ref = findTicketNumber(subject) || findTicketNumber((text || html || "").slice(0, 800));
     if (ref) {
       const { data: existing } = await supabase
         .from("support_tickets")
