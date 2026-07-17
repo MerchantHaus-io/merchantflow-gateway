@@ -377,9 +377,11 @@ const SupportTicketDetail = () => {
                       {format(new Date(ticket.created_at), "MMM d, yyyy · h:mm a")}
                     </span>
                   </div>
-                  <p className="text-sm text-foreground/90 whitespace-pre-wrap">
-                    {ticket.description || <span className="text-muted-foreground italic">No description provided.</span>}
-                  </p>
+                  <div className="text-sm text-foreground/90 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+                    {ticket.description
+                      ? renderLinkedText(ticket.description)
+                      : <span className="text-muted-foreground italic">No description provided.</span>}
+                  </div>
                 </div>
 
                 {(comments ?? []).map((c) => {
