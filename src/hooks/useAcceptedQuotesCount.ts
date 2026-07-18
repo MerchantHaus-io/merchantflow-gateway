@@ -20,7 +20,8 @@ export function useAcceptedQuotesCount() {
       const { count, error } = await supabase
         .from("quotes")
         .select("id", { count: "exact", head: true })
-        .eq("status", "accepted");
+        .eq("status", "accepted")
+        .is("archived_at", null);
       if (error) {
         // Soft-fail: nav shouldn't crash if the user has no quotes RLS.
         console.warn("accepted-quotes-count query failed:", error.message);

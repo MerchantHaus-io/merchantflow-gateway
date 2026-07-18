@@ -171,7 +171,8 @@ export default function QuotesContracts() {
           .select(
             "id, opportunity_id, quote_number, status, created_at, sent_at, accepted_at, rejected_at, valid_until, tier_name, monthly_resale",
           )
-          .not("opportunity_id", "is", null),
+          .not("opportunity_id", "is", null)
+          .is("archived_at", null),
         supabase
           .from("quote_acceptance_summary")
           .select("quote_id, signatory_name, signatory_title, accepted_at"),

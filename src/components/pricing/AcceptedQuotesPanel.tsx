@@ -4,7 +4,7 @@
 // terms version) so it can be downloaded and sent without further editing.
 
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, FileText, Loader2, RefreshCw, Send, ShieldCheck } from "lucide-react";
+import { Archive, ArchiveRestore, CheckCircle2, FileText, Loader2, RefreshCw, Send, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -26,13 +26,15 @@ import {
 } from "@/lib/quotePdf";
 import { QUOTE_TERMS_VERSION } from "@/config/quoteSchedule";
 import { asArray } from "@/lib/utils";
+import { logQuoteActivity } from "@/lib/quoteActivity";
 
-interface AcceptanceRow {
+export interface AcceptanceRow {
   quote_id: string;
   quote_number: string;
   status: string;
   client_business_name: string | null;
   sender_email: string | null;
+  opportunity_id: string | null;
   acceptance_id: string | null;
   signatory_name: string | null;
   signatory_title: string | null;
@@ -42,6 +44,7 @@ interface AcceptanceRow {
   terms_version: string | null;
   ip_address: string | null;
   fee_schedule_hash: string | null;
+  archived_at?: string | null;
 }
 
 interface FullQuote {
@@ -116,13 +119,21 @@ export function AcceptedQuotesPanel() {
   const [rows, setRows] = useState<AcceptanceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeQuoteId, setActiveQuoteId] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    // Apply the archived filter before order/limit — filter methods live on the
+    // filter builder, which order()/limit() transform away.
+    const base = supabase
       .from("quote_acceptance_summary")
       .select("*")
-      .eq("status", "accepted")
+      .eq("status", "accepted");
+    const filtered = showArchived
+      ? base.not("archived_at", "is", null)
+      : base.is("archived_at", null);
+    const { data, error } = await filtered
       .order("accepted_at", { ascending: false })
       .limit(20);
     if (error) {
@@ -135,7 +146,46 @@ export function AcceptedQuotesPanel() {
 
   useEffect(() => {
     load();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showArchived]);
+
+  const handleArchive = async (r: AcceptanceRow, archive: boolean) => {
+    if (
+      archive &&
+      !window.confirm(
+        `Archive accepted quote ${r.quote_number} for "${
+          r.client_business_name ?? "merchant"
+        }"?\n\nIt will be hidden from this list, but the acceptance audit trail is preserved and you can restore it from "Show archived".`,
+      )
+    ) {
+      return;
+    }
+    setBusyId(r.quote_id);
+    const { data: userData } = await supabase.auth.getUser();
+    const user = userData?.user ?? null;
+    const patch = archive
+      ? {
+          archived_at: new Date().toISOString(),
+          archived_by: user?.id ?? null,
+          archived_by_email: user?.email ?? null,
+        }
+      : { archived_at: null, archived_by: null, archived_by_email: null };
+    const { error } = await supabase.from("quotes").update(patch).eq("id", r.quote_id);
+    setBusyId(null);
+    if (error) {
+      toast.error(`Couldn't ${archive ? "archive" : "restore"}: ${error.message}`);
+      return;
+    }
+    void logQuoteActivity({
+      opportunityId: r.opportunity_id,
+      type: archive ? "quote_archived" : "quote_restored",
+      description: archive
+        ? `Archived accepted quote ${r.quote_number}`
+        : `Restored quote ${r.quote_number}`,
+    });
+    setRows((prev) => prev.filter((x) => x.quote_id !== r.quote_id));
+    toast.success(archive ? "Quote archived." : "Quote restored.");
+  };
 
   const active = useMemo(
     () => rows.find((r) => r.quote_id === activeQuoteId) ?? null,
@@ -155,13 +205,25 @@ export function AcceptedQuotesPanel() {
             and send it to the merchant.
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-          {loading ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <RefreshCw className="h-3.5 w-3.5" />
-          )}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant={showArchived ? "secondary" : "outline"}
+            size="sm"
+            onClick={() => setShowArchived((v) => !v)}
+            disabled={loading}
+            className="h-8"
+          >
+            <Archive className="h-3.5 w-3.5 mr-1.5" />
+            {showArchived ? "Showing archived" : "Show archived"}
+          </Button>
+          <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+            {loading ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3.5 w-3.5" />
+            )}
+          </Button>
+        </div>
       </div>
 
       {loading ? (
@@ -170,8 +232,9 @@ export function AcceptedQuotesPanel() {
         </div>
       ) : rows.length === 0 ? (
         <div className="text-sm text-muted-foreground py-8 text-center">
-          No accepted quotes yet. They appear here as soon as the merchant signs
-          via the public acceptance link.
+          {showArchived
+            ? "No archived quotes."
+            : "No accepted quotes yet. They appear here as soon as the merchant signs via the public acceptance link."}
         </div>
       ) : (
         <div className="overflow-x-auto">
@@ -211,13 +274,30 @@ export function AcceptedQuotesPanel() {
                   <td className="py-3 text-xs text-muted-foreground">
                     {formatAcceptedAt(r.accepted_at)}
                   </td>
-                  <td className="py-3 text-right">
+                  <td className="py-3 text-right whitespace-nowrap">
                     <Button
                       size="sm"
                       onClick={() => setActiveQuoteId(r.quote_id)}
-                      className="bg-neutral-900 hover:bg-neutral-800 text-white border-l-[3px] border-l-[#c81030] h-8"
+                      className="bg-neutral-900 hover:bg-neutral-800 text-white border-l-[3px] border-l-[#c81030] h-8 mr-1.5"
                     >
                       <FileText className="h-3.5 w-3.5 mr-1.5" /> Generate Contract
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleArchive(r, !showArchived)}
+                      disabled={busyId === r.quote_id}
+                      className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                      aria-label={showArchived ? "Restore quote" : "Archive quote"}
+                      title={showArchived ? "Restore quote" : "Archive quote"}
+                    >
+                      {busyId === r.quote_id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : showArchived ? (
+                        <ArchiveRestore className="h-3.5 w-3.5" />
+                      ) : (
+                        <Archive className="h-3.5 w-3.5" />
+                      )}
                     </Button>
                   </td>
                 </tr>
@@ -239,7 +319,7 @@ export function AcceptedQuotesPanel() {
 
 // ─── Dialog ──────────────────────────────────────────────────────────────
 
-function GenerateContractDialog({
+export function GenerateContractDialog({
   summary,
   onClose,
 }: {

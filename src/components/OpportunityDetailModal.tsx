@@ -48,6 +48,7 @@ import { checkDuplicateMerchant } from "@/lib/duplicate-check";
 import { AIValidatePanel } from "./opportunity-detail/AIValidatePanel";
 import { BeneficialOwners } from "./opportunity-detail/BeneficialOwners";
 import { DocumentsTab } from "./DocumentsTab";
+import { OpportunityQuotesTab } from "./opportunity-detail/OpportunityQuotesTab";
 import GameSplash from "./GameSplash";
 import CommentsTab from "./CommentsTab";
 import { PortalActivationDialog } from "./opportunity-detail/PortalActivationDialog";
@@ -234,7 +235,7 @@ interface OpportunityDetailModalProps {
 }
 
 // Removed 'activity' from sections — it's now always visible in right panel
-const MODAL_SECTIONS = ['overview', 'underwriting', 'notes', 'documents', 'details'] as const;
+const MODAL_SECTIONS = ['overview', 'underwriting', 'notes', 'documents', 'quotes', 'details'] as const;
 type ModalSection = typeof MODAL_SECTIONS[number];
 
 // Mobile-only: add a "context" section for activity/comments on mobile
@@ -1104,6 +1105,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
     ...(!isGatewayCard ? [{ id: 'underwriting', label: 'UW Review' }] : []),
     { id: 'notes', label: 'Notes' },
     { id: 'documents', label: 'Docs' },
+    { id: 'quotes', label: 'Quotes' },
     { id: 'details', label: 'Details' },
     { id: 'context', label: 'Activity' },
   ];
@@ -1482,6 +1484,13 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
 
             {activeSection === 'documents' && (
               <DocumentsTab opportunityId={opportunity.id} serviceType={opportunity.service_type} />
+            )}
+
+            {activeSection === 'quotes' && (
+              <OpportunityQuotesTab
+                opportunityId={opportunity.id}
+                onNewQuote={() => setShowQuoteDialog(true)}
+              />
             )}
 
             {activeSection === 'details' && (

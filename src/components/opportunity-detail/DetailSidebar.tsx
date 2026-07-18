@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { Opportunity, Account, Contact, getServiceType } from "@/types/opportunity";
-import { ClipboardList, Wand2, MessageSquare, FileText, Building2, Phone, Mail, Globe, DollarSign } from "lucide-react";
+import { ClipboardList, Wand2, MessageSquare, FileText, FileSignature, Building2, Phone, Mail, Globe, DollarSign } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { ClickToCall } from "@/components/ClickToCall";
 
@@ -28,6 +28,7 @@ const NAV_ITEMS = [
   { id: "underwriting", icon: Wand2, label: "UW Review", processingOnly: true },
   { id: "notes", icon: MessageSquare, label: "Notes" },
   { id: "documents", icon: FileText, label: "Documents" },
+  { id: "quotes", icon: FileSignature, label: "Quotes" },
   { id: "details", icon: Building2, label: "Details" },
 ];
 

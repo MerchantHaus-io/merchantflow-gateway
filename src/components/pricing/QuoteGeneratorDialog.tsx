@@ -73,6 +73,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { confirmAutoEmail } from "@/components/EmailSendConfirm";
 import quoteHeader from "@/assets/quote-header.png";
 import { buildEditorialQuotePdf, type QuotePdfInput } from "@/lib/quotePdf";
+import { logQuoteActivity } from "@/lib/quoteActivity";
 
 type BillingCycle = "monthly" | "annual";
 
@@ -668,6 +669,14 @@ export function QuoteGeneratorDialog({
       } else {
         setFinalized(true);
         toast.success(`Quote emailed to ${client.email}`);
+        // Record on the opportunity timeline (best-effort, no-op without an opp).
+        void logQuoteActivity({
+          opportunityId,
+          type: "quote_sent",
+          description: `Sent ${tier.name} quote ${quoteNumber} (${fmt(totals.monthlyResale)}/mo) to ${
+            client.businessName || client.email
+          }`,
+        });
       }
       onOpenChange(false);
     } catch (err: any) {

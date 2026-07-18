@@ -12,7 +12,11 @@ import {
   Zap,
   Skull,
   ListChecks,
-  Mail
+  Mail,
+  Send,
+  FileSignature,
+  Archive,
+  ArchiveRestore
 } from "lucide-react";
 import { format, formatDistanceToNow, subDays, subWeeks, subMonths, isAfter } from "date-fns";
 import { STAGE_CONFIG, OpportunityStage, EMAIL_TO_USER } from "@/types/opportunity";
@@ -114,6 +118,10 @@ const ACTIVITY_CONFIG: Record<string, {
   email_docs_request: { icon: Mail, color: "text-amber-500", bgColor: "bg-amber-500/10", label: "Docs Request Email" },
   email_decline_sent: { icon: Mail, color: "text-red-500", bgColor: "bg-red-500/10", label: "Decline Email" },
   email_account_closed: { icon: Mail, color: "text-red-600", bgColor: "bg-red-600/10", label: "Closure Email" },
+  quote_sent: { icon: Send, color: "text-sky-500", bgColor: "bg-sky-500/10", label: "Quote Sent" },
+  quote_accepted: { icon: FileSignature, color: "text-emerald-600", bgColor: "bg-emerald-600/10", label: "Quote Accepted" },
+  quote_archived: { icon: Archive, color: "text-muted-foreground", bgColor: "bg-muted", label: "Quote Archived" },
+  quote_restored: { icon: ArchiveRestore, color: "text-amber-500", bgColor: "bg-amber-500/10", label: "Quote Restored" },
 };
 
 const ActivitiesTab = ({ opportunityId, compact = false }: ActivitiesTabProps) => {

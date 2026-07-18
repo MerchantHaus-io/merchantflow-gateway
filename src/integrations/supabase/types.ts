@@ -3127,6 +3127,9 @@ export type Database = {
           accepted_at: string | null
           account_id: string | null
           annual_resale: number
+          archived_at: string | null
+          archived_by: string | null
+          archived_by_email: string | null
           billing_cycle: string
           client_average_ticket: string | null
           client_business_name: string | null
@@ -3167,6 +3170,9 @@ export type Database = {
           accepted_at?: string | null
           account_id?: string | null
           annual_resale?: number
+          archived_at?: string | null
+          archived_by?: string | null
+          archived_by_email?: string | null
           billing_cycle?: string
           client_average_ticket?: string | null
           client_business_name?: string | null
@@ -3207,6 +3213,9 @@ export type Database = {
           accepted_at?: string | null
           account_id?: string | null
           annual_resale?: number
+          archived_at?: string | null
+          archived_by?: string | null
+          archived_by_email?: string | null
           billing_cycle?: string
           client_average_ticket?: string | null
           client_business_name?: string | null
@@ -4005,6 +4014,7 @@ export type Database = {
           accepted_at: string | null
           account_id: string | null
           ach_authorized: boolean | null
+          archived_at: string | null
           client_business_name: string | null
           contact_id: string | null
           fee_schedule_hash: string | null

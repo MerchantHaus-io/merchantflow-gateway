@@ -228,6 +228,20 @@ async function handleAccept(
     // Don't abort — the audit row is the source of truth and a re-run can reconcile.
   }
 
+  // Log to the opportunity timeline (best-effort) so the acceptance surfaces in
+  // the CRM Activity feed and the opportunity's Quotes tab. Merchant-driven, so
+  // there's no auth user to attribute it to.
+  if (quote.opportunity_id) {
+    const { error: actErr } = await supabase.from("activities").insert({
+      opportunity_id: quote.opportunity_id,
+      type: "quote_accepted",
+      description: `Quote ${quote.quote_number} accepted by ${signatory_name.trim()}${
+        quote.client_business_name ? ` (${quote.client_business_name})` : ""
+      }`,
+    });
+    if (actErr) console.error("accept-quote activity log failed", actErr);
+  }
+
   // Notify the CRM owner (best-effort)
   if (RESEND_API_KEY && quote.sender_email) {
     const subject = `Quote ${quote.quote_number} accepted by ${quote.client_business_name ?? "merchant"} — ready to generate contract`;
