@@ -3,8 +3,6 @@ project_id = "cuqjaddtmkotgvfsgcol"
 [functions.export-data]
 verify_jwt = false
 
-[functions.cleanup-outlook-images]
-verify_jwt = false
 
 [functions.force-password-reset]
 verify_jwt = false
@@ -102,8 +100,6 @@ verify_jwt = false
 [functions.support-inbound-email]
 verify_jwt = false
 
-[functions.dev-autologin-credentials]
-verify_jwt = false
 
 
 [functions.nmi-close-gateway]

@@ -3,6 +3,8 @@
 // a won/active opportunity (live/billing). Closed Won is never touched.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireInvoker } from "../_shared/require-invoker.ts";
+
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -13,21 +15,11 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
   try {
-    const authHeader = req.headers.get("Authorization") ?? "";
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    let invokerEmail = "anon";
-    const isService = authHeader === `Bearer ${serviceKey}`;
-    if (!isService && authHeader.startsWith("Bearer ")) {
-      const userClient = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_ANON_KEY")!,
-        { global: { headers: { Authorization: authHeader } } }
-      );
-      const { data: { user } } = await userClient.auth.getUser();
-      invokerEmail = user?.email ?? "anon";
-    } else if (isService) {
-      invokerEmail = "service-role";
-    }
+    // Destructive: require CRON_SECRET, the service-role key, or a valid user session.
+    const auth = await requireInvoker(req, cors);
+    if ("response" in auth) return auth.response;
+    const invokerEmail = auth.invoker.email;
+
 
 
 

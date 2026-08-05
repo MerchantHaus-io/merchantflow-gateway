@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.86.1";
+import { requireInvoker } from "../_shared/require-invoker.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -78,6 +80,11 @@ async function uploadText(fileName: string, parent: string, existingId: string |
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  const auth = await requireInvoker(req, corsHeaders);
+  if ("response" in auth) return auth.response;
+
+
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,

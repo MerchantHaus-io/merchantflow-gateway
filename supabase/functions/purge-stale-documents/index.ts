@@ -6,6 +6,8 @@
 // Runs daily via pg_cron AND can be invoked manually from the Administration page.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireInvoker } from "../_shared/require-invoker.ts";
+
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -26,26 +28,14 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
   try {
-    // Allow scheduled (cron) invocation with service-role bearer; otherwise require a user session.
-    const authHeader = req.headers.get("Authorization") ?? "";
+    // Scheduled (cron) invocation must present the server-only CRON_SECRET or the
+    // service-role key. The public anon key is never accepted as a trusted caller.
+    const auth = await requireInvoker(req, cors);
+    if ("response" in auth) return auth.response;
+    const isScheduled = auth.invoker.kind !== "user";
+    const invokerEmail = auth.invoker.email;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const isScheduled =
-      authHeader === `Bearer ${serviceKey}` ||
-      authHeader === `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}` &&
-        (req.headers.get("x-scheduled") === "true");
 
-    let invokerEmail = "cron@system";
-    if (!isScheduled) {
-      if (!authHeader.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
-      const userClient = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_ANON_KEY")!,
-        { global: { headers: { Authorization: authHeader } } }
-      );
-      const { data: { user } } = await userClient.auth.getUser();
-      if (!user) return json({ error: "Unauthorized" }, 401);
-      invokerEmail = user.email ?? "unknown";
-    }
 
     const body = await req.json().catch(() => ({}));
     // Default: dry-run for manual UI calls; live for scheduled cron.
