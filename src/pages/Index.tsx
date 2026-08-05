@@ -17,6 +17,7 @@ import DateRangeFilter from "@/components/DateRangeFilter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { User, ExternalLink, Eye, Kanban, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { scopingLink } from "@/config/scopingFields";
 import { PageHeader } from "@/components/PageHeader";
 import { DateRange } from "react-day-picker";
 import { isWithinInterval, startOfDay, endOfDay } from "date-fns";
@@ -852,6 +853,17 @@ const Index = () => {
                   <ExternalLink className="h-3 w-3" />
                   Merchant Application
                 </a>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(scopingLink());
+                    toast.success("Scoping link copied");
+                  }}
+                  className="hidden md:inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <Copy className="h-3 w-3" />
+                  Copy scoping link
+                </button>
                 <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
                   <SelectTrigger className="w-[140px] h-8 text-xs bg-background border-border">
                     <User className="h-3 w-3 mr-1" />
