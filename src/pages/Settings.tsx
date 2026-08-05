@@ -499,7 +499,26 @@ const Settings = () => {
     <AppLayout pageTitle="Settings">
       <div className="flex-1 overflow-y-auto p-6">
             <div className="space-y-6 max-w-2xl">
+              {/* Agent connections */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Plug className="h-5 w-5" />
+                    Connect an AI assistant
+                  </CardTitle>
+                  <CardDescription>
+                    Link ChatGPT, Claude, or another assistant to The Ops Terminal
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button asChild variant="outline">
+                    <Link to="/connect">View connection instructions</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+
               {/* Profile Settings */}
+
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
