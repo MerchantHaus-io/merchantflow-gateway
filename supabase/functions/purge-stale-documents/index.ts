@@ -6,6 +6,8 @@
 // Runs daily via pg_cron AND can be invoked manually from the Administration page.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireInvoker } from "../_shared/require-invoker.ts";
+
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
