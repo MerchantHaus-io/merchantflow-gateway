@@ -4390,6 +4390,7 @@ export type Database = {
       }
       is_admin_email: { Args: never; Returns: boolean }
       is_blocked_recipient: { Args: { _email: string }; Returns: boolean }
+      is_internal_staff: { Args: never; Returns: boolean }
       is_merchanthaus_staff: { Args: never; Returns: boolean }
       is_referrer: { Args: never; Returns: boolean }
       link_opportunity_to_referrer: {
@@ -4404,6 +4405,8 @@ export type Database = {
         Args: { p_channel_name?: string; p_content: string }
         Returns: undefined
       }
+      referrer_owns: { Args: { _referrer_id: string }; Returns: boolean }
+      referrer_owns_account: { Args: { _account_id: string }; Returns: boolean }
       send_system_dm: {
         Args: { p_content: string; p_receiver_email: string }
         Returns: undefined
