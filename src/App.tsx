@@ -137,7 +137,9 @@ const App = () => (
                 {/* Public routes */}
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
+
                 <Route path="/update-password" element={<UpdatePassword />} />
                 <Route path="/apply" element={<Apply />} />
                 <Route path="/contact" element={<Contact />} />
