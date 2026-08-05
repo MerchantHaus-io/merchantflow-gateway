@@ -19,6 +19,7 @@ const OAuthConsent = () => {
   const [details, setDetails] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [accountEmail, setAccountEmail] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -33,6 +34,7 @@ const OAuthConsent = () => {
         window.location.href = '/login?next=' + encodeURIComponent(next);
         return;
       }
+      if (active) setAccountEmail(sess.session.user.email ?? null);
       const { data, error: detailsError } = await oauth().getAuthorizationDetails(authorizationId);
       if (!active) return;
       if (detailsError) {
@@ -50,6 +52,13 @@ const OAuthConsent = () => {
       active = false;
     };
   }, [authorizationId]);
+
+  const switchAccount = async () => {
+    const next = window.location.pathname + window.location.search;
+    await supabase.auth.signOut();
+    window.location.href = '/login?next=' + encodeURIComponent(next);
+  };
+
 
   const decide = async (approve: boolean) => {
     setBusy(true);
