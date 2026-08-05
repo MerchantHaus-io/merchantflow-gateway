@@ -59,8 +59,9 @@ serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, serviceKey);
 
-    const authHeader = req.headers.get("Authorization") ?? "";
-    if (!authHeader.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
+    const auth = await requireInvoker(req, corsHeaders);
+    if ("response" in auth) return auth.response;
+
 
     const body = await req.json().catch(() => ({}));
     const now = new Date();
