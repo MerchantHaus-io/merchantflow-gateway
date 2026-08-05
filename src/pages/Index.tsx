@@ -15,7 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTasks } from "@/contexts/TasksContext";
 import DateRangeFilter from "@/components/DateRangeFilter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, ExternalLink, Eye, Kanban, Plus } from "lucide-react";
+import { User, ExternalLink, Eye, Kanban, Plus, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { scopingLink } from "@/config/scopingFields";
 import { PageHeader } from "@/components/PageHeader";
@@ -857,7 +857,7 @@ const Index = () => {
                   type="button"
                   onClick={async () => {
                     await navigator.clipboard.writeText(scopingLink());
-                    toast.success("Scoping link copied");
+                    toast({ title: "Scoping link copied" });
                   }}
                   className="hidden md:inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
                 >
