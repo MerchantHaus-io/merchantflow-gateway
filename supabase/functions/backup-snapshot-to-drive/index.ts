@@ -1,5 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.86.1";
 import JSZip from "https://esm.sh/jszip@3.10.1";
+import { requireInvoker } from "../_shared/require-invoker.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
