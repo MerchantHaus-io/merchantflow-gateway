@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Users, Trash, Check, X, Plus, TrendingUp, Globe, UserPlus, ChevronDown, Upload, Megaphone, Sparkles } from "lucide-react";
+import { Pencil, Users, Trash, Check, X, Plus, TrendingUp, Globe, UserPlus, ChevronDown, Upload, Megaphone, Sparkles, Zap } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -174,6 +174,7 @@ const Accounts = () => {
                   zip: payload.new.zip,
                   country: payload.new.country,
                   website: payload.new.website,
+                  commission_model: payload.new.commission_model,
                 };
               }
               return acc;
@@ -194,7 +195,7 @@ const Accounts = () => {
   const fetchSingleAccount = async (accountId: string) => {
     const { data, error } = await supabase
       .from('accounts')
-      .select('id, name, status, address1, address2, city, state, zip, country, website, created_at, contacts(id, first_name, last_name, email)')
+      .select('id, name, status, address1, address2, city, state, zip, country, website, commission_model, created_at, contacts(id, first_name, last_name, email)')
       .eq('id', accountId)
       .single();
 
@@ -215,7 +216,7 @@ const Accounts = () => {
     setFetchError(null);
     const { data, error } = await supabase
       .from('accounts')
-      .select('id, name, status, address1, address2, city, state, zip, country, website, created_at, contacts(id, first_name, last_name, email)')
+      .select('id, name, status, address1, address2, city, state, zip, country, website, commission_model, created_at, contacts(id, first_name, last_name, email)')
       .order('created_at', { ascending: false });
     if (error) {
       setFetchError('Failed to load accounts. Please try again.');
@@ -579,7 +580,7 @@ const Accounts = () => {
                               <Button size="icon" variant="ghost" className="h-6 w-6" onClick={cancelInlineEdit}><X className="h-3 w-3 text-muted-foreground" /></Button>
                             </div>
                           ) : (
-                            <div className="flex items-center gap-2 group/cell">
+                            <div className="flex items-center gap-2 group/cell flex-wrap">
                               <span
                                 className="cursor-pointer text-info hover:underline transition-colors text-sm font-normal"
                                 onClick={() => startInlineEdit(account.id, 'name', account.name)}
@@ -587,6 +588,11 @@ const Accounts = () => {
                               >
                                 {account.name}
                               </span>
+                              {account.commission_model === 'gateway_only' && (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-teal-500/50 text-teal-600 dark:text-teal-400">
+                                  <Zap className="h-3 w-3 mr-1" />Gateway only
+                                </Badge>
+                              )}
                               {account.status === 'dead' && (
                                 <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Dead</Badge>
                               )}
