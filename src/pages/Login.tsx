@@ -66,7 +66,8 @@ const Login = () => {
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
-      await signInWithGoogle();
+      await signInWithGoogle(nextPath ?? undefined);
+
     } catch (error) {
       toast.error('Failed to sign in with Google. Please try again.');
     } finally {
