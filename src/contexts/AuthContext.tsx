@@ -28,7 +28,7 @@ interface AuthContextType {
   teamMemberName: string | null;
   userRole: UserRole;
   referrer: ReferrerProfile | null;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: (redirectPath?: string) => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUpWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
