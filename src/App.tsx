@@ -47,6 +47,7 @@ const Pricing = lazy(() => import("./pages/Pricing"));
 const TerminalUpdates = lazy(() => import("./pages/TerminalUpdates"));
 const WebSubmissions = lazy(() => import("./pages/WebSubmissions"));
 const MerchantApply = lazy(() => import("./pages/MerchantApply"));
+const Scoping = lazy(() => import("./pages/Scoping"));
 const TermsProcessing = lazy(() => import("./pages/TermsProcessing"));
 const LiveBilling = lazy(() => import("./pages/LiveBilling"));
 const LiveAccountDetail = lazy(() => import("./pages/LiveAccountDetail"));
@@ -83,7 +84,7 @@ import { AdminPopupDisplay } from "./components/AdminPopupDisplay";
 import { EmailSendConfirm } from "./components/EmailSendConfirm";
 import { PatchNotesPopup } from "./components/PatchNotesPopup";
 
-const PUBLIC_ROUTES = ['/auth', '/login', '/contact', '/apply', '/merchant-apply', '/forgot-password', '/update-password', '/terms-processing', '/affiliate', '/portal', '/support-request'];
+const PUBLIC_ROUTES = ['/auth', '/login', '/contact', '/apply', '/merchant-apply', '/scoping', '/forgot-password', '/update-password', '/terms-processing', '/affiliate', '/portal', '/support-request'];
 
 const InternalWidgets = () => {
   const { pathname } = useLocation();
@@ -139,6 +140,7 @@ const App = () => (
                 <Route path="/apply" element={<Apply />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/merchant-apply" element={<MerchantApply />} />
+                <Route path="/scoping" element={<Scoping />} />
                 <Route path="/terms-processing" element={<TermsProcessing />} />
                 <Route path="/support-request" element={<SupportRequest />} />
                 <Route path="/q/:token" element={<QuoteAcceptance />} />

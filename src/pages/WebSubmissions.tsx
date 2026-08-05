@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
+import { ScopingSubmissionsPanel } from "@/components/admin/ScopingSubmissionsPanel";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
@@ -143,6 +144,7 @@ export default function WebSubmissions() {
   const [isAssigning, setIsAssigning] = useState(false);
   const [isDownloading, setIsDownloading] = useState<string | null>(null);
   const [sourceFilter, setSourceFilter] = useState<"all" | "web_form" | "merchant_portal">("all");
+  const [activeTab, setActiveTab] = useState<"applications" | "scoping">("applications");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -730,7 +732,14 @@ export default function WebSubmissions() {
   return (
     <AppLayout pageTitle="Web Submissions">
       <div className="p-6 space-y-6">
-        <Card>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant={activeTab === "applications" ? "default" : "outline"} onClick={() => setActiveTab("applications")}>Merchant Applications</Button>
+          <Button size="sm" variant={activeTab === "scoping" ? "default" : "outline"} onClick={() => setActiveTab("scoping")}>Scoping Forms</Button>
+        </div>
+
+        {activeTab === "scoping" && <ScopingSubmissionsPanel />}
+
+        <Card className={activeTab === "applications" ? undefined : "hidden"}>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Incoming Applications</CardTitle>
             <div className="flex items-center gap-2">

@@ -31,6 +31,7 @@ export const NOTIFICATION_TYPE_ROUTES: Record<string, string> = {
   // Pipeline & merchant flow
   milestone: "/opportunities",
   portal_lead: "/admin/web-submissions",
+  scoping_submission: "/admin/web-submissions",
   application: "/opportunities",
 
   // Comms
@@ -66,6 +67,7 @@ export const MOBILE_NOTIFICATION_TYPE_ROUTES: Record<string, string> = {
 // Notifications flagged as deletion approvals/rejections use the generic
 // success/warning `type`, so route them via `notification_category` first.
 const CATEGORY_ROUTES: Record<string, string> = {
+  scoping_submission: "/admin/web-submissions",
   stage_change: "/opportunities",
   task_assignment: "/my-tasks",
 };

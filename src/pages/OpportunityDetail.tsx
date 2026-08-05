@@ -42,7 +42,8 @@ import {
   Mail,
   RotateCcw,
   Phone,
-  Download
+  Download,
+  Copy
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -74,6 +75,7 @@ import { CommunicationLogPanel } from "@/components/CommunicationLogPanel";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
 import { PortalActivationDialog } from "@/components/opportunity-detail/PortalActivationDialog";
+import { scopingLink } from "@/config/scopingFields";
 import { KurvSubmitDialog } from "@/components/kurv/KurvSubmitDialog";
 import { PricingBadges } from "@/components/PricingBadges";
 
@@ -858,10 +860,23 @@ const OpportunityDetail = () => {
   return (
     <AppLayout
       headerActions={
-        <Button variant="ghost" size="sm" onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/opportunities')}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={async () => {
+              await navigator.clipboard.writeText(scopingLink(opportunity.id));
+              toast.success("Scoping link copied");
+            }}
+          >
+            <Copy className="h-4 w-4 mr-2" />
+            Copy scoping link
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/opportunities')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+        </div>
       }
     >
       <div className="flex-1 overflow-auto">
