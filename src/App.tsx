@@ -25,6 +25,8 @@ const Settings = lazy(() => import("./pages/Settings"));
 const TeamRoster = lazy(() => import("./pages/TeamRoster"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Login = lazy(() => import("./pages/Login"));
+const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
+
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const UpdatePassword = lazy(() => import("./pages/UpdatePassword"));
 const Apply = lazy(() => import("./pages/Apply"));
@@ -84,7 +86,7 @@ import { AdminPopupDisplay } from "./components/AdminPopupDisplay";
 import { EmailSendConfirm } from "./components/EmailSendConfirm";
 import { PatchNotesPopup } from "./components/PatchNotesPopup";
 
-const PUBLIC_ROUTES = ['/auth', '/login', '/contact', '/apply', '/merchant-apply', '/scoping', '/forgot-password', '/update-password', '/terms-processing', '/affiliate', '/portal', '/support-request'];
+const PUBLIC_ROUTES = ['/auth', '/login', '/contact', '/apply', '/merchant-apply', '/scoping', '/forgot-password', '/update-password', '/terms-processing', '/affiliate', '/portal', '/support-request', '/.lovable/oauth/consent'];
 
 const InternalWidgets = () => {
   const { pathname } = useLocation();
@@ -135,7 +137,9 @@ const App = () => (
                 {/* Public routes */}
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
+
                 <Route path="/update-password" element={<UpdatePassword />} />
                 <Route path="/apply" element={<Apply />} />
                 <Route path="/contact" element={<Contact />} />

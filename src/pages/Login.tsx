@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,8 +15,17 @@ import { isEmailAllowed } from '@/types/opportunity';
 const emailSchema = z.string().email('Please enter a valid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
 
+const safeNext = (value: string | null): string | null => {
+  if (!value) return null;
+  // Same-origin relative paths only.
+  if (!value.startsWith('/') || value.startsWith('//')) return null;
+  return value;
+};
+
 const Login = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const nextPath = safeNext(searchParams.get('next'));
 
   const { user, signInWithGoogle, signInWithEmail, mustChangePassword, userRole } = useAuth();
   const [email, setEmail] = useState('');
@@ -30,13 +39,16 @@ const Login = () => {
 
   useEffect(() => {
     if (user && !mustChangePassword) {
-      if (userRole === 'internal' || isEmailAllowed(user.email)) {
+      if (nextPath) {
+        navigate(nextPath, { replace: true });
+      } else if (userRole === 'internal' || isEmailAllowed(user.email)) {
         navigate('/', { replace: true });
       } else if (userRole === 'referrer') {
         navigate('/affiliate', { replace: true });
       }
     }
-  }, [user, navigate, mustChangePassword, userRole]);
+  }, [user, navigate, mustChangePassword, userRole, nextPath]);
+
 
   const validateInputs = () => {
     try {
@@ -54,7 +66,8 @@ const Login = () => {
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
-      await signInWithGoogle();
+      await signInWithGoogle(nextPath ?? undefined);
+
     } catch (error) {
       toast.error('Failed to sign in with Google. Please try again.');
     } finally {
