@@ -42,7 +42,8 @@ import {
   Mail,
   RotateCcw,
   Phone,
-  Download
+  Download,
+  Copy
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
