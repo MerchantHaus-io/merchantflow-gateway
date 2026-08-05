@@ -36,31 +36,8 @@ const Auth = () => {
     if (hashParams.get('type') === 'recovery') setIsRecoveryMode(true);
   }, []);
 
-  // Dev/preview auto-login: only runs on localhost or id-preview--*.lovable.app.
-  // Production hosts (ops-terminal.lovable.app, custom domains) are blocked
-  // both client-side and by the edge function's origin check.
-  useEffect(() => {
-    if (user || isRecoveryMode) return;
-    const host = window.location.hostname;
-    const isPreview =
-      host === 'localhost' ||
-      host === '127.0.0.1' ||
-      /^id-preview--[a-z0-9-]+\.lovable\.app$/.test(host);
-    if (!isPreview) return;
-    if (sessionStorage.getItem('dev-autologin-attempted') === '1') return;
-    sessionStorage.setItem('dev-autologin-attempted', '1');
 
-    (async () => {
-      try {
-        const { supabase } = await import('@/integrations/supabase/client');
-        const { data, error } = await supabase.functions.invoke('dev-autologin-credentials');
-        if (error || !data?.email || !data?.password) return;
-        await signInWithEmail(data.email, data.password);
-      } catch (err) {
-        console.warn('[dev-autologin] skipped', err);
-      }
-    })();
-  }, [user, isRecoveryMode, signInWithEmail]);
+
 
   useEffect(() => {
     if (user && !isRecoveryMode && !mustChangePassword) {
