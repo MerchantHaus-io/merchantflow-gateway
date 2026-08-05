@@ -19,6 +19,7 @@ const OAuthConsent = () => {
   const [details, setDetails] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [accountEmail, setAccountEmail] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -33,6 +34,7 @@ const OAuthConsent = () => {
         window.location.href = '/login?next=' + encodeURIComponent(next);
         return;
       }
+      if (active) setAccountEmail(sess.session.user.email ?? null);
       const { data, error: detailsError } = await oauth().getAuthorizationDetails(authorizationId);
       if (!active) return;
       if (detailsError) {
@@ -50,6 +52,13 @@ const OAuthConsent = () => {
       active = false;
     };
   }, [authorizationId]);
+
+  const switchAccount = async () => {
+    const next = window.location.pathname + window.location.search;
+    await supabase.auth.signOut();
+    window.location.href = '/login?next=' + encodeURIComponent(next);
+  };
+
 
   const decide = async (approve: boolean) => {
     setBusy(true);
@@ -99,13 +108,33 @@ const OAuthConsent = () => {
               </p>
             </div>
 
-            <div className="flex items-start gap-3 rounded-lg border border-border bg-card p-4">
-              <ShieldCheck className="mt-0.5 h-4 w-4 text-muted-foreground" />
-              <p className="text-xs text-muted-foreground">
-                Access runs as your user account. You can revoke it at any time by disconnecting the
-                integration in the client that requested it.
-              </p>
+            <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+              <div className="flex items-start gap-3">
+                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                <div className="min-w-0 space-y-1">
+                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                    Granting access as
+                  </p>
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {accountEmail ?? 'your Ops Terminal account'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    The client acts as this Ops Terminal user and sees only what this account can
+                    access — not the email you use to sign in to {details.client?.name ?? 'the client'}.
+                    Revoke any time by disconnecting the integration there.
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="link"
+                className="h-auto p-0 text-xs"
+                disabled={busy}
+                onClick={switchAccount}
+              >
+                Not you? Sign in as a different user
+              </Button>
             </div>
+
 
             <div className="flex gap-3">
               <Button variant="outline" className="flex-1" disabled={busy} onClick={() => decide(false)}>
