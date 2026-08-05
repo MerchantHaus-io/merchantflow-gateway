@@ -31,6 +31,7 @@ export interface Account {
   zip?: string;
   country?: string;
   website?: string;
+  commission_model?: 'gateway_only' | 'processing' | string | null;
   created_at: string;
   updated_at: string;
 }
