@@ -48,9 +48,12 @@ Deno.serve(async (req) => {
       return json({ error: "Invalid storage_path" }, 400);
     }
 
+    const portalUrl = Deno.env.get("PORTAL_SUPABASE_URL");
+    const portalKey = Deno.env.get("PORTAL_SERVICE_ROLE_KEY");
     if (!portalUrl || !portalKey) {
       return json({ error: "Portal credentials not configured" }, 500);
     }
+
 
     const portalSupabase = createClient(portalUrl, portalKey);
 
