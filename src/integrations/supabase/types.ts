@@ -3357,6 +3357,252 @@ export type Database = {
         }
         Relationships: []
       }
+      scoping_submissions: {
+        Row: {
+          accounting_system: string | null
+          acknowledgement_name: string
+          acknowledgement_title: string | null
+          additional_notes: string | null
+          average_ticket: string | null
+          budget_expectation: string | null
+          business_address_line1: string | null
+          business_city: string | null
+          business_state: string | null
+          business_zip: string | null
+          channel_mix: string[] | null
+          channel_split_notes: string | null
+          chargeback_count_12mo: string | null
+          chargeback_management_provider: string | null
+          chargeback_ratio: string | null
+          client_ip: string | null
+          contact_email: string
+          contact_first_name: string
+          contact_last_name: string
+          contact_phone: string
+          contact_title: string | null
+          contract_end_date: string | null
+          created_at: string
+          crm_or_erp: string | null
+          currency_geography: string[] | null
+          current_effective_rate: string | null
+          current_processor: string | null
+          currently_processing: string | null
+          data_collected: string[] | null
+          dba_name: string | null
+          decision_makers: string[] | null
+          deposit_structure: string | null
+          disclosures_accepted: boolean
+          employee_count: string | null
+          entity_type: string | null
+          estimated_mcc: string | null
+          existing_fraud_tooling: string | null
+          foreign_ownership: string | null
+          fulfilment_timeframe: string | null
+          funding_timeline: string | null
+          gateway_capabilities: string[] | null
+          hard_deadline_reason: string | null
+          has_developer_resource: string | null
+          highest_ticket: string | null
+          id: string
+          industry_vertical: string | null
+          integration_route: string[] | null
+          legal_business_name: string
+          location_mid_count: string | null
+          monthly_transaction_count: string | null
+          monthly_volume: string | null
+          opportunity_id: string | null
+          other_providers_evaluated: string | null
+          payment_methods: string[] | null
+          pci_status: string | null
+          prior_terminations: string | null
+          process_stage: string | null
+          product_description: string
+          projected_volume_12mo: string | null
+          reconciliation_owner: string | null
+          refund_policy_summary: string | null
+          reporting_frequency: string | null
+          reporting_requirements: string | null
+          restricted_verticals: string[] | null
+          seasonal_peak_months: string | null
+          state_of_incorporation: string | null
+          status: string
+          storefront_platform: string | null
+          target_go_live_date: string | null
+          technical_contact_email: string | null
+          technical_contact_name: string | null
+          terminal_count: string | null
+          typical_refund_rate: string | null
+          unusual_flow_notes: string | null
+          updated_at: string
+          user_agent: string | null
+          utm: Json | null
+          website_url: string | null
+          years_in_operation: string | null
+        }
+        Insert: {
+          accounting_system?: string | null
+          acknowledgement_name: string
+          acknowledgement_title?: string | null
+          additional_notes?: string | null
+          average_ticket?: string | null
+          budget_expectation?: string | null
+          business_address_line1?: string | null
+          business_city?: string | null
+          business_state?: string | null
+          business_zip?: string | null
+          channel_mix?: string[] | null
+          channel_split_notes?: string | null
+          chargeback_count_12mo?: string | null
+          chargeback_management_provider?: string | null
+          chargeback_ratio?: string | null
+          client_ip?: string | null
+          contact_email: string
+          contact_first_name: string
+          contact_last_name: string
+          contact_phone: string
+          contact_title?: string | null
+          contract_end_date?: string | null
+          created_at?: string
+          crm_or_erp?: string | null
+          currency_geography?: string[] | null
+          current_effective_rate?: string | null
+          current_processor?: string | null
+          currently_processing?: string | null
+          data_collected?: string[] | null
+          dba_name?: string | null
+          decision_makers?: string[] | null
+          deposit_structure?: string | null
+          disclosures_accepted?: boolean
+          employee_count?: string | null
+          entity_type?: string | null
+          estimated_mcc?: string | null
+          existing_fraud_tooling?: string | null
+          foreign_ownership?: string | null
+          fulfilment_timeframe?: string | null
+          funding_timeline?: string | null
+          gateway_capabilities?: string[] | null
+          hard_deadline_reason?: string | null
+          has_developer_resource?: string | null
+          highest_ticket?: string | null
+          id?: string
+          industry_vertical?: string | null
+          integration_route?: string[] | null
+          legal_business_name: string
+          location_mid_count?: string | null
+          monthly_transaction_count?: string | null
+          monthly_volume?: string | null
+          opportunity_id?: string | null
+          other_providers_evaluated?: string | null
+          payment_methods?: string[] | null
+          pci_status?: string | null
+          prior_terminations?: string | null
+          process_stage?: string | null
+          product_description: string
+          projected_volume_12mo?: string | null
+          reconciliation_owner?: string | null
+          refund_policy_summary?: string | null
+          reporting_frequency?: string | null
+          reporting_requirements?: string | null
+          restricted_verticals?: string[] | null
+          seasonal_peak_months?: string | null
+          state_of_incorporation?: string | null
+          status?: string
+          storefront_platform?: string | null
+          target_go_live_date?: string | null
+          technical_contact_email?: string | null
+          technical_contact_name?: string | null
+          terminal_count?: string | null
+          typical_refund_rate?: string | null
+          unusual_flow_notes?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          utm?: Json | null
+          website_url?: string | null
+          years_in_operation?: string | null
+        }
+        Update: {
+          accounting_system?: string | null
+          acknowledgement_name?: string
+          acknowledgement_title?: string | null
+          additional_notes?: string | null
+          average_ticket?: string | null
+          budget_expectation?: string | null
+          business_address_line1?: string | null
+          business_city?: string | null
+          business_state?: string | null
+          business_zip?: string | null
+          channel_mix?: string[] | null
+          channel_split_notes?: string | null
+          chargeback_count_12mo?: string | null
+          chargeback_management_provider?: string | null
+          chargeback_ratio?: string | null
+          client_ip?: string | null
+          contact_email?: string
+          contact_first_name?: string
+          contact_last_name?: string
+          contact_phone?: string
+          contact_title?: string | null
+          contract_end_date?: string | null
+          created_at?: string
+          crm_or_erp?: string | null
+          currency_geography?: string[] | null
+          current_effective_rate?: string | null
+          current_processor?: string | null
+          currently_processing?: string | null
+          data_collected?: string[] | null
+          dba_name?: string | null
+          decision_makers?: string[] | null
+          deposit_structure?: string | null
+          disclosures_accepted?: boolean
+          employee_count?: string | null
+          entity_type?: string | null
+          estimated_mcc?: string | null
+          existing_fraud_tooling?: string | null
+          foreign_ownership?: string | null
+          fulfilment_timeframe?: string | null
+          funding_timeline?: string | null
+          gateway_capabilities?: string[] | null
+          hard_deadline_reason?: string | null
+          has_developer_resource?: string | null
+          highest_ticket?: string | null
+          id?: string
+          industry_vertical?: string | null
+          integration_route?: string[] | null
+          legal_business_name?: string
+          location_mid_count?: string | null
+          monthly_transaction_count?: string | null
+          monthly_volume?: string | null
+          opportunity_id?: string | null
+          other_providers_evaluated?: string | null
+          payment_methods?: string[] | null
+          pci_status?: string | null
+          prior_terminations?: string | null
+          process_stage?: string | null
+          product_description?: string
+          projected_volume_12mo?: string | null
+          reconciliation_owner?: string | null
+          refund_policy_summary?: string | null
+          reporting_frequency?: string | null
+          reporting_requirements?: string | null
+          restricted_verticals?: string[] | null
+          seasonal_peak_months?: string | null
+          state_of_incorporation?: string | null
+          status?: string
+          storefront_platform?: string | null
+          target_go_live_date?: string | null
+          technical_contact_email?: string | null
+          technical_contact_name?: string | null
+          terminal_count?: string | null
+          typical_refund_rate?: string | null
+          unusual_flow_notes?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          utm?: Json | null
+          website_url?: string | null
+          years_in_operation?: string | null
+        }
+        Relationships: []
+      }
       shared_todos: {
         Row: {
           completed_at: string | null
