@@ -26,6 +26,8 @@ const TeamRoster = lazy(() => import("./pages/TeamRoster"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Login = lazy(() => import("./pages/Login"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
+const Connect = lazy(() => import("./pages/Connect"));
+
 
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const UpdatePassword = lazy(() => import("./pages/UpdatePassword"));
@@ -177,6 +179,8 @@ const App = () => (
                 <Route path="/admin/administration" element={<ProtectedRoute><Administration /></ProtectedRoute>} />
                 
                 <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+                <Route path="/connect" element={<ProtectedRoute><Connect /></ProtectedRoute>} />
+
                 <Route path="/admin/team-roster" element={<ProtectedRoute><TeamRoster /></ProtectedRoute>} />
                 <Route path="/integrations" element={<ProtectedRoute><Integrations /></ProtectedRoute>} />
                 <Route path="/live-billing" element={<ProtectedRoute><LiveBilling /></ProtectedRoute>} />

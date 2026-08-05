@@ -12,7 +12,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Shield, RefreshCw, LogOut, Camera, User, Loader2, Save, Bell, Palette, Sun, Moon, Trees, Waves, Flame, Stars, MessageCircle, Volume2, Download, FileArchive, Users, Cloudy, Circle, Smartphone, DatabaseBackup, Gamepad2, Cloud, Skull } from "lucide-react";
+import { Shield, RefreshCw, LogOut, Camera, User, Loader2, Save, Bell, Palette, Sun, Moon, Trees, Waves, Flame, Stars, MessageCircle, Volume2, Download, FileArchive, Users, Cloudy, Circle, Smartphone, DatabaseBackup, Gamepad2, Cloud, Skull, Plug } from "lucide-react";
+import { Link } from "react-router-dom";
+
 import { useUserRole } from "@/hooks/useUserRole";
 import JSZip from "jszip";
 import { Switch } from "@/components/ui/switch";
@@ -499,7 +501,26 @@ const Settings = () => {
     <AppLayout pageTitle="Settings">
       <div className="flex-1 overflow-y-auto p-6">
             <div className="space-y-6 max-w-2xl">
+              {/* Agent connections */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Plug className="h-5 w-5" />
+                    Connect an AI assistant
+                  </CardTitle>
+                  <CardDescription>
+                    Link ChatGPT, Claude, or another assistant to The Ops Terminal
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button asChild variant="outline">
+                    <Link to="/connect">View connection instructions</Link>
+                  </Button>
+                </CardContent>
+              </Card>
+
               {/* Profile Settings */}
+
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
