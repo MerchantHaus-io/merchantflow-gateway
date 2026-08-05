@@ -278,9 +278,16 @@ const LiveBilling = () => {
                   <CardContent className="p-4 space-y-2">
                      <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
-                        <h3 className="font-semibold text-sm text-foreground truncate">
-                          {g.account?.name || "Unknown"}
-                        </h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-sm text-foreground truncate">
+                            {g.account?.name || "Unknown"}
+                          </h3>
+                          {g.account?.commission_model === 'gateway_only' && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-teal-500/50 text-teal-600 dark:text-teal-400 shrink-0">
+                              <Zap className="h-3 w-3 mr-1" />Gateway only
+                            </Badge>
+                          )}
+                        </div>
                         {g.account?.nmi_merchant_id ? (
                           <span className="text-[10px] font-mono text-muted-foreground">MID: {g.account.nmi_merchant_id}</span>
                         ) : isAdmin ? (
@@ -388,7 +395,16 @@ const LiveBilling = () => {
                   return (
                     <TableRow key={g.account_id} className="hover:bg-amber-50/30 dark:hover:bg-amber-950/10 cursor-pointer" onClick={() => navigate(`/live-billing/${g.account_id}`)}>
                       <TableCell className="text-right pr-2 text-[11px] text-muted-foreground tabular-nums">{idx + 1}</TableCell>
-                      <TableCell className="font-medium">{g.account?.name || "Unknown"}</TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {g.account?.name || "Unknown"}
+                          {g.account?.commission_model === 'gateway_only' && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-teal-500/50 text-teal-600 dark:text-teal-400">
+                              <Zap className="h-3 w-3 mr-1" />Gateway only
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell onClick={(e) => { if (!g.account?.nmi_merchant_id && isAdmin) e.stopPropagation(); }}>
                         {g.account?.nmi_merchant_id ? (
                           <span className="text-xs font-mono text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{g.account.nmi_merchant_id}</span>
