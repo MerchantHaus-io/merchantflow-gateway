@@ -1,4 +1,7 @@
-import type { ToolResult } from "@lovable.dev/mcp-js";
+import type { ToolHandlerResult } from "@lovable.dev/mcp-js";
+
+type ToolResult = ToolHandlerResult;
+
 
 export function toJson(payload: unknown): ToolResult {
   return {
