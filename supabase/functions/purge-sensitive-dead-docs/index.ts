@@ -3,6 +3,8 @@
 // a won/active opportunity (live/billing). Closed Won is never touched.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireInvoker } from "../_shared/require-invoker.ts";
+
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
