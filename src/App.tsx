@@ -26,6 +26,8 @@ const TeamRoster = lazy(() => import("./pages/TeamRoster"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Login = lazy(() => import("./pages/Login"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
+const Connect = lazy(() => import("./pages/Connect"));
+
 
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const UpdatePassword = lazy(() => import("./pages/UpdatePassword"));
