@@ -27,11 +27,26 @@ export async function requireInvoker(
     }),
   });
 
-  const cronSecret = Deno.env.get("CRON_SECRET") ?? "";
-  const providedCron = req.headers.get("x-cron-secret") ?? "";
-  if (cronSecret && providedCron && providedCron === cronSecret) {
-    return { invoker: { kind: "cron", email: "cron@system" } };
+  const providedCron = (req.headers.get("x-cron-secret") ?? "").trim();
+  if (providedCron) {
+    const cronSecret = (Deno.env.get("CRON_SECRET") ?? "").trim();
+    if (cronSecret && providedCron === cronSecret) {
+      return { invoker: { kind: "cron", email: "cron@system" } };
+    }
+    // pg_cron jobs read their token from a server-only table (no API-role grants),
+    // so scheduled invocations can present a value the scheduler owns.
+    const serviceKeyForToken = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    if (serviceKeyForToken) {
+      const admin = createClient(Deno.env.get("SUPABASE_URL")!, serviceKeyForToken);
+      const { data: tokens } = await admin
+        .from("internal_cron_tokens")
+        .select("token");
+      if ((tokens ?? []).some((t: { token: string }) => t.token === providedCron)) {
+        return { invoker: { kind: "cron", email: "cron@system" } };
+      }
+    }
   }
+
 
   const authHeader = req.headers.get("Authorization") ?? "";
   if (!authHeader.startsWith("Bearer ")) return unauthorized();
