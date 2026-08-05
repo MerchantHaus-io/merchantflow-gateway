@@ -28,13 +28,26 @@ Deno.serve(async (req) => {
       return json({ error: "Unauthorized" }, 401);
     }
 
-    const { storage_path } = await req.json();
-    if (!storage_path) {
-      return json({ error: "storage_path is required" }, 400);
+    // Only internal staff may mint signed URLs for merchant documents.
+    // Referrer-portal accounts are explicitly excluded so they cannot reach
+    // documents belonging to merchants outside their own scope.
+    const [{ data: isStaff }, { data: isReferrer }] = await Promise.all([
+      crmSupabase.rpc("is_merchanthaus_staff"),
+      crmSupabase.rpc("is_referrer"),
+    ]);
+    if (!isStaff || isReferrer) {
+      return json({ error: "Forbidden" }, 403);
     }
 
-    const portalUrl = Deno.env.get("PORTAL_SUPABASE_URL");
-    const portalKey = Deno.env.get("PORTAL_SERVICE_ROLE_KEY");
+    const { storage_path } = await req.json();
+    if (typeof storage_path !== "string" || !storage_path.trim()) {
+      return json({ error: "storage_path is required" }, 400);
+    }
+    // Reject traversal / absolute paths.
+    if (storage_path.includes("..") || storage_path.startsWith("/")) {
+      return json({ error: "Invalid storage_path" }, 400);
+    }
+
     if (!portalUrl || !portalKey) {
       return json({ error: "Portal credentials not configured" }, 500);
     }
