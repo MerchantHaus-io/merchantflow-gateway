@@ -73,7 +73,7 @@ function ShellChrome() {
   }, [chrome]);
 
   return (
-    <div className="h-screen h-dvh min-h-0 flex flex-col w-full overflow-hidden relative">
+    <div data-shell="root" className="h-screen h-dvh min-h-0 flex flex-col w-full overflow-hidden relative">
       {isDark && (
         <>
           <Suspense fallback={null}>
@@ -94,14 +94,16 @@ function ShellChrome() {
       )}
       {/* #99: first tab stop, so keyboard users can jump straight to content
           instead of tabbing the header and rail on every page. */}
-      <a href="#main-content" className="skip-to-content">
+      <a href="#main-content" className="skip-to-content" data-app-chrome>
         Skip to content
       </a>
       <MegaMenuHeader onNewApplication={handleNewApplication} />
-      <GmailReconnectBanner />
+      <div data-app-chrome style={{ display: "contents" }}>
+        <GmailReconnectBanner />
+      </div>
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <IconRailSidebar />
-        <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <main id="main-content" tabIndex={-1} data-shell="main" className="flex-1 flex flex-col min-h-0 overflow-hidden">
           {/* Page header slot. AppLayout portals the title/actions bar in here;
               when no page supplies one this div stays empty and collapses. */}
           <div ref={chrome?.setHeaderSlot} />
@@ -124,6 +126,7 @@ function ShellChrome() {
 
           <div
             ref={scrollRef}
+            data-shell="scroll"
             className="flex-1 min-h-0 overflow-y-auto scroll-smooth pb-16 lg:pb-0"
           >
             {/* No key on PageTransition: keying it on pathname remounted the
@@ -135,18 +138,26 @@ function ShellChrome() {
         </main>
       </div>
 
-      <MobileBottomNav />
-      <FloatingChat />
-      <ActionItemsWidget />
-      <PersistentTriTabDock />
-      <BroadcastQueueProvider>
-        <ComplianceBroadcast />
-        <BroadcastPopup />
-        <NMIBoardingBroadcast />
-        <AtriaBroadcast />
-      </BroadcastQueueProvider>
-      {isMobile && !isChatRoute && <MobileAppDock />}
-      <OfficeSimulatorOverlay />
+      {/* data-app-chrome marks the floating furniture so @media print can hide
+          it. Most of these render a <div>, so the print rule's
+          `nav, aside, header` selector never matched them — which is why the
+          tri-tab dock and chat were appearing on printed pages.
+          display:contents means this wrapper generates no box at all, so it
+          has zero effect on layout. */}
+      <div data-app-chrome style={{ display: "contents" }}>
+        <MobileBottomNav />
+        <FloatingChat />
+        <ActionItemsWidget />
+        <PersistentTriTabDock />
+        <BroadcastQueueProvider>
+          <ComplianceBroadcast />
+          <BroadcastPopup />
+          <NMIBoardingBroadcast />
+          <AtriaBroadcast />
+        </BroadcastQueueProvider>
+        {isMobile && !isChatRoute && <MobileAppDock />}
+        <OfficeSimulatorOverlay />
+      </div>
     </div>
   );
 }

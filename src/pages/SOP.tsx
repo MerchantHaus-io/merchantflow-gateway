@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect, createContext, useContext } from "react";
 import { PanelLeftClose, PanelLeft } from "lucide-react";
 import { ChevronDown, Download } from "lucide-react";
 import { UnderwritingChecklist } from "@/components/sop/UnderwritingChecklist";
@@ -34,7 +34,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Collapsible as CollapsibleRoot, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AppLayout } from "@/components/AppLayout";
 import { usePrintChromeOff } from "@/hooks/usePrintChromeOff";
 import {
@@ -45,6 +45,40 @@ import {
   NMI_ONE_TIME_FEES,
 } from "@/config/quoteSchedule";
 
+/**
+ * Printing needs every section in the DOM.
+ *
+ * This page has 39 <Collapsible> sections and only 5 default to open. Radix
+ * UNMOUNTS closed collapsible content, so the other ~34 sections were not in
+ * the document at all when the print dialog opened — which is why the printed
+ * SOP came out truncated. The print stylesheet's
+ * `[data-state="closed"] > [data-radix-collapsible-content] { display: block }`
+ * rule could never have worked: there was no element to unhide.
+ *
+ * PrintModeContext lets the wrapper below force every section open for the
+ * duration of a print, without touching any of the 39 call sites.
+ */
+const PrintModeContext = createContext(false);
+
+/**
+ * Shadows the imported Collapsible so all existing usages in this file pick it
+ * up. Controlled from the start (seeded from defaultOpen) rather than flipping
+ * between uncontrolled and controlled, which React warns about.
+ */
+const Collapsible = ({
+  defaultOpen,
+  children,
+  ...props
+}: React.ComponentProps<typeof CollapsibleRoot>) => {
+  const printing = useContext(PrintModeContext);
+  const [open, setOpen] = useState(!!defaultOpen);
+  return (
+    <CollapsibleRoot {...props} open={printing || open} onOpenChange={setOpen}>
+      {children}
+    </CollapsibleRoot>
+  );
+};
+
 const SOP = () => {
   // Print this page without the app chrome (see usePrintChromeOff).
   usePrintChromeOff();
@@ -52,10 +86,23 @@ const SOP = () => {
   const [isPrinting, setIsPrinting] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+  // Ctrl+P must expand the sections too, not just the Download PDF button.
+  // Without this, printing via the browser omits every collapsed section.
+  useEffect(() => {
+    const before = () => setIsPrinting(true);
+    const after = () => setIsPrinting(false);
+    window.addEventListener("beforeprint", before);
+    window.addEventListener("afterprint", after);
+    return () => {
+      window.removeEventListener("beforeprint", before);
+      window.removeEventListener("afterprint", after);
+    };
+  }, []);
+
   const handleDownloadPdf = useCallback(() => {
     setIsPrinting(true);
     toast.info("Preparing PDF — your browser print dialog will open shortly…");
-    // Small delay so collapsibles can expand and toast shows
+    // Delay so React can commit the expanded sections before the dialog opens.
     setTimeout(() => {
       window.print();
       setIsPrinting(false);
@@ -563,6 +610,7 @@ Sales Support`,
   );
 
   return (
+    <PrintModeContext.Provider value={isPrinting}>
     <AppLayout pageTitle="Standard Operating Procedures">
       <div className="flex-1 flex min-h-0">
             {/* Sidebar toggle (always visible on lg) */}
@@ -3197,6 +3245,7 @@ Sales Support`,
             </div>
       </div>
     </AppLayout>
+    </PrintModeContext.Provider>
   );
 };
 
