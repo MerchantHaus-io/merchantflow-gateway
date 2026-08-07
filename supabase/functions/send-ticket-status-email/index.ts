@@ -5,6 +5,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendGmail } from "../_shared/gmail-send.ts";
 import { isBlockedRecipient } from "../_shared/blocked-emails.ts";
+import { requireRole } from "../_shared/require-auth.ts";
 import {
   type BadgeTone,
   escapeHtml,
@@ -48,6 +49,10 @@ const STATUS_COPY: Record<string, { label: string; intro: string; tone: BadgeTon
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // Authorization: this function was world-callable with no check.
+  const denied = await requireRole(req, corsHeaders, ["staff", "admin"]);
+  if (denied) return denied;
 
   try {
     const { ticket_id, new_status, changed_by_name, note } = await req.json();

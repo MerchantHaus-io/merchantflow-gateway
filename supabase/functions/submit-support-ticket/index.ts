@@ -7,6 +7,7 @@ import {
 } from "../_shared/support-intake.ts";
 import { sendGmail } from "../_shared/gmail-send.ts";
 import { escapeHtml, infoCard, renderBrandedEmail } from "../_shared/email-layout.ts";
+import { checkRateLimit, tooManyRequests } from "../_shared/rate-limit.ts";
 
 const SUPPORT_INBOX = Deno.env.get("SUPPORT_INBOX_EMAIL") || "support@merchanthaus.io";
 
@@ -35,6 +36,10 @@ const sendEmail = async (to: string, subject: string, html: string, replyTo?: st
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // Public endpoint: no session required, so throttle per IP.
+  const rl = await checkRateLimit(req, "submit-support-ticket", 5, 600);
+  if (!rl.allowed) return tooManyRequests(rl, corsHeaders);
 
   try {
     const body = await req.json();

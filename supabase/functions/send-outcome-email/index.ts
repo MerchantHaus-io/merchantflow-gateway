@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireRole } from "../_shared/require-auth.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -86,6 +87,10 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
+
+  // Authorization: this function was world-callable with no check.
+  const denied = await requireRole(req, corsHeaders, ["staff", "admin"]);
+  if (denied) return denied;
 
   try {
     // Auth check — accept either x-crm-secret or standard auth

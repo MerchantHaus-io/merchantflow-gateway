@@ -7,6 +7,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendGmail } from "../_shared/gmail-send.ts";
 import { escapeHtml, infoCard, renderBrandedEmail } from "../_shared/email-layout.ts";
+import { requireRole } from "../_shared/require-auth.ts";
 
 const SUPPORT_INBOX = Deno.env.get("SUPPORT_INBOX_EMAIL") || "support@merchanthaus.io";
 
@@ -23,6 +24,10 @@ const json = (b: unknown, s = 200) =>
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // Authorization: this function was world-callable with no check.
+  const denied = await requireRole(req, corsHeaders, ["staff", "admin"]);
+  if (denied) return denied;
 
   try {
     const { ticket_id, body, agent_name } = await req.json();

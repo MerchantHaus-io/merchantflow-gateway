@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { checkRateLimit, tooManyRequests } from "../_shared/rate-limit.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
@@ -504,6 +505,10 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Public endpoint: no session required, so throttle per IP.
+  const rl = await checkRateLimit(req, "submit-merchant-application", 3, 600);
+  if (!rl.allowed) return tooManyRequests(rl, corsHeaders);
+
   try {
     const body = await req.json();
     // Strip any client-supplied client_ip — it is forgeable. Use trusted headers.
@@ -764,7 +769,9 @@ Deno.serve(async (req) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${anonKey}`,
+            // Service role, not anon: encrypt-secrets now requires a
+            // privileged caller, and this is a server-to-server call.
+            Authorization: `Bearer ${serviceKey}`,
           },
           body: JSON.stringify(encryptPayload),
         });

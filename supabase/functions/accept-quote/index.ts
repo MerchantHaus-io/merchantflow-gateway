@@ -18,6 +18,7 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { checkRateLimit, tooManyRequests } from "../_shared/rate-limit.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
@@ -378,6 +379,10 @@ function merchantConfirmationHtml(p: {
 // ─── Router ──────────────────────────────────────────────────────────────
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // Public endpoint: no session required, so throttle per IP.
+  const rl = await checkRateLimit(req, "accept-quote", 10, 600);
+  if (!rl.allowed) return tooManyRequests(rl, corsHeaders);
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
   const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
