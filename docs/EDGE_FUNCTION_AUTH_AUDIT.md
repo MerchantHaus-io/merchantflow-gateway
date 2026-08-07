@@ -161,9 +161,34 @@ locking everyone out of the tables it protects.
 - **#50 — CORS.** `_shared/cors.ts` (added this pass) provides an
   origin-allowlisted alternative to the hardcoded `*`; 63 functions still need
   migrating to it.
-- **#56 — no error telemetry.** `ErrorBoundary` still only calls
-  `console.error`; production crashes remain invisible.
+- **#56 — resolved.** `src/lib/telemetry.ts` reports render crashes, async
+  throws and rejected promises to the `client_errors` table (migration
+  `20260807200000`), with per-session caps and de-duplication so a render loop
+  can't become a write storm. `ErrorBoundary` now shows a friendly message, a
+  copyable reference id, and collapsible technical details (#78). `forwardTo()`
+  is the seam for adding Sentry later without touching call sites.
+
+- **#49 — checked, not a defect.** The audit flagged `google_calendar_tokens`
+  as `[verify]`, on the theory that loose RLS would let one user read
+  colleagues' Gmail/Calendar tokens. It does not: the policy is `FOR ALL TO
+  authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() =
+  user_id)`, so each user reaches only their own row. The client-side upsert
+  uses `onConflict: 'user_email'`, but writing over someone else's row still
+  fails the `USING` check on the existing row. Moving the write into an edge
+  function would be tidier, but it does not reduce exposure — the browser
+  already holds `session.provider_token` by the time it runs.
 - **Retention sweep for `rate_limit_events` is not scheduled.** The migration
   ships `prune_rate_limit_events()` but nothing calls it — the table grows
   unbounded until it is scheduled (pg_cron snippet is in the migration).
 - **Honeypot fields** are not yet rendered by the public forms.
+  `isHoneypotTripped()` exists in `_shared/rate-limit.ts` but is inert until
+  the forms emit a hidden `_hp` input.
+- **#45 — the staff allowlist still ships in the bundle.** Moving it
+  server-side is a design change, not a patch: `isEmailAllowed()` currently
+  runs synchronously during render and gates routing, so replacing it means an
+  async role fetch on boot and a loading state everywhere it's read. Now that
+  RLS enforces staff access server-side, the bundled list is a roster
+  disclosure rather than an access-control hole — worth fixing, but no longer
+  urgent.
+- **CORS migration** — `_shared/cors.ts` exists; the ~63 functions still
+  hardcoding `Access-Control-Allow-Origin: "*"` have not been migrated.
