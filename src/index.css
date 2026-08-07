@@ -1,6 +1,7 @@
-@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap");
-@import url("https://fonts.cdnfonts.com/css/general-sans");
-@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap");
+/* Fonts are self-hosted via @fontsource and imported in src/main.tsx (#86).
+   Previously three render-blocking @import urls sat here, one of them from
+   fonts.cdnfonts.com — a third-party CDN with no SLA in the critical path,
+   loading General Sans, which nothing actually used. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -11,6 +12,14 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
+    /* Brand typography (#85). The guide codifies DM Sans for UI text and
+       Space Mono for display/monospace. --font-display was previously never
+       defined at all, so headers, tabs and chart legends fell through an
+       unreachable 'Syne' to whatever sans-serif happened to be loaded. */
+    --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Space Mono', ui-monospace, SFMono-Regular, monospace;
+    --font-mono: 'Space Mono', ui-monospace, SFMono-Regular, monospace;
+    --font-serif: 'Playfair Display', ui-serif, Georgia, serif;
     /* #82: text-info / bg-info are used across the app but --info was
        only ever declared inside .merchant-form, so those classes resolved
        to an invalid colour everywhere else. */
@@ -1948,7 +1957,7 @@ thead tr {
   background: hsl(var(--muted));
 }
 thead th {
-  font-family: var(--font-display, 'Syne', 'General Sans', sans-serif);
+  font-family: var(--font-display);
   font-size: 10px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1971,7 +1980,7 @@ tbody tr:hover {
 }
 .recharts-cartesian-axis-tick text {
   fill: hsl(215 20% 50%);
-  font-family: var(--font-display, 'Syne', sans-serif);
+  font-family: var(--font-display);
   font-size: 11px;
 }
 .recharts-default-tooltip {
@@ -1981,7 +1990,7 @@ tbody tr:hover {
   box-shadow: 0 8px 24px rgba(0,0,0,0.5) !important;
 }
 .recharts-legend-item-text {
-  font-family: var(--font-display, 'Syne', sans-serif) !important;
+  font-family: var(--font-display) !important;
   font-size: 11px !important;
   color: hsl(215 20% 65%) !important;
 }
@@ -1994,12 +2003,14 @@ tbody tr:hover {
 
 /* ─── Pipeline editorial mono (Hairline precision direction) ─── */
 .font-pipeline-mono {
-  font-family: 'JetBrains Mono', 'DM Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* Was 'JetBrains Mono', 'DM Mono' — neither is imported, so this fell
+     through to the system monospace. Now the brand mono face. */
+  font-family: var(--font-display);
   font-feature-settings: "tnum" 1, "ss01" 1;
   font-variant-numeric: tabular-nums;
 }
 .font-pipeline-sans {
-  font-family: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-sans);
   letter-spacing: -0.01em;
 }
 
@@ -2050,7 +2061,7 @@ tbody tr:hover {
   border-radius: calc(var(--radius) + 2px);
 }
 [role="tab"] {
-  font-family: var(--font-display, 'Syne', sans-serif);
+  font-family: var(--font-display);
   font-size: 11.5px;
   letter-spacing: 0.03em;
   font-weight: 600;

@@ -44,8 +44,13 @@ export default {
     },
     extend: {
       fontFamily: {
+        // Brand guide: DM Sans for UI, Space Mono for display/mono (#85).
+        // Driven from the CSS tokens so a theme can override them.
+        display: ['var(--font-display)'],
+        mono: ['var(--font-display)'],
+        serif: ['var(--font-serif)'],
         sans: [
-          'Geist',
+          'DM Sans',
           'ui-sans-serif',
           'system-ui',
           'sans-serif',
