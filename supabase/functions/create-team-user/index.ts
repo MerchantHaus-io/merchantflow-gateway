@@ -55,6 +55,12 @@ serve(async (req) => {
         full_name: full_name || email.split('@')[0],
         must_change_password: true,
       },
+      // Authoritative copy. user_metadata above is kept only so older clients
+      // keep working; users can write that one themselves, app_metadata they
+      // cannot.
+      app_metadata: {
+        must_change_password: true,
+      },
     });
 
     if (createError) {

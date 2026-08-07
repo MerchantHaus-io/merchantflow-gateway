@@ -151,6 +151,34 @@ Both seeds exclude anyone who is a referral partner, and each is followed by a
 guard that aborts the migration if it matched nobody, rather than silently
 locking everyone out of the tables it protects.
 
+## #46 — forced-password-reset flag moved out of user-writable metadata
+
+`must_change_password` lived in `user_metadata`, which the owning user can
+write from the browser:
+
+```js
+supabase.auth.updateUser({ data: { must_change_password: false } })
+```
+
+So anyone subject to a forced reset could clear their own flag and skip it —
+the control was advisory, not enforced. It now lives in `app_metadata`, which
+is readable by the client but writable only by the service role.
+
+- `create-team-user`, `create-referrer-user` and `force-password-reset` set it
+  in `app_metadata`
+- `AuthContext` reads `app_metadata` first, falling back to `user_metadata` so
+  accounts flagged before the change are not stranded
+- the new `complete-password-change` function clears it, keyed off the
+  caller's own JWT — the browser can no longer clear it directly, which is the
+  entire point
+- migration `20260807210000` backfills existing flags
+
+The `user_metadata` copy is kept in step rather than deleted: a browser
+running older JS still reads it, and a stale `true` there would trap a user on
+the change-password screen. The migration carries the follow-up SQL to drop it
+once every client has picked up the new build, at which point the fallback in
+`AuthContext` can go too.
+
 ## Related gaps not closed in this pass
 
 - **#42 — `requireAuth` proves authentication, not authorization.** Resolved
@@ -161,9 +189,34 @@ locking everyone out of the tables it protects.
 - **#50 — CORS.** `_shared/cors.ts` (added this pass) provides an
   origin-allowlisted alternative to the hardcoded `*`; 63 functions still need
   migrating to it.
-- **#56 — no error telemetry.** `ErrorBoundary` still only calls
-  `console.error`; production crashes remain invisible.
+- **#56 — resolved.** `src/lib/telemetry.ts` reports render crashes, async
+  throws and rejected promises to the `client_errors` table (migration
+  `20260807200000`), with per-session caps and de-duplication so a render loop
+  can't become a write storm. `ErrorBoundary` now shows a friendly message, a
+  copyable reference id, and collapsible technical details (#78). `forwardTo()`
+  is the seam for adding Sentry later without touching call sites.
+
+- **#49 — checked, not a defect.** The audit flagged `google_calendar_tokens`
+  as `[verify]`, on the theory that loose RLS would let one user read
+  colleagues' Gmail/Calendar tokens. It does not: the policy is `FOR ALL TO
+  authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() =
+  user_id)`, so each user reaches only their own row. The client-side upsert
+  uses `onConflict: 'user_email'`, but writing over someone else's row still
+  fails the `USING` check on the existing row. Moving the write into an edge
+  function would be tidier, but it does not reduce exposure — the browser
+  already holds `session.provider_token` by the time it runs.
 - **Retention sweep for `rate_limit_events` is not scheduled.** The migration
   ships `prune_rate_limit_events()` but nothing calls it — the table grows
   unbounded until it is scheduled (pg_cron snippet is in the migration).
 - **Honeypot fields** are not yet rendered by the public forms.
+  `isHoneypotTripped()` exists in `_shared/rate-limit.ts` but is inert until
+  the forms emit a hidden `_hp` input.
+- **#45 — the staff allowlist still ships in the bundle.** Moving it
+  server-side is a design change, not a patch: `isEmailAllowed()` currently
+  runs synchronously during render and gates routing, so replacing it means an
+  async role fetch on boot and a loading state everywhere it's read. Now that
+  RLS enforces staff access server-side, the bundled list is a roster
+  disclosure rather than an access-control hole — worth fixing, but no longer
+  urgent.
+- **CORS migration** — `_shared/cors.ts` exists; the ~63 functions still
+  hardcoding `Access-Control-Allow-Origin: "*"` have not been migrated.

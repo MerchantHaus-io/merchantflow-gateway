@@ -43,6 +43,19 @@ interface AuthContextType {
   signOut: () => Promise<void>;
 }
 
+/**
+ * Read the forced-password-change flag.
+ *
+ * `app_metadata` is authoritative: only the service role can write it. The
+ * `user_metadata` fallback covers accounts flagged before the move — a user
+ * CAN clear that one themselves via updateUser({ data }), which is exactly the
+ * hole this addresses, so it is a transition aid and nothing more. Drop the
+ * fallback once every flagged account has been migrated.
+ */
+const mustChangePasswordFrom = (user: User | null | undefined): boolean =>
+  user?.app_metadata?.must_change_password === true ||
+  user?.user_metadata?.must_change_password === true;
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
@@ -199,7 +212,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
 
         // Check if password change is required
-        const needsPasswordChange = session?.user?.user_metadata?.must_change_password === true;
+        const needsPasswordChange = mustChangePasswordFrom(session?.user);
         setMustChangePassword(needsPasswordChange);
 
         // Resolve referrer profile (if any) so role-based routing has data on first paint
@@ -225,7 +238,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // truth for the flag — a PASSWORD_RECOVERY event used to force it to
           // true here, which trapped anyone following a normal reset link in
           // the ForcePasswordChange screen. Don't reintroduce that.
-          const needsPasswordChange = session?.user?.user_metadata?.must_change_password === true;
+          const needsPasswordChange = mustChangePasswordFrom(session?.user);
           setMustChangePassword(needsPasswordChange);
 
           // NOTE: Supabase warns that calling back into the auth-aware client
@@ -384,15 +397,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updatePassword = async (newPassword: string) => {
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword,
-      data: { must_change_password: false }
-    });
-    
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+
     if (!error) {
+      // The flag now lives in app_metadata, which the browser cannot write —
+      // that is the point, since users could previously clear their own forced
+      // reset via updateUser({ data }). An edge function clears it, keyed off
+      // the caller's own JWT.
+      const { error: clearError } = await supabase.functions.invoke('complete-password-change');
+      if (clearError) {
+        console.error('[auth] password changed but flag not cleared:', clearError);
+        // Refresh anyway: if the flag really is still set the user stays on the
+        // change-password screen, which is the safe direction to fail.
+      }
+      // Pull the updated metadata into the local session.
+      await supabase.auth.refreshSession();
       setMustChangePassword(false);
     }
-    
+
     return { error };
   };
 
