@@ -5,7 +5,15 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist"] },
+  {
+    ignores: [
+      "dist",
+      // Bundled output from the @lovable.dev/mcp-js Vite plugin. Its banner
+      // says "do not edit" and the plugin rewrites it on every build, so any
+      // lint fix applied here would be silently reverted.
+      "supabase/functions/mcp/index.ts",
+    ],
+  },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],

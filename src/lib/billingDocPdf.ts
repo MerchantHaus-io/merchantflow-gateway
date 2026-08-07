@@ -174,7 +174,7 @@ export async function buildBillingDocPdf(input: BillingDocPdfInput): Promise<Blo
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   setColor(doc, INK);
-  let ly = y + 14;
+  const ly = y + 14;
   const lh = 13;
   const billTo = [
     input.merchant.name,
