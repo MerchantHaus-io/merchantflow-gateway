@@ -94,11 +94,16 @@ export function AppLayout({
           />
         </>
       )}
+      {/* #99: first tab stop on every internal page, so keyboard users can
+          jump straight to content instead of tabbing the header and rail. */}
+      <a href="#main-content" className="skip-to-content">
+        Skip to content
+      </a>
       <MegaMenuHeader onNewApplication={onNewApplication} />
       <GmailReconnectBanner />
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <IconRailSidebar />
-        <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col min-h-0 overflow-hidden">
 
         {(pageTitle || headerActions) && (
           <div className="gradient-header px-4 lg:px-6 py-3">

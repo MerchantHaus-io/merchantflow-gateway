@@ -118,6 +118,10 @@ export default {
         },
         destructive: {
           DEFAULT: 'hsl(var(--destructive))',
+          // Lighter variant for text/icons on dark surfaces — the DEFAULT is
+          // too dark to meet AA as body text in the dark themes (#90).
+          // Falls back to DEFAULT in themes that don't define it.
+          text: 'hsl(var(--destructive-text, var(--destructive)))',
           foreground: 'hsl(var(--destructive-foreground))'
         },
         success: {

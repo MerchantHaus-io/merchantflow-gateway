@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { isEmailAllowed } from '@/types/opportunity';
 import { authRedirectTo } from '@/lib/nextPath';
 import { isAutoFullscreenEnabled } from '@/lib/uiPreferences';
+import merchantHausLogo from '@/assets/merchant-haus-logo-full.png';
 import ForcePasswordChange from './ForcePasswordChange';
 import { toast } from 'sonner';
 
@@ -70,8 +71,10 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
+        {/* #97: was /favicon.png scaled to 180px — a favicon upscaled ~4x is
+            visibly soft on a retina display. Use the full-resolution logo. */}
         <img
-          src="/favicon.png"
+          src={merchantHausLogo}
           alt="Ops Terminal"
           className="w-[180px] h-auto animate-pulse"
         />

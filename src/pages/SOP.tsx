@@ -36,6 +36,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AppLayout } from "@/components/AppLayout";
+import { usePrintChromeOff } from "@/hooks/usePrintChromeOff";
 import {
   NMI_SCHEDULE_A_RATES,
   NMI_REVENUE_ELIGIBLE_FEES,
@@ -45,6 +46,8 @@ import {
 } from "@/config/quoteSchedule";
 
 const SOP = () => {
+  // Print this page without the app chrome (see usePrintChromeOff).
+  usePrintChromeOff();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isPrinting, setIsPrinting] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
