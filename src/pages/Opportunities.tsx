@@ -42,7 +42,9 @@ import {
   TrendingUp,
   CheckCircle2,
   RotateCcw,
-  Archive
+  Archive,
+  Loader2,
+  Copy,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -172,7 +174,24 @@ const Opportunities = () => {
   // Persist filters across navigation (e.g. drilling into an account & clicking Back).
   // Read once via a lazy initialiser — this used to be a bare IIFE in the
   // component body, so it re-parsed sessionStorage on every single render.
-  const [persisted] = useState<PersistedFilters>(readPersistedFilters);
+  const [persisted] = useState<PersistedFilters>(() => {
+    // URL wins over sessionStorage: a link someone shares must open the view
+    // they meant, not whatever this browser last had.
+    const stored = readPersistedFilters();
+    const p = new URLSearchParams(window.location.search);
+    const pick = <T extends string>(key: string, fallback: T | undefined) =>
+      (p.get(key) as T | null) ?? fallback;
+    return {
+      ...stored,
+      searchQuery: pick('q', stored.searchQuery),
+      stageFilter: pick('stage', stored.stageFilter),
+      ownerFilter: pick('owner', stored.ownerFilter),
+      pipelineFilter: pick('pipeline', stored.pipelineFilter),
+      outcomeFilter: pick('outcome', stored.outcomeFilter),
+      viewTab: pick('tab', stored.viewTab) as 'all' | 'archive' | undefined,
+      viewMode: pick('view', stored.viewMode) as 'table' | 'cards' | undefined,
+    };
+  });
 
   const [searchQuery, setSearchQuery] = useState<string>(persisted.searchQuery ?? "");
   const [stageFilter, setStageFilter] = useState<string>(persisted.stageFilter ?? "all");
@@ -188,7 +207,22 @@ const Opportunities = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState<boolean>(persisted.showFilters ?? false);
   const [isTruncated, setIsTruncated] = useState(false);
+  // Ids with an inline write in flight, so a row can show it is saving
+  // instead of looking like nothing happened.
+  const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
+  // A duplicate warning that renders as an error toast but lets the change
+  // through reads as a failure and behaves as a note. Ask instead.
+  const [duplicateConfirm, setDuplicateConfirm] = useState<
+    { opp: Opportunity; newStage: OpportunityStage; message: string } | null
+  >(null);
   const [channelId] = useState(() => ++channelSeq);
+  // formatDistanceToNow renders once; without a ticker "2 minutes ago" is
+  // still on screen an hour later.
+  const [, setNowTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setNowTick(n => n + 1), 60_000);
+    return () => clearInterval(t);
+  }, []);
 
   useEffect(() => {
     try {
@@ -212,6 +246,15 @@ const Opportunities = () => {
     }
   }, [searchQuery, stageFilter, ownerFilter, pipelineFilter, outcomeFilter, sortField, sortDirection, viewMode, viewTab, showFilters]);
 
+  const markSaving = useCallback((id: string, saving: boolean) => {
+    setSavingIds(prev => {
+      const next = new Set(prev);
+      if (saving) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }, []);
+
   const toggleRowSelect = (id: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
@@ -220,6 +263,31 @@ const Opportunities = () => {
       return next;
     });
   };
+
+  // Mirror filters into the URL so a filtered view can be shared, bookmarked
+  // and reopened in a second tab. sessionStorage alone couldn't do any of that.
+  useEffect(() => {
+    const next = new URLSearchParams(window.location.search);
+    const setOrDelete = (key: string, value: string, dflt: string) => {
+      if (value && value !== dflt) next.set(key, value);
+      else next.delete(key);
+    };
+    setOrDelete('q', searchQuery, '');
+    setOrDelete('stage', stageFilter, 'all');
+    setOrDelete('owner', ownerFilter, 'all');
+    setOrDelete('pipeline', pipelineFilter, 'all');
+    setOrDelete('outcome', outcomeFilter, 'all');
+    setOrDelete('tab', viewTab, 'all');
+    setOrDelete('view', viewMode, 'table');
+    // `new` is consumed by the effect below; never re-add it here.
+    next.delete('new');
+
+    if (next.toString() !== new URLSearchParams(window.location.search).toString()) {
+      // replace, not push: typing in the search box must not fill the history
+      // stack with one entry per keystroke.
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchQuery, stageFilter, ownerFilter, pipelineFilter, outcomeFilter, viewTab, viewMode, setSearchParams]);
 
   // Handle ?new=true query param from sidebar navigation
   useEffect(() => {
@@ -334,12 +402,28 @@ const Opportunities = () => {
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(opp =>
-        opp.account?.name?.toLowerCase().includes(query) ||
-        opp.contact?.email?.toLowerCase().includes(query) ||
-        opp.contact?.first_name?.toLowerCase().includes(query) ||
-        opp.contact?.last_name?.toLowerCase().includes(query)
-      );
+      // Reps search by whatever identifier is in front of them — a DBA on a
+      // statement, a phone number from a voicemail, an MID from the processor,
+      // or an id pasted from a link.
+      filtered = filtered.filter(opp => {
+        // NOTE: the audit also suggested DBA, MID and the Kurv/NMI references.
+        // None of those are on the Account/Opportunity types the list query
+        // selects, so searching them needs the query widened first — see
+        // src/types/opportunity.ts.
+        const haystack = [
+          opp.account?.name,
+          opp.account?.website,
+          opp.contact?.email,
+          opp.contact?.first_name,
+          opp.contact?.last_name,
+          opp.contact?.phone,
+          opp.id,
+          opp.portal_merchant_id,
+          opp.username,
+          opp.referral_source,
+        ];
+        return haystack.some(v => typeof v === 'string' && v.toLowerCase().includes(query));
+      });
     }
 
     // Stage filter
@@ -502,6 +586,117 @@ const Opportunities = () => {
   };
 
   /**
+   * Commit a stage change. Split out of the inline Select handler so the
+   * duplicate-merchant dialog can resume the same code path after the user
+   * confirms, rather than duplicating it.
+   */
+  const applyStageChange = useCallback(async (opp: Opportunity, newStage: OpportunityStage) => {
+    const oldStage = opp.stage;
+    markSaving(opp.id, true);
+    try {
+      const { error } = await supabase
+        .from('opportunities')
+        .update({ stage: newStage })
+        .eq('id', opp.id);
+
+      if (error) {
+        toast({ title: "Failed to update stage", variant: "destructive" });
+        return;
+      }
+
+      // Every other STAGE_CONFIG read in this file is optional-chained; this
+      // one was not, so a legacy or unmapped stage threw here — after the
+      // write had landed — losing the activity entry and the toast.
+      const stageLabel = (stage: string) =>
+        STAGE_CONFIG[stage as OpportunityStage]?.label ?? stage;
+
+      const logged = await logActivity({
+        opportunity_id: opp.id,
+        type: 'stage_change',
+        description: `Moved from ${stageLabel(oldStage)} to ${stageLabel(newStage)}`,
+        user_id: user?.id,
+        user_email: user?.email,
+      });
+
+      // These are async and can fail after the success toast, so surface the
+      // failure instead of only logging it.
+      if (opp.assigned_to) {
+        sendStageChangeEmail(
+          opp.assigned_to,
+          opp.account?.name || 'Unknown Account',
+          oldStage,
+          newStage,
+          user?.email
+        ).catch(err => {
+          console.error("Failed to send stage change email:", err);
+          toast({
+            title: "Stage saved, but the owner wasn't notified",
+            description: `Couldn't email ${opp.assigned_to}.`,
+            variant: "destructive",
+          });
+        });
+      }
+
+      if (newStage === 'qualified') {
+        sendQualifiedDocsRequest(opp.id, opp.account_id, opp.contact_id).catch(err => {
+          console.error("Failed to send qualified docs email:", err);
+          toast({ title: "Stage saved, but the docs request wasn't sent", variant: "destructive" });
+        });
+      }
+
+      toast({
+        title: `Stage updated to ${stageLabel(newStage)}`,
+        description: logged ? undefined : 'Saved, but the activity log entry failed.',
+      });
+
+      // Don't rely on realtime being enabled for this table.
+      fetchOpportunities();
+    } finally {
+      markSaving(opp.id, false);
+    }
+  }, [toast, user, fetchOpportunities, markSaving]);
+
+  /**
+   * Run the pre-flight checks for a stage change, then either commit it or
+   * stop and ask. The duplicate check now BLOCKS: it used to render a
+   * destructive toast and apply the change anyway, which looks like an error
+   * and behaves like a note.
+   */
+  const requestStageChange = useCallback(async (opp: Opportunity, newStage: OpportunityStage) => {
+    if (newStage === opp.stage) return;
+
+    // Gateway deals can't enter underwriting/processor approval.
+    const GATEWAY_BLOCKED: OpportunityStage[] = ['underwriting_review', 'processor_approval'];
+    if (getServiceType(opp) === 'gateway_only' && GATEWAY_BLOCKED.includes(newStage)) {
+      toast({ title: "Gateway deals cannot enter Underwriting or Approved stages", variant: "destructive", duration: 4000 });
+      return;
+    }
+
+    markSaving(opp.id, true);
+    try {
+      if (newStage === 'underwriting_review') {
+        const gate = await checkUnderwritingGate(opp.id, opp.service_type);
+        if (!gate.allowed) {
+          toast({ title: "Cannot proceed to Underwriting", description: gate.reason, variant: "destructive", duration: 6000 });
+          return;
+        }
+      }
+
+      if (newStage !== 'discovery' && opp.stage === 'discovery') {
+        const dupWarning = await checkDuplicateMerchant(opp.id);
+        if (dupWarning) {
+          setDuplicateConfirm({ opp, newStage, message: dupWarning });
+          return;
+        }
+      }
+    } finally {
+      markSaving(opp.id, false);
+    }
+
+    await applyStageChange(opp, newStage);
+  }, [toast, markSaving, applyStageChange]);
+
+  /**
    * Switch an opportunity between the Processing and Gateway pipelines.
    * Previously implemented twice — inline <Select> and row dropdown — with
    * copy-pasted logic that had already drifted (the dropdown copy carried a
@@ -551,6 +746,18 @@ const Opportunities = () => {
     }
   };
 
+  const hasActiveFilters =
+    stageFilter !== 'all' || ownerFilter !== 'all' || pipelineFilter !== 'all' ||
+    outcomeFilter !== 'all' || searchQuery !== '';
+
+  const clearFilters = useCallback(() => {
+    setStageFilter('all');
+    setOwnerFilter('all');
+    setPipelineFilter('all');
+    setOutcomeFilter('all');
+    setSearchQuery('');
+  }, []);
+
   const selectedCount = selectedIds.size;
   const visibleCount = filteredOpportunities.length;
   const viewLabel = viewTab === 'archive' ? 'Archived - Opportunities' : 'All - Opportunities';
@@ -584,6 +791,16 @@ const Opportunities = () => {
           )}
         </button>
       </div>
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-8"
+        onClick={fetchOpportunities}
+        disabled={loading}
+        title="Refresh list"
+      >
+        <RotateCcw className={cn("h-3.5 w-3.5 mr-1.5", loading && "animate-spin")} /> Refresh
+      </Button>
       <Button variant="outline" size="sm" className="h-8" onClick={() => navigate('/tools/csv-import')}>
         <Upload className="h-3.5 w-3.5 mr-1.5" /> Import
       </Button>
@@ -655,9 +872,9 @@ const Opportunities = () => {
             onToggleFilters={() => setShowFilters(v => !v)}
             filtersActive={showFilters}
             leftControls={
-              (stageFilter !== 'all' || ownerFilter !== 'all' || pipelineFilter !== 'all' || outcomeFilter !== 'all' || searchQuery) && (
+              hasActiveFilters && (
                 <button
-                  onClick={() => { setStageFilter('all'); setOwnerFilter('all'); setPipelineFilter('all'); setOutcomeFilter('all'); setSearchQuery(''); }}
+                  onClick={clearFilters}
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Clear filters ×
@@ -726,9 +943,12 @@ const Opportunities = () => {
                   ))}
                 </div>
               ) : viewMode === 'table' ? (
-                <div className="rounded-md border">
+                <div className="rounded-md border overflow-x-auto max-h-[calc(100vh-22rem)] overflow-y-auto">
+                  {/* overflow-x-auto: fourteen columns clip on a 1366px laptop
+                      inside the Card's overflow-hidden. max-h + sticky header
+                      keeps the column labels visible while scrolling. */}
                   <Table>
-                    <TableHeader>
+                    <TableHeader className="sticky top-0 z-20 bg-background">
                       <TableRow className="bg-muted/40 hover:bg-muted/40 border-b border-border/60">
                         <TableHead className="w-10 text-right pr-2 text-xs text-muted-foreground py-2"></TableHead>
                         <TableHead className="w-8 py-2">
@@ -772,17 +992,40 @@ const Opportunities = () => {
                           const isStale = isStaleOpportunity(opp);
                         
                         const isSelected = selectedIds.has(opp.id);
+                        const isSaving = savingIds.has(opp.id);
                         return (
                           <TableRow
                             key={opp.id}
                             className={cn(
                               "cursor-pointer transition-colors border-b border-border/40",
                               isSelected ? "bg-info/5 hover:bg-info/10" : "hover:bg-muted/30",
-                              isStale && "opacity-75"
+                              isStale && "opacity-75",
+                              // Inline edits write straight to the DB; without
+                              // this the row looks inert while it saves.
+                              isSaving && "opacity-60 pointer-events-none"
                             )}
+                            aria-busy={isSaving}
                             onClick={() => navigateToOpportunity(opp)}
+                            tabIndex={0}
+                            role="link"
+                            aria-label={`Open ${opp.account?.name || 'opportunity'}`}
+                            onKeyDown={(e) => {
+                              // A <tr onClick> is not focusable and ignores the
+                              // keyboard. Enter/Space now match a real link.
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                if (e.target !== e.currentTarget) return;
+                                e.preventDefault();
+                                navigateToOpportunity(opp);
+                              }
+                            }}
                           >
-                            <TableCell className="text-right pr-2 text-[11px] text-muted-foreground tabular-nums py-2">{index + 1}</TableCell>
+                            <TableCell className="text-right pr-2 text-[11px] text-muted-foreground tabular-nums py-2">
+                              {isSaving ? (
+                                <Loader2 className="h-3 w-3 animate-spin inline-block text-muted-foreground" />
+                              ) : (
+                                index + 1
+                              )}
+                            </TableCell>
                             <TableCell className="py-2" onClick={(e) => e.stopPropagation()}>
                               <Checkbox
                                 checked={isSelected}
@@ -821,109 +1064,9 @@ const Opportunities = () => {
                             <TableCell onClick={(e) => e.stopPropagation()}>
                               <Select
                                 value={opp.stage}
-                                onValueChange={async (value) => {
-                                   const newStage = value as OpportunityStage;
-                                   const oldStage = opp.stage;
-                                   const isGateway = getServiceType(opp) === 'gateway_only';
-                                   
-                                   // Block gateway deals from entering underwriting/processor_approval
-                                   const GATEWAY_BLOCKED: OpportunityStage[] = ['underwriting_review', 'processor_approval'];
-                                   if (isGateway && GATEWAY_BLOCKED.includes(newStage)) {
-                                     toast({ title: "Gateway deals cannot enter Underwriting or Approved stages", variant: "destructive", duration: 4000 });
-                                     return;
-                                   }
-                                   
-                                   // Underwriting gate check
-                                   if (newStage === 'underwriting_review') {
-                                     const gate = await checkUnderwritingGate(opp.id, opp.service_type);
-                                     if (!gate.allowed) {
-                                       toast({ title: "Cannot proceed to Underwriting", description: gate.reason, variant: "destructive", duration: 6000 });
-                                       return;
-                                     }
-                                   }
-                                   
-                                   // Duplicate check when moving past discovery.
-                                   // This is advisory — it does not block the
-                                   // move — so it must not look like an error.
-                                   if (newStage !== 'discovery' && opp.stage === 'discovery') {
-                                     const dupWarning = await checkDuplicateMerchant(opp.id);
-                                     if (dupWarning) {
-                                       toast({ title: "Possible duplicate merchant", description: `${dupWarning} — the stage change was still applied.`, duration: 8000 });
-                                     }
-                                   }
-
-                                   const { error } = await supabase
-                                     .from('opportunities')
-                                     .update({ stage: newStage })
-                                     .eq('id', opp.id);
-
-                                   if (error) {
-                                     toast({ title: "Failed to update stage", variant: "destructive" });
-                                     return;
-                                   }
-
-                                   // Log activity. Every other STAGE_CONFIG read
-                                   // in this file is optional-chained; this one
-                                   // was not, so a legacy or unmapped stage threw
-                                   // here — after the write had already landed —
-                                   // losing the activity entry and the toast.
-                                   const stageLabel = (stage: string) =>
-                                     STAGE_CONFIG[stage as OpportunityStage]?.label ?? stage;
-
-                                   const logged = await logActivity({
-                                     opportunity_id: opp.id,
-                                     type: 'stage_change',
-                                     description: `Moved from ${stageLabel(oldStage)} to ${stageLabel(newStage)}`,
-                                     user_id: user?.id,
-                                     user_email: user?.email,
-                                   });
-
-                                   // Send email notification. These are async and
-                                   // can fail after the success toast, so surface
-                                   // the failure instead of only logging it.
-                                   if (opp.assigned_to) {
-                                     sendStageChangeEmail(
-                                       opp.assigned_to,
-                                       opp.account?.name || 'Unknown Account',
-                                       oldStage,
-                                       newStage,
-                                       user?.email
-                                     ).catch(err => {
-                                       console.error("Failed to send stage change email:", err);
-                                       toast({
-                                         title: "Stage saved, but the owner wasn't notified",
-                                         description: `Couldn't email ${opp.assigned_to}.`,
-                                         variant: "destructive",
-                                       });
-                                     });
-                                    }
-
-                                    // Trigger qualified docs request email
-                                    if (newStage === 'qualified') {
-                                      sendQualifiedDocsRequest(
-                                        opp.id,
-                                        opp.account_id,
-                                        opp.contact_id
-                                      ).catch(err => {
-                                        console.error("Failed to send qualified docs email:", err);
-                                        toast({
-                                          title: "Stage saved, but the docs request wasn't sent",
-                                          variant: "destructive",
-                                        });
-                                      });
-                                    }
-
-                                    toast({
-                                      title: `Stage updated to ${stageLabel(newStage)}`,
-                                      description: logged ? undefined : 'Saved, but the activity log entry failed.',
-                                    });
-
-                                    // Don't rely on realtime being enabled for
-                                    // this table — the pipeline switcher refetches
-                                    // and this path must too, or the row never
-                                    // visibly updates.
-                                    fetchOpportunities();
-                                }}
+                                onValueChange={(value) =>
+                                  requestStageChange(opp, value as OpportunityStage)
+                                }
                               >
                                 <SelectTrigger className="h-7 w-auto min-w-[100px] border-0 bg-transparent hover:bg-muted/50 px-2 text-xs gap-1">
                                   <div 
@@ -1065,14 +1208,29 @@ const Opportunities = () => {
                       {filteredOpportunities.length === 0 && (
                         <TableRow>
                           <TableCell colSpan={14}>
-                            <EmptyState
-                              icon={TrendingUp}
-                              title="No opportunities found"
-                              description="Adjust your filters or create a new application."
-                              actionLabel="New Application"
-                              onAction={() => setShowNewModal(true)}
-                              size="sm"
-                            />
+                            {hasActiveFilters ? (
+                              <EmptyState
+                                icon={TrendingUp}
+                                title="No matches"
+                                description="No opportunities match the current search and filters."
+                                actionLabel="Clear filters"
+                                onAction={clearFilters}
+                                size="sm"
+                              />
+                            ) : (
+                              <EmptyState
+                                icon={TrendingUp}
+                                title={viewTab === 'archive' ? 'Nothing archived' : 'No opportunities yet'}
+                                description={
+                                  viewTab === 'archive'
+                                    ? 'Archived opportunities will appear here.'
+                                    : 'Create your first application to start tracking a deal.'
+                                }
+                                actionLabel={viewTab === 'archive' ? undefined : 'New Application'}
+                                onAction={viewTab === 'archive' ? undefined : () => setShowNewModal(true)}
+                                size="sm"
+                              />
+                            )}
                           </TableCell>
                         </TableRow>
                       )}
@@ -1170,6 +1328,39 @@ const Opportunities = () => {
           onClose={() => setShowNewModal(false)}
           onSubmit={fetchOpportunities}
         />
+
+        {/* Possible-duplicate confirmation (#68). Blocks the stage change
+            until the rep decides, instead of warning and proceeding anyway. */}
+        <AlertDialog open={!!duplicateConfirm} onOpenChange={(open) => !open && setDuplicateConfirm(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <Copy className="h-5 w-5 text-amber-500" />
+                Possible duplicate merchant
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {duplicateConfirm?.message}
+                <span className="block mt-2">
+                  Moving <span className="font-medium text-foreground">{duplicateConfirm?.opp.account?.name || 'this opportunity'}</span>
+                  {' '}out of Discovery anyway may create a second record for the same merchant.
+                </span>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (!duplicateConfirm) return;
+                  const { opp, newStage } = duplicateConfirm;
+                  setDuplicateConfirm(null);
+                  applyStageChange(opp, newStage);
+                }}
+              >
+                Continue anyway
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Reactivation Confirmation Dialog */}
         <AlertDialog open={!!reactivateConfirm} onOpenChange={(open) => !open && setReactivateConfirm(null)}>

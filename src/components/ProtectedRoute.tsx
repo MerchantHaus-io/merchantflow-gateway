@@ -3,6 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { isEmailAllowed } from '@/types/opportunity';
 import { authRedirectTo } from '@/lib/nextPath';
+import { isAutoFullscreenEnabled } from '@/lib/uiPreferences';
 import ForcePasswordChange from './ForcePasswordChange';
 import { toast } from 'sonner';
 
@@ -21,6 +22,7 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const location = useLocation();
 
   // Auto-enter fullscreen on first user interaction after login.
+  // Opt-in via Settings and off by default — see isAutoFullscreenEnabled().
   const requestFullscreen = useCallback(() => {
     if (sessionStorage.getItem(FULLSCREEN_KEY)) return;
     if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
@@ -36,6 +38,7 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }, []);
 
   useEffect(() => {
+    if (!isAutoFullscreenEnabled()) return;
     if (sessionStorage.getItem(FULLSCREEN_KEY)) return;
     if (user && isEmailAllowed(user.email) && !document.fullscreenElement) {
       document.addEventListener('click', requestFullscreen, { once: true });
