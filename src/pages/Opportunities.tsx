@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { QueryErrorCard } from "@/components/QueryErrorCard";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTasks } from "@/contexts/TasksContext";
@@ -40,7 +41,6 @@ import {
   Plus,
   TrendingUp,
   CheckCircle2,
-  XCircle,
   RotateCcw,
   Archive
 } from "lucide-react";
@@ -79,6 +79,86 @@ import { Upload, Sparkles, Megaphone } from "lucide-react";
 type SortField = 'name' | 'stage' | 'outcome' | 'pipeline' | 'owner' | 'tasks' | 'progress' | 'created' | 'updated';
 type SortDirection = 'asc' | 'desc';
 
+/** Rows per request; PostgREST refuses to return more than ~1000 at once. */
+const PAGE_SIZE = 1000;
+/** Safety cap so a runaway table can't lock the browser up. */
+const MAX_ROWS = 5000;
+/** Coalesce bursts of realtime events into one refetch. */
+const REALTIME_DEBOUNCE_MS = 400;
+
+/**
+ * `opportunities.status` is constrained to ('active','dead','won') at the
+ * database level — see 20260522000000_opportunities_status_allow_won.sql.
+ * 'archived' was never a legal value, so the Archive tab could never match a
+ * row. 'dead' IS the archived state: it is what the archive badge and the
+ * "Reactivate Archived Opportunity?" dialog already key off.
+ */
+const ARCHIVED_STATUS = 'dead';
+
+/**
+ * Terminal stages — excluded from "active" counts and from the idle badge.
+ * Note this is just 'closed_won': fetchOpportunities() runs every row through
+ * migrateStage(), which rewrites the legacy 'live_activated', 'closed_lost'
+ * and 'application_started' names, so those can never appear here.
+ */
+const CLOSED_STAGES: string[] = ['closed_won'];
+
+const STALE_AFTER_DAYS = 7;
+
+const FILTERS_STORAGE_KEY = 'opportunities:filters:v1';
+
+interface PersistedFilters {
+  searchQuery?: string;
+  stageFilter?: string;
+  ownerFilter?: string;
+  pipelineFilter?: string;
+  outcomeFilter?: string;
+  sortField?: SortField;
+  sortDirection?: SortDirection;
+  viewMode?: 'table' | 'cards';
+  viewTab?: 'all' | 'archive';
+  showFilters?: boolean;
+}
+
+const readPersistedFilters = (): PersistedFilters => {
+  try {
+    const raw = sessionStorage.getItem(FILTERS_STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as PersistedFilters) : {};
+  } catch {
+    return {};
+  }
+};
+
+const daysSince = (iso: string) => Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+
+/** Stale = untouched for a while AND still open. Applies to both views. */
+const isStaleOpportunity = (opp: Opportunity) =>
+  daysSince(opp.updated_at) > STALE_AFTER_DAYS && !CLOSED_STAGES.includes(opp.stage);
+
+/** Created dates older than the current year need the year to be unambiguous. */
+const formatCreated = (iso: string) => {
+  const d = new Date(iso);
+  return format(d, d.getFullYear() === new Date().getFullYear() ? 'MMM d' : 'MMM d, yyyy');
+};
+
+type ActivityInsert = Database['public']['Tables']['activities']['Insert'];
+
+/**
+ * Record an audit-trail entry. These inserts were previously fire-and-forget
+ * everywhere in this file, so RLS or network failures left silent holes in the
+ * activity log. Returns false on failure so callers can warn.
+ */
+const logActivity = async (row: ActivityInsert) => {
+  const { error } = await supabase.from('activities').insert(row);
+  if (error) {
+    console.error('Failed to write activity log entry:', error, row);
+    return false;
+  }
+  return true;
+};
+
+let channelSeq = 0;
+
 const Opportunities = () => {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -89,22 +169,15 @@ const Opportunities = () => {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  // Persist filters across navigation (e.g. drilling into an account & clicking Back)
-  const FILTERS_STORAGE_KEY = 'opportunities:filters:v1';
-  const persisted = (() => {
-    try {
-      const raw = sessionStorage.getItem(FILTERS_STORAGE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch {
-      return {};
-    }
-  })();
+  // Persist filters across navigation (e.g. drilling into an account & clicking Back).
+  // Read once via a lazy initialiser — this used to be a bare IIFE in the
+  // component body, so it re-parsed sessionStorage on every single render.
+  const [persisted] = useState<PersistedFilters>(readPersistedFilters);
 
   const [searchQuery, setSearchQuery] = useState<string>(persisted.searchQuery ?? "");
   const [stageFilter, setStageFilter] = useState<string>(persisted.stageFilter ?? "all");
   const [ownerFilter, setOwnerFilter] = useState<string>(persisted.ownerFilter ?? "all");
   const [pipelineFilter, setPipelineFilter] = useState<string>(persisted.pipelineFilter ?? "all");
-  const [statusFilter, setStatusFilter] = useState<string>(persisted.statusFilter ?? "all");
   const [outcomeFilter, setOutcomeFilter] = useState<string>(persisted.outcomeFilter ?? "all");
   const [sortField, setSortField] = useState<SortField>(persisted.sortField ?? 'updated');
   const [sortDirection, setSortDirection] = useState<SortDirection>(persisted.sortDirection ?? 'desc');
@@ -114,6 +187,8 @@ const Opportunities = () => {
   const [reactivateConfirm, setReactivateConfirm] = useState<{ opp: Opportunity; assignee: string } | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState<boolean>(persisted.showFilters ?? false);
+  const [isTruncated, setIsTruncated] = useState(false);
+  const [channelId] = useState(() => ++channelSeq);
 
   useEffect(() => {
     try {
@@ -124,7 +199,6 @@ const Opportunities = () => {
           stageFilter,
           ownerFilter,
           pipelineFilter,
-          statusFilter,
           outcomeFilter,
           sortField,
           sortDirection,
@@ -136,7 +210,7 @@ const Opportunities = () => {
     } catch {
       /* ignore quota errors */
     }
-  }, [searchQuery, stageFilter, ownerFilter, pipelineFilter, statusFilter, outcomeFilter, sortField, sortDirection, viewMode, viewTab, showFilters]);
+  }, [searchQuery, stageFilter, ownerFilter, pipelineFilter, outcomeFilter, sortField, sortDirection, viewMode, viewTab, showFilters]);
 
   const toggleRowSelect = (id: string) => {
     setSelectedIds(prev => {
@@ -151,8 +225,11 @@ const Opportunities = () => {
   useEffect(() => {
     if (searchParams.get('new') === 'true') {
       setShowNewModal(true);
-      // Clear the query param
-      setSearchParams({});
+      // Clear only the param we consumed — setSearchParams({}) wiped every
+      // other query param on the URL along with it.
+      const next = new URLSearchParams(searchParams);
+      next.delete('new');
+      setSearchParams(next, { replace: true });
     }
   }, [searchParams, setSearchParams]);
 
@@ -160,25 +237,40 @@ const Opportunities = () => {
     setLoading(true);
     setFetchError(null);
     try {
-      const { data, error } = await supabase
-        .from('opportunities')
-        .select(`
-          *,
-          account:accounts(*),
-          contact:contacts(*),
-          wizard_state:onboarding_wizard_states(*)
-        `)
-        .order('updated_at', { ascending: false });
+      // PostgREST caps a single response at ~1000 rows. The page previously
+      // took whatever came back and computed every KPI off it, so past that
+      // ceiling the cards were quietly wrong and rows vanished with no
+      // warning. Page through instead, and say so if we hit the safety cap.
+      const rows: any[] = [];
+      let truncated = false;
 
-      if (error) throw error;
+      for (let from = 0; from < MAX_ROWS; from += PAGE_SIZE) {
+        const { data, error } = await supabase
+          .from('opportunities')
+          .select(`
+            *,
+            account:accounts(*),
+            contact:contacts(*),
+            wizard_state:onboarding_wizard_states(*)
+          `)
+          .order('updated_at', { ascending: false })
+          .range(from, from + PAGE_SIZE - 1);
 
-      const mapped = (data || []).map((opp: any) => ({
+        if (error) throw error;
+        rows.push(...(data ?? []));
+
+        if (!data || data.length < PAGE_SIZE) break;
+        if (from + PAGE_SIZE >= MAX_ROWS) truncated = true;
+      }
+
+      const mapped = rows.map((opp: any) => ({
         ...opp,
         stage: migrateStage(opp.stage),
         wizard_state: Array.isArray(opp.wizard_state) ? opp.wizard_state[0] : opp.wizard_state,
       }));
 
       setOpportunities(mapped);
+      setIsTruncated(truncated);
     } catch (error) {
       console.error('Error fetching opportunities:', error);
       setFetchError('Failed to load opportunities. Please try again.');
@@ -191,16 +283,27 @@ const Opportunities = () => {
   useEffect(() => {
     fetchOpportunities();
 
-    // Subscribe to realtime updates
+    // One teammate running a bulk update fires an event per row. Refetching on
+    // each one caused a refetch storm across every open browser, so coalesce
+    // bursts into a single trailing refetch.
+    let debounce: ReturnType<typeof setTimeout> | undefined;
+    const scheduleRefetch = () => {
+      clearTimeout(debounce);
+      debounce = setTimeout(() => fetchOpportunities(), REALTIME_DEBOUNCE_MS);
+    };
+
+    // Unique per mount: a static channel name collides when the component
+    // mounts twice (StrictMode, or the page open in two views).
     const channel = supabase
-      .channel('opportunities-page')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'opportunities' }, fetchOpportunities)
+      .channel(`opportunities-page:${channelId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'opportunities' }, scheduleRefetch)
       .subscribe();
 
     return () => {
+      clearTimeout(debounce);
       supabase.removeChannel(channel);
     };
-  }, [fetchOpportunities]);
+  }, [fetchOpportunities, channelId]);
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -211,26 +314,22 @@ const Opportunities = () => {
     }
   };
 
+  // "Open" means not done — `status === 'open'` silently dropped in_progress
+  // tasks, so the table and card views showed different numbers in the same
+  // badge. This matches the convention used in TasksContext.
   const getTaskCount = (opportunityId: string) => {
-    return tasks.filter(t => t.relatedOpportunityId === opportunityId && t.status === 'open').length;
+    return tasks.filter(t => t.relatedOpportunityId === opportunityId && t.status !== 'done').length;
   };
 
   const filteredOpportunities = useMemo(() => {
     // Exclude auto-synced email leads — they belong on the Leads page only
     let filtered = opportunities.filter(opp => (opp.account?.status as string) !== 'lead');
 
-    // Tab-level filter: archive tab shows only archived, all tab excludes archived
-    if (viewTab === 'archive') {
-      filtered = filtered.filter(opp => (opp.status as string) === 'archived');
-    } else {
-      filtered = filtered.filter(opp => (opp.status as string) !== 'archived');
-      // Status filter (within non-archived)
-      if (statusFilter !== "all") {
-        filtered = filtered.filter(opp => 
-          statusFilter === "active" ? opp.status !== 'dead' : opp.status === 'dead'
-        );
-      }
-    }
+    // Tab-level filter. See ARCHIVED_STATUS: 'dead' is the archived state, and
+    // the tab is the only control that selects it.
+    filtered = viewTab === 'archive'
+      ? filtered.filter(opp => opp.status === ARCHIVED_STATUS)
+      : filtered.filter(opp => opp.status !== ARCHIVED_STATUS);
 
     // Search filter
     if (searchQuery) {
@@ -303,33 +402,45 @@ const Opportunities = () => {
     });
 
     return filtered;
-  }, [opportunities, searchQuery, stageFilter, ownerFilter, pipelineFilter, statusFilter, outcomeFilter, viewTab, sortField, sortDirection, tasks]);
+  }, [opportunities, searchQuery, stageFilter, ownerFilter, pipelineFilter, outcomeFilter, viewTab, sortField, sortDirection, tasks]);
 
-  // Stats
+  // Stats. "Active Deals" previously counted won deals, which then also fed
+  // the "Won" card; and the "Archived" card counted a status value the DB
+  // constraint makes impossible, so it was permanently zero.
   const stats = useMemo(() => {
-    const nonArchived = opportunities.filter(o => (o.status as string) !== 'archived');
-    const active = nonArchived.filter(o => o.status !== 'dead');
-    const byStage: Record<string, number> = {};
-    active.forEach(o => {
-      byStage[o.stage] = (byStage[o.stage] || 0) + 1;
-    });
-    
+    const archived = opportunities.filter(o => o.status === ARCHIVED_STATUS);
+    const live = opportunities.filter(o => o.status !== ARCHIVED_STATUS);
+
+    const won = live.filter(o => o.status === 'won' || CLOSED_STAGES.includes(o.stage));
+    const open = live.filter(o => o.status !== 'won' && !CLOSED_STAGES.includes(o.stage));
+
     return {
-      total: active.length,
-      new: byStage['application_started'] || 0,
-      inProgress: active.filter(o => !['application_started', 'live_activated', 'closed_won', 'closed_lost'].includes(o.stage)).length,
-      won: (byStage['live_activated'] || 0) + (byStage['closed_won'] || 0),
-      lost: nonArchived.filter(o => o.status === 'dead').length,
-      archived: opportunities.filter(o => (o.status as string) === 'archived').length,
+      total: open.length,
+      // Subset of Open: everything that has moved past first-touch discovery.
+      inProgress: open.filter(o => o.stage !== 'discovery').length,
+      won: won.length,
+      archived: archived.length,
     };
   }, [opportunities]);
+
+  // Selection is scoped to what's on screen; keeping ids that the current
+  // filters exclude made the "N items selected" counter describe rows the user
+  // could not see.
+  useEffect(() => {
+    setSelectedIds(prev => {
+      if (prev.size === 0) return prev;
+      const visible = new Set(filteredOpportunities.map(o => o.id));
+      const next = new Set([...prev].filter(id => visible.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [filteredOpportunities]);
 
   const navigateToOpportunity = (opp: Opportunity) => {
     navigate(`/opportunities/${opp.id}`);
   };
 
   const handleAssignmentChange = (opp: Opportunity, newAssignee: string) => {
-    const wasArchived = opp.status === 'dead';
+    const wasArchived = opp.status === ARCHIVED_STATUS;
     const assigneeValue = newAssignee === 'unassigned' ? null : newAssignee;
     
     // Show confirmation if reactivating an archived opportunity
@@ -370,22 +481,68 @@ const Opportunities = () => {
       return;
     }
     
-    await supabase.from('activities').insert({
+    const logged = await logActivity({
       opportunity_id: opp.id,
       type: isReactivation ? 'reactivated' : 'assignment_change',
-      description: isReactivation 
+      description: isReactivation
         ? `Reactivated and assigned to ${assigneeValue}`
         : `Assigned to ${assigneeValue || 'Unassigned'}`,
       user_id: user?.id,
       user_email: user?.email,
     });
-    
-    toast({ 
-      title: isReactivation 
-        ? `Reactivated and assigned to ${assigneeValue}` 
-        : `Assigned to ${assigneeValue || 'Unassigned'}` 
+
+    toast({
+      title: isReactivation
+        ? `Reactivated and assigned to ${assigneeValue}`
+        : `Assigned to ${assigneeValue || 'Unassigned'}`,
+      description: logged ? undefined : 'Saved, but the activity log entry failed.',
     });
+
+    fetchOpportunities();
   };
+
+  /**
+   * Switch an opportunity between the Processing and Gateway pipelines.
+   * Previously implemented twice — inline <Select> and row dropdown — with
+   * copy-pasted logic that had already drifted (the dropdown copy carried a
+   * dead `newStage` variable).
+   */
+  const switchPipeline = useCallback(async (opp: Opportunity, newType: 'processing' | 'gateway_only') => {
+    const currentType = getServiceType(opp);
+    if (newType === currentType) return;
+
+    const label = (t: string) => (t === 'gateway_only' ? 'Gateway' : 'Processing');
+    const stageReset =
+      newType === 'gateway_only' && !GATEWAY_ONLY_PIPELINE_STAGES.includes(opp.stage as OpportunityStage)
+        ? 'discovery'
+        : undefined;
+
+    const updatePayload: Record<string, unknown> = { service_type: newType };
+    if (stageReset) updatePayload.stage = stageReset;
+
+    const { error } = await supabase
+      .from('opportunities')
+      .update(updatePayload)
+      .eq('id', opp.id);
+    if (error) {
+      toast({ title: "Failed to switch pipeline", variant: "destructive" });
+      return;
+    }
+
+    const logged = await logActivity({
+      opportunity_id: opp.id,
+      type: 'pipeline_change',
+      description: `Switched from ${label(currentType)} to ${label(newType)}${stageReset ? ' (stage reset to Discovery)' : ''}`,
+      user_id: user?.id,
+      user_email: user?.email,
+    });
+
+    toast({
+      title: `Switched to ${label(newType)} pipeline`,
+      description: logged ? undefined : 'Saved, but the activity log entry failed.',
+    });
+    fetchOpportunities();
+  }, [toast, user, fetchOpportunities]);
 
   const confirmReactivation = () => {
     if (reactivateConfirm) {
@@ -396,13 +553,7 @@ const Opportunities = () => {
 
   const selectedCount = selectedIds.size;
   const visibleCount = filteredOpportunities.length;
-  const viewLabel = viewTab === 'archive'
-    ? 'Archived - Opportunities'
-    : statusFilter === 'all'
-      ? 'All - Opportunities'
-      : statusFilter === 'active'
-        ? 'Active - Opportunities'
-        : 'Dead - Opportunities';
+  const viewLabel = viewTab === 'archive' ? 'Archived - Opportunities' : 'All - Opportunities';
   const statusText = selectedCount > 0
     ? `${selectedCount} item${selectedCount === 1 ? '' : 's'} selected`
     : `${visibleCount} item${visibleCount === 1 ? '' : 's'} • Sorted by ${sortField.charAt(0).toUpperCase() + sortField.slice(1)}`;
@@ -436,7 +587,14 @@ const Opportunities = () => {
       <Button variant="outline" size="sm" className="h-8" onClick={() => navigate('/tools/csv-import')}>
         <Upload className="h-3.5 w-3.5 mr-1.5" /> Import
       </Button>
-      <Button variant="outline" size="sm" className="h-8 text-info border-info/30 hover:bg-info/10 hover:text-info">
+      {/* Not wired up yet — disabled rather than silently doing nothing. */}
+      <Button
+        variant="outline"
+        size="sm"
+        disabled
+        title="Intelligence View is not available yet"
+        className="h-8 text-info border-info/30 hover:bg-info/10 hover:text-info"
+      >
         <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Intelligence View
       </Button>
       <Button size="sm" className="h-8" onClick={() => setShowNewModal(true)}>
@@ -474,13 +632,19 @@ const Opportunities = () => {
         />
         <div className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-4">
           {/* KPI Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 stagger-children">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 stagger-children">
             <StatCard label="Active Deals" value={stats.total} icon={TrendingUp} color="success" />
             <StatCard label="In Progress" value={stats.inProgress} icon={Clock} color="warning" />
             <StatCard label="Won" value={stats.won} icon={CheckCircle2} color="primary" />
-            <StatCard label="Closed / Dead" value={stats.lost} icon={XCircle} color="destructive" />
-            <StatCard label="Archived" value={stats.archived} icon={Archive} color="muted" />
+            <StatCard label="Archived / Dead" value={stats.archived} icon={Archive} color="muted" />
           </div>
+
+          {isTruncated && (
+            <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+              Showing the {MAX_ROWS.toLocaleString()} most recently updated opportunities. Counts above
+              cover only these rows — narrow the filters to see the rest.
+            </div>
+          )}
 
           {/* Toolbar */}
           <ListViewToolbar
@@ -604,8 +768,8 @@ const Opportunities = () => {
                         const progress = opp.wizard_state?.progress || 0;
                         
                           // Staleness: days since last update
-                          const daysSinceUpdate = Math.floor((Date.now() - new Date(opp.updated_at).getTime()) / 86400000);
-                          const isStale = daysSinceUpdate > 7 && !['live_activated', 'closed_won', 'closed_lost'].includes(opp.stage);
+                          const daysSinceUpdate = daysSince(opp.updated_at);
+                          const isStale = isStaleOpportunity(opp);
                         
                         const isSelected = selectedIds.has(opp.id);
                         return (
@@ -630,7 +794,7 @@ const Opportunities = () => {
                               <div>
                                 <div className="flex items-center gap-1.5 mb-0.5">
                                   <p className="text-info hover:underline text-sm font-normal leading-tight">{opp.account?.name || 'Unknown'}</p>
-                                  {opp.status === 'dead' && (
+                                  {opp.status === ARCHIVED_STATUS && (
                                     <Badge variant="outline" className="text-[9px] h-4 px-1 border-amber-500/40 text-amber-600 dark:text-amber-400">archived</Badge>
                                   )}
                                   {isStale && (
@@ -678,34 +842,45 @@ const Opportunities = () => {
                                      }
                                    }
                                    
-                                   // Duplicate check when moving past discovery
+                                   // Duplicate check when moving past discovery.
+                                   // This is advisory — it does not block the
+                                   // move — so it must not look like an error.
                                    if (newStage !== 'discovery' && opp.stage === 'discovery') {
                                      const dupWarning = await checkDuplicateMerchant(opp.id);
                                      if (dupWarning) {
-                                       toast({ title: "Duplicate Warning", description: dupWarning, variant: "destructive", duration: 8000 });
+                                       toast({ title: "Possible duplicate merchant", description: `${dupWarning} — the stage change was still applied.`, duration: 8000 });
                                      }
                                    }
-                                   
+
                                    const { error } = await supabase
                                      .from('opportunities')
                                      .update({ stage: newStage })
                                      .eq('id', opp.id);
-                                   
+
                                    if (error) {
                                      toast({ title: "Failed to update stage", variant: "destructive" });
                                      return;
                                    }
-                                   
-                                   // Log activity
-                                   await supabase.from('activities').insert({
+
+                                   // Log activity. Every other STAGE_CONFIG read
+                                   // in this file is optional-chained; this one
+                                   // was not, so a legacy or unmapped stage threw
+                                   // here — after the write had already landed —
+                                   // losing the activity entry and the toast.
+                                   const stageLabel = (stage: string) =>
+                                     STAGE_CONFIG[stage as OpportunityStage]?.label ?? stage;
+
+                                   const logged = await logActivity({
                                      opportunity_id: opp.id,
                                      type: 'stage_change',
-                                     description: `Moved from ${STAGE_CONFIG[oldStage as OpportunityStage].label} to ${STAGE_CONFIG[newStage].label}`,
+                                     description: `Moved from ${stageLabel(oldStage)} to ${stageLabel(newStage)}`,
                                      user_id: user?.id,
                                      user_email: user?.email,
                                    });
-                                   
-                                   // Send email notification
+
+                                   // Send email notification. These are async and
+                                   // can fail after the success toast, so surface
+                                   // the failure instead of only logging it.
                                    if (opp.assigned_to) {
                                      sendStageChangeEmail(
                                        opp.assigned_to,
@@ -713,19 +888,41 @@ const Opportunities = () => {
                                        oldStage,
                                        newStage,
                                        user?.email
-                                     ).catch(err => console.error("Failed to send stage change email:", err));
+                                     ).catch(err => {
+                                       console.error("Failed to send stage change email:", err);
+                                       toast({
+                                         title: "Stage saved, but the owner wasn't notified",
+                                         description: `Couldn't email ${opp.assigned_to}.`,
+                                         variant: "destructive",
+                                       });
+                                     });
                                     }
-                                    
+
                                     // Trigger qualified docs request email
                                     if (newStage === 'qualified') {
                                       sendQualifiedDocsRequest(
                                         opp.id,
                                         opp.account_id,
                                         opp.contact_id
-                                      ).catch(err => console.error("Failed to send qualified docs email:", err));
+                                      ).catch(err => {
+                                        console.error("Failed to send qualified docs email:", err);
+                                        toast({
+                                          title: "Stage saved, but the docs request wasn't sent",
+                                          variant: "destructive",
+                                        });
+                                      });
                                     }
-                                    
-                                    toast({ title: `Stage updated to ${STAGE_CONFIG[newStage].label}` });
+
+                                    toast({
+                                      title: `Stage updated to ${stageLabel(newStage)}`,
+                                      description: logged ? undefined : 'Saved, but the activity log entry failed.',
+                                    });
+
+                                    // Don't rely on realtime being enabled for
+                                    // this table — the pipeline switcher refetches
+                                    // and this path must too, or the row never
+                                    // visibly updates.
+                                    fetchOpportunities();
                                 }}
                               >
                                 <SelectTrigger className="h-7 w-auto min-w-[100px] border-0 bg-transparent hover:bg-muted/50 px-2 text-xs gap-1">
@@ -770,33 +967,7 @@ const Opportunities = () => {
                             <TableCell onClick={(e) => e.stopPropagation()}>
                               <Select
                                 value={serviceType}
-                                onValueChange={async (value) => {
-                                  if (value === serviceType) return;
-                                  const newType = value as 'processing' | 'gateway_only';
-                                  const GATEWAY_STAGES = ['discovery', 'qualified', 'gateway_submitted', 'integration_setup', 'testing', 'go_live_ready'];
-                                  const stageReset = (newType === 'gateway_only' && !GATEWAY_STAGES.includes(opp.stage)) ? 'discovery' : undefined;
-                                  
-                                  const updatePayload: Record<string, unknown> = { service_type: newType };
-                                  if (stageReset) updatePayload.stage = stageReset;
-                                  
-                                  const { error } = await supabase
-                                    .from('opportunities')
-                                    .update(updatePayload)
-                                    .eq('id', opp.id);
-                                  if (error) {
-                                    toast({ title: "Failed to switch pipeline", variant: "destructive" });
-                                    return;
-                                  }
-                                  await supabase.from('activities').insert({
-                                    opportunity_id: opp.id,
-                                    type: 'pipeline_change',
-                                    description: `Switched from ${serviceType === 'gateway_only' ? 'Gateway' : 'Processing'} to ${newType === 'gateway_only' ? 'Gateway' : 'Processing'}${stageReset ? ' (stage reset to Discovery)' : ''}`,
-                                    user_id: user?.id,
-                                    user_email: user?.email,
-                                  });
-                                  toast({ title: `Switched to ${newType === 'gateway_only' ? 'Gateway' : 'Processing'} pipeline` });
-                                  fetchOpportunities();
-                                }}
+                                onValueChange={(value) => switchPipeline(opp, value as 'processing' | 'gateway_only')}
                               >
                                 <SelectTrigger className="h-7 w-auto min-w-[100px] border-0 bg-transparent hover:bg-muted/50 px-2 text-xs gap-1">
                                   {serviceType === 'gateway_only' ? (
@@ -858,7 +1029,7 @@ const Opportunities = () => {
                               </div>
                             </TableCell>
                             <TableCell className="py-2.5 text-xs text-muted-foreground">
-                              {format(new Date(opp.created_at), 'MMM d')}
+                              {formatCreated(opp.created_at)}
                             </TableCell>
                             <TableCell className="py-2.5 text-xs text-muted-foreground">
                               {formatDistanceToNow(new Date(opp.updated_at), { addSuffix: true }).replace('about ', '').replace('less than a minute ago', 'just now')}
@@ -876,35 +1047,9 @@ const Opportunities = () => {
                                     View Details
                                   </DropdownMenuItem>
                                   <DropdownMenuSeparator />
-                                  <DropdownMenuItem onClick={async () => {
-                                    const currentType = getServiceType(opp);
-                                    const newType = currentType === 'gateway_only' ? 'processing' : 'gateway_only';
-                                    const newStage = opp.stage;
-                                    // If switching to gateway_only and current stage is not in gateway pipeline, reset to discovery
-                                    const GATEWAY_STAGES = ['discovery', 'qualified', 'gateway_submitted', 'integration_setup', 'testing', 'go_live_ready'];
-                                    const stageUpdate = (newType === 'gateway_only' && !GATEWAY_STAGES.includes(newStage)) ? 'discovery' : undefined;
-                                    
-                                    const updatePayload: Record<string, unknown> = { service_type: newType };
-                                    if (stageUpdate) updatePayload.stage = stageUpdate;
-                                    
-                                    const { error } = await supabase
-                                      .from('opportunities')
-                                      .update(updatePayload)
-                                      .eq('id', opp.id);
-                                    if (error) {
-                                      toast({ title: "Failed to switch pipeline", variant: "destructive" });
-                                      return;
-                                    }
-                                    await supabase.from('activities').insert({
-                                      opportunity_id: opp.id,
-                                      type: 'pipeline_change',
-                                      description: `Switched from ${currentType === 'gateway_only' ? 'Gateway' : 'Processing'} to ${newType === 'gateway_only' ? 'Gateway' : 'Processing'}${stageUpdate ? ' (stage reset to Discovery)' : ''}`,
-                                      user_id: user?.id,
-                                      user_email: user?.email,
-                                    });
-                                    toast({ title: `Switched to ${newType === 'gateway_only' ? 'Gateway' : 'Processing'} pipeline` });
-                                    fetchOpportunities();
-                                  }}>
+                                  <DropdownMenuItem onClick={() =>
+                                    switchPipeline(opp, getServiceType(opp) === 'gateway_only' ? 'processing' : 'gateway_only')
+                                  }>
                                     {getServiceType(opp) === 'gateway_only' ? (
                                       <><CreditCard className="h-4 w-4 mr-2" />Switch to Processing</>
                                     ) : (
@@ -940,9 +1085,11 @@ const Opportunities = () => {
                     const stageConfig = STAGE_CONFIG[opp.stage as OpportunityStage];
                     const serviceType = getServiceType(opp);
                     const progress = opp.wizard_state?.progress || 0;
-                    const daysSince = Math.floor((Date.now() - new Date(opp.updated_at).getTime()) / 86400000);
-                    const isStale = daysSince > 7;
-                    const taskCnt = tasks.filter(t => t.relatedOpportunityId === opp.id && t.status !== 'done').length;
+                    // Same rule as the table view — the card view used to omit
+                    // the closed-stage exclusion, so won deals showed "43d idle".
+                    const daysIdle = daysSince(opp.updated_at);
+                    const isStale = isStaleOpportunity(opp);
+                    const taskCnt = getTaskCount(opp.id);
                     
                     return (
                       <Card 
@@ -957,7 +1104,7 @@ const Opportunities = () => {
                               <div className="flex items-center gap-1.5 mb-0.5">
                                 <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: stageConfig?.color }} />
                                 <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">{stageConfig?.label}</span>
-                                {isStale && <span className="text-[10px] text-muted-foreground/50">{daysSince}d idle</span>}
+                                {isStale && <span className="text-[10px] text-muted-foreground/50">{daysIdle}d idle</span>}
                               </div>
                               <h3 className="font-semibold text-sm leading-tight">{opp.account?.name || 'Unknown'}</h3>
                               <div className="flex items-center gap-1.5 mt-0.5">

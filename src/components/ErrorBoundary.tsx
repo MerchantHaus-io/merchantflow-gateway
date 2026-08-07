@@ -1,9 +1,16 @@
 import { Component, ErrorInfo, ReactNode } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 interface Props {
   children: ReactNode;
+  /**
+   * When any value in this array changes, the boundary clears its error state.
+   * Used to reset on navigation so a crash on one page doesn't strand the user
+   * on the error screen for the rest of the session.
+   */
+  resetKeys?: unknown[];
 }
 
 interface State {
@@ -11,9 +18,12 @@ interface State {
   error: Error | null;
 }
 
+const keysChanged = (a: unknown[] = [], b: unknown[] = []) =>
+  a.length !== b.length || a.some((value, i) => !Object.is(value, b[i]));
+
 /**
- * Global Error Boundary — catches unhandled React rendering errors
- * and displays a branded recovery screen instead of a white page.
+ * Error Boundary — catches unhandled React rendering errors and displays a
+ * branded recovery screen instead of a white page.
  */
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
@@ -23,6 +33,12 @@ export class ErrorBoundary extends Component<Props, State> {
 
   static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
+  }
+
+  componentDidUpdate(prevProps: Props) {
+    if (this.state.hasError && keysChanged(prevProps.resetKeys, this.props.resetKeys)) {
+      this.setState({ hasError: false, error: null });
+    }
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
@@ -76,3 +92,13 @@ export class ErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
+
+/**
+ * Route-scoped boundary: same UI, but clears itself whenever the URL changes.
+ * Sits inside the router so a crash in one page is recoverable by navigating
+ * away, rather than requiring a hard reload.
+ */
+export const RouteErrorBoundary = ({ children }: { children: ReactNode }) => {
+  const location = useLocation();
+  return <ErrorBoundary resetKeys={[location.pathname]}>{children}</ErrorBoundary>;
+};

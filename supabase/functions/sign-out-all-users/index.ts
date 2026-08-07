@@ -72,15 +72,28 @@ Deno.serve(async (req) => {
 
     console.log('Admin user initiating sign-out-all:', user.email);
 
-    // Get all users
-    const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-    
-    if (listError) {
-      console.error('Error listing users:', listError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to list users' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // Page through every user. listUsers() returns only the first 50 by
+    // default, so a single call silently left most of the team signed in
+    // while the response reported success for the whole set.
+    const USERS_PER_PAGE = 200;
+    const users: { id: string; email?: string }[] = [];
+    for (let page = 1; ; page++) {
+      const { data, error: listError } = await supabaseAdmin.auth.admin.listUsers({
+        page,
+        perPage: USERS_PER_PAGE,
+      });
+
+      if (listError) {
+        console.error('Error listing users:', listError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to list users' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const batch = data?.users ?? [];
+      users.push(...batch);
+      if (batch.length < USERS_PER_PAGE) break;
     }
 
     console.log(`Found ${users.length} users to sign out`);
