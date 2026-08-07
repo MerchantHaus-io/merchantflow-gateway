@@ -1240,6 +1240,54 @@ export type Database = {
           },
         ]
       }
+      client_errors: {
+        Row: {
+          component_stack: string | null
+          created_at: string
+          error_id: string
+          id: number
+          message: string
+          release: string | null
+          route: string | null
+          source: string
+          stack: string | null
+          url: string | null
+          user_agent: string | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          component_stack?: string | null
+          created_at?: string
+          error_id: string
+          id?: number
+          message: string
+          release?: string | null
+          route?: string | null
+          source?: string
+          stack?: string | null
+          url?: string | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          component_stack?: string | null
+          created_at?: string
+          error_id?: string
+          id?: number
+          message?: string
+          release?: string | null
+          route?: string | null
+          source?: string
+          stack?: string | null
+          url?: string | null
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       client_interactions: {
         Row: {
           account_id: string
@@ -3286,6 +3334,27 @@ export type Database = {
           },
         ]
       }
+      rate_limit_events: {
+        Row: {
+          created_at: string
+          endpoint: string
+          id: number
+          ip: string
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          id?: number
+          ip: string
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          id?: number
+          ip?: string
+        }
+        Relationships: []
+      }
       referrer_impersonation_logs: {
         Row: {
           admin_email: string
@@ -4406,6 +4475,8 @@ export type Database = {
         Args: { p_channel_name?: string; p_content: string }
         Returns: undefined
       }
+      prune_client_errors: { Args: never; Returns: undefined }
+      prune_rate_limit_events: { Args: never; Returns: undefined }
       referrer_owns: { Args: { _referrer_id: string }; Returns: boolean }
       referrer_owns_account: { Args: { _account_id: string }; Returns: boolean }
       send_system_dm: {
