@@ -1,20 +1,31 @@
 project_id = "cuqjaddtmkotgvfsgcol"
 
+# verify_jwt policy — see docs/EDGE_FUNCTION_AUTH_AUDIT.md for the full table.
+#
+# NOTE: verify_jwt = true only requires *a* valid project-signed JWT, and the
+# publishable anon key is one. It stops unauthenticated scanning; it does NOT
+# stop anyone who reads the anon key out of the JS bundle. Functions handling
+# privileged data still need their own requireAuth/requireRole check.
+#
+#   true  — everything reachable only by a signed-in user or a cron caller
+#   false — genuinely public endpoints (merchant intake, quote acceptance) and
+#           third-party webhooks, which authenticate by signature instead
+
 [functions.export-data]
-verify_jwt = false
+verify_jwt = true
 
 
 [functions.force-password-reset]
-verify_jwt = false
+verify_jwt = true
 
 [functions.sign-out-all-users]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-notification-email]
-verify_jwt = false
+verify_jwt = true
 
 [functions.generate-profile-avatars]
-verify_jwt = false
+verify_jwt = true
 
 [functions.quo-proxy]
 verify_jwt = false
@@ -23,13 +34,13 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.ai-assistant]
-verify_jwt = false
+verify_jwt = true
 
 [functions.analyze-statement]
-verify_jwt = false
+verify_jwt = true
 
 [functions.nmi-transactions]
-verify_jwt = false
+verify_jwt = true
 
 [functions.nmi-partner-residuals]
 verify_jwt = false
@@ -38,7 +49,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.polish-email]
-verify_jwt = false
+verify_jwt = true
 
 [functions.submit-merchant-application]
 verify_jwt = false
@@ -47,19 +58,19 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.send-outreach-emails]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-push-notification]
-verify_jwt = false
+verify_jwt = true
 
 [functions.resend-outreach-webhook]
 verify_jwt = false
 
 [functions.process-scheduled-campaigns]
-verify_jwt = false
+verify_jwt = true
 
 [functions.sla-escalation]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-contact-form-email]
 verify_jwt = false
@@ -68,7 +79,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.classify-document]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-application-declined]
 verify_jwt = false
@@ -83,7 +94,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.nmi-list-merchants]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-outcome-email]
 verify_jwt = false
@@ -103,43 +114,43 @@ verify_jwt = false
 
 
 [functions.nmi-close-gateway]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-billing-doc]
 verify_jwt = false
 
 [functions.inactive-user-reminder]
-verify_jwt = false
+verify_jwt = true
 
 [functions.kurv-list-merchants]
-verify_jwt = false
+verify_jwt = true
 
 [functions.kurv-board-deal]
-verify_jwt = false
+verify_jwt = true
 
 [functions.kurv-deal-status]
-verify_jwt = false
+verify_jwt = true
 
 [functions.kurv-transactions]
-verify_jwt = false
+verify_jwt = true
 
 [functions.kurv-lookups]
-verify_jwt = false
+verify_jwt = true
 
 [functions.kurv-build-payload]
-verify_jwt = false
+verify_jwt = true
 
 [functions.kurv-validate-deal]
-verify_jwt = false
+verify_jwt = true
 
 [functions.quo-sync-calls]
-verify_jwt = false
+verify_jwt = true
 
 [functions.backup-snapshot-to-drive]
-verify_jwt = false
+verify_jwt = true
 
 [functions.backup-flush-changes]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-ticket-status-email]
 verify_jwt = false
@@ -148,7 +159,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.sanitize-existing-tickets]
-verify_jwt = false
+verify_jwt = true
 
 [functions.submit-scoping-request]
 verify_jwt = false

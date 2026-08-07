@@ -22,6 +22,7 @@ import { Select,
   SelectValue,
 } from "@/components/ui/select";
 import { asArray } from "@/lib/utils";
+import { stripInternalCostRefs } from "@/lib/redactCost";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { CheckCircle2, Loader2, ShieldCheck, AlertTriangle } from "lucide-react";
 import merchantHausLogo from "@/assets/merchanthaus-logo.png";
@@ -393,7 +394,7 @@ function QuoteAcceptanceInner() {
                   <td className="py-3 text-neutral-500 text-xs">
                     {l.perEvent
                       ? `${fmt(l.perEvent.resale)} ${l.perEvent.label}`
-                      : l.description}
+                      : stripInternalCostRefs(l.description)}
                   </td>
                   <td className="py-3 text-right text-sm">
                     {l.bundled ? "Included" : `${fmt(l.resale)}/mo`}

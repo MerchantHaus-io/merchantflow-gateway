@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest";
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { stripInternalCostRefs } from "./redactCost";
 
 describe("stripInternalCostRefs", () => {
@@ -53,5 +55,37 @@ describe("stripInternalCostRefs", () => {
     expect(stripInternalCostRefs(undefined)).toBe("");
     expect(stripInternalCostRefs(null)).toBe("");
     expect(stripInternalCostRefs("")).toBe("");
+  });
+});
+
+describe('merchant-facing surfaces are wired to the scrubber', () => {
+  // CLAUDE.md: "Any new merchant-facing document generator MUST run line
+  // descriptions through this helper." These assertions fail loudly if a
+  // generator is added, or an existing one refactored, without it — the
+  // failure mode otherwise is silent partner-cost disclosure to a merchant.
+  const MERCHANT_FACING = [
+    'src/lib/quotePdf.ts',        // quote PDF + MSA Exhibit A
+    'src/lib/billingDocPdf.ts',   // invoices / receipts
+    'src/pages/QuoteAcceptance.tsx', // the public /q/:token signing page
+  ];
+
+  it.each(MERCHANT_FACING)('%s calls stripInternalCostRefs', (file) => {
+    const src = readFileSync(resolve(process.cwd(), file), 'utf8');
+    expect(src).toMatch(/stripInternalCostRefs/);
+  });
+
+  it('scrubs the cost phrasings that appear in persisted snapshots', () => {
+    // Old accepted quotes still carry these strings in lines_snapshot.
+    const samples = [
+      'Pay-by-text payment links. NMI partner cost $5/mo + $0.18/txn.',
+      'Chargeback alerts (partner cost $0.45 each)',
+      'Tokenization vault (wholesale cost $10/mo)',
+      'Account updater — underlying cost $0.25 per update',
+    ];
+    for (const s of samples) {
+      const cleaned = stripInternalCostRefs(s);
+      expect(cleaned).not.toMatch(/partner\s+cost|wholesale\s+cost|underlying\s+cost/i);
+      expect(cleaned.length).toBeGreaterThan(0);
+    }
   });
 });
