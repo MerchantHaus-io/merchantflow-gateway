@@ -27,14 +27,14 @@ const profileSchema = z.object({
     .trim()
     .min(2, { message: "Display name must be at least 2 characters" })
     .max(80, { message: "Display name must be less than 80 characters" })
-    .regex(/^[\p{L}\p{M}0-9 '.\-]+$/u, {
+    .regex(/^[\p{L}\p{M}0-9 '.-]+$/u, {
       message: "Only letters, numbers, spaces, apostrophes, periods and hyphens are allowed",
     }),
   phone: z
     .string()
     .trim()
     .max(20, { message: "Phone must be less than 20 characters" })
-    .refine((v) => v === "" || /^\+?[0-9\s().\-]{7,20}$/.test(v), {
+    .refine((v) => v === "" || /^\+?[0-9\s().-]{7,20}$/.test(v), {
       message: "Enter a valid phone number (7–20 digits, may include + ( ) - spaces)",
     }),
 });

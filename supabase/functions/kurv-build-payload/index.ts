@@ -12,7 +12,7 @@ function pick<T>(...vals: (T | null | undefined | "")[]): T | undefined {
 
 function num(v: any): number | undefined {
   if (v === null || v === undefined || v === "") return undefined;
-  const n = Number(String(v).replace(/[^0-9.\-]/g, ""));
+  const n = Number(String(v).replace(/[^0-9.-]/g, ""));
   return Number.isFinite(n) ? n : undefined;
 }
 
