@@ -147,7 +147,6 @@ export function AppLayout({
         <BroadcastPopup />
         <NMIBoardingBroadcast />
         <AtriaBroadcast />
-        <SharedTodoPopup />
       </BroadcastQueueProvider>
       {/* AtriaFAB removed — AI is now a tab inside FloatingChat */}
       {isMobile && !isChatRoute && <MobileAppDock />}
