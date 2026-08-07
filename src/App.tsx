@@ -8,8 +8,8 @@ import { lazyWithRetry as lazy } from "@/lib/lazyWithRetry";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TasksProvider } from "@/contexts/TasksContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ReferrerRoute } from "./components/ReferrerRoute";
+import { AppShell } from "@/components/AppShell";
 import { ErrorBoundary, RouteErrorBoundary } from "@/components/ErrorBoundary";
 
 // Pages are lazy-loaded so each route ships as its own chunk, keeping the
@@ -165,61 +165,70 @@ const App = () => (
                 <Route path="/terms-processing" element={<TermsProcessing />} />
                 <Route path="/support-request" element={<SupportRequest />} />
                 <Route path="/q/:token" element={<QuoteAcceptance />} />
-                <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-                <Route path="/pipeline" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-                <Route path="/dashboard" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-                <Route path="/opportunities" element={<ProtectedRoute><Opportunities /></ProtectedRoute>} />
-                <Route path="/opportunities/:id" element={<ProtectedRoute><OpportunityDetail /></ProtectedRoute>} />
-                <Route path="/quotes-contracts" element={<ProtectedRoute><QuotesContracts /></ProtectedRoute>} />
-                <Route path="/accounts" element={<ProtectedRoute><Accounts /></ProtectedRoute>} />
-                <Route path="/contacts" element={<ProtectedRoute><Contacts /></ProtectedRoute>} />
-                <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
-                <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-                <Route path="/reports/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
-                <Route path="/sop" element={<ProtectedRoute><SOP /></ProtectedRoute>} />
-                <Route path="/training" element={<ProtectedRoute><Training /></ProtectedRoute>} />
-                <Route path="/tools/revenue-calculator" element={<ProtectedRoute><RevenueCalculator /></ProtectedRoute>} />
-                <Route path="/tools/preboarding-wizard" element={<ProtectedRoute><PreboardingWizard /></ProtectedRoute>} />
-                <Route path="/tools/csv-import" element={<ProtectedRoute><CsvImport /></ProtectedRoute>} />
-                <Route path="/tools/quote-builder" element={<ProtectedRoute><QuoteBuilder /></ProtectedRoute>} />
-                <Route path="/tools/statement-analysis" element={<ProtectedRoute><StatementAnalysis /></ProtectedRoute>} />
-                <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
-                <Route path="/my-tasks" element={<ProtectedRoute><MyTasks /></ProtectedRoute>} />
-                <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-                <Route path="/admin/deletion-requests" element={<ProtectedRoute><DeletionRequests /></ProtectedRoute>} />
-                <Route path="/admin/data-export" element={<ProtectedRoute><DataExport /></ProtectedRoute>} />
-                <Route path="/admin/migration" element={<ProtectedRoute><MigrationChecklist /></ProtectedRoute>} />
+                {/* Every authenticated internal page renders inside AppShell,
+                    which mounts the header, icon rail, chat and docks ONCE.
+                    Previously each page rendered its own AppLayout, so all of
+                    that chrome was destroyed and rebuilt on every navigation —
+                    which is what made a menu click feel like a full reload.
+                    ProtectedRoute lives inside AppShell, so the auth check no
+                    longer remounts per route either (audit #2). */}
+                <Route element={<AppShell />}>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/pipeline" element={<Index />} />
+                  <Route path="/dashboard" element={<Home />} />
+                  <Route path="/opportunities" element={<Opportunities />} />
+                  <Route path="/opportunities/:id" element={<OpportunityDetail />} />
+                  <Route path="/quotes-contracts" element={<QuotesContracts />} />
+                  <Route path="/accounts" element={<Accounts />} />
+                  <Route path="/contacts" element={<Contacts />} />
+                  <Route path="/documents" element={<Documents />} />
+                  <Route path="/reports" element={<Reports />} />
+                  <Route path="/reports/transactions" element={<Transactions />} />
+                  <Route path="/sop" element={<SOP />} />
+                  <Route path="/training" element={<Training />} />
+                  <Route path="/tools/revenue-calculator" element={<RevenueCalculator />} />
+                  <Route path="/tools/preboarding-wizard" element={<PreboardingWizard />} />
+                  <Route path="/tools/csv-import" element={<CsvImport />} />
+                  <Route path="/tools/quote-builder" element={<QuoteBuilder />} />
+                  <Route path="/tools/statement-analysis" element={<StatementAnalysis />} />
+                  <Route path="/tasks" element={<Tasks />} />
+                  <Route path="/my-tasks" element={<MyTasks />} />
+                  <Route path="/notifications" element={<Notifications />} />
+                  <Route path="/admin/deletion-requests" element={<DeletionRequests />} />
+                  <Route path="/admin/data-export" element={<DataExport />} />
+                  <Route path="/admin/migration" element={<MigrationChecklist />} />
                 
-                <Route path="/admin/web-submissions" element={<ProtectedRoute><WebSubmissions /></ProtectedRoute>} />
-                <Route path="/admin/administration" element={<ProtectedRoute><Administration /></ProtectedRoute>} />
+                  <Route path="/admin/web-submissions" element={<WebSubmissions />} />
+                  <Route path="/admin/administration" element={<Administration />} />
                 
-                <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-                <Route path="/connect" element={<ProtectedRoute><Connect /></ProtectedRoute>} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/connect" element={<Connect />} />
 
-                <Route path="/admin/team-roster" element={<ProtectedRoute><TeamRoster /></ProtectedRoute>} />
-                <Route path="/integrations" element={<ProtectedRoute><Integrations /></ProtectedRoute>} />
-                <Route path="/live-billing" element={<ProtectedRoute><LiveBilling /></ProtectedRoute>} />
-                <Route path="/live-billing/:id" element={<ProtectedRoute><LiveAccountDetail /></ProtectedRoute>} />
-                <Route path="/support" element={<ProtectedRoute><SupportTriage /></ProtectedRoute>} />
-                <Route path="/support/:id" element={<ProtectedRoute><SupportTicketDetail /></ProtectedRoute>} />
-                <Route path="/chat" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-                <Route path="/tools/nmi-payments" element={<ProtectedRoute><NMIPaymentsExplained /></ProtectedRoute>} />
-                <Route path="/tools/gateway-guide" element={<ProtectedRoute><GatewayGuide /></ProtectedRoute>} />
-                <Route path="/pricing" element={<ProtectedRoute><Pricing /></ProtectedRoute>} />
-                <Route path="/tools/terminal-updates" element={<ProtectedRoute><TerminalUpdates /></ProtectedRoute>} />
-                <Route path="/tools/netlify" element={<ProtectedRoute><NetlifyHub /></ProtectedRoute>} />
-                <Route path="/tools/nmi-boarding" element={<ProtectedRoute><NMIBoarding /></ProtectedRoute>} />
-                <Route path="/tools/kurv" element={<ProtectedRoute><KurvDashboard /></ProtectedRoute>} />
-                <Route path="/supported-processors" element={<ProtectedRoute><SupportedProcessors /></ProtectedRoute>} />
-                <Route path="/outreach" element={<ProtectedRoute><Outreach /></ProtectedRoute>} />
-                <Route path="/outreach/:id" element={<ProtectedRoute><OutreachDetail /></ProtectedRoute>} />
-                {/* /leads is the renamed home for Accounts — /accounts stays as an alias for bookmarks */}
-                <Route path="/leads" element={<ProtectedRoute><Accounts /></ProtectedRoute>} />
-                <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
-                <Route path="/commissions" element={<ProtectedRoute><Commissions /></ProtectedRoute>} />
-                <Route path="/admin/affiliates" element={<ProtectedRoute><Referrers /></ProtectedRoute>} />
-                <Route path="/admin/referrers" element={<Navigate to="/admin/affiliates" replace />} />
-                <Route path="/admin/gateway-accounts" element={<ProtectedRoute><GatewayAccounts /></ProtectedRoute>} />
+                  <Route path="/admin/team-roster" element={<TeamRoster />} />
+                  <Route path="/integrations" element={<Integrations />} />
+                  <Route path="/live-billing" element={<LiveBilling />} />
+                  <Route path="/live-billing/:id" element={<LiveAccountDetail />} />
+                  <Route path="/support" element={<SupportTriage />} />
+                  <Route path="/support/:id" element={<SupportTicketDetail />} />
+                  <Route path="/chat" element={<Home />} />
+                  <Route path="/tools/nmi-payments" element={<NMIPaymentsExplained />} />
+                  <Route path="/tools/gateway-guide" element={<GatewayGuide />} />
+                  <Route path="/pricing" element={<Pricing />} />
+                  <Route path="/tools/terminal-updates" element={<TerminalUpdates />} />
+                  <Route path="/tools/netlify" element={<NetlifyHub />} />
+                  <Route path="/tools/nmi-boarding" element={<NMIBoarding />} />
+                  <Route path="/tools/kurv" element={<KurvDashboard />} />
+                  <Route path="/supported-processors" element={<SupportedProcessors />} />
+                  <Route path="/outreach" element={<Outreach />} />
+                  <Route path="/outreach/:id" element={<OutreachDetail />} />
+                  {/* /leads is the renamed home for Accounts — /accounts stays as an alias for bookmarks */}
+                  <Route path="/leads" element={<Accounts />} />
+                  <Route path="/calendar" element={<Calendar />} />
+                  <Route path="/commissions" element={<Commissions />} />
+                  <Route path="/admin/affiliates" element={<Referrers />} />
+                  <Route path="/admin/referrers" element={<Navigate to="/admin/affiliates" replace />} />
+                  <Route path="/admin/gateway-accounts" element={<GatewayAccounts />} />
+                </Route>
 
                 {/* Affiliate portal — external partners */}
                 <Route path="/affiliate" element={<ReferrerRoute><PortalDashboard /></ReferrerRoute>} />

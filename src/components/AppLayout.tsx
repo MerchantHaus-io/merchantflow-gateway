@@ -1,29 +1,9 @@
-import { ReactNode, useRef, useCallback, lazy, Suspense } from "react";
+import { ReactNode, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
-import { MegaMenuHeader } from "@/components/MegaMenuHeader";
-import { IconRailSidebar } from "@/components/IconRailSidebar";
-import FloatingChat from "@/components/FloatingChat";
-import { MobileBottomNav } from "@/components/MobileBottomNav";
-import { ActionItemsWidget } from "@/components/ActionItemsWidget";
-import { PersistentTriTabDock } from "@/components/PersistentTriTabDock";
-import { BroadcastPopup } from "@/components/BroadcastPopup";
-import { ComplianceBroadcast } from "@/components/ComplianceBroadcast";
-import { AtriaBroadcast } from "@/components/AtriaBroadcast";
-import { NMIBoardingBroadcast } from "@/components/NMIBoardingBroadcast";
-import { BroadcastQueueProvider } from "@/components/BroadcastQueue";
-import { MobileAppDock } from "@/components/MobileAppDock";
-import { PageTransition } from "@/components/PageTransition";
-import { OfficeSimulatorOverlay } from "@/components/chat/OfficeSimulatorOverlay";
-import { GmailReconnectBanner } from "@/components/GmailReconnectBanner";
-import { usePullToRefresh } from "@/hooks/usePullToRefresh";
-import { useQueryClient } from "@tanstack/react-query";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { useTheme } from "@/contexts/ThemeContext";
-import { RefreshCw, ArrowLeft } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { usePageChrome } from "@/contexts/PageChromeContext";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-const Starfield = lazy(() => import("@/components/Starfield"));
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -34,21 +14,34 @@ interface AppLayoutProps {
   headerActions?: ReactNode;
 }
 
+/**
+ * Per-page header registrar.
+ *
+ * This used to render the entire application chrome — header, icon rail,
+ * FloatingChat, docks, background layers — and all 47 internal pages rendered
+ * their own copy. Navigating therefore unmounted and rebuilt every one of
+ * those components, which is why clicking a menu item felt like a full page
+ * reload, and why an open chat conversation never survived a navigation.
+ *
+ * The chrome now lives in AppShell, mounted once as a layout route. This
+ * component is deliberately kept with the same name and props so that no page
+ * had to change: it simply portals the title/actions bar into the slot the
+ * shell exposes, and renders its children in place.
+ *
+ * Rendering the header through a portal (rather than syncing it into shell
+ * state) means it updates naturally as the page re-renders — no effect that
+ * could loop on a `headerActions` ReactNode whose identity changes every time.
+ */
 export function AppLayout({
   children,
   onNewApplication,
   pageTitle,
   headerActions,
 }: AppLayoutProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const isMobile = useIsMobile();
   const location = useLocation();
   const navigate = useNavigate();
-  const { theme, variant } = useTheme();
-  const queryClient = useQueryClient();
-  const isDark = theme === "dark";
-  const isDoom = variant === "dark-doom";
-  const isChatRoute = location.pathname === "/chat";
+  const chrome = usePageChrome();
+
   const isTopLevel = location.pathname === "/" || location.pathname === "/dashboard";
 
   const handleGoBack = useCallback(() => {
@@ -58,116 +51,39 @@ export function AppLayout({
       navigate("/");
     }
   }, [navigate]);
-  // Refetch data rather than reloading the document. A full reload throws away
-  // all page state, re-downloads the bundle and shows a white flash; this is
-  // instant and keeps filters, scroll position and open panels intact.
-  const handleRefresh = useCallback(async () => {
-    await queryClient.invalidateQueries();
-  }, [queryClient]);
 
-  // No touch-device gate needed: usePullToRefresh binds touchstart/touchmove/
-  // touchend only, so trackpad overscroll (a wheel event) can't trigger it.
-  const { pullDistance, isRefreshing } = usePullToRefresh({
-    containerRef: scrollRef,
-    onRefresh: handleRefresh,
-  });
+  // Ref, not state: publishing the handler must not re-render the shell.
+  if (chrome) {
+    chrome.newApplicationRef.current = onNewApplication;
+  }
 
-  const showIndicator = pullDistance > 0 || isRefreshing;
+  const headerBar =
+    pageTitle || headerActions ? (
+      <div className="gradient-header px-4 lg:px-6 py-3">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          {pageTitle && (
+            <div className="flex items-center gap-2">
+              {!isTopLevel && (
+                <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" onClick={handleGoBack}>
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              )}
+              <h1 className="text-lg font-semibold text-foreground border-l-4 border-primary pl-3">
+                {pageTitle}
+              </h1>
+            </div>
+          )}
+          {headerActions && (
+            <div className="flex items-center gap-2 ml-auto flex-wrap">{headerActions}</div>
+          )}
+        </div>
+      </div>
+    ) : null;
 
   return (
-    <div className="h-screen h-dvh min-h-0 flex flex-col w-full overflow-hidden relative">
-      {isDark && (
-        <>
-          <Suspense fallback={null}>
-            <Starfield />
-          </Suspense>
-          {/* Earth / Hell horizon glow */}
-          <div
-            className="pointer-events-none fixed inset-x-0 bottom-0 z-[1]"
-            style={{
-              height: "40%",
-              background: isDoom
-                ? "radial-gradient(ellipse 120% 60% at 50% 110%, hsla(0, 85%, 35%, 0.35) 0%, hsla(0, 85%, 35%, 0.12) 40%, transparent 70%)"
-                : "radial-gradient(ellipse 120% 60% at 50% 110%, hsla(200, 80%, 35%, 0.25) 0%, hsla(200, 80%, 35%, 0.08) 40%, transparent 70%)",
-            }}
-            aria-hidden="true"
-          />
-        </>
-      )}
-      {/* #99: first tab stop on every internal page, so keyboard users can
-          jump straight to content instead of tabbing the header and rail. */}
-      <a href="#main-content" className="skip-to-content">
-        Skip to content
-      </a>
-      <MegaMenuHeader onNewApplication={onNewApplication} />
-      <GmailReconnectBanner />
-      <div className="flex-1 flex min-h-0 overflow-hidden">
-        <IconRailSidebar />
-        <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col min-h-0 overflow-hidden">
-
-        {(pageTitle || headerActions) && (
-          <div className="gradient-header px-4 lg:px-6 py-3">
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              {pageTitle && (
-                <div className="flex items-center gap-2">
-                  {!isTopLevel && (
-                    <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" onClick={handleGoBack}>
-                      <ArrowLeft className="h-4 w-4" />
-                    </Button>
-                  )}
-                  <h1 className="text-lg font-semibold text-foreground border-l-4 border-primary pl-3">{pageTitle}</h1>
-                </div>
-              )}
-              {headerActions && <div className="flex items-center gap-2 ml-auto flex-wrap">{headerActions}</div>}
-            </div>
-          </div>
-        )}
-
-        {/* Pull-to-refresh indicator */}
-        {showIndicator && (
-          <div
-            className="flex-shrink-0 flex items-center justify-center overflow-hidden transition-all duration-200"
-            style={{ height: isRefreshing ? 40 : Math.min(pullDistance, 60) }}
-          >
-            <RefreshCw
-              className={cn(
-                "h-5 w-5 text-muted-foreground transition-transform",
-                isRefreshing && "animate-spin"
-              )}
-              style={{ transform: isRefreshing ? undefined : `rotate(${pullDistance * 3}deg)` }}
-            />
-          </div>
-        )}
-
-        <div
-          ref={scrollRef}
-          className="flex-1 min-h-0 overflow-y-auto scroll-smooth pb-16 lg:pb-0"
-        >
-          {/* No key: keying on pathname remounted the whole page subtree on
-              every navigation, so all page state was destroyed, every fetch
-              re-ran, and back-navigation lost scroll position, filters and
-              open panels. The transition still plays via PageTransition's own
-              location awareness. */}
-          <PageTransition>
-            {children}
-          </PageTransition>
-        </div>
-        </main>
-      </div>
-
-      <MobileBottomNav />
-      <FloatingChat />
-      <ActionItemsWidget />
-      <PersistentTriTabDock />
-      <BroadcastQueueProvider>
-        <ComplianceBroadcast />
-        <BroadcastPopup />
-        <NMIBoardingBroadcast />
-        <AtriaBroadcast />
-      </BroadcastQueueProvider>
-      {/* AtriaFAB removed — AI is now a tab inside FloatingChat */}
-      {isMobile && !isChatRoute && <MobileAppDock />}
-      <OfficeSimulatorOverlay />
-    </div>
+    <>
+      {headerBar && chrome?.headerSlot ? createPortal(headerBar, chrome.headerSlot) : null}
+      {children}
+    </>
   );
 }
