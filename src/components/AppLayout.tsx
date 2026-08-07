@@ -16,6 +16,7 @@ import { PageTransition } from "@/components/PageTransition";
 import { OfficeSimulatorOverlay } from "@/components/chat/OfficeSimulatorOverlay";
 import { GmailReconnectBanner } from "@/components/GmailReconnectBanner";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import { useQueryClient } from "@tanstack/react-query";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useTheme } from "@/contexts/ThemeContext";
 import { RefreshCw, ArrowLeft } from "lucide-react";
@@ -44,6 +45,7 @@ export function AppLayout({
   const location = useLocation();
   const navigate = useNavigate();
   const { theme, variant } = useTheme();
+  const queryClient = useQueryClient();
   const isDark = theme === "dark";
   const isDoom = variant === "dark-doom";
   const isChatRoute = location.pathname === "/chat";
@@ -56,10 +58,15 @@ export function AppLayout({
       navigate("/");
     }
   }, [navigate]);
+  // Refetch data rather than reloading the document. A full reload throws away
+  // all page state, re-downloads the bundle and shows a white flash; this is
+  // instant and keeps filters, scroll position and open panels intact.
   const handleRefresh = useCallback(async () => {
-    window.location.reload();
-  }, []);
+    await queryClient.invalidateQueries();
+  }, [queryClient]);
 
+  // No touch-device gate needed: usePullToRefresh binds touchstart/touchmove/
+  // touchend only, so trackpad overscroll (a wheel event) can't trigger it.
   const { pullDistance, isRefreshing } = usePullToRefresh({
     containerRef: scrollRef,
     onRefresh: handleRefresh,
@@ -131,7 +138,12 @@ export function AppLayout({
           ref={scrollRef}
           className="flex-1 min-h-0 overflow-y-auto scroll-smooth pb-16 lg:pb-0"
         >
-          <PageTransition key={location.pathname}>
+          {/* No key: keying on pathname remounted the whole page subtree on
+              every navigation, so all page state was destroyed, every fetch
+              re-ran, and back-navigation lost scroll position, filters and
+              open panels. The transition still plays via PageTransition's own
+              location awareness. */}
+          <PageTransition>
             {children}
           </PageTransition>
         </div>

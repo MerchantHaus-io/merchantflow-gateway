@@ -12,12 +12,13 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Shield, RefreshCw, LogOut, Camera, User, Loader2, Save, Bell, Palette, Sun, Moon, Trees, Waves, Flame, Stars, MessageCircle, Volume2, Download, FileArchive, Users, Cloudy, Circle, Smartphone, DatabaseBackup, Gamepad2, Cloud, Skull, Plug } from "lucide-react";
+import { Shield, RefreshCw, LogOut, Camera, User, Loader2, Save, Bell, Palette, Sun, Moon, Trees, Waves, Flame, Stars, MessageCircle, Volume2, Download, FileArchive, Users, Cloudy, Circle, Smartphone, DatabaseBackup, Gamepad2, Cloud, Skull, Plug, Maximize2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import { useUserRole } from "@/hooks/useUserRole";
 import JSZip from "jszip";
 import { Switch } from "@/components/ui/switch";
+import { isAutoFullscreenEnabled, setAutoFullscreenEnabled } from "@/lib/uiPreferences";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import AvatarCropDialog from "@/components/AvatarCropDialog";
 
@@ -87,6 +88,7 @@ const Settings = () => {
     }
     return true;
   });
+  const [autoFullscreen, setAutoFullscreen] = useState(isAutoFullscreenEnabled);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
   const [cropImageSrc, setCropImageSrc] = useState<string>("");
@@ -791,6 +793,25 @@ const Settings = () => {
                         setChatSoundEnabled(checked);
                         localStorage.setItem('chatSoundEnabled', String(checked));
                       }} 
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Maximize2 className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <h3 className="font-medium">Auto-fullscreen after sign-in</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Enter fullscreen on your first click after signing in. Off by default —
+                          fullscreen hides the address bar, so you can't copy a link to a deal.
+                        </p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={autoFullscreen}
+                      onCheckedChange={(checked) => {
+                        setAutoFullscreen(checked);
+                        setAutoFullscreenEnabled(checked);
+                      }}
                     />
                   </div>
                   <p className="text-xs text-muted-foreground">
