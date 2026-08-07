@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import { z } from 'zod';
 import { getFriendlyError } from '@/lib/friendly-errors';
 import merchantHausLogo from '@/assets/merchanthaus-logo.png';
 import { isEmailAllowed } from '@/types/opportunity';
+import { safeNext } from '@/lib/nextPath';
 import ForcePasswordChange from '@/components/ForcePasswordChange';
 
 const credSchema = z.object({
@@ -21,6 +22,9 @@ const credSchema = z.object({
 
 const Auth = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  // Set by ProtectedRoute when a signed-out user follows a deep link.
+  const nextPath = safeNext(searchParams.get('next'));
   const { user, signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword, mustChangePassword, userRole } = useAuth();
   const { toast } = useToast();
   const [email, setEmail] = useState('');
@@ -41,13 +45,15 @@ const Auth = () => {
 
   useEffect(() => {
     if (user && !isRecoveryMode && !mustChangePassword) {
-      if (userRole === 'internal' || isEmailAllowed(user.email)) {
+      if (nextPath && (userRole === 'internal' || isEmailAllowed(user.email))) {
+        navigate(nextPath, { replace: true });
+      } else if (userRole === 'internal' || isEmailAllowed(user.email)) {
         navigate('/', { replace: true });
       } else if (userRole === 'referrer') {
         navigate('/affiliate', { replace: true });
       }
     }
-  }, [user, navigate, isRecoveryMode, mustChangePassword, userRole]);
+  }, [user, navigate, isRecoveryMode, mustChangePassword, userRole, nextPath]);
 
   const validate = () => {
     const parsed = credSchema.safeParse({ email, password });
@@ -61,7 +67,7 @@ const Auth = () => {
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
-      await signInWithGoogle();
+      await signInWithGoogle(nextPath ?? undefined);
     } catch {
       toast({ title: 'Error', description: 'Failed to sign in with Google.', variant: 'destructive' });
     } finally {

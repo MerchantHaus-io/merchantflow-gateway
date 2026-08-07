@@ -11,16 +11,10 @@ import { preloadAudioFile } from '@/hooks/useNotificationSound';
 
 import merchantHausLogo from '@/assets/merchanthaus-logo.png';
 import { isEmailAllowed } from '@/types/opportunity';
+import { safeNext } from '@/lib/nextPath';
 
 const emailSchema = z.string().email('Please enter a valid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
-
-const safeNext = (value: string | null): string | null => {
-  if (!value) return null;
-  // Same-origin relative paths only.
-  if (!value.startsWith('/') || value.startsWith('//')) return null;
-  return value;
-};
 
 const Login = () => {
   const navigate = useNavigate();

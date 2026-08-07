@@ -3,13 +3,14 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
+import { lazyWithRetry as lazy } from "@/lib/lazyWithRetry";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TasksProvider } from "@/contexts/TasksContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ReferrerRoute } from "./components/ReferrerRoute";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ErrorBoundary, RouteErrorBoundary } from "@/components/ErrorBoundary";
 
 // Pages are lazy-loaded so each route ships as its own chunk, keeping the
 // initial bundle small and deferring heavy deps (three/jspdf/mammoth/recharts)
@@ -88,11 +89,20 @@ import { AdminPopupDisplay } from "./components/AdminPopupDisplay";
 import { EmailSendConfirm } from "./components/EmailSendConfirm";
 import { PatchNotesPopup } from "./components/PatchNotesPopup";
 
-const PUBLIC_ROUTES = ['/auth', '/login', '/contact', '/apply', '/merchant-apply', '/scoping', '/forgot-password', '/update-password', '/terms-processing', '/affiliate', '/portal', '/support-request', '/.lovable/oauth/consent'];
+// Routes that must never mount internal staff furniture (dialler, command
+// palette, admin popups, patch notes…). `/q/:token` is the merchant-facing
+// quote-acceptance and signing page — it is public and must stay clean.
+const PUBLIC_ROUTES = ['/auth', '/login', '/contact', '/apply', '/merchant-apply', '/scoping', '/forgot-password', '/update-password', '/terms-processing', '/affiliate', '/portal', '/support-request', '/q', '/.lovable/oauth/consent'];
+
+// Match on whole path segments, not raw prefixes: a bare startsWith() makes
+// `/contacts` match `/contact` and `/quotes-contracts` match `/q`, silently
+// stripping the internal widgets from staff pages.
+const isPublicRoute = (pathname: string) =>
+  PUBLIC_ROUTES.some(r => pathname === r || pathname.startsWith(`${r}/`));
 
 const InternalWidgets = () => {
   const { pathname } = useLocation();
-  if (PUBLIC_ROUTES.some(r => pathname.startsWith(r))) return null;
+  if (isPublicRoute(pathname)) return null;
   return (
     <>
       <IncomingCallToast />
@@ -134,6 +144,11 @@ const App = () => (
           <AuthProvider>
             <TasksProvider>
               <InternalWidgets />
+              {/* Inner boundary is scoped to the routed page and clears itself
+                  on navigation, so a crash in one page doesn't strand the user
+                  on the error screen. The outer boundary still catches failures
+                  in the providers above it. */}
+              <RouteErrorBoundary>
               <Suspense fallback={<RouteFallback />}>
               <Routes>
                 {/* Public routes */}
@@ -218,6 +233,7 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
               </Suspense>
+              </RouteErrorBoundary>
             </TasksProvider>
           </AuthProvider>
           </ErrorBoundary>
