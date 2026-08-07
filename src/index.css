@@ -11,6 +11,11 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
+    /* #82: text-info / bg-info are used across the app but --info was
+       only ever declared inside .merchant-form, so those classes resolved
+       to an invalid colour everywhere else. */
+    --info: 213 94% 56%;
+    --info-foreground: 0 0% 100%;
     --background: 0 0% 0%;
     --foreground: 210 40% 98%;
 
@@ -38,7 +43,12 @@ All colors MUST be HSL.
     --accent: 348 83% 47%;
     --accent-foreground: 0 0% 100%;
 
+    /* #90: 0 63% 31% is very dark — text-destructive on the near-black dark
+       background sits around 3:1, below the 4.5:1 AA threshold for body text.
+       The surface colour stays dark for fills; --destructive-text is the
+       lighter variant for text and icons. */
     --destructive: 0 63% 31%;
+    --destructive-text: 0 84% 65%;
     --destructive-foreground: 210 40% 98%;
 
     --success: 142 76% 36%;
@@ -180,60 +190,6 @@ All colors MUST be HSL.
     --wa-divider: 0 15% 16%;
   }
 
-  /* Light theme override — warm white canvas */
-  .light {
-    --background: 0 0% 97%;
-    --foreground: 222 25% 12%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222 25% 12%;
-
-    --card-glass: 0 0% 100% / 0.96;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 25% 12%;
-
-    --primary: 348 83% 47%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 220 14% 93%;
-    --secondary-foreground: 222 25% 25%;
-
-    --muted: 220 14% 93%;
-    --muted-foreground: 220 10% 46%;
-
-    --accent: 220 14% 90%;
-    --accent-foreground: 222 25% 12%;
-
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 220 13% 87%;
-    --input: 220 13% 87%;
-    --ring: 348 83% 47%;
-
-    /* WhatsApp Chat Tokens — Light */
-    --wa-header: 204 70% 40%;
-    --wa-header-foreground: 0 0% 100%;
-    --wa-sidebar-bg: 220 14% 96%;
-    --wa-sidebar-hover: 220 14% 92%;
-    --wa-chat-bg: 220 14% 94%;
-    --wa-bubble-out: 204 60% 90%;
-    --wa-bubble-out-foreground: 222 25% 12%;
-    --wa-bubble-in: 0 0% 100%;
-    --wa-bubble-in-foreground: 222 25% 12%;
-    --wa-composer-bg: 220 14% 96%;
-    --wa-accent: 204 70% 45%;
-    --wa-unread: 204 70% 45%;
-    --wa-search-bg: 220 14% 92%;
-    --wa-meta: 220 10% 50%;
-    --wa-divider: 220 13% 87%;
-
-    --shadow-sm: 0 1px 3px 0 rgba(0,0,0,0.08), 0 1px 2px 0 rgba(0,0,0,0.04);
-    --shadow: 0 2px 6px 0 rgba(0,0,0,0.1), 0 1px 3px 0 rgba(0,0,0,0.06);
-    --shadow-md: 0 4px 12px -1px rgba(0,0,0,0.12), 0 2px 6px -1px rgba(0,0,0,0.06);
-    --shadow-lg: 0 10px 24px -3px rgba(0,0,0,0.15), 0 4px 10px -2px rgba(0,0,0,0.08);
-  }
 
   /* Dark class - same as root for dark mode (dark-default) */
   .dark {
@@ -264,7 +220,12 @@ All colors MUST be HSL.
     --accent: 348 83% 47%;
     --accent-foreground: 0 0% 100%;
 
+    /* #90: 0 63% 31% is very dark — text-destructive on the near-black dark
+       background sits around 3:1, below the 4.5:1 AA threshold for body text.
+       The surface colour stays dark for fills; --destructive-text is the
+       lighter variant for text and icons. */
     --destructive: 0 63% 31%;
+    --destructive-text: 0 84% 65%;
     --destructive-foreground: 210 40% 98%;
 
     --success: 142 76% 36%;
@@ -573,6 +534,11 @@ All colors MUST be HSL.
 
   /* Light Theme - Enterprise Professional Style (Salesforce/Microsoft 365 inspired) */
   .light {
+    /* #82: text-info / bg-info are used across the app but --info was
+       only ever declared inside .merchant-form, so those classes resolved
+       to an invalid colour everywhere else. */
+    --info: 213 94% 56%;
+    --info-foreground: 0 0% 100%;
     --background: 220 14% 96%;          /* #F3F4F6 - Soft Blue-Grey/Off-white */
     --foreground: 221 39% 11%;          /* #1F2937 - Dark Slate for readability */
 
@@ -1882,26 +1848,52 @@ textarea:focus-visible {
 /* ─── Global Scrollbar Polish ─── */
 :root {
   scrollbar-width: thin;
-  scrollbar-color: hsl(217 33% 30%) transparent;
+  scrollbar-color: hsl(var(--border)) transparent;
 }
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: hsl(217 33% 30%);
+  background: hsl(var(--border));
   border-radius: 100px;
 }
-::-webkit-scrollbar-thumb:hover { background: hsl(217 33% 40%); }
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.5); }
 
 /* ─── Text Selection ─── */
 ::selection {
-  background: hsl(348 83% 47% / 0.35);
-  color: white;
+  /* Was hardcoded brand pink, so it stayed pink in the Salesforce, Ocean and
+     Star themes. */
+  background: hsl(var(--primary) / 0.35);
+  color: hsl(var(--primary-foreground));
 }
 
 /* ─── Focus Rings ─── */
+/* outline, not box-shadow: a box-shadow ring is clipped by any ancestor with
+   overflow:hidden — of which this app has many (cards, tables, docks) — so
+   keyboard users lost their place inside them. outline is never clipped.
+   Colour comes from --ring rather than hardcoded brand pink, which stayed
+   pink in the Salesforce, Ocean and Star themes. */
 *:focus-visible {
-  outline: none !important;
-  box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(348 83% 47% / 0.6);
+  outline: 2px solid hsl(var(--ring, var(--primary)));
+  outline-offset: 2px;
+}
+
+/* ─── Skip to content (#99) ─── */
+/* Visually hidden until focused, so keyboard users can jump past the header
+   and sidebar instead of tabbing through them on every page. */
+.skip-to-content {
+  position: absolute;
+  left: 0.5rem;
+  top: -3rem;
+  z-index: 100;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius);
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  font-size: 0.875rem;
+  transition: top 0.15s ease-in-out;
+}
+.skip-to-content:focus {
+  top: 0.5rem;
 }
 
 /* ─── Noise Texture Overlay ─── */
@@ -1951,7 +1943,9 @@ main {
 
 /* ─── Table Upgrades ─── */
 thead tr {
-  background: hsl(217 33% 12%);
+  /* Was a hardcoded dark HSL, which made table headers near-black in every
+     light theme. Tokenised so it follows the active theme. */
+  background: hsl(var(--muted));
 }
 thead th {
   font-family: var(--font-display, 'Syne', 'General Sans', sans-serif);
@@ -1961,19 +1955,19 @@ thead th {
   font-weight: 600;
 }
 tbody tr:nth-child(even) {
-  background: hsl(217 33% 15% / 0.3);
+  background: hsl(var(--muted) / 0.3);
 }
 tbody tr {
-  border-color: hsl(217 33% 20%);
+  border-color: hsl(var(--border));
   transition: background-color 0.15s ease;
 }
 tbody tr:hover {
-  background: hsl(217 33% 16% / 0.5);
+  background: hsl(var(--muted) / 0.5);
 }
 
 /* ─── Recharts Upgrades ─── */
 .recharts-cartesian-grid line {
-  stroke: hsl(217 33% 22%);
+  stroke: hsl(var(--border));
 }
 .recharts-cartesian-axis-tick text {
   fill: hsl(215 20% 50%);
@@ -1981,8 +1975,8 @@ tbody tr:hover {
   font-size: 11px;
 }
 .recharts-default-tooltip {
-  background: hsl(217 33% 12%) !important;
-  border: 1px solid hsl(217 33% 25%) !important;
+  background: hsl(var(--popover)) !important;
+  border: 1px solid hsl(var(--border)) !important;
   border-radius: 8px !important;
   box-shadow: 0 8px 24px rgba(0,0,0,0.5) !important;
 }
@@ -2012,10 +2006,10 @@ tbody tr:hover {
 /* ─── Stagger Children Utility ─── */
 .stagger-children > *:nth-child(1) { animation-delay: 0ms; }
 .stagger-children > *:nth-child(2) { animation-delay: 50ms; }
-.stagger-children > *:nth-child(3) { animation-delay: 50ms; }
-.stagger-children > *:nth-child(4) { animation-delay: 100ms; }
-.stagger-children > *:nth-child(5) { animation-delay: 150ms; }
-.stagger-children > *:nth-child(6) { animation-delay: 200ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 100ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 150ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 200ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 250ms; }
 .stagger-children > * {
   animation: fade-in 0.35s ease-out both;
 }
@@ -2030,9 +2024,11 @@ tbody tr:hover {
 
 /* Dialog content — ambient mesh */
 [data-slot="dialog-content"] {
-  background-color: hsl(217 33% 13%);
+  /* This was a hardcoded dark value applied globally, so EVERY dialog
+     rendered dark even in light mode. */
+  background-color: hsl(var(--popover));
   background-image: radial-gradient(ellipse 80% 60% at 50% -10%, hsl(348 83% 47% / 0.08), transparent 50%);
-  border-color: hsl(217 33% 25%);
+  border-color: hsl(var(--border));
   box-shadow: 0 12px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05), inset 0 1px 0 rgba(255,255,255,0.08);
 }
 
@@ -2048,8 +2044,8 @@ tbody tr:hover {
 
 /* Tabs — terminal style */
 [role="tablist"] {
-  background: hsl(217 33% 13%);
-  border: 1px solid hsl(217 33% 20%);
+  background: hsl(var(--muted));
+  border: 1px solid hsl(var(--border));
   padding: 3px;
   border-radius: calc(var(--radius) + 2px);
 }
@@ -2060,7 +2056,7 @@ tbody tr:hover {
   font-weight: 600;
 }
 [role="tab"][data-state="active"] {
-  background: hsl(217 33% 22%);
+  background: hsl(var(--background));
   box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
@@ -2141,8 +2137,15 @@ tbody tr:hover {
     print-color-adjust: exact;
   }
 
-  /* Hide non-content elements */
-  nav, aside, header,
+  /* Hide non-content elements.
+     `nav, aside, header` are scoped to pages that opt in by putting
+     .print-chrome-off on <body> (see usePrintChromeOff). Applied globally they
+     stripped the chrome from every other
+     printable page too — an invoice, a quote, a ticket — which is rarely what
+     the person hitting Ctrl+P wanted. */
+  body.print-chrome-off nav,
+  body.print-chrome-off aside,
+  body.print-chrome-off header,
   .print\\:hidden,
   [data-sidebar],
   [data-radix-popper-content-wrapper],

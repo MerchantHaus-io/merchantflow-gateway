@@ -105,15 +105,7 @@ export function reportError({ error, source, componentStack }: ReportInput): str
     try {
       const { data } = await supabase.auth.getSession();
       const user = data.session?.user;
-      // `client_errors` is created by migration 20260807200000. Until that is
-      // applied to the project, the generated Database types don't know the
-      // table, so the client is narrowed here rather than editing the
-      // generated types.ts by hand. Regenerating types after the migration
-      // makes this cast redundant.
-      const db = supabase as unknown as {
-        from: (t: string) => { insert: (row: Record<string, unknown>) => Promise<unknown> };
-      };
-      await db.from('client_errors').insert({
+      await supabase.from('client_errors').insert({
         ...payload,
         user_id: user?.id ?? null,
         user_email: user?.email ?? null,
