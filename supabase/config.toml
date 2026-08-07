@@ -163,3 +163,8 @@ verify_jwt = true
 
 [functions.submit-scoping-request]
 verify_jwt = false
+
+# Clears the caller's own must_change_password flag after a real password
+# change. Identity comes from the JWT, so verify_jwt is required.
+[functions.complete-password-change]
+verify_jwt = true

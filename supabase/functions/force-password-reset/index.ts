@@ -51,7 +51,7 @@ serve(async (req) => {
     // Page through every user. listUsers() returns only the first 50 by
     // default, so the previous single call silently covered a fraction of the
     // team while the response claimed the whole set had been updated.
-    const users: { id: string; email?: string; user_metadata: Record<string, unknown> }[] = [];
+    const users: { id: string; email?: string; user_metadata: Record<string, unknown>; app_metadata?: Record<string, unknown> }[] = [];
     for (let page = 1; ; page++) {
       const { data, error: listError } = await supabaseAdmin.auth.admin.listUsers({
         page,
@@ -76,6 +76,13 @@ serve(async (req) => {
           const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
             user.id,
             {
+              // app_metadata is the authoritative flag: only the service role
+              // can write it. The user_metadata copy is kept in step so older
+              // clients keep working, but it is no longer trusted.
+              app_metadata: {
+                ...(user as { app_metadata?: Record<string, unknown> }).app_metadata,
+                must_change_password: true,
+              },
               user_metadata: {
                 ...user.user_metadata,
                 must_change_password: true,
