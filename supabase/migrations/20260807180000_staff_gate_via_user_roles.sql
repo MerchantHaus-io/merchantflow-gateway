@@ -32,9 +32,14 @@
 
 BEGIN;
 
--- 1. 'staff' joins the existing ('admin','user') enum. Additive only, so
---    existing rows and has_role() calls are unaffected.
+-- 1. 'staff' and 'finance' join the existing ('admin','user') enum. Additive
+--    only, so existing rows and has_role() calls are unaffected.
+--
+--    'staff'   — CRM access (opportunities, accounts, contacts, documents)
+--    'finance' — commission_records, which carries partner cost and margin.
+--                Deliberately narrower than 'staff'; see step 6.
 ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'staff';
+ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'finance';
 
 COMMIT;
 
@@ -125,27 +130,59 @@ AS $$
      AND public.has_role(auth.uid(), 'admin'::public.app_role);
 $$;
 
--- 6. Consolidate the second, competing staff gate.
+-- 6. Put the commission gate on a role too, WITHOUT widening it.
 --
 --    is_merchanthaus_staff() (2026-07-14) independently checks
---    `auth.users.email LIKE '%@merchanthaus.io'` and guards commission_records
---    — which holds partner cost and margin figures. Two gates that can
---    disagree is exactly the problem this migration exists to remove, so it
---    now delegates rather than carrying its own rule.
+--    `auth.users.email LIKE '%@merchanthaus.io'` and guards exactly one table:
+--    commission_records, which carries partner cost and margin figures.
 --
---    REVIEWER NOTE — this is a deliberate behaviour change. The email rule and
---    the seeded roster are not quite identical: addresses in
---    EXTRA_ALLOWED_EMAILS (currently darryn182@gmail.com) are seeded as staff
---    and so gain access to commission_records, which the '%@merchanthaus.io'
---    test excluded. If cost/margin data should stay domain-restricted, drop
---    this step and leave is_merchanthaus_staff() defined as it was.
+--    It deliberately stays STRICTER than the CRM gate. Collapsing it into
+--    is_internal_staff() would hand commission data to every seeded staff
+--    member, including EXTRA_ALLOWED_EMAILS addresses outside the domain
+--    (currently darryn182@gmail.com) — who should keep CRM access but not see
+--    cost or margin. Hence a separate 'finance' role rather than reuse.
+--
+--    Seeded from the same '%@merchanthaus.io' rule the function checks today,
+--    so access is unchanged on day one. The gain is that it is now revocable
+--    by deleting a row, instead of being welded to an email address.
+INSERT INTO public.user_roles (user_id, role)
+SELECT u.id, 'finance'::public.app_role
+FROM auth.users u
+WHERE lower(u.email) LIKE '%@merchanthaus.io'
+  AND NOT EXISTS (
+        SELECT 1 FROM public.referrers r
+        WHERE r.auth_user_id = u.id
+           OR lower(r.email) = lower(u.email)
+      )
+ON CONFLICT (user_id, role) DO NOTHING;
+
+-- Same lock-out guard as step 4: if the finance seed matched nobody, the
+-- redefinition below would make commission_records unreadable to everyone.
+DO $$
+DECLARE
+  finance_count integer;
+BEGIN
+  SELECT count(*) INTO finance_count
+  FROM public.user_roles
+  WHERE role = 'finance'::public.app_role;
+
+  IF finance_count = 0 THEN
+    RAISE EXCEPTION
+      'Refusing to tighten is_merchanthaus_staff(): user_roles has no finance rows. '
+      'No @merchanthaus.io accounts matched. Verify the roster before re-running.';
+  END IF;
+
+  RAISE NOTICE 'user_roles now holds % finance row(s).', finance_count;
+END $$;
+
 CREATE OR REPLACE FUNCTION public.is_merchanthaus_staff()
 RETURNS boolean
 LANGUAGE sql
 STABLE SECURITY DEFINER
 SET search_path = public
 AS $$
-  SELECT public.is_internal_staff();
+  SELECT auth.uid() IS NOT NULL
+     AND public.has_role(auth.uid(), 'finance'::public.app_role);
 $$;
 
 REVOKE EXECUTE ON FUNCTION public.is_internal_staff() FROM anon, public;

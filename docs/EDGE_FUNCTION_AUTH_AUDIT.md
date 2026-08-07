@@ -105,6 +105,22 @@ if (denied) return denied;
 
 `nmi-partner-residuals` and `encrypt-secrets` should require `["admin"]`.
 
+## Role model
+
+| Role | Grants | Seeded from |
+|---|---|---|
+| `admin` | Admin-only functions, via `is_admin()` | the three known admin addresses |
+| `staff` | CRM: opportunities, accounts, contacts, documents, via `is_internal_staff()` | `%@merchanthaus.io` **plus** `EXTRA_ALLOWED_EMAILS` |
+| `finance` | `commission_records` (partner cost + margin), via `is_merchanthaus_staff()` | `%@merchanthaus.io` **only** |
+
+`finance` is deliberately narrower than `staff`. Approved addresses outside the
+merchanthaus.io domain get CRM access but must not see cost or margin figures —
+so the two gates stay separate rather than being collapsed into one.
+
+Both seeds exclude anyone who is a referral partner, and each is followed by a
+guard that aborts the migration if it matched nobody, rather than silently
+locking everyone out of the tables it protects.
+
 ## Related gaps not closed in this pass
 
 - **#42 — `requireAuth` proves authentication, not authorization.** With no
