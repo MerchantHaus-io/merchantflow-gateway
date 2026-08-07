@@ -1,6 +1,7 @@
 // Send a generated MerchantHaus quote PDF to a merchant client.
 // Receives a base64-encoded PDF and sends via Resend with branded HTML body.
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { requireRole } from "../_shared/require-auth.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
@@ -77,6 +78,10 @@ const buildHtml = (req: QuoteEmailRequest) => `<!DOCTYPE html>
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // Authorization: this function was world-callable with no check.
+  const denied = await requireRole(req, corsHeaders, ["staff", "admin"]);
+  if (denied) return denied;
   try {
     if (!RESEND_API_KEY) throw new Error("RESEND_API_KEY not configured");
     const body = (await req.json()) as QuoteEmailRequest;

@@ -12,6 +12,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireInvoker } from "../_shared/require-invoker.ts";
+import { requireRole } from "../_shared/require-auth.ts";
 
 
 const corsHeaders = {
@@ -46,6 +47,10 @@ interface AttemptLog {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // Authorization: this function was world-callable with no check.
+  const denied = await requireRole(req, corsHeaders, ["finance", "admin"]);
+  if (denied) return denied;
 
   try {
     const nmiKey = Deno.env.get("NMI_API_KEY");

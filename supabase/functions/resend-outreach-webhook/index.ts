@@ -1,10 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { verifySvixSignature, rejectWebhook } from "../_shared/webhook-verify.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version, svix-id, svix-timestamp, svix-signature",
 };
 
 serve(async (req) => {
@@ -17,7 +18,13 @@ serve(async (req) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const payload = await req.json();
+    // Read the body as text: re-serialising JSON changes the bytes and
+    // invalidates the signature.
+    const rawBody = await req.text();
+    const verified = await verifySvixSignature(req, rawBody, "RESEND_WEBHOOK_SECRET");
+    if (!verified.ok) return rejectWebhook(verified, corsHeaders);
+
+    const payload = JSON.parse(rawBody);
     console.log("Resend webhook received:", JSON.stringify(payload));
 
     const eventType = payload.type;

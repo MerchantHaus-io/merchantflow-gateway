@@ -28,7 +28,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.quo-proxy]
-verify_jwt = false
+verify_jwt = true
 
 [functions.quo-webhook]
 verify_jwt = false
@@ -43,10 +43,10 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.nmi-partner-residuals]
-verify_jwt = false
+verify_jwt = true
 
 [functions.nmi-board-merchant]
-verify_jwt = false
+verify_jwt = true
 
 [functions.polish-email]
 verify_jwt = true
@@ -55,7 +55,7 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.encrypt-secrets]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-outreach-emails]
 verify_jwt = true
@@ -76,31 +76,31 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.send-qualified-docs-request]
-verify_jwt = false
+verify_jwt = true
 
 [functions.classify-document]
 verify_jwt = true
 
 [functions.send-application-declined]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-terminal-update-email]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-notice-email]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-account-closed]
-verify_jwt = false
+verify_jwt = true
 
 [functions.nmi-list-merchants]
 verify_jwt = true
 
 [functions.send-outcome-email]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-quote-email]
-verify_jwt = false
+verify_jwt = true
 
 [functions.accept-quote]
 verify_jwt = false
@@ -117,7 +117,7 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.send-billing-doc]
-verify_jwt = false
+verify_jwt = true
 
 [functions.inactive-user-reminder]
 verify_jwt = true
@@ -153,10 +153,10 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.send-ticket-status-email]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-ticket-reply]
-verify_jwt = false
+verify_jwt = true
 
 [functions.sanitize-existing-tickets]
 verify_jwt = true

@@ -1,8 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { verifySharedSecret, rejectWebhook } from '../_shared/webhook-verify.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-webhook-secret, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -271,6 +272,11 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Quo publishes no documented signature scheme, so this is a shared
+    // secret. Inert until QUO_WEBHOOK_SECRET is set — see webhook-verify.ts.
+    const verified = verifySharedSecret(req, 'QUO_WEBHOOK_SECRET');
+    if (!verified.ok) return rejectWebhook(verified, corsHeaders);
+
     const payload = await req.json();
     console.log('Quo webhook received:', JSON.stringify({ type: payload?.type, hasData: !!payload?.data }));
 

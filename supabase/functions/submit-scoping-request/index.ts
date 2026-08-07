@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { checkRateLimit, tooManyRequests } from "../_shared/rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -110,6 +111,10 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  // Public endpoint: no session required, so throttle per IP.
+  const rl = await checkRateLimit(req, "submit-scoping-request", 3, 600);
+  if (!rl.allowed) return tooManyRequests(rl, corsHeaders);
   if (req.method !== "POST") {
     return json({ error: "Method not allowed" }, 405);
   }

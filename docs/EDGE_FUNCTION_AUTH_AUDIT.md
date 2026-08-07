@@ -4,7 +4,7 @@ Audit of `verify_jwt` across all 50 configured edge functions, plus the
 authorization gaps behind it. Companion to Pass 2 of the Ops Terminal audit
 (item #41).
 
-Date: 2026-08-07
+Date: 2026-08-07 (updated: remediation applied)
 
 ## The thing to understand first
 
@@ -22,9 +22,15 @@ privileged data still needs its own check — `requireAuth`, or better
 `requireRole` (`supabase/functions/_shared/require-auth.ts`), which resolves
 roles from `public.user_roles`.
 
-## What changed in this pass
+## Current state
 
-28 functions moved to `verify_jwt = true`. 22 remain `false`.
+**42 functions `verify_jwt = true`, 8 `false`.** The 8 are the 5 genuinely
+public intake endpoints and the 3 third-party webhooks — everything that must
+accept a caller with no session.
+
+All 14 previously-unprotected functions now call `requireRole`, so they no
+longer depend on `verify_jwt` for protection. The remaining 8 are covered by
+per-IP rate limiting (intake) or signature verification (webhooks).
 
 The 28 were chosen on evidence, not judgement: each either already performs its
 own auth check (so its callers demonstrably send a token — they would fail the
@@ -65,8 +71,14 @@ Called by anonymous visitors before any session exists.
 `accept-quote`, `send-contact-form-email`, `submit-merchant-application`,
 `submit-scoping-request`, `submit-support-ticket`
 
-> These are the endpoints that need rate limiting and a honeypot/turnstile —
-> audit item #55, not addressed in this pass.
+> **Now rate-limited** per IP via `_shared/rate-limit.ts`, backed by the
+> `rate_limit_events` table (migration `20260807190000`):
+> 3 requests / 10 min for the three intake forms and the contact form,
+> 10 / 10 min for `accept-quote`.
+>
+> The limiter **fails open** — a limiter that blocks real merchant
+> applications when the database hiccups is worse than the abuse it prevents.
+> `isHoneypotTripped()` is available but not yet wired into the forms.
 
 ### Third-party webhooks → stays `false` (3)
 
@@ -74,16 +86,34 @@ Authenticate by payload signature, not JWT.
 
 `quo-webhook`, `resend-outreach-webhook`, `support-inbound-email`
 
-> **None of the three currently verifies a signature.** They are world-callable
-> with forgeable payloads. This is a real gap and needs fixing per provider.
+> **Now verified**, via `_shared/webhook-verify.ts`:
+> - `resend-outreach-webhook` — Svix signature (`RESEND_WEBHOOK_SECRET`),
+>   including a 5-minute timestamp tolerance to reject replays
+> - `quo-webhook` — shared secret (`QUO_WEBHOOK_SECRET`); Quo publishes no
+>   documented signature scheme
+> - `support-inbound-email` — already had `SUPPORT_INBOUND_SECRET`
+>
+> ⚠️ **Each enforces only once its secret is set**, matching the convention
+> `support-inbound-email` already used. That makes rollout zero-downtime, but
+> it also means **these endpoints stay open until you set the secrets**. Doing
+> so is what activates the protection.
 
-### No auth of any kind → still `false`, needs code changes (14)
+### Previously unprotected → now guarded with `requireRole` (14)
 
-**This is the important list.** Each is world-callable today with no check
-whatsoever. They were left at `false` because flipping the flag alone doesn't
-fix them (see the anon-key caveat above) and could break callers whose
-invocation path is unverified — they need a `requireRole` call added and tested
-individually.
+**Resolved.** Each was world-callable with no check whatsoever. Each now calls
+`requireRole` and has moved to `verify_jwt = true`.
+
+Callers were checked individually first: 12 are invoked from the browser via
+`supabase.functions.invoke`, which attaches the signed-in user's JWT, so the
+check passes for legitimate use. `encrypt-secrets` had no interactive caller —
+it is invoked server-to-server by `submit-merchant-application`, which was
+passing the **anon key**; that caller now sends the service-role key, which
+`requireRole` accepts. `send-application-declined` has no caller at all and
+appears to be dead code; it is guarded regardless.
+
+Roles applied: `["staff","admin"]` for the twelve operational functions,
+`["finance","admin"]` for `nmi-partner-residuals` (partner residual data, same
+gate as `commission_records`), and `["admin"]` for `encrypt-secrets`.
 
 | Function | Why it matters |
 |---|---|
@@ -123,14 +153,17 @@ locking everyone out of the tables it protects.
 
 ## Related gaps not closed in this pass
 
-- **#42 — `requireAuth` proves authentication, not authorization.** With no
-  `adminEmails` passed, any signed-in user passes, including an external
-  referral partner. `requireRole` (added this pass) is the replacement; call
-  sites still need migrating.
+- **#42 — `requireAuth` proves authentication, not authorization.** Resolved
+  for the 14 functions above, which now use `requireRole`. The other functions
+  still calling bare `requireAuth` should migrate too.
 - **#45 — the staff email allowlist ships in the browser bundle.** Anyone can
   read the roster out of the JS. Moving it server-side is a larger change.
 - **#50 — CORS.** `_shared/cors.ts` (added this pass) provides an
   origin-allowlisted alternative to the hardcoded `*`; 63 functions still need
   migrating to it.
-- **#55 — no rate limiting** on the five public intake endpoints.
-- **#56 — no error telemetry.**
+- **#56 — no error telemetry.** `ErrorBoundary` still only calls
+  `console.error`; production crashes remain invisible.
+- **Retention sweep for `rate_limit_events` is not scheduled.** The migration
+  ships `prune_rate_limit_events()` but nothing calls it — the table grows
+  unbounded until it is scheduled (pg_cron snippet is in the migration).
+- **Honeypot fields** are not yet rendered by the public forms.

@@ -1,6 +1,7 @@
 // Send a MerchantHaus invoice or receipt PDF to the merchant.
 // Mirrors send-quote-email styling (dark gradient header, no emojis).
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { requireRole } from "../_shared/require-auth.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
@@ -65,6 +66,10 @@ const buildHtml = (req: BillingDocEmailRequest) => {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // Authorization: this function was world-callable with no check.
+  const denied = await requireRole(req, corsHeaders, ["staff", "admin"]);
+  if (denied) return denied;
   try {
     if (!RESEND_API_KEY) throw new Error("RESEND_API_KEY not configured");
     const body = (await req.json()) as BillingDocEmailRequest;
