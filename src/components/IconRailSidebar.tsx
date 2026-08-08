@@ -16,6 +16,7 @@ import { useAcceptedQuotesCount } from "@/hooks/useAcceptedQuotesCount";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useOwnProfile } from "@/hooks/useOwnProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { EMAIL_TO_USER } from "@/types/opportunity";
 import { activeGroupFor, groupsForSurface, type NavItem } from "@/config/navigation";
@@ -83,54 +84,11 @@ export function IconRailSidebar() {
     setCollapsed((c) => !c);
   };
 
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [profileName, setProfileName] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!hasUserPreference.current) return;
-    localStorage.setItem(STORAGE_KEY, collapsed ? "1" : "0");
-  }, [collapsed]);
-
-  useEffect(() => {
-    if (!user) return;
-
-    const fetchProfile = async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("avatar_url, full_name")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (data) {
-        setAvatarUrl(data.avatar_url);
-        setProfileName(data.full_name);
-      }
-    };
-
-    fetchProfile();
-
-    const channel = supabase
-      .channel("rail-profile-sync")
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "profiles",
-          filter: `id=eq.${user.id}`,
-        },
-        (payload) => {
-          const updated = payload.new as { avatar_url: string | null; full_name: string | null };
-          setAvatarUrl(updated.avatar_url);
-          setProfileName(updated.full_name);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user]);
+  // One fetch and one realtime channel for this row, shared with
+  // NotificationBell rather than duplicated (#113).
+  const { data: profile } = useOwnProfile();
+  const avatarUrl = profile?.avatar_url ?? null;
+  const profileName = profile?.full_name ?? null;
 
   const handleLogout = async () => {
     await signOut();

@@ -17,6 +17,7 @@ import { PageChromeProvider, usePageChrome } from "@/contexts/PageChromeContext"
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 import { useIsCompactNav } from "@/hooks/use-compact-nav";
+import { useOwnProfileRealtime } from "@/hooks/useOwnProfile";
 import { recordPageVisit } from "@/lib/recentPages";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -80,6 +81,11 @@ function ShellChrome() {
   useEffect(() => {
     recordPageVisit(location.pathname);
   }, [location.pathname]);
+
+  // ONE realtime channel for the signed-in user's profile row, shared by the
+  // icon rail and the notification bell (#113). Mounting this anywhere else as
+  // well would recreate the duplication it exists to remove.
+  useOwnProfileRealtime();
 
   // Refetch data rather than reloading the document. A full reload throws away
   // all page state, re-downloads the bundle and shows a white flash.
