@@ -166,12 +166,9 @@ export function IconRailSidebar() {
       // area, so animating its width reflowed the whole page — including a
       // 14-column virtualised table — for 200ms on every toggle. An instant
       // snap is cheaper and reads as more responsive.
-      className={cn(
-        "hidden lg:flex flex-col shrink-0 border-r border-border/40",
-        isDark
-          ? "bg-[hsl(217_33%_11%/0.92)] text-white backdrop-blur-[20px]"
-          : "bg-background/85 text-foreground backdrop-blur-xl"
-      )}
+      // #128: token-driven, so the rail follows the active variant instead of
+      // wearing the same blue-grey under DOOM, PS1, Forest, Charcoal and Mono.
+      className="hidden lg:flex flex-col shrink-0 border-r border-border/40 chrome-rail-surface backdrop-blur-[20px]"
     >
       <nav className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-3 px-2.5 space-y-3">
         {groups.map((group) => {

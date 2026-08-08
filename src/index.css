@@ -35,6 +35,19 @@ All colors MUST be HSL.
        its saved position above the tab bar plus the device inset, and env()
        is not otherwise reachable from script. */
     --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+    /* #128: the header and icon rail hardcoded bg-[hsl(217_33%_13%/0.92)] and
+       bg-[hsl(217_33%_11%/0.92)], gated on `theme === 'dark'` and ignoring
+       `variant` entirely — so DOOM, PS1, Forest, Charcoal and Mono all wore the
+       same blue-grey chrome and the themes only ever changed the content area.
+
+       Derived from each variant's own --card rather than enumerated per theme:
+       custom properties resolve against the element they are declared on, and
+       every variant redefines --card on :root, so one definition covers all
+       fourteen and any future one for free. The rail sits a shade deeper than
+       the header, which is the relationship the old literals encoded. */
+    --chrome: color-mix(in srgb, hsl(var(--card)) 84%, black);
+    --chrome-rail: color-mix(in srgb, hsl(var(--card)) 76%, black);
     --background: 0 0% 0%;
     --foreground: 210 40% 98%;
 
@@ -564,6 +577,11 @@ All colors MUST be HSL.
        (#C8102E) nor the --primary token. One token, correct value, used
        everywhere. */
     --badge-alert: 350 85% 42%;
+
+    /* Light themes go the other way: chrome lifts off the page rather than
+       sinking into it. */
+    --chrome: color-mix(in srgb, hsl(var(--card)) 94%, white);
+    --chrome-rail: color-mix(in srgb, hsl(var(--card)) 88%, white);
     --background: 220 14% 96%;          /* #F3F4F6 - Soft Blue-Grey/Off-white */
     --foreground: 221 39% 11%;          /* #1F2937 - Dark Slate for readability */
 
@@ -2540,4 +2558,16 @@ html:not(.transparency-enabled) {
   body {
     background-attachment: scroll !important;
   }
+}
+
+/* Chrome surfaces (#128). Separate utilities rather than Tailwind's slash
+   opacity, because that needs an <alpha-value> placeholder and these tokens are
+   complete color-mix() values, not HSL triples. */
+.chrome-surface {
+  background-color: color-mix(in srgb, var(--chrome) 92%, transparent);
+  color: hsl(var(--foreground));
+}
+.chrome-rail-surface {
+  background-color: color-mix(in srgb, var(--chrome-rail) 92%, transparent);
+  color: hsl(var(--foreground));
 }

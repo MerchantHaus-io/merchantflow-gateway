@@ -48,6 +48,14 @@ import {
   Check,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import OpportunityDetailModal from "@/components/OpportunityDetailModal";
 import { PricingBadges } from "@/components/PricingBadges";
@@ -203,6 +211,12 @@ const Opportunities = () => {
   const [sortDirection, setSortDirection] = useState<SortDirection>(persisted.sortDirection ?? 'desc');
   const [showNewModal, setShowNewModal] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'cards'>(persisted.viewMode ?? 'table');
+  const isMobile = useIsMobile();
+  // #159: the table is fourteen columns with four inline Selects per row. On a
+  // 360px phone that is unusable however much it scrolls, so cards are forced
+  // below md. The stored preference is left untouched - widen the window and
+  // the user's chosen view comes back.
+  const effectiveViewMode: 'table' | 'cards' = isMobile ? 'cards' : viewMode;
   const [viewTab, setViewTab] = useState<'all' | 'archive'>(persisted.viewTab ?? 'all');
   const [reactivateConfirm, setReactivateConfirm] = useState<{ opp: Opportunity; assignee: string } | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -863,9 +877,16 @@ const Opportunities = () => {
     toast({ title: `Exported ${rows.length} opportunit${rows.length === 1 ? 'y' : 'ies'}` });
   }, [selectedOpportunities, toast]);
 
-  const hasActiveFilters =
-    stageFilter !== 'all' || ownerFilter !== 'all' || pipelineFilter !== 'all' ||
-    outcomeFilter !== 'all' || searchQuery !== '';
+  // Counted rather than just flagged, so the mobile filter sheet can show how
+  // many are applied without the user opening it (#161).
+  const activeFilterCount =
+    (stageFilter !== 'all' ? 1 : 0) +
+    (ownerFilter !== 'all' ? 1 : 0) +
+    (pipelineFilter !== 'all' ? 1 : 0) +
+    (outcomeFilter !== 'all' ? 1 : 0) +
+    (searchQuery !== '' ? 1 : 0);
+
+  const hasActiveFilters = activeFilterCount > 0;
 
   const clearFilters = useCallback(() => {
     setStageFilter('all');
@@ -1062,7 +1083,11 @@ const Opportunities = () => {
             }
           />
 
-          {showFilters && (
+          {/* #161: four Selects in a wrapping row is a desktop layout. On a
+              phone they stack raggedly and each trigger is 32px tall, so on
+              mobile the same controls open in a sheet with full-width, 44px
+              targets and an applied count. Desktop keeps the inline row. */}
+          {showFilters && !isMobile && (
             <div className="flex items-center gap-2 flex-wrap pb-1">
               <Select value={stageFilter} onValueChange={setStageFilter}>
                 <SelectTrigger className="h-8 w-[140px] text-xs"><SelectValue placeholder="Stage" /></SelectTrigger>
@@ -1101,15 +1126,81 @@ const Opportunities = () => {
             </div>
           )}
 
+          {isMobile && (
+            <Drawer open={showFilters} onOpenChange={setShowFilters}>
+              <DrawerContent className="max-h-[85dvh]">
+                <DrawerHeader className="text-left">
+                  <DrawerTitle className="flex items-center gap-2">
+                    Filters
+                    {activeFilterCount > 0 && (
+                      <Badge variant="secondary" className="h-5 px-2 text-xs">{activeFilterCount}</Badge>
+                    )}
+                  </DrawerTitle>
+                </DrawerHeader>
+                <div className="px-4 pb-4 space-y-3 overflow-y-auto">
+              <Select value={stageFilter} onValueChange={setStageFilter}>
+                <SelectTrigger className="h-11 w-full text-sm"><SelectValue placeholder="Stage" /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="all">All Stages</SelectItem>
+                  {Object.entries(STAGE_CONFIG).map(([key, config]) => (
+                    <SelectItem key={key} value={key} >{config.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+                <SelectTrigger className="h-11 w-full text-sm"><SelectValue placeholder="Owner" /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="all">All Owners</SelectItem>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {TEAM_MEMBERS.map(member => (<SelectItem key={member} value={member} >{member}</SelectItem>))}
+                </SelectContent>
+              </Select>
+              <Select value={pipelineFilter} onValueChange={setPipelineFilter}>
+                <SelectTrigger className="h-11 w-full text-sm"><SelectValue placeholder="Pipeline" /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="all">All Pipelines</SelectItem>
+                  <SelectItem value="processing">Processing</SelectItem>
+                  <SelectItem value="gateway_only">Gateway</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={outcomeFilter} onValueChange={setOutcomeFilter}>
+                <SelectTrigger className="h-11 w-full text-sm"><SelectValue placeholder="Outcome" /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="all">All Outcomes</SelectItem>
+                  {Object.entries(OUTCOME_CONFIG).map(([key, config]) => (
+                    <SelectItem key={key} value={key} >{config.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+                </div>
+                <DrawerFooter className="flex-row gap-2 pt-0">
+                  <Button variant="outline" className="flex-1 h-11" onClick={clearFilters} disabled={activeFilterCount === 0}>
+                    Clear
+                  </Button>
+                  <Button className="flex-1 h-11" onClick={() => setShowFilters(false)}>
+                    Show {filteredOpportunities.length} result{filteredOpportunities.length === 1 ? '' : 's'}
+                  </Button>
+                </DrawerFooter>
+              </DrawerContent>
+            </Drawer>
+          )}
+
           {/* Results */}
           <Card className="border-border/60 overflow-hidden">
             <CardHeader className="pb-2 pt-3 px-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Click a row to view details · Stage & pipeline editable inline</span>
-                <div className="flex items-center gap-1 bg-muted rounded-md p-0.5">
-                  <button onClick={() => setViewMode('table')} className={cn("px-2 py-1 text-xs rounded transition-colors", viewMode === 'table' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground")}>Table</button>
-                  <button onClick={() => setViewMode('cards')} className={cn("px-2 py-1 text-xs rounded transition-colors", viewMode === 'cards' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground")}>Cards</button>
-                </div>
+                <span className="text-xs text-muted-foreground">
+                  {isMobile
+                    ? "Tap a card to view details"
+                    : "Click a row to view details · Stage & pipeline editable inline"}
+                </span>
+                {/* No point offering a fourteen-column table on a phone. */}
+                {!isMobile && (
+                  <div className="flex items-center gap-1 bg-muted rounded-md p-0.5">
+                    <button onClick={() => setViewMode('table')} className={cn("px-2 py-1 text-xs rounded transition-colors", viewMode === 'table' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground")}>Table</button>
+                    <button onClick={() => setViewMode('cards')} className={cn("px-2 py-1 text-xs rounded transition-colors", viewMode === 'cards' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground")}>Cards</button>
+                  </div>
+                )}
               </div>
             </CardHeader>
             <CardContent className="pt-2">
@@ -1121,7 +1212,7 @@ const Opportunities = () => {
                     <Skeleton key={i} className="h-12 w-full" />
                   ))}
                 </div>
-              ) : viewMode === 'table' ? (
+              ) : effectiveViewMode === 'table' ? (
                 <div className="rounded-md border overflow-x-auto max-h-[calc(100vh-22rem)] overflow-y-auto">
                   {/* overflow-x-auto: fourteen columns clip on a 1366px laptop
                       inside the Card's overflow-hidden. max-h + sticky header
@@ -1422,7 +1513,7 @@ const Opportunities = () => {
                   </Table>
                 </div>
               ) : (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-3 md:gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                   {filteredOpportunities.map(opp => {
                     const stageConfig = STAGE_CONFIG[opp.stage as OpportunityStage];
                     const serviceType = getServiceType(opp);
@@ -1445,10 +1536,10 @@ const Opportunities = () => {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-1.5 mb-0.5">
                                 <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: stageConfig?.color }} />
-                                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">{stageConfig?.label}</span>
-                                {isStale && <span className="text-[10px] text-muted-foreground/50">{daysIdle}d idle</span>}
+                                <span className="text-xs md:text-[10px] font-medium text-muted-foreground uppercase tracking-wide">{stageConfig?.label}</span>
+                                {isStale && <span className="text-xs md:text-[10px] text-muted-foreground/50">{daysIdle}d idle</span>}
                               </div>
-                              <h3 className="font-semibold text-sm leading-tight">{opp.account?.name || 'Unknown'}</h3>
+                              <h3 className="font-semibold text-base md:text-sm leading-tight">{opp.account?.name || 'Unknown'}</h3>
                               <div className="flex items-center gap-1.5 mt-0.5">
                                 <p className="text-xs text-muted-foreground">
                                   {opp.contact?.first_name ? `${opp.contact.first_name} ${opp.contact.last_name || ''}`.trim() : opp.contact?.email || '—'}
@@ -1463,7 +1554,10 @@ const Opportunities = () => {
                             </div>
                             <div onClick={(e) => e.stopPropagation()}>
                               <Select value={opp.assigned_to || 'unassigned'} onValueChange={(value) => handleAssignmentChange(opp, value)}>
-                                <SelectTrigger className="h-6 w-auto border-0 bg-transparent hover:bg-muted/50 px-1.5 text-[10px] gap-1">
+                                <SelectTrigger
+                                  aria-label="Assigned to"
+                                  className="h-11 md:h-6 w-auto border-0 bg-transparent hover:bg-muted/50 px-2.5 md:px-1.5 text-xs md:text-[10px] gap-1"
+                                >
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent className="bg-popover z-50">
@@ -1485,14 +1579,14 @@ const Opportunities = () => {
                           {/* Footer */}
                           <div className="px-4 py-2.5 border-t border-border/50 flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <span className="text-[10px] text-muted-foreground">
+                              <span className="text-xs md:text-[10px] text-muted-foreground">
                                 {serviceType === 'gateway_only' ? '⚡ Gateway' : '💳 Processing'}
                               </span>
                               {taskCnt > 0 && (
-                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-destructive/10 text-destructive">{taskCnt} task{taskCnt !== 1 ? 's' : ''}</span>
+                                <span className="text-xs md:text-[10px] font-bold px-1.5 py-0.5 rounded bg-destructive/10 text-destructive">{taskCnt} task{taskCnt !== 1 ? 's' : ''}</span>
                               )}
                             </div>
-                            <span className="text-[10px] text-muted-foreground/50">
+                            <span className="text-xs md:text-[10px] text-muted-foreground/50">
                               {formatDistanceToNow(new Date(opp.updated_at), { addSuffix: true }).replace('about ', '')}
                             </span>
                           </div>

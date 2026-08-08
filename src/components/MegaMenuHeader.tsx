@@ -90,10 +90,12 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
         // column, so it never scrolls and `sticky` was inert. z-chrome rather
         // than z-50, which put it in the same band as dialogs and the mobile
         // sheet backdrop.
-        "z-chrome w-full border-b border-border/40",
+        // #128: the surface colour is a token derived from the active variant's
+        // own palette, not a literal blue-grey applied to all six dark themes.
+        "z-chrome w-full border-b border-border/40 chrome-surface backdrop-blur-[20px] backdrop-saturate-[180%]",
         isDark
-          ? "bg-[hsl(217_33%_13%/0.92)] text-white backdrop-blur-[20px] backdrop-saturate-[180%] shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_24px_rgba(0,0,0,0.4)]"
-          : "bg-background/80 text-foreground backdrop-blur-xl shadow-sm"
+          ? "shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_24px_rgba(0,0,0,0.4)]"
+          : "shadow-sm"
       )}
       style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
