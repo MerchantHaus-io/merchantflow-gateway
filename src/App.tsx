@@ -58,6 +58,7 @@ const LiveBilling = lazy(() => import("./pages/LiveBilling"));
 const LiveAccountDetail = lazy(() => import("./pages/LiveAccountDetail"));
 const SupportedProcessors = lazy(() => import("./pages/SupportedProcessors"));
 const Administration = lazy(() => import("./pages/Administration"));
+const Observability = lazy(() => import("./pages/Observability"));
 const Outreach = lazy(() => import("./pages/Outreach"));
 const OutreachDetail = lazy(() => import("./pages/OutreachDetail"));
 const NetlifyHub = lazy(() => import("./pages/NetlifyHub"));
@@ -200,6 +201,7 @@ const App = () => (
                 
                   <Route path="/admin/web-submissions" element={<WebSubmissions />} />
                   <Route path="/admin/administration" element={<Administration />} />
+                  <Route path="/admin/observability" element={<Observability />} />
                 
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/connect" element={<Connect />} />
