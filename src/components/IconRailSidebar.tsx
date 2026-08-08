@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -52,6 +52,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 import { EMAIL_TO_USER } from "@/types/opportunity";
+import { pathMatchDepth } from "@/lib/routeMatch";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
@@ -231,10 +232,26 @@ export function IconRailSidebar() {
   const userEmail = user?.email?.toLowerCase() || "";
   const displayName = profileName || EMAIL_TO_USER[userEmail] || user?.email?.split("@")[0] || "User";
 
-  const isGroupActive = (group: NavGroup) => {
-    if (location.pathname === group.url) return true;
-    return group.items?.some((i) => !i.external && location.pathname.startsWith(i.url)) ?? false;
-  };
+  // Which single group owns the current path (#108).
+  //
+  // The old check was `pathname.startsWith(item.url)` per group, so on
+  // /reports/transactions BOTH Merchants (which owns that exact URL) and
+  // Reports (which owns /reports) lit up, and the user couldn't tell which
+  // section they were in. Two fixes are needed: match on whole segments, and
+  // when several groups still match, keep only the most specific one.
+  const activeGroupTitle = useMemo(() => {
+    let best: { title: string; depth: number } | null = null;
+
+    for (const group of navMain) {
+      const candidates = [group.url, ...(group.items ?? []).filter((i) => !i.external).map((i) => i.url)];
+      for (const url of candidates) {
+        const depth = pathMatchDepth(location.pathname, url);
+        if (depth > (best?.depth ?? -1)) best = { title: group.title, depth };
+      }
+    }
+
+    return best?.title ?? null;
+  }, [location.pathname]);
 
   return (
     <aside
@@ -250,26 +267,30 @@ export function IconRailSidebar() {
     >
       <nav className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-3 px-2.5 space-y-3">
         {navMain.map((group) => {
-          const active = isGroupActive(group);
+          const active = activeGroupTitle === group.title;
           const showBadge = group.title === "Tools" && acceptedQuotesCount > 0;
 
           const trigger = (
             <NavLink
               to={group.url}
               aria-label={group.title}
-              className={({ isActive }) =>
-                cn(
-                  "group relative flex items-center rounded-lg text-[13px] font-medium tracking-tight transition-colors w-full",
-                  collapsed ? "h-11 justify-center px-0" : "h-10 gap-3 px-3",
-                  (isActive || active)
-                    ? isDark
-                      ? "bg-white/10 text-white"
-                      : "bg-accent text-accent-foreground"
-                    : isDark
-                    ? "text-white/75 hover:text-white hover:bg-white/8"
-                    : "text-foreground/75 hover:text-foreground hover:bg-accent"
-                )
-              }
+              aria-current={active ? "page" : undefined}
+              // Deliberately NOT NavLink's own `isActive`: it matches
+              // descendants, so the Reports group would light up on
+              // /reports/transactions even though Merchants owns that page.
+              // activeGroupTitle already picked the single most specific
+              // owner (#108).
+              className={cn(
+                "group relative flex items-center rounded-lg text-[13px] font-medium tracking-tight transition-colors w-full",
+                collapsed ? "h-11 justify-center px-0" : "h-10 gap-3 px-3",
+                active
+                  ? isDark
+                    ? "bg-white/10 text-white"
+                    : "bg-accent text-accent-foreground"
+                  : isDark
+                  ? "text-white/75 hover:text-white hover:bg-white/8"
+                  : "text-foreground/75 hover:text-foreground hover:bg-accent"
+              )}
             >
               <div className="relative shrink-0 flex items-center justify-center">
                 <group.icon className="h-[18px] w-[18px]" strokeWidth={1.75} />

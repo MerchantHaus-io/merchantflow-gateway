@@ -11,6 +11,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ReferrerRoute } from "./components/ReferrerRoute";
 import { AppShell } from "@/components/AppShell";
 import { ErrorBoundary, RouteErrorBoundary } from "@/components/ErrorBoundary";
+import { isPathWithin } from "@/lib/routeMatch";
 
 // Pages are lazy-loaded so each route ships as its own chunk, keeping the
 // initial bundle small and deferring heavy deps (three/jspdf/mammoth/recharts)
@@ -98,7 +99,7 @@ const PUBLIC_ROUTES = ['/auth', '/login', '/contact', '/apply', '/merchant-apply
 // `/contacts` match `/contact` and `/quotes-contracts` match `/q`, silently
 // stripping the internal widgets from staff pages.
 const isPublicRoute = (pathname: string) =>
-  PUBLIC_ROUTES.some(r => pathname === r || pathname.startsWith(`${r}/`));
+  PUBLIC_ROUTES.some(r => isPathWithin(pathname, r));
 
 const InternalWidgets = () => {
   const { pathname } = useLocation();
@@ -117,6 +118,10 @@ const InternalWidgets = () => {
   );
 };
 
+// Public routes (auth, apply, the merchant quote page) have no shell, so a
+// full-screen fallback is the right shape for them. Internal pages suspend
+// against AppShell's own boundary instead, which keeps the chrome on screen —
+// see the comment there (#102).
 const RouteFallback = () => (
   <div className="flex h-screen w-full items-center justify-center">
     <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-primary" />

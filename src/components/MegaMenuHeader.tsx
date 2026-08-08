@@ -58,6 +58,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useAcceptedQuotesCount } from "@/hooks/useAcceptedQuotesCount";
 import { useTheme } from "@/contexts/ThemeContext";
 import { NotificationBell } from "@/components/NotificationBell";
+import { isPathWithin } from "@/lib/routeMatch";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import sidebarIcon from "@/assets/sidebar-icon.webp";
 
@@ -215,7 +217,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
       )}
       style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
-      <div className="flex h-12 items-center px-3 lg:px-5 gap-2 overflow-visible overflow-visible">
+      <div className="flex h-12 items-center px-3 lg:px-5 gap-2 overflow-visible">
         {/* Logo */}
         <Link to="/" className="flex items-center shrink-0 mr-1 hover:drop-shadow-[0_0_8px_hsl(var(--primary)/0.4)] transition-all duration-300">
           <img src={sidebarIcon} alt="Ops Terminal" className="h-7 w-7 object-contain" />
@@ -286,9 +288,15 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                 size="icon"
                 onClick={() => {
                   if (document.fullscreenElement) {
-                    document.exitFullscreen();
+                    // Both APIs reject rather than throw. Unhandled, that
+                    // surfaces as an uncaught promise rejection every time the
+                    // browser blocks the request — which it does inside an
+                    // iframe, i.e. exactly how the Lovable preview runs (#126).
+                    void document.exitFullscreen().catch(() => {});
                   } else {
-                    document.documentElement.requestFullscreen();
+                    void document.documentElement.requestFullscreen().catch(() => {
+                      toast.error("Fullscreen isn't available here");
+                    });
                   }
                 }}
                 className={cn(
@@ -332,7 +340,9 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
 
 function ContextTogglePill() {
   const { pathname } = useLocation();
-  const inSupport = pathname.startsWith("/support");
+  // Segment match, not startsWith: `/support-request` is the public client
+  // form, not the Support context (#109).
+  const inSupport = isPathWithin(pathname, "/support");
   const target = inSupport ? "/" : "/support";
   const opsActive = !inSupport;
   return (
