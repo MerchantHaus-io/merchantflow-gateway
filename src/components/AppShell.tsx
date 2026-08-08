@@ -6,11 +6,7 @@ import FloatingChat from "@/components/FloatingChat";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { ActionItemsWidget } from "@/components/ActionItemsWidget";
 import { PersistentTriTabDock } from "@/components/PersistentTriTabDock";
-import { BroadcastPopup } from "@/components/BroadcastPopup";
-import { ComplianceBroadcast } from "@/components/ComplianceBroadcast";
-import { AtriaBroadcast } from "@/components/AtriaBroadcast";
-import { NMIBoardingBroadcast } from "@/components/NMIBoardingBroadcast";
-import { BroadcastQueueProvider } from "@/components/BroadcastQueue";
+import { Broadcasts } from "@/components/Broadcasts";
 import { MobileAppDock } from "@/components/MobileAppDock";
 import { PageTransition } from "@/components/PageTransition";
 import { OfficeSimulatorOverlay } from "@/components/chat/OfficeSimulatorOverlay";
@@ -149,12 +145,7 @@ function ShellChrome() {
         <FloatingChat />
         <ActionItemsWidget />
         <PersistentTriTabDock />
-        <BroadcastQueueProvider>
-          <ComplianceBroadcast />
-          <BroadcastPopup />
-          <NMIBoardingBroadcast />
-          <AtriaBroadcast />
-        </BroadcastQueueProvider>
+        <Broadcasts />
         {isMobile && !isChatRoute && <MobileAppDock />}
         <OfficeSimulatorOverlay />
       </div>
