@@ -45,6 +45,7 @@ import {
   Archive,
   Loader2,
   Copy,
+  Check,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -245,6 +246,22 @@ const Opportunities = () => {
       /* ignore quota errors */
     }
   }, [searchQuery, stageFilter, ownerFilter, pipelineFilter, outcomeFilter, sortField, sortDirection, viewMode, viewTab, showFilters]);
+
+  // #79 — toast fatigue. Every inline edit fired a toast, so the ones that
+  // matter (failures) were buried in a stream of ones that didn't. Successes
+  // now flash a brief inline confirmation on the row; toasts are reserved for
+  // failures and for actions with no on-screen result.
+  const [confirmedIds, setConfirmedIds] = useState<Set<string>>(new Set());
+  const confirmInline = useCallback((id: string) => {
+    setConfirmedIds(prev => new Set(prev).add(id));
+    setTimeout(() => {
+      setConfirmedIds(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }, 1800);
+  }, []);
 
   const markSaving = useCallback((id: string, saving: boolean) => {
     setSavingIds(prev => {
@@ -575,12 +592,16 @@ const Opportunities = () => {
       user_email: user?.email,
     });
 
-    toast({
-      title: isReactivation
-        ? `Reactivated and assigned to ${assigneeValue}`
-        : `Assigned to ${assigneeValue || 'Unassigned'}`,
-      description: logged ? undefined : 'Saved, but the activity log entry failed.',
-    });
+    if (isReactivation) {
+      // Reactivation changes status and possibly stage — more than the row
+      // shows — so it keeps a toast.
+      toast({ title: `Reactivated and assigned to ${assigneeValue}` });
+    } else {
+      confirmInline(opp.id);
+    }
+    if (!logged) {
+      toast({ title: 'Saved, but the activity log entry failed', variant: 'destructive' });
+    }
 
     fetchOpportunities();
   };
@@ -644,17 +665,22 @@ const Opportunities = () => {
         });
       }
 
-      toast({
-        title: `Stage updated to ${stageLabel(newStage)}`,
-        description: logged ? undefined : 'Saved, but the activity log entry failed.',
-      });
+      // Quiet success: the row already shows the new stage, so a toast just
+      // adds noise. A failed audit-log write still warrants one.
+      confirmInline(opp.id);
+      if (!logged) {
+        toast({
+          title: 'Stage saved, but the activity log entry failed',
+          variant: 'destructive',
+        });
+      }
 
       // Don't rely on realtime being enabled for this table.
       fetchOpportunities();
     } finally {
       markSaving(opp.id, false);
     }
-  }, [toast, user, fetchOpportunities, markSaving]);
+  }, [toast, user, fetchOpportunities, markSaving, confirmInline]);
 
   /**
    * Run the pre-flight checks for a stage change, then either commit it or
@@ -732,12 +758,12 @@ const Opportunities = () => {
       user_email: user?.email,
     });
 
-    toast({
-      title: `Switched to ${label(newType)} pipeline`,
-      description: logged ? undefined : 'Saved, but the activity log entry failed.',
-    });
+    confirmInline(opp.id);
+    if (!logged) {
+      toast({ title: 'Saved, but the activity log entry failed', variant: 'destructive' });
+    }
     fetchOpportunities();
-  }, [toast, user, fetchOpportunities]);
+  }, [toast, user, fetchOpportunities, confirmInline]);
 
   const confirmReactivation = () => {
     if (reactivateConfirm) {
@@ -745,6 +771,97 @@ const Opportunities = () => {
       setReactivateConfirm(null);
     }
   };
+
+  /**
+   * #66 — bulk actions.
+   *
+   * The list already had a select-all header, per-row checkboxes and an
+   * "N items selected" counter, and did nothing with any of it. These are the
+   * operations the selection UI was implicitly promising.
+   *
+   * Writes go one statement per action via `.in()` rather than a loop, so a
+   * hundred rows is one round trip. The activity log is written per row
+   * because that is what the audit trail records.
+   */
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkConfirm, setBulkConfirm] = useState<
+    { kind: 'archive' | 'stage' | 'owner'; value?: string; label: string } | null
+  >(null);
+
+  const selectedOpportunities = useMemo(
+    () => filteredOpportunities.filter(o => selectedIds.has(o.id)),
+    [filteredOpportunities, selectedIds],
+  );
+
+  const runBulk = useCallback(async (
+    payload: Record<string, unknown>,
+    activityType: string,
+    describe: (opp: Opportunity) => string,
+  ) => {
+    const targets = selectedOpportunities;
+    if (targets.length === 0) return;
+    setBulkBusy(true);
+    try {
+      const ids = targets.map(o => o.id);
+      const { error } = await supabase.from('opportunities').update(payload).in('id', ids);
+      if (error) {
+        toast({ title: `Couldn't update ${ids.length} opportunities`, description: error.message, variant: 'destructive' });
+        return;
+      }
+
+      // One activity row per opportunity — the trail is per-record.
+      const { error: logError } = await supabase.from('activities').insert(
+        targets.map(opp => ({
+          opportunity_id: opp.id,
+          type: activityType,
+          description: describe(opp),
+          user_id: user?.id,
+          user_email: user?.email,
+        })) as ActivityInsert[],
+      );
+
+      toast({
+        title: `Updated ${ids.length} opportunit${ids.length === 1 ? 'y' : 'ies'}`,
+        description: logError ? 'Saved, but the activity log entries failed.' : undefined,
+      });
+      setSelectedIds(new Set());
+      fetchOpportunities();
+    } finally {
+      setBulkBusy(false);
+    }
+  }, [selectedOpportunities, toast, user, fetchOpportunities]);
+
+  /** Bulk export of the current selection as CSV — client-side, no round trip. */
+  const exportSelection = useCallback(() => {
+    const rows = selectedOpportunities;
+    if (rows.length === 0) return;
+    const cols: [string, (o: Opportunity) => string][] = [
+      ['Account', o => o.account?.name ?? ''],
+      ['Contact', o => o.contact?.first_name ? `${o.contact.first_name} ${o.contact.last_name ?? ''}`.trim() : (o.contact?.email ?? '')],
+      ['Email', o => o.contact?.email ?? ''],
+      ['Stage', o => STAGE_CONFIG[o.stage as OpportunityStage]?.label ?? o.stage],
+      ['Pipeline', o => getServiceType(o) === 'gateway_only' ? 'Gateway' : 'Processing'],
+      ['Owner', o => o.assigned_to ?? 'Unassigned'],
+      ['Status', o => o.status ?? ''],
+      ['Created', o => o.created_at],
+      ['Updated', o => o.updated_at],
+    ];
+    // Quote every field and double embedded quotes — account names contain
+    // commas often enough that unquoted output corrupts the file.
+    const esc = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
+    const csv = [
+      cols.map(c => esc(c[0])).join(','),
+      ...rows.map(o => cols.map(c => esc(c[1](o))).join(',')),
+    ].join('\r\n');
+
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `opportunities-${rows.length}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: `Exported ${rows.length} opportunit${rows.length === 1 ? 'y' : 'ies'}` });
+  }, [selectedOpportunities, toast]);
 
   const hasActiveFilters =
     stageFilter !== 'all' || ownerFilter !== 'all' || pipelineFilter !== 'all' ||
@@ -860,6 +977,68 @@ const Opportunities = () => {
             <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
               Showing the {MAX_ROWS.toLocaleString()} most recently updated opportunities. Counts above
               cover only these rows — narrow the filters to see the rest.
+            </div>
+          )}
+
+          {/* #66 — bulk action bar. Appears only with a selection, and every
+              destructive or wide-reaching action confirms first. */}
+          {selectedCount > 0 && (
+            <div className="flex items-center gap-2 flex-wrap rounded-md border border-info/30 bg-info/5 px-3 py-2">
+              <span className="text-xs font-medium text-foreground">
+                {selectedCount} selected
+              </span>
+
+              <Select
+                value=""
+                onValueChange={(v) =>
+                  setBulkConfirm({ kind: 'owner', value: v, label: v === 'unassigned' ? 'Unassigned' : v })
+                }
+                disabled={bulkBusy}
+              >
+                <SelectTrigger className="h-7 w-[150px] text-xs"><SelectValue placeholder="Reassign to…" /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  <SelectItem value="unassigned" className="text-xs">Unassigned</SelectItem>
+                  {TEAM_MEMBERS.map(m => (<SelectItem key={m} value={m} className="text-xs">{m}</SelectItem>))}
+                </SelectContent>
+              </Select>
+
+              <Select
+                value=""
+                onValueChange={(v) =>
+                  setBulkConfirm({ kind: 'stage', value: v, label: STAGE_CONFIG[v as OpportunityStage]?.label ?? v })
+                }
+                disabled={bulkBusy}
+              >
+                <SelectTrigger className="h-7 w-[150px] text-xs"><SelectValue placeholder="Move to stage…" /></SelectTrigger>
+                <SelectContent className="bg-popover">
+                  {PROCESSING_PIPELINE_STAGES.map(st => (
+                    <SelectItem key={st} value={st} className="text-xs">{STAGE_CONFIG[st].label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                disabled={bulkBusy}
+                onClick={() => setBulkConfirm({ kind: 'archive', label: 'Archive' })}
+              >
+                <Archive className="h-3.5 w-3.5 mr-1.5" /> Archive
+              </Button>
+
+              <Button variant="outline" size="sm" className="h-7 text-xs" disabled={bulkBusy} onClick={exportSelection}>
+                <Upload className="h-3.5 w-3.5 mr-1.5 rotate-180" /> Export CSV
+              </Button>
+
+              <button
+                onClick={() => setSelectedIds(new Set())}
+                className="ml-auto text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Clear selection
+              </button>
+
+              {bulkBusy && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
             </div>
           )}
 
@@ -993,6 +1172,7 @@ const Opportunities = () => {
                         
                         const isSelected = selectedIds.has(opp.id);
                         const isSaving = savingIds.has(opp.id);
+                        const justSaved = confirmedIds.has(opp.id);
                         return (
                           <TableRow
                             key={opp.id}
@@ -1002,7 +1182,8 @@ const Opportunities = () => {
                               isStale && "opacity-75",
                               // Inline edits write straight to the DB; without
                               // this the row looks inert while it saves.
-                              isSaving && "opacity-60 pointer-events-none"
+                              isSaving && "opacity-60 pointer-events-none",
+                              justSaved && "bg-emerald-500/5"
                             )}
                             aria-busy={isSaving}
                             onClick={() => navigateToOpportunity(opp)}
@@ -1022,6 +1203,9 @@ const Opportunities = () => {
                             <TableCell className="text-right pr-2 text-[11px] text-muted-foreground tabular-nums py-2">
                               {isSaving ? (
                                 <Loader2 className="h-3 w-3 animate-spin inline-block text-muted-foreground" />
+                              ) : confirmedIds.has(opp.id) ? (
+                                // #79: quiet success — replaces a toast per edit.
+                                <Check className="h-3 w-3 inline-block text-emerald-500" />
                               ) : (
                                 index + 1
                               )}
@@ -1328,6 +1512,48 @@ const Opportunities = () => {
           onClose={() => setShowNewModal(false)}
           onSubmit={fetchOpportunities}
         />
+
+        {/* Bulk action confirmation (#66). Every bulk write goes through here
+            — a mis-click on a 200-row selection is not something to make
+            silently recoverable-only. */}
+        <AlertDialog open={!!bulkConfirm} onOpenChange={(open) => !open && setBulkConfirm(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {bulkConfirm?.kind === 'archive' && `Archive ${selectedCount} opportunit${selectedCount === 1 ? 'y' : 'ies'}?`}
+                {bulkConfirm?.kind === 'stage' && `Move ${selectedCount} to ${bulkConfirm.label}?`}
+                {bulkConfirm?.kind === 'owner' && `Reassign ${selectedCount} to ${bulkConfirm.label}?`}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {bulkConfirm?.kind === 'archive'
+                  ? 'They will move to the Archive tab and out of the active list. This can be undone by reassigning them.'
+                  : 'This applies to every selected opportunity and is recorded in each one\u2019s activity log.'}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (!bulkConfirm) return;
+                  const c = bulkConfirm;
+                  setBulkConfirm(null);
+                  if (c.kind === 'archive') {
+                    runBulk({ status: ARCHIVED_STATUS }, 'archived', () => 'Archived (bulk action)');
+                  } else if (c.kind === 'stage') {
+                    runBulk({ stage: c.value }, 'stage_change',
+                      opp => `Moved from ${STAGE_CONFIG[opp.stage as OpportunityStage]?.label ?? opp.stage} to ${c.label} (bulk action)`);
+                  } else {
+                    const assignee = c.value === 'unassigned' ? null : c.value;
+                    runBulk({ assigned_to: assignee }, 'assignment_change',
+                      () => `Assigned to ${assignee ?? 'Unassigned'} (bulk action)`);
+                  }
+                }}
+              >
+                Confirm
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Possible-duplicate confirmation (#68). Blocks the stage change
             until the rep decides, instead of warning and proceeding anyway. */}
