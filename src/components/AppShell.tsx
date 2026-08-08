@@ -16,9 +16,11 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { PageChromeProvider, usePageChrome } from "@/contexts/PageChromeContext";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
+import { useIsCompactNav } from "@/hooks/use-compact-nav";
+import { recordPageVisit } from "@/lib/recentPages";
 import { useQueryClient } from "@tanstack/react-query";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useReducedMotion } from "framer-motion";
 import { RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -40,7 +42,10 @@ const Starfield = lazy(() => import("@/components/Starfield"));
 function ShellChrome() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLElement>(null);
-  const isMobile = useIsMobile();
+  // The same threshold the `lg:` classes use, so the dock can't fall into the
+  // gap between "no icon rail" and "no dock" (#134).
+  const isCompactNav = useIsCompactNav();
+  const prefersReducedMotion = useReducedMotion();
   const location = useLocation();
   const navigate = useNavigate();
   const { theme, variant } = useTheme();
@@ -68,6 +73,11 @@ function ShellChrome() {
     // preventScroll, or the browser scrolls the region into view and undoes
     // the scroll reset that just ran.
     mainRef.current?.focus({ preventScroll: true });
+  }, [location.pathname]);
+
+  // Feeds the mobile launcher's "Recent" row (#156).
+  useEffect(() => {
+    recordPageVisit(location.pathname);
   }, [location.pathname]);
 
   // Refetch data rather than reloading the document. A full reload throws away
@@ -101,11 +111,17 @@ function ShellChrome() {
 
   return (
     <div data-shell="root" className="h-screen h-dvh min-h-0 flex flex-col w-full overflow-hidden relative">
+      {/* #173: Starfield was gated on the theme alone, so a phone rendered a
+          full-viewport animated canvas behind every page. It is decoration —
+          skip it on the compact layout and whenever the user has asked for
+          less motion. */}
       {isDark && (
         <>
-          <Suspense fallback={null}>
-            <Starfield />
-          </Suspense>
+          {!isCompactNav && !prefersReducedMotion && (
+            <Suspense fallback={null}>
+              <Starfield />
+            </Suspense>
+          )}
           {/* Earth / Hell horizon glow */}
           <div
             className="pointer-events-none fixed inset-x-0 bottom-0 z-[1]"
@@ -160,7 +176,15 @@ function ShellChrome() {
           <div
             ref={scrollRef}
             data-shell="scroll"
-            className="flex-1 min-h-0 overflow-y-auto scroll-smooth pb-16 lg:pb-0"
+            className="flex-1 min-h-0 overflow-y-auto scroll-smooth"
+            // pb-16 was a magic 64px standing in for a 56px tab bar plus an
+            // inset that varies by device, so it was wrong on every notched
+            // phone (#166). Derived instead, and zero once the tab bar is gone.
+            style={{
+              paddingBottom: isCompactNav
+                ? "calc(56px + env(safe-area-inset-bottom, 0px))"
+                : undefined,
+            }}
           >
             {/* Suspense belongs HERE, not around <Routes> (#102).
                 Wrapping the router meant the first visit to any route
@@ -199,7 +223,7 @@ function ShellChrome() {
         <ActionItemsWidget />
         <PersistentTriTabDock />
         <Broadcasts />
-        {isMobile && !isChatRoute && <MobileAppDock />}
+        {isCompactNav && !isChatRoute && <MobileAppDock />}
         <OfficeSimulatorOverlay />
       </div>
     </div>

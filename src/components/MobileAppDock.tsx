@@ -4,25 +4,75 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "mobile-dock-position";
-const DEFAULT_POS = { x: 16, y: -80 }; // left:16, bottom:80
+
+const FAB_SIZE = 56;
+const FAN_ITEM_SIZE = 48;
+const FAN_SPACING = 56;
+const EDGE_MARGIN = 16;
+/** Height of the fixed tab bar the dock must never cover. */
+const TAB_BAR_HEIGHT = 56;
 
 interface DockPosition {
+  /** Distance from the left edge, in px. */
   x: number;
-  y: number; // stored as negative bottom offset
+  /** Distance from the bottom edge, in px. */
+  bottom: number;
+}
+
+const DEFAULT_POS: DockPosition = { x: EDGE_MARGIN, bottom: 80 };
+
+function safeAreaBottom(): number {
+  if (typeof window === "undefined") return 0;
+  const raw = getComputedStyle(document.documentElement).getPropertyValue("--safe-bottom");
+  return Number.parseFloat(raw) || 0;
+}
+
+/**
+ * Keep the dock on screen and clear of the tab bar.
+ *
+ * The stored position is absolute pixels, and the old code only clamped while
+ * a drag was in progress. Rotate the device or open the app on a narrower
+ * phone and the FAB could sit half — or entirely — off screen, with no way to
+ * get it back (#141). The lower bound also allowed 16px, which parks it on top
+ * of the 56px tab bar and can permanently cover a primary tab (#142).
+ */
+function clamp(pos: DockPosition): DockPosition {
+  const minBottom = TAB_BAR_HEIGHT + safeAreaBottom() + 8;
+  const maxBottom = Math.max(minBottom, window.innerHeight - FAB_SIZE - EDGE_MARGIN);
+  return {
+    x: Math.max(EDGE_MARGIN, Math.min(window.innerWidth - FAB_SIZE - EDGE_MARGIN, pos.x)),
+    bottom: Math.max(minBottom, Math.min(maxBottom, pos.bottom)),
+  };
+}
+
+/** Settle to whichever side is nearer, the way every floating-bubble UI does. */
+function snapToEdge(pos: DockPosition): DockPosition {
+  const midpoint = window.innerWidth / 2;
+  const centre = pos.x + FAB_SIZE / 2;
+  return clamp({
+    ...pos,
+    x: centre < midpoint ? EDGE_MARGIN : window.innerWidth - FAB_SIZE - EDGE_MARGIN,
+  });
 }
 
 function loadPosition(): DockPosition {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (!raw) return DEFAULT_POS;
+    const parsed = JSON.parse(raw) as Partial<DockPosition>;
+    if (typeof parsed?.x !== "number" || typeof parsed?.bottom !== "number") return DEFAULT_POS;
+    return parsed as DockPosition;
   } catch {
-    /* ignore */
+    return DEFAULT_POS;
   }
-  return DEFAULT_POS;
 }
 
 function savePosition(pos: DockPosition) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(pos));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(pos));
+  } catch {
+    /* private mode / quota */
+  }
 }
 
 const FAN_ITEMS = [
@@ -32,206 +82,216 @@ const FAN_ITEMS = [
   { id: "simulator", icon: Gamepad2, label: "Simulator", event: "openOfficeSimulator" },
 ];
 
-// Fan positions — vertical stack above the FAB
-const FAN_OFFSETS = [
-  { x: 0, y: -64 },   // closest
-  { x: 0, y: -120 },  // middle
-  { x: 0, y: -176 },  // farthest
-  { x: 0, y: -232 },  // fourth item
-];
+const LONG_PRESS_MS = 500;
+const DRAG_THRESHOLD_PX = 8;
 
 export function MobileAppDock() {
   const [isOpen, setIsOpen] = useState(false);
   const [pos, setPos] = useState<DockPosition>(loadPosition);
   const [isDragging, setIsDragging] = useState(false);
-  const [longPressed, setLongPressed] = useState(false);
-  const [hidden, setHidden] = useState(false);
+
   const dragRef = useRef<{
+    pointerId: number;
     startX: number;
     startY: number;
-    startPosX: number;
-    startPosY: number;
-    startTime: number;
+    startPos: DockPosition;
     moved: boolean;
+    dragging: boolean;
   } | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tabRef = useRef<HTMLButtonElement>(null);
 
-  // Dock stays persistent — no auto-hide when sub-apps open.
-  // Listeners still close the fan but keep the dock visible.
+  // Clamp whatever was restored from storage, and again whenever the viewport
+  // changes — rotation is the common case.
   useEffect(() => {
-    const closeFan = () => setIsOpen(false);
-    window.addEventListener("dockAppOpened", closeFan);
+    const reclamp = () => setPos((p) => clamp(p));
+    reclamp();
+    window.addEventListener("resize", reclamp);
+    window.addEventListener("orientationchange", reclamp);
     return () => {
-      window.removeEventListener("dockAppOpened", closeFan);
+      window.removeEventListener("resize", reclamp);
+      window.removeEventListener("orientationchange", reclamp);
     };
   }, []);
 
-  // Close fan on outside tap
+  useEffect(() => {
+    const closeFan = () => setIsOpen(false);
+    window.addEventListener("dockAppOpened", closeFan);
+    return () => window.removeEventListener("dockAppOpened", closeFan);
+  }, []);
+
+  // Close the fan on an outside press.
   useEffect(() => {
     if (!isOpen) return;
-    const handler = (e: TouchEvent | MouseEvent) => {
+    const handler = (e: PointerEvent) => {
       if (tabRef.current?.contains(e.target as Node)) return;
       setIsOpen(false);
     };
-    document.addEventListener("touchstart", handler, { passive: true });
-    document.addEventListener("mousedown", handler);
-    return () => {
-      document.removeEventListener("touchstart", handler);
-      document.removeEventListener("mousedown", handler);
-    };
+    document.addEventListener("pointerdown", handler);
+    return () => document.removeEventListener("pointerdown", handler);
   }, [isOpen]);
 
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    dragRef.current = {
-      startX: touch.clientX,
-      startY: touch.clientY,
-      startPosX: pos.x,
-      startPosY: pos.y,
-      startTime: Date.now(),
-      moved: false,
-    };
-    // Start long-press timer (500ms)
-    longPressTimer.current = setTimeout(() => {
-      setLongPressed(true);
-      setIsDragging(true);
-      setIsOpen(false);
-      // Haptic feedback if available
-      if (navigator.vibrate) navigator.vibrate(30);
-    }, 500);
-  }, [pos]);
+  // Pointer events throughout, rather than a touch/mouse split (#144). The old
+  // click handler was guarded by `!("ontouchstart" in window)`, but
+  // touch-capable laptops and most Android browsers report ontouchstart AND
+  // fire a click after touchend — so the fan toggled twice and appeared not to
+  // open at all.
+  const onPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLButtonElement>) => {
+      e.currentTarget.setPointerCapture(e.pointerId);
+      dragRef.current = {
+        pointerId: e.pointerId,
+        startX: e.clientX,
+        startY: e.clientY,
+        startPos: pos,
+        moved: false,
+        dragging: false,
+      };
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!dragRef.current) return;
-    const touch = e.touches[0];
-    const dx = touch.clientX - dragRef.current.startX;
-    const dy = touch.clientY - dragRef.current.startY;
+      // Mouse users get drag on press; touch users must hold, so a tap stays a
+      // tap and a scroll stays a scroll.
+      if (e.pointerType === "mouse") return;
+      longPressTimer.current = setTimeout(() => {
+        if (!dragRef.current) return;
+        dragRef.current.dragging = true;
+        setIsDragging(true);
+        setIsOpen(false);
+        navigator.vibrate?.(30);
+      }, LONG_PRESS_MS);
+    },
+    [pos],
+  );
 
-    // Cancel long-press if finger moves before timer fires
-    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+  const onPointerMove = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+
+    const dx = e.clientX - drag.startX;
+    const dy = e.clientY - drag.startY;
+
+    if (Math.abs(dx) > DRAG_THRESHOLD_PX || Math.abs(dy) > DRAG_THRESHOLD_PX) {
       if (longPressTimer.current) {
         clearTimeout(longPressTimer.current);
         longPressTimer.current = null;
       }
+      if (e.pointerType === "mouse") {
+        drag.dragging = true;
+        setIsDragging(true);
+      }
     }
 
-    // Only allow dragging after long press
-    if (!longPressed && !isDragging) return;
+    if (!drag.dragging) return;
+    drag.moved = true;
+    // bottom grows upward, so a downward drag (positive dy) reduces it.
+    setPos(clamp({ x: drag.startPos.x + dx, bottom: drag.startPos.bottom - dy }));
+  }, []);
 
-    dragRef.current.moved = true;
-    const newX = Math.max(0, Math.min(window.innerWidth - 56, dragRef.current.startPosX + dx));
-    const newY = Math.max(-(window.innerHeight - 56), Math.min(-16, dragRef.current.startPosY + dy));
-    setPos({ x: newX, y: newY });
-  }, [longPressed, isDragging]);
+  const endDrag = useCallback(
+    (e: React.PointerEvent<HTMLButtonElement>) => {
+      const drag = dragRef.current;
+      if (!drag || drag.pointerId !== e.pointerId) return;
+      dragRef.current = null;
 
-  const handleTouchEnd = useCallback(() => {
-    // Clear long-press timer
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
 
-    if (!dragRef.current) return;
-    const wasDrag = dragRef.current.moved || isDragging;
-    dragRef.current = null;
-    setIsDragging(false);
-    setLongPressed(false);
+      const wasDrag = drag.dragging && drag.moved;
+      setIsDragging(false);
 
-    if (wasDrag) {
-      savePosition(pos);
-    } else {
-      setIsOpen((o) => !o);
-    }
-  }, [pos, isDragging]);
+      if (wasDrag) {
+        setPos((p) => {
+          const snapped = snapToEdge(p);
+          savePosition(snapped);
+          return snapped;
+        });
+      } else {
+        setIsOpen((o) => !o);
+      }
+    },
+    [],
+  );
 
   const handleFanItemTap = useCallback((eventName: string) => {
     setIsOpen(false);
     window.dispatchEvent(new CustomEvent(eventName));
   }, []);
 
+  // Flip the fan downward when there isn't room above (#143). Four items stack
+  // to 232px, so dragging the dock near the top of the screen rendered most of
+  // them off-screen with no way to reach them.
+  const stackHeight = FAN_ITEMS.length * FAN_SPACING;
+  const spaceAbove =
+    typeof window === "undefined" ? Infinity : window.innerHeight - pos.bottom - FAB_SIZE;
+  const flipDown = spaceAbove < stackHeight + EDGE_MARGIN;
+  const direction = flipDown ? 1 : -1;
+
   return (
-    <AnimatePresence>
-      {!hidden && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.8 }}
-          transition={{ duration: 0.25, ease: "easeOut" }}
-          className="fixed z-[55]"
-          style={{
-            left: pos.x,
-            bottom: -pos.y,
-            touchAction: "none",
-          }}
-        >
-      {/* Fan items */}
+    <div
+      className="fixed z-[55]"
+      style={{ left: pos.x, bottom: pos.bottom, touchAction: "none" }}
+    >
       <AnimatePresence>
-        {isOpen && FAN_ITEMS.map((item, i) => (
-          <motion.button
-            key={item.id}
-            initial={{ opacity: 0, x: 0, y: 0, scale: 0.3 }}
-            animate={{
-              opacity: 1,
-              x: FAN_OFFSETS[i].x,
-              y: FAN_OFFSETS[i].y,
-              scale: 1,
-            }}
-            exit={{ opacity: 0, x: 0, y: 0, scale: 0.3 }}
-            transition={{ duration: 0.2, delay: i * 0.04 }}
-            className={cn(
-              "absolute w-12 h-12 rounded-full flex items-center justify-center",
-              "bg-card border border-border text-foreground shadow-xl",
-              "active:scale-95 transition-transform"
-            )}
-            onClick={() => handleFanItemTap(item.event)}
-            aria-label={item.label}
-          >
-            <item.icon className="h-5 w-5" />
-          </motion.button>
-        ))}
+        {isOpen &&
+          FAN_ITEMS.map((item, i) => (
+            <motion.button
+              key={item.id}
+              type="button"
+              initial={{ opacity: 0, y: 0, scale: 0.3 }}
+              animate={{
+                opacity: 1,
+                y: direction * ((i + 1) * FAN_SPACING + 8),
+                scale: 1,
+              }}
+              exit={{ opacity: 0, y: 0, scale: 0.3 }}
+              transition={{ duration: 0.2, delay: i * 0.04 }}
+              style={{ width: FAN_ITEM_SIZE, height: FAN_ITEM_SIZE }}
+              className={cn(
+                "absolute rounded-full flex items-center justify-center",
+                "bg-card border border-border text-foreground shadow-xl",
+                "active:scale-95 transition-transform",
+              )}
+              onClick={() => handleFanItemTap(item.event)}
+              aria-label={item.label}
+            >
+              <item.icon className="h-5 w-5" />
+            </motion.button>
+          ))}
       </AnimatePresence>
 
-      {/* Main tab */}
       <button
         ref={tabRef}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onClick={() => {
-          // Desktop fallback
-          if (!("ontouchstart" in window)) setIsOpen((o) => !o);
-        }}
+        type="button"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        style={{ width: FAB_SIZE, height: FAB_SIZE }}
         className={cn(
-          "relative w-14 h-14 rounded-full flex items-center justify-center",
-          "bg-haus-charcoal text-white shadow-xl",
-          "transition-all duration-200",
+          "relative rounded-full flex items-center justify-center",
+          "bg-haus-charcoal text-white shadow-xl transition-all duration-200",
           isDragging && "scale-110 shadow-2xl",
-          isOpen && "ring-2 ring-gold/50"
+          isOpen && "ring-2 ring-gold/50",
         )}
         aria-label="App tools"
+        aria-expanded={isOpen}
       >
-        <motion.div
-          animate={{ rotate: isOpen ? 45 : 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <motion.span animate={{ rotate: isOpen ? 45 : 0 }} transition={{ duration: 0.2 }}>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
             <rect x="3" y="3" width="5.5" height="5.5" rx="1.2" fill="currentColor" />
             <rect x="11.5" y="3" width="5.5" height="5.5" rx="1.2" fill="currentColor" />
             <rect x="3" y="11.5" width="5.5" height="5.5" rx="1.2" fill="currentColor" />
             <rect x="11.5" y="11.5" width="5.5" height="5.5" rx="1.2" fill="currentColor" />
           </svg>
-        </motion.div>
+        </motion.span>
 
-        {/* Hold hint */}
         {isDragging && (
           <span className="absolute -top-8 left-1/2 -translate-x-1/2 text-[10px] bg-foreground text-background px-2 py-0.5 rounded whitespace-nowrap">
             Drop to place
           </span>
         )}
       </button>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    </div>
   );
 }

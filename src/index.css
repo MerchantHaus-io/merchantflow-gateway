@@ -25,6 +25,16 @@ All colors MUST be HSL.
        to an invalid colour everywhere else. */
     --info: 213 94% 56%;
     --info-foreground: 0 0% 100%;
+    /* #129: the alert badge red was hardcoded as #c81030 in four separate
+       places (rail group badge, rail sub-item badge, mobile tab badge, mobile
+       grid badge) — a value that is neither the brand red from the guide
+       (#C8102E) nor the --primary token. One token, correct value, used
+       everywhere. */
+    --badge-alert: 350 85% 42%;
+    /* Readable from JS via getComputedStyle — the mobile dock has to clamp
+       its saved position above the tab bar plus the device inset, and env()
+       is not otherwise reachable from script. */
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
     --background: 0 0% 0%;
     --foreground: 210 40% 98%;
 
@@ -548,6 +558,12 @@ All colors MUST be HSL.
        to an invalid colour everywhere else. */
     --info: 213 94% 56%;
     --info-foreground: 0 0% 100%;
+    /* #129: the alert badge red was hardcoded as #c81030 in four separate
+       places (rail group badge, rail sub-item badge, mobile tab badge, mobile
+       grid badge) — a value that is neither the brand red from the guide
+       (#C8102E) nor the --primary token. One token, correct value, used
+       everywhere. */
+    --badge-alert: 350 85% 42%;
     --background: 220 14% 96%;          /* #F3F4F6 - Soft Blue-Grey/Off-white */
     --foreground: 221 39% 11%;          /* #1F2937 - Dark Slate for readability */
 
@@ -2514,4 +2530,14 @@ html:not(.transparency-enabled) {
    bottom nav is hidden, so no offset is needed. */
 @media (min-width: 768px) and (max-width: 1023.98px) {
   :root { --tri-tab-dock-offset: 56px; }
+}
+
+/* #172: `background-attachment: fixed` is specifically broken on iOS Safari —
+   it repaints the whole background on every scroll frame, which is the single
+   biggest source of scroll jank on a phone. Every theme sets it on body, so
+   this one rule under the mobile breakpoint covers all fourteen. */
+@media (max-width: 767px) {
+  body {
+    background-attachment: scroll !important;
+  }
 }

@@ -1,40 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import {
-  LayoutDashboard,
-  BookMarked,
-  Building2,
-  Users,
-  FileText,
-  BarChart3,
-  BookOpen,
-  Wrench,
-  Calculator,
-  Activity,
-  Sparkles,
-  GraduationCap,
-  ClipboardList,
-  ListChecks,
-  FileSpreadsheet,
-  Download,
-  Briefcase,
-  Globe,
-  CreditCard,
-  BadgeDollarSign,
-  Cloud,
-  Send,
-  UserPlus,
-  FileSignature,
-  LifeBuoy,
-  MessageSquarePlus,
-  ScanSearch,
-  ChevronsLeft,
-  ChevronsRight,
-  Settings,
-  LogOut,
-  Trash2,
-  type LucideIcon,
-} from "lucide-react";
+import { ChevronsLeft, ChevronsRight, Settings, LogOut, Trash2 } from "lucide-react";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
@@ -52,112 +18,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 import { EMAIL_TO_USER } from "@/types/opportunity";
-import { pathMatchDepth } from "@/lib/routeMatch";
+import { activeGroupFor, groupsForSurface } from "@/config/navigation";
 import { cn } from "@/lib/utils";
-
-interface NavItem {
-  title: string;
-  url: string;
-  icon: LucideIcon;
-  description?: string;
-  external?: boolean;
-}
-
-interface NavGroup {
-  title: string;
-  url: string;
-  icon: LucideIcon;
-  items?: NavItem[];
-}
-
-const navMain: NavGroup[] = [
-  {
-    title: "Pipeline",
-    url: "/pipeline",
-    icon: LayoutDashboard,
-    items: [
-      { title: "Pipeline Board", url: "/pipeline", icon: LayoutDashboard, description: "Opportunity kanban board" },
-      { title: "All Opportunities", url: "/opportunities", icon: Briefcase, description: "Browse & search all opportunities" },
-      { title: "Quotes & Contracts", url: "/quotes-contracts", icon: FileSignature, description: "Quote & signature status" },
-      { title: "Tasks", url: "/tasks", icon: ListChecks, description: "Manage your tasks" },
-      { title: "Email Outreach", url: "/outreach", icon: Send, description: "Campaign tracker & email sender" },
-      { title: "Web Submissions", url: "/admin/web-submissions", icon: Globe, description: "Incoming merchant applications" },
-    ],
-  },
-  {
-    title: "CRM",
-    url: "/leads",
-    icon: UserPlus,
-    items: [
-      { title: "Leads", url: "/leads", icon: UserPlus, description: "New prospects & account list" },
-      { title: "Contacts", url: "/contacts", icon: Users, description: "Manage contacts" },
-      { title: "Calendar", url: "/calendar", icon: Calculator, description: "Team calendar & meetings" },
-      { title: "Documents", url: "/documents", icon: FileText, description: "View uploaded documents" },
-    ],
-  },
-  {
-    title: "Merchants",
-    url: "/live-billing",
-    icon: Building2,
-    items: [
-      { title: "Live & Billing", url: "/live-billing", icon: BadgeDollarSign, description: "Live accounts & billing" },
-      { title: "Transactions", url: "/reports/transactions", icon: CreditCard, description: "NMI gateway transactions" },
-      { title: "Commissions", url: "/commissions", icon: BadgeDollarSign, description: "Partner commission reports" },
-      { title: "Pricing", url: "/pricing", icon: Calculator, description: "Pricing tiers & buy rates" },
-      { title: "Supported Processors", url: "/supported-processors", icon: Globe, description: "Processor compatibility reference" },
-    ],
-  },
-  {
-    title: "Support",
-    url: "/support",
-    icon: LifeBuoy,
-    items: [
-      { title: "Support Triage", url: "/support", icon: LifeBuoy, description: "Live ticket queue" },
-      { title: "Client Request Form", url: "/support-request", icon: MessageSquarePlus, description: "Public support request page", external: true },
-    ],
-  },
-  {
-    title: "Reports",
-    url: "/reports",
-    icon: BarChart3,
-    items: [
-      { title: "Analytics", url: "/reports", icon: BarChart3, description: "Performance & pipeline analytics" },
-      { title: "System Status", url: "https://statusgator.com/services/nmi", icon: Activity, description: "Live NMI & platform status", external: true },
-    ],
-  },
-  {
-    title: "Tools",
-    url: "/tools/nmi-boarding",
-    icon: Wrench,
-    items: [
-      { title: "Board Merchant", url: "/tools/nmi-boarding", icon: BadgeDollarSign, description: "Board merchants via NMI gateway" },
-      { title: "Kurv / MyPortfolio", url: "/tools/kurv", icon: BadgeDollarSign, description: "EMS boarding, roster & transactions" },
-      { title: "Pre-Qualification Wizard", url: "/tools/preboarding-wizard", icon: ClipboardList, description: "Application readiness form" },
-      { title: "Statement Analyzer", url: "/tools/statement-analysis", icon: ScanSearch, description: "Analyze a statement & build a savings proposal" },
-      { title: "Revenue Calculator", url: "/tools/revenue-calculator", icon: Calculator, description: "Estimate processing revenue" },
-      { title: "CSV Import", url: "/tools/csv-import", icon: FileSpreadsheet, description: "Bulk import data" },
-      { title: "Quote Builder", url: "/tools/quote-builder", icon: FileSignature, description: "Generate gateway quotes" },
-    ],
-  },
-  {
-    title: "Admin",
-    url: "/sop",
-    icon: BookOpen,
-    items: [
-      { title: "SOP", url: "/sop", icon: BookOpen, description: "Standard operating procedures" },
-      { title: "Training", url: "/training", icon: GraduationCap, description: "Onboarding guide" },
-      { title: "CRM Updates", url: "/tools/terminal-updates", icon: Sparkles, description: "Latest changes & features" },
-      { title: "Administration", url: "/admin/administration", icon: Activity, description: "Agenda, popups & sessions" },
-      { title: "Team Roster", url: "/admin/team-roster", icon: Users, description: "Manage the internal team roster" },
-      { title: "Gateway Accounts", url: "/admin/gateway-accounts", icon: BadgeDollarSign, description: "NMI partner gateway inventory" },
-      { title: "Integrations", url: "/integrations", icon: Cloud, description: "Connected services & API providers" },
-      { title: "Affiliates", url: "/admin/affiliates", icon: UserPlus, description: "External affiliate partners" },
-      { title: "Data Export", url: "/admin/data-export", icon: Download, description: "Export opportunity data" },
-      { title: "Merchant Portal Guide", url: "/tools/gateway-guide", icon: BookMarked, description: "Interactive portal walkthrough" },
-      { title: "Deployment", url: "/tools/netlify", icon: Cloud, description: "Deployment audit & fix prompts" },
-    ],
-  },
-];
 
 const STORAGE_KEY = "iconRailCollapsed";
 
@@ -232,26 +94,22 @@ export function IconRailSidebar() {
   const userEmail = user?.email?.toLowerCase() || "";
   const displayName = profileName || EMAIL_TO_USER[userEmail] || user?.email?.split("@")[0] || "User";
 
-  // Which single group owns the current path (#108).
-  //
-  // The old check was `pathname.startsWith(item.url)` per group, so on
-  // /reports/transactions BOTH Merchants (which owns that exact URL) and
-  // Reports (which owns /reports) lit up, and the user couldn't tell which
-  // section they were in. Two fixes are needed: match on whole segments, and
-  // when several groups still match, keep only the most specific one.
-  const activeGroupTitle = useMemo(() => {
-    let best: { title: string; depth: number } | null = null;
+  // The single group that owns the current path (#108). Most specific wins, so
+  // /reports/transactions highlights Merchants alone rather than Merchants AND
+  // Reports, which is what a raw startsWith() per group produced.
+  const activeGroupTitle = useMemo(
+    () => activeGroupFor(location.pathname)?.title ?? null,
+    [location.pathname],
+  );
 
-    for (const group of navMain) {
-      const candidates = [group.url, ...(group.items ?? []).filter((i) => !i.external).map((i) => i.url)];
-      for (const url of candidates) {
-        const depth = pathMatchDepth(location.pathname, url);
-        if (depth > (best?.depth ?? -1)) best = { title: group.title, depth };
-      }
-    }
-
-    return best?.title ?? null;
-  }, [location.pathname]);
+  const groups = useMemo(
+    () =>
+      groupsForSurface("rail").map((g) => ({
+        ...g,
+        items: g.items.filter((i) => !i.adminOnly || isAdmin),
+      })),
+    [isAdmin],
+  );
 
   return (
     <aside
@@ -266,7 +124,7 @@ export function IconRailSidebar() {
       )}
     >
       <nav className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-3 px-2.5 space-y-3">
-        {navMain.map((group) => {
+        {groups.map((group) => {
           const active = activeGroupTitle === group.title;
           const showBadge = group.title === "Tools" && acceptedQuotesCount > 0;
 
@@ -296,7 +154,7 @@ export function IconRailSidebar() {
                 <group.icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
                 {showBadge && (
                   <span
-                    className="absolute -top-1.5 -right-2 inline-flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-[#c81030] px-1 text-[9px] font-bold leading-none text-white"
+                    className="absolute -top-1.5 -right-2 inline-flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-badge-alert px-1 text-[9px] font-bold leading-none text-white"
                     aria-label={`${acceptedQuotesCount} accepted quotes ready for contract`}
                   >
                     {acceptedQuotesCount > 99 ? "99+" : acceptedQuotesCount}
@@ -368,7 +226,7 @@ export function IconRailSidebar() {
                               <div className="text-[13px] font-medium leading-tight flex items-center gap-1.5">
                                 <span>{sub.title}</span>
                                 {sub.url === "/tools/quote-builder" && acceptedQuotesCount > 0 && (
-                                  <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#c81030] px-1 text-[10px] font-bold leading-none text-white">
+                                  <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-badge-alert px-1 text-[10px] font-bold leading-none text-white">
                                     {acceptedQuotesCount > 99 ? "99+" : acceptedQuotesCount}
                                   </span>
                                 )}

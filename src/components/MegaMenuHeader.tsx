@@ -1,42 +1,18 @@
 import { useState, useEffect } from "react";
-import { Link, NavLink as RouterNavLink, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard,
-  BookMarked,
-  Building2,
   Users,
-  FileText,
-  BarChart3,
   Plus,
-  BookOpen,
-  Wrench,
-  Calculator,
-  Activity,
-  Sparkles,
-  GraduationCap,
-  ClipboardList,
-  ListChecks,
-  FileSpreadsheet,
-  Download,
   Briefcase,
   Sun,
   Moon,
   ChevronDown,
-  Globe,
-  CreditCard,
-  BadgeDollarSign,
   Maximize,
   Minimize,
-  Cloud,
-  Send,
   Search,
   UserPlus,
-  FileSignature,
   LifeBuoy,
-  MessageSquarePlus,
   LayoutGrid,
-  ScanSearch,
-  type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,17 +21,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-  navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useAcceptedQuotesCount } from "@/hooks/useAcceptedQuotesCount";
 import { useTheme } from "@/contexts/ThemeContext";
 import { NotificationBell } from "@/components/NotificationBell";
 import { isPathWithin } from "@/lib/routeMatch";
@@ -63,124 +29,30 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import sidebarIcon from "@/assets/sidebar-icon.webp";
 
-interface NavItem {
-  title: string;
-  url: string;
-  icon: LucideIcon;
-  description?: string;
-  external?: boolean;
-}
-
-interface NavGroup {
-  title: string;
-  url: string;
-  icon: LucideIcon;
-  items?: NavItem[];
-}
-
-const navMain: NavGroup[] = [
-  {
-    title: "Pipeline",
-    url: "/pipeline",
-    icon: LayoutDashboard,
-    items: [
-      { title: "Pipeline Board", url: "/pipeline", icon: LayoutDashboard, description: "Opportunity kanban board" },
-      { title: "All Opportunities", url: "/opportunities", icon: Briefcase, description: "Browse & search all opportunities" },
-      { title: "Quotes & Contracts", url: "/quotes-contracts", icon: FileSignature, description: "Quote & signature status across every opportunity" },
-      { title: "Tasks", url: "/tasks", icon: ListChecks, description: "Manage your tasks" },
-      { title: "Email Outreach", url: "/outreach", icon: Send, description: "Campaign tracker & email sender" },
-      { title: "Web Submissions", url: "/admin/web-submissions", icon: Globe, description: "Incoming merchant applications" },
-    ],
-  },
-  {
-    title: "CRM",
-    url: "/leads",
-    icon: UserPlus,
-    items: [
-      { title: "Leads", url: "/leads", icon: UserPlus, description: "New prospects & account list" },
-      { title: "Contacts", url: "/contacts", icon: Users, description: "Manage contacts" },
-      { title: "Calendar", url: "/calendar", icon: Calculator, description: "Team calendar & meetings" },
-      { title: "Documents", url: "/documents", icon: FileText, description: "View uploaded documents" },
-    ],
-  },
-  {
-    title: "Merchants",
-    url: "/live-billing",
-    icon: Building2,
-    items: [
-      { title: "Live & Billing", url: "/live-billing", icon: BadgeDollarSign, description: "Live accounts & billing" },
-      { title: "Transactions", url: "/reports/transactions", icon: CreditCard, description: "NMI gateway transactions" },
-      { title: "Commissions", url: "/commissions", icon: BadgeDollarSign, description: "Partner commission reports" },
-      { title: "Pricing", url: "/pricing", icon: Calculator, description: "Pricing tiers & buy rates" },
-      { title: "Supported Processors", url: "/supported-processors", icon: Globe, description: "Processor compatibility reference" },
-    ],
-  },
-  {
-    title: "Support",
-    url: "/support",
-    icon: LifeBuoy,
-    items: [
-      { title: "Support Triage", url: "/support", icon: LifeBuoy, description: "Live ticket queue — claim & resolve client tickets" },
-      { title: "Client Request Form", url: "/support-request", icon: MessageSquarePlus, description: "Public support request page to share with clients", external: true },
-    ],
-  },
-  {
-    title: "Reports",
-    url: "/reports",
-    icon: BarChart3,
-    items: [
-      { title: "Analytics", url: "/reports", icon: BarChart3, description: "Performance & pipeline analytics" },
-      { title: "System Status", url: "https://statusgator.com/services/nmi", icon: Activity, description: "Live NMI & platform status", external: true },
-    ],
-  },
-  {
-    title: "Tools",
-    url: "/tools/nmi-boarding",
-    icon: Wrench,
-    items: [
-      { title: "Board Merchant", url: "/tools/nmi-boarding", icon: BadgeDollarSign, description: "Board merchants via NMI gateway" },
-      { title: "Kurv / MyPortfolio", url: "/tools/kurv", icon: BadgeDollarSign, description: "EMS boarding, roster & transactions" },
-      { title: "Pre-Qualification Wizard", url: "/tools/preboarding-wizard", icon: ClipboardList, description: "Application readiness form" },
-      { title: "Statement Analyzer", url: "/tools/statement-analysis", icon: ScanSearch, description: "Analyze a statement, benchmark fees & build a savings proposal" },
-      { title: "Revenue Calculator", url: "/tools/revenue-calculator", icon: Calculator, description: "Estimate processing revenue" },
-      { title: "CSV Import", url: "/tools/csv-import", icon: FileSpreadsheet, description: "Bulk import data" },
-      { title: "Quote Builder", url: "/tools/quote-builder", icon: FileSignature, description: "Generate gateway quotes from an opportunity" },
-    ],
-  },
-  {
-    title: "Admin",
-    url: "/sop",
-    icon: BookOpen,
-    items: [
-      { title: "SOP", url: "/sop", icon: BookOpen, description: "Standard operating procedures" },
-      { title: "Training", url: "/training", icon: GraduationCap, description: "Onboarding guide for the Ops Terminal" },
-      { title: "CRM Updates", url: "/tools/terminal-updates", icon: Sparkles, description: "Latest changes & features" },
-      { title: "Administration", url: "/admin/administration", icon: Activity, description: "Agenda, popups & session tracking" },
-      { title: "Team Roster", url: "/admin/team-roster", icon: Users, description: "Manage the internal team roster" },
-      { title: "Gateway Accounts", url: "/admin/gateway-accounts", icon: BadgeDollarSign, description: "NMI partner gateway account inventory" },
-      { title: "Integrations", url: "/integrations", icon: Cloud, description: "Connected services & API providers" },
-      { title: "Affiliates", url: "/admin/affiliates", icon: UserPlus, description: "External affiliate partners & commissions" },
-      { title: "Data Export", url: "/admin/data-export", icon: Download, description: "Export opportunity data" },
-      { title: "Merchant Portal Guide", url: "/tools/gateway-guide", icon: BookMarked, description: "Interactive portal walkthrough" },
-      { title: "Deployment", url: "/tools/netlify", icon: Cloud, description: "Deployment audit & fix prompts" },
-    ],
-  },
-];
-
 interface MegaMenuHeaderProps {
   onNewApplication?: () => void;
   onNewAccount?: () => void;
   onNewContact?: () => void;
 }
 
+/**
+ * The persistent application header.
+ *
+ * The name is a leftover: the mega menu it was built around moved to
+ * IconRailSidebar, and this component carried its whole 90-line navigation
+ * tree, the NavigationMenu primitive and thirty icon imports for months after
+ * it stopped rendering any of them (#114). The nav tree now lives in one place
+ * — src/config/navigation.ts — and this is a logo, a context pill and the
+ * right-hand action cluster.
+ *
+ * The accepted-quotes badge went with it: the hook was still being called here
+ * to badge "the Tools dropdown", which no longer exists. The rail and the
+ * mobile nav both still show it.
+ */
 export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }: MegaMenuHeaderProps) {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
-
-  // Surfaces accepted-but-not-yet-contracted quotes as a badge on the
-  // Tools dropdown and the Quote Builder sub-item.
-  const { data: acceptedQuotesCount = 0 } = useAcceptedQuotesCount();
 
   useEffect(() => {
     const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);

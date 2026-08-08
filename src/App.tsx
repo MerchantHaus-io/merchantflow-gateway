@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { Suspense } from "react";
+import { MotionConfig } from "framer-motion";
 import { lazyWithRetry as lazy } from "@/lib/lazyWithRetry";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TasksProvider } from "@/contexts/TasksContext";
@@ -141,6 +142,12 @@ const queryClient = new QueryClient({
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
+      {/* #175: the prefers-reduced-motion block in index.css neutralises CSS
+          animations only — framer-motion runs its own animation loop and
+          ignored the setting entirely, so the bottom sheet, the dock fan and
+          the tab indicator all still moved. reducedMotion="user" applies it
+          to every motion component in the app. */}
+      <MotionConfig reducedMotion="user">
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -253,6 +260,7 @@ const App = () => (
           </ErrorBoundary>
         </BrowserRouter>
       </TooltipProvider>
+      </MotionConfig>
     </ThemeProvider>
   </QueryClientProvider>
 );

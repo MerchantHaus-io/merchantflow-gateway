@@ -1,5 +1,6 @@
 import type { Config } from "tailwindcss";
 import animatePlugin from "tailwindcss-animate";
+import { NAV_BREAKPOINT } from "./src/lib/breakpoints";
 
 /*
  * This configuration extends the default Tailwind settings used in the
@@ -34,7 +35,10 @@ export default {
       'xs': '475px',
       'sm': '640px',
       'md': '768px',
-      'lg': '1024px',
+      // Imported, not literal: the chrome gates the icon rail and tab bar on
+      // `lg:` in CSS and on useIsCompactNav() in JS, and those two must be the
+      // same number or the 768–1023px band loses both (#134).
+      'lg': `${NAV_BREAKPOINT}px`,
       'xl': '1280px',
       '2xl': '1536px',
       // Mobile landscape: narrow height + landscape orientation (targets phones rotated, not desktop)
@@ -149,6 +153,9 @@ export default {
           DEFAULT: 'hsl(var(--info, 213 94% 56%))',
           foreground: 'hsl(var(--info-foreground, 213 94% 15%))'
         },
+        // Count badges on nav surfaces. One token instead of four hardcoded
+        // #c81030 literals (#129).
+        'badge-alert': 'hsl(var(--badge-alert, 350 85% 42%))',
         popover: {
           DEFAULT: 'hsl(var(--popover))',
           foreground: 'hsl(var(--popover-foreground))'
