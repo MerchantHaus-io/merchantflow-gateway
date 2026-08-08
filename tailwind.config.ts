@@ -48,12 +48,21 @@ export default {
     },
     extend: {
       fontFamily: {
-        // Brand guide: DM Sans for UI, Space Mono for display/mono (#85).
-        // Driven from the CSS tokens so a theme can override them.
-        display: ['var(--font-display)'],
-        mono: ['var(--font-display)'],
-        serif: ['var(--font-serif)'],
+        // Brand guide: DM Sans for UI, Space Mono for display/mono, Playfair
+        // for serif (#85). Driven from the CSS tokens so a theme can override
+        // them, with the family name repeated as a fallback for the case where
+        // the token is missing.
+        //
+        // `display`, `mono` and `serif` were each declared TWICE in this
+        // object. A later key wins in a JS object literal, so the token-driven
+        // definitions added with the brand-font work were being silently
+        // overwritten by the older literal lists below them — font-display
+        // resolved to Syne -> General Sans -> Geist, three families that are
+        // not self-hosted and whose CDN <link>s have now been removed from
+        // index.html. Every font-display / font-mono / font-serif utility in
+        // the app was falling through to the generic fallback.
         sans: [
+          'var(--font-sans)',
           'DM Sans',
           'ui-sans-serif',
           'system-ui',
@@ -63,39 +72,12 @@ export default {
           'Segoe UI Symbol',
           'Noto Color Emoji'
         ],
-        display: [
-          'Syne',
-          'General Sans',
-          'Geist',
-          'ui-sans-serif',
-          'system-ui',
-          'sans-serif'
-        ],
-        'mono-dm': [
-          'DM Mono',
-          'ui-monospace',
-          'SFMono-Regular',
-          'monospace'
-        ],
-        serif: [
-          'Playfair Display',
-          'ui-serif',
-          'Georgia',
-          'Cambria',
-          'Times New Roman',
-          'Times',
-          'serif'
-        ],
-        mono: [
-          'ui-monospace',
-          'SFMono-Regular',
-          'Menlo',
-          'Monaco',
-          'Consolas',
-          'Liberation Mono',
-          'Courier New',
-          'monospace'
-        ]
+        display: ['var(--font-display)', 'Space Mono', 'ui-monospace', 'monospace'],
+        mono: ['var(--font-mono)', 'Space Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+        serif: ['var(--font-serif)', 'Playfair Display', 'ui-serif', 'Georgia', 'serif'],
+        // Tabular figures for stats. Was DM Mono, which is no longer loaded;
+        // Space Mono is self-hosted and also tabular.
+        'mono-dm': ['var(--font-mono)', 'Space Mono', 'ui-monospace', 'SFMono-Regular', 'monospace']
       },
       letterSpacing: {
         'tightest': '-0.04em',

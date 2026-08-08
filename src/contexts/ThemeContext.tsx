@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { syncNativeChrome } from '@/lib/nativeChrome';
 
 // Theme variants - base mode + style variant
 export type ThemeMode = 'dark' | 'light';
@@ -199,6 +200,12 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
     
     persistTheme(theme);
     persistVariant(variant);
+
+    // Repoint the chrome outside the web view — the native status bar (#149)
+    // and the mobile browser's toolbar (#180) — at this variant's background.
+    // Both were pinned to a single hardcoded colour that matched none of the
+    // fourteen themes. Reads the token that has just been applied above.
+    syncNativeChrome(theme);
   }, [theme, variant, transparencyEnabled]);
 
   const toggleTheme = () => {

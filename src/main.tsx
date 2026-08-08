@@ -13,6 +13,7 @@ import { installGlobalErrorHandlers } from "@/lib/telemetry";
 import App from "./App.tsx";
 import "./index.css";
 import { hydrateTeamRosterFromDb } from "@/config/team";
+import { hideNativeSplash } from "@/lib/nativeChrome";
 import { bootstrapImpersonation } from "@/integrations/supabase/impersonationBootstrap";
 
 // Load the live team roster from the database (admins edit it from
@@ -24,6 +25,11 @@ if (splash) {
   splash.style.opacity = "0";
   setTimeout(() => splash.remove(), 400);
 }
+
+// The native splash is held open by config (launchAutoHide: false) until the
+// web layer is up, rather than running a fixed 2.5s timer that had nothing to
+// do with whether the app was ready (#150).
+hideNativeSplash();
 
 // Bootstrap admin-impersonation BEFORE mounting React so AuthProvider sees the
 // correct (isolated) session on its first render. No-op for normal sessions.
