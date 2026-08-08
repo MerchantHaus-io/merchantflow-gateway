@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -192,9 +192,8 @@ const Observability = () => {
                       </TableHeader>
                       <TableBody>
                         {errors.map((e) => (
-                          <>
+                          <Fragment key={e.id}>
                             <TableRow
-                              key={e.id}
                               className="cursor-pointer"
                               onClick={() => setExpanded(expanded === e.id ? null : e.id)}
                             >
