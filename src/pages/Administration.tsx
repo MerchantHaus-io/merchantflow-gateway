@@ -84,6 +84,12 @@ const Administration = () => {
           <Shield className="h-5 w-5 text-primary" />
           <h1 className="text-lg font-semibold">Administration Panel</h1>
           <Badge variant="outline" className="text-[10px]">Admin Only</Badge>
+          <button
+            onClick={() => navigate("/admin/observability")}
+            className="ml-auto text-xs underline underline-offset-4 text-muted-foreground hover:text-foreground"
+          >
+            Observability →
+          </button>
         </div>
 
         {/* Broadcast Acknowledgments */}
