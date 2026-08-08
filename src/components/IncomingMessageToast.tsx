@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { emitAppEvent } from '@/lib/appEvents';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -60,7 +61,7 @@ export function IncomingMessageToast() {
             action: {
               label: 'Open',
               onClick: () => {
-                window.dispatchEvent(new CustomEvent('openFloatingChat'));
+                emitAppEvent('openFloatingChat');
               },
             },
           });
@@ -114,7 +115,7 @@ export function IncomingMessageToast() {
             action: {
               label: 'Open',
               onClick: () => {
-                window.dispatchEvent(new CustomEvent('openFloatingChat'));
+                emitAppEvent('openFloatingChat');
               },
             },
           });

@@ -1,7 +1,8 @@
-import { ReactNode, useCallback } from "react";
+import { ReactNode, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { usePageChrome } from "@/contexts/PageChromeContext";
+import { setPageTitle } from "@/lib/pageTitle";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -53,9 +54,30 @@ export function AppLayout({
   }, [navigate]);
 
   // Ref, not state: publishing the handler must not re-render the shell.
-  if (chrome) {
+  //
+  // In an effect rather than during render (#105). Assigning in the render body
+  // is a side effect — it double-fires under StrictMode and is not safe under
+  // concurrent rendering — but the real bug was the missing cleanup. Nothing
+  // cleared the ref on unmount, so after navigating Opportunities → Reports the
+  // header's +New → New Opportunity still called Opportunities' modal setter on
+  // a component that no longer existed: nothing happened, and dev logged a
+  // state-update-on-unmounted warning. Clearing it lets the shell fall back to
+  // navigating to /opportunities?new=true.
+  useEffect(() => {
+    if (!chrome) return;
     chrome.newApplicationRef.current = onNewApplication;
-  }
+    return () => {
+      chrome.newApplicationRef.current = undefined;
+    };
+  }, [chrome, onNewApplication]);
+
+  // Publish the page title for document.title and the route announcer (#111,
+  // #104). Keyed on pathname as well as the title so that navigating between
+  // two pages that happen to share a title still re-publishes, and so a page
+  // supplying no title clears the previous one.
+  useEffect(() => {
+    setPageTitle(location.pathname, pageTitle ?? "");
+  }, [location.pathname, pageTitle]);
 
   const headerBar =
     pageTitle || headerActions ? (

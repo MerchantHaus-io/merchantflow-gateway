@@ -4,13 +4,35 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="icon" href="/favicon.png" type="image/png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Merchant Haus Onboarding Portal</title>
+    <link rel="apple-touch-icon" href="/favicon.png" />
+    <!-- interactive-widget keeps the layout viewport in step with the on-screen
+         keyboard, so the mobile launcher sheet isn't squeezed to nothing (#139). -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
+    <!-- Installable as a PWA (#154). For many reps "Add to Home Screen" is a
+         better fit than the Capacitor build, and it costs one file. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <!-- Starting value only; ThemeContext repoints it at the active theme's
+         background on every theme change (#180). -->
+    <meta name="theme-color" content="#0F172A" />
+
+    <!-- The tab used to read "Merchant Haus Onboarding Portal" — a
+         merchant-facing title on an internal CRM, and what showed in the phone
+         tab switcher and on a home-screen shortcut (#111, #179). Internal pages
+         now set their own title through RouteTitle; this is the pre-hydration
+         default, and stays brand-neutral because the public application and
+         quote-signing pages share it. -->
+    <title>Merchant Haus</title>
     <meta name="description" content="Apply for merchant services with Merchant Haus. Fast, secure onboarding for your business payment processing needs.">
     <meta name="author" content="Merchanthaus.io" />
 
-    
-    
+    <!-- Fonts are self-hosted through @fontsource and imported in src/main.tsx.
+         Seven render-blocking CDN stylesheets used to sit here — Geist, General
+         Sans, Playfair, EB Garamond, Syne, DM Mono and JetBrains Mono — from
+         two third-party origins, one of them without a preconnect. Three of
+         them duplicated what main.tsx already bundles, and the rest were for
+         families no token references any more. On a phone on 4G they were the
+         dominant cost before first paint (#155). -->
+
     <meta property="og:type" content="website" />
     <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/1GdIcbW4b4R9GrakTvyzBxbNjS63/social-images/social-1770829721559-ac3c9b9d-9bf6-4d0c-b93c-2e692b27be00.png">
 
@@ -18,31 +40,29 @@
     <meta name="twitter:site" content="@merchanthaus" />
     <meta name="twitter:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/1GdIcbW4b4R9GrakTvyzBxbNjS63/social-images/social-1770829721559-ac3c9b9d-9bf6-4d0c-b93c-2e692b27be00.png">
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- Geist - Vercel's premium modern font -->
-    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- General Sans for distinctive headings -->
-    <link href="https://fonts.cdnfonts.com/css/general-sans" rel="stylesheet">
-    <!-- Playfair Display - Prestige serif for institutional weight -->
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- EB Garamond - Editorial serif used on auth screen -->
-    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-    <!-- Syne - Bold display/heading font -->
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
-    <!-- DM Mono - Tabular/numeric mono font -->
-    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <!-- JetBrains Mono - Editorial mono for pipeline column labels -->
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-    
-  
-  
-  
-  <meta property="og:title" content="Merchant Haus Onboarding Portal">
-  <meta name="twitter:title" content="Merchant Haus Onboarding Portal">
-  <meta property="og:description" content="Apply for merchant services with Merchant Haus. Fast, secure onboarding for your business payment processing needs.">
-  <meta name="twitter:description" content="Apply for merchant services with Merchant Haus. Fast, secure onboarding for your business payment processing needs.">
-</head>
+    <meta property="og:title" content="Merchant Haus Onboarding Portal">
+    <meta name="twitter:title" content="Merchant Haus Onboarding Portal">
+    <meta property="og:description" content="Apply for merchant services with Merchant Haus. Fast, secure onboarding for your business payment processing needs.">
+    <meta name="twitter:description" content="Apply for merchant services with Merchant Haus. Fast, secure onboarding for your business payment processing needs.">
+
+    <script>
+      // The splash background was hardcoded #ffffff, so a dark-theme user got a
+      // white flash on every cold start — the middle of three loading screens
+      // (#150). Read the persisted theme before first paint and match it.
+      (function () {
+        try {
+          var dark = localStorage.getItem('merchantflow-theme') !== 'light';
+          document.documentElement.style.setProperty(
+            '--splash-bg', dark ? '#0F172A' : '#F3F4F6'
+          );
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute('content', dark ? '#0F172A' : '#F3F4F6');
+        } catch (e) {
+          document.documentElement.style.setProperty('--splash-bg', '#0F172A');
+        }
+      })();
+    </script>
+  </head>
 
   <body>
     <div id="root">
@@ -54,7 +74,7 @@
           display: flex;
           align-items: center;
           justify-content: center;
-          background: #ffffff;
+          background: var(--splash-bg, #0F172A);
           transition: opacity 0.4s ease;
         }
         #splash-loader img {
@@ -65,6 +85,9 @@
         @keyframes splash-pulse {
           0%, 100% { opacity: 0.6; transform: scale(0.97); }
           50% { opacity: 1; transform: scale(1); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          #splash-loader img { animation: none; }
         }
       </style>
       <div id="splash-loader">

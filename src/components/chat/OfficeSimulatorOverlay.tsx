@@ -1,6 +1,7 @@
-import React, { useState, useEffect, lazy, Suspense } from "react";
+import React, { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { Gamepad2, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { emitAppEvent, useAppEvent } from "@/lib/appEvents";
 import { cn } from "@/lib/utils";
 
 const OfficeChatWrapper = lazy(() => import("@/components/chat/OfficeChatWrapper"));
@@ -12,15 +13,11 @@ const OfficeChatWrapper = lazy(() => import("@/components/chat/OfficeChatWrapper
 export function OfficeSimulatorOverlay() {
   const [isOpen, setIsOpen] = useState(false);
 
-  useEffect(() => {
-    const handleOpen = () => setIsOpen(true);
-    window.addEventListener("openOfficeSimulator", handleOpen);
-    return () => window.removeEventListener("openOfficeSimulator", handleOpen);
-  }, []);
+  useAppEvent("openOfficeSimulator", useCallback(() => setIsOpen(true), []));
 
   // Notify dock
   useEffect(() => {
-    window.dispatchEvent(new CustomEvent(isOpen ? "dockAppOpened" : "dockAppClosed"));
+    emitAppEvent(isOpen ? "dockAppOpened" : "dockAppClosed");
   }, [isOpen]);
 
   return (

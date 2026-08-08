@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useAppEvent } from "@/lib/appEvents";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -73,6 +74,12 @@ export function CommandPalette() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, []);
+
+  // The header's search button used to synthesise a fake ⌘K KeyboardEvent to
+  // reach the handler above. It now emits a named event instead (#116), which
+  // is also what makes the trigger usable on a phone, where there is no
+  // keyboard to press ⌘K on (#158).
+  useAppEvent("openCommandPalette", useCallback(() => setOpen(true), []));
 
   // Focus input on open
   useEffect(() => {

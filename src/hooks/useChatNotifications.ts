@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
+import { emitAppEvent } from '@/lib/appEvents';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -105,7 +106,7 @@ export const useChatNotifications = ({ isChatOpen, currentChannelId, currentDMUs
         window.focus();
         notif.close();
         // Dispatch custom event to open chat
-        window.dispatchEvent(new CustomEvent('openFloatingChat'));
+        emitAppEvent('openFloatingChat');
       };
 
       // Auto-close after 5 seconds

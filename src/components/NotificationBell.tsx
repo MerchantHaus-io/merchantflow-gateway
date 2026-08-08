@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Bell, GitCommitVertical, UserPlus, Camera } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useOwnProfile } from '@/hooks/useOwnProfile';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -34,37 +35,12 @@ export const NotificationBell = () => {
   const isMobile = useIsMobile();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
-  const [hasAvatar, setHasAvatar] = useState(true);
   const [trueUnreadCount, setTrueUnreadCount] = useState(0);
 
-  // Check if user has uploaded a profile picture
-  useEffect(() => {
-    if (!user) return;
-    const checkAvatar = async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('avatar_url')
-        .eq('id', user.id)
-        .maybeSingle();
-      setHasAvatar(!!data?.avatar_url);
-    };
-    checkAvatar();
-
-    const channel = supabase
-      .channel('bell-profile-avatar')
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'profiles',
-        filter: `id=eq.${user.id}`,
-      }, (payload) => {
-        const updated = payload.new as { avatar_url: string | null };
-        setHasAvatar(!!updated.avatar_url);
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [user]);
+  // Shared with the icon rail — this used to be a second fetch and a second
+  // websocket channel against the very same profiles row (#113).
+  const { data: profile } = useOwnProfile();
+  const hasAvatar = Boolean(profile?.avatar_url);
 
   // Fetch the TRUE unread count from the database (not limited to 10)
   const fetchUnreadCount = useCallback(async () => {

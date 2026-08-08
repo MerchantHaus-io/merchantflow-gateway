@@ -12,9 +12,14 @@ interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
-// ProtectedRoute is mounted per-route, so it unmounts and remounts on every
-// navigation — any useRef guard resets with it. These flags therefore live in
-// sessionStorage, which survives navigation but not a new tab or a fresh login.
+// These flags live in sessionStorage so they survive a remount but not a new
+// tab or a fresh login.
+//
+// ProtectedRoute now mounts ONCE, inside AppShell, rather than per-route
+// (audit 1 #2), so a useRef would in fact survive ordinary navigation today.
+// sessionStorage is still the right home: it also survives the soft remounts
+// that StrictMode, a route error boundary reset or an auth-state change cause,
+// and it is what makes "already shown this session" mean what it says.
 const FULLSCREEN_KEY = 'fullscreen-requested';
 const ACCESS_DENIED_KEY = 'access-denied-toast-shown';
 

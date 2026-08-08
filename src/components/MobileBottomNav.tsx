@@ -1,241 +1,205 @@
-import { useLocation, useNavigate } from "react-router-dom";
-import { useState, useRef, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useState, useMemo, useCallback } from "react";
+import { motion } from "framer-motion";
+import { LogOut, Search, X, ChevronRight, Clock } from "lucide-react";
 import {
-  LayoutDashboard, Briefcase, ListChecks, Building2, Users, FileText,
-  BarChart3, Settings, BookOpen, ClipboardList, Calculator, FileSpreadsheet,
-  Download, CreditCard, Activity, Trash2, LogOut, BadgeDollarSign, Cloud,
-  Send, Globe, Search, X, ChevronRight, UserPlus, FileSignature, Calendar,
-  Bell, Handshake, type LucideIcon,
-} from "lucide-react";
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAcceptedQuotesCount } from "@/hooks/useAcceptedQuotesCount";
+import { useHistoryDismiss } from "@/hooks/useHistoryDismiss";
+import { openExternal } from "@/lib/openExternal";
+import { getRecentPages } from "@/lib/recentPages";
+import { isPathWithin } from "@/lib/routeMatch";
+import {
+  ALL_NAV_ITEMS,
+  MOBILE_PRIMARY,
+  groupsForSurface,
+  type NavItem,
+} from "@/config/navigation";
 import { cn } from "@/lib/utils";
 
-// ── NAV ITEMS ──────────────────────────────────────────────────────────────
+/**
+ * The mobile tab bar and its full-screen launcher.
+ *
+ * Nav data comes from src/config/navigation.ts (#115) — this file used to hold
+ * a third, drifted copy of the tree, missing Statement Analyzer and carrying a
+ * Notifications entry desktop didn't have.
+ */
 
-interface NavItem {
-  title: string;
-  url: string;
-  icon: LucideIcon;
-  external?: boolean;
-  badge?: string;
+const isItemActive = (pathname: string, item: NavItem) =>
+  item.url === "/" ? pathname === "/" : isPathWithin(pathname, item.url);
+
+function NavBadge({ count, label }: { count: number; label: string }) {
+  return (
+    <span
+      className="absolute -top-1.5 -right-2 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-badge-alert px-1 text-[10px] font-bold leading-none text-white shrink-0 ring-2 ring-background"
+      aria-label={label}
+    >
+      {count > 99 ? "99+" : count}
+    </span>
+  );
 }
-
-// Primary 4 — always visible in tab bar
-const PRIMARY: NavItem[] = [
-  { title: "Pipeline", url: "/", icon: LayoutDashboard },
-  { title: "Deals", url: "/opportunities", icon: Briefcase },
-  { title: "Tasks", url: "/tasks", icon: ListChecks },
-  { title: "Leads", url: "/leads", icon: UserPlus },
-];
-
-// Secondary — appear in the launcher sheet, grouped
-const GROUPS: { label: string; items: NavItem[] }[] = [
-  {
-    label: "Pipeline",
-    items: [
-      { title: "Pipeline Board", url: "/pipeline", icon: LayoutDashboard },
-      { title: "All Opportunities", url: "/opportunities", icon: Briefcase },
-      { title: "Quotes & Contracts", url: "/quotes-contracts", icon: FileSignature },
-      { title: "Tasks", url: "/tasks", icon: ListChecks },
-      { title: "Email Outreach", url: "/outreach", icon: Send },
-      { title: "Web Submissions", url: "/admin/web-submissions", icon: Globe },
-    ],
-  },
-  {
-    label: "CRM",
-    items: [
-      { title: "Leads", url: "/leads", icon: UserPlus },
-      { title: "Contacts", url: "/contacts", icon: Users },
-      { title: "Calendar", url: "/calendar", icon: Calendar },
-      { title: "Documents", url: "/documents", icon: FileText },
-      { title: "Notifications", url: "/notifications", icon: Bell },
-    ],
-  },
-  {
-    label: "Merchants",
-    items: [
-      { title: "Live & Billing", url: "/live-billing", icon: BadgeDollarSign },
-      { title: "Transactions", url: "/reports/transactions", icon: CreditCard },
-      { title: "Commissions", url: "/commissions", icon: BadgeDollarSign },
-      { title: "Pricing", url: "/pricing", icon: Calculator },
-      { title: "Supported Processors", url: "/supported-processors", icon: CreditCard },
-    ],
-  },
-  {
-    label: "Support",
-    items: [
-      { title: "Support Triage", url: "/support", icon: Activity },
-      { title: "Client Request Form", url: "/support-request", icon: FileText, external: true },
-    ],
-  },
-  {
-    label: "Reports",
-    items: [
-      { title: "Analytics", url: "/reports", icon: BarChart3 },
-      { title: "System Status", url: "https://statusgator.com/services/nmi", icon: Activity, external: true },
-    ],
-  },
-  {
-    label: "Tools",
-    items: [
-      { title: "Board Merchant", url: "/tools/nmi-boarding", icon: BadgeDollarSign },
-      { title: "Kurv / MyPortfolio", url: "/tools/kurv", icon: BadgeDollarSign },
-      { title: "Pre-Qualification Wizard", url: "/tools/preboarding-wizard", icon: ClipboardList },
-      { title: "Revenue Calculator", url: "/tools/revenue-calculator", icon: Calculator },
-      { title: "CSV Import", url: "/tools/csv-import", icon: FileSpreadsheet },
-      { title: "Quote Builder", url: "/tools/quote-builder", icon: FileSignature },
-    ],
-  },
-  {
-    label: "Admin",
-    items: [
-      { title: "SOP", url: "/sop", icon: BookOpen },
-      { title: "Training", url: "/training", icon: BookOpen },
-      { title: "CRM Updates", url: "/tools/terminal-updates", icon: Activity },
-      { title: "Administration", url: "/admin/administration", icon: Activity },
-      { title: "Team Roster", url: "/admin/team-roster", icon: Users },
-      { title: "Gateway Accounts", url: "/admin/gateway-accounts", icon: BadgeDollarSign },
-      { title: "Integrations", url: "/integrations", icon: Cloud },
-      { title: "Affiliates", url: "/admin/affiliates", icon: Handshake },
-      { title: "Data Export", url: "/admin/data-export", icon: Download },
-      { title: "Merchant Portal Guide", url: "/tools/gateway-guide", icon: CreditCard },
-      { title: "Deployment", url: "/tools/netlify", icon: Cloud },
-    ],
-  },
-  {
-    label: "System",
-    items: [
-      { title: "Settings", url: "/settings", icon: Settings },
-    ],
-  },
-];
-
-// ── COMPONENT ──────────────────────────────────────────────────────────────
 
 export function MobileBottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
   const { signOut } = useAuth();
   const { isAdmin } = useUserRole();
   const { data: acceptedQuotesCount = 0 } = useAcceptedQuotesCount();
-  const searchRef = useRef<HTMLInputElement>(null);
 
-  const isActive = useCallback((url: string) => {
-    if (url === "/") return location.pathname === "/";
-    return location.pathname.startsWith(url);
-  }, [location.pathname]);
+  // Android hardware back / browser Back closes the sheet rather than
+  // navigating out from under it.
+  useHistoryDismiss(open, () => setOpen(false));
 
-  // Is current page in the "more" group?
-  const isMoreActive = GROUPS.flatMap(g => g.items).some(
-    i => !i.external && isActive(i.url)
+  const groups = useMemo(
+    () =>
+      groupsForSurface("launcher").map((g) => ({
+        ...g,
+        items: g.items.filter((i) => !i.adminOnly || isAdmin),
+      })),
+    [isAdmin],
   );
 
-  const handleNav = useCallback((url: string, external?: boolean) => {
-    setOpen(false);
-    setSearch("");
-    if (external) {
-      window.open(url, "_blank", "noopener,noreferrer");
-    } else {
-      navigate(url);
-    }
-  }, [navigate]);
+  const searchable = useMemo(
+    () => ALL_NAV_ITEMS.filter((i) => !i.adminOnly || isAdmin),
+    [isAdmin],
+  );
 
-  const handleLogout = async () => {
+  // Read once per open, not on every render — the list only changes as a
+  // result of navigating, which closes the sheet anyway.
+  const recents = useMemo(() => {
+    if (!open) return [];
+    const byUrl = new Map(searchable.map((i) => [i.url, i]));
+    return getRecentPages()
+      .map((url) => byUrl.get(url))
+      .filter((i): i is NavItem => Boolean(i));
+  }, [open, searchable]);
+
+  const isMoreActive = groups
+    .flatMap((g) => g.items)
+    .some((i) => !i.external && isItemActive(location.pathname, i));
+
+  const handleNav = useCallback(
+    (item: NavItem) => {
+      setOpen(false);
+      setSearch("");
+      if (item.external) openExternal(item.url);
+      else navigate(item.url);
+    },
+    [navigate],
+  );
+
+  const handleSignOut = async () => {
+    setConfirmSignOut(false);
     setOpen(false);
     await signOut();
     navigate("/auth");
   };
 
-  const handleOpenLauncher = () => {
-    setOpen(true);
-    setTimeout(() => searchRef.current?.focus(), 200);
-  };
-
-  // Filter all items by search
-  const allItems: NavItem[] = [
-    ...PRIMARY,
-    ...GROUPS.flatMap(g => g.items),
-    ...(isAdmin ? [{ title: "Deletion Requests", url: "/admin/deletion-requests", icon: Trash2 }] : []),
-  ];
-
-  const filtered = search.trim()
-    ? allItems.filter(i => i.title.toLowerCase().includes(search.toLowerCase()))
+  // Titles and descriptions both, so "statement" finds the Statement Analyzer
+  // and "residuals" finds Commissions via its description (#157).
+  const query = search.trim().toLowerCase();
+  const filtered = query
+    ? searchable.filter(
+        (i) =>
+          i.title.toLowerCase().includes(query) ||
+          i.description?.toLowerCase().includes(query),
+      )
     : null;
+
+  const tabs: (NavItem & { key: string })[] = MOBILE_PRIMARY.map((t) => ({ ...t, key: t.url }));
 
   return (
     <>
       {/* ── FIXED TAB BAR ── */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden" style={{
-        background: "hsl(var(--background) / 0.8)",
-        backdropFilter: "blur(20px) saturate(180%)",
-        WebkitBackdropFilter: "blur(20px) saturate(180%)",
-        borderTop: "1px solid hsl(var(--border) / 0.4)",
-        paddingBottom: "env(safe-area-inset-bottom, 0px)",
-      }}>
+      <nav
+        aria-label="Primary"
+        className="fixed bottom-0 left-0 right-0 z-chrome lg:hidden bg-background/95 border-t border-border/40"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      >
         <div className="flex items-stretch h-[56px]">
-          {PRIMARY.map(tab => {
-            const active = isActive(tab.url);
+          {tabs.map((tab) => {
+            const active = isItemActive(location.pathname, tab);
             return (
-              <button
-                key={tab.title}
-                onClick={() => navigate(tab.url)}
+              <NavLink
+                key={tab.key}
+                to={tab.url}
+                // NavLink gives link semantics, aria-current="page" and
+                // long-press-to-copy for free; these were <button onClick>
+                // before, so assistive tech saw no current-page state (#177).
+                end={tab.url === "/"}
                 className={cn(
-                  "flex flex-col items-center justify-center flex-1 gap-[3px] text-[10px] font-medium transition-all duration-200 relative",
-                  active ? "text-teal" : "text-muted-foreground"
+                  "flex flex-col items-center justify-center flex-1 gap-[3px] text-xs font-medium relative",
+                  active ? "text-primary" : "text-muted-foreground",
                 )}
               >
-                {/* Active indicator dot */}
                 {active && (
                   <motion.span
                     layoutId="tab-indicator"
-                    className="absolute top-0 left-1/2 h-[2px] w-8 rounded-full bg-teal"
-                    style={{ transform: "translateX(-50%)" }}
+                    className="absolute top-0 left-1/2 h-[2px] w-8 -translate-x-1/2 rounded-full bg-primary"
                     transition={{ type: "spring", stiffness: 400, damping: 35 }}
                   />
                 )}
-                <motion.div
-                  animate={{ scale: active ? 1.08 : 1 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                >
-                  <tab.icon className={cn("h-[22px] w-[22px]", active && "stroke-[2.2px]")} />
-                </motion.div>
+                <tab.icon className={cn("h-[22px] w-[22px]", active && "stroke-[2.2px]")} />
                 <span className={cn("leading-none", active && "font-semibold")}>{tab.title}</span>
-              </button>
+              </NavLink>
             );
           })}
 
-          {/* Grid launcher button */}
+          {/* Launcher */}
           <button
-            onClick={handleOpenLauncher}
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-haspopup="dialog"
+            aria-expanded={open}
             className={cn(
-              "flex flex-col items-center justify-center flex-1 gap-[3px] text-[10px] font-medium transition-all duration-200 relative",
-              isMoreActive ? "text-teal" : "text-muted-foreground"
+              "flex flex-col items-center justify-center flex-1 gap-[3px] text-xs font-medium relative",
+              isMoreActive ? "text-primary" : "text-muted-foreground",
             )}
           >
+            {/* Shares the layoutId with the tabs so the indicator slides
+                between More and a primary tab instead of teleporting (#168). */}
             {isMoreActive && (
-              <span className="absolute top-0 left-1/2 -translate-x-1/2 h-[2px] w-8 rounded-full bg-teal" />
+              <motion.span
+                layoutId="tab-indicator"
+                className="absolute top-0 left-1/2 h-[2px] w-8 -translate-x-1/2 rounded-full bg-primary"
+                transition={{ type: "spring", stiffness: 400, damping: 35 }}
+              />
             )}
-            {/* 2x2 grid icon */}
             <div className="relative grid grid-cols-2 gap-[3px] h-[22px] w-[22px]">
-              {[0,1,2,3].map(i => (
-                <div key={i} className={cn(
-                  "rounded-[2px] transition-all",
-                  isMoreActive ? "bg-teal/70" : "bg-current opacity-60",
-                  open && "opacity-100"
-                )} />
+              {[0, 1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "rounded-[2px]",
+                    isMoreActive ? "bg-primary/70" : "bg-current opacity-60",
+                    open && "opacity-100",
+                  )}
+                />
               ))}
               {acceptedQuotesCount > 0 && (
-                <span
-                  className="absolute -top-1.5 -right-2 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#c81030] px-1 text-[9px] font-bold leading-none text-white shrink-0 ring-2 ring-background"
-                  aria-label={`${acceptedQuotesCount} accepted quote${acceptedQuotesCount === 1 ? "" : "s"} ready for contract`}
-                >
-                  {acceptedQuotesCount > 99 ? "99+" : acceptedQuotesCount}
-                </span>
+                <NavBadge
+                  count={acceptedQuotesCount}
+                  label={`${acceptedQuotesCount} accepted quote${acceptedQuotesCount === 1 ? "" : "s"} ready for contract`}
+                />
               )}
             </div>
             <span>More</span>
@@ -243,190 +207,244 @@ export function MobileBottomNav() {
         </div>
       </nav>
 
-      {/* ── LAUNCHER SHEET ── */}
-      <AnimatePresence>
-        {open && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              className="fixed inset-0 z-[60] lg:hidden"
-              style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => { setOpen(false); setSearch(""); }}
-            />
+      {/* ── LAUNCHER ──
+          A real drawer (vaul), not the hand-rolled motion div this was (#136).
+          That version had no focus trap, no role="dialog", no Escape handler,
+          and left the page behind it tabbable and scrollable. Drag-to-dismiss
+          comes free with the primitive.
 
-            {/* Sheet */}
-            <motion.div
-              className="fixed bottom-0 left-0 right-0 z-[70] lg:hidden rounded-t-2xl overflow-hidden flex flex-col"
-              style={{
-                background: "hsl(var(--card))",
-                border: "1px solid hsl(var(--border))",
-                borderBottom: "none",
-                maxHeight: "82vh",
-              }}
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", stiffness: 420, damping: 38 }}
-            >
-              {/* Handle + header */}
-              <div className="flex flex-col gap-0 shrink-0">
-                <div className="flex justify-center pt-3 pb-2">
-                  <div className="w-9 h-1 rounded-full bg-muted-foreground/25" />
-                </div>
+          dvh, not vh (#139): 82vh overflows under Safari's dynamic toolbar,
+          and the grid was squeezed to nothing when the keyboard opened. The
+          full-height switch under 500px covers phone landscape (#178). */}
+      <Drawer open={open} onOpenChange={setOpen}>
+        <DrawerContent className="lg:hidden max-h-[82dvh] mobile-landscape:max-h-[96dvh]">
+          <DrawerTitle className="sr-only">All pages</DrawerTitle>
+          <DrawerDescription className="sr-only">
+            Search or browse every page in the Ops Terminal
+          </DrawerDescription>
 
-                {/* Search bar */}
-                <div className="px-4 pb-3">
-                  <div className="flex items-center gap-2 px-3 h-10 rounded-xl"
-                    style={{ background: "hsl(var(--muted))", border: "1px solid hsl(var(--border))" }}>
-                    <Search className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <input
-                      ref={searchRef}
-                      value={search}
-                      onChange={e => setSearch(e.target.value)}
-                      placeholder="Search all pages…"
-                      className="flex-1 bg-transparent text-sm outline-none text-foreground placeholder:text-muted-foreground/60"
-                    />
-                    {search && (
-                      <button onClick={() => setSearch("")} className="text-muted-foreground">
-                        <X className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
+          <div className="px-4 pt-2 pb-3 shrink-0">
+            <div className="flex items-center gap-2 px-3 h-11 rounded-xl bg-muted border border-border">
+              <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+              {/* No programmatic autofocus (#138): focus outside the
+                  user-gesture window is ignored by iOS Safari anyway, so the
+                  200ms setTimeout only ever moved the caret without raising
+                  the keyboard. */}
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && filtered?.length) handleNav(filtered[0]);
+                }}
+                placeholder="Search all pages…"
+                aria-label="Search all pages"
+                className="flex-1 bg-transparent text-base outline-none text-foreground placeholder:text-muted-foreground/60"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  aria-label="Clear search"
+                  className="-mr-2 flex h-11 w-11 items-center justify-center text-muted-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
 
-              {/* Scrollable content */}
-              <div className="overflow-y-auto overscroll-contain flex-1 pb-6" style={{
-                paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 24px)"
-              }}>
-                {filtered ? (
-                  // Search results — list view
-                  <div className="px-4 space-y-1">
-                    {filtered.length === 0 ? (
-                      <p className="text-center text-sm text-muted-foreground py-8">No results for "{search}"</p>
-                    ) : filtered.map(item => {
-                      const active = !item.external && isActive(item.url);
-                      return (
-                        <button
-                          key={item.url}
-                          onClick={() => handleNav(item.url, item.external)}
-                          className={cn(
-                            "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm transition-colors",
-                            active ? "bg-teal/10 text-teal font-medium" : "hover:bg-muted text-foreground"
-                          )}
-                        >
-                          <div className={cn(
-                            "flex h-9 w-9 items-center justify-center rounded-xl shrink-0",
-                            active ? "bg-teal text-teal-foreground" : "bg-muted"
-                          )}>
-                            <item.icon className="h-4 w-4" />
-                          </div>
-                          <span className="flex-1 text-left">{item.title}</span>
-                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
-                        </button>
-                      );
-                    })}
-                  </div>
+          <div
+            className="overflow-y-auto overscroll-contain flex-1"
+            style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 24px)" }}
+          >
+            {filtered ? (
+              <div className="px-4 space-y-1">
+                {filtered.length === 0 ? (
+                  <p className="text-center text-sm text-muted-foreground py-8">
+                    No results for “{search}”
+                  </p>
                 ) : (
-                  // Browse mode — grouped grid
-                  <div className="px-4 space-y-5">
-                    {GROUPS.map(group => (
-                      <div key={group.label}>
-                        <p className="text-[10px] font-black uppercase tracking-[0.12em] text-muted-foreground/60 mb-2 px-1">
-                          {group.label}
-                        </p>
-                        <div className="grid grid-cols-4 gap-1.5">
-                          {group.items.map(item => {
-                            const active = !item.external && isActive(item.url);
-                            const showQuotesBadge =
-                              item.url === "/tools/quote-builder" && acceptedQuotesCount > 0;
-                            return (
-                              <button
-                                key={item.url}
-                                onClick={() => handleNav(item.url, item.external)}
-                                className={cn(
-                                  "flex flex-col items-center gap-1.5 py-2.5 px-1 rounded-xl text-[11px] font-medium transition-all active:scale-95",
-                                  active ? "bg-teal/10 text-teal" : "text-foreground hover:bg-muted"
-                                )}
-                              >
-                                <div className={cn(
-                                  "relative flex h-11 w-11 items-center justify-center rounded-xl",
-                                  active ? "bg-teal text-teal-foreground" : "bg-muted"
-                                )}>
-                                  <item.icon className="h-5 w-5" />
-                                  {showQuotesBadge && (
-                                    <span
-                                      className="absolute -top-1 -right-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#c81030] px-1 text-[9px] font-bold leading-none text-white shrink-0 ring-2 ring-background"
-                                      aria-label={`${acceptedQuotesCount} accepted quote${acceptedQuotesCount === 1 ? "" : "s"} ready for contract`}
-                                    >
-                                      {acceptedQuotesCount > 99 ? "99+" : acceptedQuotesCount}
-                                    </span>
-                                  )}
-                                </div>
-                                <span className="leading-tight text-center line-clamp-2">{item.title}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
-
-                    {/* Admin section */}
-                    {isAdmin && (
-                      <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.12em] text-muted-foreground/60 mb-2 px-1">
-                          Admin
-                        </p>
-                        <div className="grid grid-cols-4 gap-1.5">
-                          {[
-                            { title: "Deletions", url: "/admin/deletion-requests", icon: Trash2 },
-                          ].map(item => {
-                            const active = isActive(item.url);
-                            return (
-                              <button
-                                key={item.url}
-                                onClick={() => handleNav(item.url)}
-                                className={cn(
-                                  "flex flex-col items-center gap-1.5 py-2.5 px-1 rounded-xl text-[11px] font-medium transition-all active:scale-95",
-                                  active ? "bg-teal/10 text-teal" : "text-foreground hover:bg-muted"
-                                )}
-                              >
-                                <div className={cn(
-                                  "flex h-11 w-11 items-center justify-center rounded-xl",
-                                  active ? "bg-teal text-teal-foreground" : "bg-muted"
-                                )}>
-                                  <item.icon className="h-5 w-5" />
-                                </div>
-                                <span className="leading-tight text-center">{item.title}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Sign out */}
-                    <div className="pt-1 border-t border-border/50">
-                      <button
-                        onClick={handleLogout}
-                        className="flex items-center gap-3 w-full px-3 py-3 rounded-xl text-sm text-destructive hover:bg-destructive/8 transition-colors"
-                      >
-                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-destructive/10">
-                          <LogOut className="h-4 w-4" />
-                        </div>
-                        <span className="font-medium">Sign Out</span>
-                      </button>
-                    </div>
-                  </div>
+                  filtered.map((item) => (
+                    <LauncherRow
+                      key={item.url}
+                      item={item}
+                      active={!item.external && isItemActive(location.pathname, item)}
+                      onSelect={handleNav}
+                    />
+                  ))
                 )}
               </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+            ) : (
+              <div className="px-4 space-y-5">
+                {recents.length > 0 && (
+                  <LauncherGroup label="Recent" icon={Clock}>
+                    {recents.map((item) => (
+                      <LauncherTile
+                        key={item.url}
+                        item={item}
+                        active={isItemActive(location.pathname, item)}
+                        badge={0}
+                        onSelect={handleNav}
+                      />
+                    ))}
+                  </LauncherGroup>
+                )}
+
+                {groups.map((group) => (
+                  <LauncherGroup key={group.title} label={group.title}>
+                    {group.items.map((item) => (
+                      <LauncherTile
+                        key={item.url}
+                        item={item}
+                        active={!item.external && isItemActive(location.pathname, item)}
+                        badge={item.url === "/tools/quote-builder" ? acceptedQuotesCount : 0}
+                        onSelect={handleNav}
+                      />
+                    ))}
+                  </LauncherGroup>
+                ))}
+
+                <div className="pt-1 border-t border-border/50">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmSignOut(true)}
+                    className="flex items-center gap-3 w-full px-3 py-3 rounded-xl text-sm text-destructive"
+                  >
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-destructive/10">
+                      <LogOut className="h-4 w-4" />
+                    </div>
+                    <span className="font-medium">Sign Out</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      {/* Sign Out sat unguarded at the bottom of a scrolling grid, which is
+          easy to hit with a thumb on the way past (#167). */}
+      <AlertDialog open={confirmSignOut} onOpenChange={setConfirmSignOut}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Sign out?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You'll need to sign in again to get back into the Ops Terminal.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSignOut}>Sign out</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
+  );
+}
+
+/**
+ * A labelled section of the launcher.
+ *
+ * The label is a real heading and the tiles a real list (#176): they were
+ * styled <p>s over a bare grid, so a screen reader met forty undifferentiated
+ * buttons with no structure to skim.
+ */
+function LauncherGroup({
+  label,
+  icon: Icon,
+  children,
+}: {
+  label: string;
+  icon?: NavItem["icon"];
+  children: React.ReactNode;
+}) {
+  return (
+    <section aria-labelledby={`launcher-${label}`}>
+      <h2
+        id={`launcher-${label}`}
+        className="flex items-center gap-1.5 text-xs font-black uppercase tracking-[0.12em] text-muted-foreground/70 mb-2 px-1"
+      >
+        {Icon && <Icon className="h-3 w-3" />}
+        {label}
+      </h2>
+      <ul className="grid grid-cols-4 gap-1.5">{children}</ul>
+    </section>
+  );
+}
+
+function LauncherTile({
+  item,
+  active,
+  badge,
+  onSelect,
+}: {
+  item: NavItem;
+  active: boolean;
+  badge: number;
+  onSelect: (item: NavItem) => void;
+}) {
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={() => onSelect(item)}
+        aria-current={active ? "page" : undefined}
+        className={cn(
+          "flex w-full flex-col items-center gap-1.5 py-2.5 px-1 rounded-xl text-xs font-medium transition-transform active:scale-95",
+          active ? "bg-primary/10 text-primary" : "text-foreground",
+        )}
+      >
+        <span
+          className={cn(
+            "relative flex h-11 w-11 items-center justify-center rounded-xl",
+            active ? "bg-primary text-primary-foreground" : "bg-muted",
+          )}
+        >
+          <item.icon className="h-5 w-5" />
+          {badge > 0 && (
+            <NavBadge
+              count={badge}
+              label={`${badge} accepted quote${badge === 1 ? "" : "s"} ready for contract`}
+            />
+          )}
+        </span>
+        <span className="leading-tight text-center line-clamp-2">
+          {item.mobileTitle ?? item.title}
+        </span>
+      </button>
+    </li>
+  );
+}
+
+function LauncherRow({
+  item,
+  active,
+  onSelect,
+}: {
+  item: NavItem;
+  active: boolean;
+  onSelect: (item: NavItem) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(item)}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm",
+        active ? "bg-primary/10 text-primary font-medium" : "text-foreground",
+      )}
+    >
+      <span
+        className={cn(
+          "flex h-9 w-9 items-center justify-center rounded-xl shrink-0",
+          active ? "bg-primary text-primary-foreground" : "bg-muted",
+        )}
+      >
+        <item.icon className="h-4 w-4" />
+      </span>
+      <span className="flex-1 text-left">{item.title}</span>
+      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
+    </button>
   );
 }

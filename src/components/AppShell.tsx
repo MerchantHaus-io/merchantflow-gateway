@@ -1,5 +1,5 @@
-import { useRef, useCallback, lazy, Suspense } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { useRef, useCallback, useEffect, lazy, Suspense } from "react";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { MegaMenuHeader } from "@/components/MegaMenuHeader";
 import { IconRailSidebar } from "@/components/IconRailSidebar";
 import FloatingChat from "@/components/FloatingChat";
@@ -8,16 +8,22 @@ import { ActionItemsWidget } from "@/components/ActionItemsWidget";
 import { PersistentTriTabDock } from "@/components/PersistentTriTabDock";
 import { Broadcasts } from "@/components/Broadcasts";
 import { MobileAppDock } from "@/components/MobileAppDock";
-import { PageTransition } from "@/components/PageTransition";
+import { PageSkeleton } from "@/components/PageSkeleton";
+import { RouteTitle } from "@/components/RouteTitle";
 import { OfficeSimulatorOverlay } from "@/components/chat/OfficeSimulatorOverlay";
 import { GmailReconnectBanner } from "@/components/GmailReconnectBanner";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { PageChromeProvider, usePageChrome } from "@/contexts/PageChromeContext";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import { useScrollRestoration } from "@/hooks/useScrollRestoration";
+import { useIsCompactNav } from "@/hooks/use-compact-nav";
+import { useOwnProfileRealtime } from "@/hooks/useOwnProfile";
+import { recordPageVisit } from "@/lib/recentPages";
 import { useQueryClient } from "@tanstack/react-query";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useReducedMotion } from "framer-motion";
 import { RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const Starfield = lazy(() => import("@/components/Starfield"));
@@ -37,8 +43,13 @@ const Starfield = lazy(() => import("@/components/Starfield"));
  */
 function ShellChrome() {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const isMobile = useIsMobile();
+  const mainRef = useRef<HTMLElement>(null);
+  // The same threshold the `lg:` classes use, so the dock can't fall into the
+  // gap between "no icon rail" and "no dock" (#134).
+  const isCompactNav = useIsCompactNav();
+  const prefersReducedMotion = useReducedMotion();
   const location = useLocation();
+  const navigate = useNavigate();
   const { theme, variant } = useTheme();
   const queryClient = useQueryClient();
   const chrome = usePageChrome();
@@ -47,10 +58,42 @@ function ShellChrome() {
   const isDoom = variant === "dark-doom";
   const isChatRoute = location.pathname === "/chat";
 
+  // The scroll container no longer unmounts on navigation, so nothing resets
+  // it for us any more. See the hook for the POP/PUSH split.
+  useScrollRestoration(scrollRef);
+
+  // Move focus to the content region on navigation (#104). Without this, focus
+  // stays on the rail link that was clicked: keyboard users tab past the whole
+  // nav again on every page, and screen readers announce nothing at all.
+  // The initial render is skipped — stealing focus on first paint is hostile.
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    // preventScroll, or the browser scrolls the region into view and undoes
+    // the scroll reset that just ran.
+    mainRef.current?.focus({ preventScroll: true });
+  }, [location.pathname]);
+
+  // Feeds the mobile launcher's "Recent" row (#156).
+  useEffect(() => {
+    recordPageVisit(location.pathname);
+  }, [location.pathname]);
+
+  // ONE realtime channel for the signed-in user's profile row, shared by the
+  // icon rail and the notification bell (#113). Mounting this anywhere else as
+  // well would recreate the duplication it exists to remove.
+  useOwnProfileRealtime();
+
   // Refetch data rather than reloading the document. A full reload throws away
   // all page state, re-downloads the bundle and shows a white flash.
   const handleRefresh = useCallback(async () => {
     await queryClient.invalidateQueries();
+    // The spinner stopping is the only signal there was; nothing confirmed
+    // that anything had actually refreshed (#164).
+    toast.success("Updated just now");
   }, [queryClient]);
 
   // No touch-device gate needed: usePullToRefresh binds touchstart/touchmove/
@@ -64,17 +107,31 @@ function ShellChrome() {
 
   // Stable identity, so MegaMenuHeader never re-renders just because a page
   // re-created its handler.
+  //
+  // The fallback lives here rather than in MegaMenuHeader (#105): the header's
+  // `onNewApplication` prop is always defined — it's this callback — so its own
+  // `if (onNewApplication)` fallback could never fire. Now that AppLayout
+  // clears the ref on unmount, +New → New Opportunity from a page that doesn't
+  // handle it lands on Opportunities instead of doing nothing at all.
   const handleNewApplication = useCallback(() => {
-    chrome?.newApplicationRef.current?.();
-  }, [chrome]);
+    const handler = chrome?.newApplicationRef.current;
+    if (handler) handler();
+    else navigate("/opportunities?new=true");
+  }, [chrome, navigate]);
 
   return (
     <div data-shell="root" className="h-screen h-dvh min-h-0 flex flex-col w-full overflow-hidden relative">
+      {/* #173: Starfield was gated on the theme alone, so a phone rendered a
+          full-viewport animated canvas behind every page. It is decoration —
+          skip it on the compact layout and whenever the user has asked for
+          less motion. */}
       {isDark && (
         <>
-          <Suspense fallback={null}>
-            <Starfield />
-          </Suspense>
+          {!isCompactNav && !prefersReducedMotion && (
+            <Suspense fallback={null}>
+              <Starfield />
+            </Suspense>
+          )}
           {/* Earth / Hell horizon glow */}
           <div
             className="pointer-events-none fixed inset-x-0 bottom-0 z-[1]"
@@ -99,7 +156,13 @@ function ShellChrome() {
       </div>
       <div className="flex-1 flex min-h-0 overflow-hidden">
         <IconRailSidebar />
-        <main id="main-content" tabIndex={-1} data-shell="main" className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        <main
+          id="main-content"
+          ref={mainRef}
+          tabIndex={-1}
+          data-shell="main"
+          className="flex-1 flex flex-col min-h-0 overflow-hidden focus:outline-none"
+        >
           {/* Page header slot. AppLayout portals the title/actions bar in here;
               when no page supplies one this div stays empty and collapses. */}
           <div ref={chrome?.setHeaderSlot} />
@@ -123,13 +186,34 @@ function ShellChrome() {
           <div
             ref={scrollRef}
             data-shell="scroll"
-            className="flex-1 min-h-0 overflow-y-auto scroll-smooth pb-16 lg:pb-0"
+            className="flex-1 min-h-0 overflow-y-auto scroll-smooth"
+            // pb-16 was a magic 64px standing in for a 56px tab bar plus an
+            // inset that varies by device, so it was wrong on every notched
+            // phone (#166). Derived instead, and zero once the tab bar is gone.
+            style={{
+              paddingBottom: isCompactNav
+                ? "calc(56px + env(safe-area-inset-bottom, 0px))"
+                : undefined,
+            }}
           >
-            {/* No key on PageTransition: keying it on pathname remounted the
-                whole page subtree on every navigation. */}
-            <PageTransition>
+            {/* Suspense belongs HERE, not around <Routes> (#102).
+                Wrapping the router meant the first visit to any route
+                suspended the whole tree — shell included — and replaced it
+                with a full-screen spinner. Header, rail and chat vanished and
+                then remounted, so every cold navigation still looked exactly
+                like the full page reload this refactor set out to remove.
+                Scoped to the outlet, only the content area waits.
+
+                No PageTransition wrapper any more (#107): with the shell
+                persistent there is no key and no AnimatePresence, so `initial`
+                ran once on mount and `exit` never ran at all — framer-motion
+                on the critical path for no animation. Re-triggering it would
+                need either a key (which remounts the page, the very thing this
+                refactor removed) or an imperative class reflow; neither is
+                worth 200ms of fade. */}
+            <Suspense fallback={<PageSkeleton />}>
               <Outlet />
-            </PageTransition>
+            </Suspense>
           </div>
         </main>
       </div>
@@ -140,13 +224,16 @@ function ShellChrome() {
           tri-tab dock and chat were appearing on printed pages.
           display:contents means this wrapper generates no box at all, so it
           has zero effect on layout. */}
+      {/* Sets document.title and announces the new page to screen readers. */}
+      <RouteTitle />
+
       <div data-app-chrome style={{ display: "contents" }}>
         <MobileBottomNav />
         <FloatingChat />
         <ActionItemsWidget />
         <PersistentTriTabDock />
         <Broadcasts />
-        {isMobile && !isChatRoute && <MobileAppDock />}
+        {isCompactNav && !isChatRoute && <MobileAppDock />}
         <OfficeSimulatorOverlay />
       </div>
     </div>

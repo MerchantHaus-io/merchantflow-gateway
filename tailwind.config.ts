@@ -1,5 +1,6 @@
 import type { Config } from "tailwindcss";
 import animatePlugin from "tailwindcss-animate";
+import { NAV_BREAKPOINT } from "./src/lib/breakpoints";
 
 /*
  * This configuration extends the default Tailwind settings used in the
@@ -34,7 +35,10 @@ export default {
       'xs': '475px',
       'sm': '640px',
       'md': '768px',
-      'lg': '1024px',
+      // Imported, not literal: the chrome gates the icon rail and tab bar on
+      // `lg:` in CSS and on useIsCompactNav() in JS, and those two must be the
+      // same number or the 768–1023px band loses both (#134).
+      'lg': `${NAV_BREAKPOINT}px`,
       'xl': '1280px',
       '2xl': '1536px',
       // Mobile landscape: narrow height + landscape orientation (targets phones rotated, not desktop)
@@ -44,12 +48,21 @@ export default {
     },
     extend: {
       fontFamily: {
-        // Brand guide: DM Sans for UI, Space Mono for display/mono (#85).
-        // Driven from the CSS tokens so a theme can override them.
-        display: ['var(--font-display)'],
-        mono: ['var(--font-display)'],
-        serif: ['var(--font-serif)'],
+        // Brand guide: DM Sans for UI, Space Mono for display/mono, Playfair
+        // for serif (#85). Driven from the CSS tokens so a theme can override
+        // them, with the family name repeated as a fallback for the case where
+        // the token is missing.
+        //
+        // `display`, `mono` and `serif` were each declared TWICE in this
+        // object. A later key wins in a JS object literal, so the token-driven
+        // definitions added with the brand-font work were being silently
+        // overwritten by the older literal lists below them — font-display
+        // resolved to Syne -> General Sans -> Geist, three families that are
+        // not self-hosted and whose CDN <link>s have now been removed from
+        // index.html. Every font-display / font-mono / font-serif utility in
+        // the app was falling through to the generic fallback.
         sans: [
+          'var(--font-sans)',
           'DM Sans',
           'ui-sans-serif',
           'system-ui',
@@ -59,39 +72,35 @@ export default {
           'Segoe UI Symbol',
           'Noto Color Emoji'
         ],
-        display: [
-          'Syne',
-          'General Sans',
-          'Geist',
-          'ui-sans-serif',
-          'system-ui',
-          'sans-serif'
-        ],
-        'mono-dm': [
-          'DM Mono',
-          'ui-monospace',
-          'SFMono-Regular',
-          'monospace'
-        ],
-        serif: [
-          'Playfair Display',
-          'ui-serif',
-          'Georgia',
-          'Cambria',
-          'Times New Roman',
-          'Times',
-          'serif'
-        ],
-        mono: [
-          'ui-monospace',
-          'SFMono-Regular',
-          'Menlo',
-          'Monaco',
-          'Consolas',
-          'Liberation Mono',
-          'Courier New',
-          'monospace'
-        ]
+        display: ['var(--font-display)', 'Space Mono', 'ui-monospace', 'monospace'],
+        mono: ['var(--font-mono)', 'Space Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+        serif: ['var(--font-serif)', 'Playfair Display', 'ui-serif', 'Georgia', 'serif'],
+        // Tabular figures for stats. Was DM Mono, which is no longer loaded;
+        // Space Mono is self-hosted and also tabular.
+        'mono-dm': ['var(--font-mono)', 'Space Mono', 'ui-monospace', 'SFMono-Regular', 'monospace']
+      },
+      /**
+       * A named stacking order, so layers are chosen rather than guessed (#133).
+       *
+       * There were thirteen distinct ad-hoc values across the components —
+       * z-[35], z-[45], z-[55], z-[60], z-[61], z-[99], z-[101], z-[9999] —
+       * and the header sat at z-50, the same band as Radix dialogs and the
+       * mobile sheet backdrop, which is why overlay ordering was a coin toss.
+       *
+       *   chrome  header, icon rail, mobile tab bar — always beneath overlays
+       *   dock    floating furniture: app dock, chat, tri-tab dock
+       *   overlay Radix dialogs, drawers, sheets and their backdrops (50, the
+       *           shadcn default — left alone deliberately so the ui/
+       *           primitives need no edits)
+       *   modal   things that must sit above a dialog, e.g. a confirm inside one
+       *   toast   notifications, always on top
+       */
+      zIndex: {
+        chrome: '30',
+        dock: '40',
+        overlay: '50',
+        modal: '60',
+        toast: '70',
       },
       letterSpacing: {
         'tightest': '-0.04em',
@@ -149,6 +158,9 @@ export default {
           DEFAULT: 'hsl(var(--info, 213 94% 56%))',
           foreground: 'hsl(var(--info-foreground, 213 94% 15%))'
         },
+        // Count badges on nav surfaces. One token instead of four hardcoded
+        // #c81030 literals (#129).
+        'badge-alert': 'hsl(var(--badge-alert, 350 85% 42%))',
         popover: {
           DEFAULT: 'hsl(var(--popover))',
           foreground: 'hsl(var(--popover-foreground))'
