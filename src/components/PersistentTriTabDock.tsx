@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ClipboardCheck, MessageCircle, Phone } from "lucide-react";
+import { emitAppEvent, useAppEvent, type AppEventName } from "@/lib/appEvents";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,16 +22,8 @@ export function PersistentTriTabDock() {
   const [unreadMessages, setUnreadMessages] = useState(0);
 
   // Hide when any panel is open so it doesn't fight with the expanded window.
-  useEffect(() => {
-    const opened = () => setAnyOpen(true);
-    const closed = () => setAnyOpen(false);
-    window.addEventListener("dockAppOpened", opened);
-    window.addEventListener("dockAppClosed", closed);
-    return () => {
-      window.removeEventListener("dockAppOpened", opened);
-      window.removeEventListener("dockAppClosed", closed);
-    };
-  }, []);
+  useAppEvent("dockAppOpened", useCallback(() => setAnyOpen(true), []));
+  useAppEvent("dockAppClosed", useCallback(() => setAnyOpen(false), []));
 
   // Notice board unread (active action items)
   useEffect(() => {
@@ -70,7 +63,7 @@ export function PersistentTriTabDock() {
 
   if (!user || isMobile || anyOpen) return null;
 
-  const fire = (event: string) => window.dispatchEvent(new CustomEvent(event));
+  const fire = (event: AppEventName) => emitAppEvent(event);
 
   const tabBase =
     "group relative flex items-center gap-2 h-11 px-4 text-sm font-semibold transition-all duration-200 ease-out border border-b-0 border-border";

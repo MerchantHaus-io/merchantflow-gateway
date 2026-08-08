@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { ClipboardCheck, Phone, MessageCircle, Gamepad2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { emitAppEvent, useAppEvent, type AppEventName } from "@/lib/appEvents";
 import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "mobile-dock-position";
@@ -75,7 +76,7 @@ function savePosition(pos: DockPosition) {
   }
 }
 
-const FAN_ITEMS = [
+const FAN_ITEMS: { id: string; icon: typeof Phone; label: string; event: AppEventName }[] = [
   { id: "notice", icon: ClipboardCheck, label: "Notice Board", event: "openNoticeBoard" },
   { id: "dialler", icon: Phone, label: "Dialler", event: "openDialler" },
   { id: "chat", icon: MessageCircle, label: "Chat", event: "openFloatingChat" },
@@ -114,11 +115,7 @@ export function MobileAppDock() {
     };
   }, []);
 
-  useEffect(() => {
-    const closeFan = () => setIsOpen(false);
-    window.addEventListener("dockAppOpened", closeFan);
-    return () => window.removeEventListener("dockAppOpened", closeFan);
-  }, []);
+  useAppEvent("dockAppOpened", useCallback(() => setIsOpen(false), []));
 
   // Close the fan on an outside press.
   useEffect(() => {
@@ -213,9 +210,9 @@ export function MobileAppDock() {
     [],
   );
 
-  const handleFanItemTap = useCallback((eventName: string) => {
+  const handleFanItemTap = useCallback((eventName: AppEventName) => {
     setIsOpen(false);
-    window.dispatchEvent(new CustomEvent(eventName));
+    emitAppEvent(eventName);
   }, []);
 
   // Flip the fan downward when there isn't room above (#143). Four items stack
@@ -229,7 +226,7 @@ export function MobileAppDock() {
 
   return (
     <div
-      className="fixed z-[55]"
+      className="fixed z-dock"
       style={{ left: pos.x, bottom: pos.bottom, touchAction: "none" }}
     >
       <AnimatePresence>

@@ -22,6 +22,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useReducedMotion } from "framer-motion";
 import { RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const Starfield = lazy(() => import("@/components/Starfield"));
@@ -84,6 +85,9 @@ function ShellChrome() {
   // all page state, re-downloads the bundle and shows a white flash.
   const handleRefresh = useCallback(async () => {
     await queryClient.invalidateQueries();
+    // The spinner stopping is the only signal there was; nothing confirmed
+    // that anything had actually refreshed (#164).
+    toast.success("Updated just now");
   }, [queryClient]);
 
   // No touch-device gate needed: usePullToRefresh binds touchstart/touchmove/

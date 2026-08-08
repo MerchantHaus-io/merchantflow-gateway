@@ -24,7 +24,10 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useTheme } from "@/contexts/ThemeContext";
 import { NotificationBell } from "@/components/NotificationBell";
+import { HeaderBreadcrumb } from "@/components/HeaderBreadcrumb";
 import { isPathWithin } from "@/lib/routeMatch";
+import { emitAppEvent } from "@/lib/appEvents";
+import { isAutoFullscreenEnabled } from "@/lib/uiPreferences";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import sidebarIcon from "@/assets/sidebar-icon.webp";
@@ -53,6 +56,7 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
+  const autoFullscreen = isAutoFullscreenEnabled();
 
   useEffect(() => {
     const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
@@ -82,7 +86,11 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full border-b border-border/40",
+        // Not sticky (#133): the header is a flex child of an overflow-hidden
+        // column, so it never scrolls and `sticky` was inert. z-chrome rather
+        // than z-50, which put it in the same band as dialogs and the mobile
+        // sheet backdrop.
+        "z-chrome w-full border-b border-border/40",
         isDark
           ? "bg-[hsl(217_33%_13%/0.92)] text-white backdrop-blur-[20px] backdrop-saturate-[180%] shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_24px_rgba(0,0,0,0.4)]"
           : "bg-background/80 text-foreground backdrop-blur-xl shadow-sm"
@@ -99,27 +107,37 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
         <ContextTogglePill />
 
 
-        {/* Desktop primary navigation now lives in the collapsible IconRailSidebar */}
-        <div className="hidden lg:block flex-1" />
+        {/* Desktop primary navigation lives in the collapsible IconRailSidebar;
+            this space carries orientation instead (#119). */}
+        <HeaderBreadcrumb className="flex-1 ml-1" />
 
 
         {/* Right side actions */}
         <div className="flex items-center shrink-0 overflow-visible gap-1 ml-auto">
-          {/* ⌘K search trigger */}
+          {/* Search trigger.
+              Was `hidden lg:inline-flex`, so on a phone there was no way to
+              find a merchant by name from anywhere in the app — you had to
+              navigate to Opportunities and use its in-page filter (#158). Now
+              it shows everywhere, collapsing to an icon below lg.
+
+              It also emits a named event rather than synthesising a fake ⌘K
+              KeyboardEvent, which coupled it to whatever the palette happened
+              to bind (#116). */}
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true }))}
+            onClick={() => emitAppEvent("openCommandPalette")}
+            aria-label="Search"
             className={cn(
-              "hidden lg:inline-flex h-8 gap-1.5 px-2.5 rounded-md text-xs",
+              "h-8 gap-1.5 rounded-md text-xs px-2 lg:px-2.5",
               isDark
                 ? "text-white/45 hover:text-white/70 hover:bg-white/8"
                 : "text-muted-foreground hover:text-foreground hover:bg-accent"
             )}
           >
-            <Search className="h-3.5 w-3.5" />
-            <span className="text-muted-foreground/60">Search…</span>
-            <kbd className="text-[10px] font-mono bg-muted/50 px-1 py-0.5 rounded border border-border/50">Ctrl+K</kbd>
+            <Search className="h-4 w-4 lg:h-3.5 lg:w-3.5" />
+            <span className="hidden lg:inline text-muted-foreground/60">Search…</span>
+            <kbd className="hidden lg:inline text-[10px] font-mono bg-muted/50 px-1 py-0.5 rounded border border-border/50">Ctrl+K</kbd>
           </Button>
 
           {/* +New dropdown */}
@@ -181,7 +199,18 @@ export function MegaMenuHeader({ onNewApplication, onNewAccount, onNewContact }:
                 {isFullscreen ? <Minimize className="h-3.5 w-3.5" /> : <Maximize className="h-3.5 w-3.5" />}
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom">{isFullscreen ? "Exit Fullscreen" : "Fullscreen"}</TooltipContent>
+            {/* #125: auto-fullscreen is an opt-in Settings preference with no
+                presence anywhere near the control it affects, so a user who
+                turned it on had no way to tell why the app kept going
+                fullscreen. Surfaced here, where the behaviour is. */}
+            <TooltipContent side="bottom">
+              {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+              {autoFullscreen && (
+                <span className="block text-[10px] opacity-70">
+                  Auto-fullscreen is on (Settings)
+                </span>
+              )}
+            </TooltipContent>
           </Tooltip>
 
           {/* Theme toggle */}

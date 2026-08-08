@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { emitAppEvent, useAppEvent } from "@/lib/appEvents";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow, format, isToday, isYesterday } from "date-fns";
 import { useChatNotifications } from "@/hooks/useChatNotifications";
@@ -121,11 +122,7 @@ const FloatingChat: React.FC = () => {
     window.addEventListener('mouseup', handleMouseUp);
   }, [chatWidth, chatHeight]);
 
-  useEffect(() => {
-    const handleOpenChat = () => setIsOpen(true);
-    window.addEventListener('openFloatingChat', handleOpenChat);
-    return () => window.removeEventListener('openFloatingChat', handleOpenChat);
-  }, []);
+  useAppEvent("openFloatingChat", useCallback(() => setIsOpen(true), []));
 
   // Auto-open chat when on /chat route
   useEffect(() => {
@@ -136,7 +133,7 @@ const FloatingChat: React.FC = () => {
 
   // Notify dock of open/close state
   useEffect(() => {
-    window.dispatchEvent(new CustomEvent(isOpen ? "dockAppOpened" : "dockAppClosed"));
+    emitAppEvent(isOpen ? "dockAppOpened" : "dockAppClosed");
   }, [isOpen]);
 
   const formatMessageDate = useCallback((dateString: string) => {
@@ -932,7 +929,7 @@ const FloatingChat: React.FC = () => {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button onClick={() => { setIsOpen(false); setTimeout(() => window.dispatchEvent(new CustomEvent("openOfficeSimulator")), 100); }} className="hover:bg-[hsl(var(--wa-header)/0.7)] p-2 rounded-full transition-colors" aria-label="Office Simulator">
+                  <button onClick={() => { setIsOpen(false); setTimeout(() => emitAppEvent("openOfficeSimulator"), 100); }} className="hover:bg-[hsl(var(--wa-header)/0.7)] p-2 rounded-full transition-colors" aria-label="Office Simulator">
                     <Gamepad2 className="h-4 w-4" />
                   </button>
                 </TooltipTrigger>

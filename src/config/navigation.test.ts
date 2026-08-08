@@ -42,6 +42,18 @@ describe("navigation config", () => {
     expect(orphans).toEqual([]);
   });
 
+  /**
+   * The icon rail turns each group into a dropdown menu rather than a link
+   * (#121), which is only lossless because a group's landing page is also the
+   * first entry in its own menu. Break this and that page becomes unreachable
+   * from the rail.
+   */
+  it("makes every group's landing page its own first menu item", () => {
+    for (const group of NAV_GROUPS) {
+      expect(group.items[0]?.url, `${group.title} group`).toBe(group.url);
+    }
+  });
+
   it("marks off-site destinations as external", () => {
     for (const item of NAV_GROUPS.flatMap((g) => g.items)) {
       if (item.url.startsWith("http")) expect(item.external).toBe(true);

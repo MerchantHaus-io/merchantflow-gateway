@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { TRI_TAB_DOCK_ENABLED } from "@/lib/tri-tab-dock";
+import { emitAppEvent, useAppEvent } from "@/lib/appEvents";
 
 interface MatchedContact {
   id: string;
@@ -55,16 +56,12 @@ export const Dialler = () => {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
 
-  // Listen for external open event (from MobileAppDock)
-  useEffect(() => {
-    const handler = () => setOpen(true);
-    window.addEventListener("openDialler", handler);
-    return () => window.removeEventListener("openDialler", handler);
-  }, []);
+  // Opened from the mobile dock fan or the tri-tab dock (#117).
+  useAppEvent("openDialler", useCallback(() => setOpen(true), []));
 
   // Notify dock of open/close state
   useEffect(() => {
-    window.dispatchEvent(new CustomEvent(open ? "dockAppOpened" : "dockAppClosed"));
+    emitAppEvent(open ? "dockAppOpened" : "dockAppClosed");
   }, [open]);
   const [number, setNumber] = useState("");
   const [quoNumbers, setQuoNumbers] = useState<QuoPhoneNumber[]>([]);

@@ -16,6 +16,7 @@ import { playNoticeBoardSound } from "@/hooks/useNotificationSound";
 import { isEmailAllowed } from "@/types/opportunity";
 import { isHiddenUser } from "@/lib/hidden-users";
 import { TRI_TAB_DOCK_ENABLED } from "@/lib/tri-tab-dock";
+import { emitAppEvent, useAppEvent } from "@/lib/appEvents";
 
 interface ActionItem {
   id: string;
@@ -48,16 +49,12 @@ export function ActionItemsWidget() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [isOpen, setIsOpen] = useState(false);
 
-  // Listen for external open event (from MobileAppDock)
-  useEffect(() => {
-    const handler = () => setIsOpen(true);
-    window.addEventListener("openNoticeBoard", handler);
-    return () => window.removeEventListener("openNoticeBoard", handler);
-  }, []);
+  // Opened from the mobile dock fan or the tri-tab dock (#117).
+  useAppEvent("openNoticeBoard", useCallback(() => setIsOpen(true), []));
 
   // Notify dock of open/close state
   useEffect(() => {
-    window.dispatchEvent(new CustomEvent(isOpen ? "dockAppOpened" : "dockAppClosed"));
+    emitAppEvent(isOpen ? "dockAppOpened" : "dockAppClosed");
   }, [isOpen]);
   const [newTitle, setNewTitle] = useState("");
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);

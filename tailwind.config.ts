@@ -79,6 +79,29 @@ export default {
         // Space Mono is self-hosted and also tabular.
         'mono-dm': ['var(--font-mono)', 'Space Mono', 'ui-monospace', 'SFMono-Regular', 'monospace']
       },
+      /**
+       * A named stacking order, so layers are chosen rather than guessed (#133).
+       *
+       * There were thirteen distinct ad-hoc values across the components —
+       * z-[35], z-[45], z-[55], z-[60], z-[61], z-[99], z-[101], z-[9999] —
+       * and the header sat at z-50, the same band as Radix dialogs and the
+       * mobile sheet backdrop, which is why overlay ordering was a coin toss.
+       *
+       *   chrome  header, icon rail, mobile tab bar — always beneath overlays
+       *   dock    floating furniture: app dock, chat, tri-tab dock
+       *   overlay Radix dialogs, drawers, sheets and their backdrops (50, the
+       *           shadcn default — left alone deliberately so the ui/
+       *           primitives need no edits)
+       *   modal   things that must sit above a dialog, e.g. a confirm inside one
+       *   toast   notifications, always on top
+       */
+      zIndex: {
+        chrome: '30',
+        dock: '40',
+        overlay: '50',
+        modal: '60',
+        toast: '70',
+      },
       letterSpacing: {
         'tightest': '-0.04em',
         'tighter': '-0.02em',

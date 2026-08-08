@@ -132,7 +132,7 @@ export function MobileBottomNav() {
       {/* ── FIXED TAB BAR ── */}
       <nav
         aria-label="Primary"
-        className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-background/95 border-t border-border/40"
+        className="fixed bottom-0 left-0 right-0 z-chrome lg:hidden bg-background/95 border-t border-border/40"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="flex items-stretch h-[56px]">
