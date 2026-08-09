@@ -3449,10 +3449,12 @@ export type Database = {
       }
       scoping_submissions: {
         Row: {
+          account_id: string | null
           accounting_system: string | null
           acknowledgement_name: string
           acknowledgement_title: string | null
           additional_notes: string | null
+          assigned_to: string | null
           average_ticket: string | null
           budget_expectation: string | null
           business_address_line1: string | null
@@ -3467,6 +3469,7 @@ export type Database = {
           client_ip: string | null
           contact_email: string
           contact_first_name: string
+          contact_id: string | null
           contact_last_name: string
           contact_phone: string
           contact_title: string | null
@@ -3486,6 +3489,7 @@ export type Database = {
           entity_type: string | null
           estimated_mcc: string | null
           existing_fraud_tooling: string | null
+          first_response_at: string | null
           foreign_ownership: string | null
           fulfilment_timeframe: string | null
           funding_timeline: string | null
@@ -3530,10 +3534,12 @@ export type Database = {
           years_in_operation: string | null
         }
         Insert: {
+          account_id?: string | null
           accounting_system?: string | null
           acknowledgement_name: string
           acknowledgement_title?: string | null
           additional_notes?: string | null
+          assigned_to?: string | null
           average_ticket?: string | null
           budget_expectation?: string | null
           business_address_line1?: string | null
@@ -3548,6 +3554,7 @@ export type Database = {
           client_ip?: string | null
           contact_email: string
           contact_first_name: string
+          contact_id?: string | null
           contact_last_name: string
           contact_phone: string
           contact_title?: string | null
@@ -3567,6 +3574,7 @@ export type Database = {
           entity_type?: string | null
           estimated_mcc?: string | null
           existing_fraud_tooling?: string | null
+          first_response_at?: string | null
           foreign_ownership?: string | null
           fulfilment_timeframe?: string | null
           funding_timeline?: string | null
@@ -3611,10 +3619,12 @@ export type Database = {
           years_in_operation?: string | null
         }
         Update: {
+          account_id?: string | null
           accounting_system?: string | null
           acknowledgement_name?: string
           acknowledgement_title?: string | null
           additional_notes?: string | null
+          assigned_to?: string | null
           average_ticket?: string | null
           budget_expectation?: string | null
           business_address_line1?: string | null
@@ -3629,6 +3639,7 @@ export type Database = {
           client_ip?: string | null
           contact_email?: string
           contact_first_name?: string
+          contact_id?: string | null
           contact_last_name?: string
           contact_phone?: string
           contact_title?: string | null
@@ -3648,6 +3659,7 @@ export type Database = {
           entity_type?: string | null
           estimated_mcc?: string | null
           existing_fraud_tooling?: string | null
+          first_response_at?: string | null
           foreign_ownership?: string | null
           fulfilment_timeframe?: string | null
           funding_timeline?: string | null
@@ -3691,7 +3703,22 @@ export type Database = {
           website_url?: string | null
           years_in_operation?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "scoping_submissions_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scoping_submissions_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shared_todos: {
         Row: {
