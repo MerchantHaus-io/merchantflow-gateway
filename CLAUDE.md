@@ -53,3 +53,49 @@ untouched.
 > cost** figure — that is the *merchant's current processor's* markup (a
 > savings talking point), not MerchantHaus's. That is fine and not covered by
 > this rule.
+
+---
+
+## Gauntlet invariants — never violate, in any phase
+
+- NEVER put database migrations and client changes in the same session.
+- NEVER touch `stripInternalCostRefs` or the cost-redaction path without
+  running `npx vitest run redactCost` and reporting the result.
+- NEVER remove a `verify_jwt` guard. Adding them is fine; removing needs my
+  say-so.
+- After ANY change, run: `npm run build && npm run lint`. Report failures
+  before claiming done.
+- If a diff would touch more than 15 files and I did not ask for that, STOP
+  and tell me why before writing.
+- Cap Gauntlet loops at 3 iterations per item. On the third failure, stop and
+  report exactly what is blocking it. Do not keep going silently.
+
+### Commands that actually exist here
+
+There is **no `npm test` script**. `npm test -- redactCost` fails with a
+missing-script error, which reads like a passing run to a careless agent.
+
+```bash
+npx tsc --noEmit -p tsconfig.app.json   # typecheck — must be silent
+npm run lint                            # eslint . — 0 errors, ~305 inherited warnings
+npx vitest run                          # full suite
+npx vitest run redactCost               # the cost-redaction guard specifically
+npm run build                           # vite build
+```
+
+`tsc` does **not** cover `supabase/functions/` — those are Deno and sit in no
+tsconfig. A change there passes every local check while being syntactically
+broken. This has already happened once: a regex edit truncated the preflight
+return in five edge functions and nothing caught it. Read edge-function bodies
+back after editing them.
+
+### Baselines, so a critic can tell a regression from inherited noise
+
+| Check | Current state |
+|---|---|
+| `npx tsc --noEmit -p tsconfig.app.json` | silent |
+| `npm run lint` | **0 errors**, ~305 `any` warnings |
+| `npx vitest run` | 92 passing, 6 files |
+| `npm run build` | succeeds; chunk-size warnings are expected |
+
+A rise in the lint **error** count is a regression. Inherited warnings are not.
