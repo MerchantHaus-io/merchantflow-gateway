@@ -25,6 +25,26 @@ Always `browser_wait_for` the content you intend to judge before capturing. A
 screenshot of a half-rendered page is not evidence, and it will read as a
 layout defect that does not exist.
 
+**Presence is not reachability.** This one has already cost us: a page passed
+a critic with all ten of its sections confirmed in the DOM — and nine of them
+were unreachable, because the page had no scroll container and the app sets a
+global `overflow: hidden`. The element count was true and the conclusion was
+false.
+
+So for any "does it render" gate, assert that a user can actually get to the
+content:
+
+- `scrollHeight > clientHeight` on the scroll container, AND `scrollTop`
+  actually MOVES when you set it — if it stays 0, nothing below the fold
+  exists for a user
+- the LAST element enters the viewport: `getBoundingClientRect().bottom <=
+  innerHeight` after scrolling to the end
+- check at 360px wide as well as desktop; a page can scroll on one and clip on
+  the other
+
+A screenshot of a page's first viewport plus an element count is
+indistinguishable from proof. It is not proof.
+
 Your output is exactly one of:
 
 ```

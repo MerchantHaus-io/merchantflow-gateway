@@ -44,6 +44,25 @@ chrome, which is the most recently rewritten surface):
 1. Submit the public support request form.
 2. Confirm the ticket appears in triage.
 
+## 4. Merchant-facing pages: scroll to the bottom
+
+On every public page — `/scope`, `/scoping`, `/scoping-disclosures`,
+`/merchant-apply`, `/q/:token` — **scroll to the very bottom and confirm you
+reach the last line.**
+
+This is not paranoia. `src/index.css:1203` sets
+`html, body, #root { height: 100%; overflow: hidden }` globally, so the
+document never scrolls. Any page taller than the viewport that lacks its own
+`overflow-y-auto` is silently cut off, with everything below the fold
+unreachable — and it looks perfectly fine in a screenshot of the top.
+
+`/scoping-disclosures` shipped that way and passed a critic, because the check
+asked whether all ten disclosures were in the DOM. They were. Nine of them
+could not be read.
+
+On a page of legal disclosures a merchant is asked to accept, "rendered but
+unreachable" is not a cosmetic defect.
+
 ---
 
 ## Mobile pass — add when the session touched mobile

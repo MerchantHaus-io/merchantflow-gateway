@@ -1,5 +1,28 @@
 # Phase 2 — Merchant-side wiring
 
+> **Run status — 9 Aug 2026 (`gauntlet/phase-2`).**
+> Through the loop and PASSED: **2A-migration** (applied), **2B Quick Scope**,
+> **2D-5** the six design fixes.
+> Still open: **2A-function** (unblocked — needs three decisions, below),
+> **2C** (premise false — four projects, see below), **2D** (exceeds the
+> 15-file ceiling; depends on 2A/2B/2C).
+>
+> **2A-function needs your call on three things before a builder touches it:**
+> 1. The item contradicts itself — creates the opportunity with
+>    `assigned_to = null`, then a task "on the assigned owner". No owner exists.
+> 2. `integration_route` → `service_type` is a judgement, not a mapping: eight
+>    multi-select free-text options into a two-value enum, several ambiguous.
+> 3. The PDF. **No edge function in this repo generates one** — every existing
+>    flow is client-generates, server-relays. Client-side jsPDF handoff matches
+>    the architecture; a Deno generator would be novel and invisible to `tsc`.
+>
+> **2C's premise is false.** The Google OAuth requests `calendar.readonly`
+> only — no write scope, no free/busy, no availability anywhere. A slot picker
+> is a subsystem, not plumbing. `analyze-statement` sits behind `requireAuth`,
+> so a merchant cannot call it. Rep phone and photo do not exist as fields. And
+> `google-calendar-sync` stores full event bodies, so a naive slot picker would
+> leak reps' meeting titles to merchants.
+
 **This is the phase. Recon confirms every item is NOT_STARTED, and D4
 confirms the diagnosis: the scoping form is not linked to anything yet.**
 
@@ -73,7 +96,7 @@ confirms the confirmation arrived with a PDF attached.
 
 ---
 
-## 2B — Quick Scope · NOT_STARTED (#186, #187)
+## 2B — Quick Scope · ✅ DONE 9 Aug 2026 (#186, #187)
 
 New public route `/scope`, seven fields:
 
