@@ -77,7 +77,13 @@ grep -rln "useIsMobile" src/pages/Leads.tsx src/pages/Contacts.tsx \
 # each list page must gate its table/card choice
 ```
 
-**Gate (device emulation) — `NOT EXECUTABLE`** without Playwright.
+**Gate (device emulation) — `EXECUTABLE`.** 360×640 and an iPhone viewport,
+both orientations, confirming each list page renders cards rather than a
+table.
+
+**Still `NOT EXECUTABLE`: the native items.** Emulation does not catch #151's
+double safe-area inset or the Android hardware back button — the plan says so
+and it is right. Those need a device build.
 
 ---
 

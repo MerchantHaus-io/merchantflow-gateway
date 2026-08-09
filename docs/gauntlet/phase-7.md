@@ -76,11 +76,13 @@ D8 says four themes. The subtraction is cheaper once you are already in
 
 ## Critic warning
 
-This is the phase where the critic is weakest: almost every remaining
-judgement is visual, and no Playwright means it cannot see. The two gaps above
-are deliberately specified as `grep` gates so at least those are objective.
+This is still the phase where the critic is weakest, even with Playwright.
+It can now *see* — screenshot every route in both themes, diff them, run the
+blind comparison against the Stripe dashboard. What it cannot do is have
+taste. A screenshot proves the four surviving themes render; it does not
+prove they are the right four.
 
-For anything beyond them — the blind comparison against the Stripe dashboard,
-whether the four surviving themes look right — **take the critic seat
-yourself.** A critic reasoning about CSS it cannot render will tell you it
-looks fine.
+The two gaps above are deliberately `grep` gates so at least those are
+objective. For the judgement calls, **stay in the loop yourself.** And watch
+for the specific drift: a critic that can produce a screenshot will start
+treating "I captured it" as "I evaluated it".

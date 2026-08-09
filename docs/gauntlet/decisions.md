@@ -82,16 +82,39 @@ shortened, because a short form that also goes nowhere is no better.
 
 ## D5 — Admins
 
-**Answer: `admin@merchanthaus.io` is the only real admin.**
+**Answer, refined against the live table: two admins — `admin@merchanthaus.io`
+(shared) and `darryn@merchanthaus.io` (the operator).**
 
-Phase 3A's seed is one row, not a list.
+The first answer was "admin@ only". Reading the actual rows changed it: `darryn@`
+also held admin, and revoking it would have locked the operator out of admin
+surfaces until they signed in as the shared account. Worth the ten seconds it
+took to look.
 
-> ⚠️ Reconcile before running 3A: the unexecuted migration
-> `supabase/migrations/20260807180000_staff_gate_via_user_roles.sql` seeds
-> `staff` and `finance` roles from a **wider** hardcoded list, and aborts with
-> `RAISE EXCEPTION` if a seeded email matches nobody. Those two facts together
-> mean 3A cannot be written until that migration is either applied, amended to
-> match this answer, or dropped. Settle it first.
+**Resolved — `20260807180000_staff_gate_via_user_roles.sql` is applied.** The
+earlier note calling it unexecuted was wrong. Live state on 9 Aug 2026:
+
+| | |
+|---|---|
+| `app_role` | `admin`, `user`, `staff`, `finance` |
+| Counts | admin **4**, staff **9**, finance **8** |
+| `is_internal_staff()` | swapped — requires a `staff`/`admin` row |
+
+staff 9 and finance 8 are both correct: eight `@merchanthaus.io` accounts, plus
+`darryn182@gmail.com` taking staff but deliberately **not** finance. That is the
+cost/margin separation working — finance gates `commission_records`.
+
+The four admin rows were `admin@`, `darryn@`, `support@` (all 18:02:51) and
+`jamie@` (18:13:18) — **not** the set the migration seeds (`admin@`,
+`onboarding@`, `jamie@`). Something granted three at 18:02:51; the migration then
+added only `jamie@`, because `admin@` hit `ON CONFLICT DO NOTHING` and
+`onboarding@merchanthaus.io` has no `auth.users` row at all.
+
+> A seed that "did not work" and a seed that silently skipped an existing row
+> look identical afterwards. Check `auth.users` before assuming the former.
+
+`20260809170000_restrict_admin_role.sql` revokes `support@` and `jamie@`.
+**Unapplied — review before running.** Both keep staff and finance, so neither
+loses the CRM or commissions; they lose admin surfaces only.
 
 ---
 

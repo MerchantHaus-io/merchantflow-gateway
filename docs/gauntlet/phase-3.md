@@ -18,24 +18,33 @@ three, with RLS enabled and `has_role()` correctly `STABLE SECURITY DEFINER
 SET search_path = public`. The hostile verifier confirmed it is live, not dead
 code.
 
-**The caveat, and it matters:**
+**Live state, confirmed against the database 9 Aug 2026:**
 
-| | Plan wants | Repo has |
+| | Plan wants | Database has |
 |---|---|---|
-| `app_role` values | `'admin','internal','affiliate'` | `'admin','user'` |
+| `app_role` values | `'admin','internal','affiliate'` | `'admin','user','staff','finance'` |
+| Row counts | — | admin **4**, staff **9**, finance **8** |
+| `is_internal_staff()` | — | swapped — requires a `staff`/`admin` row |
 
-So the three-way split the RLS sweep depends on does not exist yet. Widening
-an enum in Postgres is `ALTER TYPE ... ADD VALUE`, which **cannot run inside a
-transaction block** in older versions — plan the migration accordingly.
+So `20260807180000_staff_gate_via_user_roles.sql` **is applied.** The earlier
+note calling it unexecuted was wrong.
 
-> ⚠️ **Reconcile before writing anything.** There is an *unexecuted* migration
-> `supabase/migrations/20260807180000_staff_gate_via_user_roles.sql` that
-> seeds `staff` and `finance` roles from a wider hardcoded list and **aborts
-> with `RAISE EXCEPTION` if a seeded email matches nobody**. D5 says
-> `admin@merchanthaus.io` is the only real admin. Those two facts contradict.
-> Settle it — apply, amend, or drop that migration — before 3A runs. A session
-> that writes a new role migration on top of an unapplied conflicting one will
-> produce a mess you have to unpick by hand.
+The naming differs from the plan (`staff`/`finance` rather than
+`internal`/`affiliate`) but the shape is what the RLS sweep needs, and
+`finance` is deliberately *narrower* than `staff` — it gates
+`commission_records`, which carries partner cost and margin. Do not collapse
+them. Write the sweep against the roles that exist.
+
+**Admin roles — resolved, migration written, not yet applied.**
+
+The four admin rows were `admin@`, `darryn@`, `support@` (18:02:51) and
+`jamie@` (18:13:18) — not the set `20260807180000` seeds. Per D5 as refined,
+`admin@` (shared) and `darryn@` (operator) keep it;
+`20260809170000_restrict_admin_role.sql` revokes `support@` and `jamie@`, who
+keep staff and finance and lose admin surfaces only.
+
+**Apply that before 3A**, so the RLS sweep is written against the role set you
+intend to keep rather than the one that happened to accumulate.
 
 **Remaining 3A work:** the RLS sweep across `opportunities`, `accounts`,
 `contacts`, `documents`, `support_tickets`, `commissions`, `referrers`,

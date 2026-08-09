@@ -59,5 +59,7 @@ mobile labels stay unique, and **each group's landing page is its own first
 menu item** — the invariant that makes #121 lossless. If a future phase adds a
 nav entry pointing at a route that doesn't exist, this fails.
 
-**Gate (visual) — `NOT EXECUTABLE`.** "The header and rail must never blink"
-needs Playwright. Covered manually in `smoke.md` step 1.
+**Gate (visual) — `EXECUTABLE`.** Screenshot each frame during a navigation
+and diff the header and rail regions; any frame where they are absent is a
+FAIL. Worth running once as a regression guard even though the phase is
+closed — it is the assertion that #102 stays fixed.

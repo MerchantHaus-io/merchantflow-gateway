@@ -72,10 +72,14 @@ grep -rl client_errors supabase/functions/       # must be non-empty
 
 Written up in `smoke.md`. Three paths plus a mobile pass.
 
-**Gate — `NOT EXECUTABLE`.** Requires a signed-in browser. `npx vitest run`
-covers 92 unit tests across route matching, redaction and notification
-routing — none of it drives a browser. Automating this is the strongest
-argument for installing Playwright.
+**Gate — PARTLY `EXECUTABLE`.** Playwright can now drive paths 2 and 3 —
+`/q/:token` in a clean context, and the public support form — and those are
+the two worth scripting first, because they are the merchant-facing ones.
+
+Path 1 stays `NOT EXECUTABLE`: it needs Google sign-in, and OAuth in
+automation is not worth the fight. `npx vitest run` covers 92 unit tests
+across route matching, redaction and notification routing, but none of it
+drives a browser.
 
 ---
 
