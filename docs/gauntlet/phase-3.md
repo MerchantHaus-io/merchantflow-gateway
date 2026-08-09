@@ -35,28 +35,16 @@ The naming differs from the plan (`staff`/`finance` rather than
 `commission_records`, which carries partner cost and margin. Do not collapse
 them. Write the sweep against the roles that exist.
 
-> ⚠️ **Open privilege issue: four admins, one real one.**
->
-> The migration seeds three (`admin@`, `onboarding@`, `jamie@`) and the count
-> is 4, so a fourth came from elsewhere — the original 2025-12-08 migration or
-> a manual insert. D5 says `admin@merchanthaus.io` is the only real admin, and
-> `is_admin()` is now live, so three accounts currently pass a gate they
-> should not.
->
-> Identify before revoking — if `admin@merchanthaus.io` turns out not to be
-> among the four, a blind delete leaves zero admins and locks the admin
-> surfaces:
->
-> ```sql
-> select u.email, ur.created_at
->   from public.user_roles ur
->   join auth.users u on u.id = ur.user_id
->  where ur.role = 'admin'
->  order by u.email;
-> ```
->
-> Revoking `admin` leaves `staff` and `finance` intact, so the three keep CRM
-> and commissions access and lose only admin surfaces.
+**Admin roles — resolved, migration written, not yet applied.**
+
+The four admin rows were `admin@`, `darryn@`, `support@` (18:02:51) and
+`jamie@` (18:13:18) — not the set `20260807180000` seeds. Per D5 as refined,
+`admin@` (shared) and `darryn@` (operator) keep it;
+`20260809170000_restrict_admin_role.sql` revokes `support@` and `jamie@`, who
+keep staff and finance and lose admin surfaces only.
+
+**Apply that before 3A**, so the RLS sweep is written against the role set you
+intend to keep rather than the one that happened to accumulate.
 
 **Remaining 3A work:** the RLS sweep across `opportunities`, `accounts`,
 `contacts`, `documents`, `support_tickets`, `commissions`, `referrers`,
