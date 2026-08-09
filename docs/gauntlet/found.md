@@ -75,3 +75,22 @@ plus `viewport-fit=cover` plus `paddingTop: env(safe-area-inset-top)`
 **Where:** `src/components/CommandPalette.tsx`
 **Why not fixed:** larger than its audit line implies (#157)
 **Severity:** real
+
+**What:** `/scoping-disclosures` cannot be scrolled — the page renders 2611px
+of content inside `min-h-screen` with no scroll container, and the global
+`html, body, #root { height: 100%; overflow: hidden }` in `src/index.css:1203`
+means nothing above it scrolls either. Verified in Chromium at 360x740:
+`scrollHeight` 2611, `clientHeight` 2611, `documentElement.scrollTop` stays 0
+after being set. Everything past the first viewport is unreachable. The other
+public forms dodge this by using their own `overflow-y-auto` container.
+**Where:** `src/pages/ScopingDisclosures.tsx:13`
+**Why not fixed:** owned by another builder (2B), out of scope for 2D-5
+**Severity:** real
+
+**What:** The same `fixed inset-0 z-50` overlay + solid-emerald filled-field
+treatment that 2D-5 removed from `/scoping` is still present, verbatim, on
+`/merchant-apply` (and the overlay alone on `/contact` and `/scope`).
+**Where:** `src/pages/MerchantApply.tsx:676,717,734`, `src/pages/Contact.tsx:90`,
+`src/pages/QuickScope.tsx:191`
+**Why not fixed:** explicitly out of scope for 2D-5 (Scoping.tsx only)
+**Severity:** real

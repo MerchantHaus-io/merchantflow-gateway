@@ -55,6 +55,8 @@ const TerminalUpdates = lazy(() => import("./pages/TerminalUpdates"));
 const WebSubmissions = lazy(() => import("./pages/WebSubmissions"));
 const MerchantApply = lazy(() => import("./pages/MerchantApply"));
 const Scoping = lazy(() => import("./pages/Scoping"));
+const QuickScope = lazy(() => import("./pages/QuickScope"));
+const ScopingDisclosures = lazy(() => import("./pages/ScopingDisclosures"));
 const TermsProcessing = lazy(() => import("./pages/TermsProcessing"));
 const LiveBilling = lazy(() => import("./pages/LiveBilling"));
 const LiveAccountDetail = lazy(() => import("./pages/LiveAccountDetail"));
@@ -95,7 +97,7 @@ import { PatchNotesPopup } from "./components/PatchNotesPopup";
 // Routes that must never mount internal staff furniture (dialler, command
 // palette, admin popups, patch notes…). `/q/:token` is the merchant-facing
 // quote-acceptance and signing page — it is public and must stay clean.
-const PUBLIC_ROUTES = ['/auth', '/login', '/contact', '/apply', '/merchant-apply', '/scoping', '/forgot-password', '/update-password', '/terms-processing', '/affiliate', '/portal', '/support-request', '/q', '/.lovable/oauth/consent'];
+const PUBLIC_ROUTES = ['/auth', '/login', '/contact', '/apply', '/merchant-apply', '/scoping', '/scope', '/scoping-disclosures', '/forgot-password', '/update-password', '/terms-processing', '/affiliate', '/portal', '/support-request', '/q', '/.lovable/oauth/consent'];
 
 // Match on whole path segments, not raw prefixes: a bare startsWith() makes
 // `/contacts` match `/contact` and `/quotes-contracts` match `/q`, silently
@@ -175,6 +177,10 @@ const App = () => (
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/merchant-apply" element={<MerchantApply />} />
                 <Route path="/scoping" element={<Scoping />} />
+                {/* One-screen short form. Segment matching means /scope never
+                    swallows /scoping. */}
+                <Route path="/scope" element={<QuickScope />} />
+                <Route path="/scoping-disclosures" element={<ScopingDisclosures />} />
                 <Route path="/terms-processing" element={<TermsProcessing />} />
                 <Route path="/support-request" element={<SupportRequest />} />
                 <Route path="/q/:token" element={<QuoteAcceptance />} />

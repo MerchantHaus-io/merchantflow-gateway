@@ -16,6 +16,7 @@ import {
   FileSignature,
   FileSpreadsheet,
   FileText,
+  Gauge,
   Globe,
   GraduationCap,
   Handshake,
@@ -126,6 +127,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { title: "Support Triage", mobileTitle: "Triage", url: "/support", icon: LifeBuoy, description: "Live ticket queue — claim & resolve client tickets" },
       { title: "Client Request Form", mobileTitle: "Request Form", url: "/support-request", icon: MessageSquarePlus, description: "Public support request page to share with clients", external: true },
+      { title: "Quick Scope", url: "/scope", icon: Gauge, description: "Public one-screen scoping form to share with prospects", external: true },
     ],
   },
   {
