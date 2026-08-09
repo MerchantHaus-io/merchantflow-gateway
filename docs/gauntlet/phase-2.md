@@ -32,12 +32,26 @@ exactly one thing: insert the row. Extend it so that after the insert it:
 6. **Starts an SLA clock** — extend `sla-escalation` to cover scoping
    submissions, not just support tickets.
 
-**Migration:** add `opportunity_id`, `account_id`, `contact_id`,
-`assigned_to`, `first_response_at` to `scoping_submissions`.
+**Migration: ✅ DONE AND APPLIED — 9 Aug 2026.**
+`supabase/migrations/20260809180000_scoping_submission_links.sql`.
 
-> ⚠️ **Invariant: the migration is its own session.** CLAUDE.md forbids
-> migrations and client changes in one session. Split 2A into 2A-migration
-> then 2A-function.
+`scoping_submissions` now carries `account_id`, `contact_id`, `assigned_to`
+and `first_response_at`, plus the FK and index `opportunity_id` had been
+missing since the table was created. Existing rows untouched.
+
+**`assigned_to` is `text`, holding a rep email** — matching
+`opportunities.assigned_to` and `tasks.assignee`, deliberately NOT the
+`support_tickets` uuid-FK pattern. 2A-function must write an email here.
+
+Verified before applying: rebuilt on a real Postgres 16.13 and applied three
+times for idempotency; proved the validating FK fails atomically on an orphan
+`opportunity_id`; then measured the live orphan count at **zero** — the one
+risk local testing could not close.
+
+**2A-function is unblocked. Do not re-plan the migration.**
+
+> The invariant still stands downstream: CLAUDE.md forbids migrations and
+> client changes in one session.
 
 **Gate — `EXECUTABLE` (the useful half)**
 ```sql
