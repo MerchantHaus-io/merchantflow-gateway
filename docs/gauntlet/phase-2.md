@@ -62,9 +62,20 @@ exactly one thing: insert the row. Extend it so that after the insert it:
 and `first_response_at`, plus the FK and index `opportunity_id` had been
 missing since the table was created. Existing rows untouched.
 
-**`assigned_to` is `text`, holding a rep email** — matching
-`opportunities.assigned_to` and `tasks.assignee`, deliberately NOT the
-`support_tickets` uuid-FK pattern. 2A-function must write an email here.
+**`assigned_to` is `uuid`, a FK to `auth.users`** — confirmed against the live
+database. A separate migration (`20260809230014_…`) was authored and applied
+instead of this one, and it chose uuid. My file has been corrected to match, so
+fresh environments and production agree.
+
+> ⚠️ **2A-function has to convert at the boundary.** `opportunities.assigned_to`
+> and `tasks.assignee` are **`text` holding an email**, and the opportunity
+> notification trigger does `SELECT … FROM profiles WHERE email = NEW.assigned_to`.
+> So a submission carries a uuid while the opportunity and task it creates carry
+> emails. Resolve uuid → email via `profiles` when writing them.
+>
+> **This will fail silently if you get it wrong.** Both target columns are
+> `text`, and a uuid string is a perfectly valid text value — you would get an
+> opportunity nobody is ever notified about, with no error anywhere.
 
 Verified before applying: rebuilt on a real Postgres 16.13 and applied three
 times for idempotency; proved the validating FK fails atomically on an orphan
