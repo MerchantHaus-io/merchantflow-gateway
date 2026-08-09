@@ -45,6 +45,21 @@ const steps: { label: string; icon: typeof Building2; section?: ScopingSection }
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PHONE_RE = /^[\d\s()+.-]{7,}$/;
 
+// #192: the review step used to render all ten disclosures in full inside a
+// scroll box. It now shows every heading with only the first sentence of that
+// entry's own body — DERIVED from SCOPING_DISCLOSURES, no new legal language
+// authored here — and links to the full text at /scoping-disclosures. Same
+// derivation as src/pages/QuickScope.tsx.
+const firstSentence = (body: string) => {
+  const end = body.indexOf(". ");
+  return end === -1 ? body : body.slice(0, end + 1);
+};
+
+const DISCLOSURE_SUMMARY = SCOPING_DISCLOSURES.map(d => ({
+  heading: d.heading,
+  body: firstSentence(d.body),
+}));
+
 export default function Scoping() {
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
@@ -65,6 +80,18 @@ export default function Scoping() {
   const handleChange = (key: string, value: string | string[] | boolean) =>
     setForm(prev => ({ ...prev, [key]: value }));
   const handleBlur = (key: string) => setTouched(prev => ({ ...prev, [key]: true }));
+
+  // #193: soft validation on step exit — leaving a step marks its fields
+  // touched so any problem shows up in place, on that step. It never blocks
+  // the move forward.
+  const markStepTouched = (index: number) => {
+    const section = steps[index]?.section;
+    if (!section) return;
+    setTouched(prev => ({
+      ...prev,
+      ...Object.fromEntries(section.fields.map(f => [f.key, true])),
+    }));
+  };
 
   const toggleMulti = (key: string, option: string) => {
     const current = arr(key);
@@ -102,11 +129,37 @@ export default function Scoping() {
     };
   };
 
+  // #193: which step owns a given field. The acknowledgement fields are not in
+  // any SCOPING_SECTIONS entry — they live on the final Review step.
+  const stepOfKey = (key: string) => {
+    const index = steps.findIndex(s => s.section?.fields.some(f => f.key === key));
+    return index === -1 ? steps.length - 1 : index;
+  };
+  // Every step that still has a required gap, in order. Used both to decide
+  // where (if anywhere) to move the user and to list the gaps on Review.
+  const incompleteSteps = [...new Set(missingRequired.map(stepOfKey))].sort((a, b) => a - b);
+  // The earliest step that still has something missing (null when the only
+  // outstanding item is the disclosure checkbox, which lives on Review).
+  const firstIncompleteStep = incompleteSteps.length ? incompleteSteps[0] : null;
+
   const handleSubmit = async () => {
     setShowAllErrors(true);
     if (!canSubmit) {
-      toast({ variant: "destructive", title: "Almost there", description: "Please complete the required fields and accept the disclosures." });
-      setStepIndex(missingRequired.some(k => k.startsWith("acknowledgement")) ? 5 : 0);
+      // #193: never bounce back to step 0. Errors are revealed in place by
+      // showAllErrors; we only move the user if nothing on the current step is
+      // wrong, and then only to the FIRST step that actually has a gap.
+      const currentStepHasGap = missingRequired.some(k => stepOfKey(k) === stepIndex);
+      const target = !currentStepHasGap && firstIncompleteStep !== null && firstIncompleteStep !== stepIndex
+        ? firstIncompleteStep
+        : null;
+      toast({
+        variant: "destructive",
+        title: "Almost there",
+        description: target === null
+          ? "Please complete the highlighted fields and tick the acknowledgement."
+          : `Some required fields are still empty — taking you to “${steps[target].label}”.`,
+      });
+      if (target !== null) setStepIndex(target);
       return;
     }
     setIsSubmitting(true);
@@ -151,7 +204,7 @@ export default function Scoping() {
   // ─── Submitted screen (no auto-redirect) ───
   if (isSubmitted) {
     return (
-      <div className="merchant-form fixed inset-0 z-50 bg-background flex items-center justify-center p-4">
+      <div className="merchant-form min-h-full w-full bg-background flex items-center justify-center p-4">
         <div className="max-w-md w-full rounded-2xl border border-border bg-card p-8 shadow-lg text-center space-y-4">
           <div className="mx-auto w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center">
             <CheckCircle className="w-8 h-8 text-emerald-500" />
@@ -171,15 +224,22 @@ export default function Scoping() {
   const currentStep = steps[stepIndex];
 
   return (
-    <div className="merchant-form fixed inset-0 z-50 bg-background overflow-y-auto" style={{ WebkitOverflowScrolling: "touch" }}>
+    <div className="merchant-form h-full w-full overflow-y-auto bg-background" style={{ WebkitOverflowScrolling: "touch" }}>
       <header className="bg-card border-b border-border px-3 py-2.5 md:px-4 md:py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
           <img src={merchanthausLogo} alt="MerchantHaus" className="h-7 md:h-10 w-auto" />
-          <div className="flex items-center gap-2">
-            <div className="h-1.5 w-20 md:h-2 md:w-32 rounded-full bg-secondary overflow-hidden">
-              <div className="h-full bg-primary transition-all" style={{ width: `${progress}%` }} />
-            </div>
-            <span className="text-xs md:text-sm font-medium text-foreground">{progress}%</span>
+          {/* #189: the numeric percentage is gone — the per-section counts in
+              the Status Snapshot are the readout. The bar stays as a quiet
+              visual cue; the figure is still exposed to assistive tech. */}
+          <div
+            className="h-1.5 w-20 md:h-2 md:w-32 rounded-full bg-secondary overflow-hidden"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={progress}
+            aria-label="Required fields completed"
+          >
+            <div className="h-full bg-primary transition-all" style={{ width: `${progress}%` }} />
           </div>
         </div>
       </header>
@@ -253,6 +313,9 @@ export default function Scoping() {
                     canSubmit={canSubmit}
                     isSubmitting={isSubmitting}
                     onSubmit={handleSubmit}
+                    incompleteSteps={showAllErrors ? incompleteSteps.filter(i => i !== stepIndex) : []}
+                    stepLabels={steps.map(s => s.label)}
+                    onGoToStep={setStepIndex}
                   />
                 )}
               </div>
@@ -260,7 +323,7 @@ export default function Scoping() {
               {stepIndex < steps.length - 1 && (
                 <div className="px-4 py-3 md:px-6 md:py-4 bg-muted border-t border-border flex items-center justify-between">
                   <button type="button" className="rounded-lg border border-border bg-card px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-medium text-foreground hover:bg-secondary disabled:opacity-40" onClick={() => setStepIndex(p => Math.max(0, p - 1))} disabled={stepIndex === 0}>Back</button>
-                  <button type="button" className="rounded-lg bg-primary px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90" onClick={() => setStepIndex(p => Math.min(steps.length - 1, p + 1))}>Next Step</button>
+                  <button type="button" className="rounded-lg bg-primary px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90" onClick={() => { markStepTouched(stepIndex); setStepIndex(p => Math.min(steps.length - 1, p + 1)); }}>Next Step</button>
                 </div>
               )}
             </section>
@@ -330,7 +393,11 @@ function SectionFields({ section, str, arr, onChange, onBlur, getError, toggleMu
                   return (
                     <label key={option} className={cn(
                       "flex items-center gap-2 rounded-lg border px-3 py-2 text-xs md:text-sm cursor-pointer transition-colors",
-                      checked ? "border-emerald-600 bg-emerald-600 text-white font-semibold" : "border-input bg-card text-foreground hover:bg-secondary",
+                      // #188: selected reads as a tinted chip with a 2px accent
+                      // edge instead of a solid emerald block.
+                      checked
+                        ? "border-primary border-l-2 bg-primary/10 text-foreground font-medium"
+                        : "border-input bg-card text-foreground hover:bg-secondary",
                     )}>
                       <input
                         type="checkbox"
@@ -402,36 +469,81 @@ interface ReviewProps {
   canSubmit: boolean;
   isSubmitting: boolean;
   onSubmit: () => void;
+  /** Steps (other than this one) that still have a required gap, after a submit attempt. */
+  incompleteSteps: number[];
+  stepLabels: string[];
+  onGoToStep: (index: number) => void;
 }
 
-function ReviewStep({ str, arr, form, onChange, onBlur, getError, canSubmit, isSubmitting, onSubmit }: ReviewProps) {
+function ReviewStep({ str, arr, form, onChange, onBlur, getError, canSubmit, isSubmitting, onSubmit, incompleteSteps, stepLabels, onGoToStep }: ReviewProps) {
   return (
     <div className="space-y-6">
-      {SCOPING_SECTIONS.map(section => (
-        <div key={section.key} className="rounded-xl border border-border p-4">
-          <h3 className="text-sm font-semibold text-foreground mb-3">{section.label}</h3>
-          <dl className="grid gap-3 sm:grid-cols-2 text-xs md:text-sm">
-            {section.fields.map(field => (
-              <DataItem
-                key={field.key}
-                label={field.label}
-                value={field.type === "multi" ? arr(field.key).join(", ") : str(field.key)}
-              />
-            ))}
-          </dl>
-        </div>
-      ))}
+      {SCOPING_SECTIONS.map(section => {
+        // #190: only answered fields get their own row. Everything left blank
+        // collapses into one expandable line so the review reads as a summary
+        // of what you said, not a wall of "Not provided".
+        const answered = section.fields.filter(f =>
+          (f.type === "multi" ? arr(f.key).join(", ") : str(f.key)).trim().length > 0,
+        );
+        const blank = section.fields.filter(f => !answered.includes(f));
+        return (
+          <div key={section.key} className="rounded-xl border border-border p-4">
+            <h3 className="text-sm font-semibold text-foreground mb-3">{section.label}</h3>
+            {answered.length > 0 ? (
+              <dl className="grid gap-3 sm:grid-cols-2 text-xs md:text-sm">
+                {answered.map(field => (
+                  <DataItem
+                    key={field.key}
+                    label={field.label}
+                    value={field.type === "multi" ? arr(field.key).join(", ") : str(field.key)}
+                  />
+                ))}
+              </dl>
+            ) : (
+              <p className="text-xs md:text-sm text-muted-foreground italic">Nothing answered in this section yet.</p>
+            )}
+            {blank.length > 0 && (
+              <details className="mt-3 group">
+                <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden text-xs text-muted-foreground hover:text-foreground">
+                  <span className="underline underline-offset-2">
+                    {blank.length} {blank.length === 1 ? "question" : "questions"} not answered
+                  </span>
+                  <span className="ml-1 inline-block transition-transform group-open:rotate-90">›</span>
+                </summary>
+                <ul className="mt-2 grid gap-1 sm:grid-cols-2 text-xs text-muted-foreground">
+                  {blank.map(field => (
+                    <li key={field.key} className="break-words">{field.label}</li>
+                  ))}
+                </ul>
+              </details>
+            )}
+          </div>
+        );
+      })}
 
-      {/* Disclosures */}
+      {/* Disclosures — #192: compressed to the heading plus the first sentence
+          of each entry's own body, taken verbatim from SCOPING_DISCLOSURES.
+          No new legal language is authored here; the full text lives at
+          /scoping-disclosures. Same approach as src/pages/QuickScope.tsx. */}
       <div>
         <h3 className="text-sm font-semibold text-foreground mb-2">Disclosures</h3>
-        <div className="max-h-72 overflow-y-auto rounded-xl border border-border bg-muted/40 p-4 space-y-3 text-xs leading-relaxed text-muted-foreground">
-          {SCOPING_DISCLOSURES.map((d, i) => (
-            <p key={d.heading}>
-              <span className="font-semibold text-foreground">{i + 1}. {d.heading} — </span>
-              {d.body}
-            </p>
-          ))}
+        <div className="rounded-xl border border-border bg-muted/40 p-4 space-y-2 text-xs leading-relaxed text-muted-foreground">
+          <ul className="space-y-1.5">
+            {DISCLOSURE_SUMMARY.map(d => (
+              <li key={d.heading}>
+                <span className="font-semibold text-foreground">{d.heading}. </span>
+                {d.body}
+              </li>
+            ))}
+          </ul>
+          <a
+            href="/scoping-disclosures"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-block pt-1 text-xs font-medium text-primary underline"
+          >
+            Read the full disclosures
+          </a>
         </div>
       </div>
 
@@ -461,11 +573,43 @@ function ReviewStep({ str, arr, form, onChange, onBlur, getError, canSubmit, isS
         </label>
       </div>
 
+      {/* #193: instead of throwing the user back to step 0, a failed submit
+          leaves them here and points at the steps that still have gaps. */}
+      {incompleteSteps.length > 0 && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs md:text-sm">
+          <p className="flex items-center gap-1.5 font-medium text-foreground">
+            <AlertCircle className="w-4 h-4 text-destructive" />
+            Required answers are still missing on:
+          </p>
+          <ul className="mt-2 space-y-1">
+            {incompleteSteps.map(index => (
+              <li key={index}>
+                <button
+                  type="button"
+                  onClick={() => onGoToStep(index)}
+                  className="font-medium text-primary underline underline-offset-2"
+                >
+                  {stepLabels[index]}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* #193: the button used to be hard-disabled until every required field
+          was filled, which made the "what is still missing?" feedback below
+          unreachable — the user got a dead button and no explanation. It is now
+          always clickable while incomplete: onSubmit still refuses to send
+          anything unless canSubmit is true, it just reveals the gaps instead. */}
       <button
         type="button"
         onClick={onSubmit}
-        disabled={!canSubmit || isSubmitting}
-        className="w-full rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed"
+        disabled={isSubmitting}
+        className={cn(
+          "w-full rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 disabled:cursor-not-allowed",
+          canSubmit ? "" : "opacity-60",
+        )}
       >
         {isSubmitting ? "Submitting…" : "Submit scoping form"}
       </button>
@@ -481,6 +625,12 @@ function ReviewStep({ str, arr, form, onChange, onBlur, getError, canSubmit, isS
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper components (mirrors /merchant-apply conventions)
 // ─────────────────────────────────────────────────────────────────────────────
+
+// #188: a completed field used to invert to a solid emerald block, which read
+// as an error state and blew out the page's colour balance. It now keeps the
+// normal card surface and gains a 2px accent edge on the leading side, built
+// from the design-system --primary token (no literal colours).
+const FILLED_ACCENT = "bg-card text-foreground border-input border-l-2 border-l-primary";
 
 function Field({ label, required, children, hint, error }: { label: string; required?: boolean; children: ReactNode; hint?: string; error?: string | null }) {
   return (
@@ -509,7 +659,7 @@ function Input({ hasError, ...props }: InputHTMLAttributes<HTMLInputElement> & {
         hasError
           ? "bg-card text-foreground border-destructive focus:border-destructive focus:ring-destructive/20"
           : filled
-            ? "bg-emerald-600 text-white font-semibold border-emerald-600 focus:bg-card focus:text-foreground focus:font-normal focus:border-primary focus:ring-primary/20"
+            ? cn(FILLED_ACCENT, "focus:border-primary focus:ring-primary/20")
             : "bg-card text-foreground border-input focus:border-primary focus:ring-primary/20",
         props.className,
       )}
@@ -534,7 +684,7 @@ function SelectInput({ children, hasError, ...props }: React.SelectHTMLAttribute
         hasError
           ? "bg-card text-foreground border-destructive focus:ring-destructive/20"
           : filled
-            ? "bg-emerald-600 text-white font-semibold border-emerald-600 focus:bg-card focus:text-foreground focus:font-normal focus:border-primary focus:ring-primary/20"
+            ? cn(FILLED_ACCENT, "focus:ring-primary/20")
             : "bg-card text-foreground border-input focus:ring-primary/20",
       )}
     >{children}</select>
@@ -554,7 +704,7 @@ function Textarea({ hasError, ...props }: React.TextareaHTMLAttributes<HTMLTextA
         hasError
           ? "bg-card text-foreground border-destructive focus:ring-destructive/20"
           : filled
-            ? "bg-emerald-600 text-white font-semibold border-emerald-600 focus:bg-card focus:text-foreground focus:font-normal focus:border-primary focus:ring-primary/20"
+            ? cn(FILLED_ACCENT, "focus:ring-primary/20")
             : "bg-card text-foreground border-input focus:ring-primary/20",
       )}
     />
