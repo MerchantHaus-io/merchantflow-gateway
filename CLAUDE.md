@@ -91,11 +91,19 @@ back after editing them.
 
 ### Baselines, so a critic can tell a regression from inherited noise
 
-| Check | Current state |
-|---|---|
-| `npx tsc --noEmit -p tsconfig.app.json` | silent |
-| `npm run lint` | **0 errors**, ~305 `any` warnings |
-| `npx vitest run` | 92 passing, 6 files |
-| `npm run build` | succeeds; chunk-size warnings are expected |
+| Check | Current state | As of |
+|---|---|---|
+| `npx tsc --noEmit -p tsconfig.app.json` | silent | 9 Aug 2026 |
+| `npm run lint` | **0 errors**, 330 warnings | 9 Aug 2026 |
+| `npx vitest run` | 92 passing, 6 files | 9 Aug 2026 |
+| `npm run build` | succeeds; chunk-size warnings are expected | 9 Aug 2026 |
 
 A rise in the lint **error** count is a regression. Inherited warnings are not.
+
+**Re-date this table when you notice it drifting.** The warning count was ~305
+and is now 330 — not from any Gauntlet work (checked: `npx eslint` on the
+changed files reported zero), but from unrelated commits landing on `main`. A
+stale baseline is worse than none: it makes a critic report a regression that
+did not happen, which is exactly the false signal these numbers exist to
+prevent. When a count moves, confirm the cause before assuming blame — run
+eslint on the changed files alone.
