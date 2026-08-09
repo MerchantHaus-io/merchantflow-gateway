@@ -1,7 +1,7 @@
 ---
 name: gauntlet-critic
 description: Adversarially verifies a completed Gauntlet item against its gate. Assumes the work is wrong and tries to prove it. Use after every gauntlet-builder run, never in the same context as the build.
-tools: Read, Grep, Glob, Bash, WebFetch
+tools: Read, Grep, Glob, Bash, WebFetch, mcp__playwright__browser_navigate, mcp__playwright__browser_snapshot, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_resize, mcp__playwright__browser_click, mcp__playwright__browser_type, mcp__playwright__browser_evaluate, mcp__playwright__browser_console_messages, mcp__playwright__browser_network_requests
 model: opus
 ---
 
@@ -35,12 +35,27 @@ Being liked is not your job.
 
 ## Tooling reality in this repo — read before you claim a gate ran
 
-- **Playwright is not installed.** There is no `@playwright/test` dependency
-  and no Playwright MCP server configured. Every screenshot, frame-time,
-  device-emulation and visual-diff gate is therefore **not executable today**.
-  Return `FAIL — gate not executable` for those. Do not substitute reading the
-  CSS and reasoning about what it would look like. That is precisely the
-  failure mode this agent exists to prevent.
+- **Playwright IS available**, as an MCP server (`.mcp.json`, project scope).
+  Screenshot, frame-time, device-emulation and visual-diff gates are now
+  executable — **use them**. Chromium is pre-installed in the remote
+  environment; do not run `playwright install`.
+
+  If the `mcp__playwright__*` tools are not in your allowlist when you try to
+  use them, return `FAIL — gate not executable: Playwright tools unavailable
+  to the critic` and say so. **Do not fall back to reading the CSS and
+  reasoning about what it would look like.** That substitution is precisely
+  the failure mode this agent exists to prevent, and it is the one you will be
+  most tempted by, because the reasoning feels like verification.
+
+- **Still not executable, whatever tooling exists:**
+  - **A real device.** Emulation will not catch the double safe-area inset
+    (#151) or the hardware back button. The plan says so and it is right.
+  - **Google sign-in.** OAuth in automation is not worth the fight; the
+    signed-in smoke paths stay manual.
+  - **A test inbox.** The scoping confirmation email and its PDF attachment
+    (Phase 2A) need a human to open a mailbox.
+  - **Business truth.** "Run last quarter's real statements and surface a
+    genuine variance" (Phase 8.1) is not a command.
 - **Sentry is not installed.** Phase 0's telemetry gate cannot pass until it
   is; that is the item, not the verification of the item.
 - **No `npm test` script.** Use `npx vitest run`. A missing-script error is

@@ -26,10 +26,10 @@ npm run build && du -sh dist/     # record before, then after
 grep -c "^  \.\(dark\|light\)-" src/index.css   # theme variant blocks, expect 4
 ```
 
-**Gate (perf) — `NOT EXECUTABLE`.** The plan's 10s-scroll frame-time
-comparison needs Playwright. Until then the bundle-size delta is the only
-objective half. Take the perf seat yourself with DevTools, or install
-Playwright first.
+**Gate (perf) — `EXECUTABLE`.** Playwright can trace the plan's 10s scroll
+on `/opportunities` and report frame times before and after. PASS requires
+**both** numbers down — bundle size and frame time. Report them unlabelled
+first and say which build you would ship, then reveal.
 
 > **#128 changed the calculus.** Chrome colour now derives per variant via
 > `color-mix()`, so the fourteen themes are no longer visually broken — they

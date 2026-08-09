@@ -55,33 +55,37 @@ Every brief marks each gate `EXECUTABLE` or `NOT EXECUTABLE`. That distinction
 is the whole point: a critic that reasons about pixels it cannot see will
 converge on PASS, and you will ship on its word.
 
-**Not executable today, and why:**
+**Playwright is installed** — `.mcp.json`, project scope, so it is shared with
+the repo. Chromium is pre-installed in the remote environment; never run
+`playwright install`. That makes the visual half of the harness real:
+screenshots, frame times, device emulation and blind side-by-side comparison
+all now execute.
 
-- **Anything visual** — no Playwright, no `@playwright/test`, no MCP browser.
-  That covers every screenshot, frame-time, device-emulation and blind
-  side-by-side gate in Phases 1, 4, 5, 6 and 7. Install Playwright and most
-  of them become real.
-- **Anything requiring a live signed-in session** — the smoke test, the SLA
-  clock, the confirmation email.
-- **Anything requiring a device** — #151's double safe-area inset.
-- **Feature freeze (0.4)** — a process policy. Git cannot prove it. The
+`.mcp.json` deliberately carries an empty `env`. The remote container sets
+`PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers`, which the server inherits;
+hardcoding that path would break the config on a laptop, where Playwright's
+default location is correct.
+
+**Still not executable, whatever tooling you add:**
+
+- **A real device.** Emulation does not catch the double safe-area inset
+  (#151) or the hardware back button. Put a phone in your hand.
+- **Google sign-in.** OAuth in automation is not worth the fight, so the
+  signed-in smoke paths stay manual. The `/q/:token` path and the public
+  support form *are* automatable and are the ones worth scripting first.
+- **A test inbox.** Phase 2A's confirmation email and its PDF attachment.
+- **Business truth.** Phase 8.1's "surface a genuine variance from last
+  quarter's real statements" is a judgement, not a command.
+- **Feature freeze (0.4).** A process policy — git cannot prove it. The
   observable signal is that unrelated feature commits kept landing on `main`
   after the audits merged, so it is not currently in force.
 
-Until Playwright is installed, **take the critic seat yourself** for those
-gates. The command will tell you which ones at step 2.
+For those, **take the critic seat yourself.** `/gauntlet` flags them at step 2.
 
-## What would most improve this harness
+## After adding or changing an MCP server
 
-```bash
-claude mcp add playwright --scope project -- npx -y @playwright/mcp@latest
-```
-
-That single addition converts roughly a third of the currently-unrunnable
-gates into real ones. It is the highest-leverage setup step remaining.
-
-Note: MCP servers cannot be added from a non-interactive session — run that in
-an interactive terminal, then restart so `.claude/agents/` reloads.
+Restart the session. MCP servers and `.claude/agents/` both load at startup,
+so a server added mid-session is configured but not connected.
 
 ## Files
 

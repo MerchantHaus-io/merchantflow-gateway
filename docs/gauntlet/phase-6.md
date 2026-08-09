@@ -51,9 +51,10 @@ grep -n "\.channel(" src/pages/Opportunities.tsx
 # PASS: channel name includes a per-session or per-user discriminator
 ```
 
-**Gate (time-to-first-row < 500ms) — `NOT EXECUTABLE`.** Needs Playwright and
-a seeded dataset. Until then: seed 5,000 rows, open the page, and use the
-Network panel yourself. One request, not five.
+**Gate (time-to-first-row < 500ms) — `EXECUTABLE`.** Seed 5,000 synthetic
+opportunities, then measure with Playwright. Also assert the request count:
+**one, not five.** The request count is the more honest number here, because
+it cannot be gamed by a fast machine.
 
 ---
 
@@ -75,8 +76,10 @@ grep -n "react-window\|@tanstack/react-virtual" package.json   # a virtualiser e
 grep -n "setSelectedIds(new Set())" src/pages/Opportunities.tsx # selection clears on filter change
 ```
 
-**Gate (60fps scroll, no long task > 50ms) — `NOT EXECUTABLE`** without
-Playwright tracing.
+**Gate (60fps scroll, no long task > 50ms) — `EXECUTABLE`** via Playwright
+tracing, against the same 5,000-row seed. All three numbers — first row,
+sustained frame rate, and the longest task during a 200-row bulk stage change
+— reported as figures, not impressions.
 
 ---
 

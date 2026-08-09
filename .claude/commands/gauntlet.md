@@ -47,6 +47,8 @@ me decide whether to run it with me as the critic, or defer it. Do not send an
 item to a builder when nothing can prove it done — that is how a phase reports
 green with nothing verified.
 
-Phases whose gates are mostly visual (7, and the comparison halves of 1, 4, 5)
-need me in the critic seat until Playwright is installed. Say so rather than
-letting the critic reason about pixels it cannot see.
+Playwright is available (`.mcp.json`), so most visual gates now execute. The
+ones that remain mine are the judgement calls — is this the right set of
+themes, would I ship this — plus anything needing a real device, a test inbox,
+or Google sign-in. Say which rather than letting the critic treat a captured
+screenshot as an evaluated one.
