@@ -10,7 +10,14 @@ import { SCOPING_CAUTION, SCOPING_DISCLOSURES } from "@/config/scopingFields";
 
 export default function ScopingDisclosures() {
   return (
-    <div className="merchant-form min-h-screen bg-background">
+    /* h-full + overflow-y-auto, NOT min-h-screen. src/index.css:1203 sets
+       `html, body, #root { height: 100%; overflow: hidden }` globally, so the
+       document itself never scrolls — a min-h-screen page taller than the
+       viewport is simply cut off, with everything below the fold unreachable.
+       This page is ~2600px of legal text, so all but the first screen was
+       invisible. Every other public form here carries its own scroll
+       container for the same reason. */
+    <div className="merchant-form h-full w-full overflow-y-auto bg-background">
       <header className="bg-card border-b border-border px-3 py-2.5 md:px-4 md:py-4">
         <div className="max-w-3xl mx-auto">
           <img src={merchanthausLogo} alt="MerchantHaus" className="h-7 md:h-10 w-auto" />
