@@ -72,9 +72,15 @@ That is the concrete, unglamorous work left in 5C.
 
 **Gate — `EXECUTABLE`**
 ```bash
-grep -rln "useIsMobile" src/pages/Leads.tsx src/pages/Contacts.tsx \
+# NOTE, 10 Aug 2026: this gate used to list src/pages/Leads.tsx. THAT FILE
+# DOES NOT EXIST — there is no Leads page and no /leads route anywhere in the
+# app. grep would have failed on the missing path, which reads as a failing
+# gate rather than a fictional one. Removed.
+grep -rln "useIsMobile" src/pages/Contacts.tsx \
   src/pages/Documents.tsx src/pages/LiveBilling.tsx
 # each list page must gate its table/card choice
+# Baseline 10 Aug 2026: Contacts 0, Documents 0, LiveBilling 2.
+# PASS requires all three non-zero.
 ```
 
 **Gate (device emulation) — `EXECUTABLE`.** 360×640 and an iPhone viewport,

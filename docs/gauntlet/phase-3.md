@@ -118,9 +118,37 @@ only boundary that exists.
 `anon,authenticated`) are also open, but those are named honestly and are
 plausibly intentional for public capture. Confirm intent; do not assume defect.
 
+#### STATUS UPDATE, 10 Aug 2026 — the live exposure is closed; the structure is not
+
+All four non-staff accounts were **affiliates**, not strays — active `referrers`
+rows with `auth_user_id` linked, one of whom signed in 12 days prior. They held
+bare `authenticated` with **no role**, which is exactly what the 33 policies
+below grant on. So Phase 3's stated goal ("an authenticated affiliate should not
+be able to call `export-data`") was live fact, not hypothesis.
+
+**Action taken:** all four auth accounts revoked via `banned_until`, and all
+four `referrers` rows KEPT. Revoked rather than deleted on purpose —
+`referrers.auth_user_id` has no FK and `profiles` has no FK to `auth.users`, so
+deleting would have left orphan profiles and dangling pointers, and the
+`referrers` FKs are `ON DELETE SET NULL`, meaning a delete would have silently
+nulled the referrer on **4 accounts and 4 opportunities** with no error.
+Attribution preserved; 16 impersonation logs intact.
+
+`urle.johnson@gnail.com` (typo domain, duplicate of the `@gmail.com` row) and
+`gayle0608@gmail.com` (never signed in) are also `active = false`.
+
+> **This bought time, it did not fix the design.** The 33 policies still say
+> "any authenticated user". The moment an affiliate signs up again under the
+> current scheme, the exposure returns in full. Do the `affiliate` role work
+> before re-onboarding anyone — there are now zero live affiliate logins to
+> disrupt, which is the cheapest this will ever be.
+>
+> Two migrations, not one: `ALTER TYPE app_role ADD VALUE 'affiliate'` cannot
+> be referenced in the same transaction that adds it.
+
 #### RECOMMENDATION, 10 Aug 2026 — do the cheap lever first
 
-**Close public registration before rewriting 33 policies.**
+**Close public registration before rewriting 33 policies.** ⚠️ SUPERSEDED — see the status update above. Registration cannot simply be closed: the affiliate portal depends on it. The real lever is giving affiliates their own role.
 
 The 33 policies are the symptom. The cause is that `authenticated` does not
 mean staff: the sign-in screen offers **Register**, and `handle_new_user`
