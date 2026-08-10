@@ -107,3 +107,32 @@ stale baseline is worse than none: it makes a critic report a regression that
 did not happen, which is exactly the false signal these numbers exist to
 prevent. When a count moves, confirm the cause before assuming blame — run
 eslint on the changed files alone.
+
+---
+
+## Which connector to ask about data
+
+**Use the Lovable connector. Use The Ops Terminal connector only when the
+question is specifically about what a signed-in user can see. Both when the
+question needs both.**
+
+| Connector | Reaches | Respects RLS? | Use it for |
+|---|---|---|---|
+| `mcp__Lovable__query_database` | the app's real Postgres, raw SQL | **No — bypasses RLS** | schema, column types, policy definitions, row counts, orphan checks |
+| `mcp__The_Ops_Terminal__*` | the CRM API as the signed-in user | **Yes** | what a real user actually sees |
+| `mcp__Supabase__*` | **a different project** (`cuqjaddtmkotgvfsgcol`) | — | **nothing here. Not this app's database.** |
+
+Project id for Lovable calls: `d4e766df-1ab4-4f95-a16a-4c8c4222778a`.
+
+The split matters most for RLS work, and the two are not interchangeable:
+`query_database` shows you the policy **as written**, and only The Ops Terminal
+connector shows you whether it actually **bites**. A policy that reads correctly
+and does not filter is the exact defect an RLS sweep exists to catch, and
+`query_database` cannot see it — it is querying underneath the thing being
+tested.
+
+> **`query_database` is SELECT-only for agents.** It will happily run
+> `INSERT`/`UPDATE`/`DELETE`/`DROP`, and there is no staging database behind it
+> — it is production. If a check appears to need a write, it is not an agent's
+> to run. This is repeated in `.claude/agents/gauntlet-critic.md` because the
+> critic holds the tool.
