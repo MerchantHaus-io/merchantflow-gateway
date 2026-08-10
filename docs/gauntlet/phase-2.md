@@ -134,7 +134,53 @@ times for idempotency; proved the validating FK fails atomically on an orphan
 `opportunity_id`; then measured the live orphan count at **zero** — the one
 risk local testing could not close.
 
-**2A-function is unblocked. Do not re-plan the migration.**
+### 2A-function — PARTIALLY DELIVERED, 10 Aug 2026
+
+**Shipped** in `submit-scoping-request/index.ts` + `_shared/scoping-routing.ts`:
+
+- **1. account + contact + opportunity.** Matches contact on email (ILIKE,
+  wildcards escaped), then account on business name, then creates what is
+  missing. `stage = 'discovery'`, `status = 'active'`, `source = 'web_form'`.
+- **2. Rep-link attach (#182).** A resolvable `opportunity_id` attaches to that
+  opportunity instead of creating a second one. An unresolvable one is logged
+  and a fresh opportunity is created — never dropped.
+- **3. Team notification.** Fans out `notifications` rows to everyone holding
+  `staff` or `admin`, deep-linked to the opportunity. Not a hardcoded address:
+  there is no owner to email, because of decision 1.
+- **5. The task.** `assignee = null` (the queue), `status = 'open'`,
+  `priority = 'high'`, `source = 'scoping'`, due one business day out,
+  weekends skipped.
+
+**The whole routing step is best-effort and never fails the submission.** The
+row is saved first; if any downstream insert throws, it is logged and the
+merchant still gets a success. Losing a submission to a routing error would be
+strictly worse than routing it by hand later.
+
+> **`source = 'web_form'` is deliberate.** All 93 existing opportunities use
+> that value, so a new one would hide these deals from any view already
+> filtering on it. Provenance lives in `scoping_submissions.opportunity_id`.
+
+**NOT shipped, and why:**
+
+- **4. Merchant confirmation email + PDF.** Blocked, not skipped. The decision
+  is browser-generates / function-attaches, which needs the PDF uploaded to
+  storage — and the only buckets are `avatars`, `chat-attachments` and
+  `opportunity-documents`, none writable by an anonymous submitter. Granting
+  that needs a **storage RLS policy = a migration**, and CLAUDE.md forbids a
+  migration and client changes in one session. Do it as: migration session
+  (bucket + policy) → then client + `send-scoping-confirmation`.
+- **6. SLA clock.** `sla-escalation` covers support tickets only. Extending it
+  needs `first_response_at` semantics defined for scoping (what counts as a
+  first response?) — a decision, not typing.
+
+**Testing note that matters.** `tsc` does not cover `supabase/functions/`, so
+the business logic was put in `_shared/scoping-routing.ts` with **no Deno APIs
+or remote imports**, and `src/lib/scopingRouting.test.ts` imports it. That
+pulls it into both the typecheck (TypeScript follows imports) and `vitest` —
+20 tests. The rest of the function body still has to be read back by eye; it
+was, and it was also parsed with the TypeScript parser directly.
+
+**Do not re-plan the migration.**
 
 > The invariant still stands downstream: CLAUDE.md forbids migrations and
 > client changes in one session.
