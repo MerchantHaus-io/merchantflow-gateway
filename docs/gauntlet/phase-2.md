@@ -3,18 +3,36 @@
 > **Run status — 9 Aug 2026 (`gauntlet/phase-2`).**
 > Through the loop and PASSED: **2A-migration** (applied), **2B Quick Scope**,
 > **2D-5** the six design fixes.
-> Still open: **2A-function** (unblocked — needs three decisions, below),
-> **2C** (premise false — four projects, see below), **2D** (exceeds the
-> 15-file ceiling; depends on 2A/2B/2C).
+> Still open: **2A-function** (**decisions answered 10 Aug 2026 — ready to
+> build**), **2C** (premise false — four projects, see below), **2D** (exceeds
+> the 15-file ceiling; depends on 2A/2B/2C).
 >
-> **2A-function needs your call on three things before a builder touches it:**
-> 1. The item contradicts itself — creates the opportunity with
->    `assigned_to = null`, then a task "on the assigned owner". No owner exists.
-> 2. `integration_route` → `service_type` is a judgement, not a mapping: eight
->    multi-select free-text options into a two-value enum, several ambiguous.
-> 3. The PDF. **No edge function in this repo generates one** — every existing
->    flow is client-generates, server-relays. Client-side jsPDF handoff matches
->    the architecture; a Deno generator would be novel and invisible to `tsc`.
+> ## 2A-function — the three decisions, answered 10 Aug 2026
+>
+> **1. Ownership: leave it unassigned. The task goes to a queue, not a person.**
+> This resolves the item's self-contradiction by taking it literally —
+> `assigned_to = null` on the opportunity, and the follow-up task lands on a
+> shared queue / the notice board rather than being silently dropped on someone
+> who never looks at it. Do **not** invent an owner to satisfy the task.
+>
+> **2. `service_type`: default `'processing'`, narrow exceptions.**
+> Set `'processing'` unless *every* selected `integration_route` is
+> gateway-only — Direct API, Hosted payment page, Embedded fields/Collect.js,
+> Plugin or cart extension, Mobile SDK — **and** no terminal option is
+> selected, in which case `'gateway_only'`. `"Not sure — advise us"` →
+> `'processing'`. This matches the live distribution (below), not a guess.
+>
+> **3. PDF: the browser generates it, the function attaches it.**
+> jsPDF builds the answers PDF at submit time and uploads it to storage; the
+> edge function attaches the stored object to the confirmation email. This is
+> the existing client-generates / server-relays pattern, and it stays covered
+> by `tsc`. **No edge function in this repo generates a PDF**, and `tsc` does
+> not cover `supabase/functions/`, so a Deno generator would be novel code
+> invisible to every local check.
+>
+> > **CLAUDE.md applies to that PDF.** It is a merchant-facing document, so any
+> > line descriptions must run through `stripInternalCostRefs()`
+> > (`src/lib/redactCost.ts`). Run `npx vitest run redactCost` and report.
 >
 > **2C's premise is false.** The Google OAuth requests `calendar.readonly`
 > only — no write scope, no free/busy, no availability anywhere. A slot picker
@@ -67,22 +85,49 @@ database. A separate migration (`20260809230014_…`) was authored and applied
 instead of this one, and it chose uuid. My file has been corrected to match, so
 fresh environments and production agree.
 
-> ⚠️ **2A-function has to convert at the boundary.** `opportunities.assigned_to`
-> and `tasks.assignee` are **`text` holding an email**, and the opportunity
-> notification trigger does `SELECT … FROM profiles WHERE email = NEW.assigned_to`.
-> So a submission carries a uuid while the opportunity and task it creates carry
-> emails. Resolve uuid → email via `profiles` when writing them.
+> ⚠️ **CORRECTION, 10 Aug 2026 — an earlier version of this brief was wrong.**
+> It said `opportunities.assigned_to` is "`text` holding an email" and told
+> 2A-function to resolve uuid → email via `profiles`. **That is not what the
+> column holds.** Checked against the live data:
 >
-> **This will fail silently if you get it wrong.** Both target columns are
-> `text`, and a uuid string is a perfectly valid text value — you would get an
-> opportunity nobody is ever notified about, with no error anywhere.
+> ```
+> assigned_to | Darryn(46)  Yaseen Sheik(19)  Jamie(17)
+>             | Taryn Engledoe(5)  Xavier Rooza(2)  Jude(1)  null(3)
+> ```
 >
-> Verified directly against the live schema, 10 Aug 2026:
-> `opportunities.assigned_to text` · `tasks.assignee text` ·
-> `profiles.id uuid` + `profiles.email text`. So the resolve is
-> `select email from profiles where id = <submission.assigned_to>`.
-> Note `tasks` has **no** `assigned_to` — the column is `assignee`, and
-> `created_by` is likewise `text`.
+> It holds **display names**. Following the old instruction would have written
+> an email into a column of names — matching nothing, and consistent with
+> nothing.
+>
+> **This has already broken assignment notifications, and not because of us.**
+> `notify_opportunity_assignment` and `send_stage_change_email_notification`
+> both do `SELECT … FROM profiles WHERE email = NEW.assigned_to`. Names on one
+> side, emails on the other:
+>
+> | | |
+> |---|---|
+> | opportunities with `assigned_to` set | 90 |
+> | whose value matches any `profiles.email` | **0** |
+>
+> So `assigned_user_id` is always null and both the notification row and the
+> DM are skipped. `post_system_chat_message` sits *outside* that guard, so a
+> chat message still posts on every assignment — which is very likely why
+> nobody has noticed. Pre-existing; see `found.md`.
+>
+> **For 2A-function this is now moot** — decision 1 leaves the opportunity
+> unassigned. Do not write `assigned_to` at all. It is recorded here because
+> anyone who touches assignment needs it, and because the brief previously
+> asserted the opposite.
+>
+> Schema facts that ARE correct: `opportunities.assigned_to text` ·
+> `tasks.assignee text` · `profiles.id uuid` + `profiles.email text`. `tasks`
+> has **no** `assigned_to` column — it is `assignee` — and `created_by` is
+> likewise `text`.
+>
+> ⚠️ **`scoping_submissions.assigned_to` carries a stale column COMMENT** from
+> `20260809180000`, asserting the email claim above. The migration is applied,
+> so correcting it needs a follow-up comment-only migration. Do not trust that
+> comment.
 
 Verified before applying: rebuilt on a real Postgres 16.13 and applied three
 times for idempotency; proved the validating FK fails atomically on an orphan
