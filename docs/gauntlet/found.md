@@ -18,6 +18,45 @@ Format:
 
 ---
 
+## 10 Aug 2026 — found while answering the 2A-function decisions
+
+**What:** Opportunity assignment notifications have never fired. Both
+`notify_opportunity_assignment` and `send_stage_change_email_notification`
+resolve the assignee with `SELECT … FROM profiles WHERE email = NEW.assigned_to`,
+but `opportunities.assigned_to` holds **display names** (`Darryn`,
+`Yaseen Sheik`, `Jamie`, …), not emails. Measured: **90** opportunities have
+`assigned_to` set and **0** match any `profiles.email`. So `assigned_user_id`
+is always null, and both the `notifications` row and the system DM are skipped.
+`post_system_chat_message` sits outside that guard and still posts, which is
+probably why it has gone unnoticed — assignments *look* like they announce.
+**Where:** `notify_opportunity_assignment`, `send_stage_change_email_notification`
+**Why not fixed:** pre-existing, and the fix is a judgement call — either
+backfill 90 rows to emails (and change every writer) or change the triggers to
+resolve on `full_name`. Both are their own session, and the second still breaks
+on duplicate or changed names.
+**Severity:** real
+
+**What:** `scoping_submissions.assigned_to` carries a column COMMENT asserting
+that `opportunities.assigned_to` and `tasks.assignee` are "TEXT holding an
+email". That is wrong (see above) and it is in the live database, so it will
+mislead anyone who inspects the schema.
+**Where:** `COMMENT ON COLUMN public.scoping_submissions.assigned_to`, set by
+`supabase/migrations/20260809180000_scoping_submission_links.sql`
+**Why not fixed:** the migration is applied; correcting it needs a follow-up
+comment-only migration, and CLAUDE.md keeps migrations in their own session
+**Severity:** cosmetic — but actively misleading, so worth a one-line migration
+
+**What:** `opportunities.service_type` holds three values, not two —
+`processing` (77), `gateway_only` (14), `gateway` (2). The last two look like
+the same concept spelled two ways. Phase 2's brief described the target as a
+"two-value enum"; it is plain `text` with no constraint.
+**Where:** `public.opportunities.service_type`
+**Why not fixed:** deciding whether `gateway` is a typo for `gateway_only` or a
+distinct offering is a product call, and collapsing it touches 2 live rows
+**Severity:** unsure
+
+---
+
 ## Seeded from the audit work already merged
 
 These were found during Audits 1 and 2 and deliberately left. They are here so
