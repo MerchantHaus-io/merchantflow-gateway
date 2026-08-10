@@ -118,6 +118,43 @@ only boundary that exists.
 `anon,authenticated`) are also open, but those are named honestly and are
 plausibly intentional for public capture. Confirm intent; do not assume defect.
 
+#### RECOMMENDATION, 10 Aug 2026 — do the cheap lever first
+
+**Close public registration before rewriting 33 policies.**
+
+The 33 policies are the symptom. The cause is that `authenticated` does not
+mean staff: the sign-in screen offers **Register**, and `handle_new_user`
+applies no domain restriction, so anyone who completes a sign-up satisfies
+every one of them. Five non-`merchanthaus.io` accounts already exist, one on a
+typo domain.
+
+Restricting who can register is **one change** that shrinks the blast radius of
+all 33 at once, and it does not depend on getting any individual policy right.
+Rewriting policies first leaves the door open for however long the rewrite
+takes; closing the door first makes the rewrite unhurried. Do both — this is
+defence in depth, not either/or — but in that order.
+
+Options, cheapest first: disable public sign-ups in Supabase Auth settings and
+invite staff directly; or keep sign-up and have `handle_new_user` reject
+addresses outside `merchanthaus.io` plus an allowlist (`src/types/opportunity.ts`
+already has `EXTRA_ALLOWED_EMAILS` and `isEmailAllowed` doing exactly this
+check **client-side** — the server-side equivalent is missing, which is the
+whole problem).
+
+> Check with the operator before disabling sign-ups: the affiliate/referrer
+> portal may depend on self-registration. If it does, the domain-restriction
+> route is the one, and referrers need their own role rather than bare
+> `authenticated`.
+
+**Then** rewrite the policies, worst first:
+
+1. `nmi_partner_residuals` — cost and margin. Empty today; do it before the
+   residual sync fills it, not after.
+2. `billing_documents` and `scoping_submissions` — both currently allow any
+   registered account to **DELETE**. Destructive, not just readable.
+3. The `kurv_*` tables — merchant financial data, empty today.
+4. Everything else.
+
 #### The shape of the fix
 
 Express the staff-only tables against `has_role()` using the roles that exist —
