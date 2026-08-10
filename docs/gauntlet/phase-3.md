@@ -23,7 +23,7 @@ code.
 | | Plan wants | Database has |
 |---|---|---|
 | `app_role` values | `'admin','internal','affiliate'` | `'admin','user','staff','finance'` |
-| Row counts | — | admin **4**, staff **9**, finance **8** |
+| Row counts | — | admin **2**, staff **9**, finance **8** (10 Aug 2026) |
 | `is_internal_staff()` | — | swapped — requires a `staff`/`admin` row |
 
 So `20260807180000_staff_gate_via_user_roles.sql` **is applied.** The earlier
@@ -35,7 +35,9 @@ The naming differs from the plan (`staff`/`finance` rather than
 `commission_records`, which carries partner cost and margin. Do not collapse
 them. Write the sweep against the roles that exist.
 
-**Admin roles — resolved, migration written, not yet applied.**
+**Admin roles — resolved and APPLIED.** Confirmed 10 Aug 2026: `user_roles`
+now holds **admin=2**, down from 4. The sweep can be written against the
+intended role set.
 
 The four admin rows were `admin@`, `darryn@`, `support@` (18:02:51) and
 `jamie@` (18:13:18) — not the set `20260807180000` seeds. Per D5 as refined,
@@ -43,23 +45,107 @@ The four admin rows were `admin@`, `darryn@`, `support@` (18:02:51) and
 `20260809170000_restrict_admin_role.sql` revokes `support@` and `jamie@`, who
 keep staff and finance and lose admin surfaces only.
 
-**Apply that before 3A**, so the RLS sweep is written against the role set you
-intend to keep rather than the one that happened to accumulate.
+That is done, so the RLS sweep is now written against the role set you intend
+to keep rather than the one that happened to accumulate.
 
-**Remaining 3A work:** the RLS sweep across `opportunities`, `accounts`,
-`contacts`, `documents`, `support_tickets`, `commissions`, `referrers`,
-`scoping_submissions`, `google_calendar_tokens`, `profiles`, `user_sessions`
-so every policy is expressed against `has_role()` rather than assumed.
+### Remaining 3A work — read against the live database, 10 Aug 2026
+
+The sweep was previously described as a list of tables to "express against
+`has_role()`". That was a wish, not a work list. Here is what is actually
+there, queried via `mcp__Lovable__query_database`.
+
+**Already clean — do not spend a session on these:**
+
+| Checked | Result |
+|---|---|
+| public tables with RLS disabled | **0** — every table has it on |
+| `SECURITY DEFINER` functions in `public` without a pinned `search_path` | **0** |
+| tables with RLS on and zero policies | 1 — `kurv_api_tokens`, deny-all to anon/authenticated, service-role only. Correct for a token store; not a finding. |
+
+So the two categories an RLS sweep usually finds are already handled. **The
+defect is the opposite shape: policies that exist, read plausibly, and do not
+restrict.** 36 of them use `true` as their `USING` or `WITH CHECK` expression.
+
+#### The real finding: `authenticated` is treated as "staff", and anyone can become `authenticated`
+
+`handle_new_user` (the `on_auth_user_created` trigger) inserts a profile for
+**any** new user with no domain restriction, and the sign-in screen offers a
+**Register** tab. This is not theoretical — `auth.users` already holds 8
+`@merchanthaus.io` accounts and **5 that are not**: 3 gmail, 1 yahoo.fr, and one
+`@gnail.com`, a typo domain that reads like self-registration rather than
+deliberate provisioning. (At least one gmail is the operator's own.)
+
+Every policy below grants on `TO authenticated` with `USING (true)`, so it is
+satisfied by any account that can complete a sign-up:
+
+| Table | Grants | Rows now |
+|---|---|---|
+| `nmi_partner_residuals` | SELECT | 0 |
+| `kurv_merchants`, `kurv_deal_submissions`, `kurv_transactions_daily`, `kurv_sync_logs` | SELECT | 0 |
+| `billing_documents` | SELECT, UPDATE, **DELETE** | 1 |
+| `scoping_submissions` | SELECT, UPDATE, **DELETE** | 1 |
+| `message_logs`, `lead_referrers`, `sop_change_requests`, `shared_todos`, `billing_doc_sequences` | SELECT (+INSERT/UPDATE on some) | — |
+| `cadence_steps` | ALL | — |
+
+> **`nmi_partner_residuals` is the one to care about.** Its columns are
+> `interchange_cost`, `processor_fees`, `gateway_fees`, `partner_residual` —
+> precisely the partner cost and margin that CLAUDE.md's cardinal rule exists to
+> protect. **It currently holds 0 rows, so nothing is leaking today.** State it
+> that way; do not report an active breach. But the residual sync that fills it
+> is already planned work (D7 — expected vs paid residuals do not reconcile),
+> and on the day it runs this policy hands every registered account the cost
+> book. Fix the policy before the data arrives, not after.
+>
+> Note this is a *different vector* from the CLAUDE.md rule, which governs
+> rendered merchant-facing documents. Same commercial harm, different door —
+> and `stripInternalCostRefs()` does nothing here, because nothing is being
+> rendered. RLS is the only control on this path.
+
+#### Two policies grant to `public`, which includes `anon`
+
+Their names claim otherwise, which is why they have survived review:
+
+| Table | Policy name | Actually granted to | Effect |
+|---|---|---|---|
+| `call_logs` | "**Service role** can insert call logs" / "…can update call logs" | `public` | anon key can INSERT and UPDATE |
+| `documents` | "**Authenticated users** can insert documents" | `public` | anon key can INSERT |
+
+`TO public` in Postgres covers every role including `anon`. The client UI is
+irrelevant — PostgREST is directly callable with the anon key, so RLS is the
+only boundary that exists.
+
+`merchant_consents` (INSERT, `public`) and `client_errors` (INSERT,
+`anon,authenticated`) are also open, but those are named honestly and are
+plausibly intentional for public capture. Confirm intent; do not assume defect.
+
+#### The shape of the fix
+
+Express the staff-only tables against `has_role()` using the roles that exist —
+`staff`, `finance`, `admin` — rather than against `authenticated`. Keep
+`finance` narrower than `staff`: it gates `commission_records`, which carries
+cost and margin, and `nmi_partner_residuals` belongs behind the same gate.
+Correct the two `public` grants to `service_role`, matching what their names
+already claim.
 
 **Do not touch the client in this session.** The email allowlist keeps
 working; you are adding server-side enforcement underneath it.
 
-**Gate — `EXECUTABLE`**
+**Gate — `EXECUTABLE`, but the old one was not.** It said "as an affiliate
+user". There is no `affiliate` role: `app_role` is `admin, user, staff,
+finance`. A gate naming a nonexistent role cannot be run, and the tempting
+repair is to invent a mapping. Use a real account holding only `user`:
+
 ```sql
--- as an affiliate user
-select count(*) from google_calendar_tokens;   -- must be 0
-select count(*) from referrers;                -- must be their own row only
+-- as a signed-in account with NO staff/finance/admin row in user_roles
+select count(*) from nmi_partner_residuals;  -- must be 0 rows readable
+select count(*) from billing_documents;      -- must be 0
+select count(*) from google_calendar_tokens; -- must be 0
 ```
+
+Run it through **`mcp__The_Ops_Terminal__*`, not `query_database`** — see the
+connector table in CLAUDE.md. `query_database` bypasses RLS, so it will happily
+return every row and tell you nothing about whether the policy bites. This gate
+is only meaningful executed as a real user.
 
 ---
 
