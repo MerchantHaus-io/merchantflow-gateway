@@ -169,9 +169,22 @@ strictly worse than routing it by hand later.
   that needs a **storage RLS policy = a migration**, and CLAUDE.md forbids a
   migration and client changes in one session. Do it as: migration session
   (bucket + policy) → then client + `send-scoping-confirmation`.
-- **6. SLA clock.** `sla-escalation` covers support tickets only. Extending it
-  needs `first_response_at` semantics defined for scoping (what counts as a
-  first response?) — a decision, not typing.
+- **6. SLA clock.** `sla-escalation` covers support tickets only.
+  **Semantics decided 10 Aug 2026: a first response is an OUTBOUND EMAIL
+  logged against the opportunity.** Not someone opening the submission, and
+  not the task moving to `done` — both can happen without the merchant hearing
+  anything, and what the merchant hears is the only thing an SLA promises.
+
+  So `scoping_submissions.first_response_at` is stamped when the first
+  outbound email attributable to the linked `opportunity_id` is recorded, and
+  `sla-escalation` escalates any submission still null past the threshold.
+
+  > **Confirm the source table before building this.** `message_logs` and
+  > `synced_emails` both exist, and it is not yet established which records
+  > outbound mail or whether either carries a reliable opportunity linkage. If
+  > the linkage is missing, THAT is the task — an escalation rule reading a
+  > column nobody populates is the same silent-nothing failure as the
+  > assignment notifications.
 
 **Testing note that matters.** `tsc` does not cover `supabase/functions/`, so
 the business logic was put in `_shared/scoping-routing.ts` with **no Deno APIs
