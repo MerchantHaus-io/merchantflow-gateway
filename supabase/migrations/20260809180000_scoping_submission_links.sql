@@ -24,74 +24,47 @@
 -- form before a deal record exists cannot be attached to their account or
 -- contact at all, and nobody owns the submission until someone remembers it.
 --
--- THE DECISION: assigned_to is text, not a uuid FK to auth.users
+-- THE DECISION: assigned_to is uuid, and this file was CORRECTED to match
 --
--- This schema has two live conventions for "who owns this row", and they
--- disagree:
+-- This migration originally declared `assigned_to text`, holding a rep email,
+-- to match opportunities.assigned_to and tasks.assignee — the two tables this
+-- flow hands off to.
 --
---   * opportunities.assigned_to text  (20251204152441_...sql:3) and
---     tasks.assignee text — both hold a rep's email address, and the
---     notification triggers in 20260713001301_...sql look the owner up with
---     `SELECT ... FROM profiles WHERE email = NEW.assigned_to`.
---   * support_tickets.assigned_to uuid REFERENCES auth.users(id)
---     (20260521120000_support_triage_schema.sql:38) — a real FK, with
---     denormalised assigned_to_name / assigned_to_email alongside it.
+-- That is not what shipped. A separate migration,
+-- 20260809230014_376d0a03-950e-4756-baf3-eb0dd9d0531c.sql, was authored and
+-- applied instead, declaring `assigned_to uuid REFERENCES auth.users(id)`. A
+-- live read of information_schema.columns confirms the production type is
+-- uuid. This file never ran.
 --
--- The uuid FK is the stricter design and in isolation the better one. It is
--- deliberately NOT used here. A scoping submission is worked by the same
--- people, in the same breath, as the opportunity it turns into and the tasks
--- raised off it. Making this column text means an owner can be copied
--- straight between scoping_submissions, opportunities and tasks and compared
--- with a plain equality test; making it uuid would mean every one of those
--- hand-offs needs a join through auth.users, and the existing
--- email-keyed assignment-notification triggers could not be reused.
+-- Left uncorrected, that would have been an environment divergence rather than
+-- a cosmetic mismatch. Both files use ADD COLUMN IF NOT EXISTS, and migrations
+-- apply in filename order — 180000 before 230014 — so a FRESH database would
+-- have taken `text` from this file and then silently no-opped the uuid clause
+-- in the other. Production uuid, every new environment text, and nothing
+-- anywhere would have errored.
 --
--- Consistency with the two tables this flow actually touches beat strictness
--- against a table it does not. If the support_tickets pattern later wins
--- across the schema, this column moves with opportunities.assigned_to and
--- tasks.assignee, not before them.
+-- So this file now declares uuid, matching production. On a fresh database the
+-- two files agree; on production this one is a no-op.
 --
--- One deployment note on that FK: it is added as a normal validating
--- constraint, so if any existing scoping_submissions row already holds an
--- opportunity_id that is not in public.opportunities — which nothing has been
--- preventing until now — this ALTER fails and the whole migration rolls back.
--- That is the intended behaviour: an orphan should be seen and dealt with
--- explicitly, not hidden behind NOT VALID. Live data has not been inspected
--- from here; if it does fail, null the orphaned ids out and re-run.
+-- THE TRAP THIS LEAVES FOR 2A-FUNCTION
 --
--- The FK columns follow the loose-linkage convention used by quotes
--- (20260525120000_quotes_persistence.sql:16-18) and support_tickets
--- (20260521120000_support_triage_schema.sql:36-37): nullable, lowercase uuid,
--- ON DELETE SET NULL. A submission is an inbound record of something a
--- prospect sent us; deleting the CRM row it was later matched to must not
--- delete or block the submission itself.
+-- uuid is defensible on its own terms — it is a real foreign key, it cannot
+-- hold a typo'd address, and it revokes when the account does. support_tickets
+-- already does exactly this. But it does NOT match the handoff targets:
 --
--- first_response_at is not indexed. It is an SLA timestamp read per-row on a
--- submission that has already been located by status or owner, and the
--- equivalent stamps on support_tickets (claimed_at, closed_at) carry no index
--- either. Adding one here would be inventing a convention.
+--   * opportunities.assigned_to  text  (20251204152441_...sql:3) — an email
+--   * tasks.assignee             text  (20251212223657_...sql:6) — an email
 --
--- RLS IS NOT TOUCHED, AND THAT IS ITSELF A PROBLEM — SEE BELOW
+-- and the opportunity notification triggers do
+-- `SELECT ... FROM profiles WHERE email = NEW.assigned_to`.
 --
--- The three policies on this table (20260805003336_...sql:102-109) are all
--- `USING (true)` with no column list, so the new columns are covered the
--- moment they exist. The existing GRANTs to authenticated and service_role
--- likewise apply per-table, not per-column. Nothing to change.
+-- So a submission carries a uuid while the opportunity and task it creates
+-- carry emails. 2A-function MUST convert at that boundary — read profiles to
+-- resolve uuid -> email when it writes the opportunity and the task. Writing
+-- the uuid straight through will produce an opportunity nobody is notified
+-- about, and it will fail silently, because both columns are text and a uuid
+-- string is a perfectly valid text value.
 --
--- But `USING (true)` is the whole story: scoping_submissions never received
--- the is_internal_staff() lockdown that accounts, opportunities and merchants
--- were each given later the same day (20260805014901, 20260805015430,
--- 20260805020108). Any authenticated user — including a referrer on the
--- affiliate portal — can currently SELECT, UPDATE and DELETE every scoping
--- submission in the table, which contains full business profiles, processing
--- volumes and contact details for every prospect who has filled in the form.
---
--- That gap is real, it predates this migration, and it is deliberately NOT
--- fixed here. Tightening those policies is a behaviour change for anyone
--- currently reading the table and belongs to the RLS phase, on its own, where
--- it can be reviewed as a security change rather than smuggled in behind four
--- new columns. Recorded here so it is not lost.
-
 BEGIN;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -100,7 +73,7 @@ BEGIN;
 ALTER TABLE public.scoping_submissions
   ADD COLUMN IF NOT EXISTS account_id        uuid REFERENCES public.accounts(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS contact_id        uuid REFERENCES public.contacts(id) ON DELETE SET NULL,
-  ADD COLUMN IF NOT EXISTS assigned_to       text,
+  ADD COLUMN IF NOT EXISTS assigned_to       uuid REFERENCES auth.users(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS first_response_at timestamptz;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -132,7 +105,7 @@ CREATE INDEX IF NOT EXISTS idx_scoping_submissions_assigned_to    ON public.scop
 
 COMMENT ON COLUMN public.scoping_submissions.account_id IS 'Optional link to the CRM account this submission was matched to. Nullable: the form is public and the account may not exist yet.';
 COMMENT ON COLUMN public.scoping_submissions.contact_id IS 'Optional link to the CRM contact this submission was matched to. Nullable for the same reason as account_id.';
-COMMENT ON COLUMN public.scoping_submissions.assigned_to IS 'Rep who owns this submission, held as an email address. Deliberately text rather than a uuid FK to auth.users, to match opportunities.assigned_to and tasks.assignee — see this migration''s header.';
+COMMENT ON COLUMN public.scoping_submissions.assigned_to IS 'Rep who owns this submission, as a uuid FK to auth.users — matching support_tickets.assigned_to. NOTE: opportunities.assigned_to and tasks.assignee are TEXT holding an email, so 2A-function must convert via profiles at the boundary. See this migration''s header.';
 COMMENT ON COLUMN public.scoping_submissions.first_response_at IS 'When a human first responded to this submission. SLA measurement only; intentionally unindexed.';
 
 COMMIT;

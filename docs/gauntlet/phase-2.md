@@ -62,9 +62,27 @@ exactly one thing: insert the row. Extend it so that after the insert it:
 and `first_response_at`, plus the FK and index `opportunity_id` had been
 missing since the table was created. Existing rows untouched.
 
-**`assigned_to` is `text`, holding a rep email** — matching
-`opportunities.assigned_to` and `tasks.assignee`, deliberately NOT the
-`support_tickets` uuid-FK pattern. 2A-function must write an email here.
+**`assigned_to` is `uuid`, a FK to `auth.users`** — confirmed against the live
+database. A separate migration (`20260809230014_…`) was authored and applied
+instead of this one, and it chose uuid. My file has been corrected to match, so
+fresh environments and production agree.
+
+> ⚠️ **2A-function has to convert at the boundary.** `opportunities.assigned_to`
+> and `tasks.assignee` are **`text` holding an email**, and the opportunity
+> notification trigger does `SELECT … FROM profiles WHERE email = NEW.assigned_to`.
+> So a submission carries a uuid while the opportunity and task it creates carry
+> emails. Resolve uuid → email via `profiles` when writing them.
+>
+> **This will fail silently if you get it wrong.** Both target columns are
+> `text`, and a uuid string is a perfectly valid text value — you would get an
+> opportunity nobody is ever notified about, with no error anywhere.
+>
+> Verified directly against the live schema, 10 Aug 2026:
+> `opportunities.assigned_to text` · `tasks.assignee text` ·
+> `profiles.id uuid` + `profiles.email text`. So the resolve is
+> `select email from profiles where id = <submission.assigned_to>`.
+> Note `tasks` has **no** `assigned_to` — the column is `assignee`, and
+> `created_by` is likewise `text`.
 
 Verified before applying: rebuilt on a real Postgres 16.13 and applied three
 times for idempotency; proved the validating FK fails atomically on an orphan
@@ -80,11 +98,18 @@ risk local testing could not close.
 ```sql
 select o.id, t.id, s.first_response_at
   from opportunities o
-  join tasks t on t.opportunity_id = o.id
+  join tasks t on t.related_opportunity_id = o.id
   join scoping_submissions s on s.opportunity_id = o.id
  where s.contact_email = '<test-email>';
 -- PASS: a row within 60s of submitting
 ```
+
+> The join column is **`tasks.related_opportunity_id`**, not `opportunity_id`.
+> An earlier version of this gate used the latter, which does not exist — so the
+> gate raised `column t.opportunity_id does not exist` instead of returning zero
+> rows. A gate that errors is worse than one that fails: the critic cannot tell
+> "not built yet" from "gate is wrong", and the tempting repair is to guess a
+> column name. Verified against the live schema 10 Aug 2026.
 
 **Gate (the email + PDF) — `NOT EXECUTABLE`.** Needs a test inbox. A human
 confirms the confirmation arrived with a PDF attached.
