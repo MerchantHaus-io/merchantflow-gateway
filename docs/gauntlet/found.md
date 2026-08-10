@@ -18,6 +18,21 @@ Format:
 
 ---
 
+## 10 Aug 2026 — found during the gate sweep
+
+**What:** `backup_runs` is firing roughly every 50 seconds — **38 runs in the
+last hour**, all `success`. A backup cadence of ~70/hour is not a schedule
+anyone chose; it looks like a runaway or misconfigured trigger. Phase 0's gate
+(`status='success'` within 2 hours) passes, and would keep passing whatever the
+cadence, so the gate cannot see this.
+**Where:** `backup_runs`, whatever schedules `backup-snapshot-to-drive`
+**Why not fixed:** outside the sweep, and the cost/impact depends on what a
+"run" actually does — a full Drive snapshot every 50s is very different from a
+heartbeat row
+**Severity:** unsure — but worth ten minutes, since it may be burning quota
+
+---
+
 ## 10 Aug 2026 — found while answering the 2A-function decisions
 
 **What:** Opportunity assignment notifications have never fired. Both

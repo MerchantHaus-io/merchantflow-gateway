@@ -23,7 +23,11 @@ decorative deletions are all outstanding.
 **Gate — `EXECUTABLE`**
 ```bash
 npm run build && du -sh dist/     # record before, then after
-grep -c "^  \.\(dark\|light\)-" src/index.css   # theme variant blocks, expect 4
+# Count DISTINCT theme variants, not matching lines. Verified 10 Aug 2026:
+# `grep -c` returns 23 because each variant has ~2 selector lines, so it could
+# never read 4 even after the cut — the gate was uncheckable as written.
+grep -o "^  \.\(dark\|light\)-[a-z-]*" src/index.css | sort -u | wc -l
+# 12 distinct today (7 dark + 5 light). Target 4 per D8 (2 dark + 2 light).
 ```
 
 **Gate (perf) — `EXECUTABLE`.** Playwright can trace the plan's 10s scroll
