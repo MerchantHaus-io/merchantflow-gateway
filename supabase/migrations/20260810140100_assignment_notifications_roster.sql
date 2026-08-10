@@ -87,11 +87,20 @@ AS $$
       (SELECT r.email FROM public.team_roster r
         WHERE lower(r.email) = lower(btrim(input))
         LIMIT 1),
+      -- ALIASES MATTER, and missing them is not hypothetical: 53 tasks were
+      -- assigned to darryn@merchanthaus.io, which is an ALIAS of the roster
+      -- entry whose primary email is admin@merchanthaus.io. No profile exists
+      -- for the alias, so without this branch those 53 resolved to themselves
+      -- and still matched nothing — the exact bug this migration exists to
+      -- fix, surviving the fix.
+      (SELECT r.email FROM public.team_roster r
+        WHERE lower(btrim(input)) = ANY (SELECT lower(x) FROM unnest(coalesce(r.aliases,'{}')) AS x)
+        LIMIT 1),
       (SELECT r.email FROM public.team_roster r
         WHERE lower(r.display_name) = lower(btrim(input))
         LIMIT 1),
       (SELECT r.email FROM public.team_roster r
-        WHERE lower(btrim(input)) = ANY (SELECT lower(x) FROM unnest(r.legacy_names) AS x)
+        WHERE lower(btrim(input)) = ANY (SELECT lower(x) FROM unnest(coalesce(r.legacy_names,'{}')) AS x)
         LIMIT 1),
       -- Not a roster member. Pass an address through unchanged so a
       -- one-off assignment to a real mailbox still notifies; return NULL for
@@ -101,11 +110,49 @@ AS $$
   END;
 $$;
 
+-- 4. Canonicalise alias addresses to the roster's primary, now that the
+--    resolver understands them. Guarded on the resolver returning NOT NULL:
+--    without that guard this would blank the literal labels the assignment UI
+--    offers ('Unassigned', 'Onboarding', 'Operations', 'Support'), because the
+--    resolver deliberately returns NULL for those.
+UPDATE public.tasks
+   SET assignee = public.resolve_assignee_email(assignee)
+ WHERE assignee IS NOT NULL
+   AND public.resolve_assignee_email(assignee) IS NOT NULL
+   AND public.resolve_assignee_email(assignee) <> assignee;
+
+UPDATE public.opportunities
+   SET assigned_to = public.resolve_assignee_email(assigned_to)
+ WHERE assigned_to IS NOT NULL
+   AND public.resolve_assignee_email(assigned_to) IS NOT NULL
+   AND public.resolve_assignee_email(assigned_to) <> assigned_to;
+
 COMMENT ON FUNCTION public.resolve_assignee_email(text) IS
   'Canonical email for an assignee written as an email, display name or legacy name. Returns NULL for non-address labels such as Unassigned. Used by the assignment notification triggers so they stop depending on which form the writer used.';
 
 COMMIT;
 
+-- APPLIED 10 Aug 2026, and verified against production:
+--
+--   opportunities:  93 total, 90 assigned, 90 matching a profile (was 0)
+--   tasks:         568 total, 560 assigned, 560 matching a profile
+--   name-form task values remaining: 0
+--   row counts unchanged on both tables — policies and values only
+--
+--   resolve_assignee_email('Sheiky')                  -> jessie@merchanthaus.io
+--   resolve_assignee_email('Taryn')                   -> taryn@merchanthaus.io
+--   resolve_assignee_email('Xavier Rooza')            -> xavier@merchanthaus.io
+--   resolve_assignee_email('darryn@merchanthaus.io')  -> admin@merchanthaus.io
+--   resolve_assignee_email('support@merchanthaus.io') -> jessie@merchanthaus.io
+--   resolve_assignee_email('jamie@merchanthaus.io')   -> unchanged
+--   resolve_assignee_email('Unassigned')              -> NULL
+--   resolve_assignee_email('')                        -> NULL
+--
+-- The aliases branch was added AFTER the first apply, because the first
+-- version missed it and left 53 tasks on darryn@merchanthaus.io resolving to
+-- themselves. This file now matches production exactly; do not "simplify" the
+-- branch order, it is a COALESCE precedence chain.
+--
 -- VERIFICATION — run after applying.
 --
 --   -- every assigned opportunity should now resolve to a profile
