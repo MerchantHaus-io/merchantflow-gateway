@@ -8,7 +8,7 @@ in this session (see `05-implementation-roadmap.md` for sequencing).
 ## 1. Provisioning state machine
 
 ```
-                    ┌─────────────────────┐
+                    ┌──────────────────────┐
                     │       PENDING        │  run row created, nothing executed
                     └──────────┬───────────┘
                                │ claim (atomic)
