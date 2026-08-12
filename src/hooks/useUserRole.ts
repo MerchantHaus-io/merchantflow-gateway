@@ -1,27 +1,40 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  resolveAdminRole,
+  SIGNED_OUT_ADMIN_ROLE,
+  type AdminRoleState,
+} from "@/lib/adminRole";
 
 /**
- * Determines whether the authenticated user is an administrator by checking
- * the user_roles table in the database via the has_role() security definer
- * function. Falls back to a client-side email check while loading.
+ * Determines whether the authenticated user is an administrator by reading the
+ * `user_roles` table (RLS lets a user read their own roles).
+ *
+ * Fails closed: if the lookup errors, `isAdmin` is false and `roleUnavailable`
+ * is true so callers can tell "we could not check" from "checked, not an
+ * admin". Admin status is never inferred from an email address — see
+ * `src/lib/adminRole.ts` for why.
  */
 export const useUserRole = () => {
   const { user } = useAuth();
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [state, setState] = useState<AdminRoleState>(SIGNED_OUT_ADMIN_ROLE);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Guards against a slow response for a previous user landing after the
+    // account has changed and setting admin state for the wrong person.
+    let cancelled = false;
+
     const checkAdminStatus = async () => {
       if (!user?.id) {
-        setIsAdmin(false);
+        setState(SIGNED_OUT_ADMIN_ROLE);
         setLoading(false);
         return;
       }
 
+      setLoading(true);
       try {
-        // Query user_roles directly for the current user
         const { data, error } = await supabase
           .from("user_roles")
           .select("role")
@@ -29,23 +42,20 @@ export const useUserRole = () => {
           .eq("role", "admin")
           .maybeSingle();
 
-        if (error) {
-          // Fallback to email-based check if DB query fails
-          const adminEmails = ['admin@merchanthaus.io', 'jamie@merchanthaus.io'];
-          setIsAdmin(adminEmails.includes(user.email || ''));
-        } else {
-          setIsAdmin(!!data);
-        }
-      } catch {
-        const adminEmails = ['admin@merchanthaus.io', 'jamie@merchanthaus.io'];
-        setIsAdmin(adminEmails.includes(user.email || ''));
+        if (!cancelled) setState(resolveAdminRole({ data, error }));
+      } catch (error) {
+        if (!cancelled) setState(resolveAdminRole({ data: null, error }));
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     checkAdminStatus();
+
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
-  return { isAdmin, loading };
+  return { isAdmin: state.isAdmin, roleUnavailable: state.roleUnavailable, loading };
 };

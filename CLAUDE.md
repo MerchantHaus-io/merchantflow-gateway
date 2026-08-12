@@ -93,10 +93,10 @@ back after editing them.
 
 | Check | Current state | As of |
 |---|---|---|
-| `npx tsc --noEmit -p tsconfig.app.json` | silent | 9 Aug 2026 |
-| `npm run lint` | **0 errors**, 330 warnings | 9 Aug 2026 |
-| `npx vitest run` | 92 passing, 6 files | 9 Aug 2026 |
-| `npm run build` | succeeds; chunk-size warnings are expected | 9 Aug 2026 |
+| `npx tsc --noEmit -p tsconfig.app.json` | silent | 12 Aug 2026 |
+| `npm run lint` | **0 errors**, 330 warnings | 12 Aug 2026 |
+| `npx vitest run` | 118 passing, 8 files | 12 Aug 2026 |
+| `npm run build` | succeeds; chunk-size warnings are expected | 12 Aug 2026 |
 
 A rise in the lint **error** count is a regression. Inherited warnings are not.
 
@@ -107,6 +107,11 @@ stale baseline is worse than none: it makes a critic report a regression that
 did not happen, which is exactly the false signal these numbers exist to
 prevent. When a count moves, confirm the cause before assuming blame — run
 eslint on the changed files alone.
+
+The test count moved the same way: the table read 92 passing / 6 files and the
+suite actually ran 112 / 7 — again from unrelated commits, since every test
+passed and the count only rose. It is 118 / 8 as of this re-dating, the last 6
+being `src/lib/adminRole.test.ts`.
 
 ---
 
