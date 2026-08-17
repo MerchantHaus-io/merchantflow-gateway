@@ -7,7 +7,15 @@ nothing reconciles expected vs paid residual today.
 
 ---
 
-## 8.1 — Residual reconciliation (#201) · PARTIAL · **build this first**
+## 8.1 — Residual reconciliation (#201) · CODE GATE PASSED 17 Aug 2026 · business gate still yours
+
+`src/lib/residualReconciliation.ts` (pure, 10 tests) now computes `variance`,
+`variance_pct`, `effective_rate`, `expected_rate`, `rate_drift` and
+`no_residual_alert` per merchant-month, and `Commissions.tsx` renders a
+reconciliation summary card, a red banner naming live merchants absent from
+NMI's residual report, a per-row Variance column with drift, and the same
+fields in the CSV export. The **business gate below is still open** — run last
+quarter's real statements through it yourself.
 
 More exists than D7 assumed, which makes this cheaper than it looks.
 
@@ -95,11 +103,13 @@ happens next.
 
 ---
 
-## 8.4 — Reporting loops · NOT_STARTED
+## 8.4 — Reporting loops · 8.4a DONE · 8.4b/c NOT_STARTED
 
-- **#204 loss reasons by tier and stage.** `Reports.tsx:142` already *fetches*
-  `outcome_reason` — and never references it again. The data is in hand; only
-  the aggregation is missing. Cheapest item in the phase.
+- **#204 loss reasons by tier and stage — DONE 17 Aug 2026.**
+  `src/lib/lossReasons.ts` (pure, 8 tests) aggregates by reason, stage and
+  `gateway_tier`; a "Why We Lose" section on `Reports.tsx` renders it. Losses
+  with no reason recorded bucket under "No reason recorded" so the capture gap
+  stays visible.
 - **#205 lead source → 12-month survival.** Nothing exists.
 - **#206 weighted forecast as expected monthly residual at month six**, not
   deal count. Nothing exists.
