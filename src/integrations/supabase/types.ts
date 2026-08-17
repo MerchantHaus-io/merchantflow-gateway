@@ -4506,6 +4506,7 @@ export type Database = {
       prune_rate_limit_events: { Args: never; Returns: undefined }
       referrer_owns: { Args: { _referrer_id: string }; Returns: boolean }
       referrer_owns_account: { Args: { _account_id: string }; Returns: boolean }
+      resolve_assignee_email: { Args: { input: string }; Returns: string }
       send_system_dm: {
         Args: { p_content: string; p_receiver_email: string }
         Returns: undefined
