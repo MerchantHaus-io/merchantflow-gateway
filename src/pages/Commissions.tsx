@@ -635,3 +635,30 @@ function HeroStat({
     </div>
   );
 }
+
+function ReconStat({
+  label,
+  value,
+  hint,
+  tone = "neutral",
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  tone?: "good" | "bad" | "neutral";
+}) {
+  const toneClass =
+    tone === "bad"
+      ? "text-red-600 dark:text-red-400"
+      : tone === "good"
+      ? "text-emerald-600 dark:text-emerald-400"
+      : "";
+  return (
+    <div className="bg-card p-5">
+      <div className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1.5">{label}</div>
+      <div className={`font-mono text-xl font-medium tracking-tight ${toneClass}`}>{value}</div>
+      {hint && <div className="text-[11px] text-muted-foreground mt-1">{hint}</div>}
+    </div>
+  );
+}
+
