@@ -496,7 +496,9 @@ export default function Commissions() {
                     <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="Our gateway margin (accepted quote monthly margin)">Gateway Margin</th>
                     <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="Processing residual + gateway margin">Est. Total</th>
                     <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="Actual partner residual reported by NMI for this month">NMI Actual</th>
+                    <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="NMI actual − Est. Total, with effective-rate drift against the rate our estimate implies">Variance</th>
                     <th className="text-right px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Trend</th>
+
                   </tr>
                 </thead>
                 <tbody>
