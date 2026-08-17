@@ -543,6 +543,38 @@ export default function Commissions() {
                             );
                           })()}
                         </td>
+                        <td className="px-4 py-3.5 text-right font-mono text-sm">
+                          {(() => {
+                            const rec = reconByRecord.get(r.id);
+                            if (!rec) return <span className="text-xs text-muted-foreground">—</span>;
+                            if (rec.no_residual_alert) {
+                              return (
+                                <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-red-500/50 text-red-600 dark:text-red-400">
+                                  No residual
+                                </Badge>
+                              );
+                            }
+                            if (rec.variance == null) return <span className="text-xs text-muted-foreground">—</span>;
+                            const tone =
+                              rec.severity === "alert"
+                                ? "text-red-600 dark:text-red-400"
+                                : rec.severity === "watch"
+                                ? "text-amber-600 dark:text-amber-400"
+                                : "text-muted-foreground";
+                            return (
+                              <span className="inline-flex flex-col items-end gap-0.5">
+                                <span className={`font-medium ${tone}`}>
+                                  {rec.variance >= 0 ? "+" : ""}{fmt(rec.variance)}
+                                </span>
+                                <span className="text-[10px] text-muted-foreground">
+                                  {pct(rec.variance_pct)}
+                                  {rec.rate_drift != null ? ` · drift ${rec.rate_drift >= 0 ? "+" : ""}${rec.rate_drift.toFixed(2)}pp` : ""}
+                                </span>
+                              </span>
+                            );
+                          })()}
+                        </td>
+
                         <td className="px-6 py-3.5 text-right">
                           {r.commission_change_pct != null ? (
                             <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${r.commission_change_pct >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
