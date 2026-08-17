@@ -230,6 +230,15 @@ const Reports = () => {
     return { total, sent, reply, conv, replyRate: sent > 0 ? ((reply/sent)*100).toFixed(1) : "0", convRate: reply > 0 ? ((conv/reply)*100).toFixed(1) : "0" };
   }, [campaigns]);
 
+  // ── Loss reasons by tier and stage (#204) ──
+  const lossAnalysis = useMemo(() => {
+    const reasons = aggregateLossReasons(filteredOpps);
+    const stages = lossesByStage(filteredOpps);
+    const tiers = lossesByTier(filteredOpps);
+    const total = reasons.reduce((a, r) => a + r.count, 0);
+    return { reasons, stages, tiers, total };
+  }, [filteredOpps]);
+
   // ── Top KPIs ──
   const kpis = useMemo(() => {
     const active    = filteredOpps.filter(o => o.status !== "dead").length;
@@ -557,6 +566,95 @@ const Reports = () => {
                 </CardContent>
               </Card>
             </div>
+          </section>
+
+          {/* ══ LOSS REASONS ══ */}
+          <section>
+            <SectionHeader icon={AlertTriangle} title="Why We Lose" description="Closed lost, disqualified, no decision and declined — by reason, stage and tier" />
+
+            {lossAnalysis.total === 0 ? (
+              <Card>
+                <CardContent className="py-10 text-center text-sm text-muted-foreground">
+                  No closed-out opportunities in this range.
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">Loss Reasons</CardTitle>
+                    <CardDescription className="text-xs">{lossAnalysis.total} closed-out deals</CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-xs">Reason</TableHead>
+                          <TableHead className="text-xs text-right w-16">Deals</TableHead>
+                          <TableHead className="text-xs text-right w-16">Share</TableHead>
+                          <TableHead className="text-xs w-[38%]">Died at stage</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {lossAnalysis.reasons.slice(0, 12).map((r) => (
+                          <TableRow key={r.reason}>
+                            <TableCell className="text-xs font-medium">{r.label}</TableCell>
+                            <TableCell className="text-xs text-right font-mono">{r.count}</TableCell>
+                            <TableCell className="text-xs text-right font-mono text-muted-foreground">{r.share}%</TableCell>
+                            <TableCell>
+                              <div className="flex flex-wrap gap-1">
+                                {Object.entries(r.byStage)
+                                  .sort((a, b) => b[1] - a[1])
+                                  .map(([stage, n]) => (
+                                    <Badge key={stage} variant="outline" className="text-[10px] px-1.5 py-0 font-normal">
+                                      {STAGE_CONFIG[stage as OpportunityStage]?.label || stage} · {n}
+                                    </Badge>
+                                  ))}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+
+                <div className="space-y-4">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">Losses by Stage</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0 space-y-2">
+                      {lossAnalysis.stages.map((b) => (
+                        <div key={b.key} className="space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="truncate">{STAGE_CONFIG[b.key as OpportunityStage]?.label || b.key}</span>
+                            <span className="font-mono text-muted-foreground">{b.count} · {b.share}%</span>
+                          </div>
+                          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                            <div className="h-full rounded-full bg-destructive/70" style={{ width: `${b.share}%` }} />
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">Losses by Tier</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0 space-y-2">
+                      {lossAnalysis.tiers.map((b) => (
+                        <div key={b.key} className="flex items-center justify-between text-xs">
+                          <span className="capitalize truncate">{b.key}</span>
+                          <span className="font-mono text-muted-foreground">{b.count} · {b.share}%</span>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            )}
           </section>
 
           {/* ══ OUTREACH / EMAIL SECTION ══ */}
