@@ -331,6 +331,51 @@ export default function Commissions() {
           />
         </div>
 
+        {/* Reconciliation: expected vs actually paid */}
+        {!!records?.length && (
+          <Card className="overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+              <span className="text-sm font-medium">Residual Reconciliation</span>
+              <span className="text-xs text-muted-foreground">
+                {reconSummary.reconciled_count} of {reconSummary.merchants} merchants have an NMI residual line
+              </span>
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-border">
+              <ReconStat label="Expected" value={fmt(reconSummary.expected)} hint="Processing residual + gateway margin" />
+              <ReconStat label="NMI Paid" value={fmt(reconSummary.actual)} hint="Actual partner residual reported by NMI" />
+              <ReconStat
+                label="Variance"
+                value={`${reconSummary.variance >= 0 ? "+" : ""}${fmt(reconSummary.variance)}`}
+                hint={reconSummary.variance_pct != null ? `${pct(reconSummary.variance_pct)} of expected` : "No expected total"}
+                tone={reconSummary.variance < 0 ? "bad" : reconSummary.variance > 0 ? "good" : "neutral"}
+              />
+              <ReconStat
+                label="Needs Review"
+                value={String(reconSummary.alert_count)}
+                hint={`${reconSummary.no_residual_count} live with no residual line`}
+                tone={reconSummary.alert_count > 0 ? "bad" : "good"}
+              />
+            </div>
+            {noResidualRecords.length > 0 && (
+              <div className="flex items-start gap-3 px-6 py-4 border-t border-border bg-red-50/60 dark:bg-red-950/20">
+                <AlertTriangle className="h-4 w-4 mt-0.5 text-red-600 dark:text-red-400 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-red-700 dark:text-red-400">
+                    {noResidualRecords.length} live merchant{noResidualRecords.length === 1 ? "" : "s"} paying no residual
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Active this month but absent from NMI&rsquo;s residual report —{" "}
+                    {noResidualRecords.slice(0, 6).map((r) => r.company_name || r.nmi_gateway_id).join(", ")}
+                    {noResidualRecords.length > 6 ? ` +${noResidualRecords.length - 6} more` : ""}
+                  </p>
+                </div>
+              </div>
+            )}
+          </Card>
+        )}
+
+
+
         {/* Content grid: chart + top earners */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
           {/* Commission trend chart */}
