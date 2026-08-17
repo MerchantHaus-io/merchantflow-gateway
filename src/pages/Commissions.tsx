@@ -251,10 +251,12 @@ export default function Commissions() {
   // Export CSV
   const exportCSV = () => {
     if (!records?.length) return;
-    const header = "Merchant,Merchant ID,Transactions,Volume,Processing Residual,Gateway Invoiced,Gateway Margin,Total Revenue,Change %";
-    const rows = records.map((r) =>
-      [r.company_name, r.nmi_gateway_id, r.transaction_count, r.transaction_volume, r.total_commission, r.gateway_invoiced, r.gateway_margin, (r.total_commission + r.gateway_margin).toFixed(2), r.commission_change_pct ?? ""].join(",")
-    );
+    const header = "Merchant,Merchant ID,Transactions,Volume,Processing Residual,Gateway Invoiced,Gateway Margin,Est. Total,NMI Actual,Variance,Variance %,Effective Rate %,Rate Drift pp,No Residual,Change %";
+    const rows = records.map((r) => {
+      const rec = reconByRecord.get(r.id);
+      return [r.company_name, r.nmi_gateway_id, r.transaction_count, r.transaction_volume, r.total_commission, r.gateway_invoiced, r.gateway_margin, (r.total_commission + r.gateway_margin).toFixed(2), rec?.actual ?? "", rec?.variance ?? "", rec?.variance_pct ?? "", rec?.effective_rate ?? "", rec?.rate_drift ?? "", rec?.no_residual_alert ? "YES" : "", r.commission_change_pct ?? ""].join(",");
+    });
+
     const csv = [header, ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
