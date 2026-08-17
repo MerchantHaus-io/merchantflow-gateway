@@ -95,7 +95,7 @@ back after editing them.
 |---|---|---|
 | `npx tsc --noEmit -p tsconfig.app.json` | silent | 12 Aug 2026 |
 | `npm run lint` | **0 errors**, 330 warnings | 12 Aug 2026 |
-| `npx vitest run` | 118 passing, 8 files | 12 Aug 2026 |
+| `npx vitest run` | 136 passing, 10 files | 17 Aug 2026 |
 | `npm run build` | succeeds; chunk-size warnings are expected | 12 Aug 2026 |
 
 A rise in the lint **error** count is a regression. Inherited warnings are not.

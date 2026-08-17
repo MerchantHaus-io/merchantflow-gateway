@@ -9,8 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { DollarSign, TrendingUp, TrendingDown, Users, BarChart3, RefreshCw, Download, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, Users, BarChart3, RefreshCw, Download, ArrowUpRight, ArrowDownRight, AlertTriangle } from "lucide-react";
 import { format, subMonths } from "date-fns";
+import { reconcile, summarise, type Reconciliation } from "@/lib/residualReconciliation";
+
 
 /* ─────────────── helpers ─────────────── */
 const fmt = (v: number) =>
@@ -172,6 +174,36 @@ export default function Commissions() {
 
   const residualByMid = new Map((residuals ?? []).map((r) => [r.nmi_merchant_id, r]));
 
+  /* ── Reconciliation: expected (our estimate) vs actual (NMI paid) ── */
+  const reconByRecord = new Map<string, Reconciliation>(
+    (records ?? []).map((r) => {
+      const actual = residualByMid.get(r.nmi_gateway_id);
+      return [
+        r.id,
+        reconcile(
+          {
+            total_commission: r.total_commission,
+            gateway_margin: r.gateway_margin,
+            transaction_volume: r.transaction_volume,
+            transaction_count: r.transaction_count,
+            gateway_invoiced: r.gateway_invoiced,
+          },
+          actual
+            ? {
+                partner_residual: Number(actual.partner_residual) || 0,
+                gross_volume: Number(actual.gross_volume) || 0,
+                transaction_count: Number(actual.transaction_count) || 0,
+              }
+            : null
+        ),
+      ];
+    })
+  );
+  const reconSummary = summarise([...reconByRecord.values()]);
+  const noResidualRecords = (records ?? []).filter((r) => reconByRecord.get(r.id)?.no_residual_alert);
+
+
+
   const pullActualsMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("nmi-partner-residuals", {
@@ -219,10 +251,12 @@ export default function Commissions() {
   // Export CSV
   const exportCSV = () => {
     if (!records?.length) return;
-    const header = "Merchant,Merchant ID,Transactions,Volume,Processing Residual,Gateway Invoiced,Gateway Margin,Total Revenue,Change %";
-    const rows = records.map((r) =>
-      [r.company_name, r.nmi_gateway_id, r.transaction_count, r.transaction_volume, r.total_commission, r.gateway_invoiced, r.gateway_margin, (r.total_commission + r.gateway_margin).toFixed(2), r.commission_change_pct ?? ""].join(",")
-    );
+    const header = "Merchant,Merchant ID,Transactions,Volume,Processing Residual,Gateway Invoiced,Gateway Margin,Est. Total,NMI Actual,Variance,Variance %,Effective Rate %,Rate Drift pp,No Residual,Change %";
+    const rows = records.map((r) => {
+      const rec = reconByRecord.get(r.id);
+      return [r.company_name, r.nmi_gateway_id, r.transaction_count, r.transaction_volume, r.total_commission, r.gateway_invoiced, r.gateway_margin, (r.total_commission + r.gateway_margin).toFixed(2), rec?.actual ?? "", rec?.variance ?? "", rec?.variance_pct ?? "", rec?.effective_rate ?? "", rec?.rate_drift ?? "", rec?.no_residual_alert ? "YES" : "", r.commission_change_pct ?? ""].join(",");
+    });
+
     const csv = [header, ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -296,6 +330,51 @@ export default function Commissions() {
             sub={currentPeriod?.fetched_at ? `Last synced ${format(new Date(currentPeriod.fetched_at), "MMM d, HH:mm")}` : "Not yet synced"}
           />
         </div>
+
+        {/* Reconciliation: expected vs actually paid */}
+        {!!records?.length && (
+          <Card className="overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+              <span className="text-sm font-medium">Residual Reconciliation</span>
+              <span className="text-xs text-muted-foreground">
+                {reconSummary.reconciled_count} of {reconSummary.merchants} merchants have an NMI residual line
+              </span>
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-border">
+              <ReconStat label="Expected" value={fmt(reconSummary.expected)} hint="Processing residual + gateway margin" />
+              <ReconStat label="NMI Paid" value={fmt(reconSummary.actual)} hint="Actual partner residual reported by NMI" />
+              <ReconStat
+                label="Variance"
+                value={`${reconSummary.variance >= 0 ? "+" : ""}${fmt(reconSummary.variance)}`}
+                hint={reconSummary.variance_pct != null ? `${pct(reconSummary.variance_pct)} of expected` : "No expected total"}
+                tone={reconSummary.variance < 0 ? "bad" : reconSummary.variance > 0 ? "good" : "neutral"}
+              />
+              <ReconStat
+                label="Needs Review"
+                value={String(reconSummary.alert_count)}
+                hint={`${reconSummary.no_residual_count} live with no residual line`}
+                tone={reconSummary.alert_count > 0 ? "bad" : "good"}
+              />
+            </div>
+            {noResidualRecords.length > 0 && (
+              <div className="flex items-start gap-3 px-6 py-4 border-t border-border bg-red-50/60 dark:bg-red-950/20">
+                <AlertTriangle className="h-4 w-4 mt-0.5 text-red-600 dark:text-red-400 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-red-700 dark:text-red-400">
+                    {noResidualRecords.length} live merchant{noResidualRecords.length === 1 ? "" : "s"} paying no residual
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Active this month but absent from NMI&rsquo;s residual report —{" "}
+                    {noResidualRecords.slice(0, 6).map((r) => r.company_name || r.nmi_gateway_id).join(", ")}
+                    {noResidualRecords.length > 6 ? ` +${noResidualRecords.length - 6} more` : ""}
+                  </p>
+                </div>
+              </div>
+            )}
+          </Card>
+        )}
+
+
 
         {/* Content grid: chart + top earners */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
@@ -417,7 +496,9 @@ export default function Commissions() {
                     <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="Our gateway margin (accepted quote monthly margin)">Gateway Margin</th>
                     <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="Processing residual + gateway margin">Est. Total</th>
                     <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="Actual partner residual reported by NMI for this month">NMI Actual</th>
+                    <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="NMI actual − Est. Total, with effective-rate drift against the rate our estimate implies">Variance</th>
                     <th className="text-right px-6 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Trend</th>
+
                   </tr>
                 </thead>
                 <tbody>
@@ -462,6 +543,38 @@ export default function Commissions() {
                             );
                           })()}
                         </td>
+                        <td className="px-4 py-3.5 text-right font-mono text-sm">
+                          {(() => {
+                            const rec = reconByRecord.get(r.id);
+                            if (!rec) return <span className="text-xs text-muted-foreground">—</span>;
+                            if (rec.no_residual_alert) {
+                              return (
+                                <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-red-500/50 text-red-600 dark:text-red-400">
+                                  No residual
+                                </Badge>
+                              );
+                            }
+                            if (rec.variance == null) return <span className="text-xs text-muted-foreground">—</span>;
+                            const tone =
+                              rec.severity === "alert"
+                                ? "text-red-600 dark:text-red-400"
+                                : rec.severity === "watch"
+                                ? "text-amber-600 dark:text-amber-400"
+                                : "text-muted-foreground";
+                            return (
+                              <span className="inline-flex flex-col items-end gap-0.5">
+                                <span className={`font-medium ${tone}`}>
+                                  {rec.variance >= 0 ? "+" : ""}{fmt(rec.variance)}
+                                </span>
+                                <span className="text-[10px] text-muted-foreground">
+                                  {pct(rec.variance_pct)}
+                                  {rec.rate_drift != null ? ` · drift ${rec.rate_drift >= 0 ? "+" : ""}${rec.rate_drift.toFixed(2)}pp` : ""}
+                                </span>
+                              </span>
+                            );
+                          })()}
+                        </td>
+
                         <td className="px-6 py-3.5 text-right">
                           {r.commission_change_pct != null ? (
                             <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${r.commission_change_pct >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
@@ -522,3 +635,30 @@ function HeroStat({
     </div>
   );
 }
+
+function ReconStat({
+  label,
+  value,
+  hint,
+  tone = "neutral",
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  tone?: "good" | "bad" | "neutral";
+}) {
+  const toneClass =
+    tone === "bad"
+      ? "text-red-600 dark:text-red-400"
+      : tone === "good"
+      ? "text-emerald-600 dark:text-emerald-400"
+      : "";
+  return (
+    <div className="bg-card p-5">
+      <div className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1.5">{label}</div>
+      <div className={`font-mono text-xl font-medium tracking-tight ${toneClass}`}>{value}</div>
+      {hint && <div className="text-[11px] text-muted-foreground mt-1">{hint}</div>}
+    </div>
+  );
+}
+
