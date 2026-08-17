@@ -9,8 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { DollarSign, TrendingUp, TrendingDown, Users, BarChart3, RefreshCw, Download, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, Users, BarChart3, RefreshCw, Download, ArrowUpRight, ArrowDownRight, AlertTriangle } from "lucide-react";
 import { format, subMonths } from "date-fns";
+import { reconcile, summarise, type Reconciliation } from "@/lib/residualReconciliation";
+
 
 /* ─────────────── helpers ─────────────── */
 const fmt = (v: number) =>
