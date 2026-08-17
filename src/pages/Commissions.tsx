@@ -174,6 +174,36 @@ export default function Commissions() {
 
   const residualByMid = new Map((residuals ?? []).map((r) => [r.nmi_merchant_id, r]));
 
+  /* ── Reconciliation: expected (our estimate) vs actual (NMI paid) ── */
+  const reconByRecord = new Map<string, Reconciliation>(
+    (records ?? []).map((r) => {
+      const actual = residualByMid.get(r.nmi_gateway_id);
+      return [
+        r.id,
+        reconcile(
+          {
+            total_commission: r.total_commission,
+            gateway_margin: r.gateway_margin,
+            transaction_volume: r.transaction_volume,
+            transaction_count: r.transaction_count,
+            gateway_invoiced: r.gateway_invoiced,
+          },
+          actual
+            ? {
+                partner_residual: Number(actual.partner_residual) || 0,
+                gross_volume: Number(actual.gross_volume) || 0,
+                transaction_count: Number(actual.transaction_count) || 0,
+              }
+            : null
+        ),
+      ];
+    })
+  );
+  const reconSummary = summarise([...reconByRecord.values()]);
+  const noResidualRecords = (records ?? []).filter((r) => reconByRecord.get(r.id)?.no_residual_alert);
+
+
+
   const pullActualsMutation = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("nmi-partner-residuals", {
