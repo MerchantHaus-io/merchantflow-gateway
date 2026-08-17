@@ -27,6 +27,7 @@ import {
   Minus, Trophy, Zap, Activity, RefreshCw, Filter, Calendar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { aggregateLossReasons, lossesByStage, lossesByTier } from "@/lib/lossReasons";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface OppData {
@@ -39,6 +40,7 @@ interface OppData {
   stage_entered_at?: string | null;
   outcome_status?: string | null;
   outcome_reason?: string | null;
+  gateway_tier?: string | null;
   account?: { name: string } | null;
   contact?: { first_name: string | null; last_name: string | null } | null;
 }
@@ -139,7 +141,7 @@ const Reports = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     const [oppRes, actRes, campRes] = await Promise.all([
-      supabase.from("opportunities").select("id, stage, assigned_to, created_at, updated_at, status, stage_entered_at, outcome_status, outcome_reason, account:accounts(name), contact:contacts(first_name, last_name)"),
+      supabase.from("opportunities").select("id, stage, assigned_to, created_at, updated_at, status, stage_entered_at, outcome_status, outcome_reason, gateway_tier, account:accounts(name), contact:contacts(first_name, last_name)"),
       supabase.from("activities").select("id, type, created_at, opportunity_id").order("created_at", { ascending: false }).limit(1000),
       supabase.from("outreach_campaigns").select("*").order("created_at", { ascending: false }),
     ]);
