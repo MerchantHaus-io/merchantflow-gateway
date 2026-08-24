@@ -34,7 +34,6 @@ const Connect = lazy(() => import("./pages/Connect"));
 
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const UpdatePassword = lazy(() => import("./pages/UpdatePassword"));
-const Apply = lazy(() => import("./pages/Apply"));
 const Contact = lazy(() => import("./pages/Contact"));
 const SOP = lazy(() => import("./pages/SOP"));
 const Training = lazy(() => import("./pages/Training"));
@@ -105,6 +104,17 @@ const PUBLIC_ROUTES = ['/auth', '/login', '/contact', '/apply', '/merchant-apply
 const isPublicRoute = (pathname: string) =>
   PUBLIC_ROUTES.some(r => isPathWithin(pathname, r));
 
+// #198 — `/apply` was a second, thinner intake form that wrote to the same
+// `applications` table as the full boarding flow, so merchants landed in one of
+// two different doors depending on which link they were sent. One door now.
+// A bare <Navigate to="/merchant-apply"> would drop the query string, and that
+// string carries the UTM attribution and the optional opportunity id that
+// MerchantApply reads off the URL — so carry search and hash across.
+const ApplyRedirect = () => {
+  const { search, hash } = useLocation();
+  return <Navigate to={`/merchant-apply${search}${hash}`} replace />;
+};
+
 const InternalWidgets = () => {
   const { pathname } = useLocation();
   if (isPublicRoute(pathname)) return null;
@@ -173,7 +183,7 @@ const App = () => (
                 <Route path="/forgot-password" element={<ForgotPassword />} />
 
                 <Route path="/update-password" element={<UpdatePassword />} />
-                <Route path="/apply" element={<Apply />} />
+                <Route path="/apply" element={<ApplyRedirect />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/merchant-apply" element={<MerchantApply />} />
                 <Route path="/scoping" element={<Scoping />} />
