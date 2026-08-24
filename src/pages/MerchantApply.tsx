@@ -286,6 +286,10 @@ export default function MerchantApply() {
   const [showAllErrors, setShowAllErrors] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  // Carried onto the confirmation screen: a reference the merchant can
+  // quote back to us, and any documents the server could not store.
+  const [submissionRef, setSubmissionRef] = useState<string | null>(null);
+  const [failedFileCount, setFailedFileCount] = useState(0);
   const { toast } = useToast();
 
   const isGatewayOnly = serviceType === "gateway_only";
@@ -648,17 +652,16 @@ export default function MerchantApply() {
         throw new Error(msg);
       }
 
-      // Check for file upload failures and warn the user
-      if (result.files && result.files.failed > 0) {
-        toast({
-          variant: "destructive",
-          title: `${result.files.failed} document(s) failed to upload`,
-          description: "Your application was submitted but some files could not be saved. Please contact us to re-submit the missing documents.",
-        });
-      }
-
+      // This used to setIsSubmitted(true) and then immediately assign
+      // window.location.href, both in the same tick — so React never painted
+      // the confirmation screen and the merchant was thrown to the marketing
+      // site the moment their application posted. They got no reference, no
+      // "what happens next", and no sight of the failed-upload toast below,
+      // which is the one message that actually needed acting on. Render the
+      // confirmation instead and let them leave on their own.
+      setFailedFileCount(result.files?.failed ?? 0);
+      setSubmissionRef(result.application_id ?? null);
       setIsSubmitted(true);
-      window.location.href = "https://merchanthaus.io";
     } catch (error: any) {
       const message = error?.message || '';
       const friendly = message && message.length < 500
@@ -713,15 +716,53 @@ export default function MerchantApply() {
 
   // ─── Submitted screen ───
   if (isSubmitted) {
+    // The card can outgrow a short phone screen once the reference and the
+    // upload warning are on it, so the shell scrolls rather than clipping.
     return (
-      <div className="merchant-form fixed inset-0 z-50 bg-background flex items-center justify-center p-4">
-        <div className="max-w-md w-full rounded-2xl border border-border bg-card p-8 shadow-lg text-center space-y-4">
-          <div className="mx-auto w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center">
-            <CheckCircle className="w-8 h-8 text-emerald-500" />
+      <div className="merchant-form fixed inset-0 z-50 bg-background overflow-y-auto" style={{ WebkitOverflowScrolling: "touch" }}>
+        <div className="min-h-full flex items-center justify-center p-4 py-8">
+          <div className="max-w-md w-full rounded-2xl border border-border bg-card p-8 shadow-lg text-center space-y-5">
+            <div className="mx-auto w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center">
+              <CheckCircle className="w-8 h-8 text-emerald-500" />
+            </div>
+            <div className="space-y-2">
+              <h1 className="text-2xl font-bold text-foreground">Application Received</h1>
+              <p className="text-muted-foreground">Our team will review your application and contact you within 1&ndash;2 business days.</p>
+            </div>
+
+            {submissionRef && (
+              <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-left">
+                <div className="text-xs uppercase tracking-wide text-muted-foreground">Reference</div>
+                <div className="font-mono text-sm text-foreground break-all select-all">{submissionRef}</div>
+                <p className="mt-1 text-xs text-muted-foreground">Quote this if you contact us about your application.</p>
+              </div>
+            )}
+
+            {failedFileCount > 0 && (
+              <div className="flex gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-left">
+                <AlertCircle className="w-4 h-4 shrink-0 text-destructive mt-0.5" />
+                <div className="text-xs text-destructive">
+                  <span className="font-semibold">
+                    {failedFileCount} document{failedFileCount === 1 ? "" : "s"} could not be saved.
+                  </span>{" "}
+                  Your application went through, but please contact us to re-send the missing {failedFileCount === 1 ? "file" : "files"}.
+                </div>
+              </div>
+            )}
+
+            <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-left space-y-2">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <Info className="w-3.5 h-3.5" /> What happens next
+              </div>
+              <ol className="list-decimal pl-4 space-y-1 text-xs text-muted-foreground">
+                <li>We review your application and the documents you attached.</li>
+                <li>We reach out if underwriting needs anything further.</li>
+                <li>Once approved, we send your account details and next steps.</li>
+              </ol>
+            </div>
+
+            <a href="https://merchanthaus.io" className="inline-block w-full rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90">Return to Website</a>
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Application Received!</h1>
-          <p className="text-muted-foreground">Our team will review your application and contact you within 1-2 business days.</p>
-          <a href="https://merchanthaus.io" className="inline-block mt-4 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90">Return to Website</a>
         </div>
       </div>
     );
