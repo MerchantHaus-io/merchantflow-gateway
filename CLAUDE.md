@@ -125,9 +125,50 @@ question needs both.**
 |---|---|---|---|
 | `mcp__Lovable__query_database` | the app's real Postgres, raw SQL | **No — bypasses RLS** | schema, column types, policy definitions, row counts, orphan checks |
 | `mcp__The_Ops_Terminal__*` | the CRM API as the signed-in user | **Yes** | what a real user actually sees |
-| `mcp__Supabase__*` | **a different project** (`cuqjaddtmkotgvfsgcol`) | — | **nothing here. Not this app's database.** |
+| `mcp__Supabase__*` | this app's project, but **every call is denied** | — | **nothing — it cannot answer. Use Lovable instead.** |
 
 Project id for Lovable calls: `d4e766df-1ab4-4f95-a16a-4c8c4222778a`.
+Supabase project ref for this app: `cuqjaddtmkotgvfsgcol`.
+
+### Do not reason from the Supabase row's failure
+
+The Supabase connector returns `You do not have permission to perform this
+action`, and this table used to explain that away by saying the ref it targets
+(`cuqjaddtmkotgvfsgcol`) was "a different project. Not this app's database."
+That reading was reverse-engineered from the failure, and it is wrong in a way
+that matters. `cuqjaddtmkotgvfsgcol` **is** this app's project, on four
+independent sources that agree:
+
+- `supabase/config.toml` -> `project_id` — also what `supabase functions deploy`
+  targets, so the edge functions live there too
+- `src/integrations/supabase/client.ts` -> `DEFAULT_SUPABASE_URL`
+- `.env.example` -> `VITE_SUPABASE_URL` and `VITE_SUPABASE_PROJECT_ID`
+- the anon key's own `ref` claim, which decodes to `cuqjaddtmkotgvfsgcol`
+
+The operative advice does not change — reach for Lovable, because the Supabase
+connector genuinely cannot serve you. But the *reason* is a permission denial,
+not a wrong database. Anyone doing RLS work has to know that
+`cuqjaddtmkotgvfsgcol` is the database they are reasoning about; believing it is
+some unrelated project makes them misread every policy, migration and
+edge-function config they touch.
+
+There **is** a second Supabase project, and it is the one that deserves the
+"different project" warning: `csusakykwlxixwiimrld` is the Client Portal
+(portal.merchanthaus.io). Per `public/docs/crm-bot-prompt.md` the CRM and the
+portal share no data. It appears only in that doc, never in app code.
+
+> **`supabase_migrations.schema_migrations` is not an applied/unapplied signal
+> here.** It tracks only Lovable's own generated migrations, so hand-named files
+> in `supabase/migrations/` are absent from it *even when applied*. Its newest
+> row is `20260809230014` while four later hand-written migrations are live in
+> production — including `20260810030000_close_anon_write_policies.sql`, which
+> reads like an unshipped security fix and is not one. To tell whether a
+> migration landed, check the object it creates (`pg_policies`, `pg_proc`,
+> `storage.buckets`), never this table.
+
+> **The Lovable connector rate-limits.** Bursts come back as
+> `499 request_cancelled`, which looks like a dead connector and is not. Space
+> calls roughly 60–90s apart and they succeed.
 
 The split matters most for RLS work, and the two are not interchangeable:
 `query_database` shows you the policy **as written**, and only The Ops Terminal
