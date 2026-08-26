@@ -78,10 +78,10 @@ async function sendConfirmationEmail(
   email: string,
   serviceType: string,
   companyName?: string,
-): Promise<void> {
+): Promise<boolean> {
   if (!RESEND_API_KEY) {
     console.error("RESEND_API_KEY not configured — skipping confirmation email");
-    return;
+    return false;
   }
 
   try {
@@ -103,11 +103,13 @@ async function sendConfirmationEmail(
     const result = await res.json();
     if (!res.ok) {
       console.error("Confirmation email error:", result);
-    } else {
-      console.log("Confirmation email sent to", email);
+      return false;
     }
+    console.log("Confirmation email sent to", email);
+    return true;
   } catch (err) {
     console.error("Failed to send confirmation email:", err);
+    return false;
   }
 }
 
@@ -269,10 +271,10 @@ async function sendComplianceChecklistEmail(
   firstName: string,
   email: string,
   businessName: string,
-): Promise<void> {
+): Promise<boolean> {
   if (!RESEND_API_KEY) {
     console.error("RESEND_API_KEY not configured — skipping compliance checklist email");
-    return;
+    return false;
   }
 
   try {
@@ -294,11 +296,13 @@ async function sendComplianceChecklistEmail(
     const result = await res.json();
     if (!res.ok) {
       console.error("Compliance checklist email error:", result);
-    } else {
-      console.log("Compliance checklist email sent to", email);
+      return false;
     }
+    console.log("Compliance checklist email sent to", email);
+    return true;
   } catch (err) {
     console.error("Failed to send compliance checklist email:", err);
+    return false;
   }
 }
 
@@ -546,11 +550,15 @@ Deno.serve(async (req) => {
         fileResult = await uploadFiles(supabase, applicationId, files, clientIp, userAgent);
       }
 
-      // Send confirmation email (non-blocking)
-      await sendConfirmationEmail(parsed.dba_contact_first_name, parsed.dba_contact_email, "document_submission");
+      // The send used to be fire-and-forget: a Resend rejection was logged to a
+      // console nobody reads and the response still said success, so a broken
+      // sending domain looked identical to a delivered inbox. Report it back so
+      // the merchant is told to keep their reference instead of waiting on an
+      // email that is never coming.
+      const confirmationSent = await sendConfirmationEmail(parsed.dba_contact_first_name, parsed.dba_contact_email, "document_submission");
 
       return new Response(
-        JSON.stringify({ success: true, application_id: applicationId, files: fileResult }),
+        JSON.stringify({ success: true, application_id: applicationId, files: fileResult, confirmation_email_sent: confirmationSent }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -595,14 +603,18 @@ Deno.serve(async (req) => {
         fileResult = await uploadFiles(supabase, applicationId, files, clientIp, userAgent);
       }
 
-      // Send confirmation email (non-blocking)
-      await sendConfirmationEmail(parsed.dba_contact_first_name, parsed.dba_contact_email, "gateway_only", parsed.dba_name);
+      // The send used to be fire-and-forget: a Resend rejection was logged to a
+      // console nobody reads and the response still said success, so a broken
+      // sending domain looked identical to a delivered inbox. Report it back so
+      // the merchant is told to keep their reference instead of waiting on an
+      // email that is never coming.
+      const confirmationSent = await sendConfirmationEmail(parsed.dba_contact_first_name, parsed.dba_contact_email, "gateway_only", parsed.dba_name);
 
       // Send website compliance checklist (M2 Wizard Submitted automation)
       await sendComplianceChecklistEmail(parsed.dba_contact_first_name, parsed.dba_contact_email, parsed.dba_name);
 
       return new Response(
-        JSON.stringify({ success: true, application_id: applicationId, files: fileResult }),
+        JSON.stringify({ success: true, application_id: applicationId, files: fileResult, confirmation_email_sent: confirmationSent }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -800,14 +812,18 @@ Deno.serve(async (req) => {
       fileResult = await uploadFiles(supabase, applicationId, files, clientIp, userAgent);
     }
 
-    // 8. Send confirmation email (non-blocking)
-    await sendConfirmationEmail(parsed.dba_contact_first_name, parsed.dba_contact_email, "processing", parsed.dba_name);
+    // The send used to be fire-and-forget: a Resend rejection was logged to a
+    // console nobody reads and the response still said success, so a broken
+    // sending domain looked identical to a delivered inbox. Report it back so
+    // the merchant is told to keep their reference instead of waiting on an
+    // email that is never coming.
+    const confirmationSent = await sendConfirmationEmail(parsed.dba_contact_first_name, parsed.dba_contact_email, "processing", parsed.dba_name);
 
     // 9. Send website compliance checklist (M2 Wizard Submitted automation)
     await sendComplianceChecklistEmail(parsed.dba_contact_first_name, parsed.dba_contact_email, parsed.dba_name);
 
     return new Response(
-      JSON.stringify({ success: true, application_id: applicationId, files: fileResult }),
+      JSON.stringify({ success: true, application_id: applicationId, files: fileResult, confirmation_email_sent: confirmationSent }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {

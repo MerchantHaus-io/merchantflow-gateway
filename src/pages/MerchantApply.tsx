@@ -290,6 +290,10 @@ export default function MerchantApply() {
   // quote back to us, and any documents the server could not store.
   const [submissionRef, setSubmissionRef] = useState<string | null>(null);
   const [failedFileCount, setFailedFileCount] = useState(0);
+  // Whether the server actually managed to send the confirmation email. A
+  // missing field means an older response shape, not a failure — only an
+  // explicit false raises the notice, so we never cry wolf.
+  const [confirmationEmailSent, setConfirmationEmailSent] = useState(true);
   const { toast } = useToast();
 
   const isGatewayOnly = serviceType === "gateway_only";
@@ -660,6 +664,7 @@ export default function MerchantApply() {
       // which is the one message that actually needed acting on. Render the
       // confirmation instead and let them leave on their own.
       setFailedFileCount(result.files?.failed ?? 0);
+      setConfirmationEmailSent(result.confirmation_email_sent !== false);
       setSubmissionRef(result.application_id ?? null);
       setIsSubmitted(true);
     } catch (error: any) {
@@ -735,6 +740,17 @@ export default function MerchantApply() {
                 <div className="text-xs uppercase tracking-wide text-muted-foreground">Reference</div>
                 <div className="font-mono text-sm text-foreground break-all select-all">{submissionRef}</div>
                 <p className="mt-1 text-xs text-muted-foreground">Quote this if you contact us about your application.</p>
+              </div>
+            )}
+
+            {!confirmationEmailSent && (
+              <div className="flex gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-left">
+                <AlertCircle className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+                <div className="text-xs text-amber-700 dark:text-amber-400">
+                  <span className="font-semibold">We could not send your confirmation email.</span>{" "}
+                  Your application was received — please save the reference above. You can reach us at{" "}
+                  <a href="mailto:onboarding@merchanthaus.io" className="underline">onboarding@merchanthaus.io</a>.
+                </div>
               </div>
             )}
 
