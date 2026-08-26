@@ -80,11 +80,13 @@ const STEPS: Step[] = [
     id: "buckets",
     title: "3. Recreate storage buckets",
     icon: HardDrive,
-    intro: "Match the source project's public/private settings exactly.",
+    intro:
+      "Four buckets. Match the source project's public/private settings exactly — opportunity-documents and chat-attachments are each created public and flipped private by a later migration, so a bucket snapshot can restore them world-readable with no error.",
     tasks: [
       { id: "avatars", label: "Create bucket `avatars` — Public." },
-      { id: "opps", label: "Create bucket `opportunity-documents` — Private." },
-      { id: "chat", label: "Create bucket `chat-attachments` — Private." },
+      { id: "opps", label: "Create bucket `opportunity-documents` — Private. Verify the public flag after loading data." },
+      { id: "chat", label: "Create bucket `chat-attachments` — Private. Verify the public flag after loading data." },
+      { id: "scoping", label: "Create bucket `scoping-documents` — Private, 5 MB limit, application/pdf only. A manual re-create misses the size limit and MIME restriction." },
     ],
   },
   {
@@ -92,7 +94,7 @@ const STEPS: Step[] = [
     title: "4. Deploy edge functions",
     icon: Rocket,
     intro:
-      "~80 functions under supabase/functions/*. supabase/config.toml carries per-function verify_jwt overrides — keep it as-is.",
+      "73 deployable functions under supabase/functions/* (plus _shared/, which is not a function). supabase/config.toml carries verify_jwt overrides for 51 of them; the other 22 default to true. Copy it verbatim apart from project_id.",
     tasks: [
       {
         id: "deploy",
@@ -160,11 +162,11 @@ const STEPS: Step[] = [
       {
         id: "support",
         label:
-          "If insufficient, email Lovable support and request: pg_dump of the public schema (data + sequences), copies of the three buckets, current ENCRYPTION_KEY, current VAPID_PRIVATE_KEY / VAPID_PUBLIC_KEY.",
+          "If insufficient, email Lovable support and request: pg_dump of the public schema (data + sequences), copies of all four buckets, current ENCRYPTION_KEY, current VAPID_PRIVATE_KEY / VAPID_PUBLIC_KEY. Note the project must be restored from its paused state before any export is possible.",
       },
       {
         id: "load",
-        label: "Load the dump into the new project after step 2 completes; upload bucket contents into step 3 buckets.",
+        label: "Load the dump into the new project after step 2 completes; upload bucket contents into step 3 buckets. A data-only dump carries no RLS policies, GRANTs, triggers, functions, storage.objects policies, cron jobs or realtime publication membership — those come from the migration replay.",
       },
     ],
   },
