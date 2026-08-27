@@ -250,7 +250,14 @@ const OpportunityCard = ({
           "rounded-md transition-all duration-200",
           "hover:-translate-y-[1px]",
           isGreyed
-            ? "pipeline-card-muted border-l-[2px] border-l-transparent bg-zinc-500/90 dark:bg-zinc-700/90 opacity-60"
+            // A card owned by another rep is recessive by colour, not by
+            // opacity. `opacity-60` over zinc-500 composited to ~#C8C8CC in
+            // light mode, which put this card's white title at ~1.4:1 and its
+            // red underwriting badge past unreadable. The plate now stays
+            // opaque and dark enough for white text to clear 4.5:1 in both
+            // modes; it still reads as the muted card on the board because
+            // every other card is white, gold-bordered or gradient.
+            ? "pipeline-card-muted border-l-[2px] border-l-transparent bg-zinc-600 dark:bg-zinc-700"
             : isClosedWon
               ? "pipeline-card-live border border-amber-500/30 hover:border-amber-500/60 bg-gradient-to-br from-amber-50 via-yellow-50/80 to-amber-100/60 dark:from-amber-950/40 dark:via-yellow-950/30 dark:to-amber-900/20"
               : isComplete
@@ -307,7 +314,7 @@ const OpportunityCard = ({
 
           {/* Contact name */}
           {contactName && (
-            <p className={cn("font-pipeline-mono text-[10px] uppercase tracking-wider truncate flex items-center gap-1", isGreyed ? "text-white/70" : "text-muted-foreground")}>
+            <p className={cn("font-pipeline-mono text-[10px] uppercase tracking-wider truncate flex items-center gap-1", isGreyed ? "text-white/75" : "text-muted-foreground")}>
               <User className="h-2.5 w-2.5 shrink-0" />
               {contactName}
             </p>
@@ -346,7 +353,13 @@ const OpportunityCard = ({
           {uwScore !== null && (
             <span className={cn(
               "flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-md border",
-              uwScore >= 80 ? "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30"
+              // The red/amber/emerald score scale is tuned for the card and
+              // popover surfaces; on the muted grey plate its low end was a
+              // dark red on dark grey and effectively invisible. A card you
+              // don't own carries the number in the plate's own white — the
+              // score still reads, the colour coding goes with the ownership.
+              isGreyed ? "text-white bg-white/15 border-white/25"
+                : uwScore >= 80 ? "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30"
                 : uwScore >= 60 ? "text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30"
                 : uwScore >= 40 ? "text-orange-600 dark:text-orange-400 bg-orange-500/10 border-orange-500/30"
                 : "text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/30"
@@ -383,7 +396,7 @@ const OpportunityCard = ({
             {isGreyed ? (
               <div className="flex items-center w-full">
                 {opportunity.assigned_to && (
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full truncate bg-white/20 text-white">
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full truncate bg-white/15 text-white">
                     {opportunity.assigned_to}
                   </span>
                 )}

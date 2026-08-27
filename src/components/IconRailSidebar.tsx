@@ -19,6 +19,7 @@ import { useOwnProfile } from "@/hooks/useOwnProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { EMAIL_TO_USER } from "@/types/opportunity";
 import { activeGroupFor, groupsForSurface, type NavItem } from "@/config/navigation";
+import { isPathWithin } from "@/lib/routeMatch";
 import { openExternal } from "@/lib/openExternal";
 import { cn } from "@/lib/utils";
 
@@ -31,12 +32,27 @@ const STORAGE_KEY = "iconRailCollapsed";
  */
 const AUTO_COLLAPSE_WIDTH = 1440;
 
-function SubItemBody({ sub, badge }: { sub: NavItem; badge: number }) {
+function SubItemBody({ sub, badge, active }: { sub: NavItem; badge: number; active?: boolean }) {
   return (
     <>
-      <sub.icon className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+      <sub.icon
+        className={cn(
+          "h-4 w-4 mt-0.5 shrink-0 transition-colors",
+          active
+            ? "text-foreground"
+            : "text-muted-foreground group-hover/nav:text-foreground group-focus/nav:text-foreground",
+        )}
+      />
       <span className="min-w-0 flex-1">
-        <span className="text-[13px] font-medium leading-tight flex items-center gap-1.5">
+        <span
+          className={cn(
+            "text-[13px] leading-tight flex items-center gap-1.5",
+            // Weight and the row's own tint carry the selection. Colour can't:
+            // --primary lands a 16px glyph at 2.0–2.2:1 on Star, Warm and
+            // Ocean, under the 3:1 a non-text indicator needs.
+            active ? "font-semibold" : "font-medium",
+          )}
+        >
           {sub.title}
           {badge > 0 && (
             <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-badge-alert px-1 text-[10px] font-bold leading-none text-white">
@@ -45,7 +61,14 @@ function SubItemBody({ sub, badge }: { sub: NavItem; badge: number }) {
           )}
         </span>
         {sub.description && (
-          <span className="block text-[11px] text-muted-foreground leading-snug line-clamp-1 mt-0.5">
+          <span
+            className={cn(
+              "block text-[11px] leading-snug line-clamp-1 mt-0.5 transition-colors",
+              active
+                ? "text-foreground/85"
+                : "text-muted-foreground group-hover/nav:text-foreground/85 group-focus/nav:text-foreground/85",
+            )}
+          >
             {sub.description}
           </span>
         )}
@@ -193,36 +216,59 @@ export function IconRailSidebar() {
                   {group.title}
                 </DropdownMenuLabel>
 
-                {group.items.map((sub) => (
-                  <DropdownMenuItem key={sub.url} asChild className="p-0 focus:bg-transparent">
-                    {sub.external ? (
-                      <button
-                        type="button"
-                        onClick={() => void openExternal(sub.url)}
-                        className="flex w-full items-start gap-2.5 rounded-md p-2 text-left hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
-                      >
-                        <SubItemBody sub={sub} badge={0} />
-                      </button>
-                    ) : (
-                      <NavLink
-                        to={sub.url}
-                        className={({ isActive }) =>
-                          cn(
-                            "flex items-start gap-2.5 rounded-md p-2 transition-colors cursor-pointer",
-                            isActive
-                              ? "bg-accent text-accent-foreground"
-                              : "hover:bg-accent hover:text-accent-foreground"
-                          )
-                        }
-                      >
-                        <SubItemBody
-                          sub={sub}
-                          badge={sub.url === "/tools/quote-builder" ? acceptedQuotesCount : 0}
-                        />
-                      </NavLink>
-                    )}
-                  </DropdownMenuItem>
-                ))}
+                {group.items.map((sub) => {
+                  // Computed here rather than taken from NavLink's
+                  // `className={({ isActive }) => ...}` render prop. Radix's
+                  // Slot merges an `asChild` parent's className into the
+                  // child's by `[parent, child].join(" ")` — with a function
+                  // child that stringifies the function body into the class
+                  // attribute, so every class in it was silently dropped and
+                  // the active row never painted at all.
+                  const subActive = !sub.external && isPathWithin(location.pathname, sub.url);
+
+                  return (
+                    <DropdownMenuItem
+                      key={sub.url}
+                      asChild
+                      // Both halves of the base item's focus state are replaced
+                      // here, on the item, where cn()'s tailwind-merge drops
+                      // them outright rather than leaving two rules to race on
+                      // stylesheet order. Overriding only the background — what
+                      // this did before — left `focus:text-accent-foreground`
+                      // standing: pure white in every variant, now with no fill
+                      // under it. On the light themes the focused row's title
+                      // went invisible against the popover; on the dark ones the
+                      // row simply stopped highlighting. .nav-flyout-row repaints
+                      // it as a tint that both modes can show.
+                      className="p-0 focus:bg-transparent focus:text-foreground"
+                    >
+                      {sub.external ? (
+                        <button
+                          type="button"
+                          onClick={() => void openExternal(sub.url)}
+                          className="nav-flyout-row group/nav flex w-full items-start gap-2.5 rounded-md p-2 text-left text-popover-foreground transition-colors cursor-pointer hover:text-foreground"
+                        >
+                          <SubItemBody sub={sub} badge={0} />
+                        </button>
+                      ) : (
+                        <NavLink
+                          to={sub.url}
+                          data-active={subActive ? "true" : undefined}
+                          className={cn(
+                            "nav-flyout-row group/nav flex items-start gap-2.5 rounded-md p-2 transition-colors cursor-pointer",
+                            subActive ? "text-foreground" : "text-popover-foreground hover:text-foreground",
+                          )}
+                        >
+                          <SubItemBody
+                            sub={sub}
+                            badge={sub.url === "/tools/quote-builder" ? acceptedQuotesCount : 0}
+                            active={subActive}
+                          />
+                        </NavLink>
+                      )}
+                    </DropdownMenuItem>
+                  );
+                })}
               </DropdownMenuContent>
             </DropdownMenu>
           );

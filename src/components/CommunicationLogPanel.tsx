@@ -162,12 +162,12 @@ export const CommunicationLogPanel = ({
     if (entry.kind === 'sms') {
       return entry.direction === 'incoming'
         ? <MessageCircle className="h-4 w-4 text-primary" />
-        : <Send className="h-4 w-4 text-accent-foreground" />;
+        : <Send className="h-4 w-4 text-muted-foreground" />;
     }
     const call = entry as CallEntry;
     if (call.status === 'missed') return <PhoneMissed className="h-4 w-4 text-destructive" />;
     if (call.direction === 'incoming') return <PhoneIncoming className="h-4 w-4 text-primary" />;
-    return <PhoneOutgoing className="h-4 w-4 text-accent-foreground" />;
+    return <PhoneOutgoing className="h-4 w-4 text-muted-foreground" />;
   };
 
   const getStatusBadge = (entry: CommEntry) => {
