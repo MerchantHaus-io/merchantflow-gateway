@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAcceptedQuotesCount } from "@/hooks/useAcceptedQuotesCount";
-import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useOwnProfile } from "@/hooks/useOwnProfile";
@@ -56,8 +55,6 @@ function SubItemBody({ sub, badge }: { sub: NavItem; badge: number }) {
 }
 
 export function IconRailSidebar() {
-  const { theme } = useTheme();
-  const isDark = theme === "dark";
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
@@ -152,11 +149,7 @@ export function IconRailSidebar() {
                   "group relative flex items-center rounded-lg text-[13px] font-medium tracking-tight transition-colors w-full",
                   collapsed ? "h-11 justify-center px-0" : "h-10 gap-3 px-3",
                   active
-                    ? isDark
-                      ? "bg-white/10 text-white"
-                      : "bg-accent text-accent-foreground"
-                    : isDark
-                    ? "text-white/75 hover:text-white hover:bg-white/10"
+                    ? "bg-accent text-accent-foreground"
                     : "text-foreground/75 hover:bg-accent hover:text-accent-foreground"
                 )}
               >
@@ -246,9 +239,7 @@ export function IconRailSidebar() {
               className={cn(
                 "w-full rounded-lg transition-colors",
                 collapsed ? "h-11 justify-center px-0" : "h-10 gap-3 px-3 justify-start",
-                isDark
-                  ? "text-white/75 hover:text-white hover:bg-white/10"
-                  : "text-foreground/75 hover:bg-accent hover:text-accent-foreground"
+                "text-foreground/75 hover:bg-accent hover:text-accent-foreground"
               )}
             >
               <Avatar className={cn("ring-1 ring-border/50 shrink-0", collapsed ? "h-7 w-7" : "h-7 w-7")}>
@@ -312,9 +303,7 @@ export function IconRailSidebar() {
               className={cn(
                 "w-full h-10 rounded-lg",
                 collapsed ? "justify-center px-0" : "justify-start px-3",
-                isDark
-                  ? "text-white/60 hover:text-white hover:bg-white/8"
-                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               )}
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
