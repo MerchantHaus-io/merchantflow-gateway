@@ -135,7 +135,15 @@ Deno.serve(async (req) => {
     const rootId = await ensureFolder(ROOT_FOLDER);
     const changesId = await ensureFolder("changes", rootId);
 
+    let flushed = 0;
+    let deferred = 0;
     for (const [key, rows] of groups) {
+      if (Date.now() - t0 > TIME_BUDGET_MS) {
+        // Out of time — leave the rest queued for the next run rather than
+        // being killed mid-upload with nothing marked flushed.
+        deferred += rows.length;
+        continue;
+      }
       const [table, date] = key.split("|");
       const tableId = await ensureFolder(table, changesId);
       const fileName = `${date}.jsonl`;
@@ -147,19 +155,20 @@ Deno.serve(async (req) => {
       })).join("\n");
       const combined = body ? `${body.trimEnd()}\n${lines}\n` : `${lines}\n`;
       await uploadText(fileName, tableId, existingId, combined);
-    }
 
-    const ids = queue.map((q) => q.id);
-    await supabase.from("backup_change_queue")
-      .update({ flushed_at: new Date().toISOString() })
-      .in("id", ids);
+      // Mark this group flushed immediately so a later timeout can't undo it.
+      await supabase.from("backup_change_queue")
+        .update({ flushed_at: new Date().toISOString() })
+        .in("id", rows.map((r) => r.id));
+      flushed += rows.length;
+    }
 
     await supabase.from("backup_runs").update({
       status: "success", finished_at: new Date().toISOString(),
-      duration_ms: Date.now() - t0, rows_flushed: queue.length,
+      duration_ms: Date.now() - t0, rows_flushed: flushed,
     }).eq("id", runId);
 
-    return new Response(JSON.stringify({ ok: true, flushed: queue.length }), {
+    return new Response(JSON.stringify({ ok: true, flushed, deferred }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
