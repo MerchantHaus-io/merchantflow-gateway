@@ -7,7 +7,31 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { toast } from "sonner";
+import { edgeScrollVelocity } from "@/lib/edgeScroll";
 import { format } from "date-fns";
+
+/**
+ * Gateway-only deals never enter the two processing-side stages. One list, read
+ * by every drop path, so the mouse and the finger cannot disagree about the rule.
+ */
+const GATEWAY_BLOCKED_STAGES: OpportunityStage[] = ["underwriting_review", "processor_approval"];
+
+/** Hold before a touch becomes a drag — below this it is a tap or a scroll. */
+const TOUCH_HOLD_MS = 320;
+/** Finger travel that cancels the hold, i.e. the gesture was a column scroll. */
+const TOUCH_SLOP = 10;
+
+interface TouchDragState {
+  opportunity: Opportunity;
+  element: HTMLElement;
+  ghost: HTMLElement | null;
+  startX: number;
+  startY: number;
+  armed: boolean;
+  holdTimer: number | null;
+  lastStage: OpportunityStage | null;
+}
 
 interface UnifiedPipelineBoardProps {
   opportunities: Opportunity[];
@@ -45,12 +69,222 @@ const UnifiedPipelineBoard = ({
   const [currentColumnIndex, setCurrentColumnIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
+  const autoScrollRef = useRef<{ raf: number | null; vx: number }>({ raf: null, vx: 0 });
+  const touchDragRef = useRef<TouchDragState | null>(null);
+  const blockTouchScrollRef = useRef<((ev: TouchEvent) => void) | null>(null);
 
   const handleRefresh = async () => {
     if (!onRefresh || isRefreshing) return;
     setIsRefreshing(true);
     try { await onRefresh(); } finally { setIsRefreshing(false); }
   };
+
+  /* ---------------------------------------------------------------------
+     Edge auto-scroll.
+
+     The board is 2,546px of columns behind a viewport that is ~1,176px on a
+     1440px laptop, and dragOver did nothing but preventDefault — so reaching a
+     late stage meant scrolling the board, which put the card you were holding
+     off-screen. A drag from Discovery to Testing was not slow, it was
+     impossible. Both pointer paths feed this.
+     --------------------------------------------------------------------- */
+  const stopAutoScroll = useCallback(() => {
+    const s = autoScrollRef.current;
+    if (s.raf !== null) cancelAnimationFrame(s.raf);
+    s.raf = null;
+    s.vx = 0;
+  }, []);
+
+  const updateAutoScroll = useCallback(
+    (clientX: number) => {
+      const el = scrollRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const vx = edgeScrollVelocity(clientX, r.left, r.right);
+
+      autoScrollRef.current.vx = vx;
+      if (vx === 0) {
+        stopAutoScroll();
+        return;
+      }
+      if (autoScrollRef.current.raf === null) {
+        const step = () => {
+          const node = scrollRef.current;
+          if (!node || autoScrollRef.current.vx === 0) {
+            autoScrollRef.current.raf = null;
+            return;
+          }
+          node.scrollLeft += autoScrollRef.current.vx;
+          autoScrollRef.current.raf = requestAnimationFrame(step);
+        };
+        autoScrollRef.current.raf = requestAnimationFrame(step);
+      }
+    },
+    [stopAutoScroll],
+  );
+
+  /** The one place a stage change is decided, whatever moved the card. */
+  const commitStageChange = useCallback(
+    (opportunity: Opportunity, stage: OpportunityStage) => {
+      if (opportunity.stage === stage || opportunity.outcome_status) return;
+      if (getServiceType(opportunity) === "gateway_only" && GATEWAY_BLOCKED_STAGES.includes(stage)) {
+        // Was a bare `return` commented "Silently reject": the card snapped back
+        // and nothing said why, while the detail modal toasted a clear error for
+        // the identical rule. A finger has even less to go on than a cursor.
+        toast.error("Gateway-only deals skip underwriting", {
+          description: "This deal has no processing application, so it can't enter Underwriting or Approved.",
+        });
+        return;
+      }
+      onUpdateOpportunity(opportunity.id, { stage });
+    },
+    [onUpdateOpportunity],
+  );
+
+  const stageAtPoint = (x: number, y: number): OpportunityStage | null => {
+    const el = document.elementFromPoint(x, y) as HTMLElement | null;
+    const col = el?.closest("[data-stage]") as HTMLElement | null;
+    return (col?.dataset.stage as OpportunityStage | undefined) ?? null;
+  };
+
+  const clearDropHighlight = () => {
+    document.querySelectorAll("[data-stage].drag-over").forEach((el) => el.classList.remove("drag-over"));
+  };
+
+  const clearTouchDrag = useCallback(() => {
+    const state = touchDragRef.current;
+    if (state) {
+      if (state.holdTimer !== null) window.clearTimeout(state.holdTimer);
+      state.ghost?.remove();
+      state.element.classList.remove("dragging");
+    }
+    touchDragRef.current = null;
+    if (blockTouchScrollRef.current) {
+      document.removeEventListener("touchmove", blockTouchScrollRef.current);
+      blockTouchScrollRef.current = null;
+    }
+    clearDropHighlight();
+    stopAutoScroll();
+    setDraggedOpportunity(null);
+  }, [stopAutoScroll]);
+
+  // A drag interrupted by a route change or a realtime re-render must not leave
+  // a ghost node and a document-level listener behind.
+  useEffect(() => clearTouchDrag, [clearTouchDrag]);
+
+  /* ---------------------------------------------------------------------
+     Touch drag.
+
+     PipelineColumn and OpportunityCard have accepted onTouchDrag* since they
+     were written, and nothing ever passed them — so on an iPad, where HTML5
+     `draggable` does not fire, there was no way to move a card at all. These
+     are the handlers those props were waiting for.
+     --------------------------------------------------------------------- */
+  const armTouchDrag = useCallback(() => {
+    const state = touchDragRef.current;
+    if (!state) return;
+
+    const rect = state.element.getBoundingClientRect();
+    const ghost = state.element.cloneNode(true) as HTMLElement;
+    ghost.style.position = "fixed";
+    ghost.style.left = `${rect.left}px`;
+    ghost.style.top = `${rect.top}px`;
+    ghost.style.width = `${rect.width}px`;
+    ghost.style.margin = "0";
+    ghost.style.pointerEvents = "none";
+    ghost.style.opacity = "0.92";
+    ghost.style.zIndex = "9999";
+    ghost.style.transform = "scale(1.03)";
+    ghost.style.boxShadow = "0 18px 36px -12px rgba(0, 0, 0, 0.6)";
+    document.body.appendChild(ghost);
+
+    state.ghost = ghost;
+    state.armed = true;
+    state.element.classList.add("dragging");
+    setDraggedOpportunity(state.opportunity);
+
+    // React attaches touchmove passively at the root, so preventDefault from
+    // the JSX handler is ignored and the column scrolls under the drag. A
+    // non-passive document listener is the only thing that holds it still.
+    const block = (ev: TouchEvent) => {
+      if (ev.cancelable) ev.preventDefault();
+    };
+    document.addEventListener("touchmove", block, { passive: false });
+    blockTouchScrollRef.current = block;
+  }, []);
+
+  const handleTouchDragStart = useCallback(
+    (e: React.TouchEvent, opportunity: Opportunity, element: HTMLElement) => {
+      const t = e.touches[0];
+      if (!t || opportunity.outcome_status) return;
+      // Only tear down a previous gesture if one is actually open — an
+      // unconditional clear here re-rendered the whole board on every tap.
+      if (touchDragRef.current || blockTouchScrollRef.current) clearTouchDrag();
+      const state: TouchDragState = {
+        opportunity,
+        element,
+        ghost: null,
+        startX: t.clientX,
+        startY: t.clientY,
+        armed: false,
+        holdTimer: null,
+        lastStage: null,
+      };
+      state.holdTimer = window.setTimeout(armTouchDrag, TOUCH_HOLD_MS);
+      touchDragRef.current = state;
+    },
+    [armTouchDrag, clearTouchDrag],
+  );
+
+  const handleTouchDragMove = useCallback(
+    (e: React.TouchEvent) => {
+      const state = touchDragRef.current;
+      const t = e.touches[0];
+      if (!state || !t) return;
+
+      if (!state.armed) {
+        // Moving before the hold elapses means the finger is scrolling a
+        // column, not picking a card up. Stand down and let the browser have it.
+        if (Math.abs(t.clientX - state.startX) > TOUCH_SLOP || Math.abs(t.clientY - state.startY) > TOUCH_SLOP) {
+          if (state.holdTimer !== null) window.clearTimeout(state.holdTimer);
+          touchDragRef.current = null;
+        }
+        return;
+      }
+
+      if (state.ghost) {
+        state.ghost.style.transform = `translate(${t.clientX - state.startX}px, ${t.clientY - state.startY}px) scale(1.03)`;
+      }
+      updateAutoScroll(t.clientX);
+
+      const stage = stageAtPoint(t.clientX, t.clientY);
+      if (stage !== state.lastStage) {
+        clearDropHighlight();
+        if (stage) document.querySelector(`[data-stage="${stage}"]`)?.classList.add("drag-over");
+        state.lastStage = stage;
+      }
+    },
+    [updateAutoScroll],
+  );
+
+  const handleTouchDragEnd = useCallback(() => {
+    const state = touchDragRef.current;
+    if (!state) return;
+    const { armed, lastStage, opportunity } = state;
+    clearTouchDrag();
+    if (!armed) return;
+
+    // touchend is followed by a synthetic click, which would open the detail
+    // modal for the card just dropped.
+    const swallow = (ev: MouseEvent) => {
+      ev.stopPropagation();
+      ev.preventDefault();
+    };
+    document.addEventListener("click", swallow, { capture: true, once: true });
+    window.setTimeout(() => document.removeEventListener("click", swallow, true), 400);
+
+    if (lastStage) commitStageChange(opportunity, lastStage);
+  }, [clearTouchDrag, commitStageChange]);
 
   const handleDragStart = (e: React.DragEvent, opportunity: Opportunity) => {
     setDraggedOpportunity(opportunity);
@@ -62,6 +296,7 @@ const UnifiedPipelineBoard = ({
 
   const handleDragEnd = () => {
     setDraggedOpportunity(null);
+    stopAutoScroll();
     // Remove dragging class from all cards
     document.querySelectorAll(".dragging").forEach((el) => el.classList.remove("dragging"));
   };
@@ -69,27 +304,23 @@ const UnifiedPipelineBoard = ({
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
+    updateAutoScroll(e.clientX);
   };
 
   const handleDrop = (e: React.DragEvent, stage: OpportunityStage) => {
     e.preventDefault();
-    if (draggedOpportunity && draggedOpportunity.stage !== stage && !draggedOpportunity.outcome_status) {
-      // Block gateway-only deals from Underwriting and Approved stages
-      const GATEWAY_BLOCKED_STAGES: OpportunityStage[] = ['underwriting_review', 'processor_approval'];
-      if (getServiceType(draggedOpportunity) === 'gateway_only' && GATEWAY_BLOCKED_STAGES.includes(stage)) {
-        // Silently reject - gateway deals can't go to UW or Approved
-        setDraggedOpportunity(null);
-        return;
-      }
-      onUpdateOpportunity(draggedOpportunity.id, { stage });
-    }
+    stopAutoScroll();
+    if (draggedOpportunity) commitStageChange(draggedOpportunity, stage);
     setDraggedOpportunity(null);
   };
 
   const getOpportunitiesByStage = useCallback(
     (stage: OpportunityStage) =>
       opportunities
-        .filter((o) => migrateStage(o.stage) === stage && !o.outcome_status)
+        // `status` matters as much as `outcome_status` here: the realtime UPDATE
+        // handler writes a row marked dead straight back into local state, so
+        // without this the card sat on the board until the next full refetch.
+        .filter((o) => migrateStage(o.stage) === stage && !o.outcome_status && o.status !== "dead")
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
     [opportunities]
   );
@@ -230,6 +461,10 @@ const UnifiedPipelineBoard = ({
               onAssignmentChange={onAssignmentChange}
               onSlaStatusChange={onSlaStatusChange}
               onAddNew={stage === "discovery" ? onAddNew : undefined}
+              onMarkAsDead={onMarkAsDead}
+              onTouchDragStart={handleTouchDragStart}
+              onTouchDragMove={handleTouchDragMove}
+              onTouchDragEnd={handleTouchDragEnd}
               isCompact={isCompact}
               currentUser={currentUser}
               isAdmin={isAdmin}
