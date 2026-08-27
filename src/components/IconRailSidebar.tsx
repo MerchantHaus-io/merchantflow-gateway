@@ -147,10 +147,11 @@ export function IconRailSidebar() {
                 aria-label={group.title}
                 className={cn(
                   "group relative flex items-center rounded-lg text-[13px] font-medium tracking-tight transition-colors w-full",
+                  "hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground",
                   collapsed ? "h-11 justify-center px-0" : "h-10 gap-3 px-3",
                   active
                     ? "bg-accent text-accent-foreground"
-                    : "text-foreground/75 hover:bg-accent hover:text-accent-foreground"
+                    : "text-foreground/75"
                 )}
               >
                 <span className="relative shrink-0 flex items-center justify-center">
@@ -239,7 +240,7 @@ export function IconRailSidebar() {
               className={cn(
                 "w-full rounded-lg transition-colors",
                 collapsed ? "h-11 justify-center px-0" : "h-10 gap-3 px-3 justify-start",
-                "text-foreground/75 hover:bg-accent hover:text-accent-foreground"
+                "text-foreground/75 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground data-[state=open]:bg-accent data-[state=open]:text-accent-foreground"
               )}
             >
               <Avatar className={cn("ring-1 ring-border/50 shrink-0", collapsed ? "h-7 w-7" : "h-7 w-7")}>
@@ -303,7 +304,7 @@ export function IconRailSidebar() {
               className={cn(
                 "w-full h-10 rounded-lg",
                 collapsed ? "justify-center px-0" : "justify-start px-3",
-                "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                "text-muted-foreground hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
               )}
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
