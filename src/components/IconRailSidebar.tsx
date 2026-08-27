@@ -156,8 +156,8 @@ export function IconRailSidebar() {
                       ? "bg-white/10 text-white"
                       : "bg-accent text-accent-foreground"
                     : isDark
-                    ? "text-white/75 hover:text-white hover:bg-white/8"
-                    : "text-foreground/75 hover:text-foreground hover:bg-accent"
+                    ? "text-white/75 hover:text-white hover:bg-white/10"
+                    : "text-foreground/75 hover:bg-accent hover:text-accent-foreground"
                 )}
               >
                 <span className="relative shrink-0 flex items-center justify-center">
@@ -247,8 +247,8 @@ export function IconRailSidebar() {
                 "w-full rounded-lg transition-colors",
                 collapsed ? "h-11 justify-center px-0" : "h-10 gap-3 px-3 justify-start",
                 isDark
-                  ? "text-white/75 hover:text-white hover:bg-white/8"
-                  : "text-foreground/75 hover:text-foreground hover:bg-accent"
+                  ? "text-white/75 hover:text-white hover:bg-white/10"
+                  : "text-foreground/75 hover:bg-accent hover:text-accent-foreground"
               )}
             >
               <Avatar className={cn("ring-1 ring-border/50 shrink-0", collapsed ? "h-7 w-7" : "h-7 w-7")}>
