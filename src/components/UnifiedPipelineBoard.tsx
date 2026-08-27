@@ -1,15 +1,21 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { RefreshCw, Minimize2, Maximize2, ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { Opportunity, OpportunityStage, UNIFIED_PIPELINE_STAGES, STAGE_CONFIG, getServiceType, migrateStage } from "@/types/opportunity";
-import PipelineColumn from "./PipelineColumn";
+import { RefreshCw, Minimize2, Maximize2, Plus } from "lucide-react";
+import {
+  GATEWAY_ONLY_PIPELINE_STAGES,
+  Opportunity,
+  OpportunityStage,
+  PROCESSING_PIPELINE_STAGES,
+  ServiceType,
+  getServiceType,
+} from "@/types/opportunity";
+import PipelineLane from "./PipelineLane";
 import OpportunityDetailModal from "./OpportunityDetailModal";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import { edgeScrollVelocity } from "@/lib/edgeScroll";
-import { format } from "date-fns";
+import { sumMonthlyRevenue } from "@/lib/pipelineValue";
 
 /**
  * Gateway-only deals never enter the two processing-side stages. One list, read
@@ -66,10 +72,15 @@ const UnifiedPipelineBoard = ({
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
   const [isCompact, setIsCompact] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [currentColumnIndex, setCurrentColumnIndex] = useState(0);
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const isMobile = useIsMobile();
-  const autoScrollRef = useRef<{ raf: number | null; vx: number }>({ raf: null, vx: 0 });
+  const [collapsedLanes, setCollapsedLanes] = useState<Record<ServiceType, boolean>>({
+    processing: false,
+    gateway_only: false,
+  });
+  const autoScrollRef = useRef<{ raf: number | null; vx: number; el: HTMLElement | null }>({
+    raf: null,
+    vx: 0,
+    el: null,
+  });
   const touchDragRef = useRef<TouchDragState | null>(null);
   const blockTouchScrollRef = useRef<((ev: TouchEvent) => void) | null>(null);
 
@@ -93,15 +104,23 @@ const UnifiedPipelineBoard = ({
     if (s.raf !== null) cancelAnimationFrame(s.raf);
     s.raf = null;
     s.vx = 0;
+    s.el = null;
   }, []);
 
   const updateAutoScroll = useCallback(
-    (clientX: number) => {
-      const el = scrollRef.current;
-      if (!el) return;
+    (clientX: number, clientY: number) => {
+      // Resolved from the pointer rather than a single ref: each lane scrolls
+      // independently, so the board has to follow whichever one the card is over.
+      const under = document.elementFromPoint(clientX, clientY) as HTMLElement | null;
+      const el = (under?.closest("[data-scroll-container]") as HTMLElement | null) ?? null;
+      if (!el) {
+        stopAutoScroll();
+        return;
+      }
+
       const r = el.getBoundingClientRect();
       const vx = edgeScrollVelocity(clientX, r.left, r.right);
-
+      autoScrollRef.current.el = el;
       autoScrollRef.current.vx = vx;
       if (vx === 0) {
         stopAutoScroll();
@@ -109,13 +128,13 @@ const UnifiedPipelineBoard = ({
       }
       if (autoScrollRef.current.raf === null) {
         const step = () => {
-          const node = scrollRef.current;
-          if (!node || autoScrollRef.current.vx === 0) {
-            autoScrollRef.current.raf = null;
+          const s = autoScrollRef.current;
+          if (!s.el || s.vx === 0) {
+            s.raf = null;
             return;
           }
-          node.scrollLeft += autoScrollRef.current.vx;
-          autoScrollRef.current.raf = requestAnimationFrame(step);
+          s.el.scrollLeft += s.vx;
+          s.raf = requestAnimationFrame(step);
         };
         autoScrollRef.current.raf = requestAnimationFrame(step);
       }
@@ -255,7 +274,7 @@ const UnifiedPipelineBoard = ({
       if (state.ghost) {
         state.ghost.style.transform = `translate(${t.clientX - state.startX}px, ${t.clientY - state.startY}px) scale(1.03)`;
       }
-      updateAutoScroll(t.clientX);
+      updateAutoScroll(t.clientX, t.clientY);
 
       const stage = stageAtPoint(t.clientX, t.clientY);
       if (stage !== state.lastStage) {
@@ -304,7 +323,7 @@ const UnifiedPipelineBoard = ({
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
-    updateAutoScroll(e.clientX);
+    updateAutoScroll(e.clientX, e.clientY);
   };
 
   const handleDrop = (e: React.DragEvent, stage: OpportunityStage) => {
@@ -314,47 +333,25 @@ const UnifiedPipelineBoard = ({
     setDraggedOpportunity(null);
   };
 
-  const getOpportunitiesByStage = useCallback(
-    (stage: OpportunityStage) =>
-      opportunities
-        // `status` matters as much as `outcome_status` here: the realtime UPDATE
-        // handler writes a row marked dead straight back into local state, so
-        // without this the card sat on the board until the next full refetch.
-        .filter((o) => migrateStage(o.stage) === stage && !o.outcome_status && o.status !== "dead")
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
-    [opportunities]
-  );
-
-  const scrollToColumn = useCallback((index: number) => {
-    const container = scrollRef.current;
-    if (!container) return;
-    const clamped = Math.max(0, Math.min(index, UNIFIED_PIPELINE_STAGES.length - 1));
-    const col = container.children[0]?.children[clamped] as HTMLElement | undefined;
-    col?.scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" });
-    setCurrentColumnIndex(clamped);
-  }, []);
-
-  const handleHorizontalWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
-    const container = scrollRef.current;
-    if (!container) return;
-
-    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-      e.preventDefault();
-      container.scrollLeft += e.deltaY;
-    }
-  }, []);
-
-  // Track scroll position for mobile dots
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el || !isMobile) return;
-    const onScroll = () => {
-      const colW = (el.scrollWidth / UNIFIED_PIPELINE_STAGES.length);
-      setCurrentColumnIndex(Math.round(el.scrollLeft / colW));
+  /**
+   * Deals still in play, split by the funnel each one actually belongs to.
+   *
+   * `status` matters as much as `outcome_status`: the realtime UPDATE handler
+   * writes a row marked dead straight back into local state, so without it the
+   * card sat on the board until the next full refetch.
+   */
+  const lanes = useMemo(() => {
+    const live = opportunities.filter((o) => !o.outcome_status && o.status !== "dead");
+    return {
+      processing: live.filter((o) => getServiceType(o) === "processing"),
+      gateway_only: live.filter((o) => getServiceType(o) === "gateway_only"),
     };
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onScroll);
-  }, [isMobile]);
+  }, [opportunities]);
+
+  const toggleLane = useCallback((key: ServiceType) => {
+    setCollapsedLanes((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
+
 
   const hasGatewayOpportunity = selectedOpportunity
     ? opportunities.some(
@@ -364,25 +361,17 @@ const UnifiedPipelineBoard = ({
       )
     : false;
 
-  const totalCount = opportunities.length;
-
-  // Calculate total pipeline revenue: 33% of 2.92% processing fee + $1 per 10 transactions
-  const totalPipelineValue = useMemo(() => {
-    let total = 0;
-    opportunities.forEach((opp) => {
-      const formState = opp.wizard_state?.form_state as Record<string, string> | undefined;
-      if (!formState?.monthly_volume) return;
-      const vol = parseFloat(formState.monthly_volume.replace(/[^0-9.]/g, ""));
-      if (isNaN(vol) || vol <= 0) return;
-      const processingRevenue = vol * 0.0292 * 0.33;
-      const avgTicket = formState.average_transaction
-        ? parseFloat(formState.average_transaction.replace(/[^0-9.]/g, ""))
-        : 0;
-      const txnRevenue = avgTicket > 0 ? (vol / avgTicket / 10) : 0;
-      total += processingRevenue + txnRevenue;
-    });
-    return total;
-  }, [opportunities]);
+  const totalPipelineValue = useMemo(
+    () => sumMonthlyRevenue([...lanes.processing, ...lanes.gateway_only]),
+    [lanes],
+  );
+  const laneValues = useMemo(
+    () => ({
+      processing: sumMonthlyRevenue(lanes.processing),
+      gateway_only: sumMonthlyRevenue(lanes.gateway_only),
+    }),
+    [lanes],
+  );
 
 
   const formatCurrency = (value: number) =>
@@ -439,75 +428,61 @@ const UnifiedPipelineBoard = ({
         )}
       </div>
 
-      {/* Kanban board — horizontal scroll only, column cards scroll vertically inside columns */}
-      <div
-        ref={scrollRef}
-        onWheel={handleHorizontalWheel}
-        className="flex-1 overflow-x-auto overflow-y-hidden min-h-0 pipeline-scrollbar"
-        style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-x pan-y" }}
-        data-scroll-container
-      >
-        <div className={cn("flex items-stretch min-w-max h-full", isCompact ? "gap-1.5 p-1.5" : "gap-2 p-3")}>
-          {UNIFIED_PIPELINE_STAGES.map((stage) => (
-            <PipelineColumn
-              key={stage}
-              stage={stage}
-              opportunities={getOpportunitiesByStage(stage)}
-              onDragStart={handleDragStart}
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-              onDragEnd={handleDragEnd}
-              onCardClick={setSelectedOpportunity}
-              onAssignmentChange={onAssignmentChange}
-              onSlaStatusChange={onSlaStatusChange}
-              onAddNew={stage === "discovery" ? onAddNew : undefined}
-              onMarkAsDead={onMarkAsDead}
-              onTouchDragStart={handleTouchDragStart}
-              onTouchDragMove={handleTouchDragMove}
-              onTouchDragEnd={handleTouchDragEnd}
-              isCompact={isCompact}
-              currentUser={currentUser}
-              isAdmin={isAdmin}
-            />
-          ))}
-        </div>
-      </div>
+      {/* Two funnels, two lanes.
 
-      {/* Mobile Navigation */}
-      {isMobile && (
-        <div className="flex-shrink-0 flex items-center justify-center gap-2 py-1.5 bg-muted/30 border-t border-border">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
-            onClick={() => scrollToColumn(currentColumnIndex - 1)}
-            disabled={currentColumnIndex === 0}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <div className="flex items-center gap-1">
-            {UNIFIED_PIPELINE_STAGES.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => scrollToColumn(i)}
-                className={cn(
-                  "w-1.5 h-1.5 rounded-full transition-all duration-200",
-                  i === currentColumnIndex ? "bg-indigo-600 w-3" : "bg-muted-foreground/40"
-                )}
-              />
-            ))}
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
-            onClick={() => scrollToColumn(currentColumnIndex + 1)}
-            disabled={currentColumnIndex === UNIFIED_PIPELINE_STAGES.length - 1}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
+          A gateway-only deal has no processing application, so it never enters
+          Underwriting or Approved — a rule the single ten-column row could only
+          enforce by refusing a drop after the fact. Given its own lane it has
+          seven columns and no illegal target to reach for. */}
+      <div className={cn("flex-1 min-h-0 flex flex-col overflow-y-auto", isCompact ? "gap-1.5 p-1.5" : "gap-2 p-2")}>
+        <PipelineLane
+          serviceType="processing"
+          title="Processing"
+          canonicalStages={PROCESSING_PIPELINE_STAGES}
+          opportunities={lanes.processing}
+          monthlyValue={laneValues.processing}
+          collapsed={collapsedLanes.processing}
+          onToggleCollapsed={() => toggleLane("processing")}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          onDragEnd={handleDragEnd}
+          onCardClick={setSelectedOpportunity}
+          onAssignmentChange={onAssignmentChange}
+          onSlaStatusChange={onSlaStatusChange}
+          onMarkAsDead={onMarkAsDead}
+          onAddNew={onAddNew}
+          onTouchDragStart={handleTouchDragStart}
+          onTouchDragMove={handleTouchDragMove}
+          onTouchDragEnd={handleTouchDragEnd}
+          isCompact={isCompact}
+          currentUser={currentUser}
+          isAdmin={isAdmin}
+        />
+        <PipelineLane
+          serviceType="gateway_only"
+          title="Gateway only"
+          canonicalStages={GATEWAY_ONLY_PIPELINE_STAGES}
+          opportunities={lanes.gateway_only}
+          monthlyValue={laneValues.gateway_only}
+          collapsed={collapsedLanes.gateway_only}
+          onToggleCollapsed={() => toggleLane("gateway_only")}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          onDragEnd={handleDragEnd}
+          onCardClick={setSelectedOpportunity}
+          onAssignmentChange={onAssignmentChange}
+          onSlaStatusChange={onSlaStatusChange}
+          onMarkAsDead={onMarkAsDead}
+          onTouchDragStart={handleTouchDragStart}
+          onTouchDragMove={handleTouchDragMove}
+          onTouchDragEnd={handleTouchDragEnd}
+          isCompact={isCompact}
+          currentUser={currentUser}
+          isAdmin={isAdmin}
+        />
+      </div>
 
       <OpportunityDetailModal
         opportunity={selectedOpportunity}

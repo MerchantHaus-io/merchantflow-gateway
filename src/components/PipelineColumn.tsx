@@ -3,6 +3,7 @@ import { Plus } from "lucide-react";
 import { Opportunity, OpportunityStage, STAGE_CONFIG } from "@/types/opportunity";
 import OpportunityCard from "./OpportunityCard";
 import { cn } from "@/lib/utils";
+import { sumMonthlyRevenue } from "@/lib/pipelineValue";
 import { Button } from "@/components/ui/button";
 
 interface PipelineColumnProps {
@@ -54,23 +55,7 @@ const PipelineColumn = ({
   const config = STAGE_CONFIG[stage];
   const count = opportunities.length;
 
-  // Sum deal value: 33% of 2.92% processing fee + $1 per 10 transactions
-  const columnValue = useMemo(() => {
-    let total = 0;
-    opportunities.forEach((opp) => {
-      const formState = opp.wizard_state?.form_state as Record<string, string> | undefined;
-      if (!formState?.monthly_volume) return;
-      const vol = parseFloat(formState.monthly_volume.replace(/[^0-9.]/g, ""));
-      if (isNaN(vol) || vol <= 0) return;
-      const processingRevenue = vol * 0.0292 * 0.33;
-      const avgTicket = formState.average_transaction
-        ? parseFloat(formState.average_transaction.replace(/[^0-9.]/g, ""))
-        : 0;
-      const txnRevenue = avgTicket > 0 ? (vol / avgTicket / 10) : 0;
-      total += processingRevenue + txnRevenue;
-    });
-    return total;
-  }, [opportunities]);
+  const columnValue = useMemo(() => sumMonthlyRevenue(opportunities), [opportunities]);
 
   return (
     <div
@@ -157,6 +142,9 @@ const PipelineColumn = ({
           isCompact ? "p-1 space-y-1" : "p-1.5 space-y-1.5"
         )}
         style={{ WebkitOverflowScrolling: "touch", touchAction: "auto" }}
+        // Marks this list as the lane's wheel guard: a vertical wheel here is
+        // the column's to consume, not the board's to turn into a sideways slide.
+        data-column-cards
       >
         {opportunities.length === 0 ? (
           <div
