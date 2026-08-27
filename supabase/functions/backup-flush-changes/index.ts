@@ -8,7 +8,14 @@ const corsHeaders = {
 };
 const GATEWAY = "https://connector-gateway.lovable.dev/google_drive";
 const ROOT_FOLDER = "MerchantHaus-Backups";
-const BATCH = 500;
+// Each (table, date) group costs 4 sequential Drive round-trips including a
+// full download of the existing jsonl. 500 rows spread over many groups blew
+// past the 150s edge-function limit, so nothing was ever marked flushed and the
+// next run re-processed the same (growing) backlog — a guaranteed 504 loop.
+// Smaller batch + a wall-clock budget + per-group flushing makes progress
+// monotonic: whatever finished stays finished.
+const BATCH = 100;
+const TIME_BUDGET_MS = 90_000;
 
 function driveAuth() {
   const lk = Deno.env.get("LOVABLE_API_KEY");
