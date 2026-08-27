@@ -8,7 +8,14 @@ const corsHeaders = {
 };
 const GATEWAY = "https://connector-gateway.lovable.dev/google_drive";
 const ROOT_FOLDER = "MerchantHaus-Backups";
-const BATCH = 500;
+// Each (table, date) group costs 4 sequential Drive round-trips including a
+// full download of the existing jsonl. 500 rows spread over many groups blew
+// past the 150s edge-function limit, so nothing was ever marked flushed and the
+// next run re-processed the same (growing) backlog — a guaranteed 504 loop.
+// Smaller batch + a wall-clock budget + per-group flushing makes progress
+// monotonic: whatever finished stays finished.
+const BATCH = 100;
+const TIME_BUDGET_MS = 90_000;
 
 function driveAuth() {
   const lk = Deno.env.get("LOVABLE_API_KEY");
@@ -128,7 +135,15 @@ Deno.serve(async (req) => {
     const rootId = await ensureFolder(ROOT_FOLDER);
     const changesId = await ensureFolder("changes", rootId);
 
+    let flushed = 0;
+    let deferred = 0;
     for (const [key, rows] of groups) {
+      if (Date.now() - t0 > TIME_BUDGET_MS) {
+        // Out of time — leave the rest queued for the next run rather than
+        // being killed mid-upload with nothing marked flushed.
+        deferred += rows.length;
+        continue;
+      }
       const [table, date] = key.split("|");
       const tableId = await ensureFolder(table, changesId);
       const fileName = `${date}.jsonl`;
@@ -140,19 +155,20 @@ Deno.serve(async (req) => {
       })).join("\n");
       const combined = body ? `${body.trimEnd()}\n${lines}\n` : `${lines}\n`;
       await uploadText(fileName, tableId, existingId, combined);
-    }
 
-    const ids = queue.map((q) => q.id);
-    await supabase.from("backup_change_queue")
-      .update({ flushed_at: new Date().toISOString() })
-      .in("id", ids);
+      // Mark this group flushed immediately so a later timeout can't undo it.
+      await supabase.from("backup_change_queue")
+        .update({ flushed_at: new Date().toISOString() })
+        .in("id", rows.map((r) => r.id));
+      flushed += rows.length;
+    }
 
     await supabase.from("backup_runs").update({
       status: "success", finished_at: new Date().toISOString(),
-      duration_ms: Date.now() - t0, rows_flushed: queue.length,
+      duration_ms: Date.now() - t0, rows_flushed: flushed,
     }).eq("id", runId);
 
-    return new Response(JSON.stringify({ ok: true, flushed: queue.length }), {
+    return new Response(JSON.stringify({ ok: true, flushed, deferred }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

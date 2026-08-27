@@ -47,8 +47,10 @@ serve(async (req) => {
   for (const row of data ?? []) {
     const desc = String(row.description ?? "");
     if (!desc) continue;
-    // Only rewrite rows that look noisy — cheap sniff test.
-    const noisy = /\$\{|\[\[|View in browser|View as webpage|Unsubscribe|©\s*20\d{2}|https?:\/\/\S{200,}/i.test(desc);
+    // Only rewrite rows that are unmistakably newsletter chrome. A long URL or
+    // a `${...}` snippet on its own is not noise — it is often the exact thing
+    // the customer wanted the agent to see, and this rewrite is irreversible.
+    const noisy = /^\s*view (in|as) (browser|webpage)|^\s*unsubscribe\b|©\s*20\d{2}|\[\[/im.test(desc);
     if (!noisy) continue;
     const cleaned = sanitizeInboundBody(desc, "");
     if (cleaned === desc || cleaned === "(no message body)") continue;

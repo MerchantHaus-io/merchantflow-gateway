@@ -115,15 +115,34 @@ const decodeQuotedPrintable = (s: string): string =>
       }
     });
 
-/** Remove unfilled marketing template tokens like ${foo}, {{foo}}, [[foo]], <[[…]]>. */
+/**
+ * Marketing-ish placeholder names only. `${...}` and `{{...}}` are also valid
+ * code a developer customer might paste when reporting an API problem, so the
+ * strip is limited to the merge fields newsletter platforms leave unfilled.
+ */
+const MARKETING_TOKEN_NAME =
+  /^(?:[a-z0-9_.-]*(?:btn|button|link|url|href|unsubscribe|preference|webversion|web_version|view|mirror|forward|footer|address|company|firstname|first_name|lastname|last_name|fullname|recipient|subscriber|list|campaign|utm|tracking|pixel|logo|banner|social)[a-z0-9_.-]*)$/i;
+
+/** Remove unfilled marketing template tokens like ${btn_link}, {{view_url}}, [[foo]], <[[…]]>. */
 const stripTemplateTokens = (s: string): string =>
   s
     .replace(/<\[\[[\s\S]*?\]\]>/g, "")
     .replace(/\[\[[\s\S]*?\]\]/g, "")
-    .replace(/\$\{[^}\n]{0,120}\}/g, "")
-    .replace(/\{\{[^}\n]{0,120}\}\}/g, "");
+    .replace(/\$\{([^}\n]{0,120})\}/g, (m, name: string) =>
+      MARKETING_TOKEN_NAME.test(name.trim()) ? "" : m,
+    )
+    .replace(/\{\{([^}\n]{0,120})\}\}/g, (m, name: string) =>
+      MARKETING_TOKEN_NAME.test(name.trim()) ? "" : m,
+    );
 
-/** Shorten obvious tracking / redirect URLs so they don't dominate the body. */
+/**
+ * Shorten obvious tracking / redirect URLs so they don't dominate the body.
+ *
+ * Only known redirect wrappers are collapsed. A generic "any long URL" rule
+ * used to live here and it destroyed legitimate links customers paste —
+ * Drive shares, signed S3/screenshot URLs, deep dashboard links — with no way
+ * to recover them.
+ */
 const shortenTrackingUrls = (s: string): string => {
   const TRACKERS = [
     /https?:\/\/[^\s<>()]*\/e3t\/[^\s<>()]+/gi,          // HubSpot
@@ -133,7 +152,6 @@ const shortenTrackingUrls = (s: string): string => {
     /https?:\/\/[^\s<>()]*mandrillapp\.com\/track[^\s<>()]*/gi,
     /https?:\/\/click\.[^\s<>()]+/gi,
     /https?:\/\/[^\s<>()]*\/wf\/click\?[^\s<>()]+/gi,
-    /https?:\/\/[^\s<>()]{200,}/gi,                       // any absurdly long link
   ];
   let out = s;
   for (const re of TRACKERS) out = out.replace(re, "[link]");

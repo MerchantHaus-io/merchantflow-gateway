@@ -16,6 +16,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { PageChromeProvider, usePageChrome } from "@/contexts/PageChromeContext";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
+import { useGlobalPrintChromeOff } from "@/hooks/usePrintChromeOff";
 import { useIsCompactNav } from "@/hooks/use-compact-nav";
 import { useOwnProfileRealtime } from "@/hooks/useOwnProfile";
 import { recordPageVisit } from "@/lib/recentPages";
@@ -86,6 +87,9 @@ function ShellChrome() {
   // icon rail and the notification bell (#113). Mounting this anywhere else as
   // well would recreate the duplication it exists to remove.
   useOwnProfileRealtime();
+  // Ctrl+P and page-level window.print() buttons both print without the app
+  // chrome, not just the SOP page.
+  useGlobalPrintChromeOff();
 
   // Refetch data rather than reloading the document. A full reload throws away
   // all page state, re-downloads the bundle and shows a white flash.
