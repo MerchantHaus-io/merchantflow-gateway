@@ -414,10 +414,14 @@ export const Dialler = () => {
                       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted transition-colors text-left"
                       onClick={() => call.phone_number && handleCallNumber(call.phone_number, call.contact_name)}
                     >
+                      {/* Inbound in brand, outbound neutral — the same
+                          direction coding the communication log uses. Inbound
+                          was `text-accent-foreground`, i.e. white, on a plain
+                          popover row. */}
                       {call.direction === "incoming" ? (
-                        <PhoneIncoming className="h-4 w-4 shrink-0 text-accent-foreground" />
+                        <PhoneIncoming className="h-4 w-4 shrink-0 text-primary" />
                       ) : (
-                        <PhoneOutgoing className="h-4 w-4 shrink-0 text-primary" />
+                        <PhoneOutgoing className="h-4 w-4 shrink-0 text-muted-foreground" />
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">

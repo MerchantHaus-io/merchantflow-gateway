@@ -1506,6 +1506,40 @@ All colors MUST be HSL.
     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   }
 
+  /* Rail flyout rows — the highlight under every theme variant.
+     Painted as background *image* layers rather than a background colour: the
+     row is also a Radix menu item carrying `bg-*` utilities of its own, and
+     those set background-color, so nothing here has to win an ordering fight
+     with them.
+
+     Two layers, because neither alone survives all sixteen variants:
+       - the accent tint carries the brand hue, but PS1's --accent sits 12%
+         of lightness from its --popover and disappears at any usable alpha;
+       - the --foreground veil guarantees a lightness step in any variant,
+         lightening a dark popover and darkening a light one.
+     Together the resting-to-hover step measures ΔE 9.9 at worst and the
+     active step ΔE 15.1, across every palette defined in this file.
+
+     A solid `bg-accent` fill is the other obvious answer and is the one this
+     menu used to reach for. It cannot be: --accent-foreground is pure white
+     in every variant here, and on the brighter accents (Forest, Warm, Ocean)
+     that lands 13px titles at 2.3–2.9:1. Tinting instead keeps the text on
+     --foreground, which clears 5.8:1 everywhere. */
+  .nav-flyout-row:hover,
+  .nav-flyout-row:focus {
+    background-image:
+      linear-gradient(hsl(var(--foreground) / 0.09), hsl(var(--foreground) / 0.09)),
+      linear-gradient(hsl(var(--accent) / 0.18), hsl(var(--accent) / 0.18));
+  }
+
+  .nav-flyout-row[data-active="true"],
+  .nav-flyout-row[data-active="true"]:hover,
+  .nav-flyout-row[data-active="true"]:focus {
+    background-image:
+      linear-gradient(hsl(var(--foreground) / 0.14), hsl(var(--foreground) / 0.14)),
+      linear-gradient(hsl(var(--accent) / 0.30), hsl(var(--accent) / 0.30));
+  }
+
   .pipeline-card-muted {
     position: relative;
     box-shadow: 0 2px 6px -1px rgba(0, 0, 0, 0.1);
