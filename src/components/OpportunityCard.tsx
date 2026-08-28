@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Opportunity, STAGE_CONFIG, TEAM_MEMBERS, getServiceType, migrateStage } from "@/types/opportunity";
 import { dealAttention } from "@/lib/dealAttention";
+import { assignDeal } from "@/lib/assignDeal";
 import { emptyDealSignal, type DealSignal } from "@/hooks/useDealSignals";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -160,24 +161,15 @@ const OpportunityCard = ({
 
   const handleAssignmentChange = async (value: string) => {
     const newValue = value === "unassigned" ? null : value;
-    try {
-      const updateData: Record<string, unknown> = { assigned_to: newValue };
-      if (opportunity.status === "dead" && newValue) {
-        updateData.status = "active";
-        const validActiveStages = [
-          "application_started", "discovery", "qualified", "application_prep",
-          "underwriting_review", "processor_approval", "integration_setup",
-          "gateway_submitted", "live_activated",
-        ];
-        if (!validActiveStages.includes(opportunity.stage)) updateData.stage = "application_started";
-      }
-      const { error } = await supabase.from("opportunities").update(updateData).eq("id", opportunity.id);
-      if (error) throw error;
-      onAssignmentChange?.(opportunity.id, newValue);
-      toast.success(newValue ? `Assigned to ${newValue}` : "Unassigned");
-    } catch {
+    // The write, including the dead-deal revival rule, lives in one place so
+    // the phone's one-tap Claim cannot drift from this popover.
+    const result = await assignDeal(opportunity, newValue);
+    if (!result.ok) {
       toast.error("Failed to update assignment");
+      return;
     }
+    onAssignmentChange?.(opportunity.id, newValue);
+    toast.success(newValue ? `Assigned to ${newValue}` : "Unassigned");
   };
 
   const handleMarkDeadConfirm = useCallback(async () => {

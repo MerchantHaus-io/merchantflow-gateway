@@ -38,6 +38,17 @@ export interface AttentionInputs {
   activationReady?: boolean;
 }
 
+/**
+ * The line between "now" and "later" on the mobile Today screen.
+ *
+ * Named here rather than as a bare number in the view, because it is a
+ * statement about this ladder: at or above it are the things that are already
+ * going wrong or about to — nobody owns it, someone is expecting a call, or
+ * the clock has run out. Reordering the ladder without moving this line would
+ * silently reclassify a rep's day.
+ */
+export const NEEDS_ATTENTION_NOW = 80;
+
 /** A meeting this close is the most actionable thing on a rep's board. */
 export const MEETING_IMMINENT_HOURS = 2;
 /** Past this, a stage is stalled rather than simply in progress. */
