@@ -16,6 +16,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { toast } from "sonner";
 import { edgeScrollVelocity } from "@/lib/edgeScroll";
 import { sumMonthlyRevenue } from "@/lib/pipelineValue";
+import { useDealSignals } from "@/hooks/useDealSignals";
+import PipelineQueue from "./PipelineQueue";
 
 /**
  * Gateway-only deals never enter the two processing-side stages. One list, read
@@ -348,6 +350,15 @@ const UnifiedPipelineBoard = ({
     };
   }, [opportunities]);
 
+  // One batched fetch for the whole board, shared by every card and by the
+  // queue — so the queue's ranking and the cards' status lines are computed
+  // from the same numbers.
+  const liveIds = useMemo(
+    () => [...lanes.processing, ...lanes.gateway_only].map((o) => o.id),
+    [lanes],
+  );
+  const signals = useDealSignals(liveIds);
+
   const toggleLane = useCallback((key: ServiceType) => {
     setCollapsedLanes((prev) => ({ ...prev, [key]: !prev[key] }));
   }, []);
@@ -434,6 +445,15 @@ const UnifiedPipelineBoard = ({
           Underwriting or Approved — a rule the single ten-column row could only
           enforce by refusing a drop after the fact. Given its own lane it has
           seven columns and no illegal target to reach for. */}
+      <div className="flex-1 min-h-0 flex items-stretch">
+        <PipelineQueue
+          opportunities={[...lanes.processing, ...lanes.gateway_only]}
+          signals={signals}
+          onSelect={setSelectedOpportunity}
+          currentUser={currentUser}
+          isAdmin={isAdmin}
+        />
+
       <div className={cn("flex-1 min-h-0 flex flex-col overflow-y-auto", isCompact ? "gap-1.5 p-1.5" : "gap-2 p-2")}>
         <PipelineLane
           serviceType="processing"
@@ -458,6 +478,7 @@ const UnifiedPipelineBoard = ({
           isCompact={isCompact}
           currentUser={currentUser}
           isAdmin={isAdmin}
+          signals={signals}
         />
         <PipelineLane
           serviceType="gateway_only"
@@ -481,7 +502,9 @@ const UnifiedPipelineBoard = ({
           isCompact={isCompact}
           currentUser={currentUser}
           isAdmin={isAdmin}
+          signals={signals}
         />
+      </div>
       </div>
 
       <OpportunityDetailModal
