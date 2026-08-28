@@ -4,6 +4,7 @@ import {
   AGEING_DAYS,
   FAILING_SCORE,
   MEETING_IMMINENT_HOURS,
+  NEEDS_ATTENTION_NOW,
   STALLED_DAYS,
   type AttentionInputs,
 } from "./dealAttention";
@@ -125,5 +126,28 @@ describe("dealAttention", () => {
     ];
     expect(ladder).toEqual([...ladder].sort((a, b) => b - a));
     expect(new Set(ladder).size).toBe(ladder.length);
+  });
+});
+
+describe("NEEDS_ATTENTION_NOW", () => {
+  // The mobile Today screen splits the day on this line. These assertions are
+  // about which situations a rep sees above the fold, so a change to the
+  // ladder that moves one across the line has to change this test too.
+  const rank = (i: Partial<AttentionInputs>) => dealAttention({ ...base, ...i }).rank;
+
+  it("puts nobody-owns-it, someone-is-waiting and out-of-time above the line", () => {
+    expect(rank({ assignedTo: null })).toBeGreaterThanOrEqual(NEEDS_ATTENTION_NOW);
+    expect(rank({ hoursToMeeting: 1, meetingLabel: "2:30 PM" })).toBeGreaterThanOrEqual(NEEDS_ATTENTION_NOW);
+    expect(rank({ daysInStage: STALLED_DAYS })).toBeGreaterThanOrEqual(NEEDS_ATTENTION_NOW);
+  });
+
+  it("leaves the merely notable below it", () => {
+    expect(rank({ underwritingScore: 10 })).toBeLessThan(NEEDS_ATTENTION_NOW);
+    expect(rank({ activationReady: true })).toBeLessThan(NEEDS_ATTENTION_NOW);
+    expect(rank({ daysInStage: AGEING_DAYS })).toBeLessThan(NEEDS_ATTENTION_NOW);
+  });
+
+  it("keeps a healthy deal out of the day entirely", () => {
+    expect(rank({})).toBe(0);
   });
 });

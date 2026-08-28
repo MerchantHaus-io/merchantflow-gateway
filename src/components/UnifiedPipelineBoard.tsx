@@ -17,7 +17,10 @@ import { toast } from "sonner";
 import { edgeScrollVelocity } from "@/lib/edgeScroll";
 import { sumMonthlyRevenue } from "@/lib/pipelineValue";
 import { useDealSignals } from "@/hooks/useDealSignals";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { assignDeal } from "@/lib/assignDeal";
 import PipelineQueue from "./PipelineQueue";
+import MobilePipeline from "./MobilePipeline";
 
 /**
  * Gateway-only deals never enter the two processing-side stages. One list, read
@@ -358,6 +361,20 @@ const UnifiedPipelineBoard = ({
     [lanes],
   );
   const signals = useDealSignals(liveIds);
+  const isMobile = useIsMobile();
+
+  const handleClaim = useCallback(
+    async (opportunity: Opportunity, assignedTo: string) => {
+      const result = await assignDeal(opportunity, assignedTo);
+      if (!result.ok) {
+        toast.error("Couldn't claim that deal");
+        return;
+      }
+      onAssignmentChange?.(opportunity.id, assignedTo);
+      toast.success(`Assigned to ${assignedTo}`);
+    },
+    [onAssignmentChange],
+  );
 
   const toggleLane = useCallback((key: ServiceType) => {
     setCollapsedLanes((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -445,6 +462,20 @@ const UnifiedPipelineBoard = ({
           Underwriting or Approved — a rule the single ten-column row could only
           enforce by refusing a drop after the fact. Given its own lane it has
           seven columns and no illegal target to reach for. */}
+      {/* Same route, two answers. A phone gets the mobile view; everything from
+          tablet up gets the board. One link works on any device — see
+          MobilePipeline for why a phone does not get columns. */}
+      {isMobile ? (
+        <MobilePipeline
+          opportunities={[...lanes.processing, ...lanes.gateway_only]}
+          signals={signals}
+          onSelect={setSelectedOpportunity}
+          onCommitStage={commitStageChange}
+          onAssign={handleClaim}
+          currentUser={currentUser}
+          isAdmin={isAdmin}
+        />
+      ) : (
       <div className="flex-1 min-h-0 flex items-stretch">
         <PipelineQueue
           opportunities={[...lanes.processing, ...lanes.gateway_only]}
@@ -479,6 +510,7 @@ const UnifiedPipelineBoard = ({
           currentUser={currentUser}
           isAdmin={isAdmin}
           signals={signals}
+          onCommitStage={commitStageChange}
         />
         <PipelineLane
           serviceType="gateway_only"
@@ -503,9 +535,11 @@ const UnifiedPipelineBoard = ({
           currentUser={currentUser}
           isAdmin={isAdmin}
           signals={signals}
+          onCommitStage={commitStageChange}
         />
       </div>
       </div>
+      )}
 
       <OpportunityDetailModal
         opportunity={selectedOpportunity}

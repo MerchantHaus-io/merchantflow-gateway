@@ -27,6 +27,7 @@ interface PipelineColumnProps {
   onTouchDragEnd?: (e: React.TouchEvent) => void;
   isAdmin?: boolean;
   signals?: Map<string, DealSignal>;
+  onMoveRelative?: (opportunity: Opportunity, direction: -1 | 1) => void;
 }
 
 const formatCurrency = (value: number) =>
@@ -52,6 +53,7 @@ const PipelineColumn = ({
   onTouchDragEnd,
   isAdmin,
   signals,
+  onMoveRelative,
 }: PipelineColumnProps) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const dragEnterCounter = useRef(0);
@@ -175,6 +177,7 @@ const PipelineColumn = ({
               currentUser={currentUser}
               isAdmin={isAdmin}
               signal={signals?.get(opportunity.id)}
+              onMoveRelative={onMoveRelative}
             />
           ))
         )}
