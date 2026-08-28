@@ -1506,6 +1506,24 @@ All colors MUST be HSL.
     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   }
 
+  /* The undo window, drawn.
+     A five-second reprieve the rep cannot see is a five-second reprieve they
+     will not use. The bar runs for exactly the window that holds the
+     stage-change email back, so what it shows is the actual deadline rather
+     than a decorative flourish. Its duration is set inline from the same
+     constant the timer uses. */
+  @keyframes undo-countdown {
+    from { transform: scaleX(1); }
+    to { transform: scaleX(0); }
+  }
+
+  .undo-countdown {
+    transform-origin: left center;
+    animation-name: undo-countdown;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+  }
+
   /* Rail flyout rows — the highlight under every theme variant.
      Painted as background *image* layers rather than a background colour: the
      row is also a Radix menu item carrying `bg-*` utilities of its own, and

@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { RefreshCw, Minimize2, Maximize2, Plus } from "lucide-react";
+import { CreditCard, Maximize2, Minimize2, Plus, RefreshCw, Zap } from "lucide-react";
 import {
   GATEWAY_ONLY_PIPELINE_STAGES,
   Opportunity,
@@ -77,10 +77,16 @@ const UnifiedPipelineBoard = ({
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
   const [isCompact, setIsCompact] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [collapsedLanes, setCollapsedLanes] = useState<Record<ServiceType, boolean>>({
-    processing: false,
-    gateway_only: false,
-  });
+  /**
+   * One funnel on screen at a time.
+   *
+   * Two stacked lanes put the real cards two bordered containers deep and gave
+   * the rep a second axis to navigate before reaching a deal. Picking the
+   * funnel once, up here, keeps the rule structural — the visible columns are
+   * only the ones this service type is allowed to walk — while the board stays
+   * a single row. It is also what the phone's Funnel screen already does.
+   */
+  const [lane, setLane] = useState<ServiceType>("processing");
   const autoScrollRef = useRef<{ raf: number | null; vx: number; el: HTMLElement | null }>({
     raf: null,
     vx: 0,
@@ -376,9 +382,7 @@ const UnifiedPipelineBoard = ({
     [onAssignmentChange],
   );
 
-  const toggleLane = useCallback((key: ServiceType) => {
-    setCollapsedLanes((prev) => ({ ...prev, [key]: !prev[key] }));
-  }, []);
+
 
 
   const hasGatewayOpportunity = selectedOpportunity
@@ -412,9 +416,39 @@ const UnifiedPipelineBoard = ({
       <div className="flex-shrink-0 px-4 py-1.5 flex items-center justify-end gap-1.5 gradient-header rounded-t-xl">
         {totalPipelineValue > 0 && (
           <span className="hidden sm:inline-flex text-xs font-semibold text-foreground bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full mr-auto">
-            Revenue: {formatCurrency(totalPipelineValue)}/mo
+            {formatCurrency(laneValues[lane])}/mo in {lane === "gateway_only" ? "Gateway" : "Processing"} &middot; {formatCurrency(totalPipelineValue)}/mo total
           </span>
         )}
+        <div
+          role="group"
+          aria-label="Pipeline"
+          className="inline-flex gap-0.5 p-0.5 rounded-md border border-border/60 bg-muted/40 mr-1"
+        >
+          {(["processing", "gateway_only"] as ServiceType[]).map((key) => {
+            const Icon = key === "gateway_only" ? Zap : CreditCard;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setLane(key)}
+                aria-pressed={lane === key}
+                className={cn(
+                  "inline-flex items-center gap-1.5 h-6 px-2.5 rounded text-[11px] font-semibold transition-colors",
+                  lane === key
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <Icon className="h-3 w-3" />
+                {key === "gateway_only" ? "Gateway" : "Processing"}
+                <span className="font-pipeline-mono text-[10px] text-muted-foreground">
+                  {lanes[key].length}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -485,59 +519,29 @@ const UnifiedPipelineBoard = ({
           isAdmin={isAdmin}
         />
 
-      <div className={cn("flex-1 min-h-0 flex flex-col overflow-y-auto", isCompact ? "gap-1.5 p-1.5" : "gap-2 p-2")}>
-        <PipelineLane
-          serviceType="processing"
-          title="Processing"
-          canonicalStages={PROCESSING_PIPELINE_STAGES}
-          opportunities={lanes.processing}
-          monthlyValue={laneValues.processing}
-          collapsed={collapsedLanes.processing}
-          onToggleCollapsed={() => toggleLane("processing")}
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-          onDragEnd={handleDragEnd}
-          onCardClick={setSelectedOpportunity}
-          onAssignmentChange={onAssignmentChange}
-          onSlaStatusChange={onSlaStatusChange}
-          onMarkAsDead={onMarkAsDead}
-          onAddNew={onAddNew}
-          onTouchDragStart={handleTouchDragStart}
-          onTouchDragMove={handleTouchDragMove}
-          onTouchDragEnd={handleTouchDragEnd}
-          isCompact={isCompact}
-          currentUser={currentUser}
-          isAdmin={isAdmin}
-          signals={signals}
-          onCommitStage={commitStageChange}
-        />
-        <PipelineLane
-          serviceType="gateway_only"
-          title="Gateway only"
-          canonicalStages={GATEWAY_ONLY_PIPELINE_STAGES}
-          opportunities={lanes.gateway_only}
-          monthlyValue={laneValues.gateway_only}
-          collapsed={collapsedLanes.gateway_only}
-          onToggleCollapsed={() => toggleLane("gateway_only")}
-          onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-          onDragEnd={handleDragEnd}
-          onCardClick={setSelectedOpportunity}
-          onAssignmentChange={onAssignmentChange}
-          onSlaStatusChange={onSlaStatusChange}
-          onMarkAsDead={onMarkAsDead}
-          onTouchDragStart={handleTouchDragStart}
-          onTouchDragMove={handleTouchDragMove}
-          onTouchDragEnd={handleTouchDragEnd}
-          isCompact={isCompact}
-          currentUser={currentUser}
-          isAdmin={isAdmin}
-          signals={signals}
-          onCommitStage={commitStageChange}
-        />
-      </div>
+        <div className={cn("flex-1 min-h-0 flex flex-col", isCompact ? "p-1.5" : "p-2")}>
+          <PipelineLane
+            canonicalStages={lane === "gateway_only" ? GATEWAY_ONLY_PIPELINE_STAGES : PROCESSING_PIPELINE_STAGES}
+            opportunities={lanes[lane]}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            onDragEnd={handleDragEnd}
+            onCardClick={setSelectedOpportunity}
+            onAssignmentChange={onAssignmentChange}
+            onSlaStatusChange={onSlaStatusChange}
+            onMarkAsDead={onMarkAsDead}
+            onAddNew={onAddNew}
+            onTouchDragStart={handleTouchDragStart}
+            onTouchDragMove={handleTouchDragMove}
+            onTouchDragEnd={handleTouchDragEnd}
+            isCompact={isCompact}
+            currentUser={currentUser}
+            isAdmin={isAdmin}
+            signals={signals}
+            onCommitStage={commitStageChange}
+          />
+        </div>
       </div>
       )}
 
