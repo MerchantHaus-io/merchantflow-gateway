@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { differenceInDays, differenceInHours, format } from "date-fns";
-import { ArrowRightLeft, ChevronRight, CreditCard, UserPlus, Zap } from "lucide-react";
+import { ArrowRightLeft, ChevronRight, CreditCard, Phone, Send, UserPlus, Zap } from "lucide-react";
 import {
   GATEWAY_ONLY_PIPELINE_STAGES,
   Opportunity,
@@ -22,6 +22,7 @@ import {
   DrawerDescription,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import MobileDealScreen from "./MobileDealScreen";
 import { cn } from "@/lib/utils";
 
 interface MobilePipelineProps {
@@ -52,6 +53,7 @@ interface Ranked {
   stage: OpportunityStage;
   value: number;
   serviceType: ServiceType;
+  daysInStage: number;
 }
 
 /**
@@ -84,6 +86,7 @@ const MobilePipeline = ({
   const [view, setView] = useState<View>("today");
   const [lane, setLane] = useState<ServiceType>("processing");
   const [moving, setMoving] = useState<Opportunity | null>(null);
+  const [openDeal, setOpenDeal] = useState<Ranked | null>(null);
 
   const ranked = useMemo<Ranked[]>(
     () =>
@@ -93,14 +96,16 @@ const MobilePipeline = ({
         const enteredAt = opportunity.stage_entered_at
           ? new Date(opportunity.stage_entered_at)
           : new Date(opportunity.created_at);
+        const daysInStage = differenceInDays(new Date(), enteredAt);
 
         return {
           opportunity,
           stage,
+          daysInStage,
           serviceType: getServiceType(opportunity),
           value: monthlyRevenueEstimate(opportunity),
           attention: dealAttention({
-            daysInStage: differenceInDays(new Date(), enteredAt),
+            daysInStage,
             stageLabel: STAGE_CONFIG[stage]?.label ?? "this stage",
             assignedTo: opportunity.assigned_to,
             hoursToMeeting: signal.nextEvent
@@ -166,15 +171,23 @@ const MobilePipeline = ({
     );
   }, [moving]);
 
-  const renderRow = ({ opportunity, attention, stage, value }: Ranked) => {
-    const unclaimed = !opportunity.assigned_to;
-    // Tapping the row opens the deal, so the side button is for the thing you
-    // would otherwise have to open the deal to do. An unclaimed deal has
-    // exactly one obvious next step; everything else wants its stage moved,
-    // which on a phone is the action drag-and-drop cannot provide.
-    const action = unclaimed
-      ? { icon: UserPlus, label: "Claim", run: () => currentUser && onAssign(opportunity, currentUser) }
-      : { icon: ArrowRightLeft, label: "Move", run: () => setMoving(opportunity) };
+  const renderRow = (row: Ranked) => {
+    const { opportunity, attention, stage, value } = row;
+    const phone = opportunity.contact?.phone;
+
+    /**
+     * The action follows what the deal needs, not what the component finds
+     * convenient. A deal nobody owns wants claiming; one that is late or
+     * expected wants a call; an approved one wants sending on. Anything else,
+     * the useful shortcut is the stage move — the thing dragging did.
+     */
+    const action = !opportunity.assigned_to
+      ? { icon: UserPlus, label: "Claim", href: undefined, run: () => currentUser && onAssign(opportunity, currentUser) }
+      : attention.tone === "ready"
+        ? { icon: Send, label: "Send", href: undefined, run: () => setOpenDeal(row) }
+        : (attention.tone === "critical" || attention.tone === "soon") && phone
+          ? { icon: Phone, label: "Call", href: `tel:${phone.replace(/[^\d+]/g, "")}`, run: undefined }
+          : { icon: ArrowRightLeft, label: "Move", href: undefined, run: () => setMoving(opportunity) };
     const ActionIcon = action.icon;
 
     return (
@@ -182,7 +195,7 @@ const MobilePipeline = ({
         <span className={cn("w-[3px] shrink-0", toneBar[attention.tone])} aria-hidden="true" />
         <button
           type="button"
-          onClick={() => onSelect(opportunity)}
+          onClick={() => setOpenDeal(row)}
           className="flex-1 min-w-0 text-left px-3 py-2.5"
         >
           <span className="block text-[14px] font-semibold leading-tight truncate">
@@ -203,22 +216,51 @@ const MobilePipeline = ({
 
         {/* A labelled 56px target, not a swipe: an invisible interaction is not
             an interaction, and a rep using this is often one-handed. */}
-        <button
-          type="button"
-          onClick={action.run}
-          aria-label={`${action.label} ${opportunity.account?.name || "deal"}`}
-          className="w-[58px] shrink-0 flex flex-col items-center justify-center gap-1 border-l border-border/60 bg-muted/40 active:bg-muted"
-        >
-          <ActionIcon className="h-4 w-4 text-[hsl(var(--gold))]" />
-          <span className="text-[9.5px] font-bold">{action.label}</span>
-        </button>
+        {action.href ? (
+          <a
+            href={action.href}
+            aria-label={`${action.label} ${opportunity.account?.name || "deal"}`}
+            className="w-[58px] shrink-0 flex flex-col items-center justify-center gap-1 border-l border-border/60 bg-muted/40 active:bg-muted"
+          >
+            <ActionIcon className="h-4 w-4 text-[hsl(var(--gold))]" />
+            <span className="text-[9.5px] font-bold">{action.label}</span>
+          </a>
+        ) : (
+          <button
+            type="button"
+            onClick={action.run}
+            aria-label={`${action.label} ${opportunity.account?.name || "deal"}`}
+            className="w-[58px] shrink-0 flex flex-col items-center justify-center gap-1 border-l border-border/60 bg-muted/40 active:bg-muted"
+          >
+            <ActionIcon className="h-4 w-4 text-[hsl(var(--gold))]" />
+            <span className="text-[9.5px] font-bold">{action.label}</span>
+          </button>
+        )}
       </li>
     );
   };
 
   return (
     <div className="flex flex-col min-h-0 flex-1 lg:hidden">
-      <div className="flex-shrink-0 flex items-center gap-1 px-3 py-2 border-b border-border/40">
+      <div className="flex-shrink-0 px-3 pt-3 pb-2 border-b border-border/40">
+        <div className="flex items-baseline gap-2 mb-2">
+          <h1 className="text-[19px] font-bold tracking-tight leading-none">
+            {view === "today" ? "Today" : "Funnel"}
+          </h1>
+          <p className="text-[11.5px] text-muted-foreground">
+            {view === "today" ? (
+              <>
+                {new Date().toLocaleDateString(undefined, { weekday: "long" })}
+                {" · "}
+                {now.length + later.length === 0
+                  ? "nothing waiting"
+                  : `${now.length + later.length} need you`}
+              </>
+            ) : (
+              `${laneDeals.length} open · ${formatCurrency(sumMonthlyRevenue(laneDeals.map((r) => r.opportunity)))}/mo est.`
+            )}
+          </p>
+        </div>
         <div className="inline-flex gap-0.5 p-0.5 rounded-full border border-border/60 bg-muted/40">
           {(["today", "funnel"] as View[]).map((v) => (
             <button
@@ -235,11 +277,6 @@ const MobilePipeline = ({
             </button>
           ))}
         </div>
-        <span className="ml-auto font-pipeline-mono text-[10px] text-muted-foreground">
-          {view === "today"
-            ? `${now.length + later.length} to work`
-            : `${laneDeals.length} open`}
-        </span>
       </div>
 
       {view === "today" ? (
@@ -341,6 +378,24 @@ const MobilePipeline = ({
         </div>
       )}
 
+      {openDeal && (
+        <MobileDealScreen
+          opportunity={openDeal.opportunity}
+          attention={openDeal.attention}
+          stage={openDeal.stage}
+          value={openDeal.value}
+          daysInStage={openDeal.daysInStage}
+          signal={signals.get(openDeal.opportunity.id) ?? emptyDealSignal}
+          onBack={() => setOpenDeal(null)}
+          onMove={() => setMoving(openDeal.opportunity)}
+          onOpenFullRecord={() => {
+            const target = openDeal.opportunity;
+            setOpenDeal(null);
+            onSelect(target);
+          }}
+        />
+      )}
+
       {/* Move — the replacement for dragging a card across columns that don't
           fit on the screen. Only this deal's funnel is listed, so an illegal
           move is unreachable rather than refused. */}
@@ -366,6 +421,7 @@ const MobilePipeline = ({
                       onClick={() => {
                         if (moving) onCommitStage(moving, stage);
                         setMoving(null);
+                        setOpenDeal(null);
                       }}
                       className={cn(
                         "w-full flex items-center gap-2 min-h-[46px] px-3 rounded-lg border text-[13.5px] text-left",
