@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
-import { GripVertical, CreditCard, Zap, Trash2, User, Clock, CalendarDays, ShieldCheck } from "lucide-react";
+import { GripVertical, CreditCard, Zap, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -14,8 +14,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Opportunity, TEAM_MEMBERS, getServiceType } from "@/types/opportunity";
-import { PricingBadges } from "@/components/PricingBadges";
+import { Opportunity, STAGE_CONFIG, TEAM_MEMBERS, getServiceType, migrateStage } from "@/types/opportunity";
+import { dealAttention } from "@/lib/dealAttention";
+import { emptyDealSignal, type DealSignal } from "@/hooks/useDealSignals";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -34,6 +35,8 @@ interface OpportunityCardProps {
   onTouchDragEnd?: (e: React.TouchEvent) => void;
   currentUser?: string;
   isAdmin?: boolean;
+  /** Meeting and underwriting score, fetched once for the whole board. */
+  signal?: DealSignal;
 }
 
 import { TEAM_ROSTER, NAME_TO_EMAIL } from "@/config/team";
@@ -77,6 +80,7 @@ const OpportunityCard = ({
   onTouchDragEnd,
   currentUser,
   isAdmin,
+  signal = emptyDealSignal,
 }: OpportunityCardProps) => {
   const account = opportunity.account;
   const contact = opportunity.contact;
@@ -108,35 +112,10 @@ const OpportunityCard = ({
   const dragStartPosRef = useRef<{ x: number; y: number } | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [nextEvent, setNextEvent] = useState<{ title: string; start_time: string } | null>(null);
-  const [uwScore, setUwScore] = useState<number | null>(null);
-
-  useEffect(() => {
-    const fetchCardData = async () => {
-      const now = new Date().toISOString();
-      const [eventRes, scoreRes] = await Promise.all([
-        supabase
-          .from("calendar_events")
-          .select("title, start_time")
-          .eq("opportunity_id", opportunity.id)
-          .eq("status", "confirmed")
-          .gte("start_time", now)
-          .order("start_time", { ascending: true })
-          .limit(1)
-          .maybeSingle(),
-        supabase
-          .from("validation_reports")
-          .select("score")
-          .eq("opportunity_id", opportunity.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-      ]);
-      setNextEvent(eventRes.data || null);
-      setUwScore(scoreRes.data?.score != null ? Number(scoreRes.data.score) : null);
-    };
-    fetchCardData();
-  }, [opportunity.id]);
+  // Meeting and score arrive from the board's single batched query rather than
+  // two round trips per card — see src/hooks/useDealSignals.ts.
+  const nextEvent = signal.nextEvent;
+  const uwScore = signal.underwritingScore;
 
   const slaInfo = useMemo(() => {
     if (isClosedWon) return { status: "green" as const, label: "Won", priority: null, hidden: true, daysInStage: 0 };
@@ -212,10 +191,49 @@ const OpportunityCard = ({
 
   const getInitials = (name: string) => name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
+  /** One sentence per card, decided in one place — see src/lib/dealAttention.ts. */
+  const attention = useMemo(
+    () =>
+      dealAttention({
+        daysInStage: slaInfo.daysInStage,
+        stageLabel: STAGE_CONFIG[migrateStage(opportunity.stage)]?.label ?? "this stage",
+        assignedTo: opportunity.assigned_to,
+        hoursToMeeting: nextEvent ? differenceInHours(new Date(nextEvent.start_time), new Date()) : null,
+        meetingLabel: nextEvent ? format(new Date(nextEvent.start_time), "MMM d, h:mm a") : null,
+        underwritingScore: uwScore,
+        activationReady: Boolean(opportunity.portal_merchant_id) && opportunity.stage === "go_live_ready" && !isClosedWon,
+      }),
+    [slaInfo.daysInStage, opportunity.stage, opportunity.assigned_to, opportunity.portal_merchant_id, nextEvent, uwScore, isClosedWon],
+  );
+
+  const toneStyles: Record<string, { text: string; pip: string }> = {
+    critical: { text: "text-red-600 dark:text-red-400", pip: "bg-red-500" },
+    soon: { text: "text-amber-700 dark:text-amber-400", pip: "bg-amber-500" },
+    ready: { text: "text-emerald-700 dark:text-emerald-400", pip: "bg-emerald-500" },
+    steady: { text: "text-muted-foreground", pip: "bg-muted-foreground/50" },
+  };
+  const tone = toneStyles[attention.tone];
+
+  const claimForSelf = () => {
+    if (currentUser) void handleAssignmentChange(currentUser);
+  };
+
   const cardRef = useRef<HTMLDivElement>(null);
-  const showAssigneePill = opportunity.assigned_to && opportunity.assigned_to !== currentUser;
   const isOwnCard = opportunity.assigned_to === currentUser;
-  const isGreyed = !isOwnCard;
+  /**
+   * Ownership costs chroma, not information.
+   *
+   * This used to be `isGreyed = !isOwnCard`, painting an opaque zinc plate and
+   * removing the deal value, SLA, service type, meeting and — fatally — the
+   * assign control, on every card the signed-in rep did not personally own.
+   * Unassigned deals were caught by it too, so a brand-new deal landed on the
+   * board as a grey slab that could not be claimed from the board.
+   *
+   * A manager has no "my cards", so for an admin there is nothing to fade.
+   */
+  const isOtherRep = Boolean(opportunity.assigned_to) && !isOwnCard && !isAdmin;
+  const isUnclaimed = !opportunity.assigned_to;
+  const canRetire = isOwnCard || isAdmin;
 
   return (
     <>
@@ -249,35 +267,34 @@ const OpportunityCard = ({
           "cursor-grab active:cursor-grabbing group touch-manipulation relative",
           "rounded-md transition-all duration-200",
           "hover:-translate-y-[1px]",
-          isGreyed
-            // A card owned by another rep is recessive by colour, not by
-            // opacity. `opacity-60` over zinc-500 composited to ~#C8C8CC in
-            // light mode, which put this card's white title at ~1.4:1 and its
-            // red underwriting badge past unreadable. The plate now stays
-            // opaque and dark enough for white text to clear 4.5:1 in both
-            // modes; it still reads as the muted card on the board because
-            // every other card is white, gold-bordered or gradient.
-            ? "pipeline-card-muted border-l-[2px] border-l-transparent bg-zinc-600 dark:bg-zinc-700"
-            : isClosedWon
-              ? "pipeline-card-live border border-amber-500/30 hover:border-amber-500/60 bg-gradient-to-br from-amber-50 via-yellow-50/80 to-amber-100/60 dark:from-amber-950/40 dark:via-yellow-950/30 dark:to-amber-900/20"
-              : isComplete
-                ? "pipeline-card border-l-[2px] border-l-emerald-500 border border-emerald-500/30 hover:border-emerald-400/60 bg-emerald-600/95 dark:bg-emerald-700/95"
-                : cn("pipeline-card border border-border/50 hover:border-[hsl(var(--gold)/0.55)] border-l-[2px] bg-card", teamColors.border)
+          // One surface, not four. The old emerald "wizard form is 100% filled
+          // in" plate was the loudest state on the whole board, outranking Go
+          // Live Ready and an overdue SLA — a priority order nobody chose.
+          isClosedWon
+            ? "pipeline-card-live border border-amber-500/30 hover:border-amber-500/60 bg-gradient-to-br from-amber-50 via-yellow-50/80 to-amber-100/60 dark:from-amber-950/40 dark:via-yellow-950/30 dark:to-amber-900/20"
+            : cn("pipeline-card border border-border/50 hover:border-[hsl(var(--gold)/0.55)] border-l-[2px] bg-card", teamColors.border),
+          // Ownership reads as desaturation: the team bar, the avatar, the
+          // service badge and the attention pip all lose their chroma while
+          // every text token keeps its contrast. Nothing is hidden.
+          isOtherRep && "saturate-[0.45]"
         )}
       >
-        {/* Delete button — fades in on hover (hidden when greyed) */}
-        {!isGreyed && (
+        {/* Retire this deal. Still the blunt status:'dead' path rather than the
+            OUTCOME_REASONS taxonomy the detail modal captures — that swap is
+            its own change. */}
+        {canRetire && (
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
-                  className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-50 hover:!opacity-100 transition-opacity text-muted-foreground hover:text-red-500 z-10"
+                  aria-label="Mark as dead"
+                  className="absolute top-1 right-1 p-1.5 opacity-0 group-hover:opacity-60 hover:!opacity-100 focus-visible:opacity-100 transition-opacity text-muted-foreground hover:text-destructive z-10"
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowDeleteDialog(true);
                   }}
                 >
-                  <Trash2 className="h-3 w-3" />
+                  <Trash2 className="h-3.5 w-3.5" />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="left" className="text-xs">Mark as dead</TooltipContent>
@@ -285,185 +302,89 @@ const OpportunityCard = ({
           </TooltipProvider>
         )}
 
-        {/* Drag handle */}
-        <GripVertical className="absolute left-1 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground/20 group-hover:text-muted-foreground/50 transition-all cursor-grab active:cursor-grabbing group-hover:left-0.5" />
+        <GripVertical className="absolute left-0.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground/20 group-hover:text-muted-foreground/50 transition-colors cursor-grab active:cursor-grabbing" />
 
-        <div className="pl-4 pr-2 pt-2.5 pb-2 space-y-1.5">
-          {/* Account name */}
-          <div className="flex items-start justify-between gap-1">
+        <div className="pl-3.5 pr-2 py-2.5 space-y-2">
+          {/* 1 — who it is, and 2 — whose it is. The assign control is on every
+              card now; it used to live inside the branch that ran only for your
+              own deals, so an unassigned card had no way to be claimed. */}
+          <div className="flex items-start gap-2">
             <h3 className={cn(
               "font-pipeline-sans font-semibold text-[13px] leading-tight tracking-tight flex-1 min-w-0 transition-colors",
-              isGreyed ? "text-white" : isComplete ? "text-white" : "text-foreground group-hover:text-[hsl(var(--gold))]"
+              isClosedWon ? "text-amber-900 dark:text-amber-100" : "text-foreground group-hover:text-[hsl(var(--gold))]"
             )}>
               {account?.name || "Unknown"}
             </h3>
-            {!isGreyed && (
-              <span className={cn(
-                "flex items-center gap-0.5 font-pipeline-mono text-[9px] font-bold px-1.5 py-0.5 rounded-sm border shrink-0 mt-0.5 uppercase tracking-wider",
-                serviceType === "gateway_only"
-                  ? "text-teal-600 dark:text-teal-400 border-teal-500/40 bg-teal-500/10"
-                  : "text-indigo-600 dark:text-indigo-400 border-indigo-500/40 bg-indigo-500/10"
-              )}>
-                {serviceType === "gateway_only"
-                  ? <><Zap className="h-2.5 w-2.5" />GW</>
-                  : <><CreditCard className="h-2.5 w-2.5" />CC</>
-                }
-              </span>
-            )}
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  onClick={(e) => e.stopPropagation()}
+                  aria-label={opportunity.assigned_to ? `Assigned to ${opportunity.assigned_to}` : "Unassigned — assign this deal"}
+                  className="shrink-0 -m-1.5 p-1.5 rounded-full"
+                >
+                  <Avatar className="h-6 w-6 ring-1 ring-border/60 hover:ring-[hsl(var(--gold))] transition-colors">
+                    {avatarUrl && <AvatarImage src={avatarUrl} alt={opportunity.assigned_to || "Unassigned"} />}
+                    <AvatarFallback className={cn("text-[9px] font-bold", teamColors.bg, teamColors.text)}>
+                      {opportunity.assigned_to ? getInitials(opportunity.assigned_to) : "?"}
+                    </AvatarFallback>
+                  </Avatar>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-44 p-2 bg-popover z-50 rounded-lg border border-border shadow-lg"
+                onClick={(e) => e.stopPropagation()}
+                align="end"
+              >
+                <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5 text-muted-foreground">Assign to</p>
+                <Select value={opportunity.assigned_to || "unassigned"} onValueChange={handleAssignmentChange}>
+                  <SelectTrigger className="h-9 text-xs rounded border border-border">
+                    <SelectValue placeholder="Assign..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover z-50">
+                    <SelectItem value="unassigned" className="text-xs">Unassigned</SelectItem>
+                    {TEAM_MEMBERS.map((member) => (
+                      <SelectItem key={member} value={member} className="text-xs">{member}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </PopoverContent>
+            </Popover>
           </div>
 
-          {/* Contact name */}
-          {contactName && (
-            <p className={cn("font-pipeline-mono text-[10px] uppercase tracking-wider truncate flex items-center gap-1", isGreyed ? "text-white/75" : "text-muted-foreground")}>
-              <User className="h-2.5 w-2.5 shrink-0" />
-              {contactName}
-            </p>
+          {/* 3 — what it needs, in words. The colour agrees with the sentence
+              rather than being the only place the state is written down. */}
+          <p className={cn("flex items-start gap-1.5 text-[11.5px] leading-snug", tone.text)}>
+            <span className={cn("h-1.5 w-1.5 rounded-full shrink-0 mt-[5px]", tone.pip)} aria-hidden="true" />
+            <span className="min-w-0">{attention.text}</span>
+          </p>
+
+          {isUnclaimed && currentUser && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); claimForSelf(); }}
+              className="w-full min-h-[32px] rounded-md bg-[hsl(var(--gold))] text-[hsl(var(--gold-foreground))] text-[11px] font-bold tracking-tight hover:brightness-110 transition-[filter]"
+            >
+              Claim this deal
+            </button>
           )}
 
-          {/* Referral source — hidden when greyed */}
-          {!isGreyed && opportunity.referral_source && (
-            <span className="text-[9px] text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded-md truncate inline-block max-w-full border border-border/30">
-              {opportunity.referral_source}
+          {/* 4 — what it's worth. Labelled, because a bare gold figure told a
+              new rep nothing about whether it was volume, deal size or ours. */}
+          <div className="flex items-center gap-2 pt-1.5 border-t border-border/40">
+            <span className="font-pipeline-mono font-semibold text-[11px] tracking-tight text-[hsl(var(--gold))]">
+              {dealValue > 0 ? formatCurrency(dealValue) : "—"}
+              {dealValue > 0 && <span className="font-normal text-[9px] text-muted-foreground"> /mo est.</span>}
             </span>
-          )}
 
-          {/* Pricing tier + plan */}
-          {!isGreyed && (opportunity.pricing_plan || opportunity.gateway_tier) && (
-            <PricingBadges
-              pricingPlan={opportunity.pricing_plan}
-              gatewayTier={opportunity.gateway_tier}
-              short
-            />
-          )}
-
-          {/* Upcoming meeting indicator */}
-          {!isGreyed && nextEvent && (
             <span className={cn(
-              "flex items-center gap-1 text-[9px] font-medium px-1.5 py-0.5 rounded-md truncate max-w-full border",
-              differenceInHours(new Date(nextEvent.start_time), new Date()) <= 2
-                ? "text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30"
-                : "text-teal-600 dark:text-teal-400 bg-teal-500/10 border-teal-500/30"
+              "ml-auto flex items-center gap-0.5 font-pipeline-mono text-[9px] font-bold px-1.5 py-0.5 rounded-sm border shrink-0 uppercase tracking-wider",
+              serviceType === "gateway_only"
+                ? "text-teal-600 dark:text-teal-400 border-teal-500/40 bg-teal-500/10"
+                : "text-indigo-600 dark:text-indigo-400 border-indigo-500/40 bg-indigo-500/10"
             )}>
-              <CalendarDays className="h-2.5 w-2.5 shrink-0" />
-              {format(new Date(nextEvent.start_time), "MMM d, h:mm a")}
+              {serviceType === "gateway_only" ? <><Zap className="h-2.5 w-2.5" />GW</> : <><CreditCard className="h-2.5 w-2.5" />CC</>}
             </span>
-          )}
-
-          {/* Underwriting score — always visible on all cards */}
-          {uwScore !== null && (
-            <span className={cn(
-              "flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-md border",
-              // The red/amber/emerald score scale is tuned for the card and
-              // popover surfaces; on the muted grey plate its low end was a
-              // dark red on dark grey and effectively invisible. A card you
-              // don't own carries the number in the plate's own white — the
-              // score still reads, the colour coding goes with the ownership.
-              isGreyed ? "text-white bg-white/15 border-white/25"
-                : uwScore >= 80 ? "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30"
-                : uwScore >= 60 ? "text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30"
-                : uwScore >= 40 ? "text-orange-600 dark:text-orange-400 bg-orange-500/10 border-orange-500/30"
-                : "text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/30"
-            )}>
-              <ShieldCheck className="h-2.5 w-2.5 shrink-0" />
-              {Math.round(uwScore)}
-            </span>
-          )}
-
-          {/* Footer row */}
-          <div className="flex items-center justify-between pt-1 border-t border-border/40 gap-1">
-            {/* Deal value — hidden when greyed */}
-            {!isGreyed && (
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span key={dealValue} className={cn(
-                  "font-pipeline-mono font-semibold text-[10px] truncate animate-count tracking-tight",
-                  isComplete ? "text-white/90" : "text-[hsl(var(--gold))]"
-                )}>
-                  {dealValue > 0 ? formatCurrency(dealValue) : "—"}
-                </span>
-                {slaInfo.daysInStage > 0 && !isClosedWon && (
-                  <span className={cn(
-                    "flex items-center gap-0.5 text-[9px] font-medium",
-                    slaInfo.daysInStage < 7 ? "text-emerald-500" : slaInfo.daysInStage < 14 ? "text-amber-500" : "text-red-500"
-                  )}>
-                    <Clock className="h-2 w-2" />
-                    {slaInfo.daysInStage}d
-                  </span>
-                )}
-              </div>
-            )}
-
-            {/* Greyed: show only assignee pill in colour */}
-            {isGreyed ? (
-              <div className="flex items-center w-full">
-                {opportunity.assigned_to && (
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full truncate bg-white/15 text-white">
-                    {opportunity.assigned_to}
-                  </span>
-                )}
-              </div>
-            ) : (
-              <div className="flex items-center gap-1 shrink-0">
-                {showAssigneePill && (
-                  <span className="text-[9px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full truncate max-w-[52px]">
-                    {opportunity.assigned_to}
-                  </span>
-                )}
-
-                {slaInfo.priority && !slaInfo.hidden && (
-                  <span className={cn(
-                    "text-[8px] font-bold uppercase tracking-wide px-1 py-0.5 rounded-md",
-                    slaInfo.status === "red"   && "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400",
-                    slaInfo.status === "amber" && "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400",
-                  )}>
-                    {slaInfo.priority}
-                  </span>
-                )}
-
-                {isClosedWon && (
-                  <span className="px-1 py-0.5 rounded-md text-[8px] font-black bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/40">
-                    WON
-                  </span>
-                )}
-
-                {/* Pending Portal Activation badge */}
-                {!isGreyed && opportunity.portal_merchant_id && opportunity.stage === 'go_live_ready' && !isClosedWon && (
-                  <span className="px-1 py-0.5 rounded-md text-[8px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/40 animate-pulse">
-                    ACTIVATE
-                  </span>
-                )}
-
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <button onClick={(e) => e.stopPropagation()} className="shrink-0">
-                      <Avatar className="h-5 w-5 ring-2 ring-background border border-border/50 hover:border-indigo-400 transition-colors">
-                        {avatarUrl && <AvatarImage src={avatarUrl} alt={opportunity.assigned_to || "Unassigned"} />}
-                        <AvatarFallback className={cn("text-[8px] font-black", teamColors.bg, teamColors.text)}>
-                          {opportunity.assigned_to ? getInitials(opportunity.assigned_to) : "?"}
-                        </AvatarFallback>
-                      </Avatar>
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    className="w-36 p-2 bg-popover z-50 rounded-lg border border-border shadow-lg"
-                    onClick={(e) => e.stopPropagation()}
-                    align="end"
-                  >
-                    <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5 text-muted-foreground">Assign to</p>
-                    <Select value={opportunity.assigned_to || "unassigned"} onValueChange={handleAssignmentChange}>
-                      <SelectTrigger className="h-7 text-xs rounded border border-border">
-                        <SelectValue placeholder="Assign..." />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover z-50">
-                        <SelectItem value="unassigned" className="text-xs">Unassigned</SelectItem>
-                        {TEAM_MEMBERS.map((member) => (
-                          <SelectItem key={member} value={member} className="text-xs">{member}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </PopoverContent>
-                </Popover>
-              </div>
-            )}
           </div>
         </div>
       </div>

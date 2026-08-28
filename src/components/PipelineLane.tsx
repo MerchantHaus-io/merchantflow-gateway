@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight, CreditCard, Zap } from "lucide-react";
+import { differenceInDays } from "date-fns";
 import { migrateStage, Opportunity, OpportunityStage, ServiceType } from "@/types/opportunity";
 import { laneStagesFor } from "@/lib/pipelineLanes";
+import type { DealSignal } from "@/hooks/useDealSignals";
+import { phasesFor, type PhaseId } from "@/lib/pipelinePhases";
+import { sumMonthlyRevenue } from "@/lib/pipelineValue";
 import PipelineColumn from "./PipelineColumn";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -32,6 +36,7 @@ interface PipelineLaneProps {
   isCompact?: boolean;
   currentUser?: string;
   isAdmin?: boolean;
+  signals?: Map<string, DealSignal>;
 }
 
 const formatCurrency = (value: number) =>
@@ -70,10 +75,12 @@ const PipelineLane = ({
   isCompact = false,
   currentUser,
   isAdmin,
+  signals,
 }: PipelineLaneProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const [currentColumnIndex, setCurrentColumnIndex] = useState(0);
+  const [expandedPhase, setExpandedPhase] = useState<PhaseId | null>(null);
 
   const laneStages = useMemo(
     () => laneStagesFor(canonicalStages, opportunities),
@@ -92,6 +99,38 @@ const PipelineLane = ({
     }
     return map;
   }, [laneStages, opportunities]);
+
+  const phases = useMemo(() => phasesFor(laneStages), [laneStages]);
+
+  const phaseSummary = useMemo(
+    () =>
+      phases.map(({ phase, stages }) => {
+        const deals = stages.flatMap((stage) => byStage.get(stage) ?? []);
+        const oldestDays = deals.reduce((max, opp) => {
+          const from = opp.stage_entered_at ? new Date(opp.stage_entered_at) : new Date(opp.created_at);
+          return Math.max(max, differenceInDays(new Date(), from));
+        }, 0);
+        return { phase, stages, count: deals.length, value: sumMonthlyRevenue(deals), oldestDays };
+      }),
+    [phases, byStage],
+  );
+
+  /**
+   * Which phase is open.
+   *
+   * Computed once from the data rather than tracked reactively, so the layout
+   * does not reshuffle under the rep every time a card moves. The busiest phase
+   * opens; the rest stand as rails carrying their count, value and oldest deal,
+   * which is what makes the lane fit a laptop at all. Clicking a rail opens it
+   * and closes the other.
+   */
+  const activePhase =
+    expandedPhase ??
+    phaseSummary.reduce(
+      (best, p) => (p.count > (best?.count ?? -1) ? p : best),
+      phaseSummary[0],
+    )?.phase.id ??
+    null;
 
   const scrollToColumn = useCallback(
     (index: number) => {
@@ -199,28 +238,86 @@ const PipelineLane = ({
           data-scroll-container
         >
           <div className={cn("flex items-stretch min-w-max h-full", isCompact ? "gap-1.5 p-1.5" : "gap-2 p-2")}>
-            {laneStages.map((stage) => (
-              <PipelineColumn
-                key={stage}
-                stage={stage}
-                opportunities={byStage.get(stage) ?? []}
-                onDragStart={onDragStart}
-                onDragOver={onDragOver}
-                onDrop={onDrop}
-                onDragEnd={onDragEnd}
-                onCardClick={onCardClick}
-                onAssignmentChange={onAssignmentChange}
-                onSlaStatusChange={onSlaStatusChange}
-                onAddNew={stage === "discovery" ? onAddNew : undefined}
-                onMarkAsDead={onMarkAsDead}
-                onTouchDragStart={onTouchDragStart}
-                onTouchDragMove={onTouchDragMove}
-                onTouchDragEnd={onTouchDragEnd}
-                isCompact={isCompact}
-                currentUser={currentUser}
-                isAdmin={isAdmin}
-              />
-            ))}
+            {phaseSummary.map(({ phase, stages, count, value, oldestDays }) => {
+              const open = phase.id === activePhase;
+
+              if (!open) {
+                return (
+                  <button
+                    key={phase.id}
+                    type="button"
+                    onClick={() => setExpandedPhase(phase.id)}
+                    aria-expanded={false}
+                    className="w-[104px] shrink-0 flex flex-col items-center rounded-lg border border-border/50 bg-muted/30 px-2 py-3 hover:border-[hsl(var(--gold)/0.5)] transition-colors"
+                  >
+                    <span
+                      className="font-pipeline-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground mb-2"
+                      style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+                    >
+                      {phase.label}
+                    </span>
+                    <span className="font-pipeline-mono text-[20px] font-bold leading-none text-foreground">{count}</span>
+                    <span className="text-[10px] leading-snug text-muted-foreground text-center mt-1">
+                      {count === 1 ? "deal" : "deals"} &middot; {phase.owner}
+                    </span>
+                    {value > 0 && (
+                      <span className="font-pipeline-mono text-[10px] text-[hsl(var(--gold))] mt-2">
+                        {formatCurrency(value)}/mo
+                      </span>
+                    )}
+                    {oldestDays > 0 && (
+                      <span className="text-[10px] text-muted-foreground mt-1.5 pt-1.5 border-t border-border/40 w-full text-center">
+                        oldest {oldestDays}d
+                      </span>
+                    )}
+                    <span className="font-pipeline-mono text-[9px] uppercase tracking-wider text-muted-foreground mt-auto pt-2">
+                      Expand &rarr;
+                    </span>
+                  </button>
+                );
+              }
+
+              return (
+                <div key={phase.id} className="flex flex-col min-h-0">
+                  <div className="flex items-baseline gap-2 px-1 pb-1.5">
+                    <span className="font-pipeline-mono text-[10px] font-bold uppercase tracking-[0.18em] text-foreground">
+                      {phase.label}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">{phase.owner}</span>
+                    {value > 0 && (
+                      <span className="font-pipeline-mono text-[10px] text-[hsl(var(--gold))] ml-auto pl-3">
+                        {formatCurrency(value)}/mo
+                      </span>
+                    )}
+                  </div>
+                  <div className={cn("flex items-stretch flex-1 min-h-0", isCompact ? "gap-1.5" : "gap-2")}>
+                    {stages.map((stage) => (
+                      <PipelineColumn
+                        key={stage}
+                        stage={stage}
+                        opportunities={byStage.get(stage) ?? []}
+                        onDragStart={onDragStart}
+                        onDragOver={onDragOver}
+                        onDrop={onDrop}
+                        onDragEnd={onDragEnd}
+                        onCardClick={onCardClick}
+                        onAssignmentChange={onAssignmentChange}
+                        onSlaStatusChange={onSlaStatusChange}
+                        onAddNew={stage === "discovery" ? onAddNew : undefined}
+                        onMarkAsDead={onMarkAsDead}
+                        onTouchDragStart={onTouchDragStart}
+                        onTouchDragMove={onTouchDragMove}
+                        onTouchDragEnd={onTouchDragEnd}
+                        isCompact={isCompact}
+                        currentUser={currentUser}
+                        isAdmin={isAdmin}
+                        signals={signals}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

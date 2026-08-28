@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from "react";
 import { useSearchParams } from "react-router-dom";
 import UnifiedPipelineBoard from "@/components/UnifiedPipelineBoard";
 import PipelineListView from "@/components/PipelineListView";
@@ -7,9 +7,10 @@ import OpportunityDetailModal from "@/components/OpportunityDetailModal";
 import { PortalActivationDialog } from "@/components/opportunity-detail/PortalActivationDialog";
 import NewApplicationModal, { ApplicationFormData } from "@/components/NewApplicationModal";
 import { AppLayout } from "@/components/AppLayout";
-import { getServiceType, ServiceType, OnboardingWizardState, Opportunity, OpportunityStage, OutcomeStatus, migrateStage, EMAIL_TO_USER, TEAM_MEMBERS } from "@/types/opportunity";
+import { ACTIVE_PIPELINE_STAGES, getServiceType, ServiceType, OnboardingWizardState, Opportunity, OpportunityStage, OutcomeStatus, migrateStage, STAGE_CONFIG, EMAIL_TO_USER, TEAM_MEMBERS } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { toast as sonnerToast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTasks } from "@/contexts/TasksContext";
@@ -196,6 +197,29 @@ const Index = () => {
   const [listPreviewOpp, setListPreviewOpp] = useState<Opportunity | null>(null);
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
+
+  /**
+   * How long a stage change stays provisional.
+   *
+   * A drag used to be instantly irreversible and externally visible: it wrote
+   * the row, logged the activity and emailed the assignee, with no undo and no
+   * confirmation. An accidental drag reached a colleague's inbox before the rep
+   * had finished noticing it. The database write still happens immediately —
+   * the record should be true — but the email waits out this window, and Undo
+   * cancels it.
+   */
+  const UNDO_WINDOW_MS = 5000;
+  const pendingStageEmails = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  useEffect(() => {
+    const timers = pendingStageEmails.current;
+    // Leaving the page is not consent to send: a queued notification for a move
+    // the rep may have undone must not outlive the board.
+    return () => {
+      timers.forEach((t) => clearTimeout(t));
+      timers.clear();
+    };
+  }, []);
   const { ensureSlaTask } = useTasks();
   
   // Get current user's display name for filtering
@@ -644,6 +668,37 @@ const Index = () => {
       });
     }
   };
+  /** Puts a deal back where it was, and calls off the notification. */
+  const undoStageChange = useCallback(
+    async (id: string, fromStage: OpportunityStage, toStage: OpportunityStage, accountName: string) => {
+      const timer = pendingStageEmails.current.get(id);
+      if (timer) {
+        clearTimeout(timer);
+        pendingStageEmails.current.delete(id);
+      }
+
+      setOpportunities(prev => prev.map(o => (o.id === id ? { ...o, stage: fromStage } : o)));
+
+      const { error } = await supabase.from('opportunities').update({ stage: fromStage }).eq('id', id);
+      if (error) {
+        // The board is now lying about where the deal is; put it back.
+        setOpportunities(prev => prev.map(o => (o.id === id ? { ...o, stage: toStage } : o)));
+        sonnerToast.error("Couldn't undo that move", { description: `${accountName} is still in ${STAGE_CONFIG[toStage]?.label ?? toStage}.` });
+        return;
+      }
+
+      // The activity log stays truthful: the move happened, and so did the undo.
+      await supabase.from('activities').insert({
+        opportunity_id: id,
+        type: 'stage_change',
+        description: `Undid move from ${fromStage} to ${toStage}`,
+        user_id: user?.id,
+        user_email: user?.email,
+      });
+    },
+    [user?.id, user?.email],
+  );
+
   const handleUpdateOpportunity = async (id: string, updates: Partial<Opportunity>) => {
     const opportunity = opportunities.find(o => o.id === id);
 
@@ -667,6 +722,16 @@ const Index = () => {
       }
     }
 
+    // Everything that could refuse the move has now spoken, so show it. The
+    // card used to sit in its old column through a dynamic import, two gate
+    // queries, the UPDATE and an activity insert — long enough that the rep's
+    // first instinct was to drag it again.
+    const isStageMove = Boolean(updates.stage && opportunity && opportunity.stage !== updates.stage);
+    const previousStage = opportunity?.stage;
+    if (isStageMove) {
+      setOpportunities(prev => prev.map(o => (o.id === id ? { ...o, ...updates } : o)));
+    }
+
     const dbUpdates: Record<string, unknown> = {};
     if (updates.stage) dbUpdates.stage = updates.stage;
     if (updates.service_type) dbUpdates.service_type = updates.service_type;
@@ -688,6 +753,11 @@ const Index = () => {
     if (Object.keys(dbUpdates).length > 0) {
       const { error } = await supabase.from('opportunities').update(dbUpdates).eq('id', id);
       if (error) {
+        // Roll the optimistic move back rather than leaving the board showing a
+        // position the database never accepted.
+        if (isStageMove && previousStage) {
+          setOpportunities(prev => prev.map(o => (o.id === id ? { ...o, stage: previousStage } : o)));
+        }
         toast({
           title: "Error",
           description: "Failed to update opportunity",
@@ -697,27 +767,50 @@ const Index = () => {
       }
     }
 
-    // Log stage change activity and show level up splash
-    if (updates.stage && opportunity && opportunity.stage !== updates.stage) {
-      setSplashType("level-up");
+    if (isStageMove && updates.stage && opportunity && previousStage) {
+      const accountName = opportunity.account?.name || 'Unknown Account';
+      const movedForward =
+        ACTIVE_PIPELINE_STAGES.indexOf(updates.stage) > ACTIVE_PIPELINE_STAGES.indexOf(previousStage);
+
+      // Only a promotion is a level up. The splash fired on any stage change at
+      // all, so dragging a deal backwards out of Underwriting played the same
+      // celebration as closing it.
+      if (movedForward) setSplashType("level-up");
+
       await supabase.from('activities').insert({
         opportunity_id: id,
         type: 'stage_change',
-        description: `Moved from ${opportunity.stage} to ${updates.stage}`,
+        description: `Moved from ${previousStage} to ${updates.stage}`,
         user_id: user?.id,
         user_email: user?.email
       });
 
-      // Send email notification for stage change
+      // Held for the undo window instead of sent immediately, so an accidental
+      // drag stays inside the building.
       if (opportunity.assigned_to) {
-        sendStageChangeEmail(
-          opportunity.assigned_to,
-          opportunity.account?.name || 'Unknown Account',
-          opportunity.stage,
-          updates.stage,
-          user?.email
-        ).catch(err => console.error("Failed to send stage change email:", err));
+        const assignee = opportunity.assigned_to;
+        const from = previousStage;
+        const to = updates.stage;
+        const existing = pendingStageEmails.current.get(id);
+        if (existing) clearTimeout(existing);
+        pendingStageEmails.current.set(
+          id,
+          setTimeout(() => {
+            pendingStageEmails.current.delete(id);
+            sendStageChangeEmail(assignee, accountName, from, to, user?.email)
+              .catch(err => console.error("Failed to send stage change email:", err));
+          }, UNDO_WINDOW_MS),
+        );
       }
+
+      sonnerToast(`${accountName} moved to ${STAGE_CONFIG[updates.stage]?.label ?? updates.stage}`, {
+        description: opportunity.assigned_to ? `Notifying ${opportunity.assigned_to} in 5s.` : undefined,
+        duration: UNDO_WINDOW_MS,
+        action: {
+          label: "Undo",
+          onClick: () => void undoStageChange(id, previousStage, updates.stage as OpportunityStage, accountName),
+        },
+      });
     }
 
     if (

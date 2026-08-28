@@ -4,6 +4,7 @@ import { Opportunity, OpportunityStage, STAGE_CONFIG } from "@/types/opportunity
 import OpportunityCard from "./OpportunityCard";
 import { cn } from "@/lib/utils";
 import { sumMonthlyRevenue } from "@/lib/pipelineValue";
+import type { DealSignal } from "@/hooks/useDealSignals";
 import { Button } from "@/components/ui/button";
 
 interface PipelineColumnProps {
@@ -25,6 +26,7 @@ interface PipelineColumnProps {
   onTouchDragMove?: (e: React.TouchEvent) => void;
   onTouchDragEnd?: (e: React.TouchEvent) => void;
   isAdmin?: boolean;
+  signals?: Map<string, DealSignal>;
 }
 
 const formatCurrency = (value: number) =>
@@ -49,6 +51,7 @@ const PipelineColumn = ({
   onTouchDragMove,
   onTouchDragEnd,
   isAdmin,
+  signals,
 }: PipelineColumnProps) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const dragEnterCounter = useRef(0);
@@ -171,6 +174,7 @@ const PipelineColumn = ({
               onTouchDragEnd={onTouchDragEnd}
               currentUser={currentUser}
               isAdmin={isAdmin}
+              signal={signals?.get(opportunity.id)}
             />
           ))
         )}
