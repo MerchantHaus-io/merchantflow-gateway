@@ -37,6 +37,11 @@ interface OpportunityCardProps {
   isAdmin?: boolean;
   /** Meeting and underwriting score, fetched once for the whole board. */
   signal?: DealSignal;
+  /**
+   * Move this deal one stage along its own funnel. The card cannot know which
+   * stages are legal for it — the lane owns that — so it asks by direction.
+   */
+  onMoveRelative?: (opportunity: Opportunity, direction: -1 | 1) => void;
 }
 
 import { TEAM_ROSTER, NAME_TO_EMAIL } from "@/config/team";
@@ -81,6 +86,7 @@ const OpportunityCard = ({
   currentUser,
   isAdmin,
   signal = emptyDealSignal,
+  onMoveRelative,
 }: OpportunityCardProps) => {
   const account = opportunity.account;
   const contact = opportunity.contact;
@@ -263,6 +269,30 @@ const OpportunityCard = ({
         onTouchMove={onTouchDragMove}
         onTouchEnd={onTouchDragEnd}
         onClick={() => { if (!isDraggingRef.current) onClick(); }}
+        /* The board had no keyboard path at all: not one tabIndex, role or key
+           handler across any of its files, and the card root is a div, so a
+           card could not be focused — which meant it could not be opened or
+           moved without a mouse. Drag-and-drop has no keyboard equivalent by
+           nature, so the stage move gets an explicit one. */
+        tabIndex={0}
+        role="button"
+        aria-label={`${account?.name || "Unknown"} — ${attention.text}. Enter to open, Alt with left or right arrow to change stage.`}
+        aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onClick();
+            return;
+          }
+          // Alt rather than a bare arrow: bare arrows belong to the scroll
+          // container, and a rep tabbing through cards should still be able to
+          // scroll the column they are in.
+          if (e.altKey && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+            if (!onMoveRelative) return;
+            e.preventDefault();
+            onMoveRelative(opportunity, e.key === "ArrowRight" ? 1 : -1);
+          }
+        }}
         className={cn(
           "cursor-grab active:cursor-grabbing group touch-manipulation relative",
           "rounded-md transition-all duration-200",

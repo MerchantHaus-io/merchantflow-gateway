@@ -479,6 +479,7 @@ const UnifiedPipelineBoard = ({
           currentUser={currentUser}
           isAdmin={isAdmin}
           signals={signals}
+          onCommitStage={commitStageChange}
         />
         <PipelineLane
           serviceType="gateway_only"
@@ -503,6 +504,7 @@ const UnifiedPipelineBoard = ({
           currentUser={currentUser}
           isAdmin={isAdmin}
           signals={signals}
+          onCommitStage={commitStageChange}
         />
       </div>
       </div>

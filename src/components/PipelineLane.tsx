@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight, CreditCard, Zap } from "lucide-react";
 import { differenceInDays } from "date-fns";
-import { migrateStage, Opportunity, OpportunityStage, ServiceType } from "@/types/opportunity";
+import { migrateStage, Opportunity, OpportunityStage, ServiceType, STAGE_CONFIG } from "@/types/opportunity";
 import { laneStagesFor } from "@/lib/pipelineLanes";
 import type { DealSignal } from "@/hooks/useDealSignals";
 import { phasesFor, type PhaseId } from "@/lib/pipelinePhases";
@@ -37,6 +37,8 @@ interface PipelineLaneProps {
   currentUser?: string;
   isAdmin?: boolean;
   signals?: Map<string, DealSignal>;
+  /** Commit a stage change, with the same rules a drop goes through. */
+  onCommitStage?: (opportunity: Opportunity, stage: OpportunityStage) => void;
 }
 
 const formatCurrency = (value: number) =>
@@ -76,6 +78,7 @@ const PipelineLane = ({
   currentUser,
   isAdmin,
   signals,
+  onCommitStage,
 }: PipelineLaneProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
@@ -131,6 +134,36 @@ const PipelineLane = ({
       phaseSummary[0],
     )?.phase.id ??
     null;
+
+  const [announcement, setAnnouncement] = useState("");
+
+  /**
+   * The keyboard equivalent of a drag.
+   *
+   * The lane owns the stage order, so it can answer "one stage along" for a
+   * deal without the card knowing which stages its funnel allows. Moves that
+   * would run off either end are refused out loud rather than silently.
+   */
+  const moveRelative = useCallback(
+    (opportunity: Opportunity, direction: -1 | 1) => {
+      if (!onCommitStage) return;
+      const current = laneStages.indexOf(migrateStage(opportunity.stage));
+      if (current === -1) return;
+
+      const target = laneStages[current + direction];
+      const name = opportunity.account?.name ?? "Deal";
+      if (!target) {
+        setAnnouncement(
+          `${name} is already at the ${direction === 1 ? "last" : "first"} stage of the ${title} pipeline.`,
+        );
+        return;
+      }
+
+      onCommitStage(opportunity, target);
+      setAnnouncement(`${name} moved to ${STAGE_CONFIG[target]?.label ?? target}.`);
+    },
+    [laneStages, onCommitStage, title],
+  );
 
   const scrollToColumn = useCallback(
     (index: number) => {
@@ -312,6 +345,7 @@ const PipelineLane = ({
                         currentUser={currentUser}
                         isAdmin={isAdmin}
                         signals={signals}
+                        onMoveRelative={moveRelative}
                       />
                     ))}
                   </div>
@@ -321,6 +355,10 @@ const PipelineLane = ({
           </div>
         </div>
       )}
+
+      {/* Keyboard moves are invisible otherwise: the card keeps focus and the
+          column it left is off-screen as often as not. */}
+      <span aria-live="polite" className="sr-only">{announcement}</span>
 
       {!collapsed && isMobile && laneStages.length > 1 && (
         <div className="flex-shrink-0 flex items-center justify-center gap-2 py-1 border-t border-border/40">

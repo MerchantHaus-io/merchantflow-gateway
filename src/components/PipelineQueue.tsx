@@ -77,7 +77,11 @@ const PipelineQueue = ({ opportunities, signals, onSelect, currentUser, isAdmin 
   return (
     <aside
       aria-label="Deals needing attention"
-      className="w-[248px] shrink-0 flex flex-col min-h-0 border-r border-border/40 bg-muted/20"
+      // Hidden below the nav breakpoint. At 248px fixed it took 64% of a 390px
+      // phone and squeezed the lanes into ~142px — the queue is the right idea
+      // on a phone and the wrong shape for one, and a dedicated mobile view is
+      // where it belongs rather than this column wedged into a board.
+      className="hidden lg:flex w-[248px] shrink-0 flex-col min-h-0 border-r border-border/40 bg-muted/20"
     >
       <div className="flex-shrink-0 px-3 pt-2.5 pb-2">
         <div className="flex items-baseline justify-between gap-2">
