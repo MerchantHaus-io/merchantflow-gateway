@@ -94,7 +94,7 @@ back after editing them.
 | Check | Current state | As of |
 |---|---|---|
 | `npx tsc --noEmit -p tsconfig.app.json` | silent | 29 Aug 2026 |
-| `npm run lint` | **1 error**, 330 warnings — see below | 29 Aug 2026 |
+| `npm run lint` | **0 errors**, 330 warnings | 29 Aug 2026 |
 | `npx vitest run` | 178 passing, 15 files | 29 Aug 2026 |
 | `npm run build` | succeeds; chunk-size warnings are expected | 29 Aug 2026 |
 
@@ -116,14 +116,17 @@ newest files are the pipeline libraries (`dealAttention`, `edgeScroll`,
 `pipelineValue`, `pipelineLanes`, `pipelinePhases`, `assignDeal`) and again
 every test passes.
 
-**The lint baseline is no longer zero errors, and that is not a regression to
-chase here.** `src/integrations/supabase/previewAuthStorage.ts:38` trips
-`prefer-const` (`let timer` is declared once and never reassigned). It arrived
-on `main` in commit `9880751`; no branch that touches the pipeline has edited
-that file, and `npx eslint` on changed files still reports zero. Whoever next
-works in `previewAuthStorage.ts` should fix it in passing and set this row back
-to **0 errors** — until then, treat *2 or more* errors as the regression
-signal.
+**The error row went to 1 and back to 0, and the reason is worth keeping.**
+`src/integrations/supabase/previewAuthStorage.ts:38` tripped `prefer-const`
+(`let timer`, declared once and assigned once). It arrived on `main` in commit
+`9880751` and no pipeline branch had touched that file — but CI runs
+`npm run lint` before `npm run build`, so that single error failed the `build`
+check on **every** push to main and on every open PR from 27 Aug onward. A lint
+error here is not cosmetic and is never "someone else's": it is a repo-wide
+red. Fixed in passing, as this note previously asked the next person to do.
+
+The lesson for the table: an inherited **warning** can sit. An inherited
+**error** cannot, because the gate that reads it does not know whose it is.
 
 ---
 
