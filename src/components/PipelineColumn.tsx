@@ -30,6 +30,25 @@ interface PipelineColumnProps {
   onMoveRelative?: (opportunity: Opportunity, direction: -1 | 1) => void;
 }
 
+/**
+ * What an empty column should say.
+ *
+ * Each one names the stage's job and how a deal arrives in it, so a rep who has
+ * never seen the stage populated still knows what belongs there.
+ */
+const EMPTY_HINTS: Partial<Record<OpportunityStage, string>> = {
+  discovery: "New deals land here. Add one with +.",
+  qualified: "Nothing qualified. Drag a scoped deal here.",
+  application_prep: "Nothing in prep. Move a qualified deal here to start its application.",
+  underwriting_review: "Nothing with underwriting.",
+  processor_approval: "Nothing awaiting the processor.",
+  gateway_submitted: "Nothing submitted to the gateway.",
+  integration_setup: "Nothing in setup.",
+  testing: "Nothing in testing.",
+  go_live_ready: "Nothing ready to go live.",
+  closed_won: "No wins in this view yet.",
+};
+
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
 
@@ -154,11 +173,14 @@ const PipelineColumn = ({
         {opportunities.length === 0 ? (
           <div
             className={cn(
-              "flex items-center justify-center text-muted-foreground/50 border border-dashed border-border/30 rounded-sm font-pipeline-mono uppercase tracking-[0.14em]",
-              isCompact ? "h-10 text-[8px]" : "h-14 text-[9px]"
+              "flex items-center justify-center text-center text-muted-foreground border border-dashed border-border/40 rounded-md px-2",
+              isCompact ? "h-10 text-[9px] leading-tight" : "h-16 text-[10.5px] leading-snug",
             )}
           >
-            No active deals
+            {/* "No active deals" in 9px uppercase mono told a rep nothing they
+                could act on. An empty column is the cheapest place to say what
+                the stage is for and how a deal gets into it. */}
+            {isCompact ? "Empty" : EMPTY_HINTS[stage] ?? "Nothing here yet."}
           </div>
         ) : (
           opportunities.map((opportunity) => (

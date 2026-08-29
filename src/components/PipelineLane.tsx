@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight, CreditCard, Zap } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { differenceInDays } from "date-fns";
-import { migrateStage, Opportunity, OpportunityStage, ServiceType, STAGE_CONFIG } from "@/types/opportunity";
+import { migrateStage, Opportunity, OpportunityStage, STAGE_CONFIG } from "@/types/opportunity";
 import { laneStagesFor } from "@/lib/pipelineLanes";
 import type { DealSignal } from "@/hooks/useDealSignals";
 import { phasesFor, type PhaseId } from "@/lib/pipelinePhases";
@@ -12,15 +12,10 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 interface PipelineLaneProps {
-  serviceType: ServiceType;
-  title: string;
   /** The funnel this service type is actually allowed to walk. */
   canonicalStages: OpportunityStage[];
   /** Already filtered to this lane. */
   opportunities: Opportunity[];
-  monthlyValue: number;
-  collapsed: boolean;
-  onToggleCollapsed: () => void;
   onDragStart: (e: React.DragEvent, opportunity: Opportunity) => void;
   onDragOver: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent, stage: OpportunityStage) => void;
@@ -55,13 +50,8 @@ const formatCurrency = (value: number) =>
  * gateway lane to drop onto — and cuts that lane from ten columns to seven.
  */
 const PipelineLane = ({
-  serviceType,
-  title,
   canonicalStages,
   opportunities,
-  monthlyValue,
-  collapsed,
-  onToggleCollapsed,
   onDragStart,
   onDragOver,
   onDrop,
@@ -154,7 +144,7 @@ const PipelineLane = ({
       const name = opportunity.account?.name ?? "Deal";
       if (!target) {
         setAnnouncement(
-          `${name} is already at the ${direction === 1 ? "last" : "first"} stage of the ${title} pipeline.`,
+          `${name} is already at the ${direction === 1 ? "last" : "first"} stage of this pipeline.`,
         );
         return;
       }
@@ -162,7 +152,7 @@ const PipelineLane = ({
       onCommitStage(opportunity, target);
       setAnnouncement(`${name} moved to ${STAGE_CONFIG[target]?.label ?? target}.`);
     },
-    [laneStages, onCommitStage, title],
+    [laneStages, onCommitStage],
   );
 
   const scrollToColumn = useCallback(
@@ -200,70 +190,27 @@ const PipelineLane = ({
 
   useEffect(() => {
     const el = scrollRef.current;
-    if (!el || !isMobile || collapsed || laneStages.length === 0) return;
+    if (!el || !isMobile || laneStages.length === 0) return;
     const onScroll = () => {
       const colW = el.scrollWidth / laneStages.length;
       if (colW > 0) setCurrentColumnIndex(Math.round(el.scrollLeft / colW));
     };
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => el.removeEventListener("scroll", onScroll);
-  }, [isMobile, collapsed, laneStages.length]);
+  }, [isMobile, laneStages.length]);
 
-  const Icon = serviceType === "gateway_only" ? Zap : CreditCard;
-  const accent =
-    serviceType === "gateway_only"
-      ? "text-teal-600 dark:text-teal-400 border-teal-500/40 bg-teal-500/10"
-      : "text-indigo-600 dark:text-indigo-400 border-indigo-500/40 bg-indigo-500/10";
 
   return (
-    <section
-      aria-label={`${title} pipeline`}
-      className={cn(
-        "flex flex-col min-h-0 rounded-lg border border-border/40 bg-card/30",
-        // A floor, not just flex-1: two expanded lanes inside a scrolling
-        // column would otherwise share the height by shrinking, and at the
-        // board's real size that leaves each one about a card and a half tall.
-        // With a floor they keep a usable height and the parent scrolls.
-        collapsed ? "flex-none" : "flex-1 min-h-[220px]",
-      )}
-    >
-      <div className="flex-shrink-0 flex items-center gap-2 px-3 py-1.5 border-b border-border/40">
-        <button
-          type="button"
-          onClick={onToggleCollapsed}
-          aria-expanded={!collapsed}
-          className="flex items-center gap-2 min-h-[32px] rounded-md px-1 -mx-1 text-left hover:bg-accent/20 transition-colors"
-        >
-          <ChevronDown
-            className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform", collapsed && "-rotate-90")}
-          />
-          <span
-            className={cn(
-              "inline-flex items-center gap-1 font-pipeline-mono text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm border",
-              accent,
-            )}
-          >
-            <Icon className="h-2.5 w-2.5" />
-            {serviceType === "gateway_only" ? "GW" : "CC"}
-          </span>
-          <span className="font-pipeline-mono text-[11px] font-bold uppercase tracking-wider text-foreground">
-            {title}
-          </span>
-        </button>
-
-        <span className="font-pipeline-mono text-[10px] text-muted-foreground">
-          {opportunities.length} {opportunities.length === 1 ? "deal" : "deals"}
-        </span>
-
-        {monthlyValue > 0 && (
-          <span className="font-pipeline-mono text-[10px] text-[hsl(var(--gold))] ml-auto">
-            {formatCurrency(monthlyValue)}/mo
-          </span>
-        )}
-      </div>
-
-      {!collapsed && (
-        <div
+    /* Not a card.
+       This used to be a bordered <section> holding a header, and the board
+       stacked two of them — so the real cards sat inside a column inside a
+       phase inside a lane, two bordered containers deep. The craft floor is
+       blunt about that shape: cards are the lazy container, and nested cards
+       are always wrong. The lane's identity, count and value now live in the
+       board's own service-type switch, one level up, where picking a funnel
+       is a single decision rather than a second axis of navigation. */
+    <div className="flex flex-col min-h-0 flex-1">
+      <div
           ref={scrollRef}
           onWheel={handleHorizontalWheel}
           className="flex-1 overflow-x-auto overflow-y-hidden min-h-0 pipeline-scrollbar"
@@ -353,14 +300,13 @@ const PipelineLane = ({
               );
             })}
           </div>
-        </div>
-      )}
+      </div>
 
       {/* Keyboard moves are invisible otherwise: the card keeps focus and the
           column it left is off-screen as often as not. */}
       <span aria-live="polite" className="sr-only">{announcement}</span>
 
-      {!collapsed && isMobile && laneStages.length > 1 && (
+      {isMobile && laneStages.length > 1 && (
         <div className="flex-shrink-0 flex items-center justify-center gap-2 py-1 border-t border-border/40">
           <Button
             variant="ghost"
@@ -405,7 +351,7 @@ const PipelineLane = ({
           </Button>
         </div>
       )}
-    </section>
+    </div>
   );
 };
 

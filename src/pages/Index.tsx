@@ -1,14 +1,10 @@
 import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from "react";
 import { useSearchParams } from "react-router-dom";
 import UnifiedPipelineBoard from "@/components/UnifiedPipelineBoard";
-import PipelineListView from "@/components/PipelineListView";
-import { AIValidatePanel } from "@/components/opportunity-detail/AIValidatePanel";
-import OpportunityDetailModal from "@/components/OpportunityDetailModal";
 import { PortalActivationDialog } from "@/components/opportunity-detail/PortalActivationDialog";
 import NewApplicationModal, { ApplicationFormData } from "@/components/NewApplicationModal";
 import { AppLayout } from "@/components/AppLayout";
 import { ACTIVE_PIPELINE_STAGES, getServiceType, ServiceType, OnboardingWizardState, Opportunity, OpportunityStage, OutcomeStatus, migrateStage, STAGE_CONFIG, EMAIL_TO_USER, TEAM_MEMBERS } from "@/types/opportunity";
-import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { toast as sonnerToast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,7 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTasks } from "@/contexts/TasksContext";
 import DateRangeFilter from "@/components/DateRangeFilter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, ExternalLink, Eye, Kanban, Plus, Copy } from "lucide-react";
+import { User, ExternalLink, Kanban, Plus, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { scopingLink } from "@/config/scopingFields";
 import { PageHeader } from "@/components/PageHeader";
@@ -193,8 +189,6 @@ const Index = () => {
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
   const [splashType, setSplashType] = useState<"1up" | "level-up" | null>(null);
   const [portalActivationOpp, setPortalActivationOpp] = useState<Opportunity | null>(null);
-  const [listSelectedOpp, setListSelectedOpp] = useState<Opportunity | null>(null);
-  const [listPreviewOpp, setListPreviewOpp] = useState<Opportunity | null>(null);
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
 
@@ -803,14 +797,45 @@ const Index = () => {
         );
       }
 
-      sonnerToast(`${accountName} moved to ${STAGE_CONFIG[updates.stage]?.label ?? updates.stage}`, {
-        description: opportunity.assigned_to ? `Notifying ${opportunity.assigned_to} in 5s.` : undefined,
-        duration: UNDO_WINDOW_MS,
-        action: {
-          label: "Undo",
-          onClick: () => void undoStageChange(id, previousStage, updates.stage as OpportunityStage, accountName),
-        },
-      });
+      // A custom toast rather than the default one, for the countdown: a
+      // five-second reprieve the rep cannot see is one they will not use. The
+      // bar runs for exactly the window that holds the email back.
+      const stageLabel = STAGE_CONFIG[updates.stage]?.label ?? updates.stage;
+      const assignee = opportunity.assigned_to;
+      sonnerToast.custom(
+        (id_) => (
+          <div className="relative overflow-hidden w-full rounded-lg border border-border bg-background shadow-lg pl-3.5 pr-2 py-2.5">
+            <div className="flex items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-medium leading-tight">
+                  <span className="font-semibold">{accountName}</span> moved to {stageLabel}
+                </p>
+                {assignee && (
+                  <p className="text-[11.5px] text-muted-foreground leading-tight mt-0.5">
+                    Notifying {assignee} when this bar runs out.
+                  </p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  sonnerToast.dismiss(id_);
+                  void undoStageChange(id, previousStage, updates.stage as OpportunityStage, accountName);
+                }}
+                className="shrink-0 min-h-[34px] px-3 rounded-md border border-border text-[12px] font-semibold hover:bg-accent/20 transition-colors"
+              >
+                Undo
+              </button>
+            </div>
+            <span
+              aria-hidden="true"
+              className="undo-countdown absolute bottom-0 left-0 h-[2px] w-full bg-[hsl(var(--gold))]"
+              style={{ animationDuration: `${UNDO_WINDOW_MS}ms` }}
+            />
+          </div>
+        ),
+        { duration: UNDO_WINDOW_MS },
+      );
     }
 
     if (
@@ -979,10 +1004,7 @@ const Index = () => {
               </div>
             }
           />
-          <div className="flex-1 flex flex-col gap-2 sm:gap-3 p-2 sm:p-3 lg:p-4 min-h-0 overflow-hidden mobile-landscape:gap-2">
-        <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          {/* Pipeline board — takes ~75% of available space */}
-          <div className="flex flex-col min-h-0" style={{ flex: '3 1 0%' }}>
+          <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-2 sm:p-3 lg:p-4">
             <UnifiedPipelineBoard
               opportunities={filteredOpportunities}
               onUpdateOpportunity={handleUpdateOpportunity}
@@ -997,71 +1019,10 @@ const Index = () => {
               currentUser={currentUserDisplayName || undefined}
               isAdmin={isAdmin}
             />
-          </div>
-          {/* Pipeline list view with UW preview split — takes ~25% of available space */}
-          {(
-            <div className="flex min-h-0 overflow-hidden" style={{ flex: '1 1 0%', minHeight: '180px' }}>
-              <div className={cn("flex flex-col min-h-0 overflow-hidden transition-all", listPreviewOpp ? "w-[60%]" : "w-full")}>
-                <PipelineListView
-                  opportunities={filteredOpportunities}
-                  onCardClick={setListSelectedOpp}
-                  selectedId={listPreviewOpp?.id}
-                  onSelect={setListPreviewOpp}
-                />
-              </div>
-              {listPreviewOpp && (
-                <div className="w-[40%] border-l border-border/60 bg-card/80 overflow-y-auto p-3">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-bold text-foreground truncate">
-                      {[listPreviewOpp.contact?.first_name, listPreviewOpp.contact?.last_name].filter(Boolean).join(" ") || "No contact"}
-                    </h3>
-                    <Button size="sm" variant="outline" className="h-7 text-xs shrink-0" onClick={() => setListSelectedOpp(listPreviewOpp)}>
-                      <Eye className="h-3 w-3 mr-1" /> Full View
-                    </Button>
-                  </div>
-                  {listPreviewOpp.service_type !== 'gateway_only' ? (
-                    <AIValidatePanel
-                      key={listPreviewOpp.id}
-                      opportunityId={listPreviewOpp.id}
-                    />
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground text-xs">
-                      <p>Gateway-only deals do not require underwriting review.</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </main>
-          </div>
+          </main>
         </div>
 
       <NewApplicationModal open={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleNewApplication} />
-
-      {/* Detail modal for list view clicks */}
-      <OpportunityDetailModal
-        opportunity={listSelectedOpp}
-        onClose={() => setListSelectedOpp(null)}
-        onUpdate={(updates) => {
-          if (listSelectedOpp) {
-            handleUpdateOpportunity(listSelectedOpp.id, updates);
-          }
-        }}
-        onMarkAsDead={handleMarkAsDead}
-        onDelete={handleDelete}
-        onConvertToGateway={handleConvertToGatewayTrack}
-        onMoveToProcessing={handleMoveToProcessing}
-        hasGatewayOpportunity={
-          listSelectedOpp
-            ? opportunities.some(
-                (opp) =>
-                  opp.account_id === listSelectedOpp.account_id &&
-                  getServiceType(opp) === "gateway_only"
-              )
-            : false
-        }
-      />
 
       {/* Portal Activation Dialog — triggered by stage change to go_live_ready */}
       {portalActivationOpp?.portal_merchant_id && (

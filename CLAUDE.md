@@ -93,10 +93,10 @@ back after editing them.
 
 | Check | Current state | As of |
 |---|---|---|
-| `npx tsc --noEmit -p tsconfig.app.json` | silent | 12 Aug 2026 |
-| `npm run lint` | **0 errors**, 330 warnings | 12 Aug 2026 |
-| `npx vitest run` | 136 passing, 10 files | 17 Aug 2026 |
-| `npm run build` | succeeds; chunk-size warnings are expected | 12 Aug 2026 |
+| `npx tsc --noEmit -p tsconfig.app.json` | silent | 29 Aug 2026 |
+| `npm run lint` | **0 errors**, 330 warnings | 29 Aug 2026 |
+| `npx vitest run` | 178 passing, 15 files | 29 Aug 2026 |
+| `npm run build` | succeeds; chunk-size warnings are expected | 29 Aug 2026 |
 
 A rise in the lint **error** count is a regression. Inherited warnings are not.
 
@@ -111,7 +111,22 @@ eslint on the changed files alone.
 The test count moved the same way: the table read 92 passing / 6 files and the
 suite actually ran 112 / 7 — again from unrelated commits, since every test
 passed and the count only rose. It is 118 / 8 as of this re-dating, the last 6
-being `src/lib/adminRole.test.ts`.
+being `src/lib/adminRole.test.ts`. It has since risen again, to 178 / 15; the
+newest files are the pipeline libraries (`dealAttention`, `edgeScroll`,
+`pipelineValue`, `pipelineLanes`, `pipelinePhases`, `assignDeal`) and again
+every test passes.
+
+**The error row went to 1 and back to 0, and the reason is worth keeping.**
+`src/integrations/supabase/previewAuthStorage.ts:38` tripped `prefer-const`
+(`let timer`, declared once and assigned once). It arrived on `main` in commit
+`9880751` and no pipeline branch had touched that file — but CI runs
+`npm run lint` before `npm run build`, so that single error failed the `build`
+check on **every** push to main and on every open PR from 27 Aug onward. A lint
+error here is not cosmetic and is never "someone else's": it is a repo-wide
+red. Fixed in passing, as this note previously asked the next person to do.
+
+The lesson for the table: an inherited **warning** can sit. An inherited
+**error** cannot, because the gate that reads it does not know whose it is.
 
 ---
 
