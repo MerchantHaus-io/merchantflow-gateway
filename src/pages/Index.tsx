@@ -195,6 +195,17 @@ const Index = () => {
   const [portalActivationOpp, setPortalActivationOpp] = useState<Opportunity | null>(null);
   const [listSelectedOpp, setListSelectedOpp] = useState<Opportunity | null>(null);
   const [listPreviewOpp, setListPreviewOpp] = useState<Opportunity | null>(null);
+  /**
+   * Board or list — the toggle this page was built around and lost.
+   *
+   * PipelineListView was wrapped in `{( … )}`, a conditional with no condition,
+   * so it rendered permanently under the board: a second copy of the same deals
+   * in a different sort order, taking a quarter of the screen from the surface
+   * a rep actually works in. The wrapper is what a removed toggle leaves
+   * behind. Restoring the toggle gives the board the full page and keeps the
+   * list for anyone who prefers it, rather than deleting a view in the dark.
+   */
+  const [pipelineView, setPipelineView] = useState<"board" | "list">("board");
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
 
@@ -965,6 +976,28 @@ const Index = () => {
             color="primary"
             actions={
               <div className="flex items-center gap-2 flex-wrap">
+                <div
+                  role="group"
+                  aria-label="Pipeline view"
+                  className="inline-flex gap-0.5 p-0.5 rounded-md border border-border/60 bg-muted/40"
+                >
+                  {(["board", "list"] as const).map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => setPipelineView(v)}
+                      aria-pressed={pipelineView === v}
+                      className={cn(
+                        "h-6 px-2.5 rounded text-[11px] font-semibold capitalize transition-colors",
+                        pipelineView === v
+                          ? "bg-card text-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
                 <span className="hidden sm:inline-flex items-center text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
                   {filteredOpportunities.length} deals
                 </span>
@@ -1013,7 +1046,8 @@ const Index = () => {
           <div className="flex-1 flex flex-col gap-2 sm:gap-3 p-2 sm:p-3 lg:p-4 min-h-0 overflow-hidden mobile-landscape:gap-2">
         <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
           {/* Pipeline board — takes ~75% of available space */}
-          <div className="flex flex-col min-h-0" style={{ flex: '3 1 0%' }}>
+          {pipelineView === "board" && (
+          <div className="flex flex-col min-h-0 flex-1">
             <UnifiedPipelineBoard
               opportunities={filteredOpportunities}
               onUpdateOpportunity={handleUpdateOpportunity}
@@ -1029,9 +1063,11 @@ const Index = () => {
               isAdmin={isAdmin}
             />
           </div>
+          )}
+
           {/* Pipeline list view with UW preview split — takes ~25% of available space */}
-          {(
-            <div className="flex min-h-0 overflow-hidden" style={{ flex: '1 1 0%', minHeight: '180px' }}>
+          {pipelineView === "list" && (
+            <div className="flex min-h-0 flex-1 overflow-hidden">
               <div className={cn("flex flex-col min-h-0 overflow-hidden transition-all", listPreviewOpp ? "w-[60%]" : "w-full")}>
                 <PipelineListView
                   opportunities={filteredOpportunities}
