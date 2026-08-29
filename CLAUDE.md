@@ -93,10 +93,10 @@ back after editing them.
 
 | Check | Current state | As of |
 |---|---|---|
-| `npx tsc --noEmit -p tsconfig.app.json` | silent | 12 Aug 2026 |
-| `npm run lint` | **0 errors**, 330 warnings | 12 Aug 2026 |
-| `npx vitest run` | 136 passing, 10 files | 17 Aug 2026 |
-| `npm run build` | succeeds; chunk-size warnings are expected | 12 Aug 2026 |
+| `npx tsc --noEmit -p tsconfig.app.json` | silent | 29 Aug 2026 |
+| `npm run lint` | **1 error**, 330 warnings — see below | 29 Aug 2026 |
+| `npx vitest run` | 178 passing, 15 files | 29 Aug 2026 |
+| `npm run build` | succeeds; chunk-size warnings are expected | 29 Aug 2026 |
 
 A rise in the lint **error** count is a regression. Inherited warnings are not.
 
@@ -111,7 +111,19 @@ eslint on the changed files alone.
 The test count moved the same way: the table read 92 passing / 6 files and the
 suite actually ran 112 / 7 — again from unrelated commits, since every test
 passed and the count only rose. It is 118 / 8 as of this re-dating, the last 6
-being `src/lib/adminRole.test.ts`.
+being `src/lib/adminRole.test.ts`. It has since risen again, to 178 / 15; the
+newest files are the pipeline libraries (`dealAttention`, `edgeScroll`,
+`pipelineValue`, `pipelineLanes`, `pipelinePhases`, `assignDeal`) and again
+every test passes.
+
+**The lint baseline is no longer zero errors, and that is not a regression to
+chase here.** `src/integrations/supabase/previewAuthStorage.ts:38` trips
+`prefer-const` (`let timer` is declared once and never reassigned). It arrived
+on `main` in commit `9880751`; no branch that touches the pipeline has edited
+that file, and `npx eslint` on changed files still reports zero. Whoever next
+works in `previewAuthStorage.ts` should fix it in passing and set this row back
+to **0 errors** — until then, treat *2 or more* errors as the regression
+signal.
 
 ---
 

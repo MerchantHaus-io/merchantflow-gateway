@@ -5,9 +5,9 @@ import { Opportunity } from "@/types/opportunity";
  *
  * Residual share of the processing fee, plus a per-transaction component. The
  * same expression was written out four times — OpportunityCard, PipelineColumn,
- * UnifiedPipelineBoard and PipelineListView — so the rate could drift between
- * a card and the column total summing it. One definition, and the constants are
- * named rather than inline decimals.
+ * UnifiedPipelineBoard and the since-removed pipeline list — so the rate could
+ * drift between a card and the column total summing it. One definition, and the
+ * constants are named rather than inline decimals.
  *
  * This is an internal estimate for rep-facing pipeline totals. It is not a
  * quoted price and must never reach a merchant-facing document.
