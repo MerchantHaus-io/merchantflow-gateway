@@ -196,16 +196,36 @@ const Index = () => {
   const [listSelectedOpp, setListSelectedOpp] = useState<Opportunity | null>(null);
   const [listPreviewOpp, setListPreviewOpp] = useState<Opportunity | null>(null);
   /**
-   * Board or list — the toggle this page was built around and lost.
+   * Board or Overview — the toggle this page was built around and lost.
    *
-   * PipelineListView was wrapped in `{( … )}`, a conditional with no condition,
-   * so it rendered permanently under the board: a second copy of the same deals
-   * in a different sort order, taking a quarter of the screen from the surface
-   * a rep actually works in. The wrapper is what a removed toggle leaves
-   * behind. Restoring the toggle gives the board the full page and keeps the
-   * list for anyone who prefers it, rather than deleting a view in the dark.
+   * PipelineListView, whose own heading reads "Pipeline Overview", was wrapped
+   * in `{( … )}` — a conditional with no condition — so it rendered
+   * permanently under the board: a second view of the same deals in a
+   * different sort order, taking a quarter of the screen from the surface a
+   * rep works in. That wrapper is what a removed toggle leaves behind.
+   *
+   * The toggle names the panel the way the panel names itself. Labelling it
+   * "List" was the first version and it was wrong: a control has to say where
+   * it goes, and nobody calls that screen the list.
+   *
+   * The choice persists, because a rep who prefers the overview should say so
+   * once rather than on every visit — the icon rail already stores its state
+   * this way.
    */
-  const [pipelineView, setPipelineView] = useState<"board" | "list">("board");
+  const PIPELINE_VIEW_KEY = "pipelineView";
+  const [pipelineView, setPipelineView] = useState<"board" | "overview">(() => {
+    if (typeof window === "undefined") return "board";
+    return localStorage.getItem(PIPELINE_VIEW_KEY) === "overview" ? "overview" : "board";
+  });
+
+  const choosePipelineView = useCallback((next: "board" | "overview") => {
+    setPipelineView(next);
+    try {
+      localStorage.setItem(PIPELINE_VIEW_KEY, next);
+    } catch {
+      // A blocked or full store is not a reason to refuse the toggle.
+    }
+  }, []);
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
 
@@ -981,20 +1001,23 @@ const Index = () => {
                   aria-label="Pipeline view"
                   className="inline-flex gap-0.5 p-0.5 rounded-md border border-border/60 bg-muted/40"
                 >
-                  {(["board", "list"] as const).map((v) => (
+                  {([
+                    { key: "board", label: "Board" },
+                    { key: "overview", label: "Overview" },
+                  ] as const).map(({ key, label }) => (
                     <button
-                      key={v}
+                      key={key}
                       type="button"
-                      onClick={() => setPipelineView(v)}
-                      aria-pressed={pipelineView === v}
+                      onClick={() => choosePipelineView(key)}
+                      aria-pressed={pipelineView === key}
                       className={cn(
-                        "h-6 px-2.5 rounded text-[11px] font-semibold capitalize transition-colors",
-                        pipelineView === v
+                        "h-6 px-2.5 rounded text-[11px] font-semibold transition-colors",
+                        pipelineView === key
                           ? "bg-card text-foreground shadow-sm"
                           : "text-muted-foreground hover:text-foreground",
                       )}
                     >
-                      {v}
+                      {label}
                     </button>
                   ))}
                 </div>
@@ -1066,7 +1089,7 @@ const Index = () => {
           )}
 
           {/* Pipeline list view with UW preview split — takes ~25% of available space */}
-          {pipelineView === "list" && (
+          {pipelineView === "overview" && (
             <div className="flex min-h-0 flex-1 overflow-hidden">
               <div className={cn("flex flex-col min-h-0 overflow-hidden transition-all", listPreviewOpp ? "w-[60%]" : "w-full")}>
                 <PipelineListView
