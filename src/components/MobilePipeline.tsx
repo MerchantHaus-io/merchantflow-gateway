@@ -31,6 +31,9 @@ interface MobilePipelineProps {
   onSelect: (opportunity: Opportunity) => void;
   onCommitStage: (opportunity: Opportunity, stage: OpportunityStage) => void;
   onAssign: (opportunity: Opportunity, assignedTo: string) => void;
+  /** The page's assignee filter — 'all', 'mine', or a team member's name. */
+  assigneeFilter?: string;
+  onAssigneeFilterChange?: (next: string) => void;
   currentUser?: string;
   isAdmin?: boolean;
 }
@@ -80,6 +83,8 @@ const MobilePipeline = ({
   onSelect,
   onCommitStage,
   onAssign,
+  assigneeFilter,
+  onAssigneeFilterChange,
   currentUser,
   isAdmin,
 }: MobilePipelineProps) => {
@@ -241,7 +246,7 @@ const MobilePipeline = ({
   };
 
   return (
-    <div className="flex flex-col min-h-0 flex-1 lg:hidden">
+    <div className="flex flex-col min-h-0 flex-1">
       <div className="flex-shrink-0 px-3 pt-3 pb-2 border-b border-border/40">
         <div className="flex items-baseline gap-2 mb-2">
           <h1 className="text-[19px] font-bold tracking-tight leading-none">
@@ -261,21 +266,61 @@ const MobilePipeline = ({
             )}
           </p>
         </div>
-        <div className="inline-flex gap-0.5 p-0.5 rounded-full border border-border/60 bg-muted/40">
-          {(["today", "funnel"] as View[]).map((v) => (
-            <button
-              key={v}
-              type="button"
-              onClick={() => setView(v)}
-              aria-pressed={view === v}
-              className={cn(
-                "font-pipeline-mono text-[10px] font-bold uppercase tracking-wider px-3.5 min-h-[32px] rounded-full transition-colors",
-                view === v ? "bg-primary text-primary-foreground" : "text-muted-foreground",
-              )}
-            >
-              {v}
-            </button>
-          ))}
+        {/* The page header and the board toolbar are both gone on a phone, so
+            the one control worth keeping from them — whose deals you are
+            looking at — lives here instead of costing another 300px above the
+            first card.
+
+            New Application deliberately did not come with it. MegaMenuHeader's
+            + is on every screen and its New Opportunity item calls the same
+            callback, so a button here would be the second copy of an action
+            already 300px up the same viewport — the duplication this change
+            exists to remove. */}
+        <div className="flex items-center gap-2">
+          <div className="inline-flex gap-0.5 p-0.5 rounded-full border border-border/60 bg-muted/40">
+            {(["today", "funnel"] as View[]).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setView(v)}
+                aria-pressed={view === v}
+                className={cn(
+                  "font-pipeline-mono text-[10px] font-bold uppercase tracking-wider px-3.5 min-h-[32px] rounded-full transition-colors",
+                  view === v ? "bg-primary text-primary-foreground" : "text-muted-foreground",
+                )}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+
+          <div className="ml-auto flex items-center gap-2">
+            {onAssigneeFilterChange && (
+              <div
+                role="group"
+                aria-label="Whose deals"
+                className="inline-flex gap-0.5 p-0.5 rounded-full border border-border/60 bg-muted/40"
+              >
+                {([
+                  ["mine", "Mine"],
+                  ["all", "All"],
+                ] as const).map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => onAssigneeFilterChange(key)}
+                    aria-pressed={assigneeFilter === key}
+                    className={cn(
+                      "font-pipeline-mono text-[10px] font-bold uppercase tracking-wider px-3 min-h-[32px] rounded-full transition-colors",
+                      assigneeFilter === key ? "bg-primary text-primary-foreground" : "text-muted-foreground",
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -400,7 +445,7 @@ const MobilePipeline = ({
           fit on the screen. Only this deal's funnel is listed, so an illegal
           move is unreachable rather than refused. */}
       <Drawer open={Boolean(moving)} onOpenChange={(open) => !open && setMoving(null)}>
-        <DrawerContent className="lg:hidden">
+        <DrawerContent>
           <div className="px-4 pb-6 pt-1">
             <DrawerTitle className="text-[15px]">
               Move {moving?.account?.name || "this deal"}

@@ -76,6 +76,17 @@ describe("dealAttention", () => {
     expect(dealAttention({ ...base, underwritingScore: FAILING_SCORE }).rank).toBe(0);
   });
 
+  it("does not flag a score of 0, which means nobody has assessed it", () => {
+    // 22 validation_reports rows sit at exactly 0 next to 112 with no score.
+    // Reading those as a failing grade put all 22 in the rep's day as critical.
+    const a = dealAttention({ ...base, underwritingScore: 0 });
+    expect(a.rank).toBe(0);
+    expect(a.tone).toBe("steady");
+    expect(a.text).not.toContain("at risk");
+    // The smallest real score still flags, so this is not an off-by-one.
+    expect(dealAttention({ ...base, underwritingScore: 1 }).tone).toBe("critical");
+  });
+
   it("treats a ready activation as an action, not a decoration", () => {
     const a = dealAttention({ ...base, stageLabel: "Go Live Ready", activationReady: true });
     expect(a.tone).toBe("ready");

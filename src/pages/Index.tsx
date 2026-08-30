@@ -22,6 +22,7 @@ import GameSplash from "@/components/GameSplash";
 import { sendStageChangeEmail } from "@/hooks/useEmailNotifications";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Starfield = lazy(() => import("@/components/Starfield"));
 
@@ -191,6 +192,9 @@ const Index = () => {
   const [portalActivationOpp, setPortalActivationOpp] = useState<Opportunity | null>(null);
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
+  /** Same authority the board uses to choose the mobile view, so the page
+   *  chrome and the view below it can never disagree about the breakpoint. */
+  const isMobile = useIsMobile();
 
   /**
    * How long a stage change stays provisional.
@@ -953,6 +957,12 @@ const Index = () => {
   return (
       <AppLayout onNewApplication={() => setIsModalOpen(true)}>
         <div className="flex flex-col h-full overflow-hidden">
+          {/* Desktop only. On a phone this header cost ~340px — an orb, a title
+              the bottom nav already tells you, and a filter row that wrapped
+              onto two lines — before the rep saw a single deal. MobilePipeline
+              opens on "Today · N need you" and carries the two controls worth
+              keeping. */}
+          {!isMobile && (
           <PageHeader
             icon={Kanban}
             title="Pipeline"
@@ -1004,6 +1014,7 @@ const Index = () => {
               </div>
             }
           />
+          )}
           <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-2 sm:p-3 lg:p-4">
             <UnifiedPipelineBoard
               opportunities={filteredOpportunities}
@@ -1016,6 +1027,8 @@ const Index = () => {
               onConvertToGateway={handleConvertToGatewayTrack}
               onMoveToProcessing={handleMoveToProcessing}
               onRefresh={fetchOpportunities}
+              assigneeFilter={assigneeFilter}
+              onAssigneeFilterChange={setAssigneeFilter}
               currentUser={currentUserDisplayName || undefined}
               isAdmin={isAdmin}
             />
