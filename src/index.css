@@ -2623,3 +2623,12 @@ html:not(.transparency-enabled) {
   background-color: color-mix(in srgb, var(--chrome-rail) 92%, transparent);
   color: hsl(var(--foreground));
 }
+
+/* ── Deal modal editorial type (Slate Editorial direction) ──
+   Scoped to the opportunity detail surface; theme tokens still own colour. */
+.deal-mono {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.deal-sans {
+  font-family: 'Work Sans', 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+}
