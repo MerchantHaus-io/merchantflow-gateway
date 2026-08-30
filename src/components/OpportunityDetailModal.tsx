@@ -1393,10 +1393,10 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
           )}
 
           {/* Stage Path — always visible */}
-          <div className="px-4 pb-2 space-y-2">
+          <div className="px-4 md:px-6 pb-3 pt-1 space-y-2">
             {opportunity.outcome_status === 'closed_won' ? (
-              <div className="rounded-lg bg-gradient-to-b from-emerald-50/60 via-emerald-100/30 to-transparent dark:from-emerald-500/10 dark:via-emerald-500/5 dark:to-transparent border border-emerald-200/40 dark:border-emerald-500/20 py-3 px-4">
-                <h3 className="text-emerald-600 dark:text-emerald-400 font-bold tracking-widest uppercase text-sm text-center">
+              <div className="border-y-2 border-emerald-600/60 py-2.5 px-1">
+                <h3 className="deal-mono text-emerald-600 dark:text-emerald-400 font-bold tracking-[0.25em] uppercase text-xs text-center">
                   Closed Won — Live &amp; Billing
                 </h3>
               </div>
@@ -1422,10 +1422,10 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                   key={s.id}
                   onClick={() => setActiveSection(s.id as ModalSection)}
                   className={cn(
-                    "px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0",
+                    "px-1.5 py-1.5 border-b-2 deal-mono text-[11px] uppercase tracking-wider whitespace-nowrap transition-colors shrink-0",
                     activeSection === s.id
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      ? "border-foreground text-foreground font-semibold"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
                   )}
                 >
                   {s.label}

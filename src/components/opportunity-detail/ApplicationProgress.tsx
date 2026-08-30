@@ -239,19 +239,15 @@ export const ApplicationProgress = ({ opportunity, wizardState }: ApplicationPro
       </div>
 
       <div className="space-y-1">
-        <div className="flex items-center justify-between text-xs">
-          <span className="font-medium">{overallProgress}% Complete</span>
+        <div className="flex items-center justify-between text-xs deal-mono uppercase tracking-wider">
+          <span className="font-semibold">{overallProgress}% Complete</span>
           {lastUpdated && (
             <span className="text-muted-foreground">Updated {lastUpdated}</span>
           )}
         </div>
-        <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+        <div className="h-3 w-full border border-foreground/60 p-[2px]">
           <div
-            className={cn(
-              "h-full transition-all",
-              overallProgress >= 100 ? "bg-emerald-500" :
-              overallProgress >= 50 ? "bg-amber-500" : "bg-destructive"
-            )}
+            className="h-full bg-foreground transition-all"
             style={{ width: `${Math.min(overallProgress, 100)}%` }}
           />
         </div>
@@ -262,10 +258,10 @@ export const ApplicationProgress = ({ opportunity, wizardState }: ApplicationPro
           <div
             key={section.key}
             className={cn(
-              "flex items-center justify-between p-3 rounded-lg border",
-              section.status === "complete" && "bg-emerald-500/5 border-emerald-500/20",
-              section.status === "partial" && "bg-amber-500/5 border-amber-500/20",
-              section.status === "empty" && "bg-destructive/5 border-destructive/20"
+              "flex items-center justify-between p-3 border-y border-r border-border border-l-2 bg-card",
+              section.status === "complete" && "border-l-emerald-500",
+              section.status === "partial" && "border-l-amber-500",
+              section.status === "empty" && "border-l-destructive"
             )}
           >
             <div className="flex items-center gap-3">
@@ -284,10 +280,10 @@ export const ApplicationProgress = ({ opportunity, wizardState }: ApplicationPro
         {(
           <div
             className={cn(
-              "p-3 rounded-lg border space-y-2",
-              docsStatus === "complete" && "bg-emerald-500/5 border-emerald-500/20",
-              docsStatus === "partial" && "bg-amber-500/5 border-amber-500/20",
-              docsStatus === "empty" && "bg-destructive/5 border-destructive/20"
+              "p-3 border-y border-r border-border border-l-2 bg-card space-y-2",
+              docsStatus === "complete" && "border-l-emerald-500",
+              docsStatus === "partial" && "border-l-amber-500",
+              docsStatus === "empty" && "border-l-destructive"
             )}
           >
             <div className="flex items-center gap-3">
