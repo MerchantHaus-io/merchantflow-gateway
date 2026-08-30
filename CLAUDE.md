@@ -128,6 +128,35 @@ red. Fixed in passing, as this note previously asked the next person to do.
 The lesson for the table: an inherited **warning** can sit. An inherited
 **error** cannot, because the gate that reads it does not know whose it is.
 
+**Then it came back, and that changed the fix.** Lovable's `8b7db17` ("Work in
+progress") reverted the const — comment and all — and reded `main` again. Three
+breakages from one line, two of them authored by a generator that rewrites the
+file. A fourth was a matter of when, so the rule is now downgraded to a
+**warning for that one file** in `eslint.config.js`, next to the existing
+`ignores` entry for `supabase/functions/mcp/index.ts`, which is there for the
+same reason: a lint fix applied to a regenerated file is silently reverted.
+
+**`eslint --fix` in the CI lint step was tried first and rejected — do not
+reach for it again without reading this.** Two findings, both verified rather
+than assumed:
+
+- It does **not** fix this error. `prefer-const` will not mechanically repair a
+  `let` declared without an initializer and assigned later. Running
+  `eslint . --fix` over the broken file left it untouched and still exited 1.
+  The CI log says so directly if you read it: *"0 errors and 1 warning
+  potentially fixable."* Zero errors fixable.
+- It makes **semantic** edits that CI then throws away. On this tree it deleted
+  an `eslint-disable-next-line react-hooks/exhaustive-deps` directive in
+  `SharedTodoPopup.tsx`. CI would go green on source a developer's own
+  `npm run lint` still rejects — the exact false signal this table exists to
+  prevent.
+
+The override keeps every other rule on that file (it handles session tokens),
+and `prefer-const` still **errors** everywhere else, in this same
+non-autofixable shape — confirmed by putting one in another file and watching
+the build fail. A `lint:fix` script exists in `package.json` for local use; CI
+deliberately does not run it.
+
 ---
 
 ## Which connector to ask about data
