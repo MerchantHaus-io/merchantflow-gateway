@@ -52,6 +52,7 @@
       (function () {
         try {
           var dark = localStorage.getItem('merchantflow-theme') !== 'light';
+          if (dark) document.documentElement.classList.add('splash-dark');
           document.documentElement.style.setProperty(
             '--splash-bg', dark ? '#0F172A' : '#F3F4F6'
           );
@@ -86,12 +87,16 @@
           0%, 100% { opacity: 0.6; transform: scale(0.97); }
           50% { opacity: 1; transform: scale(1); }
         }
+        #splash-loader .splash-logo-dark { display: none; }
+        .splash-dark #splash-loader .splash-logo-light { display: none; }
+        .splash-dark #splash-loader .splash-logo-dark { display: block; }
         @media (prefers-reduced-motion: reduce) {
           #splash-loader img { animation: none; }
         }
       </style>
       <div id="splash-loader">
-        <img src="/images/merchanthaus-logo.png" alt="Merchant Haus" width="220" height="auto" style="width:220px;" />
+        <img class="splash-logo-light" src="/images/merchanthaus-logo.png" alt="Merchant Haus" width="220" height="auto" style="width:220px;" />
+        <img class="splash-logo-dark" src="/images/merchanthaus-logo-dark.png" alt="Merchant Haus" width="220" height="auto" style="width:220px;" />
       </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>
