@@ -57,6 +57,16 @@ export const STALLED_DAYS = 14;
 export const AGEING_DAYS = 7;
 /** Below this, underwriting is a real risk to the deal, not a note. */
 export const FAILING_SCORE = 40;
+/**
+ * A score of exactly 0 means the report exists but nobody has assessed it —
+ * not that the deal scored zero.
+ *
+ * `validation_reports` holds 22 rows at 0 alongside 112 with no score at all,
+ * and treating 0 as a failing grade pushed all 22 onto the mobile Today screen
+ * as critical. A rep's day filling with deals nobody has looked at yet is worse
+ * than not flagging them: it teaches them to ignore the list.
+ */
+const UNSCORED = 0;
 
 const days = (n: number) => `${n} ${n === 1 ? "day" : "days"}`;
 
@@ -97,7 +107,7 @@ export function dealAttention(input: AttentionInputs): DealAttention {
     };
   }
 
-  if (underwritingScore != null && underwritingScore < FAILING_SCORE) {
+  if (underwritingScore != null && underwritingScore > UNSCORED && underwritingScore < FAILING_SCORE) {
     return {
       tone: "critical",
       text: `Underwriting score ${Math.round(underwritingScore)} — at risk`,

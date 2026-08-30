@@ -57,6 +57,11 @@ interface UnifiedPipelineBoardProps {
   onRefresh?: () => Promise<void>;
   currentUser?: string;
   isAdmin?: boolean;
+  /** The page's assignee filter — 'all', 'mine', or a team member's name. */
+  assigneeFilter?: string;
+  /** Set it. The phone's Mine/All toggle drives the page's own filter rather
+   *  than keeping a second one, so the two can never disagree. */
+  onAssigneeFilterChange?: (next: string) => void;
 }
 
 const UnifiedPipelineBoard = ({
@@ -72,6 +77,8 @@ const UnifiedPipelineBoard = ({
   onRefresh,
   currentUser,
   isAdmin,
+  assigneeFilter,
+  onAssigneeFilterChange,
 }: UnifiedPipelineBoardProps) => {
   const [draggedOpportunity, setDraggedOpportunity] = useState<Opportunity | null>(null);
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
@@ -412,7 +419,16 @@ const UnifiedPipelineBoard = ({
 
   return (
     <div className="bg-background/80 dark:bg-transparent flex flex-col flex-1 min-h-0 rounded-xl">
-      {/* Inline toolbar — compact action row */}
+      {/* Inline toolbar — compact action row. Desktop only.
+
+          Every control here is dead or duplicated on a phone: the lane switch
+          repeats MobilePipeline's Funnel tab, Add Deal repeats the page's New
+          Application button, and Compact/Expand changes nothing in a view that
+          has no columns to compact. It rendered anyway until screenshots showed
+          what that cost — this strip plus the page header pushed the first deal
+          a third of the way down the viewport. Swapping only the board below
+          was never enough; the chrome above it had to go too. */}
+      {!isMobile && (
       <div className="flex-shrink-0 px-4 py-1.5 flex items-center justify-end gap-1.5 gradient-header rounded-t-xl">
         {totalPipelineValue > 0 && (
           <span className="hidden sm:inline-flex text-xs font-semibold text-foreground bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full mr-auto">
@@ -489,6 +505,7 @@ const UnifiedPipelineBoard = ({
           </Button>
         )}
       </div>
+      )}
 
       {/* Two funnels, two lanes.
 
@@ -506,6 +523,8 @@ const UnifiedPipelineBoard = ({
           onSelect={setSelectedOpportunity}
           onCommitStage={commitStageChange}
           onAssign={handleClaim}
+          assigneeFilter={assigneeFilter}
+          onAssigneeFilterChange={onAssigneeFilterChange}
           currentUser={currentUser}
           isAdmin={isAdmin}
         />

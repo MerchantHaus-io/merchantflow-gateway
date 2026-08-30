@@ -56,7 +56,7 @@ const MobileDealScreen = ({
   const serviceType = getServiceType(opportunity);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-background lg:hidden">
+    <div className="fixed inset-0 z-50 flex flex-col bg-background">
       <header className="flex-shrink-0 flex items-center gap-3 px-3 py-2 border-b border-border/50">
         <button
           type="button"
