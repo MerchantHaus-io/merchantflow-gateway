@@ -21,6 +21,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Deliberately `lint`, not `lint:fix`. Running --fix here was tried and
+      # rejected: it does not repair the error that keeps reding this repo
+      # (prefer-const will not mechanically fix a `let` declared without an
+      # initializer), and it does make semantic edits that are then thrown away
+      # — on this tree it deleted an eslint-disable directive. CI would then
+      # pass on source a developer's own `npm run lint` still rejects, which is
+      # the divergence CLAUDE.md's baseline table exists to prevent.
+      #
+      # The recurring error is handled where it belongs, in eslint.config.js.
       - name: Lint
         run: npm run lint
 
