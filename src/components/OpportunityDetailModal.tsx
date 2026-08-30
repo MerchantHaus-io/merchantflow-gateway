@@ -1117,84 +1117,17 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
           mounted ? "translate-x-0" : "translate-x-full"
         )}
       >
-        {/* ═══════ STICKY HEADER ═══════ */}
-        <div className="flex-shrink-0 border-b border-border bg-background/95 backdrop-blur-sm">
-          <div className="flex items-center justify-between px-4 py-2.5 gap-3">
-            {/* Left: Back + Company Info */}
-            <div className="flex items-center gap-3 min-w-0">
+        {/* ═══════ STICKY MASTHEAD ═══════ */}
+        <div className="flex-shrink-0 border-b border-border bg-background deal-sans">
+          {/* Top rule: back + breadcrumb ····· actions */}
+          <div className="flex items-center justify-between px-4 md:px-6 pt-3 pb-2 gap-3 border-b border-border/60">
+            <div className="flex items-center gap-2 min-w-0">
               <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={onClose}>
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <h1 className="text-base font-semibold truncate">{account?.name || 'Unknown Business'}</h1>
-                  <span className={cn(
-                    "flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0",
-                    isGatewayCard
-                      ? "bg-teal/10 text-teal" 
-                      : "bg-primary/10 text-primary"
-                  )}>
-                    {isGatewayCard ? <><Zap className="h-2.5 w-2.5" /> Gateway</> : <><CreditCard className="h-2.5 w-2.5" /> Processing</>}
-                  </span>
-                  {opportunity.status === 'dead' && (
-                    <span className="text-[10px] text-destructive bg-destructive/10 px-1.5 py-0.5 rounded shrink-0">Archived</span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 mt-0.5">
-                  {/* Stage Dropdown */}
-                  <Select value={opportunity.stage} onValueChange={(v) => handleStageChange(v as OpportunityStage)}>
-                    <SelectTrigger className="h-5 w-auto border-0 bg-transparent hover:bg-muted/50 px-1 text-xs gap-1 text-foreground">
-                      <div className={`w-2 h-2 rounded-full ${stageConfig.colorClass}`} />
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover z-[60]">
-                      {(isGatewayCard ? GATEWAY_ONLY_PIPELINE_STAGES : PROCESSING_PIPELINE_STAGES).map((stage) => (
-                        <SelectItem key={stage} value={stage} className="text-xs">
-                          <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${STAGE_CONFIG[stage].colorClass}`} />
-                            {STAGE_CONFIG[stage].label}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  {opportunity.portal_merchant_id && opportunity.stage === 'go_live_ready' && opportunity.status !== 'dead' && (
-                    <button
-                      onClick={() => setShowActivationDialog(true)}
-                      className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 rounded hover:bg-amber-500/20 transition-colors flex items-center gap-1"
-                    >
-                      <Zap className="h-2.5 w-2.5" /> Pending Activation
-                    </button>
-                  )}
-
-                  <span className="text-muted-foreground text-xs">•</span>
-
-                  {/* Owner Dropdown */}
-                  <Select
-                    value={opportunity.assigned_to || "unassigned"}
-                    onValueChange={(value) => {
-                      const newAssignee = value === "unassigned" ? null : value;
-                      if (opportunity.status === 'dead' && newAssignee) {
-                        setReactivateConfirm({ assignee: value });
-                        return;
-                      }
-                      performOwnerUpdate(value, false);
-                    }}
-                  >
-                    <SelectTrigger className="h-5 w-auto border-0 bg-transparent hover:bg-muted/50 px-1 text-[11px] font-medium">
-                      <User className="h-3 w-3 mr-0.5" />
-                      <SelectValue placeholder="Assign owner" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover z-[60]">
-                      <SelectItem value="unassigned" className="text-xs">Unassigned</SelectItem>
-                      {TEAM_MEMBERS.map((member) => (
-                        <SelectItem key={member} value={member} className="text-xs">{member}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+              <span className="deal-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground select-none hidden sm:inline">
+                Pipeline / Deal
+              </span>
             </div>
 
             {/* Right: Action buttons */}
@@ -1215,7 +1148,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                     <>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button variant="outline" size="icon" className="h-8 w-8" onClick={startEditing}>
+                          <Button variant="outline" size="icon" className="h-8 w-8 rounded-sm" onClick={startEditing}>
                             <Pencil className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
@@ -1236,7 +1169,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                               variant="outline"
                               size="icon"
                               className={cn(
-                                "h-8 w-8",
+                                "h-8 w-8 rounded-sm",
                                 isGatewayCard
                                   ? "text-indigo-500 border-indigo-500 hover:bg-indigo-500/10"
                                   : "text-teal-500 border-teal-500 hover:bg-teal-500/10"
@@ -1254,7 +1187,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                       {isAdmin && (
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => setShowDeleteDialog(true)}>
+                            <Button variant="destructive" size="icon" className="h-8 w-8 rounded-sm" onClick={() => setShowDeleteDialog(true)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </TooltipTrigger>
@@ -1264,7 +1197,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                       {!isAdmin && (
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Button variant="outline" size="icon" className="h-8 w-8 text-destructive border-destructive hover:bg-destructive/10" onClick={() => setShowRequestDeleteDialog(true)}>
+                            <Button variant="outline" size="icon" className="h-8 w-8 rounded-sm text-destructive border-destructive hover:bg-destructive/10" onClick={() => setShowRequestDeleteDialog(true)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </TooltipTrigger>
@@ -1307,7 +1240,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                           <Button
                             variant="outline"
                             size="icon"
-                            className="h-8 w-8 text-primary border-primary/40 hover:bg-primary/10"
+                            className="h-8 w-8 rounded-sm text-primary border-primary/40 hover:bg-primary/10"
                             onClick={() => setShowQuoteDialog(true)}
                           >
                             <FileSpreadsheet className="h-4 w-4" />
@@ -1370,6 +1303,83 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
             </div>
           </div>
 
+          {/* Headline: name + service chip */}
+          <div className="flex items-center gap-3 min-w-0 flex-wrap px-4 md:px-6 pt-3">
+            <h1 className="deal-mono text-xl md:text-2xl font-bold tracking-tight truncate min-w-0">
+              {account?.name || 'Unknown Business'}
+            </h1>
+            <span className="inline-flex items-center gap-1 rounded-sm bg-foreground text-background px-2 py-1 deal-mono text-[10px] font-semibold uppercase tracking-[0.15em] shrink-0">
+              {isGatewayCard ? <><Zap className="h-3 w-3" /> Gateway</> : <><CreditCard className="h-3 w-3" /> Processing</>}
+            </span>
+            {opportunity.status === 'dead' && (
+              <span className="deal-mono text-[10px] uppercase tracking-wider text-destructive border border-destructive/40 px-1.5 py-0.5 rounded-sm shrink-0">
+                Archived
+              </span>
+            )}
+          </div>
+
+          {/* Facts strip: Stage · Owner · Created */}
+          <div className="flex items-center flex-wrap gap-x-4 gap-y-1 px-4 md:px-6 pt-2 pb-1">
+            <div className="flex items-center gap-1.5">
+              <span className="deal-mono text-[10px] uppercase tracking-wider text-muted-foreground">Stage</span>
+              <Select value={opportunity.stage} onValueChange={(v) => handleStageChange(v as OpportunityStage)}>
+                <SelectTrigger className="h-6 w-auto border-0 border-b border-dashed border-muted-foreground/40 rounded-none bg-transparent hover:border-foreground px-1 text-xs gap-1 text-foreground deal-mono focus:ring-0 focus:ring-offset-0">
+                  <div className={`w-2 h-2 rounded-full ${stageConfig.colorClass}`} />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-[60]">
+                  {(isGatewayCard ? GATEWAY_ONLY_PIPELINE_STAGES : PROCESSING_PIPELINE_STAGES).map((stage) => (
+                    <SelectItem key={stage} value={stage} className="text-xs">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${STAGE_CONFIG[stage].colorClass}`} />
+                        {STAGE_CONFIG[stage].label}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {opportunity.portal_merchant_id && opportunity.stage === 'go_live_ready' && opportunity.status !== 'dead' && (
+                <button
+                  onClick={() => setShowActivationDialog(true)}
+                  className="text-[10px] font-semibold deal-mono uppercase tracking-wider text-amber-600 dark:text-amber-400 border border-dashed border-amber-500/50 px-1.5 py-0.5 rounded-sm hover:bg-amber-500/10 transition-colors flex items-center gap-1"
+                >
+                  <Zap className="h-2.5 w-2.5" /> Pending Activation
+                </button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <span className="deal-mono text-[10px] uppercase tracking-wider text-muted-foreground">Owner</span>
+              <Select
+                value={opportunity.assigned_to || "unassigned"}
+                onValueChange={(value) => {
+                  const newAssignee = value === "unassigned" ? null : value;
+                  if (opportunity.status === 'dead' && newAssignee) {
+                    setReactivateConfirm({ assignee: value });
+                    return;
+                  }
+                  performOwnerUpdate(value, false);
+                }}
+              >
+                <SelectTrigger className="h-6 w-auto border-0 border-b border-dashed border-muted-foreground/40 rounded-none bg-transparent hover:border-foreground px-1 text-[11px] font-medium deal-mono focus:ring-0 focus:ring-offset-0">
+                  <User className="h-3 w-3 mr-0.5" />
+                  <SelectValue placeholder="Assign owner" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-[60]">
+                  <SelectItem value="unassigned" className="text-xs">Unassigned</SelectItem>
+                  {TEAM_MEMBERS.map((member) => (
+                    <SelectItem key={member} value={member} className="text-xs">{member}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <span className="deal-mono text-[10px] uppercase tracking-wider text-muted-foreground hidden lg:inline ml-auto">
+              Created {new Date(opportunity.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            </span>
+          </div>
+
           {/* Live badge overlay */}
           {opportunity.outcome_status === 'closed_won' && (
             <div className="relative flex justify-center -mt-8 pointer-events-none z-10" style={{ marginBottom: '-2rem' }}>
@@ -1383,10 +1393,10 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
           )}
 
           {/* Stage Path — always visible */}
-          <div className="px-4 pb-2 space-y-2">
+          <div className="px-4 md:px-6 pb-3 pt-1 space-y-2">
             {opportunity.outcome_status === 'closed_won' ? (
-              <div className="rounded-lg bg-gradient-to-b from-emerald-50/60 via-emerald-100/30 to-transparent dark:from-emerald-500/10 dark:via-emerald-500/5 dark:to-transparent border border-emerald-200/40 dark:border-emerald-500/20 py-3 px-4">
-                <h3 className="text-emerald-600 dark:text-emerald-400 font-bold tracking-widest uppercase text-sm text-center">
+              <div className="border-y-2 border-emerald-600/60 py-2.5 px-1">
+                <h3 className="deal-mono text-emerald-600 dark:text-emerald-400 font-bold tracking-[0.25em] uppercase text-xs text-center">
                   Closed Won — Live &amp; Billing
                 </h3>
               </div>
@@ -1412,10 +1422,10 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
                   key={s.id}
                   onClick={() => setActiveSection(s.id as ModalSection)}
                   className={cn(
-                    "px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors shrink-0",
+                    "px-1.5 py-1.5 border-b-2 deal-mono text-[11px] uppercase tracking-wider whitespace-nowrap transition-colors shrink-0",
                     activeSection === s.id
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      ? "border-foreground text-foreground font-semibold"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
                   )}
                 >
                   {s.label}
@@ -1952,7 +1962,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
 
 const InfoItem = ({ label, value }: { label: string; value?: string | null }) => (
   <div>
-    <span className="text-xs text-muted-foreground uppercase tracking-wide">{label}</span>
+    <span className="deal-mono text-[10px] text-muted-foreground uppercase tracking-wider">{label}</span>
     <p className="text-sm mt-0.5">{value || '-'}</p>
   </div>
 );
@@ -1969,12 +1979,12 @@ const EditField = ({
   type?: string;
 }) => (
   <div className="space-y-1">
-    <Label className="text-xs text-muted-foreground uppercase tracking-wide">{label}</Label>
+    <Label className="deal-mono text-[10px] text-muted-foreground uppercase tracking-wider">{label}</Label>
     <Input 
       type={type}
       value={value} 
       onChange={(e) => onChange(e.target.value)}
-      className="h-9"
+      className="h-9 rounded-sm"
     />
   </div>
 );

@@ -49,11 +49,11 @@ export const DetailSidebar = ({
   const contactName = [resolvedContact?.first_name, resolvedContact?.last_name].filter(Boolean).join(" ") || "—";
 
   return (
-    <div className="w-[260px] border-r border-border bg-muted/20 flex flex-col flex-shrink-0 overflow-y-auto">
+    <div className="w-[260px] border-r border-border bg-background flex flex-col flex-shrink-0 overflow-y-auto deal-sans">
       {/* Quick Info Card */}
       <div className="p-4 border-b border-border space-y-3">
         <div>
-          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Company</p>
+          <p className="deal-mono text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-medium">Company</p>
           <p className="text-sm font-semibold truncate">{resolvedAccount?.name || "—"}</p>
         </div>
         <div className="space-y-2">
@@ -100,17 +100,14 @@ export const DetailSidebar = ({
               key={item.id}
               onClick={() => onSelect(item.id)}
               className={cn(
-                "w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-all duration-150 relative",
+                "w-full flex items-center gap-2.5 px-3 py-2 text-[13px] transition-all duration-150 border-l-2",
                 isActive
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  ? "border-primary text-foreground font-semibold bg-primary/5"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/40"
               )}
             >
-              {isActive && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-primary rounded-r-full" />
-              )}
               <item.icon className="h-4 w-4 shrink-0" />
-              <span>{item.label}</span>
+              <span className="deal-mono text-[11px] uppercase tracking-wider">{item.label}</span>
             </button>
           );
         })}
@@ -119,21 +116,21 @@ export const DetailSidebar = ({
       {/* Wizard Progress */}
       {wizardSectionProgress.length > 0 && (
         <div className="p-4 border-t border-border space-y-3">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Wizard Progress</p>
+          <p className="deal-mono text-[10px] text-muted-foreground uppercase tracking-[0.2em] font-medium">Wizard Progress</p>
           {wizardSectionProgress.map((section) => (
             <div key={section.key} className="space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">{section.label}</span>
+                <span className="deal-mono text-[11px] uppercase tracking-wider text-muted-foreground">{section.label}</span>
                 <span className={cn(
-                  "text-[10px] font-bold",
+                  "deal-mono text-[10px] font-bold",
                   section.percent >= 100 ? "text-emerald-500" : section.percent >= 10 ? "text-amber-500" : "text-destructive"
                 )}>
                   {section.percent}%
                 </span>
               </div>
-              <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+              <div className="h-1.5 w-full bg-muted overflow-hidden">
                 <div
-                  className={cn("h-full rounded-full transition-all duration-500", wizardBarColor(section.percent))}
+                  className={cn("h-full transition-all duration-500", wizardBarColor(section.percent))}
                   style={{ width: `${section.percent}%` }}
                 />
               </div>

@@ -21,7 +21,7 @@ export const DetailRightPanel = ({
   onUpdate,
 }: DetailRightPanelProps) => {
   return (
-    <div className="w-[320px] border-l border-border bg-muted/10 flex flex-col flex-shrink-0 overflow-y-auto">
+    <div className="w-[320px] border-l border-border bg-background flex flex-col flex-shrink-0 overflow-y-auto deal-sans">
       {/* Pricing */}
       <div className="p-3 border-b border-border">
         <PricingEditor
@@ -48,7 +48,7 @@ export const DetailRightPanel = ({
       <div className="flex-1 min-h-0 flex flex-col">
         <div className="px-3 pt-3 pb-1 flex items-center gap-2">
           <Activity className="h-3.5 w-3.5 text-muted-foreground" />
-          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Activity</h3>
+          <h3 className="deal-mono text-[10px] font-medium text-muted-foreground uppercase tracking-[0.2em]">Activity</h3>
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto px-3 pb-2">
           <ActivitiesTab opportunityId={opportunityId} />
@@ -59,7 +59,7 @@ export const DetailRightPanel = ({
       <div className="border-t border-border">
         <div className="px-3 pt-3 pb-1 flex items-center gap-2">
           <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
-          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Comments</h3>
+          <h3 className="deal-mono text-[10px] font-medium text-muted-foreground uppercase tracking-[0.2em]">Comments</h3>
         </div>
         <div className="px-3 pb-3">
           <CommentsTab opportunityId={opportunityId} />

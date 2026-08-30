@@ -1,6 +1,6 @@
 import { Opportunity, STAGE_CONFIG, PROCESSING_PIPELINE_STAGES, GATEWAY_ONLY_PIPELINE_STAGES, getServiceType, OpportunityStage } from "@/types/opportunity";
 import { cn } from "@/lib/utils";
-import { Check, Circle, GripHorizontal } from "lucide-react";
+import { GripHorizontal } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useRef, useState, useEffect } from "react";
@@ -91,23 +91,23 @@ export const StagePath = ({ opportunity }: StagePathProps) => {
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-          Stage Progress
+        <h3 className="deal-mono text-[10px] font-medium text-muted-foreground uppercase tracking-[0.2em]">
+          Stage Progress — Step {currentStageIndex + 1} of {stages.length}
         </h3>
         {showGrabHint && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground animate-pulse">
+          <div className="flex items-center gap-1 text-[10px] deal-mono uppercase tracking-wider text-muted-foreground animate-pulse">
             <GripHorizontal className="h-3 w-3" />
-            <span>Drag to scroll</span>
+            <span>Drag</span>
           </div>
         )}
       </div>
-      
-      <div 
+
+      <div
         ref={scrollRef}
         className={cn(
-          "flex items-center gap-1 overflow-x-auto pb-2 scrollbar-hide select-none",
+          "overflow-x-auto pb-1 scrollbar-hide select-none",
           isDragging ? "cursor-grabbing" : "cursor-grab"
         )}
         onMouseDown={handleMouseDown}
@@ -119,33 +119,33 @@ export const StagePath = ({ opportunity }: StagePathProps) => {
         onTouchEnd={handleTouchEnd}
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        {stages.map((stage, index) => {
-          const stageConfig = STAGE_CONFIG[stage];
-          const isCompleted = index < currentStageIndex;
-          const isCurrent = index === currentStageIndex;
-          const isPending = index > currentStageIndex;
-          
-          return (
-            <div key={stage} className="flex items-center shrink-0">
-              <Tooltip>
+        {/* Segmented editorial stepper */}
+        <div className="flex items-stretch gap-1 min-w-max">
+          {stages.map((stage, index) => {
+            const stageConfig = STAGE_CONFIG[stage];
+            const isCompleted = index < currentStageIndex;
+            const isCurrent = index === currentStageIndex;
+
+            return (
+              <Tooltip key={stage}>
                 <TooltipTrigger asChild>
-                  <div
-                    className={cn(
-                      "flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-colors cursor-default whitespace-nowrap",
-                      isCompleted && "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-                      isCurrent && "bg-primary/10 text-primary ring-1 ring-primary/30",
-                      isPending && "bg-muted text-muted-foreground"
-                    )}
-                  >
-                    {isCompleted ? (
-                      <Check className="h-3 w-3" />
-                    ) : isCurrent ? (
-                      <Circle className="h-3 w-3 fill-current" />
-                    ) : (
-                      <Circle className="h-3 w-3" />
-                    )}
-                    <span className="hidden sm:inline">{stageConfig.label}</span>
-                    <span className="sm:hidden">{stageConfig.label.split(" ")[0]}</span>
+                  <div className="flex flex-col gap-1 w-16 sm:w-20 shrink-0 cursor-default">
+                    <div
+                      className={cn(
+                        "h-1 transition-colors",
+                        isCompleted && "bg-foreground",
+                        isCurrent && "bg-primary",
+                        !isCompleted && !isCurrent && "bg-muted"
+                      )}
+                    />
+                    <span
+                      className={cn(
+                        "deal-mono text-[9px] uppercase tracking-wide leading-tight truncate",
+                        isCurrent ? "text-foreground font-semibold" : "text-muted-foreground"
+                      )}
+                    >
+                      {stageConfig.label}
+                    </span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-[200px]">
@@ -162,18 +162,9 @@ export const StagePath = ({ opportunity }: StagePathProps) => {
                   </div>
                 </TooltipContent>
               </Tooltip>
-              
-              {index < stages.length - 1 && (
-                <div 
-                  className={cn(
-                    "w-4 h-0.5 mx-0.5",
-                    isCompleted ? "bg-emerald-500/50" : "bg-muted"
-                  )} 
-                />
-              )}
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );
