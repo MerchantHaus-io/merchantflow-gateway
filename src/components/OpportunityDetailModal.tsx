@@ -1962,7 +1962,7 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
 
 const InfoItem = ({ label, value }: { label: string; value?: string | null }) => (
   <div>
-    <span className="text-xs text-muted-foreground uppercase tracking-wide">{label}</span>
+    <span className="deal-mono text-[10px] text-muted-foreground uppercase tracking-wider">{label}</span>
     <p className="text-sm mt-0.5">{value || '-'}</p>
   </div>
 );
@@ -1979,12 +1979,12 @@ const EditField = ({
   type?: string;
 }) => (
   <div className="space-y-1">
-    <Label className="text-xs text-muted-foreground uppercase tracking-wide">{label}</Label>
+    <Label className="deal-mono text-[10px] text-muted-foreground uppercase tracking-wider">{label}</Label>
     <Input 
       type={type}
       value={value} 
       onChange={(e) => onChange(e.target.value)}
-      className="h-9"
+      className="h-9 rounded-sm"
     />
   </div>
 );
