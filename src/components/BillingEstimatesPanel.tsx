@@ -17,6 +17,10 @@ import { cn } from "@/lib/utils";
 const MONTHLY_GATEWAY_FEE = 59.0;
 const PER_TX_GATEWAY_FEE = 0.25;
 const PER_TX_EXTENSION_FEE = 0.15; // Vault + Kount
+// Recurring merchant-facing processing (acquiring) fees for accounts that also
+// process with us: monthly service fee + breach protection + regulatory fee.
+const PROCESSING_MONTHLY_FEES = 10.0 + 7.95 + 6.95;
+
 
 type DatePreset = "last_month" | "this_month" | "7d" | "30d" | "60d" | "90d";
 
