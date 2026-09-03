@@ -267,10 +267,10 @@ export const BillingEstimatesPanel = ({ accounts }: Props) => {
         </p>
 
         {/* Empty / loading / error */}
-        {allGatewayIds.length === 0 ? (
+        {accounts.length === 0 ? (
           <div className="text-center py-8">
             <FileText className="h-8 w-8 mx-auto mb-2 text-muted-foreground/30" />
-            <p className="text-sm text-muted-foreground">No gateway IDs found across these accounts.</p>
+            <p className="text-sm text-muted-foreground">No live accounts to bill.</p>
           </div>
         ) : isLoading ? (
           <div className="space-y-2">
@@ -287,7 +287,7 @@ export const BillingEstimatesPanel = ({ accounts }: Props) => {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
               <SummaryTile label="Accounts billed" value={String(rows.filter((r) => r.total > 0).length)} />
               <SummaryTile label="Transactions" value={totals.count.toLocaleString()} />
-              <SummaryTile label="Approved volume" value={currency(totals.volume)} />
+              <SummaryTile label="Processing fees" value={currency(totals.processing)} />
               <SummaryTile label="Total billable" value={currency(totals.total)} highlight />
             </div>
 
@@ -297,18 +297,20 @@ export const BillingEstimatesPanel = ({ accounts }: Props) => {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-xs">Account</TableHead>
+                    <TableHead className="text-xs">Services</TableHead>
                     <TableHead className="text-xs text-right">Tx Count</TableHead>
                     <TableHead className="text-xs text-right hidden md:table-cell">Volume</TableHead>
                     <TableHead className="text-xs text-right">Monthly</TableHead>
                     <TableHead className="text-xs text-right">Per-Tx</TableHead>
                     {includeExtensions && <TableHead className="text-xs text-right hidden md:table-cell">Ext.</TableHead>}
+                    <TableHead className="text-xs text-right">Processing</TableHead>
                     <TableHead className="text-xs text-right">Total</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {rows.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={includeExtensions ? 7 : 6} className="text-center text-xs text-muted-foreground py-6">
+                      <TableCell colSpan={includeExtensions ? 9 : 8} className="text-center text-xs text-muted-foreground py-6">
                         No billable accounts in this period.
                       </TableCell>
                     </TableRow>
@@ -317,11 +319,27 @@ export const BillingEstimatesPanel = ({ accounts }: Props) => {
                       <TableCell className="text-xs">
                         <div className="font-medium text-foreground">{r.name}</div>
                         <div className="flex flex-wrap gap-1 mt-0.5">
-                          {r.ids.map((id) => (
+                          {r.ids.length === 0 ? (
+                            <span className="text-[9px] text-muted-foreground italic">No gateway ID linked</span>
+                          ) : r.ids.map((id) => (
                             <span key={id} className="text-[9px] font-mono text-muted-foreground bg-muted px-1 py-0.5 rounded">
                               {id}
                             </span>
                           ))}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        <div className="flex flex-col gap-1">
+                          {r.hasProcessing && (
+                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-indigo-400/50 text-indigo-700 dark:text-indigo-300 w-fit">
+                              Processing
+                            </Badge>
+                          )}
+                          {r.pipelines.includes("gateway_only") && (
+                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-teal-400/50 text-teal-700 dark:text-teal-300 w-fit">
+                              Gateway only
+                            </Badge>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="text-xs text-right tabular-nums">{r.count.toLocaleString()}</TableCell>
@@ -333,6 +351,7 @@ export const BillingEstimatesPanel = ({ accounts }: Props) => {
                       {includeExtensions && (
                         <TableCell className="text-xs text-right tabular-nums hidden md:table-cell">{currency(r.ext)}</TableCell>
                       )}
+                      <TableCell className="text-xs text-right tabular-nums">{currency(r.processing)}</TableCell>
                       <TableCell className="text-xs text-right tabular-nums font-semibold text-foreground">
                         {currency(r.total)}
                       </TableCell>
@@ -342,7 +361,7 @@ export const BillingEstimatesPanel = ({ accounts }: Props) => {
                 {rows.length > 0 && (
                   <tfoot className="border-t border-border bg-muted/30">
                     <tr>
-                      <td className="px-4 py-2 text-xs font-semibold">Totals</td>
+                      <td className="px-4 py-2 text-xs font-semibold" colSpan={2}>Totals</td>
                       <td className="px-4 py-2 text-xs text-right tabular-nums font-semibold">{totals.count.toLocaleString()}</td>
                       <td className="px-4 py-2 text-xs text-right tabular-nums font-semibold hidden md:table-cell">{currency(totals.volume)}</td>
                       <td className="px-4 py-2 text-xs text-right tabular-nums font-semibold">{currency(totals.monthly)}</td>
@@ -350,9 +369,11 @@ export const BillingEstimatesPanel = ({ accounts }: Props) => {
                       {includeExtensions && (
                         <td className="px-4 py-2 text-xs text-right tabular-nums font-semibold hidden md:table-cell">{currency(totals.ext)}</td>
                       )}
+                      <td className="px-4 py-2 text-xs text-right tabular-nums font-semibold">{currency(totals.processing)}</td>
                       <td className="px-4 py-2 text-xs text-right tabular-nums font-bold text-amber-700 dark:text-amber-400">
                         {currency(totals.total)}
                       </td>
+
                     </tr>
                   </tfoot>
                 )}
