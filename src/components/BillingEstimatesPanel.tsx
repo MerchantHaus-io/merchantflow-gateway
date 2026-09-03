@@ -17,6 +17,10 @@ import { cn } from "@/lib/utils";
 const MONTHLY_GATEWAY_FEE = 59.0;
 const PER_TX_GATEWAY_FEE = 0.25;
 const PER_TX_EXTENSION_FEE = 0.15; // Vault + Kount
+// Recurring merchant-facing processing (acquiring) fees for accounts that also
+// process with us: monthly service fee + breach protection + regulatory fee.
+const PROCESSING_MONTHLY_FEES = 10.0 + 7.95 + 6.95;
+
 
 type DatePreset = "last_month" | "this_month" | "7d" | "30d" | "60d" | "90d";
 
@@ -128,26 +132,29 @@ export const BillingEstimatesPanel = ({ accounts }: Props) => {
 
   const rows = useMemo(() => {
     return accounts
-      .filter((a) => accountToIds.has(a.account_id))
       .map((a) => {
-        const ids = accountToIds.get(a.account_id)!;
+        const ids = accountToIds.get(a.account_id) ?? [];
         const count = ids.reduce((sum, id) => sum + (data?.[id]?.count ?? 0), 0);
         const volume = ids.reduce((sum, id) => sum + (data?.[id]?.volume ?? 0), 0);
-        const hasGateway = a.pipelines.includes("gateway_only") || a.pipelines.includes("processing");
+        const hasProcessing = a.pipelines.includes("processing");
+        const hasGateway = a.pipelines.includes("gateway_only") || hasProcessing;
         const monthly = hasGateway ? MONTHLY_GATEWAY_FEE : 0;
         const perTx = count * PER_TX_GATEWAY_FEE;
         const ext = includeExtensions ? count * PER_TX_EXTENSION_FEE : 0;
+        const processing = hasProcessing ? PROCESSING_MONTHLY_FEES : 0;
         return {
           account_id: a.account_id,
           name: a.account?.name || "Unknown",
           ids,
           pipelines: a.pipelines,
+          hasProcessing,
           count,
           volume,
           monthly,
           perTx,
           ext,
-          total: monthly + perTx + ext,
+          processing,
+          total: monthly + perTx + ext + processing,
         };
       })
       .sort((x, y) => y.total - x.total);
@@ -162,17 +169,19 @@ export const BillingEstimatesPanel = ({ accounts }: Props) => {
           monthly: acc.monthly + r.monthly,
           perTx: acc.perTx + r.perTx,
           ext: acc.ext + r.ext,
+          processing: acc.processing + r.processing,
           total: acc.total + r.total,
         }),
-        { count: 0, volume: 0, monthly: 0, perTx: 0, ext: 0, total: 0 },
+        { count: 0, volume: 0, monthly: 0, perTx: 0, ext: 0, processing: 0, total: 0 },
       ),
     [rows],
   );
 
+
   const exportCsv = () => {
     const header = [
       "Account", "MIDs", "Pipelines", "Transactions", "Approved Volume",
-      "Monthly Gateway Fee", "Per-Tx Gateway Fee", "Extension Fee", "Total Billable",
+      "Monthly Gateway Fee", "Per-Tx Gateway Fee", "Extension Fee", "Processing Fees", "Total Billable",
     ];
     const lines = [header.join(",")];
     for (const r of rows) {
@@ -185,14 +194,17 @@ export const BillingEstimatesPanel = ({ accounts }: Props) => {
         r.monthly.toFixed(2),
         r.perTx.toFixed(2),
         r.ext.toFixed(2),
+        r.processing.toFixed(2),
         r.total.toFixed(2),
       ].join(","));
     }
     lines.push([
       "TOTAL", "", "",
       totals.count, totals.volume.toFixed(2),
-      totals.monthly.toFixed(2), totals.perTx.toFixed(2), totals.ext.toFixed(2), totals.total.toFixed(2),
+      totals.monthly.toFixed(2), totals.perTx.toFixed(2), totals.ext.toFixed(2),
+      totals.processing.toFixed(2), totals.total.toFixed(2),
     ].join(","));
+
     const blob = new Blob([lines.join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -215,7 +227,7 @@ export const BillingEstimatesPanel = ({ accounts }: Props) => {
               <h3 className="text-sm font-semibold text-foreground">Monthly Billing Estimates</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Auto-calculated from NMI gateway transactions · ${MONTHLY_GATEWAY_FEE.toFixed(2)} monthly + ${PER_TX_GATEWAY_FEE.toFixed(2)}/tx
-                {includeExtensions && ` + $${PER_TX_EXTENSION_FEE.toFixed(2)}/tx ext`}
+                {includeExtensions && ` + $${PER_TX_EXTENSION_FEE.toFixed(2)}/tx ext`} · processing accounts add ${PROCESSING_MONTHLY_FEES.toFixed(2)}/mo
               </p>
             </div>
           </div>
@@ -255,10 +267,10 @@ export const BillingEstimatesPanel = ({ accounts }: Props) => {
         </p>
 
         {/* Empty / loading / error */}
-        {allGatewayIds.length === 0 ? (
+        {accounts.length === 0 ? (
           <div className="text-center py-8">
             <FileText className="h-8 w-8 mx-auto mb-2 text-muted-foreground/30" />
-            <p className="text-sm text-muted-foreground">No gateway IDs found across these accounts.</p>
+            <p className="text-sm text-muted-foreground">No live accounts to bill.</p>
           </div>
         ) : isLoading ? (
           <div className="space-y-2">
@@ -275,7 +287,7 @@ export const BillingEstimatesPanel = ({ accounts }: Props) => {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
               <SummaryTile label="Accounts billed" value={String(rows.filter((r) => r.total > 0).length)} />
               <SummaryTile label="Transactions" value={totals.count.toLocaleString()} />
-              <SummaryTile label="Approved volume" value={currency(totals.volume)} />
+              <SummaryTile label="Processing fees" value={currency(totals.processing)} />
               <SummaryTile label="Total billable" value={currency(totals.total)} highlight />
             </div>
 
@@ -285,18 +297,20 @@ export const BillingEstimatesPanel = ({ accounts }: Props) => {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-xs">Account</TableHead>
+                    <TableHead className="text-xs">Services</TableHead>
                     <TableHead className="text-xs text-right">Tx Count</TableHead>
                     <TableHead className="text-xs text-right hidden md:table-cell">Volume</TableHead>
                     <TableHead className="text-xs text-right">Monthly</TableHead>
                     <TableHead className="text-xs text-right">Per-Tx</TableHead>
                     {includeExtensions && <TableHead className="text-xs text-right hidden md:table-cell">Ext.</TableHead>}
+                    <TableHead className="text-xs text-right">Processing</TableHead>
                     <TableHead className="text-xs text-right">Total</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {rows.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={includeExtensions ? 7 : 6} className="text-center text-xs text-muted-foreground py-6">
+                      <TableCell colSpan={includeExtensions ? 9 : 8} className="text-center text-xs text-muted-foreground py-6">
                         No billable accounts in this period.
                       </TableCell>
                     </TableRow>
@@ -305,11 +319,27 @@ export const BillingEstimatesPanel = ({ accounts }: Props) => {
                       <TableCell className="text-xs">
                         <div className="font-medium text-foreground">{r.name}</div>
                         <div className="flex flex-wrap gap-1 mt-0.5">
-                          {r.ids.map((id) => (
+                          {r.ids.length === 0 ? (
+                            <span className="text-[9px] text-muted-foreground italic">No gateway ID linked</span>
+                          ) : r.ids.map((id) => (
                             <span key={id} className="text-[9px] font-mono text-muted-foreground bg-muted px-1 py-0.5 rounded">
                               {id}
                             </span>
                           ))}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        <div className="flex flex-col gap-1">
+                          {r.hasProcessing && (
+                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-indigo-400/50 text-indigo-700 dark:text-indigo-300 w-fit">
+                              Processing
+                            </Badge>
+                          )}
+                          {r.pipelines.includes("gateway_only") && (
+                            <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-teal-400/50 text-teal-700 dark:text-teal-300 w-fit">
+                              Gateway only
+                            </Badge>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="text-xs text-right tabular-nums">{r.count.toLocaleString()}</TableCell>
@@ -321,6 +351,7 @@ export const BillingEstimatesPanel = ({ accounts }: Props) => {
                       {includeExtensions && (
                         <TableCell className="text-xs text-right tabular-nums hidden md:table-cell">{currency(r.ext)}</TableCell>
                       )}
+                      <TableCell className="text-xs text-right tabular-nums">{currency(r.processing)}</TableCell>
                       <TableCell className="text-xs text-right tabular-nums font-semibold text-foreground">
                         {currency(r.total)}
                       </TableCell>
@@ -330,7 +361,7 @@ export const BillingEstimatesPanel = ({ accounts }: Props) => {
                 {rows.length > 0 && (
                   <tfoot className="border-t border-border bg-muted/30">
                     <tr>
-                      <td className="px-4 py-2 text-xs font-semibold">Totals</td>
+                      <td className="px-4 py-2 text-xs font-semibold" colSpan={2}>Totals</td>
                       <td className="px-4 py-2 text-xs text-right tabular-nums font-semibold">{totals.count.toLocaleString()}</td>
                       <td className="px-4 py-2 text-xs text-right tabular-nums font-semibold hidden md:table-cell">{currency(totals.volume)}</td>
                       <td className="px-4 py-2 text-xs text-right tabular-nums font-semibold">{currency(totals.monthly)}</td>
@@ -338,9 +369,11 @@ export const BillingEstimatesPanel = ({ accounts }: Props) => {
                       {includeExtensions && (
                         <td className="px-4 py-2 text-xs text-right tabular-nums font-semibold hidden md:table-cell">{currency(totals.ext)}</td>
                       )}
+                      <td className="px-4 py-2 text-xs text-right tabular-nums font-semibold">{currency(totals.processing)}</td>
                       <td className="px-4 py-2 text-xs text-right tabular-nums font-bold text-amber-700 dark:text-amber-400">
                         {currency(totals.total)}
                       </td>
+
                     </tr>
                   </tfoot>
                 )}
