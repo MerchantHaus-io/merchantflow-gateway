@@ -128,26 +128,29 @@ export const BillingEstimatesPanel = ({ accounts }: Props) => {
 
   const rows = useMemo(() => {
     return accounts
-      .filter((a) => accountToIds.has(a.account_id))
       .map((a) => {
-        const ids = accountToIds.get(a.account_id)!;
+        const ids = accountToIds.get(a.account_id) ?? [];
         const count = ids.reduce((sum, id) => sum + (data?.[id]?.count ?? 0), 0);
         const volume = ids.reduce((sum, id) => sum + (data?.[id]?.volume ?? 0), 0);
-        const hasGateway = a.pipelines.includes("gateway_only") || a.pipelines.includes("processing");
+        const hasProcessing = a.pipelines.includes("processing");
+        const hasGateway = a.pipelines.includes("gateway_only") || hasProcessing;
         const monthly = hasGateway ? MONTHLY_GATEWAY_FEE : 0;
         const perTx = count * PER_TX_GATEWAY_FEE;
         const ext = includeExtensions ? count * PER_TX_EXTENSION_FEE : 0;
+        const processing = hasProcessing ? PROCESSING_MONTHLY_FEES : 0;
         return {
           account_id: a.account_id,
           name: a.account?.name || "Unknown",
           ids,
           pipelines: a.pipelines,
+          hasProcessing,
           count,
           volume,
           monthly,
           perTx,
           ext,
-          total: monthly + perTx + ext,
+          processing,
+          total: monthly + perTx + ext + processing,
         };
       })
       .sort((x, y) => y.total - x.total);
@@ -162,12 +165,14 @@ export const BillingEstimatesPanel = ({ accounts }: Props) => {
           monthly: acc.monthly + r.monthly,
           perTx: acc.perTx + r.perTx,
           ext: acc.ext + r.ext,
+          processing: acc.processing + r.processing,
           total: acc.total + r.total,
         }),
-        { count: 0, volume: 0, monthly: 0, perTx: 0, ext: 0, total: 0 },
+        { count: 0, volume: 0, monthly: 0, perTx: 0, ext: 0, processing: 0, total: 0 },
       ),
     [rows],
   );
+
 
   const exportCsv = () => {
     const header = [
