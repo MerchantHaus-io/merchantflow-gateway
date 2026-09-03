@@ -227,7 +227,7 @@ export const BillingEstimatesPanel = ({ accounts }: Props) => {
               <h3 className="text-sm font-semibold text-foreground">Monthly Billing Estimates</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Auto-calculated from NMI gateway transactions · ${MONTHLY_GATEWAY_FEE.toFixed(2)} monthly + ${PER_TX_GATEWAY_FEE.toFixed(2)}/tx
-                {includeExtensions && ` + $${PER_TX_EXTENSION_FEE.toFixed(2)}/tx ext`}
+                {includeExtensions && ` + $${PER_TX_EXTENSION_FEE.toFixed(2)}/tx ext`} · processing accounts add ${PROCESSING_MONTHLY_FEES.toFixed(2)}/mo
               </p>
             </div>
           </div>
