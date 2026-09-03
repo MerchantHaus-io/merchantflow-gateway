@@ -35,18 +35,7 @@ export function brokeredPreviewStorage() {
     new Promise((resolve) => {
       const requestId = newId();
       let done = false;
-      // Armed before the request goes out rather than after, so it can be a
-      // const: both lines are in the same synchronous block, so the window is
-      // the same TIMEOUT either way, and `finish` is only ever reached from an
-      // async callback, so referencing it here is not a TDZ hazard.
-      //
-      // Keep it a const. As a `let` assigned once it trips `prefer-const`, and
-      // CI runs `npm run lint` before `npm run build` with no --max-warnings —
-      // so that single error fails the `build` check on every push to main and
-      // on every open PR, whoever's. This has now been reverted twice (9880751,
-      // 8b7db17). If a generator rewrites this block again, the rule to keep is
-      // the const; the ordering is incidental.
-      const timer = setTimeout(() => finish(null), TIMEOUT);
+      let timer: ReturnType<typeof setTimeout>;
       const finish = (r: { ok: boolean; value?: string | null } | null) => {
         if (done) return;
         done = true;
@@ -64,6 +53,7 @@ export function brokeredPreviewStorage() {
       if (value !== undefined) msg['value'] = value;
       // targetOrigin per trusted editor origin, so a session token never reaches an arbitrary embedder.
       for (const origin of editorOrigins) window.parent.postMessage(msg, origin);
+      timer = setTimeout(() => finish(null), TIMEOUT);
     });
 
   // The editor may not be listening yet at the first getItem, so retry once.
