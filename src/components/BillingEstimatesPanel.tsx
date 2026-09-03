@@ -181,7 +181,7 @@ export const BillingEstimatesPanel = ({ accounts }: Props) => {
   const exportCsv = () => {
     const header = [
       "Account", "MIDs", "Pipelines", "Transactions", "Approved Volume",
-      "Monthly Gateway Fee", "Per-Tx Gateway Fee", "Extension Fee", "Total Billable",
+      "Monthly Gateway Fee", "Per-Tx Gateway Fee", "Extension Fee", "Processing Fees", "Total Billable",
     ];
     const lines = [header.join(",")];
     for (const r of rows) {
@@ -194,14 +194,17 @@ export const BillingEstimatesPanel = ({ accounts }: Props) => {
         r.monthly.toFixed(2),
         r.perTx.toFixed(2),
         r.ext.toFixed(2),
+        r.processing.toFixed(2),
         r.total.toFixed(2),
       ].join(","));
     }
     lines.push([
       "TOTAL", "", "",
       totals.count, totals.volume.toFixed(2),
-      totals.monthly.toFixed(2), totals.perTx.toFixed(2), totals.ext.toFixed(2), totals.total.toFixed(2),
+      totals.monthly.toFixed(2), totals.perTx.toFixed(2), totals.ext.toFixed(2),
+      totals.processing.toFixed(2), totals.total.toFixed(2),
     ].join(","));
+
     const blob = new Blob([lines.join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
