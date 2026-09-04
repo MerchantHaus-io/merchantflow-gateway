@@ -6,6 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { AffiliatePayoutsPanel } from "@/components/affiliates/AffiliatePayoutsPanel";
+import {
+  DEFAULT_MONTHLY_CAP,
+  PARTNER_SHARE_DIVISOR,
+  PARTNER_SHARE_RATE,
+  fmtUsd,
+} from "@/lib/affiliatePayouts";
 import { PartnerActivityPanel } from "@/components/affiliates/PartnerActivityPanel";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -66,8 +72,8 @@ export default function Referrers() {
     full_name: "",
     email: "",
     phone: "",
-    commission_rate: 0.50,
-    monthly_cap_per_merchant: 1000,
+    commission_rate: PARTNER_SHARE_RATE,
+    monthly_cap_per_merchant: DEFAULT_MONTHLY_CAP,
   });
   const [creating, setCreating] = useState(false);
   const [createdCredentials, setCreatedCredentials] = useState<{ email: string; password: string } | null>(null);
@@ -338,7 +344,13 @@ export default function Referrers() {
 
     setCreating(false);
     setCreatedCredentials({ email: createForm.email, password: data.temp_password });
-    setCreateForm({ full_name: "", email: "", phone: "", commission_rate: 0.50, monthly_cap_per_merchant: 1000 });
+    setCreateForm({
+      full_name: "",
+      email: "",
+      phone: "",
+      commission_rate: PARTNER_SHARE_RATE,
+      monthly_cap_per_merchant: DEFAULT_MONTHLY_CAP,
+    });
     setCreateOpen(false);
     load();
   };
@@ -349,8 +361,8 @@ export default function Referrers() {
       full_name: row.full_name,
       email: "",
       phone: row.phone ?? "",
-      commission_rate: 0.50,
-      monthly_cap_per_merchant: 1000,
+      commission_rate: PARTNER_SHARE_RATE,
+      monthly_cap_per_merchant: DEFAULT_MONTHLY_CAP,
     });
     setCreateOpen(true);
   };
@@ -626,9 +638,12 @@ export default function Referrers() {
         </Card>
 
         <p className="text-xs text-muted-foreground">
-          Commission: affiliate earns <strong>Comm %</strong> of net monthly revenue per referred merchant, capped at
-          <strong> Monthly Cap</strong> per merchant per month. Clawback applies if the merchant churns within
-          the clawback window of going live. Names marked <strong>Attribution only</strong> exist purely to record who
+          Commission: an affiliate earns <strong>Comm %</strong> of the monthly gateway net per referred merchant —
+          what that merchant is billed for the gateway less our cost — capped at <strong>Monthly Cap</strong> per
+          merchant per month. The programme rate is a quarter of the net (÷ {PARTNER_SHARE_DIVISOR}), capped at{" "}
+          {fmtUsd(DEFAULT_MONTHLY_CAP)}; the Programme audit above checks every credit against it. Processing volume
+          earns an affiliate nothing. Clawback applies if the merchant churns within the clawback window of going
+          live. Names marked <strong>Attribution only</strong> exist purely to record who
           referred a deal — no login, no commission and no payouts until you promote them.
         </p>
       </div>
@@ -692,7 +707,10 @@ export default function Referrers() {
                   value={createForm.commission_rate}
                   onChange={(e) => setCreateForm({ ...createForm, commission_rate: Number(e.target.value) })}
                 />
-                <p className="text-xs text-muted-foreground mt-1">{fmtPct(createForm.commission_rate)} of net revenue</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {fmtPct(createForm.commission_rate)} of the monthly gateway net
+                  {createForm.commission_rate === PARTNER_SHARE_RATE ? " (programme rate)" : " — off the programme rate"}
+                </p>
               </div>
               <div>
                 <Label htmlFor="ref-cap">Monthly cap per merchant</Label>

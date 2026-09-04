@@ -56,6 +56,36 @@ untouched.
 
 ---
 
+## Affiliate programme basis — one source of truth
+
+A referral partner earns **a quarter of the gateway net**, month on month, per
+referred merchant:
+
+    partner share = (gateway billed − gateway cost) ÷ 4,  capped per merchant/month
+
+`src/lib/affiliatePayouts.ts` holds the constants — `PARTNER_SHARE_DIVISOR`,
+`GATEWAY_BASIS`, `DEFAULT_MONTHLY_CAP` — and every UI default reads from them.
+Do not re-write these numbers into a component, a form default or a migration;
+they had drifted into five disagreeing copies once already.
+
+The gateway cost basis is **$25/month + $0.15/txn**, matching
+`TIER_PLATFORM_FEE.foundation.cost` in `src/config/quoteSchedule.ts` and the
+figures actually stored in `commission_records.gateway_margin`. The `$15.00`
+in `supabase/migrations/20260904203347_*.sql` is **wrong** — re-running that
+UPDATE would over-state every net by $10/month.
+
+Two things the database still disagrees with, deliberately left for a
+migration-only session (never mix migrations with client changes):
+
+- `referrers.commission_rate` is `0.5000` in production, i.e. **double** the
+  programme rate. Every existing commission credit is 2x.
+- `build_referrer_ledger()` accrues from any commission period rather than
+  from the merchant's first gateway invoice month.
+
+The **Programme audit** card on `/admin/affiliates` recomputes every credit
+from its own gateway month and flags exactly these divergences, so the gap is
+visible in the UI until the migration lands.
+
 ## Gauntlet invariants — never violate, in any phase
 
 - NEVER put database migrations and client changes in the same session.
@@ -93,10 +123,10 @@ back after editing them.
 
 | Check | Current state | As of |
 |---|---|---|
-| `npx tsc --noEmit -p tsconfig.app.json` | silent | 29 Aug 2026 |
-| `npm run lint` | **0 errors**, 330 warnings | 29 Aug 2026 |
-| `npx vitest run` | 178 passing, 15 files | 29 Aug 2026 |
-| `npm run build` | succeeds; chunk-size warnings are expected | 29 Aug 2026 |
+| `npx tsc --noEmit -p tsconfig.app.json` | silent | 4 Sep 2026 |
+| `npm run lint` | **0 errors**, 325 warnings | 4 Sep 2026 |
+| `npx vitest run` | 230 passing, 18 files | 4 Sep 2026 |
+| `npm run build` | succeeds; chunk-size warnings are expected | 4 Sep 2026 |
 
 A rise in the lint **error** count is a regression. Inherited warnings are not.
 
@@ -114,7 +144,10 @@ passed and the count only rose. It is 118 / 8 as of this re-dating, the last 6
 being `src/lib/adminRole.test.ts`. It has since risen again, to 178 / 15; the
 newest files are the pipeline libraries (`dealAttention`, `edgeScroll`,
 `pipelineValue`, `pipelineLanes`, `pipelinePhases`, `assignDeal`) and again
-every test passes.
+every test passes. Re-dated 4 Sep 2026 at 230 / 18: 211 / 18 was the measured
+baseline before the affiliate programme-basis work, which added 19 tests to
+`src/lib/affiliatePayouts.test.ts`. The warning count moved 330 -> 325 on
+unrelated commits; `npx eslint` on the changed files reports zero.
 
 **The error row went to 1 and back to 0, and the reason is worth keeping.**
 `src/integrations/supabase/previewAuthStorage.ts:38` tripped `prefer-const`

@@ -13,6 +13,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { STAGE_CONFIG, OpportunityStage, OutcomeStatus } from "@/types/opportunity";
 import { format, formatDistanceToNow, differenceInDays } from "date-fns";
 import { Send, CheckCircle2, XCircle, Clock, TrendingUp, Building2, Mail, Sparkles } from "lucide-react";
+import { DEFAULT_MONTHLY_CAP, PARTNER_SHARE_RATE, fmtUsd } from "@/lib/affiliatePayouts";
 
 const PREMIUM_CONTACT_EMAIL = "jamie@merchanthaus.io";
 
@@ -214,8 +215,8 @@ export default function PortalDashboard() {
         open={premiumOpen}
         onOpenChange={setPremiumOpen}
         referrerName={referrer?.full_name ?? null}
-        commissionRate={referrer?.commission_rate ?? 0.5}
-        monthlyCap={referrer?.monthly_cap_per_merchant ?? 500}
+        commissionRate={referrer?.commission_rate ?? PARTNER_SHARE_RATE}
+        monthlyCap={referrer?.monthly_cap_per_merchant ?? DEFAULT_MONTHLY_CAP}
         bonusAmount={referrer?.bonus_amount ?? 500}
         bonusMilestone={referrer?.bonus_milestone_count ?? 5}
       />
@@ -424,11 +425,11 @@ function PremiumDetailsDialog({
             <ul className="text-sm space-y-2">
               <li className="flex justify-between gap-3">
                 <span className="text-muted-foreground">Revenue share</span>
-                <strong>{(commissionRate * 100).toFixed(0)}% of company commission</strong>
+                <strong>{(commissionRate * 100).toFixed(0)}% of gateway net, monthly</strong>
               </li>
               <li className="flex justify-between gap-3">
                 <span className="text-muted-foreground">Per-account monthly cap</span>
-                <strong>${monthlyCap.toLocaleString()} / account / month</strong>
+                <strong>{fmtUsd(monthlyCap)} / account / month</strong>
               </li>
               <li className="flex justify-between gap-3">
                 <span className="text-muted-foreground">Account limit</span>
@@ -440,8 +441,10 @@ function PremiumDetailsDialog({
               </li>
             </ul>
             <p className="text-xs text-muted-foreground mt-3">
-              Example: 10 accounts each at the per-account monthly cap = ${(monthlyCap * 10).toLocaleString()}/month recurring.
-              20 accounts = ${(monthlyCap * 20).toLocaleString()}/month recurring. Paid every month for the life of the merchant.
+              Your share is worked out on the gateway only — what a merchant is billed for the gateway, less what it
+              costs us to run — and never on their card processing volume. Ceiling: 10 accounts each at the
+              per-account monthly cap = {fmtUsd(monthlyCap * 10)}/month recurring, 20 accounts ={" "}
+              {fmtUsd(monthlyCap * 20)}/month. Paid every month for the life of the merchant.
             </p>
           </div>
 
