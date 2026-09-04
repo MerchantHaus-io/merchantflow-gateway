@@ -64,6 +64,7 @@ Deno.serve(async (req) => {
       });
     }
 
+    // eslint-disable-next-line prefer-const
     let { data: linkData, error: linkErr } = await makeLink();
 
     if (linkErr || !linkData) {
