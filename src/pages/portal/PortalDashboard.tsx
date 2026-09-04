@@ -104,7 +104,37 @@ export default function PortalDashboard() {
 
   const openOpps = (opportunities ?? []).filter((o) => !o.outcome_status);
   const closedOpps = (opportunities ?? []).filter((o) => !!o.outcome_status);
-  const liveCount = (liveMerchants ?? []).filter((m) => m.is_live).length;
+
+  // Accounts that are live and billing. A merchant is live either because a
+  // merchant record says so, or because the deal on that account was won —
+  // the latter is what the internal Live & Billing view reads, so the two
+  // stay in step.
+  const liveAccounts = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; since: string }>();
+    for (const o of opportunities ?? []) {
+      if (o.outcome_status !== "closed_won" || !o.account) continue;
+      const since = o.outcome_closed_at ?? o.stage_entered_at ?? o.updated_at;
+      const existing = map.get(o.account.id);
+      if (!existing || since < existing.since) {
+        map.set(o.account.id, { id: o.account.id, name: o.account.name, since });
+      }
+    }
+    for (const m of liveMerchants ?? []) {
+      if (!m.is_live) continue;
+      const key = m.account_id ?? m.id;
+      if (!map.has(key)) {
+        map.set(key, {
+          id: key,
+          name: m.dba_name || m.legal_entity_name || "Merchant",
+          since: m.created_at,
+        });
+      }
+    }
+    return [...map.values()].sort((a, b) => (a.since < b.since ? 1 : -1));
+  }, [opportunities, liveMerchants]);
+
+  const liveCount = liveAccounts.length;
+
 
   if (!referrerId) {
     return (
