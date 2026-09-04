@@ -114,16 +114,28 @@ export const bonusesDue = (
   return Math.max(0, earned - Math.max(0, alreadyAwarded));
 };
 
-/** Commission share for one referred account in one month, capped per account. */
+/**
+ * Partner share for one referred account in one month, capped per account.
+ * The base is always our GATEWAY margin — never the processing residual and
+ * never the gross amount billed to the merchant.
+ */
 export const commissionShare = (
-  companyCommission: number,
+  gatewayMargin: number,
   rate: number,
   monthlyCap: number,
 ): number => {
-  const uncapped = num(companyCommission) * num(rate);
+  const uncapped = num(gatewayMargin) * num(rate);
   const capped = num(monthlyCap) > 0 ? Math.min(uncapped, num(monthlyCap)) : uncapped;
   return Math.round(Math.max(0, capped) * 100) / 100;
 };
+
+/** Explicit alias making the gateway-only basis obvious at call sites. */
+export const gatewayShare = commissionShare;
+
+/** Month key (YYYY-MM) a ledger entry belongs to. */
+export const monthKey = (periodEnd: string | null | undefined): string =>
+  periodEnd ? periodEnd.slice(0, 7) : "";
+
 
 export const fmtUsd = (v: number | string | null | undefined): string =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 }).format(num(v));
