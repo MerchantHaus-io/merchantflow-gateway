@@ -396,18 +396,26 @@ export default function Referrers() {
         <p className="text-xs text-muted-foreground">
           Commission: affiliate earns <strong>Comm %</strong> of net monthly revenue per referred merchant, capped at
           <strong> Monthly Cap</strong> per merchant per month. Clawback applies if the merchant churns within
-          the clawback window of going live.
+          the clawback window of going live. Names marked <strong>Attribution only</strong> exist purely to record who
+          referred a deal — no login, no commission and no payouts until you promote them.
         </p>
       </div>
 
       {/* Create Affiliate dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+      <Dialog
+        open={createOpen}
+        onOpenChange={(o) => {
+          setCreateOpen(o);
+          if (!o) setPromotingId(null);
+        }}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Affiliate</DialogTitle>
+            <DialogTitle>{promotingId ? "Promote to full affiliate" : "Add Affiliate"}</DialogTitle>
             <DialogDescription>
               Creates an admin-provisioned account. A temporary password will be generated — share it with the
               affiliate; they'll be prompted to change it on first login.
+
             </DialogDescription>
           </DialogHeader>
 
