@@ -311,6 +311,14 @@ export default function Referrers() {
       pageTitle="Affiliates"
       headerActions={
         <div className="flex items-center gap-2">
+          <Button
+            onClick={() => copy(`${window.location.origin}/affiliate/signup`)}
+            size="sm"
+            variant="outline"
+          >
+            <Copy className="h-4 w-4 mr-2" />
+            Copy Sign-up Link
+          </Button>
           <Button onClick={() => setNameOnlyOpen(true)} size="sm" variant="outline">
             <Tag className="h-4 w-4 mr-2" />
             Add Name Only
