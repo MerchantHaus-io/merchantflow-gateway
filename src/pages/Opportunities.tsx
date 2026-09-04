@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { QueryErrorCard } from "@/components/QueryErrorCard";
 import { supabase } from "@/integrations/supabase/client";
+import { syncAccountReferrerForOpportunity } from "@/lib/referrerAssignment";
 import type { Database } from "@/integrations/supabase/types";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -644,6 +645,12 @@ const Opportunities = () => {
       // write had landed — losing the activity entry and the toast.
       const stageLabel = (stage: string) =>
         STAGE_CONFIG[stage as OpportunityStage]?.label ?? stage;
+
+      // A deal that just went live hands its partner over to the account, so
+      // the affiliate keeps earning on the merchant they introduced.
+      if (newStage === 'closed_won') {
+        await syncAccountReferrerForOpportunity(opp.id, newStage);
+      }
 
       const logged = await logActivity({
         opportunity_id: opp.id,
