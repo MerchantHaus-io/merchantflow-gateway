@@ -162,10 +162,48 @@ export function AffiliatePayoutsPanel() {
 
   const selectedPeriod = periods.find((p) => p.id === periodId) ?? null;
 
+  /** Earnings grouped per partner, newest month first. */
+  const monthsByPartner = useMemo(() => {
+    const map = new Map<string, MonthRow[]>();
+    for (const m of months) {
+      const list = map.get(m.referrer_id) ?? [];
+      list.push(m);
+      map.set(m.referrer_id, list);
+    }
+    return map;
+  }, [months]);
+
   /**
-   * Turn the selected month's residual records into partner credits, then top
-   * up any milestone bonuses that have been earned since the last run. Credits
-   * are idempotent: one per (partner, residual record).
+   * Build (or backdate) every month a referred merchant has been billed for the
+   * gateway, and release anything whose 30-day hold has passed. Idempotent.
+   */
+  const buildOutstanding = async () => {
+    setWorking("backdate");
+    try {
+      const { data, error } = await supabase.rpc("build_referrer_ledger");
+      if (error) throw error;
+      const row = Array.isArray(data) ? data[0] : data;
+      const inserted = num(row?.inserted);
+      const promoted = num(row?.promoted);
+      if (!inserted && !promoted) {
+        toast.info("No new months to add — every referred merchant is up to date.");
+      } else {
+        toast.success(
+          `${inserted} month${inserted === 1 ? "" : "s"} added, ${promoted} released for payment.`,
+        );
+      }
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not build the outstanding months");
+    } finally {
+      setWorking(null);
+    }
+  };
+
+  /**
+   * Turn the selected month's gateway margin into partner credits, then top up
+   * any milestone bonuses earned since the last run. Credits are idempotent:
+   * one per (partner, merchant, month).
    */
   const generateCredits = async () => {
     if (!selectedPeriod) {
@@ -190,9 +228,16 @@ export function AffiliatePayoutsPanel() {
             .in("commission_record_id", recordIds)
         : { data: [] as { commission_record_id: string | null }[] };
       const seen = new Set((existing ?? []).map((e) => e.commission_record_id));
+      // A month accrued by the backdating routine already covers this merchant.
+      const seenMonths = new Set(
+        months
+          .filter((m) => m.entry_type === "commission" && m.account_id)
+          .map((m) => `${m.referrer_id}|${m.account_id}|${m.period_start}`),
+      );
 
       const inserts = rows
         .filter((r) => !seen.has(r.record_id as string))
+        .filter((r) => !seenMonths.has(`${r.referrer_id}|${r.account_id}|${r.period_start}`))
         .map((r) => ({
           referrer_id: r.referrer_id as string,
           entry_type: "commission",
@@ -202,7 +247,7 @@ export function AffiliatePayoutsPanel() {
           payable_on: payableOnFor(r.period_end as string),
           account_id: (r.account_id as string) ?? null,
           commission_record_id: r.record_id as string,
-          description: `Referral commission — ${r.company_name ?? "merchant"}`,
+          description: `Gateway referral commission — ${r.company_name ?? "merchant"}`,
         }));
 
       if (inserts.length) {
@@ -221,6 +266,7 @@ export function AffiliatePayoutsPanel() {
       setWorking(null);
     }
   };
+
 
   /** $500 for every 5 merchants boarded, counted once per milestone. */
   const generateBonuses = async (period: PeriodOption): Promise<number> => {
