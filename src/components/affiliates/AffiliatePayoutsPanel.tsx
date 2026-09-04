@@ -19,15 +19,20 @@ import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { AlertTriangle, Banknote, CalendarRange, CheckCircle2, Download, Landmark, Loader2, RefreshCw, Scale, Wallet } from "lucide-react";
 import {
+  AUDIT_VERDICT_LABEL,
   DEFAULT_BONUS_AMOUNT,
   DEFAULT_BONUS_MILESTONE,
   DEFAULT_MINIMUM_PAYOUT,
+  DEFAULT_MONTHLY_CAP,
+  PARTNER_SHARE_DIVISOR,
+  auditCommissionLedger,
   bonusesDue,
-  clearsMinimum,
   fmtUsd,
   payableOnFor,
   reconcilePayoutRun,
+  selectRunEntries,
   RECONCILE_VERDICT_LABEL,
+  type AuditBasisRecord,
 } from "@/lib/affiliatePayouts";
 
 
@@ -81,6 +86,12 @@ interface MonthRow {
 }
 
 
+/** One referred merchant's gateway month, the basis every credit is checked against. */
+interface BasisRow extends AuditBasisRecord {
+  referrer_id: string;
+  monthly_cap_per_merchant: number | string | null;
+}
+
 interface BankForm {
   bank_account_name: string;
   bank_name: string;
@@ -101,6 +112,9 @@ const emptyBank: BankForm = {
 
 const num = (v: number | string | null | undefined) => (v == null ? 0 : Number(v) || 0);
 
+/** Postgres unique-violation. A month already credited, not a failure. */
+const DUPLICATE_KEY = "23505";
+
 const periodLabel = (start: string, end: string) =>
   `${format(parseISO(start), "d MMM yyyy")} – ${format(parseISO(end), "d MMM yyyy")}`;
 
@@ -115,6 +129,7 @@ export function AffiliatePayoutsPanel() {
   const [runs, setRuns] = useState<PayoutRun[]>([]);
   const [periods, setPeriods] = useState<PeriodOption[]>([]);
   const [months, setMonths] = useState<MonthRow[]>([]);
+  const [basis, setBasis] = useState<BasisRow[]>([]);
   const [periodId, setPeriodId] = useState("");
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState<string | null>(null);
@@ -126,9 +141,9 @@ export function AffiliatePayoutsPanel() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [balanceRes, runRes, periodRes, monthRes] = await Promise.all([
+    const [balanceRes, runRes, periodRes, monthRes, basisRes] = await Promise.all([
       supabase.from("referrer_balances").select("*").order("balance_amount", { ascending: false }),
-      supabase.from("referrer_payout_runs").select("*").order("period_end", { ascending: false }).limit(24),
+      supabase.from("referrer_payout_runs").select("*").order("created_at", { ascending: false }).limit(24),
       supabase.from("commission_periods").select("id, period_start, period_end").order("period_end", { ascending: false }).limit(24),
       supabase
         .from("referrer_ledger_entries")
@@ -136,11 +151,17 @@ export function AffiliatePayoutsPanel() {
         .neq("status", "void")
         .order("period_end", { ascending: false, nullsFirst: false })
         .limit(500),
+      supabase
+        .from("referrer_commission_records")
+        .select("referrer_id, account_id, company_name, period_start, period_end, transaction_count, gateway_invoiced, gateway_margin, monthly_cap_per_merchant")
+        .order("period_start", { ascending: false })
+        .limit(500),
     ]);
     if (balanceRes.error) toast.error("Could not load partner balances");
     setBalances(((balanceRes.data ?? []) as unknown[] as BalanceRow[]).filter((b) => !!b.referrer_id));
     setRuns((runRes.data ?? []) as PayoutRun[]);
     setMonths((monthRes.data ?? []) as MonthRow[]);
+    setBasis(((basisRes.data ?? []) as unknown[] as BasisRow[]).filter((b) => !!b.referrer_id));
     const periodRows = (periodRes.data ?? []) as PeriodOption[];
     setPeriods(periodRows);
     setPeriodId((prev) => prev || periodRows[0]?.id || "");
@@ -177,16 +198,84 @@ export function AffiliatePayoutsPanel() {
     return map;
   }, [months]);
 
-  /** Newest run that actually released money (or is queued to). */
-  const latestRun = useMemo(
-    () => runs.find((r) => r.status !== "void") ?? null,
-    [runs],
-  );
+  /**
+   * Most recently CREATED run that is not cancelled. Ordering by period end
+   * would pick the wrong run whenever a back-dated catch-up run is raised
+   * after a current one.
+   */
+  const latestRun = useMemo(() => {
+    const live = runs.filter((r) => r.status !== "void");
+    return (
+      [...live].sort((a, b) => (a.created_at < b.created_at ? 1 : -1))[0] ?? null
+    );
+  }, [runs]);
 
   const partnerName = useCallback(
     (id: string) => balances.find((b) => b.referrer_id === id)?.full_name ?? "Unknown partner",
     [balances],
   );
+
+  /** Each partner's per-merchant monthly cap, taken from their own profile. */
+  const capsByPartner = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const b of basis) {
+      if (!map.has(b.referrer_id)) map.set(b.referrer_id, num(b.monthly_cap_per_merchant));
+    }
+    return map;
+  }, [basis]);
+
+  /**
+   * Programme audit: recompute every commission credit from the merchant's own
+   * gateway month — billed less our cost, divided by four — and compare it to
+   * what was actually credited. This is what catches a credit worked out on the
+   * wrong share or the wrong cost basis, and a billed month that never accrued.
+   */
+  const audit = useMemo(
+    () => auditCommissionLedger(months, basis, capsByPartner),
+    [months, basis, capsByPartner],
+  );
+
+  const exportAudit = () => {
+    const header = [
+      "Partner",
+      "Merchant",
+      "Month",
+      "Transactions",
+      "Gateway billed",
+      "Gateway cost",
+      "Gateway net",
+      "Programme share",
+      "Credited",
+      "Variance",
+      "Status",
+      "Result",
+    ];
+    const lines = audit.rows.map((r) =>
+      [
+        partnerName(r.referrerId),
+        r.merchant,
+        r.periodStart,
+        r.txnCount,
+        r.billed.toFixed(2),
+        r.cost.toFixed(2),
+        r.net.toFixed(2),
+        r.expected.toFixed(2),
+        r.credited.toFixed(2),
+        r.variance.toFixed(2),
+        r.status,
+        AUDIT_VERDICT_LABEL[r.verdict],
+      ]
+        .map((c) => `"${String(c).replace(/"/g, '""')}"`)
+        .join(","),
+    );
+    const csv = [header.join(","), ...lines].join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `affiliate-programme-audit-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   /**
    * Reconciliation: what the month-by-month table says each partner was owed at
@@ -319,14 +408,35 @@ export function AffiliatePayoutsPanel() {
           description: `Gateway referral commission — ${r.company_name ?? "merchant"}`,
         }));
 
+      // The backdating routine writes month credits with no commission_record_id,
+      // keyed on (partner, merchant, month). The filters above only see the most
+      // recent 500 ledger rows, so a batch can still collide with a month that
+      // is already credited — and a plain insert is all-or-nothing, so one
+      // collision used to fail the whole run. (Upsert is not an option: the
+      // guard is a PARTIAL unique index, which ON CONFLICT cannot infer from a
+      // column list.) Try the batch, and on a duplicate-key error fall back to
+      // inserting one at a time so the rest still land.
+      let added = 0;
       if (inserts.length) {
         const { error: insertError } = await supabase.from("referrer_ledger_entries").insert(inserts);
-        if (insertError) throw insertError;
+        if (!insertError) {
+          added = inserts.length;
+        } else if (insertError.code === DUPLICATE_KEY) {
+          for (const row of inserts) {
+            const { error: rowError } = await supabase.from("referrer_ledger_entries").insert(row);
+            if (!rowError) added += 1;
+            else if (rowError.code !== DUPLICATE_KEY) throw rowError;
+          }
+        } else {
+          throw insertError;
+        }
       }
 
       const bonusCount = await generateBonuses(selectedPeriod);
+      const skipped = inserts.length - added;
       toast.success(
-        `${inserts.length} commission credit${inserts.length === 1 ? "" : "s"} and ${bonusCount} bonus credit${bonusCount === 1 ? "" : "s"} added.`,
+        `${added} commission credit${added === 1 ? "" : "s"} and ${bonusCount} bonus credit${bonusCount === 1 ? "" : "s"} added` +
+          (skipped > 0 ? `, ${skipped} month${skipped === 1 ? "" : "s"} already credited.` : "."),
       );
       await load();
     } catch (e) {
@@ -404,7 +514,7 @@ export function AffiliatePayoutsPanel() {
     try {
       const { data: entries, error } = await supabase
         .from("referrer_ledger_entries")
-        .select("id, referrer_id, amount, period_start, period_end")
+        .select("id, referrer_id, amount, period_start, period_end, payable_on")
         .eq("status", "payable")
         .is("payout_run_id", null);
       if (error) throw error;
@@ -413,38 +523,37 @@ export function AffiliatePayoutsPanel() {
         return;
       }
 
+      // One selection rule, shared with the reconciliation view: a credit joins
+      // the run once its release date has arrived, and a partner joins once
+      // their own minimum is cleared.
+      const payDate = new Date().toISOString().slice(0, 10);
       const minimums = new Map(balances.map((b) => [b.referrer_id, num(b.minimum_payout) || DEFAULT_MINIMUM_PAYOUT]));
-      const byPartner = new Map<string, { ids: string[]; total: number }>();
-      for (const e of entries) {
-        const bucket = byPartner.get(e.referrer_id) ?? { ids: [], total: 0 };
-        bucket.ids.push(e.id);
-        bucket.total += num(e.amount);
-        byPartner.set(e.referrer_id, bucket);
-      }
-
-      const included: string[] = [];
-      let total = 0;
-      let partnerCount = 0;
-      for (const [partnerId, bucket] of byPartner) {
-        if (!clearsMinimum(bucket.total, minimums.get(partnerId) ?? DEFAULT_MINIMUM_PAYOUT)) continue;
-        included.push(...bucket.ids);
-        total += bucket.total;
-        partnerCount += 1;
-      }
+      const selection = selectRunEntries(entries, minimums, payDate);
+      const included = selection.entryIds;
+      const total = selection.total;
+      const partnerCount = selection.perPartner.size;
       if (!included.length) {
         toast.info("No partner has reached their minimum payout yet — balances roll over.");
         return;
       }
 
-      const starts = entries.map((e) => e.period_start).filter(Boolean) as string[];
-      const ends = entries.map((e) => e.period_end).filter(Boolean) as string[];
+      // The run's period spans only the credits it actually releases, not every
+      // payable credit on the books.
+      const includedSet = new Set(included);
+      const inRun = entries.filter((e) => includedSet.has(e.id));
+      const starts = inRun.map((e) => e.period_start).filter(Boolean) as string[];
+      const ends = inRun.map((e) => e.period_end).filter(Boolean) as string[];
       const { data: run, error: runError } = await supabase
         .from("referrer_payout_runs")
         .insert({
           period_start: starts.sort()[0] ?? new Date().toISOString().slice(0, 10),
           period_end: ends.sort().slice(-1)[0] ?? new Date().toISOString().slice(0, 10),
           status: "approved",
-          minimum_payout: DEFAULT_MINIMUM_PAYOUT,
+          minimum_payout: Math.min(
+            ...[...selection.perPartner.keys()].map(
+              (id) => minimums.get(id) ?? DEFAULT_MINIMUM_PAYOUT,
+            ),
+          ),
           total_amount: Math.round(total * 100) / 100,
           partner_count: partnerCount,
           approved_at: new Date().toISOString(),
@@ -589,9 +698,10 @@ export function AffiliatePayoutsPanel() {
             Create payout run
           </Button>
           <p className="text-xs text-muted-foreground max-w-md">
-            Partners earn on the gateway only — half of our gateway margin per referred merchant, capped per merchant each
-            month. Building outstanding months backdates every month a referred merchant has been billed. Earnings become
-            payable 30 days after the month ends, and runs include only partners whose ready-to-pay balance reaches{" "}
+            Partners earn on the gateway only — a quarter of the gateway net per referred merchant (billed less our cost,
+            ÷ {PARTNER_SHARE_DIVISOR}), capped at {fmtUsd(DEFAULT_MONTHLY_CAP)} per merchant each month. Building
+            outstanding months backdates every month a referred merchant has been billed. Earnings become payable 30 days
+            after the month ends, and runs include only partners whose ready-to-pay balance reaches{" "}
             {fmtUsd(DEFAULT_MINIMUM_PAYOUT)}; anything below rolls over.
           </p>
         </div>
@@ -726,6 +836,119 @@ export function AffiliatePayoutsPanel() {
       </Card>
 
 
+
+      <Card className="overflow-hidden">
+        <div className="px-4 py-3 border-b flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Scale className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold">Programme audit — credited vs. the rule</h2>
+            {audit.rows.length === 0 ? null : audit.exceptions.length === 0 ? (
+              <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-300 dark:text-emerald-400">
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                Every credit matches
+              </Badge>
+            ) : (
+              <Badge variant="destructive" className="text-[10px]">
+                <AlertTriangle className="h-3 w-3 mr-1" />
+                {audit.exceptions.length} exception{audit.exceptions.length === 1 ? "" : "s"}
+              </Badge>
+            )}
+          </div>
+          <Button size="sm" variant="ghost" onClick={exportAudit} disabled={audit.rows.length === 0}>
+            <Download className="h-4 w-4 mr-1" />
+            Export CSV
+          </Button>
+        </div>
+        <div className="px-4 py-2 text-xs text-muted-foreground border-b">
+          Every credit recomputed from its own gateway month: billed less our cost, divided by{" "}
+          {PARTNER_SHARE_DIVISOR}, then capped. A variance means the credit was worked out on a different share or a
+          different cost basis. Billed and cost are internal figures — partners only ever see their own share.
+        </div>
+        {audit.exceptions.length > 0 && (
+          <div className="px-4 py-2 text-xs border-b bg-destructive/5 flex flex-wrap gap-x-5 gap-y-1">
+            <span>
+              Credited <strong className="tabular-nums">{fmtUsd(audit.totals.credited)}</strong>
+            </span>
+            <span>
+              Programme says <strong className="tabular-nums">{fmtUsd(audit.totals.expected)}</strong>
+            </span>
+            <span className={audit.totals.variance === 0 ? "" : "text-destructive"}>
+              Difference <strong className="tabular-nums">{fmtUsd(audit.totals.variance)}</strong>
+            </span>
+            {audit.missing.length > 0 && <span>{audit.missing.length} billed month(s) never accrued</span>}
+            {audit.orphans.length > 0 && <span>{audit.orphans.length} credit(s) with no gateway month</span>}
+          </div>
+        )}
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Partner</TableHead>
+                <TableHead>Merchant</TableHead>
+                <TableHead>Month</TableHead>
+                <TableHead className="text-right">Txns</TableHead>
+                <TableHead className="text-right">Gateway net</TableHead>
+                <TableHead className="text-right">Should be</TableHead>
+                <TableHead className="text-right">Credited</TableHead>
+                <TableHead className="text-right">Difference</TableHead>
+                <TableHead>Result</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center text-muted-foreground py-6">
+                    Auditing…
+                  </TableCell>
+                </TableRow>
+              ) : audit.rows.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center text-muted-foreground py-6">
+                    Nothing to audit yet — no referred merchant has a billed gateway month.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                audit.rows.map((r) => (
+                  <TableRow
+                    key={r.entryId ?? `${r.referrerId}-${r.accountId}-${r.periodStart}`}
+                    className={r.verdict === "match" ? undefined : "bg-destructive/5"}
+                  >
+                    <TableCell className="text-sm font-medium">{partnerName(r.referrerId)}</TableCell>
+                    <TableCell className="text-sm">{r.merchant}</TableCell>
+                    <TableCell className="text-sm whitespace-nowrap">
+                      {r.periodStart ? format(parseISO(r.periodStart), "MMM yyyy") : "—"}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums text-sm">{r.txnCount}</TableCell>
+                    <TableCell className="text-right tabular-nums text-sm text-muted-foreground">
+                      {r.verdict === "orphan" ? "—" : fmtUsd(r.net)}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {fmtUsd(r.expected)}
+                      {r.capped && <span className="ml-1 text-[10px] text-amber-600">capped</span>}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">{fmtUsd(r.credited)}</TableCell>
+                    <TableCell
+                      className={`text-right tabular-nums font-semibold ${
+                        r.variance === 0 ? "" : r.variance > 0 ? "text-destructive" : "text-amber-600 dark:text-amber-400"
+                      }`}
+                    >
+                      {r.variance === 0 ? "—" : fmtUsd(r.variance)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={r.verdict === "match" ? "outline" : "destructive"}
+                        className="text-[10px] whitespace-nowrap"
+                      >
+                        {AUDIT_VERDICT_LABEL[r.verdict]}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
 
       {reconciliation && latestRun && (
         <Card className="overflow-hidden">

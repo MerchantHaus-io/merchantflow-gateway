@@ -10,6 +10,17 @@ import {
   monthKey,
   selectRunEntries,
   reconcilePayoutRun,
+  PARTNER_SHARE_DIVISOR,
+  PARTNER_SHARE_RATE,
+  DEFAULT_MONTHLY_CAP,
+  GATEWAY_BASIS,
+  gatewayBilled,
+  gatewayCost,
+  gatewayNet,
+  partnerShare,
+  partnerShareForMonth,
+  auditCommissionLedger,
+  bonusProgress,
 
 
 
@@ -211,5 +222,269 @@ describe("reconcilePayoutRun", () => {
     );
     expect(report.totals.due).toBe(100);
     expect(report.totals.variance).toBe(0);
+  });
+});
+
+describe("gateway basis", () => {
+  it("bills the monthly fee plus the per-transaction fee", () => {
+    expect(gatewayBilled(0)).toBe(GATEWAY_BASIS.monthlyBilled);
+    expect(gatewayBilled(6)).toBe(61.4);
+    expect(gatewayBilled(25)).toBe(69);
+  });
+
+  it("costs the monthly platform cost plus the per-transaction cost", () => {
+    expect(gatewayCost(0)).toBe(GATEWAY_BASIS.monthlyCost);
+    expect(gatewayCost(6)).toBe(25.9);
+    expect(gatewayCost(25)).toBe(28.75);
+  });
+
+  it("nets billed less cost and never goes negative", () => {
+    expect(gatewayNet(0)).toBe(34);
+    expect(gatewayNet(6)).toBe(35.5);
+    expect(gatewayNet(25)).toBe(40.25);
+    expect(gatewayNet(-100)).toBe(34);
+  });
+
+  it("matches the production gateway figures month for month", () => {
+    // The three referred merchants' real Jul–Sep 2026 months.
+    const observed: [number, number, number][] = [
+      // txn count, gateway_invoiced, gateway_margin
+      [6, 61.4, 35.5],
+      [3, 60.2, 34.75],
+      [1, 59.4, 34.25],
+      [19, 66.6, 38.75],
+      [25, 69.0, 40.25],
+      [7, 61.8, 35.75],
+      [13, 64.2, 37.25],
+    ];
+    for (const [txns, billed, net] of observed) {
+      expect(gatewayBilled(txns)).toBe(billed);
+      expect(gatewayNet(txns)).toBe(net);
+    }
+  });
+});
+
+describe("partnerShare", () => {
+  it("is a quarter of the gateway net", () => {
+    expect(PARTNER_SHARE_DIVISOR).toBe(4);
+    expect(PARTNER_SHARE_RATE).toBe(0.25);
+    expect(partnerShare(100)).toBe(25);
+    expect(partnerShare(35.5)).toBe(8.88);
+    expect(partnerShare(34.25)).toBe(8.56);
+  });
+
+  it("applies the per-merchant monthly cap", () => {
+    expect(partnerShare(8000, DEFAULT_MONTHLY_CAP)).toBe(1000);
+    expect(partnerShare(8000, 0)).toBe(2000); // 0 = uncapped
+    expect(partnerShare(400, DEFAULT_MONTHLY_CAP)).toBe(100);
+  });
+
+  it("never pays out on a negative net", () => {
+    expect(partnerShare(-500)).toBe(0);
+  });
+
+  it("derives the share straight from a transaction count", () => {
+    expect(partnerShareForMonth(6)).toBe(8.88);
+    expect(partnerShareForMonth(25)).toBe(10.06);
+  });
+});
+
+describe("summariseLedger — entry types", () => {
+  it("ignores payout rows so disbursement is not counted as earnings", () => {
+    const summary = summariseLedger([
+      { amount: 100, status: "paid", entry_type: "commission" },
+      { amount: 100, status: "paid", entry_type: "payout" },
+      { amount: 20, status: "payable", entry_type: "bonus" },
+    ]);
+    expect(summary.paid).toBe(100);
+    expect(summary.payable).toBe(20);
+    expect(summary.lifetime).toBe(120);
+  });
+
+  it("nets clawbacks and adjustments out of the balance", () => {
+    const summary = summariseLedger([
+      { amount: 100, status: "payable", entry_type: "commission" },
+      { amount: -30, status: "payable", entry_type: "clawback" },
+    ]);
+    expect(summary.payable).toBe(70);
+    expect(summary.balance).toBe(70);
+  });
+});
+
+describe("auditCommissionLedger", () => {
+  const basis = [
+    {
+      referrer_id: "p1",
+      account_id: "a1",
+      company_name: "the masque skin",
+      period_start: "2026-07-01",
+      period_end: "2026-07-31",
+      transaction_count: 6,
+    },
+    {
+      referrer_id: "p1",
+      account_id: "a2",
+      company_name: "Exotic Car Trader",
+      period_start: "2026-07-01",
+      period_end: "2026-07-31",
+      transaction_count: 13,
+    },
+  ];
+
+  it("flags a credit worked out on the wrong share", () => {
+    // 17.75 is (billed − cost) ÷ 2 — the old 50% rate on a $35.50 net.
+    const report = auditCommissionLedger(
+      [
+        {
+          id: "e1",
+          referrer_id: "p1",
+          account_id: "a1",
+          amount: 17.75,
+          status: "payable",
+          entry_type: "commission",
+          period_start: "2026-07-01",
+          period_end: "2026-07-31",
+        },
+      ],
+      [basis[0]],
+    );
+    const row = report.rows[0];
+    expect(row.net).toBe(35.5);
+    expect(row.expected).toBe(8.88);
+    expect(row.credited).toBe(17.75);
+    expect(row.variance).toBe(8.87);
+    expect(row.verdict).toBe("over");
+    expect(report.exceptions).toHaveLength(1);
+  });
+
+  it("passes a credit that matches the programme", () => {
+    const report = auditCommissionLedger(
+      [
+        {
+          id: "e1",
+          referrer_id: "p1",
+          account_id: "a1",
+          amount: 8.88,
+          status: "payable",
+          entry_type: "commission",
+          period_start: "2026-07-01",
+          period_end: "2026-07-31",
+        },
+      ],
+      [basis[0]],
+    );
+    expect(report.rows[0].verdict).toBe("match");
+    expect(report.totals.variance).toBe(0);
+    expect(report.exceptions).toHaveLength(0);
+  });
+
+  it("reports a billed month that never accrued", () => {
+    const report = auditCommissionLedger([], basis);
+    expect(report.missing).toHaveLength(2);
+    expect(report.missing.map((r) => r.merchant).sort()).toEqual([
+      "Exotic Car Trader",
+      "the masque skin",
+    ]);
+    // 6 txns -> 8.88, 13 txns -> 9.31
+    expect(report.totals.expected).toBe(18.19);
+    expect(report.totals.credited).toBe(0);
+  });
+
+  it("reports a credit with no gateway month behind it", () => {
+    const report = auditCommissionLedger(
+      [
+        {
+          id: "ghost",
+          referrer_id: "p1",
+          account_id: "a9",
+          amount: 40,
+          status: "pending",
+          entry_type: "commission",
+          period_start: "2026-07-01",
+          description: "Gateway referral commission — Ghost Merchant",
+        },
+      ],
+      [],
+    );
+    expect(report.orphans).toHaveLength(1);
+    expect(report.orphans[0].merchant).toBe("Ghost Merchant");
+    expect(report.orphans[0].variance).toBe(40);
+  });
+
+  it("ignores bonuses, voids and payouts", () => {
+    const report = auditCommissionLedger(
+      [
+        {
+          id: "b1",
+          referrer_id: "p1",
+          account_id: null,
+          amount: 500,
+          status: "payable",
+          entry_type: "bonus",
+          period_start: "2026-07-01",
+        },
+        {
+          id: "v1",
+          referrer_id: "p1",
+          account_id: "a1",
+          amount: 17.75,
+          status: "void",
+          entry_type: "commission",
+          period_start: "2026-07-01",
+        },
+      ],
+      [basis[0]],
+    );
+    // Only the un-accrued gateway month survives.
+    expect(report.rows).toHaveLength(1);
+    expect(report.rows[0].verdict).toBe("missing");
+  });
+
+  it("honours a partner's own cap", () => {
+    const report = auditCommissionLedger(
+      [
+        {
+          id: "e1",
+          referrer_id: "p1",
+          account_id: "a1",
+          amount: 5,
+          status: "payable",
+          entry_type: "commission",
+          period_start: "2026-07-01",
+        },
+      ],
+      [basis[0]],
+      new Map([["p1", 5]]),
+    );
+    expect(report.rows[0].expected).toBe(5);
+    expect(report.rows[0].capped).toBe(true);
+    expect(report.rows[0].verdict).toBe("match");
+  });
+});
+
+describe("bonusProgress", () => {
+  it("counts earned bonuses off boarded merchants", () => {
+    const p = bonusProgress(7, []);
+    expect(p.earned).toBe(1);
+    expect(p.credited).toBe(0);
+    expect(p.nextAt).toBe(10);
+    expect(p.toNext).toBe(3);
+  });
+
+  it("separates what was earned from what was actually credited", () => {
+    const p = bonusProgress(10, [
+      { amount: 500, status: "payable", entry_type: "bonus" },
+      { amount: 500, status: "void", entry_type: "bonus" },
+      { amount: 25, status: "paid", entry_type: "commission" },
+    ]);
+    expect(p.earned).toBe(2);
+    expect(p.credited).toBe(1);
+    expect(p.creditedValue).toBe(500);
+  });
+
+  it("lands the next milestone correctly on an exact multiple", () => {
+    expect(bonusProgress(5).nextAt).toBe(10);
+    expect(bonusProgress(5).toNext).toBe(5);
+    expect(bonusProgress(0).nextAt).toBe(5);
   });
 });

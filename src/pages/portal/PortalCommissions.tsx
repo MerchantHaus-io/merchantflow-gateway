@@ -9,7 +9,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, parseISO } from "date-fns";
-import { DollarSign, AlertTriangle, TrendingUp, Trophy, Lock } from "lucide-react";
+import { AlertTriangle, TrendingUp, Trophy } from "lucide-react";
+import {
+  DEFAULT_MONTHLY_CAP,
+  PARTNER_SHARE_RATE,
+  bonusProgress,
+  fmtUsd,
+  summariseLedger,
+} from "@/lib/affiliatePayouts";
 
 interface PayoutRecord {
   record_id: string;
@@ -28,8 +35,8 @@ interface PayoutRecord {
   at_cap: boolean;
 }
 
-const fmt = (v: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 }).format(v);
+/** One currency formatter across the admin panel and the portal. */
+const fmt = fmtUsd;
 
 const fmtPct = (v: number) => `${(v * 100).toFixed(1)}%`;
 
@@ -65,8 +72,32 @@ export default function PortalCommissions() {
     },
   });
 
-  const rate = referrer?.commission_rate ?? 0.5;
-  const monthlyCap = referrer?.monthly_cap_per_merchant ?? 1000;
+  // A partner's own agreed terms win; the programme defaults are the fallback.
+  const rate = referrer?.commission_rate ?? PARTNER_SHARE_RATE;
+  const monthlyCap = referrer?.monthly_cap_per_merchant ?? DEFAULT_MONTHLY_CAP;
+
+  /**
+   * The ledger is the only record of what a partner is actually owed and has
+   * been paid. `commission_records` is the gateway activity behind it, and is
+   * used for the per-merchant breakdown and the forward projection — never for
+   * a balance or a lifetime figure, which used to be re-derived here and so
+   * disagreed with the Payouts page.
+   */
+  const { data: ledger } = useQuery({
+    queryKey: ["portal-earnings-ledger", referrer?.id],
+    enabled: !!referrer?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("referrer_ledger_entries")
+        .select("id, entry_type, amount, status, period_start, period_end")
+        .eq("referrer_id", referrer!.id);
+      if (error) return [];
+      return data ?? [];
+    },
+  });
+
+  const ledgerRows = useMemo(() => ledger ?? [], [ledger]);
+  const ledgerSummary = useMemo(() => summariseLedger(ledgerRows), [ledgerRows]);
 
   // Referred accounts, live vs still in pipeline.
   const { data: referredAccounts } = useQuery({
@@ -151,37 +182,18 @@ export default function PortalCommissions() {
     });
   }, [allRecords, rate, monthlyCap]);
 
-  // Aggregate per-account: lifetime sum of capped monthly payouts (uncapped overall).
-  const accountSummaries = useMemo(() => {
-    const map = new Map<
-      string,
-      { account_id: string; company_name: string; firstSeen: string; lifetime: number }
-    >();
-    for (const r of cappedRecords) {
-      const key = r.account_id || r.record_id;
-      const existing = map.get(key);
-      if (existing) {
-        existing.lifetime += r.displayPayout;
-        if (r.period_start < existing.firstSeen) existing.firstSeen = r.period_start;
-      } else {
-        map.set(key, {
-          account_id: key,
-          company_name: r.company_name || "Merchant",
-          firstSeen: r.period_start,
-          lifetime: r.displayPayout,
-        });
-      }
-    }
-    return Array.from(map.values()).sort((a, b) => a.firstSeen.localeCompare(b.firstSeen));
-  }, [cappedRecords]);
+  const lifetimeEarnings = ledgerSummary.lifetime;
 
-  const eligibleAccountCount = accountSummaries.length;
-  const lifetimeEarnings = accountSummaries.reduce((s, a) => s + a.lifetime, 0);
-
-  // Bonus: $bonusAmount for every $bonusMilestone successfully boarded merchants (no ceiling).
-  const successfulCount = accountSummaries.filter((a) => a.lifetime > 0).length;
-  const bonusesEarned = Math.floor(successfulCount / bonusMilestone) * bonusAmount;
-  const nextBonusAt = (Math.floor(successfulCount / bonusMilestone) + 1) * bonusMilestone;
+  /**
+   * Milestone bonuses run on merchants BOARDED, which is the same count the
+   * admin side awards against — not on merchants that happen to have earned
+   * something, which is what this page used to count and which quietly
+   * promised bonuses the ledger never credited.
+   */
+  const bonus = useMemo(
+    () => bonusProgress(projection.liveCount, ledgerRows, bonusAmount, bonusMilestone),
+    [projection.liveCount, ledgerRows, bonusAmount, bonusMilestone],
+  );
 
   const periods = useMemo(() => {
     const map = new Map<string, { id: string; period_start: string; period_end: string }>();
@@ -225,8 +237,8 @@ export default function PortalCommissions() {
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
           <div>
-            <div className="text-xs text-muted-foreground uppercase">Rev share</div>
-            <div className="font-semibold text-base mt-0.5">{fmtPct(rate)} of commission</div>
+            <div className="text-xs text-muted-foreground uppercase">Your share</div>
+            <div className="font-semibold text-base mt-0.5">{fmtPct(rate)} of gateway net</div>
           </div>
           <div>
             <div className="text-xs text-muted-foreground uppercase">Cap / account</div>
@@ -240,11 +252,12 @@ export default function PortalCommissions() {
           </div>
         </div>
         <p className="text-xs text-muted-foreground mt-3">
-          You earn a <strong>{fmtPct(rate)}</strong> share on the <strong>gateway service</strong> for each
-          merchant you refer — card processing volume does not earn commission. Capped at{" "}
-          <strong>{fmt(monthlyCap)} per account, per month</strong> and recurring for the lifetime of that
+          You earn a <strong>{fmtPct(rate)}</strong> share of what the <strong>gateway service</strong> nets on each
+          merchant you refer, every month they are billed — card processing volume does not earn commission. Capped
+          at <strong>{fmt(monthlyCap)} per account, per month</strong> and recurring for the lifetime of that
           account. A <strong>{fmt(bonusAmount)}</strong> bonus is paid for every{" "}
-          <strong>{bonusMilestone}</strong> successfully boarded merchants.
+          <strong>{bonusMilestone}</strong> merchants you board. Each month is released for payment 30 days after it
+          closes, and paid once your balance reaches your minimum.
         </p>
 
       </Card>
@@ -254,12 +267,17 @@ export default function PortalCommissions() {
         <Card className="p-4">
           <div className="text-xs uppercase tracking-wide text-muted-foreground">This period</div>
           <div className="text-2xl font-semibold mt-1 tabular-nums">{fmt(totals.periodTotal)}</div>
-          <div className="text-[10px] text-muted-foreground mt-1">settled</div>
+          <div className="text-[10px] text-muted-foreground mt-1">
+            {format(parseISO(periods.find((p) => p.id === effectivePeriodId)?.period_start ?? "1970-01-01"), "MMM yyyy")}{" "}
+            gateway earnings
+          </div>
         </Card>
         <Card className="p-4">
           <div className="text-xs uppercase tracking-wide text-muted-foreground">Lifetime earnings</div>
-          <div className="text-2xl font-semibold mt-1 tabular-nums">{fmt(lifetimeEarnings)}</div>
-          <div className="text-[10px] text-muted-foreground mt-1">recurring, no overall cap</div>
+          <div className="text-2xl font-semibold mt-1 tabular-nums">{fmtUsd(lifetimeEarnings)}</div>
+          <div className="text-[10px] text-muted-foreground mt-1">
+            {fmtUsd(ledgerSummary.paid)} paid · {fmtUsd(ledgerSummary.balance)} still owed
+          </div>
         </Card>
         <Card className="p-4">
           <div className="text-xs uppercase tracking-wide text-muted-foreground">Active accounts</div>
@@ -272,10 +290,11 @@ export default function PortalCommissions() {
           </div>
         </Card>
         <Card className="p-4">
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">Bonus paid</div>
-          <div className="text-2xl font-semibold mt-1 tabular-nums">{fmt(bonusesEarned)}</div>
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">Milestone bonuses</div>
+          <div className="text-2xl font-semibold mt-1 tabular-nums">{fmtUsd(bonus.creditedValue)}</div>
           <div className="text-[10px] text-muted-foreground mt-1">
-            Next {fmt(bonusAmount)} at {nextBonusAt} successful merchants
+            {bonus.credited > 0 ? `${bonus.credited} credited · ` : ""}
+            {bonus.toNext} more merchant{bonus.toNext === 1 ? "" : "s"} to your next {fmtUsd(bonus.amount)}
           </div>
         </Card>
       </div>
@@ -352,7 +371,7 @@ export default function PortalCommissions() {
               ))}
           </ul>
           <div className="px-4 py-2 text-[11px] text-muted-foreground border-t">
-            Earnings are calculated on gateway billing only — processing volume does not earn commission. Each figure is your {fmtPct(rate)} share of that merchant's most recent gateway month, capped at {fmt(monthlyCap)} per account per month. Amounts appear once a merchant's first gateway invoice is issued.
+            Earnings are calculated on gateway billing only — processing volume does not earn commission. Each figure is your {fmtPct(rate)} share of what the gateway netted on that merchant in their most recent billed month, capped at {fmt(monthlyCap)} per account per month. A projection, not a guarantee: the actual figure moves with that merchant's monthly gateway activity. Amounts appear once a merchant's first gateway invoice is issued.
           </div>
 
         </Card>
@@ -418,7 +437,7 @@ export default function PortalCommissions() {
                         <div className="font-semibold tabular-nums">{fmt(r.displayPayout)}</div>
                         {r.eligible && Number(r.company_commission) * rate > r.displayPayout && (
                           <div className="text-[10px] text-muted-foreground">
-                            uncapped {fmt(Number(r.company_commission) * rate)}
+                            at your {fmt(monthlyCap)} monthly cap
                           </div>
                         )}
                       </div>
@@ -435,8 +454,10 @@ export default function PortalCommissions() {
         <span>
           Figures reflect calculated payouts after the per-account monthly cap. Earnings are capped at{" "}
           <strong>{fmt(monthlyCap)} per account, per month</strong> and recur for the lifetime of each
-          account. Disbursement schedule and any clawbacks (within the first {referrer.clawback_window_days} days
-          of a merchant going live) are confirmed by MerchantHaus accounting.
+          account. Your balance, releases and payments are on the{" "}
+          <strong>Payouts</strong> page — that ledger is the record of what you are owed. Any clawbacks (within the
+          first {referrer.clawback_window_days} days of a merchant going live) are confirmed by MerchantHaus
+          accounting.
         </span>
       </p>
     </PortalLayout>

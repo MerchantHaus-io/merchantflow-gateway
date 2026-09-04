@@ -12,6 +12,7 @@ import { CalendarClock, Landmark, Wallet } from "lucide-react";
 import {
   DEFAULT_MINIMUM_PAYOUT,
   LEDGER_LABEL,
+  PAYABLE_HOLD_DAYS,
   STATUS_LABEL,
   clearsMinimum,
   fmtUsd,
@@ -71,6 +72,7 @@ export default function PortalPayouts() {
   const summary = useMemo(() => summariseLedger(rows), [rows]);
   const minimum = Number(bank?.minimum_payout) || DEFAULT_MINIMUM_PAYOUT;
   const readyNow = clearsMinimum(summary.payable, minimum);
+  const shortfall = Math.max(0, Math.round((minimum - summary.payable) * 100) / 100);
 
   const nextDue = useMemo(() => {
     const upcoming = rows
@@ -95,11 +97,15 @@ export default function PortalPayouts() {
             <div className="text-2xl font-semibold mt-1 text-emerald-600 dark:text-emerald-400">
               {fmtUsd(summary.payable)}
             </div>
-            {!readyNow && summary.payable > 0 && (
-              <div className="text-[11px] text-muted-foreground mt-1">
-                Rolls over until it reaches {fmtUsd(minimum)}
+            {readyNow ? (
+              <div className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1">
+                Clears your {fmtUsd(minimum)} minimum — included in the next run
               </div>
-            )}
+            ) : summary.payable > 0 ? (
+              <div className="text-[11px] text-muted-foreground mt-1">
+                {fmtUsd(shortfall)} short of your {fmtUsd(minimum)} minimum — rolls over
+              </div>
+            ) : null}
           </Card>
           <Card className="p-4">
             <div className="text-xs uppercase tracking-wide text-muted-foreground">On hold</div>
@@ -114,13 +120,16 @@ export default function PortalPayouts() {
           <Card className="p-4">
             <div className="text-xs uppercase tracking-wide text-muted-foreground">Paid to you</div>
             <div className="text-2xl font-semibold mt-1">{fmtUsd(summary.paid)}</div>
+            <div className="text-[11px] text-muted-foreground mt-1">
+              {fmtUsd(summary.lifetime)} earned to date
+            </div>
           </Card>
         </div>
 
         <Card className="p-4 text-sm text-muted-foreground flex flex-wrap gap-x-6 gap-y-2">
           <span className="flex items-center gap-2">
             <Wallet className="h-4 w-4" />
-            Earnings for a month are released 30 days after that month closes.
+            Earnings for a month are released {PAYABLE_HOLD_DAYS} days after that month closes.
           </span>
           <span className="flex items-center gap-2">
             <Landmark className="h-4 w-4" />
