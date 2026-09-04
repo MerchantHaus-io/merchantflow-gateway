@@ -55,22 +55,50 @@ Deno.serve(async (req) => {
     const origin = req.headers.get("origin") || req.headers.get("referer") || "";
     const redirectTo = origin ? `${origin.replace(/\/$/, "")}/affiliate` : undefined;
 
-    const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
-      type: "magiclink",
-      email: ref.email,
-      options: redirectTo ? { redirectTo } : undefined,
-    });
+    const refEmail = ref.email as string;
+    async function makeLink() {
+      return await admin.auth.admin.generateLink({
+        type: "magiclink",
+        email: refEmail,
+        options: redirectTo ? { redirectTo } : undefined,
+      });
+    }
+
+    let { data: linkData, error: linkErr } = await makeLink();
 
     if (linkErr || !linkData) {
       console.error("Magic link error", linkErr);
       return json({ error: linkErr?.message || "Failed to generate magic link" }, 500);
     }
 
+    // An active affiliate whose auth login is still suspended (e.g. created while
+    // pending approval) cannot exchange the magic link — lift the ban first, then
+    // mint a fresh link.
+    const linkUser = (linkData as unknown as { user?: { id?: string; banned_until?: string | null } })?.user;
+    const bannedUntil = linkUser?.banned_until;
+    if (linkUser?.id && bannedUntil && new Date(bannedUntil).getTime() > Date.now()) {
+      const { error: unbanErr } = await admin.auth.admin.updateUserById(linkUser.id, {
+        ban_duration: "none",
+      });
+      if (unbanErr) {
+        console.error("Unban failed", unbanErr);
+        return json({ error: `Partner login is suspended: ${unbanErr.message}` }, 400);
+      }
+      const retry = await makeLink();
+      if (retry.error || !retry.data) {
+        console.error("Magic link retry error", retry.error);
+        return json({ error: retry.error?.message || "Failed to generate magic link" }, 500);
+      }
+      linkData = retry.data;
+    }
+
     // Exchange the magic-link OTP for a real session pair so the admin can hand
     // tokens to an isolated tab via setSession() — no browser navigation needed.
-    const tokenHash = (linkData as unknown)?.properties?.hashed_token as string | undefined;
+    const tokenHash = (linkData as unknown as { properties?: { hashed_token?: string } })?.properties
+      ?.hashed_token;
     let access_token: string | null = null;
     let refresh_token: string | null = null;
+    let otpFailure: string | null = null;
     if (tokenHash) {
       const otpClient = createClient(
         Deno.env.get("SUPABASE_URL")!,
@@ -83,16 +111,25 @@ Deno.serve(async (req) => {
       });
       if (otpErr) {
         console.error("verifyOtp error", otpErr);
+        otpFailure =
+          otpErr.message === "User is banned"
+            ? "This partner's login is suspended — reactivate it and try again."
+            : otpErr.message;
       } else {
         access_token = otpData.session?.access_token ?? null;
         refresh_token = otpData.session?.refresh_token ?? null;
       }
     }
 
+    if (!access_token || !refresh_token) {
+      return json({ error: otpFailure || "Could not start a partner session" }, 400);
+    }
+
+
     // Backfill referrers.auth_user_id so RLS policies that key off auth_user_id work
     // for impersonated sessions. generateLink upserts the auth user, so it now exists.
     try {
-      const userId = (linkData as unknown)?.user?.id;
+      const userId = (linkData as unknown as { user?: { id?: string } })?.user?.id;
       if (userId) {
         await admin
           .from("referrers")
