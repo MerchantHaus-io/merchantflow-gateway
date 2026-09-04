@@ -63,6 +63,20 @@ interface PeriodOption {
   period_end: string;
 }
 
+interface MonthRow {
+  id: string;
+  referrer_id: string;
+  account_id: string | null;
+  amount: number | string | null;
+  status: string;
+  period_start: string | null;
+  period_end: string | null;
+  payable_on: string | null;
+  description: string | null;
+  entry_type: string;
+}
+
+
 interface BankForm {
   bank_account_name: string;
   bank_name: string;
