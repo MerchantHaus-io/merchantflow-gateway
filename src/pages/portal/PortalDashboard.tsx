@@ -234,32 +234,31 @@ export default function PortalDashboard() {
           Live & Billing Accounts
         </h2>
         <Card className="overflow-hidden border-emerald-200 dark:border-emerald-900">
-          {merchantsLoading ? (
+          {merchantsLoading || oppsLoading ? (
             <div className="p-6 space-y-2">
               <Skeleton className="h-5 w-1/3" />
               <Skeleton className="h-4 w-1/2" />
             </div>
-          ) : (liveMerchants ?? []).filter((m) => m.is_live).length === 0 ? (
+          ) : liveAccounts.length === 0 ? (
             <div className="p-6 text-sm text-muted-foreground">
               No live accounts yet. Once a referred merchant goes live, they'll appear here and start generating commission.
             </div>
           ) : (
             <ul className="divide-y">
-              {(liveMerchants ?? [])
-                .filter((m) => m.is_live)
-                .map((m) => (
-                  <li key={m.id} className="px-4 py-3 flex items-center justify-between gap-3">
-                    <div>
-                      <div className="font-medium">{m.dba_name || m.legal_entity_name || "Merchant"}</div>
-                      <div className="text-xs text-muted-foreground">
-                        Live since {format(new Date(m.created_at), "MMM d, yyyy")}
-                      </div>
+              {liveAccounts.map((a) => (
+                <li key={a.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                  <div>
+                    <div className="font-medium">{a.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      Live since {format(new Date(a.since), "MMM d, yyyy")}
                     </div>
-                    <Badge className="bg-emerald-600 hover:bg-emerald-700">Live</Badge>
-                  </li>
-                ))}
+                  </div>
+                  <Badge className="bg-emerald-600 hover:bg-emerald-700">Live</Badge>
+                </li>
+              ))}
             </ul>
           )}
+
         </Card>
       </section>
 
