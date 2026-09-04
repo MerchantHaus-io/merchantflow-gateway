@@ -80,6 +80,7 @@ const Referrers = lazy(() => import("./pages/Referrers"));
 const PortalDashboard = lazy(() => import("./pages/portal/PortalDashboard"));
 const PortalNewReferral = lazy(() => import("./pages/portal/PortalNewReferral"));
 const PortalCommissions = lazy(() => import("./pages/portal/PortalCommissions"));
+const AffiliateSignup = lazy(() => import("./pages/AffiliateSignup"));
 const SupportTriage = lazy(() => import("./pages/SupportTriage"));
 const SupportTicketDetail = lazy(() => import("./pages/SupportTicketDetail"));
 const SupportRequest = lazy(() => import("./pages/SupportRequest"));
@@ -261,6 +262,7 @@ const App = () => (
                 </Route>
 
                 {/* Affiliate portal — external partners */}
+                <Route path="/affiliate/signup" element={<AffiliateSignup />} />
                 <Route path="/affiliate" element={<ReferrerRoute><PortalDashboard /></ReferrerRoute>} />
                 <Route path="/affiliate/new-referral" element={<ReferrerRoute><PortalNewReferral /></ReferrerRoute>} />
                 <Route path="/affiliate/commissions" element={<ReferrerRoute><PortalCommissions /></ReferrerRoute>} />
