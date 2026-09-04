@@ -71,6 +71,11 @@ export default function Referrers() {
   const [createdCredentials, setCreatedCredentials] = useState<{ email: string; password: string } | null>(null);
   const [impersonating, setImpersonating] = useState<string | null>(null);
   const [promotingId, setPromotingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ReferrerRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [nameOnlyOpen, setNameOnlyOpen] = useState(false);
+  const [nameOnlyForm, setNameOnlyForm] = useState({ full_name: "", notes: "" });
+
 
 
   const handleImpersonate = async (row: ReferrerRow) => {
