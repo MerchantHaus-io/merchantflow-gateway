@@ -175,6 +175,71 @@ export function AffiliatePayoutsPanel() {
     return map;
   }, [months]);
 
+  /** Newest run that actually released money (or is queued to). */
+  const latestRun = useMemo(
+    () => runs.find((r) => r.status !== "void") ?? null,
+    [runs],
+  );
+
+  const partnerName = useCallback(
+    (id: string) => balances.find((b) => b.referrer_id === id)?.full_name ?? "Unknown partner",
+    [balances],
+  );
+
+  /**
+   * Reconciliation: what the month-by-month table says each partner was owed at
+   * the run's pay date versus what the run actually released to them.
+   */
+  const reconciliation = useMemo(() => {
+    if (!latestRun) return null;
+    const payDate = (latestRun.paid_at ?? latestRun.period_end ?? "").slice(0, 10);
+    if (!payDate) return null;
+    const minimums = new Map(
+      balances.map((b) => [b.referrer_id, num(b.minimum_payout) || DEFAULT_MINIMUM_PAYOUT]),
+    );
+    return reconcilePayoutRun(months, latestRun.id, payDate, minimums);
+  }, [latestRun, months, balances]);
+
+  const exportReconciliation = () => {
+    if (!reconciliation) return;
+    const header = [
+      "Partner",
+      "Due at pay date",
+      "Expected in run",
+      "Released in run",
+      "Variance",
+      "Held below minimum",
+      "Minimum",
+      "Result",
+      "Months missing from run",
+      "Months released early",
+    ];
+    const lines = reconciliation.rows.map((r) =>
+      [
+        partnerName(r.referrerId),
+        r.due.toFixed(2),
+        r.expected.toFixed(2),
+        r.released.toFixed(2),
+        r.variance.toFixed(2),
+        r.heldBack.toFixed(2),
+        r.minimum.toFixed(2),
+        RECONCILE_VERDICT_LABEL[r.verdict],
+        r.missingEntryIds.length,
+        r.earlyEntryIds.length,
+      ]
+        .map((c) => `"${String(c).replace(/"/g, '""')}"`)
+        .join(","),
+    );
+    const csv = [header.join(","), ...lines].join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `payout-reconciliation-${reconciliation.payDate}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+
   /**
    * Build (or backdate) every month a referred merchant has been billed for the
    * gateway, and release anything whose 30-day hold has passed. Idempotent.
