@@ -157,12 +157,17 @@ export default function Referrers() {
     setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)));
 
   const saveRow = async (row: ReferrerRow) => {
+    if (!row.full_name.trim()) {
+      toast.error("A name is required");
+      return;
+    }
     setSaving(row.id);
      
     const patch: any = {
-      full_name: row.full_name,
+      full_name: row.full_name.trim(),
       phone: row.phone,
       alias: row.alias,
+      notes: row.notes,
       active: row.active,
       commission_rate: row.commission_rate,
       monthly_cap_per_merchant: row.monthly_cap_per_merchant,
@@ -172,6 +177,64 @@ export default function Referrers() {
     setSaving(null);
     if (error) toast.error(error.message);
     else toast.success("Saved");
+  };
+
+  const handleDelete = async () => {
+    const row = deleteTarget;
+    if (!row) return;
+    setDeleting(true);
+
+    // Attribution-only names have no login, so the row delete is enough and
+    // admins can do it directly under RLS. Full affiliates go through the
+    // edge function, which also removes the portal login.
+    if (row.attribution_only && !row.auth_user_id) {
+      const { error } = await supabase.from("referrers").delete().eq("id", row.id);
+      setDeleting(false);
+      setDeleteTarget(null);
+      if (error) toast.error(error.message);
+      else {
+        toast.success(`${row.full_name} deleted`);
+        load();
+      }
+      return;
+    }
+
+    const { data, error } = await supabase.functions.invoke("delete-referrer", {
+      body: { referrer_id: row.id },
+    });
+    setDeleting(false);
+    if (error || data?.error) {
+      toast.error(data?.error || error?.message || "Failed to delete affiliate");
+      return;
+    }
+    setDeleteTarget(null);
+    toast.success(data?.message ?? `${row.full_name} deleted`);
+    load();
+  };
+
+  const handleCreateNameOnly = async () => {
+    if (!nameOnlyForm.full_name.trim()) {
+      toast.error("A name is required");
+      return;
+    }
+    setCreating(true);
+    const { error } = await supabase.from("referrers").insert({
+      full_name: nameOnlyForm.full_name.trim(),
+      notes: nameOnlyForm.notes.trim() || null,
+      active: false,
+      attribution_only: true,
+      commission_rate: 0,
+      monthly_cap_per_merchant: 0,
+    } as never);
+    setCreating(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Name added for attribution");
+    setNameOnlyForm({ full_name: "", notes: "" });
+    setNameOnlyOpen(false);
+    load();
   };
 
   const handleCreate = async () => {
