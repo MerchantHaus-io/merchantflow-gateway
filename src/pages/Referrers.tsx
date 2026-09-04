@@ -476,9 +476,21 @@ export default function Referrers() {
                   </TableCell>
 
                   <TableCell className="text-right">
-                    <Button size="sm" variant="outline" onClick={() => saveRow(row)} disabled={saving === row.id}>
-                      {saving === row.id ? "Saving…" : "Save"}
-                    </Button>
+                    <div className="flex items-center justify-end gap-1.5">
+                      <Button size="sm" variant="outline" onClick={() => saveRow(row)} disabled={saving === row.id}>
+                        {saving === row.id ? "Saving…" : "Save"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setDeleteTarget(row)}
+                        title="Delete this affiliate"
+                        aria-label={`Delete ${row.full_name}`}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
