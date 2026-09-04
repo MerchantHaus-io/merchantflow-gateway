@@ -177,18 +177,40 @@ export default function Referrers() {
         monthly_cap_per_merchant: createForm.monthly_cap_per_merchant,
       },
     });
-    setCreating(false);
 
     if (error || (data && data.error)) {
+      setCreating(false);
       toast.error((data && data.error) || error?.message || "Failed to create affiliate");
       return;
     }
 
+    // Promoting an attribution-only name: retire the placeholder row so the
+    // list keeps one entry per person.
+    if (promotingId) {
+      const { error: delErr } = await supabase.from("referrers").delete().eq("id", promotingId);
+      if (delErr) toast.error(`Affiliate created, but the old attribution entry remains: ${delErr.message}`);
+      setPromotingId(null);
+    }
+
+    setCreating(false);
     setCreatedCredentials({ email: createForm.email, password: data.temp_password });
     setCreateForm({ full_name: "", email: "", phone: "", commission_rate: 0.50, monthly_cap_per_merchant: 1000 });
     setCreateOpen(false);
     load();
   };
+
+  const startPromote = (row: ReferrerRow) => {
+    setPromotingId(row.id);
+    setCreateForm({
+      full_name: row.full_name,
+      email: "",
+      phone: row.phone ?? "",
+      commission_rate: 0.50,
+      monthly_cap_per_merchant: 1000,
+    });
+    setCreateOpen(true);
+  };
+
 
   const copy = (text: string) => {
     navigator.clipboard.writeText(text);
