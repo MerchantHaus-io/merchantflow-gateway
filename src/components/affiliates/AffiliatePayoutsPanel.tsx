@@ -17,7 +17,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
-import { Banknote, Landmark, Loader2, RefreshCw, Wallet } from "lucide-react";
+import { Banknote, CalendarRange, Landmark, Loader2, RefreshCw, Wallet } from "lucide-react";
 import {
   DEFAULT_BONUS_AMOUNT,
   DEFAULT_BONUS_MILESTONE,
@@ -27,6 +27,7 @@ import {
   fmtUsd,
   payableOnFor,
 } from "@/lib/affiliatePayouts";
+
 
 interface BalanceRow {
   referrer_id: string;
@@ -62,6 +63,20 @@ interface PeriodOption {
   period_end: string;
 }
 
+interface MonthRow {
+  id: string;
+  referrer_id: string;
+  account_id: string | null;
+  amount: number | string | null;
+  status: string;
+  period_start: string | null;
+  period_end: string | null;
+  payable_on: string | null;
+  description: string | null;
+  entry_type: string;
+}
+
+
 interface BankForm {
   bank_account_name: string;
   bank_name: string;
@@ -86,13 +101,16 @@ const periodLabel = (start: string, end: string) =>
   `${format(parseISO(start), "d MMM yyyy")} – ${format(parseISO(end), "d MMM yyyy")}`;
 
 /**
- * Admin view of the affiliate payout programme: live balance per partner,
- * credit generation from the month's residuals, and monthly payout runs.
+ * Admin view of the affiliate payout programme: live balance per partner, the
+ * month-by-month gateway earnings behind those balances, credit generation and
+ * monthly payout runs. Partners earn on the gateway margin only — processing
+ * residuals never form part of a payout.
  */
 export function AffiliatePayoutsPanel() {
   const [balances, setBalances] = useState<BalanceRow[]>([]);
   const [runs, setRuns] = useState<PayoutRun[]>([]);
   const [periods, setPeriods] = useState<PeriodOption[]>([]);
+  const [months, setMonths] = useState<MonthRow[]>([]);
   const [periodId, setPeriodId] = useState("");
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState<string | null>(null);
@@ -104,19 +122,27 @@ export function AffiliatePayoutsPanel() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [balanceRes, runRes, periodRes] = await Promise.all([
+    const [balanceRes, runRes, periodRes, monthRes] = await Promise.all([
       supabase.from("referrer_balances").select("*").order("balance_amount", { ascending: false }),
       supabase.from("referrer_payout_runs").select("*").order("period_end", { ascending: false }).limit(24),
       supabase.from("commission_periods").select("id, period_start, period_end").order("period_end", { ascending: false }).limit(24),
+      supabase
+        .from("referrer_ledger_entries")
+        .select("id, referrer_id, account_id, amount, status, period_start, period_end, payable_on, description, entry_type")
+        .neq("status", "void")
+        .order("period_end", { ascending: false, nullsFirst: false })
+        .limit(500),
     ]);
     if (balanceRes.error) toast.error("Could not load partner balances");
     setBalances(((balanceRes.data ?? []) as unknown[] as BalanceRow[]).filter((b) => !!b.referrer_id));
     setRuns((runRes.data ?? []) as PayoutRun[]);
+    setMonths((monthRes.data ?? []) as MonthRow[]);
     const periodRows = (periodRes.data ?? []) as PeriodOption[];
     setPeriods(periodRows);
     setPeriodId((prev) => prev || periodRows[0]?.id || "");
     setLoading(false);
   }, []);
+
 
   useEffect(() => {
     void load();
@@ -136,10 +162,48 @@ export function AffiliatePayoutsPanel() {
 
   const selectedPeriod = periods.find((p) => p.id === periodId) ?? null;
 
+  /** Earnings grouped per partner, newest month first. */
+  const monthsByPartner = useMemo(() => {
+    const map = new Map<string, MonthRow[]>();
+    for (const m of months) {
+      const list = map.get(m.referrer_id) ?? [];
+      list.push(m);
+      map.set(m.referrer_id, list);
+    }
+    return map;
+  }, [months]);
+
   /**
-   * Turn the selected month's residual records into partner credits, then top
-   * up any milestone bonuses that have been earned since the last run. Credits
-   * are idempotent: one per (partner, residual record).
+   * Build (or backdate) every month a referred merchant has been billed for the
+   * gateway, and release anything whose 30-day hold has passed. Idempotent.
+   */
+  const buildOutstanding = async () => {
+    setWorking("backdate");
+    try {
+      const { data, error } = await supabase.rpc("build_referrer_ledger");
+      if (error) throw error;
+      const row = Array.isArray(data) ? data[0] : data;
+      const inserted = num(row?.inserted);
+      const promoted = num(row?.promoted);
+      if (!inserted && !promoted) {
+        toast.info("No new months to add — every referred merchant is up to date.");
+      } else {
+        toast.success(
+          `${inserted} month${inserted === 1 ? "" : "s"} added, ${promoted} released for payment.`,
+        );
+      }
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not build the outstanding months");
+    } finally {
+      setWorking(null);
+    }
+  };
+
+  /**
+   * Turn the selected month's gateway margin into partner credits, then top up
+   * any milestone bonuses earned since the last run. Credits are idempotent:
+   * one per (partner, merchant, month).
    */
   const generateCredits = async () => {
     if (!selectedPeriod) {
@@ -164,9 +228,16 @@ export function AffiliatePayoutsPanel() {
             .in("commission_record_id", recordIds)
         : { data: [] as { commission_record_id: string | null }[] };
       const seen = new Set((existing ?? []).map((e) => e.commission_record_id));
+      // A month accrued by the backdating routine already covers this merchant.
+      const seenMonths = new Set(
+        months
+          .filter((m) => m.entry_type === "commission" && m.account_id)
+          .map((m) => `${m.referrer_id}|${m.account_id}|${m.period_start}`),
+      );
 
       const inserts = rows
         .filter((r) => !seen.has(r.record_id as string))
+        .filter((r) => !seenMonths.has(`${r.referrer_id}|${r.account_id}|${r.period_start}`))
         .map((r) => ({
           referrer_id: r.referrer_id as string,
           entry_type: "commission",
@@ -176,7 +247,7 @@ export function AffiliatePayoutsPanel() {
           payable_on: payableOnFor(r.period_end as string),
           account_id: (r.account_id as string) ?? null,
           commission_record_id: r.record_id as string,
-          description: `Referral commission — ${r.company_name ?? "merchant"}`,
+          description: `Gateway referral commission — ${r.company_name ?? "merchant"}`,
         }));
 
       if (inserts.length) {
@@ -195,6 +266,7 @@ export function AffiliatePayoutsPanel() {
       setWorking(null);
     }
   };
+
 
   /** $500 for every 5 merchants boarded, counted once per milestone. */
   const generateBonuses = async (period: PeriodOption): Promise<number> => {
@@ -435,7 +507,11 @@ export function AffiliatePayoutsPanel() {
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={generateCredits} disabled={working === "generate" || !periodId} size="sm">
+          <Button onClick={buildOutstanding} disabled={working === "backdate"} size="sm">
+            {working === "backdate" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CalendarRange className="h-4 w-4 mr-2" />}
+            Build outstanding months
+          </Button>
+          <Button onClick={generateCredits} disabled={working === "generate" || !periodId} size="sm" variant="outline">
             {working === "generate" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
             Generate credits
           </Button>
@@ -444,11 +520,14 @@ export function AffiliatePayoutsPanel() {
             Create payout run
           </Button>
           <p className="text-xs text-muted-foreground max-w-md">
-            Credits become payable 30 days after the month ends. Runs include only partners whose ready-to-pay balance
-            reaches {fmtUsd(DEFAULT_MINIMUM_PAYOUT)}; anything below rolls over.
+            Partners earn on the gateway only — half of our gateway margin per referred merchant, capped per merchant each
+            month. Building outstanding months backdates every month a referred merchant has been billed. Earnings become
+            payable 30 days after the month ends, and runs include only partners whose ready-to-pay balance reaches{" "}
+            {fmtUsd(DEFAULT_MINIMUM_PAYOUT)}; anything below rolls over.
           </p>
         </div>
       </Card>
+
 
       <Card className="overflow-hidden">
         <div className="px-4 py-3 border-b flex items-center gap-2">
@@ -515,6 +594,69 @@ export function AffiliatePayoutsPanel() {
           </Table>
         </div>
       </Card>
+
+      <Card className="overflow-hidden">
+        <div className="px-4 py-3 border-b flex items-center gap-2">
+          <CalendarRange className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-sm font-semibold">Month-by-month earnings (gateway only)</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Partner</TableHead>
+                <TableHead>Month</TableHead>
+                <TableHead>Merchant</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Released</TableHead>
+                <TableHead className="text-right">Partner share</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                    Loading earnings…
+                  </TableCell>
+                </TableRow>
+              ) : months.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                    Nothing accrued yet. Assign an affiliate to a live gateway account, then build the outstanding months.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                balances.flatMap((b) =>
+                  (monthsByPartner.get(b.referrer_id) ?? []).map((m, i) => (
+                    <TableRow key={m.id}>
+                      <TableCell className="text-sm">
+                        {i === 0 ? <span className="font-medium">{b.full_name}</span> : <span className="text-muted-foreground">↳</span>}
+                      </TableCell>
+                      <TableCell className="text-sm whitespace-nowrap">
+                        {m.period_end ? format(parseISO(m.period_end), "MMM yyyy") : "—"}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {(m.description ?? "").replace(/^.*—\s*/, "") || "—"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={m.status === "paid" ? "secondary" : "outline"} className="text-[10px]">
+                          {m.status === "pending" ? "On hold" : m.status === "payable" ? "Ready to pay" : m.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                        {m.payable_on ? format(parseISO(m.payable_on), "d MMM yyyy") : "—"}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums font-medium">{fmtUsd(m.amount)}</TableCell>
+                    </TableRow>
+                  )),
+                )
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
+
+
 
       <Card className="overflow-hidden">
         <div className="px-4 py-3 border-b">

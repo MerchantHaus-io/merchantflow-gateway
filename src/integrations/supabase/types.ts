@@ -4642,11 +4642,14 @@ export type Database = {
           commission_rate: number | null
           company_commission: number | null
           company_name: string | null
+          gateway_invoiced: number | null
+          gateway_margin: number | null
           monthly_cap_per_merchant: number | null
           payout: number | null
           period_end: string | null
           period_id: string | null
           period_start: string | null
+          processing_residual: number | null
           record_id: string | null
           referrer_id: string | null
           transaction_count: number | null
@@ -4687,6 +4690,13 @@ export type Database = {
     }
     Functions: {
       archive_stale_closed_tickets: { Args: never; Returns: number }
+      build_referrer_ledger: {
+        Args: never
+        Returns: {
+          inserted: number
+          promoted: number
+        }[]
+      }
       current_referrer_id: { Args: never; Returns: string }
       current_user_email: { Args: never; Returns: string }
       ensure_office_avatar: {

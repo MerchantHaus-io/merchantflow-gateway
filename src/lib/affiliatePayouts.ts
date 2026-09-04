@@ -2,15 +2,23 @@
  * Affiliate payout programme — pure calculation helpers.
  *
  * Programme rules (see project memory):
- *   • 50% revenue share, capped at $1,000 per referred account per month.
+ *   • Partners earn on the GATEWAY side only: 50% of our gateway margin
+ *     (what the merchant is billed less our underlying cost), capped at
+ *     $1,000 per referred account per month.
+ *   • Processing residuals earn a partner nothing and never enter the payout.
+ *   • Earnings run from the month of the merchant's first gateway invoice.
  *   • A $500 bonus for every 5 merchants boarded.
  *   • Credits earned in a month become payable 30 days after that month ends.
  *   • A partner is paid only once their payable balance reaches the minimum
  *     (default $50); anything below rolls into the next run.
  *
+ * Cost and margin figures are internal: never surface them to a partner or a
+ * merchant, only the partner's own share.
+ *
  * Nothing here touches the database, so it is unit-testable and shared by the
  * admin dashboard and the partner portal.
  */
+
 
 export const DEFAULT_MINIMUM_PAYOUT = 50;
 export const DEFAULT_BONUS_AMOUNT = 500;
@@ -106,16 +114,28 @@ export const bonusesDue = (
   return Math.max(0, earned - Math.max(0, alreadyAwarded));
 };
 
-/** Commission share for one referred account in one month, capped per account. */
+/**
+ * Partner share for one referred account in one month, capped per account.
+ * The base is always our GATEWAY margin — never the processing residual and
+ * never the gross amount billed to the merchant.
+ */
 export const commissionShare = (
-  companyCommission: number,
+  gatewayMargin: number,
   rate: number,
   monthlyCap: number,
 ): number => {
-  const uncapped = num(companyCommission) * num(rate);
+  const uncapped = num(gatewayMargin) * num(rate);
   const capped = num(monthlyCap) > 0 ? Math.min(uncapped, num(monthlyCap)) : uncapped;
   return Math.round(Math.max(0, capped) * 100) / 100;
 };
+
+/** Explicit alias making the gateway-only basis obvious at call sites. */
+export const gatewayShare = commissionShare;
+
+/** Month key (YYYY-MM) a ledger entry belongs to. */
+export const monthKey = (periodEnd: string | null | undefined): string =>
+  periodEnd ? periodEnd.slice(0, 7) : "";
+
 
 export const fmtUsd = (v: number | string | null | undefined): string =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 }).format(num(v));
