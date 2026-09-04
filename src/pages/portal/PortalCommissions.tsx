@@ -240,11 +240,13 @@ export default function PortalCommissions() {
           </div>
         </div>
         <p className="text-xs text-muted-foreground mt-3">
-          You earn <strong>{fmtPct(rate)}</strong> of the company commission for each merchant you refer, capped
-          at <strong>{fmt(monthlyCap)} per account, per month</strong> — recurring for the lifetime of that
+          You earn a <strong>{fmtPct(rate)}</strong> share on the <strong>gateway service</strong> for each
+          merchant you refer — card processing volume does not earn commission. Capped at{" "}
+          <strong>{fmt(monthlyCap)} per account, per month</strong> and recurring for the lifetime of that
           account. A <strong>{fmt(bonusAmount)}</strong> bonus is paid for every{" "}
           <strong>{bonusMilestone}</strong> successfully boarded merchants.
         </p>
+
       </Card>
 
       {/* Totals — realized */}
