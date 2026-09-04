@@ -350,8 +350,9 @@ export default function PortalCommissions() {
               ))}
           </ul>
           <div className="px-4 py-2 text-[11px] text-muted-foreground border-t">
-            Projections estimate monthly earnings using stated processing volume and the {fmtPct(rate)} rev share, capped at {fmt(monthlyCap)} per account per month. Actual payouts populate once merchants begin processing.
+            Earnings are calculated on gateway billing only — processing volume does not earn commission. Each figure is your {fmtPct(rate)} share of that merchant's most recent gateway month, capped at {fmt(monthlyCap)} per account per month. Amounts appear once a merchant's first gateway invoice is issued.
           </div>
+
         </Card>
       )}
 
