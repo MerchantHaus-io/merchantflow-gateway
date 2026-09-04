@@ -37,17 +37,13 @@ type ProjAccount = {
   account_id: string;
   company_name: string;
   status: "live" | "pipeline";
-  monthly_volume: number;
-  estimated: boolean;
-  projected_company_commission: number;
+  /** True when we have no gateway billing history for this merchant yet. */
+  awaitingGateway: boolean;
   projected_payout: number;
   at_cap: boolean;
 };
 
 const DEAD_OUTCOMES = new Set(["disqualified", "closed_lost", "no_decision", "underwriting_declined"]);
-const PROCESSING_RATE = 0.0292;
-const REV_SHARE = 0.30;
-const FALLBACK_VOLUME = 25000;
 
 export default function PortalCommissions() {
   const { referrer } = useAuth();
@@ -72,36 +68,19 @@ export default function PortalCommissions() {
   const rate = referrer?.commission_rate ?? 0.5;
   const monthlyCap = referrer?.monthly_cap_per_merchant ?? 1000;
 
-  // Projection data: referred accounts + most recent application monthly volume.
-  const { data: projectionAccounts } = useQuery({
+  // Referred accounts, live vs still in pipeline.
+  const { data: referredAccounts } = useQuery({
     queryKey: ["portal-projection", referrer?.id],
     enabled: !!referrer?.id,
-    queryFn: async (): Promise<ProjAccount[]> => {
+    queryFn: async (): Promise<{ account_id: string; company_name: string; status: "live" | "pipeline" }[]> => {
       const { data: opps } = await supabase
         .from("opportunities")
         .select("account_id, status, outcome_status, stage, created_at, account:accounts(id, name, nmi_merchant_id)")
         .eq("referrer_id", referrer!.id)
         .order("created_at", { ascending: false });
 
-      const { data: apps } = await (supabase.from("applications") as any)
-        .select("monthly_volume, email, created_at")
-        .eq("referrer_id", referrer!.id)
-        .order("created_at", { ascending: false });
-
-      const volByEmail = new Map<string, number>();
-      for (const a of (apps as any[]) ?? []) {
-        const key = (a?.email ?? "").toString().toLowerCase();
-        if (!key) continue;
-        if (!volByEmail.has(key) && a?.monthly_volume) {
-          volByEmail.set(key, Number(a.monthly_volume));
-        }
-      }
-      // Weak fallback: use the most recent volume value submitted by this referrer.
-      let fallbackVol = 0;
-      for (const [, v] of volByEmail) { fallbackVol = v; break; }
-
       const seen = new Set<string>();
-      const out: ProjAccount[] = [];
+      const out: { account_id: string; company_name: string; status: "live" | "pipeline" }[] = [];
       for (const o of (opps as any[]) ?? []) {
         const acct = o?.account;
         if (!acct?.id || seen.has(acct.id)) continue;
@@ -113,29 +92,38 @@ export default function PortalCommissions() {
         if (isDead) continue;
 
         const isLive = !!acct.nmi_merchant_id || o.stage === "closed_won" || o.outcome_status === "closed_won";
-
-        let vol = fallbackVol;
-        const estimated = vol === 0;
-        if (estimated) vol = FALLBACK_VOLUME;
-
-        const companyCommission = vol * PROCESSING_RATE * REV_SHARE;
-        const uncapped = companyCommission * rate;
-        const payout = Math.min(uncapped, monthlyCap);
-
         out.push({
           account_id: acct.id,
           company_name: acct.name ?? "Merchant",
           status: isLive ? "live" : "pipeline",
-          monthly_volume: vol,
-          estimated,
-          projected_company_commission: companyCommission,
-          projected_payout: payout,
-          at_cap: uncapped >= monthlyCap,
         });
       }
       return out;
     },
   });
+
+  /**
+   * Projections are based on each merchant's most recent GATEWAY billing month —
+   * never on processing volume. Processing residuals earn a partner nothing.
+   */
+  const projectionAccounts = useMemo<ProjAccount[]>(() => {
+    const latestPayout = new Map<string, number>();
+    for (const r of allRecords ?? []) {
+      if (latestPayout.has(r.account_id)) continue; // records are newest-first
+      latestPayout.set(r.account_id, Number(r.payout) || 0);
+    }
+    return (referredAccounts ?? []).map((a) => {
+      const known = latestPayout.get(a.account_id);
+      const payout = known ?? 0;
+      return {
+        ...a,
+        awaitingGateway: known === undefined,
+        projected_payout: payout,
+        at_cap: monthlyCap > 0 && payout >= monthlyCap,
+      };
+    });
+  }, [allRecords, referredAccounts, monthlyCap]);
+
 
   const projection = useMemo(() => {
     const acc = projectionAccounts ?? [];
