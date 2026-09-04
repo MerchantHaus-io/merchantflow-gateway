@@ -1375,6 +1375,19 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
               </Select>
             </div>
 
+            <div className="flex items-center gap-1.5">
+              <span className="deal-mono text-[10px] uppercase tracking-wider text-muted-foreground">Affiliate</span>
+              <ReferrerAssignField
+                table="opportunities"
+                recordId={opportunity.id}
+                value={(opportunity as { referrer_id?: string | null }).referrer_id ?? null}
+                invalidateKeys={[["opportunities"], ["opportunity", opportunity.id]]}
+                className="h-6 w-[190px] border-0 border-b border-dashed border-muted-foreground/40 rounded-none bg-transparent px-1 text-[11px] deal-mono hover:border-foreground"
+              />
+            </div>
+
+
+
             <span className="deal-mono text-[10px] uppercase tracking-wider text-muted-foreground hidden lg:inline ml-auto">
               Created {new Date(opportunity.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
             </span>
