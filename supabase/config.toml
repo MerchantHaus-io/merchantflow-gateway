@@ -168,3 +168,7 @@ verify_jwt = false
 # change. Identity comes from the JWT, so verify_jwt is required.
 [functions.complete-password-change]
 verify_jwt = true
+
+# Admin-only affiliate removal (deletes the referrers row and its login).
+[functions.delete-referrer]
+verify_jwt = true

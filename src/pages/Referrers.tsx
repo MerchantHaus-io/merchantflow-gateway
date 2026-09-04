@@ -15,10 +15,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Copy, Plus, UserPlus, LogIn } from "lucide-react";
+import { Copy, Plus, UserPlus, LogIn, Trash2, Tag } from "lucide-react";
 import { format } from "date-fns";
 
 interface ReferrerRow {
@@ -61,6 +71,11 @@ export default function Referrers() {
   const [createdCredentials, setCreatedCredentials] = useState<{ email: string; password: string } | null>(null);
   const [impersonating, setImpersonating] = useState<string | null>(null);
   const [promotingId, setPromotingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ReferrerRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [nameOnlyOpen, setNameOnlyOpen] = useState(false);
+  const [nameOnlyForm, setNameOnlyForm] = useState({ full_name: "", notes: "" });
+
 
 
   const handleImpersonate = async (row: ReferrerRow) => {
@@ -147,12 +162,17 @@ export default function Referrers() {
     setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)));
 
   const saveRow = async (row: ReferrerRow) => {
+    if (!row.full_name.trim()) {
+      toast.error("A name is required");
+      return;
+    }
     setSaving(row.id);
      
     const patch: any = {
-      full_name: row.full_name,
+      full_name: row.full_name.trim(),
       phone: row.phone,
       alias: row.alias,
+      notes: row.notes,
       active: row.active,
       commission_rate: row.commission_rate,
       monthly_cap_per_merchant: row.monthly_cap_per_merchant,
@@ -162,6 +182,64 @@ export default function Referrers() {
     setSaving(null);
     if (error) toast.error(error.message);
     else toast.success("Saved");
+  };
+
+  const handleDelete = async () => {
+    const row = deleteTarget;
+    if (!row) return;
+    setDeleting(true);
+
+    // Attribution-only names have no login, so the row delete is enough and
+    // admins can do it directly under RLS. Full affiliates go through the
+    // edge function, which also removes the portal login.
+    if (row.attribution_only && !row.auth_user_id) {
+      const { error } = await supabase.from("referrers").delete().eq("id", row.id);
+      setDeleting(false);
+      setDeleteTarget(null);
+      if (error) toast.error(error.message);
+      else {
+        toast.success(`${row.full_name} deleted`);
+        load();
+      }
+      return;
+    }
+
+    const { data, error } = await supabase.functions.invoke("delete-referrer", {
+      body: { referrer_id: row.id },
+    });
+    setDeleting(false);
+    if (error || data?.error) {
+      toast.error(data?.error || error?.message || "Failed to delete affiliate");
+      return;
+    }
+    setDeleteTarget(null);
+    toast.success(data?.message ?? `${row.full_name} deleted`);
+    load();
+  };
+
+  const handleCreateNameOnly = async () => {
+    if (!nameOnlyForm.full_name.trim()) {
+      toast.error("A name is required");
+      return;
+    }
+    setCreating(true);
+    const { error } = await supabase.from("referrers").insert({
+      full_name: nameOnlyForm.full_name.trim(),
+      notes: nameOnlyForm.notes.trim() || null,
+      active: false,
+      attribution_only: true,
+      commission_rate: 0,
+      monthly_cap_per_merchant: 0,
+    } as never);
+    setCreating(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Name added for attribution");
+    setNameOnlyForm({ full_name: "", notes: "" });
+    setNameOnlyOpen(false);
+    load();
   };
 
   const handleCreate = async () => {
@@ -232,10 +310,16 @@ export default function Referrers() {
     <AppLayout
       pageTitle="Affiliates"
       headerActions={
-        <Button onClick={() => setCreateOpen(true)} size="sm">
-          <UserPlus className="h-4 w-4 mr-2" />
-          Add Affiliate
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => setNameOnlyOpen(true)} size="sm" variant="outline">
+            <Tag className="h-4 w-4 mr-2" />
+            Add Name Only
+          </Button>
+          <Button onClick={() => setCreateOpen(true)} size="sm">
+            <UserPlus className="h-4 w-4 mr-2" />
+            Add Affiliate
+          </Button>
+        </div>
       }
     >
       <div className="p-4 md:p-6 space-y-4">
@@ -255,24 +339,25 @@ export default function Referrers() {
                 <TableHead>Email</TableHead>
                 <TableHead>Alias</TableHead>
                 <TableHead>Phone</TableHead>
+                <TableHead>Notes</TableHead>
                 <TableHead className="text-right">Comm %</TableHead>
                 <TableHead className="text-right">Monthly Cap</TableHead>
                 <TableHead className="text-right">Clawback (days)</TableHead>
                 <TableHead>Active</TableHead>
                 <TableHead>Date activated</TableHead>
                 <TableHead className="text-center">Login</TableHead>
-                <TableHead className="text-right">Save</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading && (
                 <TableRow>
-                  <TableCell colSpan={12} className="text-center text-muted-foreground py-8">Loading…</TableCell>
+                  <TableCell colSpan={13} className="text-center text-muted-foreground py-8">Loading…</TableCell>
                 </TableRow>
               )}
               {!loading && rows.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={12} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={13} className="text-center text-muted-foreground py-8">
                     No affiliates yet. Click <strong>Add Affiliate</strong> to create the first one.
                   </TableCell>
                 </TableRow>
@@ -310,6 +395,14 @@ export default function Referrers() {
                       value={row.phone ?? ""}
                       onChange={(e) => update(row.id, { phone: e.target.value })}
                       className="h-8"
+                      placeholder="—"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      value={row.notes ?? ""}
+                      onChange={(e) => update(row.id, { notes: e.target.value })}
+                      className="h-8 w-40"
                       placeholder="—"
                     />
                   </TableCell>
@@ -383,9 +476,21 @@ export default function Referrers() {
                   </TableCell>
 
                   <TableCell className="text-right">
-                    <Button size="sm" variant="outline" onClick={() => saveRow(row)} disabled={saving === row.id}>
-                      {saving === row.id ? "Saving…" : "Save"}
-                    </Button>
+                    <div className="flex items-center justify-end gap-1.5">
+                      <Button size="sm" variant="outline" onClick={() => saveRow(row)} disabled={saving === row.id}>
+                        {saving === row.id ? "Saving…" : "Save"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setDeleteTarget(row)}
+                        title="Delete this affiliate"
+                        aria-label={`Delete ${row.full_name}`}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -526,6 +631,73 @@ export default function Referrers() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Add an attribution-only name (no login, no payouts) */}
+      <Dialog open={nameOnlyOpen} onOpenChange={setNameOnlyOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add name only</DialogTitle>
+            <DialogDescription>
+              Records who referred a deal. No login, no commission and no payouts — you can promote them to a full
+              affiliate later.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="name-only">Full name</Label>
+              <Input
+                id="name-only"
+                value={nameOnlyForm.full_name}
+                onChange={(e) => setNameOnlyForm({ ...nameOnlyForm, full_name: e.target.value })}
+                placeholder="Jane Smith"
+              />
+            </div>
+            <div>
+              <Label htmlFor="name-only-notes">Notes (optional)</Label>
+              <Input
+                id="name-only-notes"
+                value={nameOnlyForm.notes}
+                onChange={(e) => setNameOnlyForm({ ...nameOnlyForm, notes: e.target.value })}
+                placeholder="Bank, introducer, how you know them…"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setNameOnlyOpen(false)} disabled={creating}>Cancel</Button>
+            <Button onClick={handleCreateNameOnly} disabled={creating}>
+              <Plus className="h-4 w-4 mr-2" />
+              {creating ? "Adding…" : "Add name"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {deleteTarget?.full_name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget?.attribution_only && !deleteTarget?.auth_user_id
+                ? "This removes the name from the list. Deals already tagged to them keep their history."
+                : "This removes the affiliate and their portal login for good. Deals stay, but they lose the referral tag. If they already have commission records, switch them to inactive instead — the delete will be blocked."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleDelete();
+              }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 }
