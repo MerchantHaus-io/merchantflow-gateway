@@ -217,3 +217,152 @@ export const RUN_STATUS_LABEL: Record<string, string> = {
   paid: "Paid",
   void: "Cancelled",
 };
+
+/* ------------------------------------------------------------------ *
+ * Payout-run reconciliation
+ *
+ * Compares what a partner's month-by-month earnings say they were owed at a
+ * run's pay date against what the run actually released to them. A clean
+ * programme reconciles to zero for every partner; anything else means a month
+ * was missed, double-counted, or released before its 30-day hold expired.
+ * ------------------------------------------------------------------ */
+
+export interface ReconcileEntry {
+  id: string;
+  referrer_id: string;
+  amount: number | string | null;
+  status: LedgerStatus | string;
+  payable_on?: string | null;
+  period_end?: string | null;
+  payout_run_id?: string | null;
+}
+
+export type ReconcileVerdict = "match" | "short" | "over" | "held";
+
+export interface ReconcilePartnerRow {
+  referrerId: string;
+  /** Released and due by the pay date, before the minimum is applied. */
+  due: number;
+  /** Due amount the minimum allows to be paid in this run. */
+  expected: number;
+  /** What the run actually attached to this partner. */
+  released: number;
+  /** released − expected. Positive = overpaid, negative = underpaid. */
+  variance: number;
+  /** Held under the partner's minimum, so it rolls to the next run. */
+  heldBack: number;
+  minimum: number;
+  verdict: ReconcileVerdict;
+  /** Credits that were due but did not make the run. */
+  missingEntryIds: string[];
+  /** Credits in the run whose release date had not arrived yet. */
+  earlyEntryIds: string[];
+}
+
+export interface ReconcileReport {
+  runId: string;
+  payDate: string;
+  rows: ReconcilePartnerRow[];
+  totals: { due: number; expected: number; released: number; variance: number; heldBack: number };
+  /** Partners whose released amount differs from what was expected. */
+  mismatches: ReconcilePartnerRow[];
+}
+
+const r2 = (n: number) => Math.round(n * 100) / 100;
+
+/**
+ * Reconcile one payout run against the earnings ledger.
+ *
+ * A credit counts as due when its release date has arrived on or before the
+ * run's pay date and it is not already settled by a different run.
+ */
+export const reconcilePayoutRun = (
+  entries: ReconcileEntry[],
+  runId: string,
+  payDate: string,
+  minimums: Map<string, number> = new Map(),
+): ReconcileReport => {
+  const cutoff = (payDate ?? "").slice(0, 10);
+  const byPartner = new Map<string, ReconcileEntry[]>();
+
+  for (const e of entries) {
+    if (e.status === "void") continue;
+    const inThisRun = e.payout_run_id === runId;
+    const settledElsewhere = !!e.payout_run_id && !inThisRun;
+    if (settledElsewhere) continue;
+    if (!inThisRun && e.status === "paid") continue;
+    const list = byPartner.get(e.referrer_id) ?? [];
+    list.push(e);
+    byPartner.set(e.referrer_id, list);
+  }
+
+  const rows: ReconcilePartnerRow[] = [];
+  for (const [referrerId, list] of byPartner) {
+    const minimum = num(minimums.get(referrerId)) || DEFAULT_MINIMUM_PAYOUT;
+    let due = 0;
+    let released = 0;
+    const missingEntryIds: string[] = [];
+    const earlyEntryIds: string[] = [];
+
+    for (const e of list) {
+      const amount = num(e.amount);
+      const release = (e.payable_on ?? e.period_end ?? "").slice(0, 10);
+      const isDue = !!cutoff && (!release || release <= cutoff);
+      const inRun = e.payout_run_id === runId;
+      if (isDue) due += amount;
+      if (inRun) released += amount;
+      if (isDue && !inRun) missingEntryIds.push(e.id);
+      if (!isDue && inRun) earlyEntryIds.push(e.id);
+    }
+
+    due = r2(due);
+    released = r2(released);
+    const clears = clearsMinimum(due, minimum);
+    const expected = clears ? due : 0;
+    const heldBack = clears ? 0 : due;
+    const variance = r2(released - expected);
+    const verdict: ReconcileVerdict =
+      variance === 0 ? (heldBack > 0 ? "held" : "match") : variance < 0 ? "short" : "over";
+
+    rows.push({
+      referrerId,
+      due,
+      expected,
+      released,
+      variance,
+      heldBack,
+      minimum,
+      verdict,
+      missingEntryIds,
+      earlyEntryIds,
+    });
+  }
+
+  rows.sort((a, b) => Math.abs(b.variance) - Math.abs(a.variance));
+
+  const totals = rows.reduce(
+    (acc, r) => ({
+      due: r2(acc.due + r.due),
+      expected: r2(acc.expected + r.expected),
+      released: r2(acc.released + r.released),
+      variance: r2(acc.variance + r.variance),
+      heldBack: r2(acc.heldBack + r.heldBack),
+    }),
+    { due: 0, expected: 0, released: 0, variance: 0, heldBack: 0 },
+  );
+
+  return {
+    runId,
+    payDate: cutoff,
+    rows,
+    totals,
+    mismatches: rows.filter((r) => r.variance !== 0),
+  };
+};
+
+export const RECONCILE_VERDICT_LABEL: Record<ReconcileVerdict, string> = {
+  match: "Matches",
+  short: "Underpaid",
+  over: "Overpaid",
+  held: "Held (below minimum)",
+};
