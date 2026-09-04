@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePortalSessionHeartbeat } from "@/hooks/usePortalSessionHeartbeat";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { LayoutDashboard, Send, DollarSign, LogOut, ShieldAlert, X , Wallet} from "lucide-react";
@@ -28,6 +29,9 @@ export function PortalLayout({ children, pageTitle, headerActions }: PortalLayou
   const navigate = useNavigate();
 
   const impersonating = isImpersonationTab();
+  // Records sign-in count + time spent for real partner visits.
+  usePortalSessionHeartbeat(!impersonating && !!user);
+
   const impersonationLabel =
     typeof window !== "undefined"
       ? sessionStorage.getItem(IMPERSONATION_REFERRER_LABEL)

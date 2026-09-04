@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { AffiliatePayoutsPanel } from "@/components/affiliates/AffiliatePayoutsPanel";
+import { PartnerActivityPanel } from "@/components/affiliates/PartnerActivityPanel";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import {
@@ -451,6 +452,9 @@ export default function Referrers() {
         )}
 
         <AffiliatePayoutsPanel />
+
+        <PartnerActivityPanel />
+
 
 
         <Card className="overflow-hidden">
