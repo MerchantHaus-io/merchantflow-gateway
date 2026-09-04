@@ -6,6 +6,9 @@ import {
   clearsMinimum,
   bonusesDue,
   commissionShare,
+  gatewayShare,
+  monthKey,
+
 } from "./affiliatePayouts";
 
 describe("payableOnFor", () => {
