@@ -17,7 +17,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
-import { Banknote, Landmark, Loader2, RefreshCw, Wallet } from "lucide-react";
+import { Banknote, CalendarRange, Landmark, Loader2, RefreshCw, Wallet } from "lucide-react";
 import {
   DEFAULT_BONUS_AMOUNT,
   DEFAULT_BONUS_MILESTONE,
@@ -27,6 +27,7 @@ import {
   fmtUsd,
   payableOnFor,
 } from "@/lib/affiliatePayouts";
+
 
 interface BalanceRow {
   referrer_id: string;
