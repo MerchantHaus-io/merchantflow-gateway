@@ -55,10 +55,11 @@ Deno.serve(async (req) => {
     const origin = req.headers.get("origin") || req.headers.get("referer") || "";
     const redirectTo = origin ? `${origin.replace(/\/$/, "")}/affiliate` : undefined;
 
+    const refEmail = ref.email as string;
     async function makeLink() {
       return await admin.auth.admin.generateLink({
         type: "magiclink",
-        email: ref.email,
+        email: refEmail,
         options: redirectTo ? { redirectTo } : undefined,
       });
     }
@@ -128,7 +129,7 @@ Deno.serve(async (req) => {
     // Backfill referrers.auth_user_id so RLS policies that key off auth_user_id work
     // for impersonated sessions. generateLink upserts the auth user, so it now exists.
     try {
-      const userId = (linkData as unknown)?.user?.id;
+      const userId = (linkData as unknown as { user?: { id?: string } })?.user?.id;
       if (userId) {
         await admin
           .from("referrers")
