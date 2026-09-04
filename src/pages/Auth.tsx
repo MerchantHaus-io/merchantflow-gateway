@@ -249,8 +249,21 @@ const Auth = () => {
             </svg>
             Continue with Google
           </Button>
+
+          <p className="mt-6 text-center text-xs text-muted-foreground">
+            Referral partner?{' '}
+            <Link to="/affiliate" className="font-medium text-foreground underline underline-offset-4">
+              Open your partner dashboard
+            </Link>{' '}
+            or{' '}
+            <Link to="/affiliate/signup" className="font-medium text-foreground underline underline-offset-4">
+              become a partner
+            </Link>
+            .
+          </p>
         </Tabs>
       </div>
+
 
     </main>
   );
