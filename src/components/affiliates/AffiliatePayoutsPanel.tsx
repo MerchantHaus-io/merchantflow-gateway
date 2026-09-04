@@ -128,7 +128,7 @@ export function AffiliatePayoutsPanel() {
       supabase.from("commission_periods").select("id, period_start, period_end").order("period_end", { ascending: false }).limit(24),
       supabase
         .from("referrer_ledger_entries")
-        .select("id, referrer_id, account_id, amount, status, period_start, period_end, payable_on, description, entry_type")
+        .select("id, referrer_id, account_id, amount, status, period_start, period_end, payable_on, description, entry_type, payout_run_id")
         .neq("status", "void")
         .order("period_end", { ascending: false, nullsFirst: false })
         .limit(500),
