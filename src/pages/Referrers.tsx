@@ -210,9 +210,23 @@ export default function Referrers() {
     });
     setDeleting(false);
     if (error || data?.error) {
-      toast.error(data?.error || error?.message || "Failed to delete affiliate");
+      // A non-2xx response makes invoke() throw, so `data` is null and the
+      // only message left is the generic "non-2xx status code". Read the real
+      // reason out of the response body attached to the error.
+      let message = data?.error as string | undefined;
+      const ctx = (error as { context?: Response } | null)?.context;
+      if (!message && ctx && typeof ctx.json === "function") {
+        try {
+          const body = await ctx.clone().json();
+          if (body?.error) message = body.error as string;
+        } catch {
+          /* not JSON — fall back to the generic message */
+        }
+      }
+      toast.error(message || error?.message || "Failed to delete affiliate");
       return;
     }
+
     setDeleteTarget(null);
     toast.success(data?.message ?? `${row.full_name} deleted`);
     load();
