@@ -352,12 +352,12 @@ export default function Referrers() {
             <TableBody>
               {loading && (
                 <TableRow>
-                  <TableCell colSpan={12} className="text-center text-muted-foreground py-8">Loading…</TableCell>
+                  <TableCell colSpan={13} className="text-center text-muted-foreground py-8">Loading…</TableCell>
                 </TableRow>
               )}
               {!loading && rows.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={12} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={13} className="text-center text-muted-foreground py-8">
                     No affiliates yet. Click <strong>Add Affiliate</strong> to create the first one.
                   </TableCell>
                 </TableRow>
