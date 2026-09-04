@@ -1,6 +1,8 @@
 import {
   Activity,
   BadgeDollarSign,
+  Banknote,
+
   BarChart3,
   Bell,
   BookMarked,
