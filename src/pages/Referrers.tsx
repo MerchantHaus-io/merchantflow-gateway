@@ -5,6 +5,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { AffiliatePayoutsPanel } from "@/components/affiliates/AffiliatePayoutsPanel";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import {
@@ -336,6 +337,8 @@ export default function Referrers() {
           {totals.attribution > 0 && <Badge variant="outline">{totals.attribution} attribution only</Badge>}
           <Badge variant="outline">{totals.total} total</Badge>
         </div>
+
+        <AffiliatePayoutsPanel />
 
 
         <Card className="overflow-hidden">
