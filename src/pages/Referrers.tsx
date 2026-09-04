@@ -398,6 +398,14 @@ export default function Referrers() {
                       placeholder="—"
                     />
                   </TableCell>
+                  <TableCell>
+                    <Input
+                      value={row.notes ?? ""}
+                      onChange={(e) => update(row.id, { notes: e.target.value })}
+                      className="h-8 w-40"
+                      placeholder="—"
+                    />
+                  </TableCell>
                   <TableCell className="text-right">
                     <Input
                       type="number"
