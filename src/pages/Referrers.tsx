@@ -93,7 +93,7 @@ export default function Referrers() {
         access_token: data.access_token,
         refresh_token: data.refresh_token,
         referrer_name: data.referrer_name ?? row.full_name,
-        referrer_email: data.referrer_email ?? row.email,
+        referrer_email: data.referrer_email ?? row.email ?? "",
         ts: Date.now(),
       };
       // Use a per-handoff key so multiple opens don't race.
