@@ -596,6 +596,69 @@ export function AffiliatePayoutsPanel() {
       </Card>
 
       <Card className="overflow-hidden">
+        <div className="px-4 py-3 border-b flex items-center gap-2">
+          <CalendarRange className="h-4 w-4 text-muted-foreground" />
+          <h2 className="text-sm font-semibold">Month-by-month earnings (gateway only)</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Partner</TableHead>
+                <TableHead>Month</TableHead>
+                <TableHead>Merchant</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Released</TableHead>
+                <TableHead className="text-right">Partner share</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                    Loading earnings…
+                  </TableCell>
+                </TableRow>
+              ) : months.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                    Nothing accrued yet. Assign an affiliate to a live gateway account, then build the outstanding months.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                balances.flatMap((b) =>
+                  (monthsByPartner.get(b.referrer_id) ?? []).map((m, i) => (
+                    <TableRow key={m.id}>
+                      <TableCell className="text-sm">
+                        {i === 0 ? <span className="font-medium">{b.full_name}</span> : <span className="text-muted-foreground">↳</span>}
+                      </TableCell>
+                      <TableCell className="text-sm whitespace-nowrap">
+                        {m.period_end ? format(parseISO(m.period_end), "MMM yyyy") : "—"}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {(m.description ?? "").replace(/^.*—\s*/, "") || "—"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={m.status === "paid" ? "secondary" : "outline"} className="text-[10px]">
+                          {m.status === "pending" ? "On hold" : m.status === "payable" ? "Ready to pay" : m.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                        {m.payable_on ? format(parseISO(m.payable_on), "d MMM yyyy") : "—"}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums font-medium">{fmtUsd(m.amount)}</TableCell>
+                    </TableRow>
+                  )),
+                )
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
+
+
+
+      <Card className="overflow-hidden">
         <div className="px-4 py-3 border-b">
           <h2 className="text-sm font-semibold">Payout runs</h2>
         </div>
