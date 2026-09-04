@@ -17,7 +17,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
-import { Banknote, CalendarRange, Landmark, Loader2, RefreshCw, Wallet } from "lucide-react";
+import { AlertTriangle, Banknote, CalendarRange, CheckCircle2, Download, Landmark, Loader2, RefreshCw, Scale, Wallet } from "lucide-react";
 import {
   DEFAULT_BONUS_AMOUNT,
   DEFAULT_BONUS_MILESTONE,
@@ -26,6 +26,8 @@ import {
   clearsMinimum,
   fmtUsd,
   payableOnFor,
+  reconcilePayoutRun,
+  RECONCILE_VERDICT_LABEL,
 } from "@/lib/affiliatePayouts";
 
 
@@ -74,6 +76,8 @@ interface MonthRow {
   payable_on: string | null;
   description: string | null;
   entry_type: string;
+  payout_run_id: string | null;
+
 }
 
 
@@ -128,7 +132,7 @@ export function AffiliatePayoutsPanel() {
       supabase.from("commission_periods").select("id, period_start, period_end").order("period_end", { ascending: false }).limit(24),
       supabase
         .from("referrer_ledger_entries")
-        .select("id, referrer_id, account_id, amount, status, period_start, period_end, payable_on, description, entry_type")
+        .select("id, referrer_id, account_id, amount, status, period_start, period_end, payable_on, description, entry_type, payout_run_id")
         .neq("status", "void")
         .order("period_end", { ascending: false, nullsFirst: false })
         .limit(500),
@@ -172,6 +176,71 @@ export function AffiliatePayoutsPanel() {
     }
     return map;
   }, [months]);
+
+  /** Newest run that actually released money (or is queued to). */
+  const latestRun = useMemo(
+    () => runs.find((r) => r.status !== "void") ?? null,
+    [runs],
+  );
+
+  const partnerName = useCallback(
+    (id: string) => balances.find((b) => b.referrer_id === id)?.full_name ?? "Unknown partner",
+    [balances],
+  );
+
+  /**
+   * Reconciliation: what the month-by-month table says each partner was owed at
+   * the run's pay date versus what the run actually released to them.
+   */
+  const reconciliation = useMemo(() => {
+    if (!latestRun) return null;
+    const payDate = (latestRun.paid_at ?? latestRun.period_end ?? "").slice(0, 10);
+    if (!payDate) return null;
+    const minimums = new Map(
+      balances.map((b) => [b.referrer_id, num(b.minimum_payout) || DEFAULT_MINIMUM_PAYOUT]),
+    );
+    return reconcilePayoutRun(months, latestRun.id, payDate, minimums);
+  }, [latestRun, months, balances]);
+
+  const exportReconciliation = () => {
+    if (!reconciliation) return;
+    const header = [
+      "Partner",
+      "Due at pay date",
+      "Expected in run",
+      "Released in run",
+      "Variance",
+      "Held below minimum",
+      "Minimum",
+      "Result",
+      "Months missing from run",
+      "Months released early",
+    ];
+    const lines = reconciliation.rows.map((r) =>
+      [
+        partnerName(r.referrerId),
+        r.due.toFixed(2),
+        r.expected.toFixed(2),
+        r.released.toFixed(2),
+        r.variance.toFixed(2),
+        r.heldBack.toFixed(2),
+        r.minimum.toFixed(2),
+        RECONCILE_VERDICT_LABEL[r.verdict],
+        r.missingEntryIds.length,
+        r.earlyEntryIds.length,
+      ]
+        .map((c) => `"${String(c).replace(/"/g, '""')}"`)
+        .join(","),
+    );
+    const csv = [header.join(","), ...lines].join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `payout-reconciliation-${reconciliation.payDate}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
 
   /**
    * Build (or backdate) every month a referred merchant has been billed for the
@@ -657,6 +726,114 @@ export function AffiliatePayoutsPanel() {
       </Card>
 
 
+
+      {reconciliation && latestRun && (
+        <Card className="overflow-hidden">
+          <div className="px-4 py-3 border-b flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Scale className="h-4 w-4 text-muted-foreground" />
+              <h2 className="text-sm font-semibold">
+                Reconciliation — latest payout run ({periodLabel(latestRun.period_start, latestRun.period_end)})
+              </h2>
+              {reconciliation.mismatches.length === 0 ? (
+                <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-300 dark:text-emerald-400">
+                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                  All partners reconcile
+                </Badge>
+              ) : (
+                <Badge variant="destructive" className="text-[10px]">
+                  <AlertTriangle className="h-3 w-3 mr-1" />
+                  {reconciliation.mismatches.length} mismatch{reconciliation.mismatches.length === 1 ? "" : "es"}
+                </Badge>
+              )}
+            </div>
+            <Button size="sm" variant="ghost" onClick={exportReconciliation}>
+              <Download className="h-4 w-4 mr-1" />
+              Export CSV
+            </Button>
+          </div>
+          <div className="px-4 py-2 text-xs text-muted-foreground border-b">
+            Compared as at {format(parseISO(reconciliation.payDate), "d MMM yyyy")}. A month counts as owed once its
+            30-day hold has passed on or before that date; anything under a partner\u2019s minimum is held over, not missing.
+          </div>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Partner</TableHead>
+                  <TableHead className="text-right">Owed at pay date</TableHead>
+                  <TableHead className="text-right">Expected in run</TableHead>
+                  <TableHead className="text-right">Released in run</TableHead>
+                  <TableHead className="text-right">Difference</TableHead>
+                  <TableHead>Result</TableHead>
+                  <TableHead>Detail</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {reconciliation.rows.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center text-muted-foreground py-6">
+                      Nothing to reconcile for this run yet.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  reconciliation.rows.map((r) => (
+                    <TableRow key={r.referrerId} className={r.variance !== 0 ? "bg-destructive/5" : undefined}>
+                      <TableCell className="text-sm font-medium">{partnerName(r.referrerId)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{fmtUsd(r.due)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{fmtUsd(r.expected)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{fmtUsd(r.released)}</TableCell>
+                      <TableCell
+                        className={`text-right tabular-nums font-semibold ${
+                          r.variance === 0 ? "" : r.variance < 0 ? "text-amber-600 dark:text-amber-400" : "text-destructive"
+                        }`}
+                      >
+                        {r.variance === 0 ? "\u2014" : fmtUsd(r.variance)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={r.verdict === "match" ? "outline" : r.verdict === "held" ? "secondary" : "destructive"}
+                          className="text-[10px]"
+                        >
+                          {RECONCILE_VERDICT_LABEL[r.verdict]}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {r.missingEntryIds.length > 0 && (
+                          <div>
+                            {r.missingEntryIds.length} month{r.missingEntryIds.length === 1 ? "" : "s"} owed but not in the run
+                          </div>
+                        )}
+                        {r.earlyEntryIds.length > 0 && (
+                          <div>
+                            {r.earlyEntryIds.length} month{r.earlyEntryIds.length === 1 ? "" : "s"} released before the hold ended
+                          </div>
+                        )}
+                        {r.heldBack > 0 && <div>{fmtUsd(r.heldBack)} under the {fmtUsd(r.minimum)} minimum</div>}
+                        {r.missingEntryIds.length === 0 && r.earlyEntryIds.length === 0 && r.heldBack === 0 && "\u2014"}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+              {reconciliation.rows.length > 0 && (
+                <TableBody>
+                  <TableRow className="font-semibold border-t">
+                    <TableCell>Total</TableCell>
+                    <TableCell className="text-right tabular-nums">{fmtUsd(reconciliation.totals.due)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fmtUsd(reconciliation.totals.expected)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fmtUsd(reconciliation.totals.released)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fmtUsd(reconciliation.totals.variance)}</TableCell>
+                    <TableCell colSpan={2} className="text-xs font-normal text-muted-foreground">
+                      {fmtUsd(reconciliation.totals.heldBack)} held over to the next run
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              )}
+            </Table>
+          </div>
+        </Card>
+      )}
 
       <Card className="overflow-hidden">
         <div className="px-4 py-3 border-b">
