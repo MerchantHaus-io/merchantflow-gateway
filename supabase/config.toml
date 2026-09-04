@@ -172,3 +172,8 @@ verify_jwt = true
 # Admin-only affiliate removal (deletes the referrers row and its login).
 [functions.delete-referrer]
 verify_jwt = true
+
+# Public self-serve affiliate registration. Creates a pending (inactive)
+# affiliate record; an admin approves it before portal access is granted.
+[functions.affiliate-signup]
+verify_jwt = false
