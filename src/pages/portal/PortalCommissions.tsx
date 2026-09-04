@@ -286,8 +286,9 @@ export default function PortalCommissions() {
           </div>
           <div className="text-2xl font-semibold mt-1 tabular-nums">{fmt(projection.liveMonthly)}</div>
           <div className="text-[10px] text-muted-foreground mt-1">
-            from {projection.liveCount} live account{projection.liveCount === 1 ? "" : "s"} at 50% rev share, capped at {fmt(monthlyCap)}/mo each
+            from {projection.liveCount} live account{projection.liveCount === 1 ? "" : "s"}, based on their latest gateway billing month, capped at {fmt(monthlyCap)}/mo each
           </div>
+
         </Card>
         <Card className="p-4 bg-muted/30">
           <div className="text-xs uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
