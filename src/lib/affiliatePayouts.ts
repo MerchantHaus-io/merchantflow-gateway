@@ -154,3 +154,66 @@ export const STATUS_LABEL: Record<string, string> = {
   paid: "Paid",
   void: "Void",
 };
+
+export interface RunCandidateEntry {
+  id: string;
+  referrer_id: string;
+  amount: number | string | null;
+  payable_on?: string | null;
+  period_start?: string | null;
+  period_end?: string | null;
+}
+
+export interface RunSelection {
+  /** Ledger entry ids that belong in the run. */
+  entryIds: string[];
+  /** Partner id -> amount included for that partner. */
+  perPartner: Map<string, number>;
+  total: number;
+  /** Partners held back because they have not reached their minimum. */
+  heldBack: { referrerId: string; amount: number; minimum: number }[];
+}
+
+/**
+ * Pick which ready-to-pay credits go into a payout run paid on `payDate`.
+ * A credit joins the run once its release date has arrived, and a partner is
+ * only included once their included total clears their own minimum.
+ */
+export const selectRunEntries = (
+  entries: RunCandidateEntry[],
+  minimums: Map<string, number>,
+  payDate: string,
+): RunSelection => {
+  const cutoff = payDate.slice(0, 10);
+  const buckets = new Map<string, { ids: string[]; amount: number }>();
+  for (const e of entries) {
+    const due = (e.payable_on ?? "").slice(0, 10);
+    if (due && due > cutoff) continue;
+    const bucket = buckets.get(e.referrer_id) ?? { ids: [], amount: 0 };
+    bucket.ids.push(e.id);
+    bucket.amount += num(e.amount);
+    buckets.set(e.referrer_id, bucket);
+  }
+
+  const selection: RunSelection = { entryIds: [], perPartner: new Map(), total: 0, heldBack: [] };
+  for (const [referrerId, bucket] of buckets) {
+    const minimum = num(minimums.get(referrerId)) || DEFAULT_MINIMUM_PAYOUT;
+    const amount = Math.round(bucket.amount * 100) / 100;
+    if (!clearsMinimum(amount, minimum)) {
+      selection.heldBack.push({ referrerId, amount, minimum });
+      continue;
+    }
+    selection.entryIds.push(...bucket.ids);
+    selection.perPartner.set(referrerId, amount);
+    selection.total += amount;
+  }
+  selection.total = Math.round(selection.total * 100) / 100;
+  return selection;
+};
+
+export const RUN_STATUS_LABEL: Record<string, string> = {
+  draft: "Scheduled",
+  approved: "Approved",
+  paid: "Paid",
+  void: "Cancelled",
+};
