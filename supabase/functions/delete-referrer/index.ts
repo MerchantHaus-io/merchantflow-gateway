@@ -109,7 +109,7 @@ serve(async (req) => {
     // Detach attribution so tagged records survive the delete. Every table
     // below points at referrers with ON DELETE NO ACTION, so a leftover
     // reference makes the delete fail outright.
-    for (const table of ["opportunities", "accounts", "applications", "merchants"] as const) {
+    for (const table of ["opportunities", "accounts", "applications", "merchants", "partner_leads"] as const) {
       const { error: detachError } = await supabaseAdmin
         .from(table)
         .update({ referrer_id: null })
