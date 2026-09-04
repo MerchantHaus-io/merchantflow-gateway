@@ -460,6 +460,15 @@ const LiveBilling = () => {
                         )}
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
+                        <ReferrerAssignField
+                          table="accounts"
+                          recordId={g.account_id}
+                          value={g.account?.referrer_id ?? null}
+                          invalidateKeys={[["live-billing-opportunities"]]}
+                          className="w-[190px]"
+                        />
+                      </TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-1">
                           <Tooltip>
                             <TooltipTrigger asChild>
