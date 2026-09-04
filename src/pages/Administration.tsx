@@ -101,8 +101,22 @@ const Administration = () => {
         {/* Team & Roles Management */}
         <UserRoleManager />
 
-        {/* Lead Referrers Directory */}
-        <LeadReferrerManager />
+        {/* Referral attribution now lives with Affiliates */}
+        <div className="rounded-md border border-border p-4 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium">Referral names</p>
+            <p className="text-xs text-muted-foreground">
+              Referral partners and referral-only names are managed in one place now.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate("/admin/affiliates")}
+            className="text-xs underline underline-offset-4 text-muted-foreground hover:text-foreground shrink-0"
+          >
+            Open Affiliates →
+          </button>
+        </div>
+
 
         {/* Google Drive Backups */}
         <BackupStatusCard />
