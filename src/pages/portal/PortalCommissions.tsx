@@ -318,8 +318,11 @@ export default function PortalCommissions() {
                     <div className="min-w-0">
                       <div className="font-medium truncate">{a.company_name}</div>
                       <div className="text-xs text-muted-foreground mt-0.5">
-                        {fmt(a.monthly_volume)} est. monthly volume{a.estimated ? " · estimate" : ""}
+                        {a.awaitingGateway
+                          ? "Awaiting first gateway invoice"
+                          : "Based on the latest gateway billing month"}
                       </div>
+
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge
