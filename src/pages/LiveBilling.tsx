@@ -310,6 +310,15 @@ const LiveBilling = () => {
                       {g.contact?.first_name} {g.contact?.last_name}
                       {g.contact?.email && ` · ${g.contact.email}`}
                     </p>
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Affiliate</span>
+                      <ReferrerAssignField
+                        table="accounts"
+                        recordId={g.account_id}
+                        value={g.account?.referrer_id ?? null}
+                        invalidateKeys={[["live-billing-opportunities"]]}
+                      />
+                    </div>
                     {(() => {
                       const lead = g.opportunities?.[0] as any;
                       return (lead?.pricing_plan || lead?.gateway_tier) ? (
