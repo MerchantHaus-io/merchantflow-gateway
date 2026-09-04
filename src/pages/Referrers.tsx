@@ -60,6 +60,8 @@ export default function Referrers() {
   const [creating, setCreating] = useState(false);
   const [createdCredentials, setCreatedCredentials] = useState<{ email: string; password: string } | null>(null);
   const [impersonating, setImpersonating] = useState<string | null>(null);
+  const [promotingId, setPromotingId] = useState<string | null>(null);
+
 
   const handleImpersonate = async (row: ReferrerRow) => {
     // Open the tab synchronously, while the click's user-activation context is
