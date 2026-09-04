@@ -104,7 +104,37 @@ export default function PortalDashboard() {
 
   const openOpps = (opportunities ?? []).filter((o) => !o.outcome_status);
   const closedOpps = (opportunities ?? []).filter((o) => !!o.outcome_status);
-  const liveCount = (liveMerchants ?? []).filter((m) => m.is_live).length;
+
+  // Accounts that are live and billing. A merchant is live either because a
+  // merchant record says so, or because the deal on that account was won —
+  // the latter is what the internal Live & Billing view reads, so the two
+  // stay in step.
+  const liveAccounts = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; since: string }>();
+    for (const o of opportunities ?? []) {
+      if (o.outcome_status !== "closed_won" || !o.account) continue;
+      const since = o.outcome_closed_at ?? o.stage_entered_at ?? o.updated_at;
+      const existing = map.get(o.account.id);
+      if (!existing || since < existing.since) {
+        map.set(o.account.id, { id: o.account.id, name: o.account.name, since });
+      }
+    }
+    for (const m of liveMerchants ?? []) {
+      if (!m.is_live) continue;
+      const key = m.account_id ?? m.id;
+      if (!map.has(key)) {
+        map.set(key, {
+          id: key,
+          name: m.dba_name || m.legal_entity_name || "Merchant",
+          since: m.created_at,
+        });
+      }
+    }
+    return [...map.values()].sort((a, b) => (a.since < b.since ? 1 : -1));
+  }, [opportunities, liveMerchants]);
+
+  const liveCount = liveAccounts.length;
+
 
   if (!referrerId) {
     return (
@@ -204,32 +234,31 @@ export default function PortalDashboard() {
           Live & Billing Accounts
         </h2>
         <Card className="overflow-hidden border-emerald-200 dark:border-emerald-900">
-          {merchantsLoading ? (
+          {merchantsLoading || oppsLoading ? (
             <div className="p-6 space-y-2">
               <Skeleton className="h-5 w-1/3" />
               <Skeleton className="h-4 w-1/2" />
             </div>
-          ) : (liveMerchants ?? []).filter((m) => m.is_live).length === 0 ? (
+          ) : liveAccounts.length === 0 ? (
             <div className="p-6 text-sm text-muted-foreground">
               No live accounts yet. Once a referred merchant goes live, they'll appear here and start generating commission.
             </div>
           ) : (
             <ul className="divide-y">
-              {(liveMerchants ?? [])
-                .filter((m) => m.is_live)
-                .map((m) => (
-                  <li key={m.id} className="px-4 py-3 flex items-center justify-between gap-3">
-                    <div>
-                      <div className="font-medium">{m.dba_name || m.legal_entity_name || "Merchant"}</div>
-                      <div className="text-xs text-muted-foreground">
-                        Live since {format(new Date(m.created_at), "MMM d, yyyy")}
-                      </div>
+              {liveAccounts.map((a) => (
+                <li key={a.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                  <div>
+                    <div className="font-medium">{a.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      Live since {format(new Date(a.since), "MMM d, yyyy")}
                     </div>
-                    <Badge className="bg-emerald-600 hover:bg-emerald-700">Live</Badge>
-                  </li>
-                ))}
+                  </div>
+                  <Badge className="bg-emerald-600 hover:bg-emerald-700">Live</Badge>
+                </li>
+              ))}
             </ul>
           )}
+
         </Card>
       </section>
 
