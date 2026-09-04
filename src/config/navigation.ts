@@ -167,6 +167,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { title: "Gateway Accounts", mobileTitle: "Gateways", url: "/admin/gateway-accounts", icon: BadgeDollarSign, description: "NMI partner gateway account inventory" },
       { title: "Integrations", mobileTitle: "Integrate", url: "/integrations", icon: Cloud, description: "Connected services & API providers" },
       { title: "Affiliates", url: "/admin/affiliates", icon: Handshake, description: "External affiliate partners & commissions" },
+      { title: "Payout Runs", url: "/admin/payout-runs", icon: Banknote, description: "Schedule and record affiliate payments" },
       { title: "Data Export", mobileTitle: "Export", url: "/admin/data-export", icon: Download, description: "Export opportunity data" },
       { title: "Merchant Portal Guide", mobileTitle: "Portal Guide", url: "/tools/gateway-guide", icon: BookMarked, description: "Interactive portal walkthrough" },
       { title: "Deployment", mobileTitle: "Deploy", url: "/tools/netlify", icon: Cloud, description: "Deployment audit & fix prompts" },
