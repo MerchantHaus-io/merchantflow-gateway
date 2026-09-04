@@ -37,7 +37,26 @@ serve(async (req) => {
 
     const token = authHeader.replace("Bearer ", "");
     const { data: { user: caller }, error: authError } = await supabaseAdmin.auth.getUser(token);
-    if (authError || !caller || !(caller.email ?? "").toLowerCase().endsWith("@merchanthaus.io")) {
+    if (authError || !caller) {
+      console.error("delete-referrer: caller not authenticated", authError?.message);
+      return json({ error: "Unauthorized" }, 401);
+    }
+
+    // Admin = a @merchanthaus.io address OR an admin row in user_roles, so
+    // outside admins (e.g. the app author) are not locked out.
+    const callerEmail = (caller.email ?? "").toLowerCase();
+    let isAdmin = callerEmail.endsWith("@merchanthaus.io");
+    if (!isAdmin) {
+      const { data: roleRow } = await supabaseAdmin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", caller.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      isAdmin = !!roleRow;
+    }
+    if (!isAdmin) {
+      console.error("delete-referrer: admin access required for", callerEmail);
       return json({ error: "Admin access required" }, 403);
     }
 
@@ -71,15 +90,41 @@ serve(async (req) => {
       );
     }
 
-    // Detach attribution so tagged deals survive the delete.
-    const { error: detachError } = await supabaseAdmin
-      .from("opportunities")
-      .update({ referrer_id: null })
+    const { count: ledgerCount, error: ledgerError } = await supabaseAdmin
+      .from("referrer_ledger_entries")
+      .select("id", { count: "exact", head: true })
       .eq("referrer_id", referrer_id);
-    if (detachError) return json({ error: detachError.message }, 400);
+    if (ledgerError) return json({ error: ledgerError.message }, 400);
+    if ((ledgerCount ?? 0) > 0) {
+      return json(
+        {
+          error:
+            `${referrer.full_name} has ${ledgerCount} payout ledger entry/entries. ` +
+            `Switch them to inactive instead of deleting so payout history stays intact.`,
+        },
+        409,
+      );
+    }
+
+    // Detach attribution so tagged records survive the delete. Every table
+    // below points at referrers with ON DELETE NO ACTION, so a leftover
+    // reference makes the delete fail outright.
+    for (const table of ["opportunities", "accounts", "applications", "merchants"] as const) {
+      const { error: detachError } = await supabaseAdmin
+        .from(table)
+        .update({ referrer_id: null })
+        .eq("referrer_id", referrer_id);
+      if (detachError) {
+        console.error(`delete-referrer: detach from ${table} failed`, detachError.message);
+        return json({ error: `Could not unlink ${table}: ${detachError.message}` }, 400);
+      }
+    }
 
     const { error: deleteError } = await supabaseAdmin.from("referrers").delete().eq("id", referrer_id);
-    if (deleteError) return json({ error: deleteError.message }, 400);
+    if (deleteError) {
+      console.error("delete-referrer: row delete failed", deleteError.message);
+      return json({ error: deleteError.message }, 400);
+    }
 
     if (referrer.auth_user_id) {
       const { error: userError } = await supabaseAdmin.auth.admin.deleteUser(referrer.auth_user_id);
