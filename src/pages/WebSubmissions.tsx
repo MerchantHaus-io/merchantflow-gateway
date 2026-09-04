@@ -1201,12 +1201,13 @@ export default function WebSubmissions() {
                   </div>
                 )}
                 <div className="space-y-2">
-                  <Label>Referrer (from directory)</Label>
+                  <Label>Referred by (affiliate)</Label>
                   <LeadReferrerSelect
                     value={referralPrompt.leadReferrerId}
                     onChange={(id) => setReferralPrompt(prev => prev ? { ...prev, leadReferrerId: id } : null)}
                   />
-                  <p className="text-[11px] text-muted-foreground">Optional — links the deal to a managed bank/partner contact.</p>
+                  <p className="text-[11px] text-muted-foreground">Optional — links the deal to an affiliate or bank/partner contact.</p>
+
                 </div>
                 <div className="flex justify-end gap-2 pt-2 border-t border-border">
                   <Button variant="outline" onClick={() => setReferralPrompt(null)}>Cancel</Button>
