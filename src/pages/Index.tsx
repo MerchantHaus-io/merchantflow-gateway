@@ -8,6 +8,7 @@ import { ACTIVE_PIPELINE_STAGES, getServiceType, ServiceType, OnboardingWizardSt
 import { useToast } from "@/hooks/use-toast";
 import { toast as sonnerToast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { syncAccountReferrerForOpportunity } from "@/lib/referrerAssignment";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTasks } from "@/contexts/TasksContext";
 import DateRangeFilter from "@/components/DateRangeFilter";
@@ -750,6 +751,11 @@ const Index = () => {
     // Only write to DB if there are actual opportunity-level changes
     if (Object.keys(dbUpdates).length > 0) {
       const { error } = await supabase.from('opportunities').update(dbUpdates).eq('id', id);
+      if (!error && updates.stage === 'closed_won') {
+        // Live deal: hand the partner over to the account so the affiliate
+        // keeps earning on the merchant they introduced.
+        void syncAccountReferrerForOpportunity(id, 'closed_won');
+      }
       if (error) {
         // Roll the optimistic move back rather than leaving the board showing a
         // position the database never accepted.
