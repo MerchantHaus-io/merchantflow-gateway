@@ -130,3 +130,84 @@ describe("selectRunEntries", () => {
     expect(sel.perPartner.get("p2")).toBe(20);
   });
 });
+
+describe("reconcilePayoutRun", () => {
+  const minimums = new Map([["p1", 50]]);
+
+  it("reports a match when the run released everything that was due", () => {
+    const report = reconcilePayoutRun(
+      [
+        { id: "a", referrer_id: "p1", amount: 100, status: "paid", payable_on: "2026-07-30", payout_run_id: "run1" },
+        { id: "b", referrer_id: "p1", amount: 50, status: "paid", payable_on: "2026-08-30", payout_run_id: "run1" },
+      ],
+      "run1",
+      "2026-08-31",
+      minimums,
+    );
+    expect(report.totals.released).toBe(150);
+    expect(report.totals.variance).toBe(0);
+    expect(report.mismatches).toHaveLength(0);
+    expect(report.rows[0].verdict).toBe("match");
+  });
+
+  it("flags a month that was due but left out of the run", () => {
+    const report = reconcilePayoutRun(
+      [
+        { id: "a", referrer_id: "p1", amount: 100, status: "paid", payable_on: "2026-07-30", payout_run_id: "run1" },
+        { id: "b", referrer_id: "p1", amount: 60, status: "payable", payable_on: "2026-08-01", payout_run_id: null },
+      ],
+      "run1",
+      "2026-08-31",
+      minimums,
+    );
+    const row = report.rows[0];
+    expect(row.due).toBe(160);
+    expect(row.released).toBe(100);
+    expect(row.variance).toBe(-60);
+    expect(row.verdict).toBe("short");
+    expect(row.missingEntryIds).toEqual(["b"]);
+    expect(report.mismatches).toHaveLength(1);
+  });
+
+  it("flags a credit released before its hold expired", () => {
+    const report = reconcilePayoutRun(
+      [
+        { id: "a", referrer_id: "p1", amount: 80, status: "paid", payable_on: "2026-09-30", payout_run_id: "run1" },
+      ],
+      "run1",
+      "2026-08-31",
+      minimums,
+    );
+    const row = report.rows[0];
+    expect(row.due).toBe(0);
+    expect(row.released).toBe(80);
+    expect(row.verdict).toBe("over");
+    expect(row.earlyEntryIds).toEqual(["a"]);
+  });
+
+  it("treats a below-minimum balance as held rather than a mismatch", () => {
+    const report = reconcilePayoutRun(
+      [{ id: "a", referrer_id: "p1", amount: 20, status: "payable", payable_on: "2026-08-01", payout_run_id: null }],
+      "run1",
+      "2026-08-31",
+      minimums,
+    );
+    expect(report.rows[0].verdict).toBe("held");
+    expect(report.rows[0].heldBack).toBe(20);
+    expect(report.mismatches).toHaveLength(0);
+  });
+
+  it("ignores credits settled by an earlier run", () => {
+    const report = reconcilePayoutRun(
+      [
+        { id: "old", referrer_id: "p1", amount: 500, status: "paid", payable_on: "2026-06-30", payout_run_id: "run0" },
+        { id: "a", referrer_id: "p1", amount: 100, status: "paid", payable_on: "2026-07-30", payout_run_id: "run1" },
+      ],
+      "run1",
+      "2026-08-31",
+      minimums,
+    );
+    expect(report.totals.due).toBe(100);
+    expect(report.totals.variance).toBe(0);
+  });
+});
