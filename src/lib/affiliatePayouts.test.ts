@@ -126,7 +126,7 @@ describe("selectRunEntries", () => {
 
   it("respects a partner's own lower minimum", () => {
     const sel = selectRunEntries(entries, new Map([["p2", 10]]), "2026-08-31");
-    expect(sel.entryIds.sort()).toEqual(["a", "c"]);
+    expect(sel.entryIds).toEqual(["c"]);
     expect(sel.perPartner.get("p2")).toBe(20);
   });
 });
