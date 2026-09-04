@@ -92,7 +92,7 @@ interface PartnerRow {
 }
 
 export default function PayoutRuns() {
-  const { isAdmin, isStaff, loading: roleLoading } = useUserRole();
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const [runs, setRuns] = useState<RunRow[]>([]);
   const [entries, setEntries] = useState<EntryRow[]>([]);
   const [partners, setPartners] = useState<PartnerRow[]>([]);
@@ -279,7 +279,7 @@ export default function PayoutRuns() {
     );
   }
 
-  if (!isAdmin && !isStaff) {
+  if (!isAdmin) {
     return (
       <AppLayout>
         <div className="p-6 text-sm text-muted-foreground">You do not have access to partner payouts.</div>
