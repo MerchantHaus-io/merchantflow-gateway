@@ -2996,6 +2996,81 @@ export type Database = {
           },
         ]
       }
+      partner_leads: {
+        Row: {
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          created_by: string | null
+          expected_close_date: string | null
+          expected_deals: number
+          expected_monthly_gateway: number
+          id: string
+          notes: string | null
+          owner_email: string | null
+          partner_name: string
+          referrer_id: string | null
+          source: string | null
+          stage: string
+          updated_at: string
+          win_likelihood: number
+        }
+        Insert: {
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          expected_close_date?: string | null
+          expected_deals?: number
+          expected_monthly_gateway?: number
+          id?: string
+          notes?: string | null
+          owner_email?: string | null
+          partner_name: string
+          referrer_id?: string | null
+          source?: string | null
+          stage?: string
+          updated_at?: string
+          win_likelihood?: number
+        }
+        Update: {
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          expected_close_date?: string | null
+          expected_deals?: number
+          expected_monthly_gateway?: number
+          id?: string
+          notes?: string | null
+          owner_email?: string | null
+          partner_name?: string
+          referrer_id?: string | null
+          source?: string | null
+          stage?: string
+          updated_at?: string
+          win_likelihood?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_leads_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "referrer_balances"
+            referencedColumns: ["referrer_id"]
+          },
+          {
+            foreignKeyName: "partner_leads_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "referrers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       principals: {
         Row: {
           application_id: string
