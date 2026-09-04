@@ -136,8 +136,10 @@ export default function Referrers() {
 
   const totals = useMemo(() => {
     const active = rows.filter((r) => r.active).length;
-    return { active, total: rows.length };
+    const attribution = rows.filter((r) => r.attribution_only).length;
+    return { active, attribution, total: rows.length };
   }, [rows]);
+
 
   const update = (id: string, patch: Partial<ReferrerRow>) =>
     setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)));
