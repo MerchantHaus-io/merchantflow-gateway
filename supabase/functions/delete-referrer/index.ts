@@ -73,22 +73,10 @@ serve(async (req) => {
     if (loadError) return json({ error: loadError.message }, 400);
     if (!referrer) return json({ error: "Affiliate not found" }, 404);
 
-    const { count: commissionCount, error: countError } = await supabaseAdmin
-      .from("commission_records")
-      .select("id", { count: "exact", head: true })
-      .eq("referrer_id", referrer_id);
+    // Commission history is tied to the account, not the affiliate, so the
+    // guard that matters is the payout ledger, checked next. (commission_records
+    // has no referrer_id column — querying one made every delete fail.)
 
-    if (countError) return json({ error: countError.message }, 400);
-    if ((commissionCount ?? 0) > 0) {
-      return json(
-        {
-          error:
-            `${referrer.full_name} has ${commissionCount} commission record(s). ` +
-            `Switch them to inactive instead of deleting so payout history stays intact.`,
-        },
-        409,
-      );
-    }
 
     const { count: ledgerCount, error: ledgerError } = await supabaseAdmin
       .from("referrer_ledger_entries")
