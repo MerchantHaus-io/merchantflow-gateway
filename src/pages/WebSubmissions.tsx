@@ -521,7 +521,8 @@ export default function WebSubmissions() {
            
           ...(appReferrerId ? { referrer_id: appReferrerId } as any : {}),
            
-          ...(leadReferrerId ? { lead_referrer_id: leadReferrerId } as any : {}),
+          ...(!appReferrerId && leadReferrerId ? { referrer_id: leadReferrerId } as any : {}),
+
            
           ...(autoTier ? { gateway_tier: autoTier } as any : {}),
            
