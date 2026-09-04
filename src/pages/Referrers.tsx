@@ -631,6 +631,73 @@ export default function Referrers() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Add an attribution-only name (no login, no payouts) */}
+      <Dialog open={nameOnlyOpen} onOpenChange={setNameOnlyOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add name only</DialogTitle>
+            <DialogDescription>
+              Records who referred a deal. No login, no commission and no payouts — you can promote them to a full
+              affiliate later.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="name-only">Full name</Label>
+              <Input
+                id="name-only"
+                value={nameOnlyForm.full_name}
+                onChange={(e) => setNameOnlyForm({ ...nameOnlyForm, full_name: e.target.value })}
+                placeholder="Jane Smith"
+              />
+            </div>
+            <div>
+              <Label htmlFor="name-only-notes">Notes (optional)</Label>
+              <Input
+                id="name-only-notes"
+                value={nameOnlyForm.notes}
+                onChange={(e) => setNameOnlyForm({ ...nameOnlyForm, notes: e.target.value })}
+                placeholder="Bank, introducer, how you know them…"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setNameOnlyOpen(false)} disabled={creating}>Cancel</Button>
+            <Button onClick={handleCreateNameOnly} disabled={creating}>
+              <Plus className="h-4 w-4 mr-2" />
+              {creating ? "Adding…" : "Add name"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {deleteTarget?.full_name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget?.attribution_only && !deleteTarget?.auth_user_id
+                ? "This removes the name from the list. Deals already tagged to them keep their history."
+                : "This removes the affiliate and their portal login for good. Deals stay, but they lose the referral tag. If they already have commission records, switch them to inactive instead — the delete will be blocked."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleDelete();
+              }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 }
