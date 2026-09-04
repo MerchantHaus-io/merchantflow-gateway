@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Check, ChevronsUpDown, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,22 +35,29 @@ interface Props {
 export function LeadReferrerSelect({
   value,
   onChange,
-  placeholder = "Select a referrer (optional)",
+  placeholder = "Select an affiliate (optional)",
   className,
   disabled,
 }: Props) {
   const [open, setOpen] = useState(false);
 
+  // Affiliates are the single source of truth for "who referred this?".
+  // Inactive / attribution-only affiliates are included so historical names
+  // stay pickable without granting a portal login or generating payouts.
   const { data: referrers = [] } = useQuery<LeadReferrer[]>({
-    queryKey: ["lead-referrers-active"],
+    queryKey: ["affiliates-for-attribution"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("lead_referrers" as any)
-        .select("id,name,institution,is_active")
-        .eq("is_active", true)
-        .order("name", { ascending: true });
+        .from("referrers")
+        .select("id,full_name,notes,active")
+        .order("full_name", { ascending: true });
       if (error) throw error;
-      return (data ?? []) as unknown as LeadReferrer[];
+      return (data ?? []).map((r) => ({
+        id: r.id as string,
+        name: (r.full_name as string) ?? "",
+        institution: (r.notes as string | null) ?? null,
+        is_active: Boolean(r.active),
+      }));
     },
   });
 
@@ -84,9 +91,9 @@ export function LeadReferrerSelect({
       </PopoverTrigger>
       <PopoverContent className="p-0 w-[--radix-popover-trigger-width]" align="start">
         <Command>
-          <CommandInput placeholder="Search referrers…" />
+          <CommandInput placeholder="Search affiliates…" />
           <CommandList>
-            <CommandEmpty>No referrers found.</CommandEmpty>
+            <CommandEmpty>No affiliates found.</CommandEmpty>
             <CommandGroup>
               {referrers.map((r) => (
                 <CommandItem
@@ -99,6 +106,9 @@ export function LeadReferrerSelect({
                 >
                   <Check className={cn("mr-2 h-4 w-4", value === r.id ? "opacity-100" : "opacity-0")} />
                   <span>{formatReferrerLabel(r)}</span>
+                  {!r.is_active && (
+                    <span className="ml-2 text-[10px] uppercase tracking-wide text-muted-foreground">inactive</span>
+                  )}
                 </CommandItem>
               ))}
             </CommandGroup>

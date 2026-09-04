@@ -94,7 +94,7 @@ export function NewLeadDialog() {
           contact_id: contact.id,
           stage: "discovery",
           referral_source: "Manual Lead",
-          ...(leadReferrerId ? ({ lead_referrer_id: leadReferrerId } as Record<string, unknown>) : {}),
+          ...(leadReferrerId ? ({ referrer_id: leadReferrerId } as Record<string, unknown>) : {}),
         });
       if (oErr) throw oErr;
 

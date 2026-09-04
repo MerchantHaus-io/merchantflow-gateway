@@ -25,16 +25,18 @@ interface ReferrerRow {
   id: string;
   auth_user_id: string | null;
   full_name: string;
-  email: string;
+  email: string | null;
   phone: string | null;
   alias: string | null;
   active: boolean;
+  attribution_only: boolean;
   commission_rate: number;
   monthly_cap_per_merchant: number;
   clawback_window_days: number;
   notes: string | null;
   created_at: string;
 }
+
 
 const fmtCurrency = (v: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v);
@@ -58,6 +60,8 @@ export default function Referrers() {
   const [creating, setCreating] = useState(false);
   const [createdCredentials, setCreatedCredentials] = useState<{ email: string; password: string } | null>(null);
   const [impersonating, setImpersonating] = useState<string | null>(null);
+  const [promotingId, setPromotingId] = useState<string | null>(null);
+
 
   const handleImpersonate = async (row: ReferrerRow) => {
     // Open the tab synchronously, while the click's user-activation context is
@@ -91,7 +95,7 @@ export default function Referrers() {
         access_token: data.access_token,
         refresh_token: data.refresh_token,
         referrer_name: data.referrer_name ?? row.full_name,
-        referrer_email: data.referrer_email ?? row.email,
+        referrer_email: data.referrer_email ?? row.email ?? "",
         ts: Date.now(),
       };
       // Use a per-handoff key so multiple opens don't race.
@@ -134,8 +138,10 @@ export default function Referrers() {
 
   const totals = useMemo(() => {
     const active = rows.filter((r) => r.active).length;
-    return { active, total: rows.length };
+    const attribution = rows.filter((r) => r.attribution_only).length;
+    return { active, attribution, total: rows.length };
   }, [rows]);
+
 
   const update = (id: string, patch: Partial<ReferrerRow>) =>
     setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)));
@@ -173,18 +179,40 @@ export default function Referrers() {
         monthly_cap_per_merchant: createForm.monthly_cap_per_merchant,
       },
     });
-    setCreating(false);
 
     if (error || (data && data.error)) {
+      setCreating(false);
       toast.error((data && data.error) || error?.message || "Failed to create affiliate");
       return;
     }
 
+    // Promoting an attribution-only name: retire the placeholder row so the
+    // list keeps one entry per person.
+    if (promotingId) {
+      const { error: delErr } = await supabase.from("referrers").delete().eq("id", promotingId);
+      if (delErr) toast.error(`Affiliate created, but the old attribution entry remains: ${delErr.message}`);
+      setPromotingId(null);
+    }
+
+    setCreating(false);
     setCreatedCredentials({ email: createForm.email, password: data.temp_password });
     setCreateForm({ full_name: "", email: "", phone: "", commission_rate: 0.50, monthly_cap_per_merchant: 1000 });
     setCreateOpen(false);
     load();
   };
+
+  const startPromote = (row: ReferrerRow) => {
+    setPromotingId(row.id);
+    setCreateForm({
+      full_name: row.full_name,
+      email: "",
+      phone: row.phone ?? "",
+      commission_rate: 0.50,
+      monthly_cap_per_merchant: 1000,
+    });
+    setCreateOpen(true);
+  };
+
 
   const copy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -213,8 +241,10 @@ export default function Referrers() {
       <div className="p-4 md:p-6 space-y-4">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Badge variant="secondary">{totals.active} active</Badge>
+          {totals.attribution > 0 && <Badge variant="outline">{totals.attribution} attribution only</Badge>}
           <Badge variant="outline">{totals.total} total</Badge>
         </div>
+
 
         <Card className="overflow-hidden">
           <Table>
@@ -250,16 +280,23 @@ export default function Referrers() {
               {rows.map((row) => (
                 <TableRow key={row.id}>
                   <TableCell>
-                    <Input
-                      value={row.full_name}
-                      onChange={(e) => update(row.id, { full_name: e.target.value })}
-                      className="h-8"
-                    />
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={row.full_name}
+                        onChange={(e) => update(row.id, { full_name: e.target.value })}
+                        className="h-8"
+                      />
+                      {row.attribution_only && (
+                        <Badge variant="outline" className="shrink-0 text-[10px] whitespace-nowrap">
+                          Attribution only
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">
-                    {row.email.split("@")[0]}
+                    {row.email ? row.email.split("@")[0] : "—"}
                   </TableCell>
-                  <TableCell className="font-mono text-xs">{row.email}</TableCell>
+                  <TableCell className="font-mono text-xs">{row.email ?? "—"}</TableCell>
                   <TableCell>
                     <Input
                       value={row.alias ?? ""}
@@ -284,7 +321,8 @@ export default function Referrers() {
                       max="1"
                       value={row.commission_rate}
                       onChange={(e) => update(row.id, { commission_rate: Number(e.target.value) })}
-                      className="h-8 w-20 text-right ml-auto"
+                      disabled={row.attribution_only}
+                      className="h-8 w-20 text-right ml-auto disabled:opacity-50"
                     />
                   </TableCell>
                   <TableCell className="text-right">
@@ -294,7 +332,8 @@ export default function Referrers() {
                       min="0"
                       value={row.monthly_cap_per_merchant}
                       onChange={(e) => update(row.id, { monthly_cap_per_merchant: Number(e.target.value) })}
-                      className="h-8 w-24 text-right ml-auto"
+                      disabled={row.attribution_only}
+                      className="h-8 w-24 text-right ml-auto disabled:opacity-50"
                     />
                   </TableCell>
                   <TableCell className="text-right">
@@ -304,12 +343,14 @@ export default function Referrers() {
                       min="0"
                       value={row.clawback_window_days}
                       onChange={(e) => update(row.id, { clawback_window_days: Number(e.target.value) })}
-                      className="h-8 w-16 text-right ml-auto"
+                      disabled={row.attribution_only}
+                      className="h-8 w-16 text-right ml-auto disabled:opacity-50"
                     />
                   </TableCell>
                   <TableCell>
                     <Switch
                       checked={row.active}
+                      disabled={row.attribution_only}
                       onCheckedChange={(v) => update(row.id, { active: v })}
                     />
                   </TableCell>
@@ -317,17 +358,30 @@ export default function Referrers() {
                     {format(new Date(row.created_at), "MMM d, yyyy")}
                   </TableCell>
                   <TableCell className="text-center">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => handleImpersonate(row)}
-                      disabled={impersonating === row.id || !row.active}
-                      title={row.active ? "Open a session as this affiliate" : "Affiliate is inactive"}
-                    >
-                      <LogIn className="h-3.5 w-3.5 mr-1.5" />
-                      {impersonating === row.id ? "Opening…" : "Login as"}
-                    </Button>
+                    {row.attribution_only ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => startPromote(row)}
+                        title="Give this name a portal login and commission terms"
+                      >
+                        <UserPlus className="h-3.5 w-3.5 mr-1.5" />
+                        Promote
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => handleImpersonate(row)}
+                        disabled={impersonating === row.id || !row.active}
+                        title={row.active ? "Open a session as this affiliate" : "Affiliate is inactive"}
+                      >
+                        <LogIn className="h-3.5 w-3.5 mr-1.5" />
+                        {impersonating === row.id ? "Opening…" : "Login as"}
+                      </Button>
+                    )}
                   </TableCell>
+
                   <TableCell className="text-right">
                     <Button size="sm" variant="outline" onClick={() => saveRow(row)} disabled={saving === row.id}>
                       {saving === row.id ? "Saving…" : "Save"}
@@ -342,18 +396,26 @@ export default function Referrers() {
         <p className="text-xs text-muted-foreground">
           Commission: affiliate earns <strong>Comm %</strong> of net monthly revenue per referred merchant, capped at
           <strong> Monthly Cap</strong> per merchant per month. Clawback applies if the merchant churns within
-          the clawback window of going live.
+          the clawback window of going live. Names marked <strong>Attribution only</strong> exist purely to record who
+          referred a deal — no login, no commission and no payouts until you promote them.
         </p>
       </div>
 
       {/* Create Affiliate dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+      <Dialog
+        open={createOpen}
+        onOpenChange={(o) => {
+          setCreateOpen(o);
+          if (!o) setPromotingId(null);
+        }}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Affiliate</DialogTitle>
+            <DialogTitle>{promotingId ? "Promote to full affiliate" : "Add Affiliate"}</DialogTitle>
             <DialogDescription>
               Creates an admin-provisioned account. A temporary password will be generated — share it with the
               affiliate; they'll be prompted to change it on first login.
+
             </DialogDescription>
           </DialogHeader>
 
