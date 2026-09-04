@@ -241,8 +241,10 @@ export default function Referrers() {
       <div className="p-4 md:p-6 space-y-4">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Badge variant="secondary">{totals.active} active</Badge>
+          {totals.attribution > 0 && <Badge variant="outline">{totals.attribution} attribution only</Badge>}
           <Badge variant="outline">{totals.total} total</Badge>
         </div>
+
 
         <Card className="overflow-hidden">
           <Table>
