@@ -310,10 +310,16 @@ export default function Referrers() {
     <AppLayout
       pageTitle="Affiliates"
       headerActions={
-        <Button onClick={() => setCreateOpen(true)} size="sm">
-          <UserPlus className="h-4 w-4 mr-2" />
-          Add Affiliate
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => setNameOnlyOpen(true)} size="sm" variant="outline">
+            <Tag className="h-4 w-4 mr-2" />
+            Add Name Only
+          </Button>
+          <Button onClick={() => setCreateOpen(true)} size="sm">
+            <UserPlus className="h-4 w-4 mr-2" />
+            Add Affiliate
+          </Button>
+        </div>
       }
     >
       <div className="p-4 md:p-6 space-y-4">
@@ -333,13 +339,14 @@ export default function Referrers() {
                 <TableHead>Email</TableHead>
                 <TableHead>Alias</TableHead>
                 <TableHead>Phone</TableHead>
+                <TableHead>Notes</TableHead>
                 <TableHead className="text-right">Comm %</TableHead>
                 <TableHead className="text-right">Monthly Cap</TableHead>
                 <TableHead className="text-right">Clawback (days)</TableHead>
                 <TableHead>Active</TableHead>
                 <TableHead>Date activated</TableHead>
                 <TableHead className="text-center">Login</TableHead>
-                <TableHead className="text-right">Save</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
