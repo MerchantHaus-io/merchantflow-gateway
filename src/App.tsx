@@ -77,6 +77,7 @@ const StatementAnalysis = lazy(() => import("./pages/StatementAnalysis"));
 const QuoteAcceptance = lazy(() => import("./pages/QuoteAcceptance"));
 const QuotesContracts = lazy(() => import("./pages/QuotesContracts"));
 const Referrers = lazy(() => import("./pages/Referrers"));
+const PayoutRuns = lazy(() => import("./pages/PayoutRuns"));
 const PortalDashboard = lazy(() => import("./pages/portal/PortalDashboard"));
 const PortalNewReferral = lazy(() => import("./pages/portal/PortalNewReferral"));
 const PortalCommissions = lazy(() => import("./pages/portal/PortalCommissions"));
@@ -258,6 +259,7 @@ const App = () => (
                   <Route path="/calendar" element={<Calendar />} />
                   <Route path="/commissions" element={<Commissions />} />
                   <Route path="/admin/affiliates" element={<Referrers />} />
+                  <Route path="/admin/payout-runs" element={<PayoutRuns />} />
                   <Route path="/admin/referrers" element={<Navigate to="/admin/affiliates" replace />} />
                   <Route path="/admin/gateway-accounts" element={<GatewayAccounts />} />
                 </Route>

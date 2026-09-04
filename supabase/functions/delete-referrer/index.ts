@@ -120,6 +120,18 @@ serve(async (req) => {
       }
     }
 
+    // Admin-view audit rows point at the affiliate with ON DELETE NO ACTION,
+    // so they block the delete outright. They are an access log, not payout
+    // history, so they go with the affiliate.
+    const { error: logError } = await supabaseAdmin
+      .from("referrer_impersonation_logs")
+      .delete()
+      .eq("referrer_id", referrer_id);
+    if (logError) {
+      console.error("delete-referrer: clearing admin-view logs failed", logError.message);
+      return json({ error: `Could not clear admin-view logs: ${logError.message}` }, 400);
+    }
+
     const { error: deleteError } = await supabaseAdmin.from("referrers").delete().eq("id", referrer_id);
     if (deleteError) {
       console.error("delete-referrer: row delete failed", deleteError.message);

@@ -29,7 +29,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Copy, Plus, UserPlus, LogIn, Trash2, Tag } from "lucide-react";
+import { Copy, Plus, UserPlus, LogIn, Trash2, Tag, Check, X, Clock } from "lucide-react";
 import { format } from "date-fns";
 
 interface ReferrerRow {
@@ -137,6 +137,48 @@ export default function Referrers() {
     }
   };
 
+  const [decisionId, setDecisionId] = useState<string | null>(null);
+
+  /**
+   * A partner who signed up themselves lands as an inactive row with a login
+   * already attached. Approving switches the portal on; declining leaves the
+   * row inactive with a note, so nothing is silently destroyed.
+   */
+  const approveApplication = async (row: ReferrerRow) => {
+    setDecisionId(row.id);
+    const { error } = await supabase
+      .from("referrers")
+      .update({ active: true } as never)
+      .eq("id", row.id);
+    setDecisionId(null);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(`${row.full_name} approved — their portal is live.`);
+    copy(`${window.location.origin}/affiliate`);
+    load();
+  };
+
+  const declineApplication = async (row: ReferrerRow) => {
+    setDecisionId(row.id);
+    const stamp = format(new Date(), "d MMM yyyy");
+    const { error } = await supabase
+      .from("referrers")
+      .update({
+        active: false,
+        notes: `${row.notes ? `${row.notes}\n` : ""}Application declined ${stamp}`,
+      } as never)
+      .eq("id", row.id);
+    setDecisionId(null);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(`${row.full_name} declined`);
+    load();
+  };
+
   const load = async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -158,6 +200,12 @@ export default function Referrers() {
     return { active, attribution, total: rows.length };
   }, [rows]);
 
+
+  /** Self-service sign-ups waiting on a yes or no. */
+  const pending = useMemo(
+    () => rows.filter((r) => !r.active && !r.attribution_only && !!r.auth_user_id),
+    [rows],
+  );
 
   const update = (id: string, patch: Partial<ReferrerRow>) =>
     setRows((rs) => rs.map((r) => (r.id === id ? { ...r, ...patch } : r)));
@@ -338,6 +386,9 @@ export default function Referrers() {
             <Tag className="h-4 w-4 mr-2" />
             Add Name Only
           </Button>
+          <Button asChild size="sm" variant="outline">
+            <a href="/admin/payout-runs">Payout Runs</a>
+          </Button>
           <Button onClick={() => setCreateOpen(true)} size="sm">
             <UserPlus className="h-4 w-4 mr-2" />
             Add Affiliate
@@ -351,6 +402,53 @@ export default function Referrers() {
           {totals.attribution > 0 && <Badge variant="outline">{totals.attribution} attribution only</Badge>}
           <Badge variant="outline">{totals.total} total</Badge>
         </div>
+
+        {pending.length > 0 && (
+          <Card className="p-4 space-y-3 border-primary/40">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <h2 className="text-sm font-semibold">
+                {pending.length} application{pending.length === 1 ? "" : "s"} waiting for approval
+              </h2>
+            </div>
+            <div className="space-y-2">
+              {pending.map((row) => (
+                <div
+                  key={row.id}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{row.full_name}</p>
+                    <p className="text-xs text-muted-foreground font-mono truncate">{row.email}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Applied {format(new Date(row.created_at), "d MMM yyyy")}
+                      {row.phone ? ` · ${row.phone}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => approveApplication(row)}
+                      disabled={decisionId === row.id}
+                    >
+                      <Check className="h-4 w-4 mr-1" />
+                      Approve &amp; copy portal link
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => declineApplication(row)}
+                      disabled={decisionId === row.id}
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Decline
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
 
         <AffiliatePayoutsPanel />
 

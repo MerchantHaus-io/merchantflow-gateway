@@ -14,6 +14,7 @@ import { Building2, User, Briefcase, FileText, Activity, Pencil, X, Upload, Tras
 import { QuoteGeneratorDialog } from "./pricing/QuoteGeneratorDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
+import { syncAccountReferrerForOpportunity } from "@/lib/referrerAssignment";
 import { toast } from "sonner";
 import { confirmAutoEmail } from "@/components/EmailSendConfirm";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -929,6 +930,12 @@ const OpportunityDetailModal = ({ opportunity, onClose, onUpdate, onMarkAsDead, 
       return;
     }
     
+    // A deal that just went live hands its partner over to the account, so the
+    // affiliate keeps earning on the merchant they introduced.
+    if (newStage === 'closed_won') {
+      await syncAccountReferrerForOpportunity(opportunity.id, newStage);
+    }
+
     await supabase.from('activities').insert({
       opportunity_id: opportunity.id,
       type: 'stage_change',
