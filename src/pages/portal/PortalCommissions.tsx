@@ -388,8 +388,8 @@ export default function PortalCommissions() {
           </div>
         ) : periodRecords.length === 0 ? (
           <div className="p-6 text-sm text-muted-foreground">
-            No commission records for this period yet. Once your referred merchants start processing, earnings
-            will appear here at the end of each month.
+            No earnings for this period yet. Once your referred merchants are invoiced for their gateway,
+            earnings will appear here at the end of each month.
           </div>
         ) : (
           <ul className="divide-y">
@@ -401,11 +401,10 @@ export default function PortalCommissions() {
                     <div className="min-w-0">
                       <div className="font-medium truncate">{r.company_name || "Merchant"}</div>
                       <div className="text-xs text-muted-foreground mt-0.5">
-                        Volume {fmt(Number(r.transaction_volume))} ·{" "}
-                        {r.transaction_count.toLocaleString()} txns · Company net{" "}
-                        {fmt(Number(r.company_commission))}
+                        Gateway earnings for {format(parseISO(r.period_start), "MMM yyyy")}
                       </div>
                     </div>
+
                     <div className="flex items-center gap-2">
                       {r.displayPayout >= monthlyCap && (
                         <Badge variant="outline" className="text-amber-700 border-amber-300 dark:text-amber-400">
