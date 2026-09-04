@@ -507,7 +507,11 @@ export function AffiliatePayoutsPanel() {
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={generateCredits} disabled={working === "generate" || !periodId} size="sm">
+          <Button onClick={buildOutstanding} disabled={working === "backdate"} size="sm">
+            {working === "backdate" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CalendarRange className="h-4 w-4 mr-2" />}
+            Build outstanding months
+          </Button>
+          <Button onClick={generateCredits} disabled={working === "generate" || !periodId} size="sm" variant="outline">
             {working === "generate" ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
             Generate credits
           </Button>
@@ -516,11 +520,14 @@ export function AffiliatePayoutsPanel() {
             Create payout run
           </Button>
           <p className="text-xs text-muted-foreground max-w-md">
-            Credits become payable 30 days after the month ends. Runs include only partners whose ready-to-pay balance
-            reaches {fmtUsd(DEFAULT_MINIMUM_PAYOUT)}; anything below rolls over.
+            Partners earn on the gateway only — half of our gateway margin per referred merchant, capped per merchant each
+            month. Building outstanding months backdates every month a referred merchant has been billed. Earnings become
+            payable 30 days after the month ends, and runs include only partners whose ready-to-pay balance reaches{" "}
+            {fmtUsd(DEFAULT_MINIMUM_PAYOUT)}; anything below rolls over.
           </p>
         </div>
       </Card>
+
 
       <Card className="overflow-hidden">
         <div className="px-4 py-3 border-b flex items-center gap-2">
