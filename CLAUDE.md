@@ -86,6 +86,18 @@ The **Programme audit** card on `/admin/affiliates` recomputes every credit
 from its own gateway month and flags exactly these divergences, so the gap is
 visible in the UI until the migration lands.
 
+### Corrections are entries, not edits
+
+A clawback or an adjustment is written as a **new** ledger row; the credit it
+corrects is left alone. The partner sees both on their statement and the audit
+still reconciles. Voiding is only for a credit raised in error and is refused
+once it is paid or banked into a run (`canVoidEntry`) — money the partner
+legitimately earned comes back via a clawback, never a void.
+
+A partner still cannot enter their own bank details: the Payouts page asks them
+to send the details in, because RLS grants `UPDATE` on `referrers` to admins
+only. Self-service needs a new policy, so it belongs to a migration session.
+
 ## Gauntlet invariants — never violate, in any phase
 
 - NEVER put database migrations and client changes in the same session.
@@ -125,7 +137,7 @@ back after editing them.
 |---|---|---|
 | `npx tsc --noEmit -p tsconfig.app.json` | silent | 4 Sep 2026 |
 | `npm run lint` | **0 errors**, 325 warnings | 4 Sep 2026 |
-| `npx vitest run` | 230 passing, 18 files | 4 Sep 2026 |
+| `npx vitest run` | 242 passing, 18 files | 4 Sep 2026 |
 | `npm run build` | succeeds; chunk-size warnings are expected | 4 Sep 2026 |
 
 A rise in the lint **error** count is a regression. Inherited warnings are not.

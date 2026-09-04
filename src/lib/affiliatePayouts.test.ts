@@ -21,6 +21,10 @@ import {
   partnerShareForMonth,
   auditCommissionLedger,
   bonusProgress,
+  signedCorrectionAmount,
+  clawbackTotalFor,
+  canVoidEntry,
+  validateCorrection,
 
 
 
@@ -486,5 +490,95 @@ describe("bonusProgress", () => {
     expect(bonusProgress(5).nextAt).toBe(10);
     expect(bonusProgress(5).toNext).toBe(5);
     expect(bonusProgress(0).nextAt).toBe(5);
+  });
+});
+
+describe("signedCorrectionAmount", () => {
+  it("always stores a clawback negative, however it was typed", () => {
+    expect(signedCorrectionAmount("clawback", 40)).toBe(-40);
+    expect(signedCorrectionAmount("clawback", -40)).toBe(-40);
+    expect(signedCorrectionAmount("clawback", "17.75")).toBe(-17.75);
+  });
+
+  it("lets an adjustment go either way", () => {
+    expect(signedCorrectionAmount("adjustment", 25)).toBe(25);
+    expect(signedCorrectionAmount("adjustment", -25)).toBe(-25);
+  });
+});
+
+describe("clawbackTotalFor", () => {
+  const entries = [
+    { id: "a", account_id: "m1", amount: 8.88, status: "payable", entry_type: "commission" },
+    { id: "b", account_id: "m1", amount: 9.31, status: "paid", entry_type: "commission" },
+    { id: "c", account_id: "m1", amount: 9.69, status: "void", entry_type: "commission" },
+    { id: "d", account_id: "m2", amount: 10.06, status: "payable", entry_type: "commission" },
+    { id: "e", account_id: null, amount: 500, status: "payable", entry_type: "bonus" },
+  ];
+
+  it("totals every live commission credit for one merchant", () => {
+    expect(clawbackTotalFor(entries, "m1")).toBe(18.19);
+  });
+
+  it("does not reach across merchants or into bonuses", () => {
+    expect(clawbackTotalFor(entries, "m2")).toBe(10.06);
+    expect(clawbackTotalFor(entries, "nope")).toBe(0);
+  });
+});
+
+describe("canVoidEntry", () => {
+  it("allows voiding a credit still on hold or ready to pay", () => {
+    expect(canVoidEntry({ id: "a", amount: 10, status: "pending" })).toBe(true);
+    expect(canVoidEntry({ id: "a", amount: 10, status: "payable" })).toBe(true);
+  });
+
+  it("refuses once the money is paid or banked into a run", () => {
+    expect(canVoidEntry({ id: "a", amount: 10, status: "paid" })).toBe(false);
+    expect(canVoidEntry({ id: "a", amount: 10, status: "payable", payout_run_id: "run1" })).toBe(false);
+    expect(canVoidEntry({ id: "a", amount: 10, status: "void" })).toBe(false);
+  });
+});
+
+describe("validateCorrection", () => {
+  const balance = { pending: 20, payable: 30, paid: 100, balance: 50, lifetime: 150 };
+
+  it("insists on a reason", () => {
+    const v = validateCorrection({ type: "clawback", magnitude: 10, reason: "  " }, balance);
+    expect(v.ok).toBe(false);
+    expect(v.error).toMatch(/reason/i);
+  });
+
+  it("rejects a zero amount", () => {
+    const v = validateCorrection({ type: "adjustment", magnitude: 0, reason: "goodwill" }, balance);
+    expect(v.ok).toBe(false);
+    expect(v.error).toMatch(/amount/i);
+  });
+
+  it("passes a clawback within the balance without warnings", () => {
+    const v = validateCorrection({ type: "clawback", magnitude: 40, reason: "churned in window" }, balance);
+    expect(v.ok).toBe(true);
+    expect(v.amount).toBe(-40);
+    expect(v.warnings).toEqual([]);
+  });
+
+  it("warns when a clawback exceeds what is still owed", () => {
+    const v = validateCorrection({ type: "clawback", magnitude: 90, reason: "churned" }, balance);
+    expect(v.ok).toBe(true);
+    expect(v.warnings.length).toBeGreaterThan(0);
+    expect(v.warnings.join(" ")).toMatch(/negative balance/i);
+  });
+
+  it("warns when nothing is owed at all", () => {
+    const v = validateCorrection(
+      { type: "clawback", magnitude: 10, reason: "churned" },
+      { pending: 0, payable: 0, paid: 0, balance: 0, lifetime: 0 },
+    );
+    expect(v.warnings.join(" ")).toMatch(/nothing owed/i);
+  });
+
+  it("accepts a positive adjustment", () => {
+    const v = validateCorrection({ type: "adjustment", magnitude: 15, reason: "goodwill credit" }, balance);
+    expect(v.ok).toBe(true);
+    expect(v.amount).toBe(15);
+    expect(v.warnings).toEqual([]);
   });
 });

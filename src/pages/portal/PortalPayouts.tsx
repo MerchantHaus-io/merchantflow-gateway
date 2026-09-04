@@ -184,7 +184,13 @@ export default function PortalPayouts() {
                       <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                         {r.status === "paid" ? dateLabel(r.paid_at) : dateLabel(r.payable_on)}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums font-medium">{fmtUsd(r.amount)}</TableCell>
+                      <TableCell
+                        className={`text-right tabular-nums font-medium ${
+                          Number(r.amount) < 0 ? "text-destructive" : ""
+                        }`}
+                      >
+                        {fmtUsd(r.amount)}
+                      </TableCell>
                     </TableRow>
                   ))
                 )}

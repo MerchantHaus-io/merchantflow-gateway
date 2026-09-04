@@ -721,3 +721,118 @@ export const bonusProgress = (
     milestone: step,
   };
 };
+
+/* ------------------------------------------------------------------ *
+ * Ledger corrections
+ *
+ * Everything above only ever ADDS credits. A programme also has to be able to
+ * take money back — a merchant that churns inside their clawback window — and
+ * to correct a credit raised in error. The schema has modelled `clawback` and
+ * `adjustment` entries from the start and the partner statement renders them;
+ * these helpers are what finally lets an admin raise one.
+ *
+ * A correction is always a NEW entry, never an edit of the original: the
+ * original credit stays on the statement and the reversal sits beside it, so
+ * the partner can see what happened and the audit still reconciles. The one
+ * exception is voiding, which is for a credit that should never have existed
+ * and has not been paid or banked into a run.
+ * ------------------------------------------------------------------ */
+
+export type CorrectionType = "clawback" | "adjustment";
+
+/**
+ * The signed amount to write for a correction. A clawback is entered as a
+ * positive figure ("claw back $40") and always stored negative; an adjustment
+ * keeps whatever sign the admin gave it, so it can go either way.
+ */
+export const signedCorrectionAmount = (type: CorrectionType, magnitude: number | string): number => {
+  const value = num(magnitude);
+  const signed = type === "clawback" ? -Math.abs(value) : value;
+  return Math.round(signed * 100) / 100;
+};
+
+/** Ledger fields a correction needs to reason about an existing credit. */
+export interface CorrectableEntry extends LedgerEntryLike {
+  id: string;
+  account_id?: string | null;
+  payout_run_id?: string | null;
+}
+
+/**
+ * What a partner has been credited for one merchant, across every month.
+ * This is the natural default when clawing a churned merchant back.
+ */
+export const clawbackTotalFor = (
+  entries: CorrectableEntry[],
+  accountId: string,
+): number => {
+  const total = entries
+    .filter(
+      (e) =>
+        e.account_id === accountId &&
+        e.status !== "void" &&
+        (e.entry_type == null || e.entry_type === "commission"),
+    )
+    .reduce((sum, e) => sum + num(e.amount), 0);
+  return Math.round(total * 100) / 100;
+};
+
+/**
+ * A credit can be voided only while it is still ours to withdraw: not paid,
+ * and not already banked into a payout run. Anything past that has to be
+ * reversed with a clawback so the money movement stays on the record.
+ */
+export const canVoidEntry = (entry: CorrectableEntry): boolean =>
+  entry.status !== "void" && entry.status !== "paid" && !entry.payout_run_id;
+
+export interface CorrectionDraft {
+  type: CorrectionType;
+  /** As typed by the admin — a clawback is entered positive. */
+  magnitude: number | string;
+  reason: string;
+}
+
+export interface CorrectionValidation {
+  ok: boolean;
+  /** The signed amount that would be written. */
+  amount: number;
+  error: string | null;
+  /** Non-blocking notes worth showing before the admin commits. */
+  warnings: string[];
+}
+
+/**
+ * Validate a correction before it is written. A reason is mandatory: these
+ * entries show up on a partner's own statement, and "Adjustment" with no
+ * explanation is how a support conversation starts.
+ */
+export const validateCorrection = (
+  draft: CorrectionDraft,
+  balance: BalanceSummary,
+): CorrectionValidation => {
+  const amount = signedCorrectionAmount(draft.type, draft.magnitude);
+  const warnings: string[] = [];
+
+  if (!draft.reason.trim()) {
+    return { ok: false, amount, error: "Give a reason — the partner sees this on their statement.", warnings };
+  }
+  if (amount === 0) {
+    return { ok: false, amount, error: "Enter an amount.", warnings };
+  }
+
+  if (amount < 0) {
+    const owed = balance.balance;
+    if (Math.abs(amount) > owed) {
+      warnings.push(
+        owed > 0
+          ? `Larger than the ${fmtUsd(owed)} still owed — this will leave a negative balance carried against future earnings.`
+          : "This partner has nothing owed — the clawback will sit as a negative balance until they earn again.",
+      );
+    }
+    if (balance.paid > 0 && Math.abs(amount) > balance.balance) {
+      warnings.push("Part of this was already paid out; recovering it is a separate bank transaction.");
+    }
+  }
+
+  return { ok: true, amount, error: null, warnings };
+};

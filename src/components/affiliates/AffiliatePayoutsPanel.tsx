@@ -17,7 +17,8 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
-import { AlertTriangle, Banknote, CalendarRange, CheckCircle2, Download, Landmark, Loader2, RefreshCw, Scale, Wallet } from "lucide-react";
+import { AlertTriangle, Banknote, CalendarRange, CheckCircle2, Download, Landmark, Loader2, RefreshCw, Scale, Undo2, Wallet } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import {
   AUDIT_VERDICT_LABEL,
   DEFAULT_BONUS_AMOUNT,
@@ -31,8 +32,13 @@ import {
   payableOnFor,
   reconcilePayoutRun,
   selectRunEntries,
+  summariseLedger,
   RECONCILE_VERDICT_LABEL,
+  canVoidEntry,
+  clawbackTotalFor,
+  validateCorrection,
   type AuditBasisRecord,
+  type CorrectionType,
 } from "@/lib/affiliatePayouts";
 
 
@@ -138,6 +144,13 @@ export function AffiliatePayoutsPanel() {
   const [bankForm, setBankForm] = useState<BankForm>(emptyBank);
   const [payTarget, setPayTarget] = useState<PayoutRun | null>(null);
   const [payReference, setPayReference] = useState("");
+
+  const [correctTarget, setCorrectTarget] = useState<BalanceRow | null>(null);
+  const [correctType, setCorrectType] = useState<CorrectionType>("clawback");
+  const [correctAccountId, setCorrectAccountId] = useState("");
+  const [correctAmount, setCorrectAmount] = useState("");
+  const [correctReason, setCorrectReason] = useState("");
+  const [voidTarget, setVoidTarget] = useState<MonthRow | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -605,6 +618,111 @@ export function AffiliatePayoutsPanel() {
     }
   };
 
+  /** Merchants this partner has been credited for, for the clawback picker. */
+  const merchantsFor = useCallback(
+    (referrerId: string) => {
+      const map = new Map<string, string>();
+      for (const m of monthsByPartner.get(referrerId) ?? []) {
+        // Commission rows only: a correction's own description is
+        // "Clawback — Acme: reason", which would otherwise be parsed back out
+        // as a merchant name and, being the newest row, would win.
+        if (m.entry_type !== "commission" || !m.account_id || map.has(m.account_id)) continue;
+        map.set(m.account_id, (m.description ?? "").replace(/^.*—\s*/, "") || "Merchant");
+      }
+      return [...map.entries()].map(([id, name]) => ({ id, name }));
+    },
+    [monthsByPartner],
+  );
+
+  const openCorrection = (row: BalanceRow, type: CorrectionType) => {
+    setCorrectTarget(row);
+    setCorrectType(type);
+    setCorrectAccountId("");
+    setCorrectAmount("");
+    setCorrectReason("");
+  };
+
+  /** Picking a merchant for a clawback prefills everything credited for them. */
+  const pickClawbackMerchant = (accountId: string) => {
+    setCorrectAccountId(accountId);
+    if (correctType !== "clawback" || !correctTarget) return;
+    const total = clawbackTotalFor(monthsByPartner.get(correctTarget.referrer_id) ?? [], accountId);
+    if (total > 0) setCorrectAmount(total.toFixed(2));
+  };
+
+  const correctionBalance = useMemo(
+    () => summariseLedger(correctTarget ? monthsByPartner.get(correctTarget.referrer_id) ?? [] : []),
+    [correctTarget, monthsByPartner],
+  );
+
+  const correctionCheck = useMemo(
+    () =>
+      validateCorrection(
+        { type: correctType, magnitude: correctAmount, reason: correctReason },
+        correctionBalance,
+      ),
+    [correctType, correctAmount, correctReason, correctionBalance],
+  );
+
+  /**
+   * Write a clawback or an adjustment. Always a NEW entry, never an edit of the
+   * credit it corrects — the original stays on the partner's statement so the
+   * reversal is legible beside it and the audit still reconciles.
+   */
+  const saveCorrection = async () => {
+    if (!correctTarget || !correctionCheck.ok) return;
+    setWorking("correction");
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const merchant = correctAccountId
+        ? merchantsFor(correctTarget.referrer_id).find((m) => m.id === correctAccountId)?.name
+        : null;
+      const { error } = await supabase.from("referrer_ledger_entries").insert({
+        referrer_id: correctTarget.referrer_id,
+        entry_type: correctType,
+        amount: correctionCheck.amount,
+        // A correction is due now, not on the 30-day earnings hold.
+        period_start: today,
+        period_end: today,
+        payable_on: today,
+        account_id: correctAccountId || null,
+        description: `${correctType === "clawback" ? "Clawback" : "Adjustment"}${merchant ? ` — ${merchant}` : ""}: ${correctReason.trim()}`,
+      });
+      if (error) throw error;
+      toast.success(
+        `${correctType === "clawback" ? "Clawback" : "Adjustment"} of ${fmtUsd(correctionCheck.amount)} recorded.`,
+      );
+      setCorrectTarget(null);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not record the correction");
+    } finally {
+      setWorking(null);
+    }
+  };
+
+  /** Void a credit raised in error — only while it is unpaid and unbanked. */
+  const voidEntry = async () => {
+    if (!voidTarget) return;
+    setWorking(`void-${voidTarget.id}`);
+    try {
+      const { error } = await supabase
+        .from("referrer_ledger_entries")
+        .update({ status: "void" })
+        .eq("id", voidTarget.id)
+        .is("payout_run_id", null)
+        .neq("status", "paid");
+      if (error) throw error;
+      toast.success("Credit voided.");
+      setVoidTarget(null);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not void the credit");
+    } finally {
+      setWorking(null);
+    }
+  };
+
   const openBank = async (row: BalanceRow) => {
     const { data } = await supabase
       .from("referrers")
@@ -760,7 +878,11 @@ export function AffiliatePayoutsPanel() {
                     <TableCell className="text-xs text-muted-foreground">
                       {b.last_paid_at ? format(parseISO(b.last_paid_at), "d MMM yyyy") : "—"}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right whitespace-nowrap">
+                      <Button size="sm" variant="ghost" onClick={() => openCorrection(b, "clawback")}>
+                        <Undo2 className="h-4 w-4 mr-1" />
+                        Correct
+                      </Button>
                       <Button size="sm" variant="ghost" onClick={() => openBank(b)}>
                         <Landmark className="h-4 w-4 mr-1" />
                         Bank
@@ -789,18 +911,19 @@ export function AffiliatePayoutsPanel() {
                 <TableHead>Status</TableHead>
                 <TableHead>Released</TableHead>
                 <TableHead className="text-right">Partner share</TableHead>
+                <TableHead className="text-right"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-6">
                     Loading earnings…
                   </TableCell>
                 </TableRow>
               ) : months.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-6">
                     Nothing accrued yet. Assign an affiliate to a live gateway account, then build the outstanding months.
                   </TableCell>
                 </TableRow>
@@ -825,7 +948,25 @@ export function AffiliatePayoutsPanel() {
                       <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                         {m.payable_on ? format(parseISO(m.payable_on), "d MMM yyyy") : "—"}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums font-medium">{fmtUsd(m.amount)}</TableCell>
+                      <TableCell
+                        className={`text-right tabular-nums font-medium ${
+                          num(m.amount) < 0 ? "text-destructive" : ""
+                        }`}
+                      >
+                        {fmtUsd(m.amount)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {canVoidEntry(m) && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-muted-foreground hover:text-destructive"
+                            onClick={() => setVoidTarget(m)}
+                          >
+                            Void
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   )),
                 )
@@ -1112,6 +1253,138 @@ export function AffiliatePayoutsPanel() {
           </Table>
         </div>
       </Card>
+
+      <Dialog open={!!correctTarget} onOpenChange={(o) => !o && setCorrectTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Correct the ledger — {correctTarget?.full_name}</DialogTitle>
+            <DialogDescription>
+              This writes a new entry rather than editing an existing credit, so the original stays on the partner's
+              statement beside the correction. They see the reason you give.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label>Type</Label>
+              <Select
+                value={correctType}
+                onValueChange={(v) => {
+                  setCorrectType(v as CorrectionType);
+                  setCorrectAmount("");
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="clawback">Clawback — take earnings back</SelectItem>
+                  <SelectItem value="adjustment">Adjustment — correct up or down</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Merchant {correctType === "adjustment" && <span className="text-muted-foreground">(optional)</span>}</Label>
+              <Select value={correctAccountId} onValueChange={pickClawbackMerchant}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Whole account — not merchant-specific" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(correctTarget ? merchantsFor(correctTarget.referrer_id) : []).map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {correctType === "clawback" && (
+                <p className="text-xs text-muted-foreground">
+                  Picking a merchant fills in everything credited for them so far.
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="correct_amount">
+                Amount (USD){correctType === "clawback" ? " to claw back" : " — negative to reduce"}
+              </Label>
+              <Input
+                id="correct_amount"
+                type="number"
+                step="0.01"
+                value={correctAmount}
+                onChange={(e) => setCorrectAmount(e.target.value)}
+                placeholder="0.00"
+              />
+              {correctionCheck.amount !== 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Writes {fmtUsd(correctionCheck.amount)} to the ledger. Balance owed is currently{" "}
+                  {fmtUsd(correctionBalance.balance)}.
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="correct_reason">Reason</Label>
+              <Textarea
+                id="correct_reason"
+                rows={2}
+                value={correctReason}
+                onChange={(e) => setCorrectReason(e.target.value)}
+                placeholder={
+                  correctType === "clawback"
+                    ? "Merchant closed within the clawback window"
+                    : "What this corrects, in the partner's words"
+                }
+              />
+            </div>
+
+            {correctionCheck.warnings.map((w) => (
+              <p key={w} className="text-xs text-amber-600 dark:text-amber-400 flex items-start gap-1.5">
+                <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                {w}
+              </p>
+            ))}
+            {correctionCheck.error && correctReason.length > 0 && (
+              <p className="text-xs text-destructive">{correctionCheck.error}</p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCorrectTarget(null)}>
+              Cancel
+            </Button>
+            <Button onClick={saveCorrection} disabled={!correctionCheck.ok || working === "correction"}>
+              {working === "correction" && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Record {correctType}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!voidTarget} onOpenChange={(o) => !o && setVoidTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Void this credit?</DialogTitle>
+            <DialogDescription>
+              {voidTarget
+                ? `${fmtUsd(voidTarget.amount)} — ${(voidTarget.description ?? "").replace(/^.*—\s*/, "") || "credit"}.`
+                : ""}{" "}
+              Voiding removes it from the partner's balance entirely, as though it had never been raised. Use it only for
+              a credit created in error; to take back money the partner has legitimately earned, raise a clawback instead
+              so the reversal stays on their statement.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setVoidTarget(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={voidEntry} disabled={!!working?.startsWith("void-")}>
+              {working?.startsWith("void-") && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Void credit
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!bankTarget} onOpenChange={(o) => !o && setBankTarget(null)}>
         <DialogContent>
