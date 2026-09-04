@@ -74,6 +74,8 @@ interface MonthRow {
   payable_on: string | null;
   description: string | null;
   entry_type: string;
+  payout_run_id: string | null;
+
 }
 
 
