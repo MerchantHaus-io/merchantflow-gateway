@@ -24,6 +24,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { BillingEstimatesPanel } from "@/components/BillingEstimatesPanel";
+import { ReferrerAssignField } from "@/components/ReferrerAssignField";
 
 import { NAME_TO_EMAIL } from "@/config/team";
 const TEAM_EMAIL_MAP: Record<string, string> = NAME_TO_EMAIL;
