@@ -15,10 +15,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Copy, Plus, UserPlus, LogIn } from "lucide-react";
+import { Copy, Plus, UserPlus, LogIn, Trash2, Tag } from "lucide-react";
 import { format } from "date-fns";
 
 interface ReferrerRow {
