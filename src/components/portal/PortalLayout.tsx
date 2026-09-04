@@ -3,7 +3,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Send, DollarSign, LogOut, ShieldAlert, X } from "lucide-react";
+import { LayoutDashboard, Send, DollarSign, LogOut, ShieldAlert, X , Wallet} from "lucide-react";
 import {
   IMPERSONATION_ACTIVE_FLAG,
   IMPERSONATION_REFERRER_LABEL,
@@ -19,6 +19,7 @@ interface PortalLayoutProps {
 const NAV = [
   { to: "/affiliate", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/affiliate/commissions", label: "Earnings", icon: DollarSign, end: false },
+  { to: "/affiliate/payouts", label: "Payouts", icon: Wallet, end: false },
   { to: "/affiliate/new-referral", label: "Submit Referral", icon: Send, end: false },
 ];
 

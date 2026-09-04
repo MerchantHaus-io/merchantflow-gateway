@@ -80,6 +80,7 @@ const Referrers = lazy(() => import("./pages/Referrers"));
 const PortalDashboard = lazy(() => import("./pages/portal/PortalDashboard"));
 const PortalNewReferral = lazy(() => import("./pages/portal/PortalNewReferral"));
 const PortalCommissions = lazy(() => import("./pages/portal/PortalCommissions"));
+const PortalPayouts = lazy(() => import("./pages/portal/PortalPayouts"));
 const AffiliateSignup = lazy(() => import("./pages/AffiliateSignup"));
 const SupportTriage = lazy(() => import("./pages/SupportTriage"));
 const SupportTicketDetail = lazy(() => import("./pages/SupportTicketDetail"));
@@ -266,6 +267,7 @@ const App = () => (
                 <Route path="/affiliate" element={<ReferrerRoute><PortalDashboard /></ReferrerRoute>} />
                 <Route path="/affiliate/new-referral" element={<ReferrerRoute><PortalNewReferral /></ReferrerRoute>} />
                 <Route path="/affiliate/commissions" element={<ReferrerRoute><PortalCommissions /></ReferrerRoute>} />
+                <Route path="/affiliate/payouts" element={<ReferrerRoute><PortalPayouts /></ReferrerRoute>} />
                 {/* Legacy /portal redirects */}
                 <Route path="/portal" element={<Navigate to="/affiliate" replace />} />
                 <Route path="/portal/new-referral" element={<Navigate to="/affiliate/new-referral" replace />} />

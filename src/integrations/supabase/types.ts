@@ -80,6 +80,13 @@ export type Database = {
             foreignKeyName: "accounts_referrer_id_fkey"
             columns: ["referrer_id"]
             isOneToOne: false
+            referencedRelation: "referrer_balances"
+            referencedColumns: ["referrer_id"]
+          },
+          {
+            foreignKeyName: "accounts_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
             referencedRelation: "referrers"
             referencedColumns: ["id"]
           },
@@ -524,6 +531,13 @@ export type Database = {
           zip?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "applications_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "referrer_balances"
+            referencedColumns: ["referrer_id"]
+          },
           {
             foreignKeyName: "applications_referrer_id_fkey"
             columns: ["referrer_id"]
@@ -2284,6 +2298,13 @@ export type Database = {
             foreignKeyName: "merchants_referrer_id_fkey"
             columns: ["referrer_id"]
             isOneToOne: false
+            referencedRelation: "referrer_balances"
+            referencedColumns: ["referrer_id"]
+          },
+          {
+            foreignKeyName: "merchants_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
             referencedRelation: "referrers"
             referencedColumns: ["id"]
           },
@@ -2817,6 +2838,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "lead_referrers"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opportunities_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "referrer_balances"
+            referencedColumns: ["referrer_id"]
           },
           {
             foreignKeyName: "opportunities_referrer_id_fkey"
@@ -3385,10 +3413,168 @@ export type Database = {
             foreignKeyName: "referrer_impersonation_logs_referrer_id_fkey"
             columns: ["referrer_id"]
             isOneToOne: false
+            referencedRelation: "referrer_balances"
+            referencedColumns: ["referrer_id"]
+          },
+          {
+            foreignKeyName: "referrer_impersonation_logs_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
             referencedRelation: "referrers"
             referencedColumns: ["id"]
           },
         ]
+      }
+      referrer_ledger_entries: {
+        Row: {
+          account_id: string | null
+          amount: number
+          commission_record_id: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          entry_type: string
+          id: string
+          paid_at: string | null
+          payable_on: string | null
+          payout_run_id: string | null
+          period_end: string | null
+          period_start: string | null
+          referrer_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          amount: number
+          commission_record_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          entry_type: string
+          id?: string
+          paid_at?: string | null
+          payable_on?: string | null
+          payout_run_id?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          referrer_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          amount?: number
+          commission_record_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          entry_type?: string
+          id?: string
+          paid_at?: string | null
+          payable_on?: string | null
+          payout_run_id?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          referrer_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrer_ledger_entries_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrer_ledger_entries_commission_record_id_fkey"
+            columns: ["commission_record_id"]
+            isOneToOne: false
+            referencedRelation: "commission_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrer_ledger_entries_commission_record_id_fkey"
+            columns: ["commission_record_id"]
+            isOneToOne: false
+            referencedRelation: "referrer_commission_records"
+            referencedColumns: ["record_id"]
+          },
+          {
+            foreignKeyName: "referrer_ledger_entries_payout_run_id_fkey"
+            columns: ["payout_run_id"]
+            isOneToOne: false
+            referencedRelation: "referrer_payout_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrer_ledger_entries_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "referrer_balances"
+            referencedColumns: ["referrer_id"]
+          },
+          {
+            foreignKeyName: "referrer_ledger_entries_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "referrers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referrer_payout_runs: {
+        Row: {
+          approved_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          minimum_payout: number
+          notes: string | null
+          paid_at: string | null
+          partner_count: number
+          period_end: string
+          period_start: string
+          reference: string | null
+          status: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          minimum_payout?: number
+          notes?: string | null
+          paid_at?: string | null
+          partner_count?: number
+          period_end: string
+          period_start: string
+          reference?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          minimum_payout?: number
+          notes?: string | null
+          paid_at?: string | null
+          partner_count?: number
+          period_end?: string
+          period_start?: string
+          reference?: string | null
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       referrers: {
         Row: {
@@ -3396,6 +3582,10 @@ export type Database = {
           alias: string | null
           attribution_only: boolean
           auth_user_id: string | null
+          bank_account_last4: string | null
+          bank_account_name: string | null
+          bank_name: string | null
+          bank_routing_last4: string | null
           bonus_amount: number
           bonus_milestone_count: number
           clawback_window_days: number
@@ -3404,8 +3594,11 @@ export type Database = {
           email: string | null
           full_name: string
           id: string
+          minimum_payout: number
           monthly_cap_per_merchant: number
           notes: string | null
+          payout_method: string
+          payout_notes: string | null
           phone: string | null
           tier: string
           updated_at: string
@@ -3415,6 +3608,10 @@ export type Database = {
           alias?: string | null
           attribution_only?: boolean
           auth_user_id?: string | null
+          bank_account_last4?: string | null
+          bank_account_name?: string | null
+          bank_name?: string | null
+          bank_routing_last4?: string | null
           bonus_amount?: number
           bonus_milestone_count?: number
           clawback_window_days?: number
@@ -3423,8 +3620,11 @@ export type Database = {
           email?: string | null
           full_name: string
           id?: string
+          minimum_payout?: number
           monthly_cap_per_merchant?: number
           notes?: string | null
+          payout_method?: string
+          payout_notes?: string | null
           phone?: string | null
           tier?: string
           updated_at?: string
@@ -3434,6 +3634,10 @@ export type Database = {
           alias?: string | null
           attribution_only?: boolean
           auth_user_id?: string | null
+          bank_account_last4?: string | null
+          bank_account_name?: string | null
+          bank_name?: string | null
+          bank_routing_last4?: string | null
           bonus_amount?: number
           bonus_milestone_count?: number
           clawback_window_days?: number
@@ -3442,8 +3646,11 @@ export type Database = {
           email?: string | null
           full_name?: string
           id?: string
+          minimum_payout?: number
           monthly_cap_per_merchant?: number
           notes?: string | null
+          payout_method?: string
+          payout_notes?: string | null
           phone?: string | null
           tier?: string
           updated_at?: string
@@ -4409,6 +4616,25 @@ export type Database = {
           },
         ]
       }
+      referrer_balances: {
+        Row: {
+          active: boolean | null
+          attribution_only: boolean | null
+          balance_amount: number | null
+          commission_entries: number | null
+          email: string | null
+          full_name: string | null
+          last_paid_at: string | null
+          last_period_end: string | null
+          lifetime_amount: number | null
+          minimum_payout: number | null
+          paid_amount: number | null
+          payable_amount: number | null
+          pending_amount: number | null
+          referrer_id: string | null
+        }
+        Relationships: []
+      }
       referrer_commission_records: {
         Row: {
           account_id: string | null
@@ -4428,6 +4654,13 @@ export type Database = {
           uncapped_payout: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "accounts_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "referrer_balances"
+            referencedColumns: ["referrer_id"]
+          },
           {
             foreignKeyName: "accounts_referrer_id_fkey"
             columns: ["referrer_id"]
@@ -4509,6 +4742,7 @@ export type Database = {
       prune_rate_limit_events: { Args: never; Returns: undefined }
       referrer_owns: { Args: { _referrer_id: string }; Returns: boolean }
       referrer_owns_account: { Args: { _account_id: string }; Returns: boolean }
+      referrer_payable_on: { Args: { _period_end: string }; Returns: string }
       resolve_assignee_email: { Args: { input: string }; Returns: string }
       send_system_dm: {
         Args: { p_content: string; p_receiver_email: string }
