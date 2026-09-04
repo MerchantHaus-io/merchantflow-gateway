@@ -491,9 +491,10 @@ export default function Commissions() {
                     <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">MID</th>
                     <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Txns</th>
                     <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">Volume</th>
-                    <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="Processing residual (Kurv markup × our split)">Processing</th>
+                    <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="Processing residual (Kurv markup × our split). Affiliates earn nothing on this.">Processing</th>
                     <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="Gateway invoiced to merchant (accepted quote monthly resale)">Gateway Inv.</th>
-                    <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="Our gateway margin (accepted quote monthly margin)">Gateway Margin</th>
+                    <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="Our gateway margin (accepted quote monthly margin). Affiliate commission is paid on this figure only.">Gateway Margin</th>
+
                     <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="Processing residual + gateway margin">Est. Total</th>
                     <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="Actual partner residual reported by NMI for this month">NMI Actual</th>
                     <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider" title="NMI actual − Est. Total, with effective-rate drift against the rate our estimate implies">Variance</th>
