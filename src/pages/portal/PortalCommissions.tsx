@@ -37,17 +37,13 @@ type ProjAccount = {
   account_id: string;
   company_name: string;
   status: "live" | "pipeline";
-  monthly_volume: number;
-  estimated: boolean;
-  projected_company_commission: number;
+  /** True when we have no gateway billing history for this merchant yet. */
+  awaitingGateway: boolean;
   projected_payout: number;
   at_cap: boolean;
 };
 
 const DEAD_OUTCOMES = new Set(["disqualified", "closed_lost", "no_decision", "underwriting_declined"]);
-const PROCESSING_RATE = 0.0292;
-const REV_SHARE = 0.30;
-const FALLBACK_VOLUME = 25000;
 
 export default function PortalCommissions() {
   const { referrer } = useAuth();
@@ -72,36 +68,19 @@ export default function PortalCommissions() {
   const rate = referrer?.commission_rate ?? 0.5;
   const monthlyCap = referrer?.monthly_cap_per_merchant ?? 1000;
 
-  // Projection data: referred accounts + most recent application monthly volume.
-  const { data: projectionAccounts } = useQuery({
+  // Referred accounts, live vs still in pipeline.
+  const { data: referredAccounts } = useQuery({
     queryKey: ["portal-projection", referrer?.id],
     enabled: !!referrer?.id,
-    queryFn: async (): Promise<ProjAccount[]> => {
+    queryFn: async (): Promise<{ account_id: string; company_name: string; status: "live" | "pipeline" }[]> => {
       const { data: opps } = await supabase
         .from("opportunities")
         .select("account_id, status, outcome_status, stage, created_at, account:accounts(id, name, nmi_merchant_id)")
         .eq("referrer_id", referrer!.id)
         .order("created_at", { ascending: false });
 
-      const { data: apps } = await (supabase.from("applications") as any)
-        .select("monthly_volume, email, created_at")
-        .eq("referrer_id", referrer!.id)
-        .order("created_at", { ascending: false });
-
-      const volByEmail = new Map<string, number>();
-      for (const a of (apps as any[]) ?? []) {
-        const key = (a?.email ?? "").toString().toLowerCase();
-        if (!key) continue;
-        if (!volByEmail.has(key) && a?.monthly_volume) {
-          volByEmail.set(key, Number(a.monthly_volume));
-        }
-      }
-      // Weak fallback: use the most recent volume value submitted by this referrer.
-      let fallbackVol = 0;
-      for (const [, v] of volByEmail) { fallbackVol = v; break; }
-
       const seen = new Set<string>();
-      const out: ProjAccount[] = [];
+      const out: { account_id: string; company_name: string; status: "live" | "pipeline" }[] = [];
       for (const o of (opps as any[]) ?? []) {
         const acct = o?.account;
         if (!acct?.id || seen.has(acct.id)) continue;
@@ -113,29 +92,38 @@ export default function PortalCommissions() {
         if (isDead) continue;
 
         const isLive = !!acct.nmi_merchant_id || o.stage === "closed_won" || o.outcome_status === "closed_won";
-
-        let vol = fallbackVol;
-        const estimated = vol === 0;
-        if (estimated) vol = FALLBACK_VOLUME;
-
-        const companyCommission = vol * PROCESSING_RATE * REV_SHARE;
-        const uncapped = companyCommission * rate;
-        const payout = Math.min(uncapped, monthlyCap);
-
         out.push({
           account_id: acct.id,
           company_name: acct.name ?? "Merchant",
           status: isLive ? "live" : "pipeline",
-          monthly_volume: vol,
-          estimated,
-          projected_company_commission: companyCommission,
-          projected_payout: payout,
-          at_cap: uncapped >= monthlyCap,
         });
       }
       return out;
     },
   });
+
+  /**
+   * Projections are based on each merchant's most recent GATEWAY billing month —
+   * never on processing volume. Processing residuals earn a partner nothing.
+   */
+  const projectionAccounts = useMemo<ProjAccount[]>(() => {
+    const latestPayout = new Map<string, number>();
+    for (const r of allRecords ?? []) {
+      if (latestPayout.has(r.account_id)) continue; // records are newest-first
+      latestPayout.set(r.account_id, Number(r.payout) || 0);
+    }
+    return (referredAccounts ?? []).map((a) => {
+      const known = latestPayout.get(a.account_id);
+      const payout = known ?? 0;
+      return {
+        ...a,
+        awaitingGateway: known === undefined,
+        projected_payout: payout,
+        at_cap: monthlyCap > 0 && payout >= monthlyCap,
+      };
+    });
+  }, [allRecords, referredAccounts, monthlyCap]);
+
 
   const projection = useMemo(() => {
     const acc = projectionAccounts ?? [];
@@ -252,11 +240,13 @@ export default function PortalCommissions() {
           </div>
         </div>
         <p className="text-xs text-muted-foreground mt-3">
-          You earn <strong>{fmtPct(rate)}</strong> of the company commission for each merchant you refer, capped
-          at <strong>{fmt(monthlyCap)} per account, per month</strong> — recurring for the lifetime of that
+          You earn a <strong>{fmtPct(rate)}</strong> share on the <strong>gateway service</strong> for each
+          merchant you refer — card processing volume does not earn commission. Capped at{" "}
+          <strong>{fmt(monthlyCap)} per account, per month</strong> and recurring for the lifetime of that
           account. A <strong>{fmt(bonusAmount)}</strong> bonus is paid for every{" "}
           <strong>{bonusMilestone}</strong> successfully boarded merchants.
         </p>
+
       </Card>
 
       {/* Totals — realized */}
@@ -298,8 +288,9 @@ export default function PortalCommissions() {
           </div>
           <div className="text-2xl font-semibold mt-1 tabular-nums">{fmt(projection.liveMonthly)}</div>
           <div className="text-[10px] text-muted-foreground mt-1">
-            from {projection.liveCount} live account{projection.liveCount === 1 ? "" : "s"} at 50% rev share, capped at {fmt(monthlyCap)}/mo each
+            from {projection.liveCount} live account{projection.liveCount === 1 ? "" : "s"}, based on their latest gateway billing month, capped at {fmt(monthlyCap)}/mo each
           </div>
+
         </Card>
         <Card className="p-4 bg-muted/30">
           <div className="text-xs uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
@@ -329,8 +320,11 @@ export default function PortalCommissions() {
                     <div className="min-w-0">
                       <div className="font-medium truncate">{a.company_name}</div>
                       <div className="text-xs text-muted-foreground mt-0.5">
-                        {fmt(a.monthly_volume)} est. monthly volume{a.estimated ? " · estimate" : ""}
+                        {a.awaitingGateway
+                          ? "Awaiting first gateway invoice"
+                          : "Based on the latest gateway billing month"}
                       </div>
+
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge
@@ -358,8 +352,9 @@ export default function PortalCommissions() {
               ))}
           </ul>
           <div className="px-4 py-2 text-[11px] text-muted-foreground border-t">
-            Projections estimate monthly earnings using stated processing volume and the {fmtPct(rate)} rev share, capped at {fmt(monthlyCap)} per account per month. Actual payouts populate once merchants begin processing.
+            Earnings are calculated on gateway billing only — processing volume does not earn commission. Each figure is your {fmtPct(rate)} share of that merchant's most recent gateway month, capped at {fmt(monthlyCap)} per account per month. Amounts appear once a merchant's first gateway invoice is issued.
           </div>
+
         </Card>
       )}
 
@@ -395,8 +390,8 @@ export default function PortalCommissions() {
           </div>
         ) : periodRecords.length === 0 ? (
           <div className="p-6 text-sm text-muted-foreground">
-            No commission records for this period yet. Once your referred merchants start processing, earnings
-            will appear here at the end of each month.
+            No earnings for this period yet. Once your referred merchants are invoiced for their gateway,
+            earnings will appear here at the end of each month.
           </div>
         ) : (
           <ul className="divide-y">
@@ -408,11 +403,10 @@ export default function PortalCommissions() {
                     <div className="min-w-0">
                       <div className="font-medium truncate">{r.company_name || "Merchant"}</div>
                       <div className="text-xs text-muted-foreground mt-0.5">
-                        Volume {fmt(Number(r.transaction_volume))} ·{" "}
-                        {r.transaction_count.toLocaleString()} txns · Company net{" "}
-                        {fmt(Number(r.company_commission))}
+                        Gateway earnings for {format(parseISO(r.period_start), "MMM yyyy")}
                       </div>
                     </div>
+
                     <div className="flex items-center gap-2">
                       {r.displayPayout >= monthlyCap && (
                         <Badge variant="outline" className="text-amber-700 border-amber-300 dark:text-amber-400">
