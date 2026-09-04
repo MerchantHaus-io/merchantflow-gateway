@@ -78,3 +78,23 @@ describe("commissionShare", () => {
     expect(commissionShare(4000, 0.5, 0)).toBe(2000);
   });
 });
+
+describe("gatewayShare", () => {
+  it("pays on the gateway margin only, ignoring processing residuals", () => {
+    // Gateway billed $59, our cost $25 → margin $34 → partner gets $17.
+    expect(gatewayShare(34, 0.5, 1000)).toBe(17);
+    // A big processing residual is irrelevant: the base is the margin.
+    expect(gatewayShare(0, 0.5, 1000)).toBe(0);
+  });
+
+  it("respects the per-merchant monthly cap", () => {
+    expect(gatewayShare(3000, 0.5, 1000)).toBe(1000);
+  });
+});
+
+describe("monthKey", () => {
+  it("groups entries by the month they were earned in", () => {
+    expect(monthKey("2026-07-31")).toBe("2026-07");
+    expect(monthKey(null)).toBe("");
+  });
+});
