@@ -24,6 +24,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { BillingEstimatesPanel } from "@/components/BillingEstimatesPanel";
+import { ReferrerAssignField } from "@/components/ReferrerAssignField";
 
 import { NAME_TO_EMAIL } from "@/config/team";
 const TEAM_EMAIL_MAP: Record<string, string> = NAME_TO_EMAIL;
@@ -309,6 +310,15 @@ const LiveBilling = () => {
                       {g.contact?.first_name} {g.contact?.last_name}
                       {g.contact?.email && ` · ${g.contact.email}`}
                     </p>
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <span className="text-[10px] uppercase tracking-wide text-muted-foreground">Affiliate</span>
+                      <ReferrerAssignField
+                        table="accounts"
+                        recordId={g.account_id}
+                        value={g.account?.referrer_id ?? null}
+                        invalidateKeys={[["live-billing-opportunities"]]}
+                      />
+                    </div>
                     {(() => {
                       const lead = g.opportunities?.[0] as any;
                       return (lead?.pricing_plan || lead?.gateway_tier) ? (
@@ -384,6 +394,7 @@ const LiveBilling = () => {
                   <TableHead>Pipeline</TableHead>
                   <TableHead>Went Live</TableHead>
                   <TableHead>Owner</TableHead>
+                  <TableHead>Affiliate</TableHead>
                   <TableHead className="w-[60px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -457,6 +468,15 @@ const LiveBilling = () => {
                         ) : (
                           <span className="text-sm text-muted-foreground">Unassigned</span>
                         )}
+                      </TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <ReferrerAssignField
+                          table="accounts"
+                          recordId={g.account_id}
+                          value={g.account?.referrer_id ?? null}
+                          invalidateKeys={[["live-billing-opportunities"]]}
+                          className="w-[190px]"
+                        />
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-1">
