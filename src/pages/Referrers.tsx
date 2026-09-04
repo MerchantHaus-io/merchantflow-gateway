@@ -280,16 +280,23 @@ export default function Referrers() {
               {rows.map((row) => (
                 <TableRow key={row.id}>
                   <TableCell>
-                    <Input
-                      value={row.full_name}
-                      onChange={(e) => update(row.id, { full_name: e.target.value })}
-                      className="h-8"
-                    />
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={row.full_name}
+                        onChange={(e) => update(row.id, { full_name: e.target.value })}
+                        className="h-8"
+                      />
+                      {row.attribution_only && (
+                        <Badge variant="outline" className="shrink-0 text-[10px] whitespace-nowrap">
+                          Attribution only
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">
-                    {row.email.split("@")[0]}
+                    {row.email ? row.email.split("@")[0] : "—"}
                   </TableCell>
-                  <TableCell className="font-mono text-xs">{row.email}</TableCell>
+                  <TableCell className="font-mono text-xs">{row.email ?? "—"}</TableCell>
                   <TableCell>
                     <Input
                       value={row.alias ?? ""}
@@ -314,7 +321,8 @@ export default function Referrers() {
                       max="1"
                       value={row.commission_rate}
                       onChange={(e) => update(row.id, { commission_rate: Number(e.target.value) })}
-                      className="h-8 w-20 text-right ml-auto"
+                      disabled={row.attribution_only}
+                      className="h-8 w-20 text-right ml-auto disabled:opacity-50"
                     />
                   </TableCell>
                   <TableCell className="text-right">
@@ -324,7 +332,8 @@ export default function Referrers() {
                       min="0"
                       value={row.monthly_cap_per_merchant}
                       onChange={(e) => update(row.id, { monthly_cap_per_merchant: Number(e.target.value) })}
-                      className="h-8 w-24 text-right ml-auto"
+                      disabled={row.attribution_only}
+                      className="h-8 w-24 text-right ml-auto disabled:opacity-50"
                     />
                   </TableCell>
                   <TableCell className="text-right">
@@ -334,12 +343,14 @@ export default function Referrers() {
                       min="0"
                       value={row.clawback_window_days}
                       onChange={(e) => update(row.id, { clawback_window_days: Number(e.target.value) })}
-                      className="h-8 w-16 text-right ml-auto"
+                      disabled={row.attribution_only}
+                      className="h-8 w-16 text-right ml-auto disabled:opacity-50"
                     />
                   </TableCell>
                   <TableCell>
                     <Switch
                       checked={row.active}
+                      disabled={row.attribution_only}
                       onCheckedChange={(v) => update(row.id, { active: v })}
                     />
                   </TableCell>
@@ -347,17 +358,30 @@ export default function Referrers() {
                     {format(new Date(row.created_at), "MMM d, yyyy")}
                   </TableCell>
                   <TableCell className="text-center">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => handleImpersonate(row)}
-                      disabled={impersonating === row.id || !row.active}
-                      title={row.active ? "Open a session as this affiliate" : "Affiliate is inactive"}
-                    >
-                      <LogIn className="h-3.5 w-3.5 mr-1.5" />
-                      {impersonating === row.id ? "Opening…" : "Login as"}
-                    </Button>
+                    {row.attribution_only ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => startPromote(row)}
+                        title="Give this name a portal login and commission terms"
+                      >
+                        <UserPlus className="h-3.5 w-3.5 mr-1.5" />
+                        Promote
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => handleImpersonate(row)}
+                        disabled={impersonating === row.id || !row.active}
+                        title={row.active ? "Open a session as this affiliate" : "Affiliate is inactive"}
+                      >
+                        <LogIn className="h-3.5 w-3.5 mr-1.5" />
+                        {impersonating === row.id ? "Opening…" : "Login as"}
+                      </Button>
+                    )}
                   </TableCell>
+
                   <TableCell className="text-right">
                     <Button size="sm" variant="outline" onClick={() => saveRow(row)} disabled={saving === row.id}>
                       {saving === row.id ? "Saving…" : "Save"}
