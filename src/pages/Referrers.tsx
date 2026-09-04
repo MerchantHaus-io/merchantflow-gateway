@@ -25,16 +25,18 @@ interface ReferrerRow {
   id: string;
   auth_user_id: string | null;
   full_name: string;
-  email: string;
+  email: string | null;
   phone: string | null;
   alias: string | null;
   active: boolean;
+  attribution_only: boolean;
   commission_rate: number;
   monthly_cap_per_merchant: number;
   clawback_window_days: number;
   notes: string | null;
   created_at: string;
 }
+
 
 const fmtCurrency = (v: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v);
