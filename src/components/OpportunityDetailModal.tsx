@@ -40,6 +40,7 @@ import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "./AutoSaveIndicator";
 import { StagePath } from "./opportunity-detail/StagePath";
 import { PricingBadges } from "./PricingBadges";
+import { ReferrerAssignField } from "./ReferrerAssignField";
 import { ApplicationProgress } from "./opportunity-detail/ApplicationProgress";
 import { NotesSection } from "./opportunity-detail/NotesSection";
 import { OverviewUnderwritingSummary } from "./opportunity-detail/OverviewUnderwritingSummary";
