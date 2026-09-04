@@ -101,13 +101,16 @@ const periodLabel = (start: string, end: string) =>
   `${format(parseISO(start), "d MMM yyyy")} – ${format(parseISO(end), "d MMM yyyy")}`;
 
 /**
- * Admin view of the affiliate payout programme: live balance per partner,
- * credit generation from the month's residuals, and monthly payout runs.
+ * Admin view of the affiliate payout programme: live balance per partner, the
+ * month-by-month gateway earnings behind those balances, credit generation and
+ * monthly payout runs. Partners earn on the gateway margin only — processing
+ * residuals never form part of a payout.
  */
 export function AffiliatePayoutsPanel() {
   const [balances, setBalances] = useState<BalanceRow[]>([]);
   const [runs, setRuns] = useState<PayoutRun[]>([]);
   const [periods, setPeriods] = useState<PeriodOption[]>([]);
+  const [months, setMonths] = useState<MonthRow[]>([]);
   const [periodId, setPeriodId] = useState("");
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState<string | null>(null);
@@ -119,19 +122,27 @@ export function AffiliatePayoutsPanel() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [balanceRes, runRes, periodRes] = await Promise.all([
+    const [balanceRes, runRes, periodRes, monthRes] = await Promise.all([
       supabase.from("referrer_balances").select("*").order("balance_amount", { ascending: false }),
       supabase.from("referrer_payout_runs").select("*").order("period_end", { ascending: false }).limit(24),
       supabase.from("commission_periods").select("id, period_start, period_end").order("period_end", { ascending: false }).limit(24),
+      supabase
+        .from("referrer_ledger_entries")
+        .select("id, referrer_id, account_id, amount, status, period_start, period_end, payable_on, description, entry_type")
+        .neq("status", "void")
+        .order("period_end", { ascending: false, nullsFirst: false })
+        .limit(500),
     ]);
     if (balanceRes.error) toast.error("Could not load partner balances");
     setBalances(((balanceRes.data ?? []) as unknown[] as BalanceRow[]).filter((b) => !!b.referrer_id));
     setRuns((runRes.data ?? []) as PayoutRun[]);
+    setMonths((monthRes.data ?? []) as MonthRow[]);
     const periodRows = (periodRes.data ?? []) as PeriodOption[];
     setPeriods(periodRows);
     setPeriodId((prev) => prev || periodRows[0]?.id || "");
     setLoading(false);
   }, []);
+
 
   useEffect(() => {
     void load();
