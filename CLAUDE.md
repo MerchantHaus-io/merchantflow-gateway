@@ -72,19 +72,33 @@ The gateway cost basis is **$25/month + $0.15/txn**, matching
 `TIER_PLATFORM_FEE.foundation.cost` in `src/config/quoteSchedule.ts` and the
 figures actually stored in `commission_records.gateway_margin`. The `$15.00`
 in `supabase/migrations/20260904203347_*.sql` is **wrong** — re-running that
-UPDATE would over-state every net by $10/month.
+UPDATE would over-state every net by $10/month. That file is applied, so it is
+left alone; `20260904214500_affiliate_programme_basis.sql` supersedes it.
 
-Two things the database still disagrees with, deliberately left for a
-migration-only session (never mix migrations with client changes):
+In SQL the basis now lives in `public.gateway_billed()`, `gateway_cost()`,
+`gateway_net()`, `partner_commission_rate()` and `partner_share()` — IMMUTABLE
+mirrors of `GATEWAY_BASIS`, created by that same migration. A migration that
+needs the basis calls them; it does not retype the numbers.
 
-- `referrers.commission_rate` is `0.5000` in production, i.e. **double** the
-  programme rate. Every existing commission credit is 2x.
-- `build_referrer_ledger()` accrues from any commission period rather than
-  from the merchant's first gateway invoice month.
+The two divergences the database used to carry are closed by that migration
+(migration-only session — never mix migrations with client changes):
+
+- `referrers.commission_rate` was `0.5000`, i.e. **double** the programme rate,
+  so every commission credit was 2x. Both earning partners are set to `0.25`,
+  the column default follows, and the six existing credits were restated down
+  from $113.15 to $56.57 — recomputed from each credit's own gateway month, not
+  halved. Attribution-only partners stay at `0`.
+- `build_referrer_ledger()` had lost its start month and accrued from any
+  commission period. It runs from the merchant's first gateway invoice again,
+  falling back to the accepted quote's month and then to the merchant's first
+  gateway month on `commission_records`. That last fallback matters: two of the
+  three referred merchants have neither an invoice row nor an accepted quote,
+  and a bare "no start month, no earnings" guard would silently stop paying
+  their partner.
 
 The **Programme audit** card on `/admin/affiliates` recomputes every credit
-from its own gateway month and flags exactly these divergences, so the gap is
-visible in the UI until the migration lands.
+from its own gateway month and is the check that the migration landed: it read
+**+$56.58** before and every row should read "Correct" at **$0.00** after.
 
 ## Gauntlet invariants — never violate, in any phase
 
