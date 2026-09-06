@@ -4797,6 +4797,9 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      gateway_billed: { Args: { _txn_count: number }; Returns: number }
+      gateway_cost: { Args: { _txn_count: number }; Returns: number }
+      gateway_net: { Args: { _txn_count: number }; Returns: number }
       get_or_create_general_channel: { Args: never; Returns: string }
       has_role: {
         Args: {
@@ -4818,6 +4821,11 @@ export type Database = {
       next_billing_doc_number: {
         Args: { p_doc_type: string; p_year: number }
         Returns: string
+      }
+      partner_commission_rate: { Args: never; Returns: number }
+      partner_share: {
+        Args: { _cap?: number; _net: number; _rate?: number }
+        Returns: number
       }
       post_system_chat_message: {
         Args: { p_channel_name?: string; p_content: string }
