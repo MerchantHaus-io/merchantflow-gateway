@@ -3071,6 +3071,30 @@ export type Database = {
           },
         ]
       }
+      platform_admins: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          note: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          note?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          note?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       principals: {
         Row: {
           application_id: string
@@ -4422,6 +4446,361 @@ export type Database = {
         }
         Relationships: []
       }
+      tenant_audit_events: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_user_id: string | null
+          created_at: string
+          detail: Json
+          id: string
+          target_id: string | null
+          target_type: string | null
+          tenant_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          detail?: Json
+          id?: string
+          target_id?: string | null
+          target_type?: string | null
+          tenant_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          detail?: Json
+          id?: string
+          target_id?: string | null
+          target_type?: string | null
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_audit_events_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          revoked_at: string | null
+          role: Database["public"]["Enums"]["tenant_member_role"]
+          tenant_id: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          revoked_at?: string | null
+          role?: Database["public"]["Enums"]["tenant_member_role"]
+          tenant_id: string
+          token?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          revoked_at?: string | null
+          role?: Database["public"]["Enums"]["tenant_member_role"]
+          tenant_id?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_invitations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_memberships: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          invited_by: string | null
+          is_default: boolean
+          joined_at: string
+          role: Database["public"]["Enums"]["tenant_member_role"]
+          status: Database["public"]["Enums"]["tenant_membership_status"]
+          tenant_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          invited_by?: string | null
+          is_default?: boolean
+          joined_at?: string
+          role?: Database["public"]["Enums"]["tenant_member_role"]
+          status?: Database["public"]["Enums"]["tenant_membership_status"]
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          invited_by?: string | null
+          is_default?: boolean
+          joined_at?: string
+          role?: Database["public"]["Enums"]["tenant_member_role"]
+          status?: Database["public"]["Enums"]["tenant_membership_status"]
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_memberships_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_onboarding_state: {
+        Row: {
+          completed_at: string | null
+          completed_steps: string[]
+          created_at: string
+          current_step: string
+          data: Json
+          id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_steps?: string[]
+          created_at?: string
+          current_step?: string
+          data?: Json
+          id?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_steps?: string[]
+          created_at?: string
+          current_step?: string
+          data?: Json
+          id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_onboarding_state_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_provisioning_runs: {
+        Row: {
+          attempt: number
+          created_at: string
+          error: string | null
+          finished_at: string | null
+          id: string
+          idempotency_key: string
+          payload: Json
+          requested_by: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["provisioning_run_status"]
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          attempt?: number
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          idempotency_key: string
+          payload?: Json
+          requested_by?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["provisioning_run_status"]
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          attempt?: number
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          idempotency_key?: string
+          payload?: Json
+          requested_by?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["provisioning_run_status"]
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_provisioning_runs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_provisioning_steps: {
+        Row: {
+          created_at: string
+          detail: Json
+          error: string | null
+          finished_at: string | null
+          id: string
+          run_id: string
+          started_at: string | null
+          status: Database["public"]["Enums"]["provisioning_step_status"]
+          step_key: string
+          step_order: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          detail?: Json
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          run_id: string
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["provisioning_step_status"]
+          step_key: string
+          step_order?: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          detail?: Json
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          run_id?: string
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["provisioning_step_status"]
+          step_key?: string
+          step_order?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_provisioning_steps_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_provisioning_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_provisioning_steps_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenants: {
+        Row: {
+          activated_at: string | null
+          billing_email: string | null
+          branding: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          is_legacy: boolean
+          name: string
+          primary_contact_email: string | null
+          settings: Json
+          slug: string
+          status: Database["public"]["Enums"]["tenant_status"]
+          suspended_at: string | null
+          suspended_reason: string | null
+          updated_at: string
+        }
+        Insert: {
+          activated_at?: string | null
+          billing_email?: string | null
+          branding?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_legacy?: boolean
+          name: string
+          primary_contact_email?: string | null
+          settings?: Json
+          slug: string
+          status?: Database["public"]["Enums"]["tenant_status"]
+          suspended_at?: string | null
+          suspended_reason?: string | null
+          updated_at?: string
+        }
+        Update: {
+          activated_at?: string | null
+          billing_email?: string | null
+          branding?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_legacy?: boolean
+          name?: string
+          primary_contact_email?: string | null
+          settings?: Json
+          slug?: string
+          status?: Database["public"]["Enums"]["tenant_status"]
+          suspended_at?: string | null
+          suspended_reason?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       terminal_updates: {
         Row: {
           created_at: string
@@ -4773,6 +5152,7 @@ export type Database = {
         }[]
       }
       current_referrer_id: { Args: never; Returns: string }
+      current_tenant_id: { Args: never; Returns: string }
       current_user_email: { Args: never; Returns: string }
       ensure_office_avatar: {
         Args: { p_email: string }
@@ -4813,7 +5193,10 @@ export type Database = {
       is_blocked_recipient: { Args: { _email: string }; Returns: boolean }
       is_internal_staff: { Args: never; Returns: boolean }
       is_merchanthaus_staff: { Args: never; Returns: boolean }
+      is_platform_admin: { Args: never; Returns: boolean }
       is_referrer: { Args: never; Returns: boolean }
+      is_tenant_admin: { Args: { _tenant_id: string }; Returns: boolean }
+      is_tenant_member: { Args: { _tenant_id: string }; Returns: boolean }
       link_opportunity_to_referrer: {
         Args: { p_application_email: string; p_opportunity_id: string }
         Returns: undefined
@@ -4844,6 +5227,28 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user" | "staff" | "finance"
+      provisioning_run_status:
+        | "pending"
+        | "running"
+        | "succeeded"
+        | "failed"
+        | "cancelled"
+      provisioning_step_status:
+        | "pending"
+        | "running"
+        | "succeeded"
+        | "failed"
+        | "skipped"
+      tenant_member_role: "owner" | "admin" | "member"
+      tenant_membership_status: "invited" | "active" | "suspended" | "revoked"
+      tenant_status:
+        | "pending"
+        | "provisioning"
+        | "ready"
+        | "active"
+        | "suspended"
+        | "failed"
+        | "deactivated"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -4972,6 +5377,31 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user", "staff", "finance"],
+      provisioning_run_status: [
+        "pending",
+        "running",
+        "succeeded",
+        "failed",
+        "cancelled",
+      ],
+      provisioning_step_status: [
+        "pending",
+        "running",
+        "succeeded",
+        "failed",
+        "skipped",
+      ],
+      tenant_member_role: ["owner", "admin", "member"],
+      tenant_membership_status: ["invited", "active", "suspended", "revoked"],
+      tenant_status: [
+        "pending",
+        "provisioning",
+        "ready",
+        "active",
+        "suspended",
+        "failed",
+        "deactivated",
+      ],
     },
   },
 } as const
