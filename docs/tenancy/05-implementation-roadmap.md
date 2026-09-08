@@ -24,9 +24,15 @@ migration.
 
 ---
 
-## Phase 1 — Tenancy foundation (migration only)
+## Phase 1 — Tenancy foundation (migration only) — **APPLIED 8 Sep 2026**
 
 New tables only. Touches no existing table, so it cannot regress the running app.
+
+Applied against production (no staging exists — 0.1 remains open). Helper set
+shipped as `current_tenant_id()`, `is_platform_admin()`, `is_tenant_member()`,
+`is_tenant_admin()`; `current_tenant_id()` resolves only for `ready`/`active`
+tenants, so suspension bites at the chokepoint from the start.
+
 
 - `tenants`, `tenant_memberships`, `tenant_invitations`
 - `platform_admins`
