@@ -9,5 +9,6 @@
 ## Tenancy (Sep 9 2026)
 - [x] Phase 1 foundation (tenants, memberships, helpers)
 - [x] Phase 2a anchors stamped: accounts, opportunities, merchants, applications
-- [ ] Phase 2b-2f remaining tables + uniqueness changes
+- [x] Phase 2b children stamped: contacts, principals, beneficial_owners, bank_accounts, merchant_consents, application_documents/secrets, documents, client_interactions, call_logs, calendar_events, validation/website reports, onboarding_wizard_states, nmi_boarding_submissions
+- [ ] Phase 2c-2f remaining tables + uniqueness changes
 - [ ] Phase 3 tenant-aware access rules
