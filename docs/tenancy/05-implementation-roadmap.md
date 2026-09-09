@@ -51,6 +51,15 @@ existing app behaviour unchanged.
 
 ## Phase 2 — Adopt existing data (migration only)
 
+**Batch 2a APPLIED 9 Sep 2026.** `accounts` (115), `opportunities` (95),
+`merchants` (58), `applications` (109) all carry `tenant_id NOT NULL` + FK +
+index, backfilled to the legacy MerchantHaus tenant. Inserts stay working via a
+column `DEFAULT public.default_tenant_id()` (caller's tenant, else legacy) plus
+a belt-and-braces BEFORE INSERT trigger `set_tenant_id_default()`. The default
+function is SECURITY DEFINER and executable by `anon` deliberately — the public
+apply form inserts applications unauthenticated. Uniqueness changes and RLS are
+still untouched (Phases 2d/3).
+
 The large, careful one. Split into reviewable batches rather than one migration.
 
 1. `ALTER TABLE … ADD COLUMN tenant_id uuid` — **nullable at first**
