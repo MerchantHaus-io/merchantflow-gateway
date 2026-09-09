@@ -170,7 +170,7 @@ export default function Tenants() {
           if (ctx && typeof ctx.text === "function") {
             const text = await ctx.text().catch(() => "");
             try {
-              detail = (JSON.parse(text) as { error?: string }).error ?? text || detail;
+              detail = (JSON.parse(text) as { error?: string }).error || text || detail;
             } catch {
               detail = text || detail;
             }
