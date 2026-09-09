@@ -52,7 +52,7 @@ export type Database = {
           referrer_id?: string | null
           state?: string | null
           status?: string | null
-          tenant_id: string
+          tenant_id?: string
           updated_at?: string
           website?: string | null
           zip?: string | null
@@ -485,7 +485,7 @@ export type Database = {
           state_of_incorporation?: string | null
           status?: string | null
           submitted_at?: string | null
-          tenant_id: string
+          tenant_id?: string
           underwriting_status?: string | null
           updated_at?: string
           website?: string | null
@@ -2261,7 +2261,7 @@ export type Database = {
           sic_mcc_code?: string | null
           state_incorporated?: string | null
           tax_exempt?: boolean | null
-          tenant_id: string
+          tenant_id?: string
           updated_at?: string
           website_url?: string | null
         }
@@ -2811,7 +2811,7 @@ export type Database = {
           stage?: string
           stage_entered_at?: string | null
           status?: string | null
-          tenant_id: string
+          tenant_id?: string
           timezone?: string | null
           updated_at?: string
           username?: string | null
@@ -5194,6 +5194,7 @@ export type Database = {
       current_referrer_id: { Args: never; Returns: string }
       current_tenant_id: { Args: never; Returns: string }
       current_user_email: { Args: never; Returns: string }
+      default_tenant_id: { Args: never; Returns: string }
       ensure_office_avatar: {
         Args: { p_email: string }
         Returns: {
