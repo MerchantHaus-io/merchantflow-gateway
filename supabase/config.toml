@@ -177,3 +177,8 @@ verify_jwt = true
 # affiliate record; an admin approves it before portal access is granted.
 [functions.affiliate-signup]
 verify_jwt = false
+
+# Tenant provisioning worker. Platform-admin only; identity comes from the JWT,
+# so verify_jwt stays on.
+[functions.provision-tenant]
+verify_jwt = true
