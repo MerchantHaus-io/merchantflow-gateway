@@ -60,6 +60,16 @@ function is SECURITY DEFINER and executable by `anon` deliberately — the publi
 apply form inserts applications unauthenticated. Uniqueness changes and RLS are
 still untouched (Phases 2d/3).
 
+**Batch 2b APPLIED 9 Sep 2026.** 15 child tables now carry `tenant_id NOT NULL`
++ FK + index + column default + `set_tenant_id_default()` trigger: `contacts`,
+`principals`, `beneficial_owners`, `bank_accounts`, `merchant_consents`,
+`application_documents`, `application_secrets`, `documents`,
+`client_interactions`, `call_logs`, `calendar_events`, `validation_reports`,
+`website_scrutiny_reports`, `onboarding_wizard_states`,
+`nmi_boarding_submissions`. Backfill resolved through the parent FK where set;
+rows with a null or orphaned parent (`call_logs` 225, `calendar_events` 209,
+`nmi_boarding_submissions` 10) fell back to `default_tenant_id()`. RLS untouched.
+
 The large, careful one. Split into reviewable batches rather than one migration.
 
 1. `ALTER TABLE … ADD COLUMN tenant_id uuid` — **nullable at first**
