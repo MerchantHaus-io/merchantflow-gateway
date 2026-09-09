@@ -430,7 +430,7 @@ serve(async (req) => {
       if (!state) return json({ error: "Setup wizard has not been opened for this organisation" }, 404);
 
       const completed = new Set<string>((state.completed_steps as string[]) ?? []);
-      if (body.undo === "true" || body.undo === true) completed.delete(step);
+      if (String(body.undo) === "true") completed.delete(step);
       else completed.add(step);
 
       const merged = { ...((state.data ?? {}) as Record<string, unknown>), ...(body.data ?? {}) };
