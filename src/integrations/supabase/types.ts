@@ -5943,6 +5943,7 @@ export type Database = {
         Args: { p_content: string; p_receiver_email: string }
         Returns: undefined
       }
+      tenant_visible: { Args: { _tenant_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user" | "staff" | "finance"
