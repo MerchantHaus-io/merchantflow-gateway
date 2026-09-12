@@ -849,9 +849,13 @@ Dependency-ordered. Effort XS–XL, priority P0–P3.
 
 ### EPIC E — Provisioning & platform console
 - E1.1 Provisioning orchestrator with checkpointed, idempotent steps.
-  *L / P0.*
+  *L / P0.* ✅ **DONE 11 Sep** — `provision-tenant` (JWT + platform-admin only,
+  idempotent, audited), verified end-to-end on a throwaway tenant.
 - E1.2 Platform console: tenant list, state, provisioning failure inspection,
-  suspend/reactivate/retry, platform audit. *L / P1.*
+  suspend/reactivate/retry, platform audit. *L / P1.* ✅ **DONE 11 Sep** —
+  `/admin/tenants`, minus platform audit view (still open). Also landed
+  alongside: `/admin/organisation` per-ISO admin (team invites via
+  `tenant-team` fn, `tenant_pricing_items` pricing, quote activity).
 - E1.3 Platform-admin impersonation with time-boxed, audited sessions
   (generalize `impersonate-referrer`). *M / P1.*
 
@@ -1016,26 +1020,30 @@ b) would upgrade several rows — noted where it changes.
 
 ## 23. Recommended Immediate Next Actions
 
-In order. None of these begin the tenancy implementation.
+In order, updated 12 Sep 2026. Tenancy implementation is underway, so the list
+now reads from where the work actually stands.
 
-1. **Answer D1** — multi-tenant shared database, or single-tenant instances for
-   the first customers. Every date downstream depends on it.
-2. **Answer D3** (`terminal_updates` scope) and D6 (whether historical affiliate
-   credits get restated).
-3. **Provision staging.** Nothing about isolation is verifiable until it
-   exists, and `CLAUDE.md` correctly forbids exercising it on production.
-4. **Close the two live defects** in W0, in separate sessions:
-   T1 (`useUserRole` fail-open — client) and T11/T12 (commission rate and
-   gateway cost — migration-only).
-5. **Put the existing tests to work:** add `vitest` and `deno check` to CI.
-   One afternoon; it converts 230 tests and 76 unchecked Deno files from
-   decoration into a gate.
-6. **Run a restore drill** into staging and write down the RTO/RPO.
-7. **Start the commercial track in parallel** — pricing model, ToS, DPA,
-   sub-processor list — since none of it depends on engineering.
-8. **Then, and only then, open Gate 2:** prototype `tenant_id` plus a
-   tenantized helper on `accounts`, `opportunities` and `merchants` in staging
-   and measure the query plans.
+1. **Answered & done:** D1 (shared-DB multi-tenancy — being built), D6 (credits
+   restated by `20260904214500`), T1 and T11/T12 (closed).
+2. **Tenant-scope the service-role edge functions (C2) — the largest live
+   isolation gap.** RLS no longer protects these 60 callers because they bypass
+   it. Start with `requireAuth()` returning the principal (C2.1), then sweep
+   handlers (C2.2), then the 13 cron jobs (C2.4).
+3. **Ship `user_roles` tenantization alone (B2.8)** and the ADR-007 uniqueness
+   changes (B2.7), each migration-only.
+4. **Audit the `default_tenant_id()` fallback** before any second tenant goes
+   active — it may grant membership-less principals visibility of the legacy
+   tenant.
+5. **Provision staging.** Still the binding blocker on verifying isolation;
+   two-tenant isolation suite (C4.1) cannot honestly run without it.
+6. **Client tenant context (D1.1–D1.3)** — `TenantContext`, switcher with cache
+   reset, tenant-scoped `queryKey`s — before any real user holds two
+   memberships.
+7. **Put the existing tests to work:** `vitest` + `deno check` in CI. 236 tests
+   and 77 unchecked Deno files are still decoration, not a gate.
+8. **Run a restore drill** into staging and write down the RTO/RPO.
+9. **Commercial track in parallel** — pricing model, ToS, DPA, sub-processor
+   list — none of it depends on engineering.
 
 Items requiring verification, and how: platform PITR availability and retention
 (check the Cloud project's backup settings); current auth MFA configuration
