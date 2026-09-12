@@ -1,9 +1,11 @@
 # The Ops Terminal — Prototype-to-GA Productization Assessment
 
-Assessment only. **No application code, schema or configuration was changed to
-produce this document.**
+Assessment originally written 5 Sep 2026. **Status update 12 Sep 2026:**
+tenancy implementation is now underway — see the delta section below, which
+supersedes the rows it touches. Everything not mentioned there remains as
+assessed on 5 Sep.
 
-Evidence basis, all re-verified on 5 Sep 2026 in this session unless marked
+Evidence basis, re-verified on 5 Sep 2026 unless marked
 *Requires verification*:
 
 | Measurement | Command / query | Result |
@@ -22,9 +24,38 @@ Evidence basis, all re-verified on 5 Sep 2026 in this session unless marked
 | Edge functions | `supabase/functions/` | 76 |
 | Functions holding a service-role key | `grep -rl SERVICE_ROLE` | 60 |
 | Functions with `verify_jwt = false` | `supabase/config.toml` | 9 |
-| Migrations in repo | `supabase/migrations/` | 186 |
+| Migrations in repo | `supabase/migrations/` | 186 (5 Sep; since grown — tenancy phases) |
 | Frontend source files | `src/**/*.ts(x)` | 370 (66 pages, 90 components dirs) |
-| Test files | `src/**/*.test.ts` | 18 |
+| Test files | `src/**/*.test.ts` | 18 (236 passing as of 11 Sep) |
+
+---
+
+## Status update — 12 Sep 2026 (supersedes the rows it touches)
+
+Work has begun on the roadmap this document proposed. What has landed, verified
+against production:
+
+| Item | State |
+|---|---|
+| **EPIC B1.1 Tenancy foundation** | **DONE.** `tenants`, `memberships`, provisioning tables, `current_tenant_id()`, `is_platform_admin()` live. Legacy MerchantHaus tenant `34623237-1a3d-4926-89a2-2964cef66ab7`; all 12 users backfilled as members. |
+| **EPIC B2 batches 2a–2e** | **DONE (50 tables).** Anchors (accounts, opportunities, merchants, applications) then children — contacts, principals, bank accounts, documents, activity, messaging, quoting, billing, commissions, affiliate and integration tables — all stamped `tenant_id NOT NULL` + FK + index + default + insert trigger, backfilled to MerchantHaus. Verified: zero nulls, zero orphans, zero cross-tenant mismatches. |
+| **EPIC B2.7 / B2.8** | **Open.** The 10 uniqueness changes (ADR-007), `billing_doc_sequences` PK change, and `user_roles → (tenant_id, user_id, role)` — user_roles ships alone as planned. |
+| **EPIC C1 (RLS isolation, first pass)** | **DONE, first pass.** `tenant_visible(uuid)` helper; all 211 policies on tenant-stamped tables now AND a tenant term on reads and writes. Platform admins bypass. Anon intake preserved via `default_tenant_id()` fallback. C2 (60 service-role edge functions) and C2.4 (13 cron jobs) remain **untouched** — they still bypass RLS and are now the largest live isolation gap. |
+| **EPIC E1.1 / E1.2 Provisioning & platform console** | **DONE.** `provision-tenant` worker (JWT + platform-admin only; create, retry, step, activate, suspend, reactivate; idempotent) and `/admin/tenants` console. Verified end-to-end on a throwaway tenant, since deleted. |
+| **EPIC D1.4 (partial)** | **Started.** `tenant_pricing_items` table + per-organisation pricing admin live; other config constants (team, paymentInstructions, navigation) still compile-time. |
+| **EPIC F (partial)** | New: per-organisation admin page `/admin/organisation` — ISO admins manage their own details, team invites/roles/suspension (via `tenant-team` edge function), pricing, and quote activity, all under tenant RLS. |
+| **Affiliate divergence (T11/T12)** | **CLOSED.** `20260904214500_affiliate_programme_basis.sql` corrected the 0.5000 rate to 0.25, the $15 cost to $25 + $0.15/txn, restated credits, and restored the first-gateway-invoice accrual guard in `build_referrer_ledger()`. |
+| **T1 `useUserRole` fail-open** | **CLOSED** (fixed 12 Aug, before this document — the ledger in `docs/tenancy/06` has the detail). |
+
+**What this changes in the assessment:** gaps 1 and 3 in the Executive Summary
+are partially closed (tenant dimension now exists and RLS carries it; identity
+is membership-backed in the helpers, though email-domain checks remain in
+places). Gaps 2, 4 and 5 are unchanged: service-role functions are
+tenant-blind, there is still no staging environment, and nothing commercial
+exists. The critical path now runs: **edge-function tenant scoping (C2) →
+user_roles tenantization (B2.8) → storage namespacing (C3.1) → client tenant
+context (D1.1–D1.3) → two-tenant isolation test (C4.1) → onboarding/commercial
+track.**
 
 This document supersedes and extends `docs/tenancy/` (which covers tenancy
 only) by adding product definition, CI/CD, testing, commercialization, beta,
@@ -232,8 +263,8 @@ operational visibility a paying external customer implies.
 | RLS *enabled* on all tables | **Production-ready** | `relrowsecurity = true` on 78/78 |
 | Quoting → MSA → acceptance | Functional, needs hardening | Snapshot correctness relies on one code path; thin tests |
 | Billing documents & sequences | Functional, needs hardening | `next_billing_doc_number` sequence contention unproven under concurrency |
-| Residual reconciliation & commission | Functional, needs hardening | Tested helpers; `CLAUDE.md` records a wrong `$15.00` constant in migration `20260904203347` and `referrers.commission_rate = 0.5000` being double the programme rate — **known live data divergence** |
-| Affiliate ledger & payout runs | Functional, needs hardening | Same divergence; `build_referrer_ledger()` accrues from any period rather than first gateway invoice |
+| Residual reconciliation & commission | Functional, needs hardening | Tested helpers; the `$15.00` cost and `0.5000` rate divergences were **closed 4 Sep** by `20260904214500_affiliate_programme_basis.sql` (25% rate, $25 + $0.15/txn cost, credits restated) |
+| Affiliate ledger & payout runs | Functional, needs hardening | *(12 Sep)* accrual guard restored to first-gateway-invoice month; reconciliation report on payout runs live |
 | NMI / Kurv boarding | Functional, needs hardening | No retry/idempotency evidence on partner calls |
 | Support ticketing + inbound email | Functional, needs hardening | Sanitization has already regressed once (links/snippets stripped) |
 | Google Workspace sync | Functional, needs hardening | Token refresh failure handling unproven |
@@ -243,10 +274,10 @@ operational visibility a paying external customer implies.
 | MCP / agent integration | Prototype | Recent, one 503 incident from upstream auth |
 | In-app observability | Prototype | Error/rate-limit browsing only; no metrics or alerts |
 | Mobile (Capacitor) | Incomplete | Wrapper + layouts exist; release state *Requires verification* |
-| **Multi-tenancy** | **Missing** | Zero tenant columns |
-| **Tenant provisioning** | **Missing** | — |
-| **Customer onboarding** | **Missing** | `onboarding_wizard_states` exists but is a *merchant* preboarding wizard, not tenant onboarding |
-| **Platform admin console** | **Missing** | — |
+| **Multi-tenancy** | **In progress** | *(12 Sep)* 50 tables stamped, first-pass tenant RLS live; edge functions, crons, storage and client cache still tenant-blind |
+| **Tenant provisioning** | Functional, needs hardening | *(12 Sep)* `provision-tenant` worker + `/admin/tenants` console, verified end-to-end |
+| **Customer onboarding** | **In progress** | *(12 Sep)* provisioning wizard + `/admin/organisation` exist; 12-step resumable onboarding and credential vault not yet |
+| **Platform admin console** | Functional, needs hardening | *(12 Sep)* `/admin/tenants` (list, setup, suspend/reactivate/retry); platform audit and impersonation not yet |
 | **Plans / entitlements / subscription billing** | **Missing** | Billing here bills *merchants*, not ISO customers |
 | **Staging environment** | **Missing** | Binding blocker |
 | **Tests in CI** | **Missing** | 230 tests, zero gating |
@@ -763,22 +794,27 @@ Dependency-ordered. Effort XS–XL, priority P0–P3.
   settings, entitlements, platform_admins, provisioning runs/steps, onboarding
   state, audit events, `current_tenant_id()`, `is_platform_admin()`,
   `is_tenant_admin()`, state machine, legacy tenant seed, membership backfill
-  from 12 users / 19 role rows). *L / P0.* **AC:** every existing user has an
-  active membership; `current_tenant_id()` returns the legacy tenant; app
-  behavior unchanged.
+  from 12 users / 19 role rows). *L / P0.* ✅ **DONE 9 Sep** — verified:
+  12 memberships on legacy tenant, app behavior unchanged.
 - B2.1–B2.6 `tenant_id` adoption batches 2a–2f per `docs/tenancy/05`, each:
   add nullable → backfill → validate (zero nulls, zero orphans) → NOT NULL +
-  FK + index. *XL total / P0.* **AC per batch:** validation script output
-  attached to the migration.
-- B2.7 The 10 uniqueness changes from ADR-007. *M / P0.*
+  FK + index. *XL total / P0.* ✅ **2a–2e DONE 9–11 Sep** (50 tables incl.
+  anchors and all child/activity/messaging/quoting/billing/commission/
+  integration tables); **2f (`user_roles`) and `billing_doc_sequences` still
+  open.**
+- B2.7 The 10 uniqueness changes from ADR-007. *M / P0.* **Open.**
 - B2.8 `user_roles` → `(tenant_id, user_id, role)` — **shipped alone**.
-  *M / P0.* **AC:** admin resolution unchanged for the legacy tenant.
+  *M / P0.* **Open — next schema step.** **AC:** admin resolution unchanged
+  for the legacy tenant.
 
 ### EPIC C — Isolation
 
 - C1.1 Add the tenant predicate to the 5–7 security-definer helpers.
-  *M / P0.* **AC:** ~67 delegating policies filter by tenant with no policy
-  edits.
+  *M / P0.* ✅ **DONE 11 Sep (first pass)** — `tenant_visible(uuid)` helper; all
+  211 policies on tenant-stamped tables now carry a tenant term on reads and
+  writes. Platform-admin bypass live; anon intake preserved via
+  `default_tenant_id()` fallback. Note: the fallback deserves an audit — it may
+  expose legacy-tenant rows to a principal with no membership.
 - C1.2 Rewrite the 27 `USING (true)` policies. *L / P0.*
 - C1.3 Rewrite the 43 `auth.uid() IS NOT NULL` policies. *L / P0.*
 - C1.4 Add tenant terms to the 51 INSERT-only `WITH CHECK` policies.
@@ -813,9 +849,13 @@ Dependency-ordered. Effort XS–XL, priority P0–P3.
 
 ### EPIC E — Provisioning & platform console
 - E1.1 Provisioning orchestrator with checkpointed, idempotent steps.
-  *L / P0.*
+  *L / P0.* ✅ **DONE 11 Sep** — `provision-tenant` (JWT + platform-admin only,
+  idempotent, audited), verified end-to-end on a throwaway tenant.
 - E1.2 Platform console: tenant list, state, provisioning failure inspection,
-  suspend/reactivate/retry, platform audit. *L / P1.*
+  suspend/reactivate/retry, platform audit. *L / P1.* ✅ **DONE 11 Sep** —
+  `/admin/tenants`, minus platform audit view (still open). Also landed
+  alongside: `/admin/organisation` per-ISO admin (team invites via
+  `tenant-team` fn, `tenant_pricing_items` pricing, quote activity).
 - E1.3 Platform-admin impersonation with time-boxed, audited sessions
   (generalize `impersonate-referrer`). *M / P1.*
 
@@ -980,26 +1020,30 @@ b) would upgrade several rows — noted where it changes.
 
 ## 23. Recommended Immediate Next Actions
 
-In order. None of these begin the tenancy implementation.
+In order, updated 12 Sep 2026. Tenancy implementation is underway, so the list
+now reads from where the work actually stands.
 
-1. **Answer D1** — multi-tenant shared database, or single-tenant instances for
-   the first customers. Every date downstream depends on it.
-2. **Answer D3** (`terminal_updates` scope) and D6 (whether historical affiliate
-   credits get restated).
-3. **Provision staging.** Nothing about isolation is verifiable until it
-   exists, and `CLAUDE.md` correctly forbids exercising it on production.
-4. **Close the two live defects** in W0, in separate sessions:
-   T1 (`useUserRole` fail-open — client) and T11/T12 (commission rate and
-   gateway cost — migration-only).
-5. **Put the existing tests to work:** add `vitest` and `deno check` to CI.
-   One afternoon; it converts 230 tests and 76 unchecked Deno files from
-   decoration into a gate.
-6. **Run a restore drill** into staging and write down the RTO/RPO.
-7. **Start the commercial track in parallel** — pricing model, ToS, DPA,
-   sub-processor list — since none of it depends on engineering.
-8. **Then, and only then, open Gate 2:** prototype `tenant_id` plus a
-   tenantized helper on `accounts`, `opportunities` and `merchants` in staging
-   and measure the query plans.
+1. **Answered & done:** D1 (shared-DB multi-tenancy — being built), D6 (credits
+   restated by `20260904214500`), T1 and T11/T12 (closed).
+2. **Tenant-scope the service-role edge functions (C2) — the largest live
+   isolation gap.** RLS no longer protects these 60 callers because they bypass
+   it. Start with `requireAuth()` returning the principal (C2.1), then sweep
+   handlers (C2.2), then the 13 cron jobs (C2.4).
+3. **Ship `user_roles` tenantization alone (B2.8)** and the ADR-007 uniqueness
+   changes (B2.7), each migration-only.
+4. **Audit the `default_tenant_id()` fallback** before any second tenant goes
+   active — it may grant membership-less principals visibility of the legacy
+   tenant.
+5. **Provision staging.** Still the binding blocker on verifying isolation;
+   two-tenant isolation suite (C4.1) cannot honestly run without it.
+6. **Client tenant context (D1.1–D1.3)** — `TenantContext`, switcher with cache
+   reset, tenant-scoped `queryKey`s — before any real user holds two
+   memberships.
+7. **Put the existing tests to work:** `vitest` + `deno check` in CI. 236 tests
+   and 77 unchecked Deno files are still decoration, not a gate.
+8. **Run a restore drill** into staging and write down the RTO/RPO.
+9. **Commercial track in parallel** — pricing model, ToS, DPA, sub-processor
+   list — none of it depends on engineering.
 
 Items requiring verification, and how: platform PITR availability and retention
 (check the Cloud project's backup settings); current auth MFA configuration
