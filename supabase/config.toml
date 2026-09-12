@@ -182,3 +182,8 @@ verify_jwt = false
 # so verify_jwt stays on.
 [functions.provision-tenant]
 verify_jwt = true
+
+# Per-organisation team management (invite, role, revoke). The caller's tenant
+# and admin rights are re-derived from their own membership, so verify_jwt on.
+[functions.tenant-team]
+verify_jwt = true

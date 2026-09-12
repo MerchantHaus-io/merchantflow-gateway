@@ -5298,6 +5298,62 @@ export type Database = {
           },
         ]
       }
+      tenant_pricing_items: {
+        Row: {
+          active: boolean
+          cadence: string
+          category: string
+          code: string
+          cost: number
+          created_at: string
+          id: string
+          label: string
+          notes: string | null
+          resale: number
+          sort_order: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          cadence?: string
+          category?: string
+          code: string
+          cost?: number
+          created_at?: string
+          id?: string
+          label: string
+          notes?: string | null
+          resale?: number
+          sort_order?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          cadence?: string
+          category?: string
+          code?: string
+          cost?: number
+          created_at?: string
+          id?: string
+          label?: string
+          notes?: string | null
+          resale?: number
+          sort_order?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_pricing_items_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_provisioning_runs: {
         Row: {
           attempt: number

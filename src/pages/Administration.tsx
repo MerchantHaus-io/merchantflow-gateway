@@ -91,6 +91,22 @@ const Administration = () => {
           </button>
         </div>
 
+        {/* Per-organisation admin (own team, pricing, quotes) */}
+        <div className="rounded-md border border-border p-4 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium">Your organisation</p>
+            <p className="text-xs text-muted-foreground">
+              Organisation details, team invites, your own price list and quote activity.
+            </p>
+          </div>
+          <button
+            onClick={() => navigate("/admin/organisation")}
+            className="text-xs underline underline-offset-4 text-muted-foreground hover:text-foreground shrink-0"
+          >
+            Open Organisation →
+          </button>
+        </div>
+
         {/* Broadcast Acknowledgments */}
         <BroadcastAckPanel />
 
