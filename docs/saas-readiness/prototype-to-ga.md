@@ -1,9 +1,11 @@
 # The Ops Terminal — Prototype-to-GA Productization Assessment
 
-Assessment only. **No application code, schema or configuration was changed to
-produce this document.**
+Assessment originally written 5 Sep 2026. **Status update 12 Sep 2026:**
+tenancy implementation is now underway — see the delta section below, which
+supersedes the rows it touches. Everything not mentioned there remains as
+assessed on 5 Sep.
 
-Evidence basis, all re-verified on 5 Sep 2026 in this session unless marked
+Evidence basis, re-verified on 5 Sep 2026 unless marked
 *Requires verification*:
 
 | Measurement | Command / query | Result |
