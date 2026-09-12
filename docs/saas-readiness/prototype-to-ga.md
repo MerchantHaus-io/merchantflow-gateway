@@ -24,9 +24,38 @@ Evidence basis, re-verified on 5 Sep 2026 unless marked
 | Edge functions | `supabase/functions/` | 76 |
 | Functions holding a service-role key | `grep -rl SERVICE_ROLE` | 60 |
 | Functions with `verify_jwt = false` | `supabase/config.toml` | 9 |
-| Migrations in repo | `supabase/migrations/` | 186 |
+| Migrations in repo | `supabase/migrations/` | 186 (5 Sep; since grown — tenancy phases) |
 | Frontend source files | `src/**/*.ts(x)` | 370 (66 pages, 90 components dirs) |
-| Test files | `src/**/*.test.ts` | 18 |
+| Test files | `src/**/*.test.ts` | 18 (236 passing as of 11 Sep) |
+
+---
+
+## Status update — 12 Sep 2026 (supersedes the rows it touches)
+
+Work has begun on the roadmap this document proposed. What has landed, verified
+against production:
+
+| Item | State |
+|---|---|
+| **EPIC B1.1 Tenancy foundation** | **DONE.** `tenants`, `memberships`, provisioning tables, `current_tenant_id()`, `is_platform_admin()` live. Legacy MerchantHaus tenant `34623237-1a3d-4926-89a2-2964cef66ab7`; all 12 users backfilled as members. |
+| **EPIC B2 batches 2a–2e** | **DONE (50 tables).** Anchors (accounts, opportunities, merchants, applications) then children — contacts, principals, bank accounts, documents, activity, messaging, quoting, billing, commissions, affiliate and integration tables — all stamped `tenant_id NOT NULL` + FK + index + default + insert trigger, backfilled to MerchantHaus. Verified: zero nulls, zero orphans, zero cross-tenant mismatches. |
+| **EPIC B2.7 / B2.8** | **Open.** The 10 uniqueness changes (ADR-007), `billing_doc_sequences` PK change, and `user_roles → (tenant_id, user_id, role)` — user_roles ships alone as planned. |
+| **EPIC C1 (RLS isolation, first pass)** | **DONE, first pass.** `tenant_visible(uuid)` helper; all 211 policies on tenant-stamped tables now AND a tenant term on reads and writes. Platform admins bypass. Anon intake preserved via `default_tenant_id()` fallback. C2 (60 service-role edge functions) and C2.4 (13 cron jobs) remain **untouched** — they still bypass RLS and are now the largest live isolation gap. |
+| **EPIC E1.1 / E1.2 Provisioning & platform console** | **DONE.** `provision-tenant` worker (JWT + platform-admin only; create, retry, step, activate, suspend, reactivate; idempotent) and `/admin/tenants` console. Verified end-to-end on a throwaway tenant, since deleted. |
+| **EPIC D1.4 (partial)** | **Started.** `tenant_pricing_items` table + per-organisation pricing admin live; other config constants (team, paymentInstructions, navigation) still compile-time. |
+| **EPIC F (partial)** | New: per-organisation admin page `/admin/organisation` — ISO admins manage their own details, team invites/roles/suspension (via `tenant-team` edge function), pricing, and quote activity, all under tenant RLS. |
+| **Affiliate divergence (T11/T12)** | **CLOSED.** `20260904214500_affiliate_programme_basis.sql` corrected the 0.5000 rate to 0.25, the $15 cost to $25 + $0.15/txn, restated credits, and restored the first-gateway-invoice accrual guard in `build_referrer_ledger()`. |
+| **T1 `useUserRole` fail-open** | **CLOSED** (fixed 12 Aug, before this document — the ledger in `docs/tenancy/06` has the detail). |
+
+**What this changes in the assessment:** gaps 1 and 3 in the Executive Summary
+are partially closed (tenant dimension now exists and RLS carries it; identity
+is membership-backed in the helpers, though email-domain checks remain in
+places). Gaps 2, 4 and 5 are unchanged: service-role functions are
+tenant-blind, there is still no staging environment, and nothing commercial
+exists. The critical path now runs: **edge-function tenant scoping (C2) →
+user_roles tenantization (B2.8) → storage namespacing (C3.1) → client tenant
+context (D1.1–D1.3) → two-tenant isolation test (C4.1) → onboarding/commercial
+track.**
 
 This document supersedes and extends `docs/tenancy/` (which covers tenancy
 only) by adding product definition, CI/CD, testing, commercialization, beta,
