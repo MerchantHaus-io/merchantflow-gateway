@@ -794,22 +794,27 @@ Dependency-ordered. Effort XS–XL, priority P0–P3.
   settings, entitlements, platform_admins, provisioning runs/steps, onboarding
   state, audit events, `current_tenant_id()`, `is_platform_admin()`,
   `is_tenant_admin()`, state machine, legacy tenant seed, membership backfill
-  from 12 users / 19 role rows). *L / P0.* **AC:** every existing user has an
-  active membership; `current_tenant_id()` returns the legacy tenant; app
-  behavior unchanged.
+  from 12 users / 19 role rows). *L / P0.* ✅ **DONE 9 Sep** — verified:
+  12 memberships on legacy tenant, app behavior unchanged.
 - B2.1–B2.6 `tenant_id` adoption batches 2a–2f per `docs/tenancy/05`, each:
   add nullable → backfill → validate (zero nulls, zero orphans) → NOT NULL +
-  FK + index. *XL total / P0.* **AC per batch:** validation script output
-  attached to the migration.
-- B2.7 The 10 uniqueness changes from ADR-007. *M / P0.*
+  FK + index. *XL total / P0.* ✅ **2a–2e DONE 9–11 Sep** (50 tables incl.
+  anchors and all child/activity/messaging/quoting/billing/commission/
+  integration tables); **2f (`user_roles`) and `billing_doc_sequences` still
+  open.**
+- B2.7 The 10 uniqueness changes from ADR-007. *M / P0.* **Open.**
 - B2.8 `user_roles` → `(tenant_id, user_id, role)` — **shipped alone**.
-  *M / P0.* **AC:** admin resolution unchanged for the legacy tenant.
+  *M / P0.* **Open — next schema step.** **AC:** admin resolution unchanged
+  for the legacy tenant.
 
 ### EPIC C — Isolation
 
 - C1.1 Add the tenant predicate to the 5–7 security-definer helpers.
-  *M / P0.* **AC:** ~67 delegating policies filter by tenant with no policy
-  edits.
+  *M / P0.* ✅ **DONE 11 Sep (first pass)** — `tenant_visible(uuid)` helper; all
+  211 policies on tenant-stamped tables now carry a tenant term on reads and
+  writes. Platform-admin bypass live; anon intake preserved via
+  `default_tenant_id()` fallback. Note: the fallback deserves an audit — it may
+  expose legacy-tenant rows to a principal with no membership.
 - C1.2 Rewrite the 27 `USING (true)` policies. *L / P0.*
 - C1.3 Rewrite the 43 `auth.uid() IS NOT NULL` policies. *L / P0.*
 - C1.4 Add tenant terms to the 51 INSERT-only `WITH CHECK` policies.
