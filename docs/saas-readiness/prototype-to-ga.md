@@ -263,8 +263,8 @@ operational visibility a paying external customer implies.
 | RLS *enabled* on all tables | **Production-ready** | `relrowsecurity = true` on 78/78 |
 | Quoting → MSA → acceptance | Functional, needs hardening | Snapshot correctness relies on one code path; thin tests |
 | Billing documents & sequences | Functional, needs hardening | `next_billing_doc_number` sequence contention unproven under concurrency |
-| Residual reconciliation & commission | Functional, needs hardening | Tested helpers; `CLAUDE.md` records a wrong `$15.00` constant in migration `20260904203347` and `referrers.commission_rate = 0.5000` being double the programme rate — **known live data divergence** |
-| Affiliate ledger & payout runs | Functional, needs hardening | Same divergence; `build_referrer_ledger()` accrues from any period rather than first gateway invoice |
+| Residual reconciliation & commission | Functional, needs hardening | Tested helpers; the `$15.00` cost and `0.5000` rate divergences were **closed 4 Sep** by `20260904214500_affiliate_programme_basis.sql` (25% rate, $25 + $0.15/txn cost, credits restated) |
+| Affiliate ledger & payout runs | Functional, needs hardening | *(12 Sep)* accrual guard restored to first-gateway-invoice month; reconciliation report on payout runs live |
 | NMI / Kurv boarding | Functional, needs hardening | No retry/idempotency evidence on partner calls |
 | Support ticketing + inbound email | Functional, needs hardening | Sanitization has already regressed once (links/snippets stripped) |
 | Google Workspace sync | Functional, needs hardening | Token refresh failure handling unproven |
@@ -274,10 +274,10 @@ operational visibility a paying external customer implies.
 | MCP / agent integration | Prototype | Recent, one 503 incident from upstream auth |
 | In-app observability | Prototype | Error/rate-limit browsing only; no metrics or alerts |
 | Mobile (Capacitor) | Incomplete | Wrapper + layouts exist; release state *Requires verification* |
-| **Multi-tenancy** | **Missing** | Zero tenant columns |
-| **Tenant provisioning** | **Missing** | — |
-| **Customer onboarding** | **Missing** | `onboarding_wizard_states` exists but is a *merchant* preboarding wizard, not tenant onboarding |
-| **Platform admin console** | **Missing** | — |
+| **Multi-tenancy** | **In progress** | *(12 Sep)* 50 tables stamped, first-pass tenant RLS live; edge functions, crons, storage and client cache still tenant-blind |
+| **Tenant provisioning** | Functional, needs hardening | *(12 Sep)* `provision-tenant` worker + `/admin/tenants` console, verified end-to-end |
+| **Customer onboarding** | **In progress** | *(12 Sep)* provisioning wizard + `/admin/organisation` exist; 12-step resumable onboarding and credential vault not yet |
+| **Platform admin console** | Functional, needs hardening | *(12 Sep)* `/admin/tenants` (list, setup, suspend/reactivate/retry); platform audit and impersonation not yet |
 | **Plans / entitlements / subscription billing** | **Missing** | Billing here bills *merchants*, not ISO customers |
 | **Staging environment** | **Missing** | Binding blocker |
 | **Tests in CI** | **Missing** | 230 tests, zero gating |
