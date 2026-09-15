@@ -4789,6 +4789,8 @@ export type Database = {
           gmail_thread_id: string | null
           id: string
           priority: string
+          quarantine_reason: string | null
+          quarantined_at: string | null
           requester_email: string
           requester_name: string | null
           source: string
@@ -4815,6 +4817,8 @@ export type Database = {
           gmail_thread_id?: string | null
           id?: string
           priority?: string
+          quarantine_reason?: string | null
+          quarantined_at?: string | null
           requester_email: string
           requester_name?: string | null
           source?: string
@@ -4841,6 +4845,8 @@ export type Database = {
           gmail_thread_id?: string | null
           id?: string
           priority?: string
+          quarantine_reason?: string | null
+          quarantined_at?: string | null
           requester_email?: string
           requester_name?: string | null
           source?: string
