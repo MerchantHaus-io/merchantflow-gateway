@@ -139,7 +139,7 @@ const AffiliateSignup = () => {
                   required
                   maxLength={120}
                   autoComplete="name"
-                  className="bg-background border-border text-foreground placeholder:text-muted-foreground/60"
+                  className="bg-input/40 border-input text-foreground placeholder:text-muted-foreground/60"
                 />
               </div>
               <div className="space-y-1.5">
@@ -150,7 +150,7 @@ const AffiliateSignup = () => {
                   onChange={set("phone")}
                   maxLength={40}
                   autoComplete="tel"
-                  className="bg-background border-border text-foreground placeholder:text-muted-foreground/60"
+                  className="bg-input/40 border-input text-foreground placeholder:text-muted-foreground/60"
                 />
               </div>
             </div>
@@ -164,7 +164,7 @@ const AffiliateSignup = () => {
                 onChange={set("email")}
                 required
                 autoComplete="email"
-                className="bg-background border-border text-foreground placeholder:text-muted-foreground/60"
+                className="bg-input/40 border-input text-foreground placeholder:text-muted-foreground/60"
               />
             </div>
 
@@ -176,7 +176,7 @@ const AffiliateSignup = () => {
                 onChange={set("company")}
                 rows={2}
                 maxLength={300}
-                className="bg-background border-border text-foreground placeholder:text-muted-foreground/60"
+                className="bg-input/40 border-input text-foreground placeholder:text-muted-foreground/60"
               />
             </div>
 
@@ -191,7 +191,7 @@ const AffiliateSignup = () => {
                   required
                   minLength={10}
                   autoComplete="new-password"
-                  className="bg-background border-border text-foreground placeholder:text-muted-foreground/60"
+                  className="bg-input/40 border-input text-foreground placeholder:text-muted-foreground/60"
                 />
               </div>
               <div className="space-y-1.5">
@@ -204,7 +204,7 @@ const AffiliateSignup = () => {
                   required
                   minLength={10}
                   autoComplete="new-password"
-                  className="bg-background border-border text-foreground placeholder:text-muted-foreground/60"
+                  className="bg-input/40 border-input text-foreground placeholder:text-muted-foreground/60"
                 />
               </div>
             </div>
