@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-import merchantHausLogo from "@/assets/merchanthaus-logo.png";
+import merchantHausLogo from "/images/merchanthaus-logo-dark.png";
 
 /**
  * Public self-serve affiliate registration.
