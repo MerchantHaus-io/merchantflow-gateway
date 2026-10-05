@@ -93,7 +93,7 @@ export function useOperationsHome(currentUserName?: string, isAdmin = false) {
         .select(
           "id, account_id, contact_id, stage, status, service_type, assigned_to, " +
             "stage_entered_at, outcome_status, portal_merchant_id, monthly_volume, " +
-            "created_at, updated_at",
+            "created_at, updated_at, account:accounts(name)",
         )
         .neq("status", "dead")
         .is("outcome_status", null);

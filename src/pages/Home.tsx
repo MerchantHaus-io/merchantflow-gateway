@@ -138,8 +138,7 @@ function QueueRow({ item }: { item: QueueItem }) {
         className="text-left py-2.5 pl-3.5 min-w-0"
       >
         <div className="text-[13.5px] font-semibold tracking-[-0.01em] truncate">
-          {/* Account name resolved by the caller's joined account record. */}
-          {opportunity.account_id}
+          {(opportunity as { account?: { name?: string | null } | null }).account?.name || "Unnamed account"}
         </div>
         <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-px truncate">
           <Icon className={cn("h-3 w-3 shrink-0", TONE_TEXT[attention.tone])} />
@@ -182,7 +181,14 @@ function QueueRow({ item }: { item: QueueItem }) {
       </div>
 
       <div className="flex items-center gap-1.5 justify-end py-2.5">
-        <Button size="sm" variant="outline" className="h-8 text-xs">{resolve.label}</Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-8 text-xs"
+          onClick={() => navigate(`/opportunities/${opportunity.id}`)}
+        >
+          {resolve.label}
+        </Button>
         <Button
           size="sm"
           variant="ghost"

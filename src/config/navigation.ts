@@ -174,6 +174,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { title: "Merchant Portal Guide", mobileTitle: "Portal Guide", url: "/tools/gateway-guide", icon: BookMarked, description: "Interactive portal walkthrough" },
       { title: "Deployment", mobileTitle: "Deploy", url: "/tools/netlify", icon: Cloud, description: "Deployment audit & fix prompts" },
       { title: "Deletion Requests", mobileTitle: "Deletions", url: "/admin/deletion-requests", icon: Trash2, description: "Review pending record deletions", adminOnly: true },
+      { title: "Organisations", mobileTitle: "Orgs", url: "/admin/tenants", icon: Building2, description: "Provision and manage ISO workspaces", adminOnly: true },
     ],
   },
   {
