@@ -48,6 +48,7 @@ import {
   slugify,
   stepLabel,
 } from "@/lib/tenantProvisioning";
+import { TenantSetupWizard } from "@/components/admin/TenantSetupWizard";
 
 interface TenantRow {
   id: string;
@@ -122,6 +123,7 @@ export default function Tenants() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState({ name: "", slug: "", admin_email: "", billing_email: "" });
+  const [wizardFor, setWizardFor] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -203,10 +205,11 @@ export default function Tenants() {
         "create",
       );
       if (res.status === "failed") toast.error(`Setup stopped: ${res.error ?? "unknown reason"}`);
-      else toast.success("Organisation created — work through the setup wizard to reach Ready");
+      else toast.success("Organisation created — now run the setup wizard");
       setCreateOpen(false);
       setForm({ name: "", slug: "", admin_email: "", billing_email: "" });
       setExpanded(res.tenant_id as string);
+      if (res.status !== "failed") setWizardFor(res.tenant_id as string);
       await load();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not create the organisation");
@@ -389,8 +392,10 @@ export default function Tenants() {
                                   <Checkbox
                                     id={key}
                                     checked={done}
-                                    disabled={busy === key}
-                                    onCheckedChange={() => toggleStep(t.id, step.key, done)}
+                                    disabled={busy === key || (step.required && !done)}
+                                    onCheckedChange={() =>
+                                      step.required && !done ? setWizardFor(t.id) : toggleStep(t.id, step.key, done)
+                                    }
                                   />
                                   <Label htmlFor={key} className="cursor-pointer text-sm font-normal leading-tight">
                                     {step.label}
@@ -404,6 +409,11 @@ export default function Tenants() {
                         )}
 
                         <div className="mt-4 flex flex-wrap gap-2">
+                          {ob && !progress.complete && (
+                            <Button size="sm" variant="outline" onClick={() => setWizardFor(t.id)}>
+                              <PlayCircle className="mr-2 h-4 w-4" /> Run setup wizard
+                            </Button>
+                          )}
                           {t.status === "ready" && (
                             <Button size="sm" disabled={busy === `${t.id}:activate`} onClick={() => lifecycle(t.id, "activate")}>
                               <PlayCircle className="mr-2 h-4 w-4" /> Activate
@@ -507,6 +517,22 @@ export default function Tenants() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {(() => {
+        const wt = tenants.find((x) => x.id === wizardFor);
+        if (!wt) return null;
+        return (
+          <TenantSetupWizard
+            key={wt.id}
+            open
+            onOpenChange={(o) => !o && setWizardFor(null)}
+            tenant={wt}
+            completed={byTenant(wt.id).onboarding?.completed_steps ?? []}
+            call={call}
+            onChanged={load}
+          />
+        );
+      })()}
     </AppLayout>
   );
 }

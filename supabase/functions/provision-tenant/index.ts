@@ -286,6 +286,173 @@ async function executeRun(ctx: Ctx, runId: string): Promise<{ status: string; er
   }
 }
 
+const HEX = /^#[0-9a-fA-F]{6}$/;
+const DOMAIN = /^(?!-)[a-z0-9-]{1,63}(\.[a-z0-9-]{1,63})+$/;
+const TEAM_ROLES = ["owner", "admin", "member"];
+
+/**
+ * Validates one wizard step's data and writes its real artifact, so a ticked
+ * step always corresponds to configuration that exists. Throws on bad input.
+ */
+async function applyOnboardingStep(
+  ctx: Ctx,
+  tenantId: string,
+  step: string,
+  data: Record<string, unknown>,
+  redirectTo?: string,
+): Promise<Record<string, unknown>> {
+  const { data: t } = await ctx.db.from("tenants").select("settings,branding").eq("id", tenantId).single();
+  const settings = { ...((t?.settings ?? {}) as Record<string, unknown>) };
+  const branding = { ...((t?.branding ?? {}) as Record<string, unknown>) };
+  const str = (k: string) => String(data[k] ?? "").trim();
+
+  if (step === "welcome" || step === "integrations") return {};
+
+  if (step === "branding") {
+    const displayName = str("display_name");
+    if (!displayName) throw new Error("Display name is required");
+    const primary = str("primary_color");
+    if (primary && !HEX.test(primary)) throw new Error("Brand colour must be a hex value like #1A6BFF");
+    const logo = str("logo_url");
+    if (logo && !/^https:\/\//.test(logo)) throw new Error("Logo URL must start with https://");
+    Object.assign(branding, { display_name: displayName, primary_color: primary || null, logo_url: logo || null });
+    const { error } = await ctx.db.from("tenants").update({ branding }).eq("id", tenantId);
+    if (error) throw new Error(error.message);
+    await audit(ctx, tenantId, "tenant.branding_set", { display_name: displayName });
+    return { display_name: displayName };
+  }
+
+  if (step === "sender_identity") {
+    const fromName = str("from_name");
+    const replyTo = str("reply_to").toLowerCase();
+    const domain = str("sender_domain").toLowerCase();
+    if (!fromName) throw new Error("Sender name is required");
+    if (!isEmail(replyTo)) throw new Error("A valid reply-to address is required");
+    if (!DOMAIN.test(domain)) throw new Error("Sender domain must look like mail.acmepayments.com");
+    const replyDomain = replyTo.split("@")[1];
+    if (replyDomain !== domain && !replyDomain.endsWith(`.${domain}`) && !domain.endsWith(`.${replyDomain}`)) {
+      throw new Error("Reply-to address must belong to the sender domain");
+    }
+    settings.sender = { from_name: fromName, reply_to: replyTo, domain, verified: false };
+    const { error } = await ctx.db.from("tenants").update({ settings }).eq("id", tenantId);
+    if (error) throw new Error(error.message);
+    await audit(ctx, tenantId, "tenant.sender_set", { domain });
+    return { domain, verified: false };
+  }
+
+  if (step === "pricing") {
+    const items = Array.isArray(data.items) ? (data.items as Record<string, unknown>[]) : [];
+    if (!items.length) throw new Error("Add at least one priced item");
+    let order = 10;
+    for (const raw of items) {
+      const code = String(raw.code ?? "").trim();
+      const label = String(raw.label ?? "").trim();
+      const cost = Number(raw.cost);
+      const resale = Number(raw.resale);
+      if (!code || !label) throw new Error("Every pricing item needs a name and code");
+      if (!Number.isFinite(cost) || !Number.isFinite(resale) || cost < 0 || resale < 0) {
+        throw new Error(`${label}: prices must be zero or more`);
+      }
+      if (resale < cost) throw new Error(`${label}: resale price is below cost`);
+      const row = {
+        tenant_id: tenantId,
+        code,
+        label,
+        category: String(raw.category ?? "platform"),
+        cadence: String(raw.cadence ?? "monthly"),
+        cost,
+        resale,
+        active: true,
+        sort_order: order,
+      };
+      order += 10;
+      const { data: existing } = await ctx.db
+        .from("tenant_pricing_items")
+        .select("id")
+        .eq("tenant_id", tenantId)
+        .eq("code", code)
+        .maybeSingle();
+      const { error } = existing
+        ? await ctx.db.from("tenant_pricing_items").update(row).eq("id", existing.id)
+        : await ctx.db.from("tenant_pricing_items").insert(row);
+      if (error) throw new Error(error.message);
+    }
+    settings.pricing_confirmed_at = new Date().toISOString();
+    await ctx.db.from("tenants").update({ settings }).eq("id", tenantId);
+    await audit(ctx, tenantId, "tenant.pricing_set", { items: items.length });
+    return { items: items.length };
+  }
+
+  if (step === "team") {
+    const invites = Array.isArray(data.invites) ? (data.invites as Record<string, unknown>[]) : [];
+    const sent: string[] = [];
+    for (const raw of invites) {
+      const email = String(raw.email ?? "").trim().toLowerCase();
+      const role = String(raw.role ?? "member");
+      if (!email) continue;
+      if (!isEmail(email)) throw new Error(`${email} is not a valid email`);
+      if (!TEAM_ROLES.includes(role)) throw new Error(`Unknown role for ${email}`);
+
+      const { data: member } = await ctx.db
+        .from("tenant_memberships")
+        .select("id,status")
+        .eq("tenant_id", tenantId)
+        .eq("email", email)
+        .maybeSingle();
+      if (member?.status === "active") continue;
+
+      let userId: string | null = null;
+      const { data: invited, error: invErr } = await ctx.db.auth.admin.inviteUserByEmail(
+        email,
+        redirectTo ? { redirectTo } : undefined,
+      );
+      if (invited?.user) userId = invited.user.id;
+      else if (invErr && !/already been registered|already exists/i.test(invErr.message)) {
+        throw new Error(`Could not invite ${email}: ${invErr.message}`);
+      }
+
+      const { data: openInvite } = await ctx.db
+        .from("tenant_invitations")
+        .select("id")
+        .eq("tenant_id", tenantId)
+        .eq("email", email)
+        .is("revoked_at", null)
+        .maybeSingle();
+      if (!openInvite) {
+        const { error } = await ctx.db.from("tenant_invitations").insert({
+          tenant_id: tenantId,
+          email,
+          role,
+          token: crypto.randomUUID(),
+          invited_by: ctx.actorId,
+          expires_at: new Date(Date.now() + 14 * 24 * 3600 * 1000).toISOString(),
+        });
+        if (error) throw new Error(error.message);
+      }
+
+      const membership = { tenant_id: tenantId, email, role, status: "invited", invited_by: ctx.actorId, user_id: userId };
+      const { error: mErr } = member
+        ? await ctx.db.from("tenant_memberships").update(membership).eq("id", member.id)
+        : await ctx.db.from("tenant_memberships").insert(membership);
+      if (mErr) throw new Error(mErr.message);
+      sent.push(email);
+    }
+
+    const { data: owners } = await ctx.db
+      .from("tenant_memberships")
+      .select("id")
+      .eq("tenant_id", tenantId)
+      .in("role", ["owner", "admin"])
+      .in("status", ["invited", "active"])
+      .limit(1);
+    if (!owners?.length) throw new Error("Invite at least one owner or administrator");
+    await audit(ctx, tenantId, "tenant.team_invited", { invited: sent });
+    return { invited: sent };
+  }
+
+  throw new Error(`Unknown setup step "${step}"`);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -429,11 +596,26 @@ serve(async (req) => {
         .maybeSingle();
       if (!state) return json({ error: "Setup wizard has not been opened for this organisation" }, 404);
 
+      const undo = String(body.undo) === "true";
+      let applied: Record<string, unknown> = {};
+      if (!undo && body.data) {
+        try {
+          applied = await applyOnboardingStep(ctx, tenantId, step, body.data, body.redirect_to);
+        } catch (err) {
+          return json({ error: err instanceof Error ? err.message : String(err) }, 400);
+        }
+      } else if (!undo && REQUIRED_ONBOARDING_STEPS.includes(step)) {
+        return json({ error: "Fill in this step before marking it done" }, 400);
+      }
+
       const completed = new Set<string>((state.completed_steps as string[]) ?? []);
-      if (String(body.undo) === "true") completed.delete(step);
+      if (undo) completed.delete(step);
       else completed.add(step);
 
-      const merged = { ...((state.data ?? {}) as Record<string, unknown>), ...(body.data ?? {}) };
+      const merged = {
+        ...((state.data ?? {}) as Record<string, unknown>),
+        ...(body.data ? { [step]: { ...body.data, applied } } : {}),
+      };
       const remaining = REQUIRED_ONBOARDING_STEPS.filter((k) => !completed.has(k));
 
       await db
