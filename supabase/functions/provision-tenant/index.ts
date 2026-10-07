@@ -429,11 +429,26 @@ serve(async (req) => {
         .maybeSingle();
       if (!state) return json({ error: "Setup wizard has not been opened for this organisation" }, 404);
 
+      const undo = String(body.undo) === "true";
+      let applied: Record<string, unknown> = {};
+      if (!undo && body.data) {
+        try {
+          applied = await applyOnboardingStep(ctx, tenantId, step, body.data, body.redirect_to);
+        } catch (err) {
+          return json({ error: err instanceof Error ? err.message : String(err) }, 400);
+        }
+      } else if (!undo && REQUIRED_ONBOARDING_STEPS.includes(step)) {
+        return json({ error: "Fill in this step before marking it done" }, 400);
+      }
+
       const completed = new Set<string>((state.completed_steps as string[]) ?? []);
-      if (String(body.undo) === "true") completed.delete(step);
+      if (undo) completed.delete(step);
       else completed.add(step);
 
-      const merged = { ...((state.data ?? {}) as Record<string, unknown>), ...(body.data ?? {}) };
+      const merged = {
+        ...((state.data ?? {}) as Record<string, unknown>),
+        ...(body.data ? { [step]: { ...body.data, applied } } : {}),
+      };
       const remaining = REQUIRED_ONBOARDING_STEPS.filter((k) => !completed.has(k));
 
       await db
