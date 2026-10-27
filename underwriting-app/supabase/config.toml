@@ -1,0 +1,36 @@
+# Supabase project config for the standalone underwriting app.
+# `project_id` is a local identifier only; link to a real project with
+#   supabase link --project-ref <ref>
+# then apply schema with `supabase db push` and deploy functions with
+#   supabase functions deploy underwriting-review
+project_id = "underwriting-app"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 15
+
+[storage]
+enabled = true
+file_size_limit = "10MiB"
+
+[auth]
+enabled = true
+# Set site_url / additional_redirect_urls / external providers per environment.
+site_url = "http://localhost:8090"
+additional_redirect_urls = ["http://localhost:8090"]
+jwt_expiry = 3600
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+
+[functions.underwriting-review]
+verify_jwt = true
