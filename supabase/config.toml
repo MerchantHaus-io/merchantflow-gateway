@@ -187,3 +187,9 @@ verify_jwt = true
 # and admin rights are re-derived from their own membership, so verify_jwt on.
 [functions.tenant-team]
 verify_jwt = true
+
+# Fetches the sent email behind an email_* activity from Resend so staff can
+# view it from the activity feed. Caller identity + RLS on activities decide
+# access, so verify_jwt stays on.
+[functions.get-sent-email]
+verify_jwt = true
