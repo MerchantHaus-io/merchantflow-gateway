@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  AlertCircle, ArrowRight, CalendarDays, Check, Clock, Plus, TrendingDown, TrendingUp, UserPlus,
+  AlertCircle, ArrowRight, CalendarDays, Check, Clock, Mail, Plus, TrendingDown, TrendingUp, UserPlus,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,23 @@ import { useOperationsHome, type QueueItem } from "@/hooks/useOperationsHome";
 import { EMAIL_TO_USER } from "@/types/opportunity";
 import { type AttentionTone } from "@/lib/dealAttention";
 import { cn } from "@/lib/utils";
+import { SentEmailDialog } from "@/components/SentEmailDialog";
+import { isViewableEmailActivity } from "@/lib/emailActivity";
+
+/** "Today" / "Yesterday" / "2 Nov" (plus year when not this year). */
+function activityDayLabel(iso: string): string {
+  const d = new Date(iso);
+  const today = new Date();
+  const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const days = Math.round((startOf(today) - startOf(d)) / 86_400_000);
+  if (days === 0) return "Today";
+  if (days === 1) return "Yesterday";
+  return d.toLocaleDateString([], {
+    day: "numeric",
+    month: "short",
+    ...(d.getFullYear() !== today.getFullYear() ? { year: "2-digit" } : {}),
+  });
+}
 
 /**
  * Operations — the signed-in front door.
@@ -275,6 +292,7 @@ export default function Home() {
   // everyone else on sales until roles carry a working-role column.
   const [role, setRole] = useState<RoleView>(isAdmin ? "admin" : "sales");
   const [scope, setScope] = useState<"mine" | "all">("mine");
+  const [viewEmailActivityId, setViewEmailActivityId] = useState<string | null>(null);
 
   const { loading, now, today, steady, ladder, counts, activity } = useOperationsHome(
     displayName,
@@ -490,8 +508,12 @@ export default function Home() {
                 <div className="p-6 text-center text-[12.5px] text-muted-foreground">No activity recorded yet.</div>
               ) : (
                 activity.map((a) => (
-                  <div key={a.id} className="grid grid-cols-[46px_1fr] gap-2.5 px-3.5 py-2 border-b border-border/50 last:border-0">
-                    <span className="font-display text-[10px] text-muted-foreground pt-0.5">
+                  <div key={a.id} className="grid grid-cols-[58px_1fr] gap-2.5 px-3.5 py-2 border-b border-border/50 last:border-0">
+                    <span
+                      className="font-display text-[10px] text-muted-foreground pt-0.5 leading-tight"
+                      title={new Date(a.at).toLocaleString([], { dateStyle: "full", timeStyle: "short" })}
+                    >
+                      <span className="block text-foreground/70">{activityDayLabel(a.at)}</span>
                       {new Date(a.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </span>
                     <span className="text-[12.5px] leading-snug text-muted-foreground">
@@ -500,6 +522,16 @@ export default function Home() {
                       <span className="font-display text-[9px] uppercase tracking-[0.08em] border border-border rounded px-1 py-px ml-1.5 whitespace-nowrap">
                         {a.type}
                       </span>
+                      {isViewableEmailActivity(a.type, a.description) && (
+                        <button
+                          type="button"
+                          onClick={() => setViewEmailActivityId(a.id)}
+                          className="ml-1.5 inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline whitespace-nowrap"
+                        >
+                          <Mail className="h-3 w-3" />
+                          View email
+                        </button>
+                      )}
                     </span>
                   </div>
                 ))
@@ -562,6 +594,10 @@ export default function Home() {
         </section>
 
       </div>
+      <SentEmailDialog
+        activityId={viewEmailActivityId}
+        onOpenChange={(open) => !open && setViewEmailActivityId(null)}
+      />
     </AppLayout>
   );
 }
