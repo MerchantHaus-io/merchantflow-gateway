@@ -231,7 +231,7 @@ const Contact = () => {
                 </ol>
               </div>
 
-              <div className="bg-info/10 rounded-xl md:rounded-2xl border border-info/20 p-4 md:p-5">
+              <div className="bg-muted rounded-xl md:rounded-2xl border border-border p-4 md:p-5">
                 <div className="flex items-start gap-2">
                   <ShieldCheck className="w-4 h-4 text-info mt-0.5 flex-shrink-0" />
                   <div>
@@ -247,10 +247,10 @@ const Contact = () => {
 
       {/* Success overlay */}
       {formStatus === 'success' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="max-w-md w-full rounded-2xl border border-border bg-card p-8 shadow-lg text-center space-y-4 animate-scale-in">
-            <div className="mx-auto w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center">
-              <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+            <div className="mx-auto w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
+              <CheckCircle2 className="w-8 h-8 text-success" />
             </div>
             <h1 className="text-2xl font-bold text-foreground">Thank You!</h1>
             <p className="text-muted-foreground">

@@ -266,7 +266,7 @@ function QuoteAcceptanceInner() {
   if (loading) {
     return (
       <Shell>
-        <div className="flex items-center gap-3 text-neutral-500 py-24 justify-center">
+        <div className="flex items-center gap-3 text-muted-foreground py-24 justify-center">
           <Loader2 className="h-5 w-5 animate-spin" />
           <span className="text-sm">Loading your quote…</span>
         </div>
@@ -278,9 +278,9 @@ function QuoteAcceptanceInner() {
     return (
       <Shell>
         <div className="max-w-xl mx-auto py-16 text-center">
-          <AlertTriangle className="h-10 w-10 text-[#c81030] mx-auto mb-4" />
-          <h1 className="font-serif text-3xl mb-3">We couldn't load this quote.</h1>
-          <p className="text-neutral-600 text-sm">
+          <AlertTriangle className="h-10 w-10 text-primary mx-auto mb-4" />
+          <h1 className="font-bold text-3xl mb-3">We couldn't load this quote.</h1>
+          <p className="text-muted-foreground text-sm">
             {error ?? "The link may be invalid or the quote may have expired."} If you
             believe this is a mistake, reply to the email this link came from and your
             MerchantHaus contact will issue a new link.
@@ -294,16 +294,16 @@ function QuoteAcceptanceInner() {
     return (
       <Shell>
         <div className="max-w-xl mx-auto py-16 text-center">
-          <CheckCircle2 className="h-12 w-12 text-emerald-600 mx-auto mb-4" />
-          <h1 className="font-serif text-4xl mb-3">
+          <CheckCircle2 className="h-12 w-12 text-success mx-auto mb-4" />
+          <h1 className="font-bold text-4xl mb-3">
             {acceptedNow ? "Acceptance recorded." : "Already accepted."}
           </h1>
-          <p className="text-neutral-600 text-sm mb-6">
+          <p className="text-muted-foreground text-sm mb-6">
             {acceptedNow
               ? "Thank you. The MerchantHaus team has been notified and will reach out shortly with onboarding next steps."
               : "This quote has already been accepted. If you need to make changes, contact your MerchantHaus representative."}
           </p>
-          <div className="bg-neutral-100 border border-neutral-200 rounded-lg px-4 py-3 inline-block text-left text-xs text-neutral-600 font-mono">
+          <div className="bg-muted border border-border rounded-lg px-4 py-3 inline-block text-left text-xs text-muted-foreground font-mono">
             Quote {quote.quote_number}
           </div>
         </div>
@@ -318,10 +318,10 @@ function QuoteAcceptanceInner() {
         {/* Header strip */}
         <div className="flex items-center justify-between gap-4 mb-10">
           <div>
-            <div className="text-[10px] font-bold tracking-[0.16em] text-[#c81030]">
+            <div className="text-[10px] font-bold tracking-[0.16em] text-primary">
               PAYMENT GATEWAY QUOTE · CONFIDENTIAL
             </div>
-            <div className="text-[11px] text-neutral-500 font-mono mt-1">
+            <div className="text-[11px] text-muted-foreground font-mono mt-1">
               {quote.quote_number}
             </div>
           </div>
@@ -330,29 +330,29 @@ function QuoteAcceptanceInner() {
 
         {/* Hero */}
         <div className="mb-10">
-          <div className="text-[10px] font-bold tracking-[0.16em] text-[#c81030] mb-1">
+          <div className="text-[10px] font-bold tracking-[0.16em] text-primary mb-1">
             PREPARED FOR
           </div>
-          <div className="w-7 h-[2px] bg-[#c81030] mb-4" />
-          <h1 className="font-serif text-4xl sm:text-5xl text-neutral-900 leading-tight tracking-tight">
+          <div className="w-7 h-[2px] bg-primary mb-4" />
+          <h1 className="font-bold text-4xl sm:text-5xl text-foreground leading-tight tracking-tight">
             {quote.client_business_name ?? "Merchant"}
           </h1>
-          <p className="font-serif italic text-lg text-neutral-500 mt-3">
+          <p className="text-lg text-muted-foreground mt-3">
             Gateway services — {quote.tier_name} Plan, {quote.billing_cycle} billing.
           </p>
         </div>
 
         {/* Stats strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-neutral-200 mb-10 border-y border-neutral-200">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-border mb-10 border-y border-border">
           {[
             { label: "Plan", value: quote.tier_name },
             { label: "Billing", value: quote.billing_cycle === "annual" ? "Annual" : "Monthly" },
             { label: "Monthly", value: fmt(quote.monthly_resale) },
             { label: "Annualized", value: fmt(quote.annual_resale) },
           ].map((s) => (
-            <div key={s.label} className="bg-white p-4">
-              <div className="font-serif text-xl text-neutral-900">{s.value}</div>
-              <div className="text-[10px] font-bold tracking-[0.14em] text-neutral-500 mt-1">
+            <div key={s.label} className="bg-card p-4">
+              <div className="font-semibold text-xl text-foreground">{s.value}</div>
+              <div className="text-[10px] font-bold tracking-[0.14em] text-muted-foreground mt-1">
                 {s.label.toUpperCase()}
               </div>
             </div>
@@ -362,26 +362,26 @@ function QuoteAcceptanceInner() {
         {/* Line items */}
         <section className="mb-10">
           <div className="flex items-baseline gap-2 mb-1">
-            <span className="text-[10px] font-bold tracking-[0.16em] text-[#c81030]">01</span>
-            <span className="text-[10px] font-bold tracking-[0.14em] text-neutral-500">
+            <span className="text-[10px] font-bold tracking-[0.16em] text-primary">01</span>
+            <span className="text-[10px] font-bold tracking-[0.14em] text-muted-foreground">
               · INCLUDED
             </span>
           </div>
-          <div className="w-7 h-[2px] bg-[#c81030] mb-5" />
-          <h2 className="font-serif text-2xl mb-5">What's included.</h2>
+          <div className="w-7 h-[2px] bg-primary mb-5" />
+          <h2 className="font-bold text-2xl mb-5">What's included.</h2>
 
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-y border-neutral-900 text-[10px] tracking-[0.14em] text-neutral-500">
+              <tr className="border-y border-foreground text-[10px] tracking-[0.14em] text-muted-foreground">
                 <th className="text-left py-2 font-bold">ITEM</th>
                 <th className="text-left py-2 font-bold">DETAIL</th>
                 <th className="text-right py-2 font-bold">PRICE</th>
               </tr>
             </thead>
             <tbody>
-              <tr className="border-b border-neutral-200">
+              <tr className="border-b border-border">
                 <td className="py-3 font-semibold">Platform Bundle ({quote.tier_name})</td>
-                <td className="py-3 text-neutral-500 text-xs">
+                <td className="py-3 text-muted-foreground text-xs">
                   Gateway access, tokenization, PCI tools, support
                 </td>
                 <td className="py-3 text-right font-semibold">
@@ -389,9 +389,9 @@ function QuoteAcceptanceInner() {
                 </td>
               </tr>
               {enabledLines.map((l) => (
-                <tr key={l.id} className="border-b border-neutral-200">
+                <tr key={l.id} className="border-b border-border">
                   <td className="py-3">{l.label}</td>
-                  <td className="py-3 text-neutral-500 text-xs">
+                  <td className="py-3 text-muted-foreground text-xs">
                     {l.perEvent
                       ? `${fmt(l.perEvent.resale)} ${l.perEvent.label}`
                       : stripInternalCostRefs(l.description)}
@@ -402,9 +402,9 @@ function QuoteAcceptanceInner() {
                 </tr>
               ))}
               {gatewayFees.map((f) => (
-                <tr key={f.id} className="border-b border-neutral-200">
+                <tr key={f.id} className="border-b border-border">
                   <td className="py-3">{f.label}</td>
-                  <td className="py-3 text-neutral-500 text-xs">
+                  <td className="py-3 text-muted-foreground text-xs">
                     {f.cadence === "per_transaction"
                       ? `${fmt(f.resale)} per transaction · billed on actual volume`
                       : f.description}
@@ -415,16 +415,16 @@ function QuoteAcceptanceInner() {
                 </tr>
               ))}
               {oneTimeAncillary.map((a) => (
-                <tr key={a.id} className="border-b border-neutral-200">
+                <tr key={a.id} className="border-b border-border">
                   <td className="py-3">{a.label}</td>
-                  <td className="py-3 text-neutral-500 text-xs">{a.description}</td>
+                  <td className="py-3 text-muted-foreground text-xs">{a.description}</td>
                   <td className="py-3 text-right text-sm">{fmt(a.amount)} one-time</td>
                 </tr>
               ))}
               {activationCharged && (
-                <tr className="border-b border-neutral-200">
+                <tr className="border-b border-border">
                   <td className="py-3">{activation!.label}</td>
-                  <td className="py-3 text-neutral-500 text-xs">
+                  <td className="py-3 text-muted-foreground text-xs">
                     One-time gateway activation. Payable per the instructions below.
                   </td>
                   <td className="py-3 text-right text-sm">
@@ -437,51 +437,51 @@ function QuoteAcceptanceInner() {
 
           {hasOneTime && (
             <div className="flex justify-end mt-4">
-              <div className="text-sm text-neutral-600">
-                <span className="text-neutral-500 mr-3">One-time fees</span>
-                <span className="font-semibold text-neutral-900">{fmt(oneTimeTotal)}</span>
+              <div className="text-sm text-muted-foreground">
+                <span className="text-muted-foreground mr-3">One-time fees</span>
+                <span className="font-semibold text-foreground">{fmt(oneTimeTotal)}</span>
               </div>
             </div>
           )}
 
           {showPaymentInstructions && (
-            <div className="mt-8 rounded-lg border border-neutral-300 bg-neutral-50 p-5">
-              <div className="text-[10px] font-bold tracking-[0.16em] text-[#c81030] mb-3">
+            <div className="mt-8 rounded-lg border border-border bg-muted p-5">
+              <div className="text-[10px] font-bold tracking-[0.16em] text-primary mb-3">
                 PAYMENT INSTRUCTIONS
               </div>
-              <div className="text-sm font-semibold text-neutral-900 mb-3">
+              <div className="text-sm font-semibold text-foreground mb-3">
                 {activation!.label}: {fmt(activation!.amount)}{" "}
-                <span className="font-normal text-neutral-500">(one-time)</span>
+                <span className="font-normal text-muted-foreground">(one-time)</span>
               </div>
               <table className="text-sm">
                 <tbody>
                   <tr>
-                    <td className="pr-5 py-1 text-neutral-500 align-top whitespace-nowrap">Bank</td>
-                    <td className="py-1 text-neutral-800">{PAYMENT_INSTRUCTIONS.bankName}</td>
+                    <td className="pr-5 py-1 text-muted-foreground align-top whitespace-nowrap">Bank</td>
+                    <td className="py-1 text-foreground">{PAYMENT_INSTRUCTIONS.bankName}</td>
                   </tr>
                   <tr>
-                    <td className="pr-5 py-1 text-neutral-500 align-top whitespace-nowrap">Account name</td>
-                    <td className="py-1 text-neutral-800">
+                    <td className="pr-5 py-1 text-muted-foreground align-top whitespace-nowrap">Account name</td>
+                    <td className="py-1 text-foreground">
                       {PAYMENT_INSTRUCTIONS.accountName}
                       {PAYMENT_INSTRUCTIONS.signatory &&
                         ` (signatory: ${PAYMENT_INSTRUCTIONS.signatory})`}
                     </td>
                   </tr>
                   <tr>
-                    <td className="pr-5 py-1 text-neutral-500 align-top whitespace-nowrap">Routing</td>
-                    <td className="py-1 font-mono text-neutral-800">
+                    <td className="pr-5 py-1 text-muted-foreground align-top whitespace-nowrap">Routing</td>
+                    <td className="py-1 font-mono text-foreground">
                       {PAYMENT_INSTRUCTIONS.routingNumber}
                     </td>
                   </tr>
                   <tr>
-                    <td className="pr-5 py-1 text-neutral-500 align-top whitespace-nowrap">Account</td>
-                    <td className="py-1 font-mono text-neutral-800">
+                    <td className="pr-5 py-1 text-muted-foreground align-top whitespace-nowrap">Account</td>
+                    <td className="py-1 font-mono text-foreground">
                       {PAYMENT_INSTRUCTIONS.accountNumber}
                     </td>
                   </tr>
                 </tbody>
               </table>
-              <p className="text-xs text-neutral-600 mt-3">
+              <p className="text-xs text-muted-foreground mt-3">
                 {PAYMENT_INSTRUCTIONS.activationNote}
               </p>
             </div>
@@ -491,14 +491,14 @@ function QuoteAcceptanceInner() {
         {/* Acceptance form */}
         <section>
           <div className="flex items-baseline gap-2 mb-1">
-            <span className="text-[10px] font-bold tracking-[0.16em] text-[#c81030]">02</span>
-            <span className="text-[10px] font-bold tracking-[0.14em] text-neutral-500">
+            <span className="text-[10px] font-bold tracking-[0.16em] text-primary">02</span>
+            <span className="text-[10px] font-bold tracking-[0.14em] text-muted-foreground">
               · ACCEPTANCE
             </span>
           </div>
-          <div className="w-7 h-[2px] bg-[#c81030] mb-5" />
-          <h2 className="font-serif text-3xl mb-3">Sign to commence.</h2>
-          <p className="text-sm text-neutral-600 mb-6">
+          <div className="w-7 h-[2px] bg-primary mb-5" />
+          <h2 className="font-bold text-3xl mb-3">Sign to commence.</h2>
+          <p className="text-sm text-muted-foreground mb-6">
             Submitting this form constitutes binding acceptance of the MerchantHaus
             Gateway Platform &amp; Services Agreement, the Fee Schedule shown above, and
             the billing and termination terms in the attached PDF. Gateway provisioning
@@ -550,7 +550,7 @@ function QuoteAcceptanceInner() {
                   onCheckedChange={(c) => setAuthority(!!c)}
                   className="mt-0.5"
                 />
-                <span className="text-sm text-neutral-700">
+                <span className="text-sm text-foreground">
                   I confirm I have legal authority to bind{" "}
                   <strong>{quote.client_business_name ?? "the Merchant"}</strong> to this
                   agreement.
@@ -562,7 +562,7 @@ function QuoteAcceptanceInner() {
                   onCheckedChange={(c) => setAgreed(!!c)}
                   className="mt-0.5"
                 />
-                <span className="text-sm text-neutral-700">
+                <span className="text-sm text-foreground">
                   I agree to the MerchantHaus Gateway Platform &amp; Services Agreement
                   (Master Agreement, Appendix A) and the Fee Schedule above.
                 </span>
@@ -579,14 +579,14 @@ function QuoteAcceptanceInner() {
                   onCheckedChange={(c) => setAchToggle(!!c)}
                   className="mt-0.5"
                 />
-                <span className="text-sm text-neutral-700">
+                <span className="text-sm text-foreground">
                   <strong>(Optional)</strong> Authorize ACH debit now to streamline
                   onboarding. We capture last-4 details on this page; full account
                   details are tokenized separately in our billing system.
                 </span>
               </label>
               {achToggle && (
-                <div className="grid sm:grid-cols-2 gap-3 pl-7 border-l-2 border-[#c81030]/30 ml-1">
+                <div className="grid sm:grid-cols-2 gap-3 pl-7 border-l-2 border-primary/30 ml-1">
                   <div className="grid gap-1.5 sm:col-span-2">
                     <Label htmlFor="ach-holder">Account holder name</Label>
                     <Input
@@ -649,7 +649,7 @@ function QuoteAcceptanceInner() {
               <Button
                 type="submit"
                 disabled={submitting || !authority || !agreed}
-                className="w-full sm:w-auto bg-neutral-900 hover:bg-neutral-800 text-white border-l-[3px] border-l-[#c81030] py-6 px-8 text-base font-semibold"
+                className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground py-6 px-8 text-base font-semibold"
               >
                 {submitting ? (
                   <>
@@ -661,7 +661,7 @@ function QuoteAcceptanceInner() {
                   </>
                 )}
               </Button>
-              <p className="text-[11px] text-neutral-500 mt-3 leading-relaxed">
+              <p className="text-[11px] text-muted-foreground mt-3 leading-relaxed">
                 On submit we record your name, email, IP address, browser, and a hash of
                 the Fee Schedule shown above as an immutable audit trail. A copy of the
                 signed quote is emailed to you, and your MerchantHaus contact is notified
@@ -672,7 +672,7 @@ function QuoteAcceptanceInner() {
         </section>
 
         {/* Footer */}
-        <div className="mt-16 pt-6 border-t border-neutral-200 text-[10px] tracking-[0.14em] text-neutral-400 text-center">
+        <div className="mt-16 pt-6 border-t border-border text-[10px] tracking-[0.14em] text-muted-foreground text-center">
           {(quote.sender_company ?? "MERCHANTHAUS LLC").toUpperCase()} · TERMS VERSION{" "}
           {QUOTE_TERMS_VERSION} · CONFIDENTIAL
         </div>
@@ -687,7 +687,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   // container. Matches the pattern used by TermsProcessing and Apply.
   return (
     <div
-      className="fixed inset-0 z-50 bg-[#fafafa] text-neutral-900 font-sans overflow-y-auto overscroll-contain"
+      className="merchant-form fixed inset-0 z-50 bg-background text-foreground overflow-y-auto overscroll-contain"
       style={{ WebkitOverflowScrolling: "touch" }}
     >
       {children}
