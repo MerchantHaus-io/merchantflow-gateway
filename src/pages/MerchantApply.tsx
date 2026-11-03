@@ -683,26 +683,26 @@ export default function MerchantApply() {
           </div>
         </header>
         <div className="p-4 md:p-8">
-          <div className="max-w-2xl mx-auto space-y-6 md:space-y-8">
+          <div className="mh-enter max-w-2xl mx-auto space-y-6 md:space-y-8">
             <div className="text-center space-y-2">
               <h1 className="text-xl md:text-3xl font-bold text-foreground">What do you need?</h1>
               <p className="text-sm md:text-base text-muted-foreground">Select the service that best fits your business requirements.</p>
             </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              <button onClick={() => { setServiceType("gateway_only"); setStepIndex(0); }} className="group text-left bg-card rounded-2xl border-2 border-border hover:border-primary/50 p-5 md:p-6 transition-all shadow-sm hover:shadow-md space-y-3">
-                <div className="w-12 h-12 rounded-xl bg-teal-500/10 flex items-center justify-center"><Zap className="w-6 h-6 text-teal-600" /></div>
+            <div className="mh-stagger grid gap-4 md:grid-cols-3">
+              <button onClick={() => { setServiceType("gateway_only"); setStepIndex(0); }} className="group text-left bg-card rounded-2xl border-2 border-border mh-tile p-5 md:p-6 transition-all shadow-sm hover:shadow-md space-y-3">
+                <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center"><Zap className="w-6 h-6 text-info" /></div>
                 <h2 className="text-lg font-semibold text-foreground">Gateway Only</h2>
                 <p className="text-sm text-muted-foreground leading-relaxed">I already have a processor and need NMI gateway access.</p>
                 <div className="text-xs text-primary font-medium">Quick setup — fewer fields required →</div>
               </button>
-              <button onClick={() => { setServiceType("gateway_and_processing"); setStepIndex(0); }} className="group text-left bg-card rounded-2xl border-2 border-border hover:border-primary/50 p-5 md:p-6 transition-all shadow-sm hover:shadow-md space-y-3">
+              <button onClick={() => { setServiceType("gateway_and_processing"); setStepIndex(0); }} className="group text-left bg-card rounded-2xl border-2 border-border mh-tile p-5 md:p-6 transition-all shadow-sm hover:shadow-md space-y-3">
                 <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center"><CreditCard className="w-6 h-6 text-primary" /></div>
                 <h2 className="text-lg font-semibold text-foreground">Gateway + Processing</h2>
                 <p className="text-sm text-muted-foreground leading-relaxed">I need both a payment processor and NMI gateway.</p>
                 <div className="text-xs text-primary font-medium">Full application required →</div>
               </button>
-              <button onClick={() => { setServiceType("document_submission"); setStepIndex(0); }} className="group text-left bg-card rounded-2xl border-2 border-border hover:border-primary/50 p-5 md:p-6 transition-all shadow-sm hover:shadow-md space-y-3">
-                <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center"><FileText className="w-6 h-6 text-amber-600" /></div>
+              <button onClick={() => { setServiceType("document_submission"); setStepIndex(0); }} className="group text-left bg-card rounded-2xl border-2 border-border mh-tile p-5 md:p-6 transition-all shadow-sm hover:shadow-md space-y-3">
+                <div className="w-12 h-12 rounded-xl bg-warning/10 flex items-center justify-center"><FileText className="w-6 h-6 text-warning" /></div>
                 <h2 className="text-lg font-semibold text-foreground">Document Submission</h2>
                 <p className="text-sm text-muted-foreground leading-relaxed">Upload required documents for an existing or new application.</p>
                 <div className="text-xs text-primary font-medium">Upload documents only →</div>
@@ -721,9 +721,9 @@ export default function MerchantApply() {
     return (
       <div className="merchant-form fixed inset-0 z-50 bg-background overflow-y-auto" style={{ WebkitOverflowScrolling: "touch" }}>
         <div className="min-h-full flex items-center justify-center p-4 py-8">
-          <div className="max-w-md w-full rounded-2xl border border-border bg-card p-8 shadow-lg text-center space-y-5">
-            <div className="mx-auto w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center">
-              <CheckCircle className="w-8 h-8 text-emerald-500" />
+          <div className="mh-enter max-w-md w-full rounded-2xl border border-border bg-card p-8 shadow-lg text-center space-y-5">
+            <div className="mx-auto w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
+              <CheckCircle className="w-8 h-8 text-success" />
             </div>
             <div className="space-y-2">
               <h1 className="text-2xl font-bold text-foreground">Application Received</h1>
@@ -789,7 +789,7 @@ export default function MerchantApply() {
       </header>
 
       <div className="p-3 md:p-8">
-        <div className="max-w-6xl mx-auto space-y-3 md:space-y-6">
+        <div className="mh-enter max-w-6xl mx-auto space-y-3 md:space-y-6">
           {/* Step Navigation */}
           <nav className="flex items-center justify-between gap-1 md:gap-2 overflow-x-auto pb-1 md:pb-2">
             {steps.map((step, index) => {
@@ -815,7 +815,7 @@ export default function MerchantApply() {
           {/* Main Content */}
           <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(280px,1fr)]">
             <section className="bg-card rounded-xl md:rounded-2xl border border-border shadow-sm overflow-visible">
-              <div className="p-4 md:p-6">
+              <div key={`${serviceType}-${stepIndex}`} className="mh-enter p-4 md:p-6">
                 <div className="mb-4 md:mb-6">
                   <h2 className="text-base md:text-xl font-semibold text-foreground">{currentStep.label}</h2>
                   <p className="text-xs md:text-sm text-muted-foreground mt-0.5">Required fields marked with <span className="text-destructive">*</span></p>
@@ -872,7 +872,7 @@ export default function MerchantApply() {
                 </div>
               </div>
 
-              <div className="bg-info/10 rounded-xl md:rounded-2xl border border-info/20 p-3 md:p-5">
+              <div className="bg-muted rounded-xl md:rounded-2xl border border-border p-3 md:p-5">
                 <div className="flex items-start gap-2">
                   <Info className="w-4 h-4 text-info mt-0.5 flex-shrink-0" />
                   <div>
@@ -920,7 +920,7 @@ function Input({ hasError, ...props }: InputHTMLAttributes<HTMLInputElement> & {
         hasError
           ? "bg-card text-foreground border-destructive focus:border-destructive focus:ring-destructive/20"
           : filled
-            ? "bg-emerald-600 text-white font-semibold border-emerald-600 focus:bg-card focus:text-foreground focus:font-normal focus:border-primary focus:ring-primary/20"
+            ? "bg-card text-foreground border-input border-l-2 border-l-primary focus:border-primary focus:ring-primary/20"
             : "bg-card text-foreground border-input focus:border-primary focus:ring-primary/20",
         props.className
       )}
@@ -945,7 +945,7 @@ function SelectInput({ children, hasError, ...props }: React.SelectHTMLAttribute
         hasError
           ? "bg-card text-foreground border-destructive focus:ring-destructive/20"
           : filled
-            ? "bg-emerald-600 text-white font-semibold border-emerald-600 focus:bg-card focus:text-foreground focus:font-normal focus:border-primary focus:ring-primary/20"
+            ? "bg-card text-foreground border-input border-l-2 border-l-primary focus:border-primary focus:ring-primary/20"
             : "bg-card text-foreground border-input focus:ring-primary/20",
       )}
     >{children}</select>
@@ -965,7 +965,7 @@ function Textarea({ hasError, ...props }: React.TextareaHTMLAttributes<HTMLTextA
         hasError
           ? "bg-card text-foreground border-destructive focus:ring-destructive/20"
           : filled
-            ? "bg-emerald-600 text-white font-semibold border-emerald-600 focus:bg-card focus:text-foreground focus:font-normal focus:border-primary focus:ring-primary/20"
+            ? "bg-card text-foreground border-input border-l-2 border-l-primary focus:border-primary focus:ring-primary/20"
             : "bg-card text-foreground border-input focus:ring-primary/20",
       )}
     />
@@ -1084,7 +1084,7 @@ function GatewayDocumentsStep({ form, onChange, onSubmit, isSubmitting, progress
           <FileText className="w-4 h-4 text-primary" /> VAR Sheet
         </h3>
         <p className="text-xs text-muted-foreground">From your current processor. This document shows your current rates and processing details.</p>
-        <label className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-border hover:border-primary/50 bg-card p-4 cursor-pointer transition-all group text-center">
+        <label className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-border mh-tile bg-card p-4 cursor-pointer transition-all group text-center">
           <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary" />
           <span className="text-xs font-medium text-foreground">Upload VAR Sheet</span>
           <span className="text-[10px] text-muted-foreground">PDF, JPG, PNG, DOC</span>
@@ -1110,7 +1110,7 @@ function GatewayDocumentsStep({ form, onChange, onSubmit, isSubmitting, progress
         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
           <FileText className="w-4 h-4 text-primary" /> Voided Check or Bank Confirmation Letter
         </h3>
-        <label className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-border hover:border-primary/50 bg-card p-4 cursor-pointer transition-all group text-center">
+        <label className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-border mh-tile bg-card p-4 cursor-pointer transition-all group text-center">
           <Plus className="w-6 h-6 text-muted-foreground group-hover:text-primary" />
           <span className="text-xs font-medium text-foreground">Upload Voided Check / Bank Letter</span>
           <span className="text-[10px] text-muted-foreground">PDF, JPG, PNG, DOC</span>
@@ -1145,11 +1145,11 @@ function GatewayDocumentsStep({ form, onChange, onSubmit, isSubmitting, progress
         </dl>
       </div>
       {allComplete ? (
-        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-500 flex items-start gap-2">
+        <div className="rounded-xl border border-success/30 bg-success/10 p-4 text-sm text-success flex items-start gap-2">
           <CheckCircle className="w-4 h-4 mt-0.5" /><div><p className="font-medium">Ready to Submit!</p></div>
         </div>
       ) : (
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-500 flex items-start gap-2">
+        <div className="rounded-xl border border-warning/30 bg-warning/10 p-4 text-sm text-warning flex items-start gap-2">
           <AlertCircle className="w-4 h-4 mt-0.5" /><div><p className="font-medium">Please complete all required fields.</p></div>
         </div>
       )}
@@ -1193,8 +1193,8 @@ function DocumentSubmissionStep({ form, onChange, onBlur, getError, onSubmit, is
   return (
     <div className="space-y-6">
       {/* Info Banner */}
-      <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm flex items-start gap-3">
-        <Info className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+      <div className="rounded-xl border border-warning/30 bg-warning/10 p-4 text-sm flex items-start gap-3">
+        <Info className="w-5 h-5 text-warning mt-0.5 flex-shrink-0" />
         <div>
           <p className="font-semibold text-foreground">Please fill out the email address associated with your submission.</p>
           <p className="text-muted-foreground mt-1">This allows us to match your documents to the correct application.</p>
@@ -1229,7 +1229,7 @@ function DocumentSubmissionStep({ form, onChange, onBlur, getError, onSubmit, is
 
       {/* File Upload */}
       <div>
-        <label className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-border hover:border-primary/50 bg-card p-6 cursor-pointer transition-all group text-center">
+        <label className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed border-border mh-tile bg-card p-6 cursor-pointer transition-all group text-center">
           <Plus className="w-8 h-8 text-muted-foreground group-hover:text-primary" />
           <div>
             <p className="text-sm font-semibold text-foreground">Upload Documents</p>
@@ -1285,7 +1285,7 @@ function PricingStep({ form, onChange }: { form: MerchantForm; onChange: <K exte
           onClick={() => onChange("pricing_plan", "flat_rate")}
           className={cn(
             "text-left rounded-xl border-2 p-5 transition-all space-y-4",
-            selected === "flat_rate" ? "border-primary bg-primary/5 shadow-md" : "border-border hover:border-primary/40 bg-card"
+            selected === "flat_rate" ? "border-primary bg-primary/5 shadow-md" : "border-border mh-tile bg-card"
           )}
         >
           <div className="flex items-center justify-between">
@@ -1310,7 +1310,7 @@ function PricingStep({ form, onChange }: { form: MerchantForm; onChange: <K exte
           onClick={() => onChange("pricing_plan", "interchange_plus")}
           className={cn(
             "text-left rounded-xl border-2 p-5 transition-all space-y-4",
-            selected === "interchange_plus" ? "border-primary bg-primary/5 shadow-md" : "border-border hover:border-primary/40 bg-card"
+            selected === "interchange_plus" ? "border-primary bg-primary/5 shadow-md" : "border-border mh-tile bg-card"
           )}
         >
           <div className="flex items-center justify-between">
@@ -1526,7 +1526,7 @@ function ProcessingStep({ form, onChange, onBlur, getError }: StepProps) {
         If your average ticket is &gt; $1,000 or High Ticket &gt; $2,500, we will need 3 months of Bank or Merchant Processing Statements to review with your application. You can upload them now to save time. Provide a Void Check or Bank Letter to assist us in validating your bank account to speed up application review.
       </p>
       <div className="grid gap-3 md:gap-4 md:grid-cols-2">
-        <label className="flex items-center gap-3 rounded-xl border-2 border-dashed border-border hover:border-primary/50 bg-card p-4 cursor-pointer transition-all group">
+        <label className="flex items-center gap-3 rounded-xl border-2 border-dashed border-border mh-tile bg-card p-4 cursor-pointer transition-all group">
           <Plus className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
           <div className="text-xs md:text-sm font-semibold text-foreground uppercase tracking-wide">Bank or Processing Statements</div>
           <input type="file" multiple className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onChange={e => {
@@ -1534,7 +1534,7 @@ function ProcessingStep({ form, onChange, onBlur, getError }: StepProps) {
             onChange("statement_docs", [...form.statement_docs, ...files] as any);
           }} />
         </label>
-        <label className="flex items-center gap-3 rounded-xl border-2 border-dashed border-border hover:border-primary/50 bg-card p-4 cursor-pointer transition-all group">
+        <label className="flex items-center gap-3 rounded-xl border-2 border-dashed border-border mh-tile bg-card p-4 cursor-pointer transition-all group">
           <Plus className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
           <div className="text-xs md:text-sm font-semibold text-foreground uppercase tracking-wide">Void Check or Bank Letter</div>
           <input type="file" multiple className="hidden" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" onChange={e => {
@@ -1751,11 +1751,11 @@ function ReviewStep({ form, onSubmit, isSubmitting, progress, onChange, isCanadi
         Application Review
       </div>
       {allComplete ? (
-        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-500 flex items-start gap-2">
+        <div className="rounded-xl border border-success/30 bg-success/10 p-4 text-sm text-success flex items-start gap-2">
           <CheckCircle className="w-4 h-4 mt-0.5" /><div><p className="font-medium">Ready to Submit!</p><p className="mt-1">Review your information below and click Submit.</p></div>
         </div>
       ) : (
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-500 flex items-start gap-2">
+        <div className="rounded-xl border border-warning/30 bg-warning/10 p-4 text-sm text-warning flex items-start gap-2">
           <AlertCircle className="w-4 h-4 mt-0.5" /><div><p className="font-medium">Missing Required Information</p><p className="mt-1">Please go back and complete all required fields.</p></div>
         </div>
       )}
@@ -1901,7 +1901,7 @@ function ReviewStep({ form, onSubmit, isSubmitting, progress, onChange, isCanadi
         </div>
 
         {(!form.merchant_agreement_accepted || !form.account_authorization_accepted) && (
-          <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-600 flex items-start gap-2">
+          <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs text-warning flex items-start gap-2">
             <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
             <span>You must accept both agreements above before you can submit your application.</span>
           </div>

@@ -6,6 +6,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Public Sans — the MerchantHaus design system's one typeface, copied from
+   that system's own font file. Declared here but only referenced inside
+   .merchant-form, so the staff app never downloads it. */
+@font-face {
+  font-family: 'Public Sans';
+  src: url('./assets/fonts/PublicSans-VariableFont_wght.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */
@@ -1151,43 +1162,180 @@ All colors MUST be HSL.
     --wa-divider: 40 15% 85%;
   }
 
+  /* Client-facing forms (/apply -> /merchant-apply, /scoping, /scope,
+     /scoping-disclosures, /terms-processing, /support-request, /contact,
+     /q/:token) wear the MerchantHaus design system, not the staff app's theme:
+     cream ground, near-black text, crimson primary, Public Sans throughout.
+     Values are the light theme of the "MerchantHaus" design-system artifact
+     (tokens.json), written as the HSL triplets shadcn expects. Contrast notes
+     are the artifact's own: crimson on cream 5.2:1, muted-foreground 5.4:1+,
+     input borders 3.4:1. Scoped to this class so the staff app is untouched. */
   .merchant-form {
-    --background: 220 14% 96%;
-    --foreground: 221 39% 11%;
+    --background: 39 80% 92%;          /* cream #FBF0DB */
+    --foreground: 0 0% 7%;             /* near-black */
 
-    --card: 0 0% 100%;
-    --card-foreground: 221 39% 11%;
+    --card: 40 90% 96%;
+    --card-foreground: 0 0% 7%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 221 39% 11%;
+    --popover: 40 90% 96%;
+    --popover-foreground: 0 0% 7%;
 
-    --primary: 152 69% 31%;
+    --primary: 355 76% 44%;            /* crimson #C51B29 */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 13% 91%;
-    --secondary-foreground: 221 39% 11%;
+    --secondary: 41 53% 85%;
+    --secondary-foreground: 0 0% 7%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 40 64% 87%;
+    --muted-foreground: 0 0% 36%;
 
-    --accent: 152 69% 31%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 41 53% 85%;
+    --accent-foreground: 0 0% 7%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 358 83% 24%;        /* maroon, so an error never reads as a crimson button */
     --destructive-foreground: 0 0% 100%;
 
-    --success: 152 69% 31%;
+    --success: 142 70% 24%;            /* status-approved */
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 50%;
-    --warning-foreground: 30 80% 20%;
+    --warning: 30 95% 28%;             /* status-pending */
+    --warning-foreground: 0 0% 100%;
 
-    --info: 213 94% 56%;
-    --info-foreground: 213 94% 15%;
+    --info: 214 80% 36%;               /* status-refunded */
+    --info-foreground: 0 0% 100%;
 
-    --border: 220 13% 84%;
-    --input: 220 13% 84%;
-    --ring: 152 69% 31%;
+    --border: 40 47% 78%;              /* hairlines */
+    --input: 38 10% 49%;               /* control edges, 3.4:1 */
+    --ring: 0 0% 7%;
+
+    --radius: 0.5rem;                  /* radius-md: buttons, inputs */
+
+    --font-sans: 'Public Sans', system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --font-display: 'Public Sans', system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+    font-family: var(--font-sans);
+    letter-spacing: 0;
+    color: hsl(var(--foreground));
+  }
+
+  /* Headings are Bold Public Sans at the design system's tracking, not the
+     staff app's mono display face pulled tight. */
+  .merchant-form :is(h1, h2, h3) {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    letter-spacing: -0.015em;
+  }
+  .merchant-form :is(h4, h5, h6) {
+    letter-spacing: 0;
+  }
+
+  /* The lockup PNG carries an opaque white ground. Multiply drops the white
+     into the cream page and leaves the red shield and black wordmark as-is. */
+  .merchant-form img[src*="merchanthaus-logo"] {
+    mix-blend-mode: multiply;
+  }
+
+  /* Eyebrows: uppercase Black, tracked (design system `hero-eyebrow`). */
+  .merchant-form .label-caps {
+    font-family: var(--font-sans);
+    font-weight: 900;
+    letter-spacing: 0.12em;
+  }
+
+  /* ── Motion and interaction (design system: Animation and interaction) ──
+     Ease-out for entries, ease-in-out for state changes, no springs, no
+     lifts or scale. 120ms for hover and press, 200ms by default, 320ms for
+     page-level fade-ups. Everything collapses under prefers-reduced-motion. */
+  .merchant-form {
+    --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+    --dur-fast: 120ms;
+    --dur-base: 200ms;
+    --dur-slow: 320ms;
+    --shadow-xs: 0 1px 2px 0 rgba(16, 24, 40, 0.05);
+  }
+
+  /* Zero-specificity default, so any element that sets its own Tailwind
+     transition keeps it; this only fills the gaps. */
+  :where(.merchant-form) :where(a, button, label, input, select, textarea, summary, [role="tab"]) {
+    transition-property: color, background-color, border-color, box-shadow, text-decoration-color, opacity;
+    transition-duration: var(--dur-fast);
+    transition-timing-function: var(--ease-out);
+  }
+  /* Existing transition utilities follow the house curve and timing. */
+  .merchant-form :is(.transition-all, .transition-colors) {
+    transition-duration: var(--dur-base);
+    transition-timing-function: var(--ease-out);
+  }
+
+  /* Filled crimson actions darken on hover (about 4% lightness) and further
+     on press, instead of fading toward the ground. */
+  .merchant-form :is(button, a).bg-primary:not(:disabled):hover {
+    background-color: color-mix(in oklab, hsl(var(--primary)) 90%, black);
+  }
+  .merchant-form :is(button, a).bg-primary:not(:disabled):active {
+    background-color: color-mix(in oklab, hsl(var(--primary)) 80%, black);
+  }
+
+  /* Crimson text actions underline on hover. */
+  .merchant-form :is(a, button).text-primary:not(.bg-primary):hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  /* Clickable tiles and cards: the edge darkens to the control border and a
+     faint shadow appears. Never lifts or scales. */
+  .merchant-form .mh-tile {
+    transition-property: border-color, box-shadow, background-color;
+    transition-duration: var(--dur-fast);
+    transition-timing-function: var(--ease-out);
+  }
+  .merchant-form .mh-tile:hover:not(:disabled) {
+    border-color: hsl(var(--input));
+    box-shadow: var(--shadow-xs);
+  }
+  .merchant-form .mh-tile:active:not(:disabled) {
+    background-color: hsl(var(--muted));
+  }
+
+  /* Keyboard focus: 2px ring, 2px offset. */
+  .merchant-form :is(a, button, summary, [role="tab"], label:has(> input[type="file"])):focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  /* Page, step and dialog entrances: a short fade-up. */
+  @keyframes mh-fade-up {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes mh-fade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  .merchant-form .mh-enter {
+    animation: mh-fade-up var(--dur-slow) var(--ease-out) both;
+  }
+  .merchant-form .mh-scrim {
+    animation: mh-fade var(--dur-base) var(--ease-out) both;
+  }
+  /* A row of choices arrives in order, 60ms apart. */
+  .merchant-form .mh-stagger > * {
+    animation: mh-fade-up var(--dur-slow) var(--ease-out) both;
+  }
+  .merchant-form .mh-stagger > :nth-child(2) { animation-delay: 60ms; }
+  .merchant-form .mh-stagger > :nth-child(3) { animation-delay: 120ms; }
+  .merchant-form .mh-stagger > :nth-child(4) { animation-delay: 180ms; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .merchant-form *,
+    .merchant-form *::before,
+    .merchant-form *::after {
+      animation-duration: 1ms !important;
+      animation-delay: 0ms !important;
+      transition-duration: 1ms !important;
+    }
   }
 }
 

@@ -205,9 +205,9 @@ export default function Scoping() {
   if (isSubmitted) {
     return (
       <div className="merchant-form min-h-full w-full bg-background flex items-center justify-center p-4">
-        <div className="max-w-md w-full rounded-2xl border border-border bg-card p-8 shadow-lg text-center space-y-4">
-          <div className="mx-auto w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center">
-            <CheckCircle className="w-8 h-8 text-emerald-500" />
+        <div className="mh-enter max-w-md w-full rounded-2xl border border-border bg-card p-8 shadow-lg text-center space-y-4">
+          <div className="mx-auto w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
+            <CheckCircle className="w-8 h-8 text-success" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">Scoping form received</h1>
           <p className="text-muted-foreground">
@@ -245,7 +245,7 @@ export default function Scoping() {
       </header>
 
       <div className="p-3 md:p-8">
-        <div className="max-w-6xl mx-auto space-y-3 md:space-y-6">
+        <div className="mh-enter max-w-6xl mx-auto space-y-3 md:space-y-6">
           <div className="space-y-1">
             <h1 className="text-lg md:text-2xl font-bold text-foreground">Payments &amp; Gateway Scoping Form</h1>
             <p className="text-xs md:text-sm text-muted-foreground">
@@ -277,16 +277,16 @@ export default function Scoping() {
 
           <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(280px,1fr)]">
             <section className="bg-card rounded-xl md:rounded-2xl border border-border shadow-sm overflow-visible">
-              <div className="p-4 md:p-6">
+              <div key={stepIndex} className="mh-enter p-4 md:p-6">
                 <div className="mb-4 md:mb-6">
                   <h2 className="text-base md:text-xl font-semibold text-foreground">{currentStep.label}</h2>
                   <p className="text-xs md:text-sm text-muted-foreground mt-0.5">Required fields marked with <span className="text-destructive">*</span> — everything else is optional.</p>
                 </div>
 
                 {stepIndex === 0 && (
-                  <div className="mb-5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 md:p-4">
+                  <div className="mb-5 rounded-xl border border-warning/30 bg-warning/10 p-3 md:p-4">
                     <div className="flex items-start gap-2">
-                      <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                      <AlertTriangle className="w-4 h-4 text-warning mt-0.5 flex-shrink-0" />
                       <p className="text-xs md:text-sm text-foreground">{SCOPING_CAUTION}</p>
                     </div>
                   </div>
@@ -343,7 +343,7 @@ export default function Scoping() {
                 </div>
               </div>
 
-              <div className="bg-info/10 rounded-xl md:rounded-2xl border border-info/20 p-3 md:p-5">
+              <div className="bg-muted rounded-xl md:rounded-2xl border border-border p-3 md:p-5">
                 <div className="flex items-start gap-2">
                   <Info className="w-4 h-4 text-info mt-0.5 flex-shrink-0" />
                   <div>
