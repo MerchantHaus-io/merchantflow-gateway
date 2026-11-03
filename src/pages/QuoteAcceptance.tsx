@@ -277,7 +277,7 @@ function QuoteAcceptanceInner() {
   if (error || !quote) {
     return (
       <Shell>
-        <div className="max-w-xl mx-auto py-16 text-center">
+        <div className="mh-enter max-w-xl mx-auto py-16 text-center">
           <AlertTriangle className="h-10 w-10 text-primary mx-auto mb-4" />
           <h1 className="font-bold text-3xl mb-3">We couldn't load this quote.</h1>
           <p className="text-muted-foreground text-sm">
@@ -293,7 +293,7 @@ function QuoteAcceptanceInner() {
   if (acceptedNow || alreadyAccepted) {
     return (
       <Shell>
-        <div className="max-w-xl mx-auto py-16 text-center">
+        <div className="mh-enter max-w-xl mx-auto py-16 text-center">
           <CheckCircle2 className="h-12 w-12 text-success mx-auto mb-4" />
           <h1 className="font-bold text-4xl mb-3">
             {acceptedNow ? "Acceptance recorded." : "Already accepted."}
@@ -314,7 +314,7 @@ function QuoteAcceptanceInner() {
   // ─── Acceptance form ──────────────────────────────────────────────
   return (
     <Shell>
-      <div className="max-w-3xl mx-auto py-8 sm:py-12 px-4">
+      <div className="mh-enter max-w-3xl mx-auto py-8 sm:py-12 px-4">
         {/* Header strip */}
         <div className="flex items-center justify-between gap-4 mb-10">
           <div>

@@ -90,7 +90,7 @@ const SupportRequest = () => {
       </header>
 
       <div className="p-3 md:p-8">
-        <div className="max-w-2xl mx-auto space-y-4 md:space-y-6">
+        <div className="mh-enter max-w-2xl mx-auto space-y-4 md:space-y-6">
           <div className="flex items-center gap-3 px-2 py-1.5 md:px-4 md:py-3 rounded-lg bg-card border-b-2 border-primary shadow-sm">
             <div className="w-6 h-6 md:w-10 md:h-10 rounded-full flex items-center justify-center bg-primary/10 text-primary flex-shrink-0">
               <LifeBuoy className="w-3 h-3 md:w-5 md:h-5" />
@@ -229,8 +229,8 @@ const SupportRequest = () => {
       </div>
 
       {formStatus === "success" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="max-w-md w-full rounded-2xl border border-border bg-card p-8 shadow-lg text-center space-y-4">
+        <div className="mh-scrim fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="mh-enter max-w-md w-full rounded-2xl border border-border bg-card p-8 shadow-lg text-center space-y-4">
             <div className="mx-auto w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
               <CheckCircle2 className="w-8 h-8 text-success" />
             </div>

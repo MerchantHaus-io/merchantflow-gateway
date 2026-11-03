@@ -33,7 +33,7 @@ export default function TermsProcessing() {
           </a>
         </div>
       </header>
-      <div className="max-w-4xl mx-auto p-4 md:p-8">
+      <div className="mh-enter max-w-4xl mx-auto p-4 md:p-8">
         <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-6">
           Merchant Terms and Conditions
         </h1>

@@ -196,7 +196,7 @@ export default function QuickScope() {
       </header>
 
       <div className="p-3 md:p-8">
-        <div className="max-w-3xl mx-auto space-y-5 md:space-y-6">
+        <div className="mh-enter max-w-3xl mx-auto space-y-5 md:space-y-6">
           <div className="space-y-1.5 md:space-y-2 pt-1 md:pt-2">
             <p className="label-caps text-primary">Quick Scope</p>
             <h1 className="text-2xl md:text-4xl font-bold tracking-tight text-foreground">
@@ -322,8 +322,8 @@ export default function QuickScope() {
       </div>
 
       {status === "success" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="max-w-md w-full rounded-2xl border border-border bg-card p-8 shadow-lg text-center space-y-4 animate-scale-in">
+        <div className="mh-scrim fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="mh-enter max-w-md w-full rounded-2xl border border-border bg-card p-8 shadow-lg text-center space-y-4">
             <div className="mx-auto w-16 h-16 rounded-full bg-success/10 flex items-center justify-center">
               <CheckCircle2 className="w-8 h-8 text-success" />
             </div>

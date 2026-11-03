@@ -24,7 +24,7 @@ export default function ScopingDisclosures() {
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-8 md:py-12 space-y-8">
+      <main className="mh-enter max-w-3xl mx-auto px-4 py-8 md:py-12 space-y-8">
         <div className="space-y-2">
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground">
             Scoping form disclosures
