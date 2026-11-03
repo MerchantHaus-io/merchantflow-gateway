@@ -51,7 +51,7 @@ const defaultPricing = (): PriceItem[] => [
   {
     code: "gateway_monthly",
     label: "Gateway monthly fee",
-    category: "platform",
+    category: "gateway_fee",
     cadence: "monthly",
     cost: String(GATEWAY_BASIS.monthlyCost),
     resale: String(GATEWAY_BASIS.monthlyBilled),
@@ -59,7 +59,7 @@ const defaultPricing = (): PriceItem[] => [
   {
     code: "gateway_per_txn",
     label: "Gateway per transaction",
-    category: "platform",
+    category: "gateway_fee",
     cadence: "per_transaction",
     cost: String(GATEWAY_BASIS.perTxnCost),
     resale: String(GATEWAY_BASIS.perTxnBilled),
