@@ -358,7 +358,7 @@ async function applyOnboardingStep(
         tenant_id: tenantId,
         code,
         label,
-        category: String(raw.category ?? "platform"),
+        category: normalisePricingCategory(raw.category),
         cadence: String(raw.cadence ?? "monthly"),
         cost,
         resale,
@@ -409,6 +409,20 @@ async function applyOnboardingStep(
       if (invited?.user) userId = invited.user.id;
       else if (invErr && !/already been registered|already exists/i.test(invErr.message)) {
         throw new Error(`Could not invite ${email}: ${invErr.message}`);
+      }
+      if (!userId) {
+        // Existing account: resolve its id so the NOT NULL membership insert succeeds.
+        const { data: prof } = await ctx.db.from("profiles").select("id").ilike("email", email).maybeSingle();
+        userId = (prof?.id as string | undefined) ?? null;
+        if (!userId) {
+          for (let page = 1; page <= 20 && !userId; page++) {
+            const { data: list, error: lErr } = await ctx.db.auth.admin.listUsers({ page, perPage: 200 });
+            if (lErr || !list?.users?.length) break;
+            userId = list.users.find((u) => u.email?.toLowerCase() === email)?.id ?? null;
+            if (list.users.length < 200) break;
+          }
+        }
+        if (!userId) throw new Error(`Could not find the existing account for ${email}`);
       }
 
       const { data: openInvite } = await ctx.db
