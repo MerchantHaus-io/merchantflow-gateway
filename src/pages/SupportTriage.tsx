@@ -19,7 +19,8 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Search, Plus, Inbox, Loader2, CheckCircle2, UserCheck, Building2, Hand, Archive, Clock } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Search, Plus, Inbox, Loader2, CheckCircle2, UserCheck, Building2, Hand, Archive, ArchiveRestore, Clock, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -65,6 +66,8 @@ const SupportTriage = () => {
   const [filterPriority, setFilterPriority] = useState("all");
   const [newTicketOpen, setNewTicketOpen] = useState(false);
   const [claimingId, setClaimingId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkAction, setBulkAction] = useState<"claim" | "archive" | "restore" | null>(null);
 
   const { data: tickets, isLoading } = useQuery({
     queryKey: ["support-tickets"],
@@ -131,6 +134,159 @@ const SupportTriage = () => {
       return matchSearch && matchCategory && matchStatus && matchPriority;
     });
   }, [tickets, view, search, filterCategory, filterStatus, filterPriority, user?.id]);
+
+  // Drop selections that are no longer visible (tab/filter change, live update).
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      if (prev.size === 0) return prev;
+      const visible = new Set(filtered.map((t) => t.id));
+      const next = new Set([...prev].filter((id) => visible.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [filtered]);
+
+  const selected = useMemo(
+    () => filtered.filter((t) => selectedIds.has(t.id)),
+    [filtered, selectedIds],
+  );
+  const claimable = selected.filter((t) => !t.assigned_to && !t.archived_at);
+  const archivable = selected.filter((t) => !t.archived_at);
+  const restorable = selected.filter((t) => !!t.archived_at);
+  const allSelected = filtered.length > 0 && selected.length === filtered.length;
+  const someSelected = selected.length > 0 && !allSelected;
+
+  const toggleSelected = (id: string, on: boolean) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+
+  const toggleAll = (on: boolean) =>
+    setSelectedIds(on ? new Set(filtered.map((t) => t.id)) : new Set());
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const agentName = () =>
+    resolveDisplayName(user?.email) ?? teamMemberName ?? user?.email ?? "Agent";
+
+  // Same internal system note the ticket detail page writes for each action.
+  const logSystemNotes = async (ticketIds: string[], body: string) => {
+    if (ticketIds.length === 0) return;
+    const { error } = await supabase.from("support_ticket_comments").insert(
+      ticketIds.map((ticket_id) => ({
+        ticket_id,
+        body,
+        is_internal: true,
+        author_type: "system",
+        author_id: user?.id ?? null,
+        author_name: agentName(),
+      })),
+    );
+    if (error) console.error("Failed to log bulk activity:", error);
+  };
+
+  const handleBulkClaim = async () => {
+    if (!user || claimable.length === 0) return;
+    setBulkAction("claim");
+    const claimedBy = agentName();
+    const assignee = {
+      assigned_to: user.id,
+      assigned_to_name: claimedBy,
+      assigned_to_email: user.email ?? null,
+    };
+    // Open tickets move to in_progress (and the client is told); others keep their status.
+    const openIds = claimable.filter((t) => t.status === "open").map((t) => t.id);
+    const otherIds = claimable.filter((t) => t.status !== "open").map((t) => t.id);
+    try {
+      const claimedIds: string[] = [];
+      // `.is("assigned_to", null)` keeps us from overwriting a teammate who
+      // claimed one of these in the meantime.
+      if (openIds.length) {
+        const { data, error } = await supabase
+          .from("support_tickets")
+          .update({ ...assignee, status: "in_progress" })
+          .in("id", openIds)
+          .is("assigned_to", null)
+          .select("id");
+        if (error) throw error;
+        claimedIds.push(...(data ?? []).map((r) => r.id));
+      }
+      if (otherIds.length) {
+        const { data, error } = await supabase
+          .from("support_tickets")
+          .update(assignee)
+          .in("id", otherIds)
+          .is("assigned_to", null)
+          .select("id");
+        if (error) throw error;
+        claimedIds.push(...(data ?? []).map((r) => r.id));
+      }
+
+      await logSystemNotes(claimedIds, `${claimedBy} claimed the ticket.`);
+
+      const claimedSet = new Set(claimedIds);
+      const toNotify = claimable.filter(
+        (t) => claimedSet.has(t.id) && t.status === "open" && t.requester_email,
+      );
+      const emailResults = await Promise.all(
+        toNotify.map((t) =>
+          supabase.functions.invoke("send-ticket-status-email", {
+            body: { ticket_id: t.id, new_status: "in_progress", changed_by_name: claimedBy },
+          }),
+        ),
+      );
+      const emailFailures = emailResults.filter((r) => r.error);
+      emailFailures.forEach((r) => console.error("Failed to send allocation email:", r.error));
+
+      const skipped = claimable.length - claimedIds.length;
+      toast.success(
+        `You claimed ${claimedIds.length} ticket${claimedIds.length === 1 ? "" : "s"}` +
+          (skipped > 0 ? ` · ${skipped} already taken` : ""),
+      );
+      if (emailFailures.length) {
+        toast.error(`${emailFailures.length} client notification${emailFailures.length === 1 ? "" : "s"} failed.`);
+      }
+      clearSelection();
+    } catch (err) {
+      console.error("Failed to bulk claim tickets:", err);
+      toast.error("Could not claim the selected tickets.");
+    } finally {
+      queryClient.invalidateQueries({ queryKey: ["support-tickets"] });
+      setBulkAction(null);
+    }
+  };
+
+  const handleBulkArchive = async (restore: boolean) => {
+    const targets = restore ? restorable : archivable;
+    if (targets.length === 0) return;
+    setBulkAction(restore ? "restore" : "archive");
+    const ids = targets.map((t) => t.id);
+    try {
+      const { error } = await supabase
+        .from("support_tickets")
+        .update({ archived_at: restore ? null : new Date().toISOString() } as Partial<SupportTicket>)
+        .in("id", ids);
+      if (error) throw error;
+      await logSystemNotes(
+        ids,
+        restore
+          ? `${agentName()} restored the ticket from archive.`
+          : `${agentName()} archived the ticket.`,
+      );
+      toast.success(
+        `${restore ? "Restored" : "Archived"} ${ids.length} ticket${ids.length === 1 ? "" : "s"}`,
+      );
+      clearSelection();
+    } catch (err) {
+      console.error("Failed to bulk archive tickets:", err);
+      toast.error(`Could not ${restore ? "restore" : "archive"} the selected tickets.`);
+    } finally {
+      queryClient.invalidateQueries({ queryKey: ["support-tickets"] });
+      setBulkAction(null);
+    }
+  };
 
   const handleClaim = async (ticket: TicketRow) => {
     if (!user) return;
@@ -319,6 +475,69 @@ const SupportTriage = () => {
           </Select>
         </div>
 
+        {/* Bulk actions */}
+        {selected.length > 0 && (
+          <div className="sticky top-2 z-10 flex flex-wrap items-center gap-2 rounded-lg border bg-card px-3 py-2 shadow-sm">
+            <span className="text-sm font-medium mr-auto">
+              {selected.length} selected
+            </span>
+            {view === "archived" ? (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={bulkAction !== null || restorable.length === 0}
+                onClick={() => handleBulkArchive(true)}
+              >
+                {bulkAction === "restore" ? (
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <ArchiveRestore className="h-3.5 w-3.5 mr-1.5" />
+                )}
+                Restore ({restorable.length})
+              </Button>
+            ) : (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={bulkAction !== null || claimable.length === 0}
+                  onClick={handleBulkClaim}
+                  title={claimable.length === 0 ? "None of the selected tickets are unassigned" : undefined}
+                >
+                  {bulkAction === "claim" ? (
+                    <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                  ) : (
+                    <Hand className="h-3.5 w-3.5 mr-1.5" />
+                  )}
+                  Claim ({claimable.length})
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={bulkAction !== null || archivable.length === 0}
+                  onClick={() => handleBulkArchive(false)}
+                >
+                  {bulkAction === "archive" ? (
+                    <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                  ) : (
+                    <Archive className="h-3.5 w-3.5 mr-1.5" />
+                  )}
+                  Archive ({archivable.length})
+                </Button>
+              </>
+            )}
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={bulkAction !== null}
+              onClick={clearSelection}
+              aria-label="Clear selection"
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        )}
+
         {/* Ticket list */}
         {isLoading ? (
           <div className="space-y-3">
@@ -342,6 +561,13 @@ const SupportTriage = () => {
           </Card>
         ) : isMobile ? (
           <div className="space-y-3">
+            <label className="flex items-center gap-2 text-xs text-muted-foreground px-1">
+              <Checkbox
+                checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                onCheckedChange={(v) => toggleAll(v === true)}
+              />
+              Select all ({filtered.length})
+            </label>
             {filtered.map((t) => {
               const cat = categoryMeta(t.category);
               const st = statusMeta(t.status);
@@ -350,11 +576,22 @@ const SupportTriage = () => {
                 <Card
                   key={t.id}
                   onClick={() => navigate(`/support/${t.id}`)}
-                  className="cursor-pointer hover:shadow-md transition-all"
+                  className={cn(
+                    "cursor-pointer hover:shadow-md transition-all",
+                    selectedIds.has(t.id) && "ring-2 ring-primary/40",
+                  )}
                 >
                   <CardContent className="p-4 space-y-2">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-mono text-muted-foreground">{t.ticket_number}</span>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={selectedIds.has(t.id)}
+                          onCheckedChange={(v) => toggleSelected(t.id, v === true)}
+                          onClick={(e) => e.stopPropagation()}
+                          aria-label={`Select ${t.ticket_number}`}
+                        />
+                        <span className="text-xs font-mono text-muted-foreground">{t.ticket_number}</span>
+                      </div>
                       <Badge variant="outline" className={cn("text-xs", st.badgeClass)}>
                         {t.archived_at ? "Archived" : st.label}
                       </Badge>
@@ -411,6 +648,13 @@ const SupportTriage = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[40px]">
+                    <Checkbox
+                      checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                      onCheckedChange={(v) => toggleAll(v === true)}
+                      aria-label="Select all tickets"
+                    />
+                  </TableHead>
                   <TableHead className="w-[90px]">Ticket</TableHead>
                   <TableHead>Subject</TableHead>
                   <TableHead>Requester</TableHead>
@@ -429,8 +673,16 @@ const SupportTriage = () => {
                     <TableRow
                       key={t.id}
                       className="cursor-pointer"
+                      data-state={selectedIds.has(t.id) ? "selected" : undefined}
                       onClick={() => navigate(`/support/${t.id}`)}
                     >
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={selectedIds.has(t.id)}
+                          onCheckedChange={(v) => toggleSelected(t.id, v === true)}
+                          aria-label={`Select ${t.ticket_number}`}
+                        />
+                      </TableCell>
                       <TableCell className="font-mono text-xs text-muted-foreground">
                         {t.ticket_number}
                       </TableCell>
