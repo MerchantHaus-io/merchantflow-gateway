@@ -23,6 +23,7 @@ import {
 } from "@/components/pricing/QuoteGeneratorDialog";
 import { AcceptedQuotesPanel } from "@/components/pricing/AcceptedQuotesPanel";
 import { SavedDraftsPanel } from "@/components/pricing/SavedDraftsPanel";
+import { SentQuotesPanel } from "@/components/pricing/SentQuotesPanel";
 import { toast } from "sonner";
 
 type BillingCycle = "monthly" | "annual";
@@ -426,6 +427,8 @@ export default function QuoteBuilder() {
               setOpen(true);
             }}
           />
+
+          <SentQuotesPanel refreshSignal={draftsRefresh} />
 
           <AcceptedQuotesPanel />
         </div>
