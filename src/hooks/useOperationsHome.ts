@@ -4,12 +4,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { useDealSignals, emptyDealSignal } from "@/hooks/useDealSignals";
 import { dealAttention, NEEDS_ATTENTION_NOW, type DealAttention } from "@/lib/dealAttention";
 import { monthlyRevenueEstimate } from "@/lib/pipelineValue";
+import { dealBucket, isAssignedTo, type DealBucket } from "@/lib/dealBucket";
+
+export type { DealBucket };
 import {
   ACTIVE_PIPELINE_STAGES,
+  OUTCOME_CONFIG,
   STAGE_CONFIG,
   migrateStage,
+  resolveDisplayName,
   type Opportunity,
   type OpportunityStage,
+  type OutcomeStatus,
 } from "@/types/opportunity";
 
 /**
@@ -32,6 +38,21 @@ export interface QueueItem {
   stageLabel: string;
   daysInStage: number;
   value: number;
+}
+
+export interface DealRow {
+  opportunity: Opportunity;
+  bucket: DealBucket;
+  merchant: string;
+  stage: OpportunityStage;
+  stageLabel: string;
+  /** Outcome label for won/lost deals ("Closed Lost", "Disqualified", …). */
+  outcomeLabel: string | null;
+  owner: string | null;
+  ownerName: string;
+  mine: boolean;
+  value: number;
+  updatedAt: string;
 }
 
 export interface StageBucket {
@@ -63,10 +84,19 @@ export interface OperationsCounts {
   openDeletionRequests: number;
 }
 
-const SLA_HOURS: Record<string, number> = { P1: 1, P2: 4, P3: 24, P4: 72 };
+// Response budget per ticket priority. Keys match support_tickets.priority
+// (low/normal/high/urgent); the old P1–P4 keys matched nothing, so every
+// ticket silently got the 24h fallback.
+const SLA_HOURS: Record<string, number> = { urgent: 1, high: 4, normal: 24, low: 72 };
 
-export function useOperationsHome(currentUserName?: string, isAdmin = false) {
-  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+const PAGE_SIZE = 1000;
+
+export function useOperationsHome(
+  currentUser: { email?: string | null; name?: string | null },
+  showAll = false,
+) {
+  const [allOpportunities, setAllOpportunities] = useState<Opportunity[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
   const [counts, setCounts] = useState<OperationsCounts>({
     activeDeals: 0,
@@ -86,21 +116,45 @@ export function useOperationsHome(currentUserName?: string, isAdmin = false) {
     let cancelled = false;
 
     const load = async () => {
-      // Only the columns the home screen renders — the same discipline the
-      // README records for the rest of the app.
-      const { data } = await supabase
-        .from("opportunities")
-        .select(
-          "id, account_id, contact_id, stage, status, service_type, assigned_to, " +
-            "stage_entered_at, outcome_status, portal_merchant_id, monthly_volume, " +
-            "created_at, updated_at, account:accounts(name)",
-        )
-        .neq("status", "dead")
-        .is("outcome_status", null);
-
-      if (cancelled) return;
-      setOpportunities((data ?? []) as unknown as Opportunity[]);
-      setLoading(false);
+      // Every deal — open, won and lost — so the dashboard can show the whole
+      // book. This query used to select a `monthly_volume` column that does
+      // not exist on opportunities; PostgREST rejected it, the error was
+      // ignored, and the screen rendered zero deals. Volume lives in the
+      // onboarding wizard's form_state, which monthlyRevenueEstimate reads.
+      const rows: Opportunity[] = [];
+      try {
+        for (let from = 0; ; from += PAGE_SIZE) {
+          const { data, error: qErr } = await supabase
+            .from("opportunities")
+            .select(
+              "id, account_id, contact_id, stage, status, service_type, assigned_to, " +
+                "stage_entered_at, outcome_status, outcome_closed_at, portal_merchant_id, " +
+                "created_at, updated_at, account:accounts(name), " +
+                "wizard_state:onboarding_wizard_states(form_state)",
+            )
+            .order("updated_at", { ascending: false })
+            .order("id")
+            .range(from, from + PAGE_SIZE - 1);
+          if (qErr) throw qErr;
+          for (const raw of (data ?? []) as unknown as (Opportunity & { wizard_state: unknown })[]) {
+            rows.push({
+              ...raw,
+              wizard_state: (Array.isArray(raw.wizard_state)
+                ? raw.wizard_state[0]
+                : raw.wizard_state) as Opportunity["wizard_state"],
+            });
+          }
+          if (!data || data.length < PAGE_SIZE) break;
+        }
+        if (cancelled) return;
+        setAllOpportunities(rows);
+        setError(null);
+      } catch (err) {
+        console.error("Operations: failed to load deals", err);
+        if (!cancelled) setError((err as { message?: string })?.message ?? "Could not load deals.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     };
 
     load();
@@ -109,16 +163,65 @@ export function useOperationsHome(currentUserName?: string, isAdmin = false) {
     };
   }, []);
 
+  // The queue, ladder and pipeline figures are about deals still being worked.
+  const opportunities = useMemo(
+    () => allOpportunities.filter((o) => dealBucket(o) === "open"),
+    [allOpportunities],
+  );
+
+  const userEmail = currentUser.email ?? null;
+  const userName = currentUser.name ?? null;
+  const isMine = useMemo(
+    () => (assigned: string | null | undefined) =>
+      isAssignedTo(assigned, { email: userEmail, name: userName }),
+    [userEmail, userName],
+  );
+
+  // ── Every deal, for the "All deals" table ──────────────────
+  const deals = useMemo<DealRow[]>(
+    () =>
+      allOpportunities.map((opportunity) => {
+        const bucket = dealBucket(opportunity);
+        const stage = migrateStage(opportunity.stage);
+        const outcome = opportunity.outcome_status as OutcomeStatus | null | undefined;
+        return {
+          opportunity,
+          bucket,
+          merchant:
+            (opportunity as { account?: { name?: string | null } | null }).account?.name ||
+            "Unnamed account",
+          stage,
+          stageLabel: STAGE_CONFIG[stage]?.label ?? opportunity.stage,
+          outcomeLabel:
+            bucket === "open"
+              ? null
+              : outcome
+                ? (OUTCOME_CONFIG[outcome]?.label ?? outcome)
+                : bucket === "won"
+                  ? "Won"
+                  : "Dead",
+          owner: opportunity.assigned_to ?? null,
+          ownerName: opportunity.assigned_to ? resolveDisplayName(opportunity.assigned_to) : "Unassigned",
+          mine: isMine(opportunity.assigned_to),
+          value: monthlyRevenueEstimate(opportunity),
+          updatedAt: opportunity.updated_at,
+        };
+      }),
+    [allOpportunities, isMine],
+  );
+
   const opportunityIds = useMemo(() => opportunities.map((o) => o.id), [opportunities]);
   const signals = useDealSignals(opportunityIds);
 
+  // The deals this view is about: everyone's, or the user's plus unowned ones.
+  const scoped = useMemo(
+    () => opportunities.filter((o) => showAll || !o.assigned_to || isMine(o.assigned_to)),
+    [opportunities, showAll, isMine],
+  );
+
   // ── Queue, ranked exactly as the board ranks it ────────────
   const queue = useMemo<QueueItem[]>(() => {
-    const mine = opportunities.filter(
-      (o) => isAdmin || !o.assigned_to || o.assigned_to === currentUserName,
-    );
-
-    return mine
+    return scoped
       .map((opportunity) => {
         const signal = signals.get(opportunity.id) ?? emptyDealSignal;
         const enteredAt = opportunity.stage_entered_at
@@ -156,12 +259,12 @@ export function useOperationsHome(currentUserName?: string, isAdmin = false) {
       })
       .filter((item) => item.attention.rank > 0)
       .sort((a, b) => b.attention.rank - a.attention.rank || b.value - a.value);
-  }, [opportunities, signals, currentUserName, isAdmin]);
+  }, [scoped, signals]);
 
   /** Already going wrong, or about to. The line is owned by dealAttention.ts. */
   const now = useMemo(() => queue.filter((i) => i.attention.rank >= NEEDS_ATTENTION_NOW), [queue]);
   const today = useMemo(() => queue.filter((i) => i.attention.rank < NEEDS_ATTENTION_NOW), [queue]);
-  const steady = Math.max(0, opportunities.length - queue.length);
+  const steady = Math.max(0, scoped.length - queue.length);
 
   // ── Stage ladder ───────────────────────────────────────────
   const ladder = useMemo<StageBucket[]>(() => {
@@ -200,7 +303,7 @@ export function useOperationsHome(currentUserName?: string, isAdmin = false) {
 
       const openTickets = tickets.data ?? [];
       const breaching = openTickets.filter((t) => {
-        const budget = SLA_HOURS[String(t.priority).toUpperCase()] ?? 24;
+        const budget = SLA_HOURS[String(t.priority).toLowerCase()] ?? 24;
         return differenceInHours(new Date(), new Date(t.created_at)) > budget;
       });
 
@@ -253,7 +356,7 @@ export function useOperationsHome(currentUserName?: string, isAdmin = false) {
     };
   }, []);
 
-  return { loading, now, today, steady, ladder, counts, activity };
+  return { loading, error, now, today, steady, ladder, counts, activity, deals };
 }
 
 /*
