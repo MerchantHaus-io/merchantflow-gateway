@@ -141,7 +141,7 @@ serve(async (req) => {
     if (ref) {
       const { data: existing } = await supabase
         .from("support_tickets")
-        .select("id, ticket_number, status")
+        .select("id, ticket_number, status, archived_at")
         .eq("ticket_number", ref)
         .maybeSingle();
 
@@ -154,8 +154,13 @@ serve(async (req) => {
           author_name: name,
         });
 
-        if (existing.status === "closed") {
-          await supabase.from("support_tickets").update({ status: "open" }).eq("id", existing.id);
+        // Reopen, and bring an archived ticket back into the active queue —
+        // reopening alone leaves the reply hidden under the Archived tab.
+        const reopen: Record<string, unknown> = {};
+        if (existing.status === "closed") reopen.status = "open";
+        if (existing.archived_at) reopen.archived_at = null;
+        if (Object.keys(reopen).length) {
+          await supabase.from("support_tickets").update(reopen).eq("id", existing.id);
         }
 
         return json({ ok: true, threaded: existing.ticket_number });

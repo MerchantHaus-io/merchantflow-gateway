@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,7 +20,17 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, Plus, Inbox, Loader2, CheckCircle2, UserCheck, Building2, Hand, Archive, ArchiveRestore, Clock, X } from "lucide-react";
+import { Search, Plus, Inbox, Loader2, CheckCircle2, UserCheck, Building2, Hand, Archive, ArchiveRestore, Clock, X, UserMinus, MessageSquareReply } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -50,6 +60,22 @@ const daysUntilArchive = (closedAt: string | null | undefined): number | null =>
   return days;
 };
 
+// The Archived tab only loads the most recent archived tickets; the active
+// queue is bounded by the 7-day auto-archive so it is always loaded in full.
+const ARCHIVED_PAGE_SIZE = 500;
+// PostgREST caps a response at 1000 rows; page through anything bigger.
+const PAGE = 1000;
+
+const PRIORITY_RANK: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
+
+type SortKey = "updated" | "priority" | "oldest" | "awaiting";
+
+const chunk = <T,>(list: T[], size: number): T[][] => {
+  const out: T[][] = [];
+  for (let i = 0; i < list.length; i += size) out.push(list.slice(i, i + size));
+  return out;
+};
+
 const getInitials = (name: string) =>
   name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
@@ -67,20 +93,106 @@ const SupportTriage = () => {
   const [newTicketOpen, setNewTicketOpen] = useState(false);
   const [claimingId, setClaimingId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [bulkAction, setBulkAction] = useState<"claim" | "archive" | "restore" | null>(null);
+  const [bulkAction, setBulkAction] = useState<
+    "claim" | "archive" | "restore" | "release" | "close" | null
+  >(null);
+  const [confirmClose, setConfirmClose] = useState(false);
+  const [sortBy, setSortBy] = useState<SortKey>("updated");
 
-  const { data: tickets, isLoading } = useQuery({
-    queryKey: ["support-tickets"],
+  // Active (unarchived) tickets. Loaded in full, paging past the 1000-row cap,
+  // so the queue and its counts are never silently truncated.
+  const { data: activeTickets, isLoading: activeLoading } = useQuery({
+    queryKey: ["support-tickets", "active"],
+    queryFn: async () => {
+      const rows: TicketRow[] = [];
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await supabase
+          .from("support_tickets")
+          .select("*, account:accounts(id, name)")
+          .is("archived_at", null)
+          .order("updated_at", { ascending: false })
+          .order("id")
+          .range(from, from + PAGE - 1)
+          .returns<TicketRow[]>();
+        if (error) throw error;
+        rows.push(...(data ?? []));
+        if (!data || data.length < PAGE) break;
+      }
+      return rows;
+    },
+  });
+
+  // Archived tickets grow forever, so they are only fetched when the tab is open.
+  const { data: archivedTickets, isLoading: archivedLoading } = useQuery({
+    queryKey: ["support-tickets", "archived"],
+    enabled: view === "archived",
     queryFn: async () => {
       const { data, error } = await supabase
         .from("support_tickets")
         .select("*, account:accounts(id, name)")
-        .order("updated_at", { ascending: false })
+        .not("archived_at", "is", null)
+        .order("archived_at", { ascending: false })
+        .limit(ARCHIVED_PAGE_SIZE)
         .returns<TicketRow[]>();
       if (error) throw error;
       return data ?? [];
     },
   });
+
+  const { data: archivedCount = 0 } = useQuery({
+    queryKey: ["support-tickets", "archived-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("support_tickets")
+        .select("id", { count: "exact", head: true })
+        .not("archived_at", "is", null);
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
+  // Who spoke last on each active ticket's public thread. A ticket whose latest
+  // public message is the customer's — or that has no agent reply at all — is
+  // waiting on us.
+  const activeIds = useMemo(
+    () => (activeTickets ?? []).filter((t) => t.status !== "closed").map((t) => t.id),
+    [activeTickets],
+  );
+  const { data: lastSpeaker } = useQuery({
+    queryKey: ["support-tickets", "last-speaker", activeIds],
+    enabled: activeIds.length > 0,
+    queryFn: async () => {
+      const latest = new Map<string, string>();
+      // Small chunks keep the `in (...)` filter well inside URL length limits.
+      for (const ids of chunk(activeIds, 50)) {
+        const { data, error } = await supabase
+          .from("support_ticket_comments")
+          .select("ticket_id, author_type, created_at")
+          .in("ticket_id", ids)
+          .eq("is_internal", false)
+          .neq("author_type", "system")
+          .order("created_at", { ascending: false })
+          .limit(PAGE);
+        if (error) throw error;
+        for (const c of data ?? []) {
+          if (!latest.has(c.ticket_id)) latest.set(c.ticket_id, c.author_type);
+        }
+      }
+      return latest;
+    },
+  });
+
+  const isAwaitingReply = useCallback(
+    (t: TicketRow) => {
+      if (t.archived_at || t.status === "closed") return false;
+      const who = lastSpeaker?.get(t.id);
+      // No public thread yet: waiting if nobody has picked it up.
+      return who === undefined ? !t.assigned_to || t.status === "open" : who === "customer";
+    },
+    [lastSpeaker],
+  );
+
+  const isLoading = view === "archived" ? archivedLoading : activeLoading;
 
   // Live updates — refresh the board whenever any ticket changes.
   useEffect(() => {
@@ -98,29 +210,25 @@ const SupportTriage = () => {
   }, [queryClient]);
 
   const stats = useMemo(() => {
-    const list = tickets ?? [];
-    const active = list.filter((t) => !t.archived_at);
+    const active = activeTickets ?? [];
     return {
       open: active.filter((t) => t.status === "open").length,
       inProgress: active.filter((t) => t.status === "in_progress").length,
       unassigned: active.filter((t) => !t.assigned_to && t.status !== "closed").length,
       closed: active.filter((t) => t.status === "closed").length,
-      archived: list.filter((t) => !!t.archived_at).length,
+      archived: archivedCount,
     };
-  }, [tickets]);
+  }, [activeTickets, archivedCount]);
 
   const filtered = useMemo(() => {
-    let list = tickets ?? [];
-    if (view === "archived") {
-      list = list.filter((t) => !!t.archived_at);
-    } else {
-      list = list.filter((t) => !t.archived_at);
+    let list = (view === "archived" ? archivedTickets : activeTickets) ?? [];
+    if (view !== "archived") {
       if (view === "unassigned") list = list.filter((t) => !t.assigned_to && t.status !== "closed");
       if (view === "mine") list = list.filter((t) => t.assigned_to === user?.id);
     }
 
     const q = search.trim().toLowerCase();
-    return list.filter((t) => {
+    const matched = list.filter((t) => {
       const matchSearch =
         !q ||
         t.subject.toLowerCase().includes(q) ||
@@ -133,7 +241,19 @@ const SupportTriage = () => {
       const matchPriority = filterPriority === "all" || t.priority === filterPriority;
       return matchSearch && matchCategory && matchStatus && matchPriority;
     });
-  }, [tickets, view, search, filterCategory, filterStatus, filterPriority, user?.id]);
+
+    const age = (t: TicketRow) => new Date(t.created_at).getTime();
+    const updated = (t: TicketRow) => new Date(t.updated_at).getTime();
+    const rank = (t: TicketRow) => PRIORITY_RANK[t.priority] ?? 2;
+    const awaiting = (t: TicketRow) => (isAwaitingReply(t) ? 0 : 1);
+    const sorted = [...matched];
+    if (sortBy === "priority") sorted.sort((a, b) => rank(a) - rank(b) || age(a) - age(b));
+    else if (sortBy === "oldest") sorted.sort((a, b) => age(a) - age(b));
+    else if (sortBy === "awaiting")
+      sorted.sort((a, b) => awaiting(a) - awaiting(b) || rank(a) - rank(b) || age(a) - age(b));
+    else sorted.sort((a, b) => updated(b) - updated(a));
+    return sorted;
+  }, [activeTickets, archivedTickets, view, search, filterCategory, filterStatus, filterPriority, sortBy, isAwaitingReply, user?.id]);
 
   // Drop selections that are no longer visible (tab/filter change, live update).
   useEffect(() => {
@@ -152,6 +272,8 @@ const SupportTriage = () => {
   const claimable = selected.filter((t) => !t.assigned_to && !t.archived_at);
   const archivable = selected.filter((t) => !t.archived_at);
   const restorable = selected.filter((t) => !!t.archived_at);
+  const releasable = selected.filter((t) => !!t.assigned_to && !t.archived_at);
+  const closable = selected.filter((t) => t.status !== "closed" && !t.archived_at);
   const allSelected = filtered.length > 0 && selected.length === filtered.length;
   const someSelected = selected.length > 0 && !allSelected;
 
@@ -288,6 +410,67 @@ const SupportTriage = () => {
     }
   };
 
+  const handleBulkRelease = async () => {
+    if (releasable.length === 0) return;
+    setBulkAction("release");
+    const ids = releasable.map((t) => t.id);
+    try {
+      const { error } = await supabase
+        .from("support_tickets")
+        .update({ assigned_to: null, assigned_to_name: null, assigned_to_email: null })
+        .in("id", ids);
+      if (error) throw error;
+      await logSystemNotes(ids, `${agentName()} released the ticket.`);
+      toast.success(`Released ${ids.length} ticket${ids.length === 1 ? "" : "s"}`);
+      clearSelection();
+    } catch (err) {
+      console.error("Failed to bulk release tickets:", err);
+      toast.error("Could not release the selected tickets.");
+    } finally {
+      queryClient.invalidateQueries({ queryKey: ["support-tickets"] });
+      setBulkAction(null);
+    }
+  };
+
+  // Mirrors a status change on the ticket page: the requester is emailed.
+  const handleBulkClose = async () => {
+    setConfirmClose(false);
+    if (closable.length === 0) return;
+    setBulkAction("close");
+    const ids = closable.map((t) => t.id);
+    const closedBy = agentName();
+    try {
+      const { error } = await supabase
+        .from("support_tickets")
+        .update({ status: "closed" })
+        .in("id", ids);
+      if (error) throw error;
+      await logSystemNotes(ids, `Status changed to "${statusMeta("closed").label}" by ${closedBy}.`);
+      const emailResults = await Promise.all(
+        closable
+          .filter((t) => t.requester_email)
+          .map((t) =>
+            supabase.functions.invoke("send-ticket-status-email", {
+              body: { ticket_id: t.id, new_status: "closed", changed_by_name: closedBy },
+            }),
+          ),
+      );
+      const emailFailures = emailResults.filter((r) => r.error);
+      emailFailures.forEach((r) => console.error("Failed to send status email:", r.error));
+      toast.success(`Closed ${ids.length} ticket${ids.length === 1 ? "" : "s"}`);
+      if (emailFailures.length) {
+        toast.error(`${emailFailures.length} client notification${emailFailures.length === 1 ? "" : "s"} failed.`);
+      }
+      clearSelection();
+    } catch (err) {
+      console.error("Failed to bulk close tickets:", err);
+      toast.error("Could not close the selected tickets.");
+    } finally {
+      queryClient.invalidateQueries({ queryKey: ["support-tickets"] });
+      setBulkAction(null);
+    }
+  };
+
   const handleClaim = async (ticket: TicketRow) => {
     if (!user) return;
     setClaimingId(ticket.id);
@@ -295,7 +478,8 @@ const SupportTriage = () => {
     const startsWork = ticket.status === "open";
     const claimedBy = resolveDisplayName(user.email) ?? teamMemberName ?? user.email ?? "Agent";
     try {
-      const { error } = await supabase
+      // `.is("assigned_to", null)` so a teammate's claim a moment earlier wins.
+      const { data, error } = await supabase
         .from("support_tickets")
         .update({
           assigned_to: user.id,
@@ -303,8 +487,15 @@ const SupportTriage = () => {
           assigned_to_email: user.email ?? null,
           status: startsWork ? "in_progress" : ticket.status,
         })
-        .eq("id", ticket.id);
+        .eq("id", ticket.id)
+        .is("assigned_to", null)
+        .select("id");
       if (error) throw error;
+      if (!data || data.length === 0) {
+        toast.error(`A teammate claimed ${ticket.ticket_number} first.`);
+        return;
+      }
+      await logSystemNotes([ticket.id], `${claimedBy} claimed the ticket.`);
       toast.success(`You claimed ${ticket.ticket_number}`);
       if (startsWork && ticket.requester_email) {
         const { error: emailErr } = await supabase.functions.invoke("send-ticket-status-email", {
@@ -319,11 +510,11 @@ const SupportTriage = () => {
           toast.error("Ticket claimed, but the client notification failed.");
         }
       }
-      queryClient.invalidateQueries({ queryKey: ["support-tickets"] });
     } catch (err) {
       console.error("Failed to claim ticket:", err);
       toast.error("Could not claim the ticket.");
     } finally {
+      queryClient.invalidateQueries({ queryKey: ["support-tickets"] });
       setClaimingId(null);
     }
   };
@@ -473,7 +664,24 @@ const SupportTriage = () => {
               ))}
             </SelectContent>
           </Select>
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
+            <SelectTrigger className="w-full sm:w-44" aria-label="Sort tickets">
+              <SelectValue placeholder="Sort" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="updated">Recently updated</SelectItem>
+              <SelectItem value="awaiting">Awaiting reply first</SelectItem>
+              <SelectItem value="priority">Priority, then oldest</SelectItem>
+              <SelectItem value="oldest">Oldest first</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
+
+        {view === "archived" && archivedCount > ARCHIVED_PAGE_SIZE && (
+          <p className="text-[11px] text-muted-foreground -mt-3">
+            Showing the {ARCHIVED_PAGE_SIZE} most recently archived of {archivedCount}.
+          </p>
+        )}
 
         {/* Bulk actions */}
         {selected.length > 0 && (
@@ -523,6 +731,32 @@ const SupportTriage = () => {
                     <Archive className="h-3.5 w-3.5 mr-1.5" />
                   )}
                   Archive ({archivable.length})
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={bulkAction !== null || releasable.length === 0}
+                  onClick={handleBulkRelease}
+                >
+                  {bulkAction === "release" ? (
+                    <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                  ) : (
+                    <UserMinus className="h-3.5 w-3.5 mr-1.5" />
+                  )}
+                  Release ({releasable.length})
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={bulkAction !== null || closable.length === 0}
+                  onClick={() => setConfirmClose(true)}
+                >
+                  {bulkAction === "close" ? (
+                    <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />
+                  )}
+                  Close ({closable.length})
                 </Button>
               </>
             )}
@@ -602,6 +836,12 @@ const SupportTriage = () => {
                       <Badge variant="outline" className={cn("text-xs", pr.badgeClass)}>
                         {pr.label}
                       </Badge>
+                      {isAwaitingReply(t) && (
+                        <Badge variant="outline" className="text-xs gap-1 border-sky-500/40 text-sky-600 dark:text-sky-400 bg-sky-500/10">
+                          <MessageSquareReply className="h-3 w-3" />
+                          Awaiting reply
+                        </Badge>
+                      )}
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {t.requester_name || t.requester_email}
@@ -715,6 +955,12 @@ const SupportTriage = () => {
                           <Badge variant="outline" className={cn("text-xs", st.badgeClass)}>
                             {t.archived_at ? "Archived" : st.label}
                           </Badge>
+                          {isAwaitingReply(t) && (
+                            <span className="text-[10px] text-sky-600 dark:text-sky-400 flex items-center gap-0.5">
+                              <MessageSquareReply className="h-2.5 w-2.5" />
+                              awaiting reply
+                            </span>
+                          )}
                           {!t.archived_at && t.status === "closed" && (() => {
                             const d = daysUntilArchive(t.closed_at);
                             if (d === null) return null;
@@ -772,6 +1018,24 @@ const SupportTriage = () => {
           </Card>
         )}
       </div>
+
+      <AlertDialog open={confirmClose} onOpenChange={setConfirmClose}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Close {closable.length} ticket{closable.length === 1 ? "" : "s"}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Each requester is emailed that their ticket was closed. Closed tickets archive
+              automatically after 7 days; a customer reply reopens them.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkClose}>Close tickets</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <NewTicketDialog
         open={newTicketOpen}
