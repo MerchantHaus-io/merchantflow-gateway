@@ -192,7 +192,7 @@ serve(async (req) => {
       if (ref) {
         const { data: existing } = await supabase
           .from("support_tickets")
-          .select("id, ticket_number, status")
+          .select("id, ticket_number, status, archived_at")
           .eq("ticket_number", ref)
           .maybeSingle();
 
@@ -209,6 +209,9 @@ serve(async (req) => {
             gmail_message_id: messageId || null,
           };
           if (!isInternal && existing.status === "closed") patch.status = "open";
+          // A customer reply must bring an archived ticket back into the active
+          // queue — reopening alone leaves it hidden under the Archived tab.
+          if (!isInternal && existing.archived_at) patch.archived_at = null;
           await supabase.from("support_tickets").update(patch).eq("id", existing.id);
           results.push({ id: m.id, threaded: existing.ticket_number });
         }

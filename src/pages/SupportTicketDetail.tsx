@@ -190,17 +190,35 @@ const SupportTicketDetail = () => {
     // Claiming an open ticket moves it into "in_progress" — the moment the
     // client should be told their request has been allocated to an agent.
     const startsWork = ticket.status === "open";
-    await updateTicket(
-      {
-        assigned_to: user?.id ?? null,
-        assigned_to_name: authorName,
-        assigned_to_email: user?.email ?? null,
-        status: startsWork ? "in_progress" : ticket.status,
-      },
-      "assignee",
-      `${authorName} claimed the ticket.`,
-    );
-    if (startsWork && ticket.requester_email) {
+    setSavingField("assignee");
+    let claimed = false;
+    try {
+      // `.is("assigned_to", null)` so a teammate who claimed it a moment ago
+      // isn't silently overwritten.
+      const { data, error } = await supabase
+        .from("support_tickets")
+        .update({
+          assigned_to: user?.id ?? null,
+          assigned_to_name: authorName,
+          assigned_to_email: user?.email ?? null,
+          status: startsWork ? "in_progress" : ticket.status,
+        })
+        .eq("id", ticket.id)
+        .is("assigned_to", null)
+        .select("id");
+      if (error) throw error;
+      claimed = (data ?? []).length > 0;
+      if (claimed) await logSystem(`${authorName} claimed the ticket.`);
+      else toast.error("A teammate claimed this ticket first.");
+    } catch (err) {
+      console.error("Failed to claim ticket:", err);
+      toast.error("Could not save the change.");
+    } finally {
+      queryClient.invalidateQueries({ queryKey: ["support-ticket", id] });
+      queryClient.invalidateQueries({ queryKey: ["support-tickets"] });
+      setSavingField(null);
+    }
+    if (claimed && startsWork && ticket.requester_email) {
       try {
         const { error } = await supabase.functions.invoke("send-ticket-status-email", {
           body: {
