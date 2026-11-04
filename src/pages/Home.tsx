@@ -1,13 +1,14 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  AlertCircle, ArrowRight, CalendarDays, Check, Clock, Mail, Plus, TrendingDown, TrendingUp, UserPlus,
+  AlertCircle, ArrowRight, CalendarDays, Check, Clock, Mail, Plus, Search, TrendingDown, TrendingUp, UserPlus,
 } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
-import { useOperationsHome, type QueueItem } from "@/hooks/useOperationsHome";
+import { useOperationsHome, type DealBucket, type DealRow, type QueueItem } from "@/hooks/useOperationsHome";
+import { Input } from "@/components/ui/input";
 import { EMAIL_TO_USER } from "@/types/opportunity";
 import { type AttentionTone } from "@/lib/dealAttention";
 import { cn } from "@/lib/utils";
@@ -255,6 +256,165 @@ function Tile({
   );
 }
 
+const BUCKET_LABEL: Record<DealBucket | "all", string> = {
+  open: "Open",
+  won: "Won",
+  lost: "Lost",
+  all: "All",
+};
+
+const BUCKET_TEXT: Record<DealBucket, string> = {
+  open: "text-foreground",
+  won: "text-success",
+  lost: "text-muted-foreground",
+};
+
+const shortDate = (iso: string) =>
+  new Date(iso).toLocaleDateString([], {
+    day: "numeric",
+    month: "short",
+    ...(new Date(iso).getFullYear() !== new Date().getFullYear() ? { year: "2-digit" } : {}),
+  });
+
+/** Every deal in the book — open, won and lost — searchable and filterable. */
+function AllDeals({ deals, loading }: { deals: DealRow[]; loading: boolean }) {
+  const navigate = useNavigate();
+  const [bucket, setBucket] = useState<DealBucket | "all">("open");
+  const [owner, setOwner] = useState<"all" | "mine">("all");
+  const [q, setQ] = useState("");
+
+  const counts = useMemo(() => {
+    const scoped = owner === "mine" ? deals.filter((d) => d.mine) : deals;
+    return {
+      open: scoped.filter((d) => d.bucket === "open").length,
+      won: scoped.filter((d) => d.bucket === "won").length,
+      lost: scoped.filter((d) => d.bucket === "lost").length,
+      all: scoped.length,
+    };
+  }, [deals, owner]);
+
+  const rows = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    return deals.filter(
+      (d) =>
+        (bucket === "all" || d.bucket === bucket) &&
+        (owner === "all" || d.mine) &&
+        (!needle ||
+          d.merchant.toLowerCase().includes(needle) ||
+          d.ownerName.toLowerCase().includes(needle) ||
+          d.stageLabel.toLowerCase().includes(needle)),
+    );
+  }, [deals, bucket, owner, q]);
+
+  return (
+    <section className="mt-7">
+      <SectionHead title="All deals" count={counts.all} note="Every deal in the book" action="Opportunities" actionTo="/opportunities" />
+      <div className="flex flex-wrap items-center gap-2 mb-2">
+        <div className="flex rounded-md border border-border/60 overflow-hidden">
+          {(["open", "won", "lost", "all"] as const).map((b) => (
+            <button
+              key={b}
+              onClick={() => setBucket(b)}
+              aria-pressed={bucket === b}
+              className={cn(
+                "h-7 px-2.5 font-display text-[9.5px] uppercase tracking-[0.1em] border-l first:border-l-0 border-border/60 transition-colors",
+                bucket === b ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {BUCKET_LABEL[b]} <span className="tabular-nums opacity-70">{counts[b]}</span>
+            </button>
+          ))}
+        </div>
+        <div className="flex rounded-md border border-border/60 overflow-hidden">
+          {(["all", "mine"] as const).map((o) => (
+            <button
+              key={o}
+              onClick={() => setOwner(o)}
+              aria-pressed={owner === o}
+              className={cn(
+                "h-7 px-2.5 font-display text-[9.5px] uppercase tracking-[0.1em] border-l first:border-l-0 border-border/60 transition-colors",
+                owner === o ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {o === "all" ? "Everyone" : "Mine"}
+            </button>
+          ))}
+        </div>
+        <div className="relative ml-auto w-full sm:w-64">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search merchant, owner or stage"
+            className="h-8 pl-8 text-xs"
+            aria-label="Search deals"
+          />
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-border/55 bg-card/60 overflow-x-auto">
+        {loading ? (
+          <div className="p-8 text-center text-sm text-muted-foreground">Loading deals…</div>
+        ) : rows.length === 0 ? (
+          <div className="p-8 text-center text-[12.5px] text-muted-foreground">No deals match.</div>
+        ) : (
+          <table className="w-full text-sm min-w-[680px]">
+            <thead>
+              <tr className="border-b border-border/50 text-left">
+                {["Merchant", "Stage", "Status", "Owner", "Est. /mo", "Updated"].map((h, i) => (
+                  <th
+                    key={h}
+                    className={cn(
+                      "font-display text-[9.5px] font-bold uppercase tracking-[0.12em] text-muted-foreground px-3.5 py-2",
+                      i === 4 && "text-right",
+                    )}
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((d) => (
+                <tr
+                  key={d.opportunity.id}
+                  onClick={() => navigate(`/opportunities/${d.opportunity.id}`)}
+                  className="border-b border-border/50 last:border-0 hover:bg-muted/40 cursor-pointer transition-colors"
+                >
+                  <td className="px-3.5 py-2.5 font-semibold text-[13px] max-w-[260px] truncate">
+                    <Link
+                      to={`/opportunities/${d.opportunity.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="hover:underline"
+                    >
+                      {d.merchant}
+                    </Link>
+                  </td>
+                  <td className="px-3.5 py-2.5 font-display text-[10px] uppercase tracking-[0.07em] text-muted-foreground whitespace-nowrap">
+                    {d.stageLabel}
+                  </td>
+                  <td className={cn("px-3.5 py-2.5 text-xs whitespace-nowrap", BUCKET_TEXT[d.bucket])}>
+                    {d.bucket === "open" ? "Open" : d.outcomeLabel}
+                  </td>
+                  <td className={cn("px-3.5 py-2.5 text-xs whitespace-nowrap", d.owner ? "text-muted-foreground" : "text-primary")}>
+                    {d.ownerName}
+                  </td>
+                  <td className="px-3.5 py-2.5 text-right font-display text-[12.5px] tabular-nums whitespace-nowrap">
+                    {d.value > 0 ? money(d.value) : "—"}
+                  </td>
+                  <td className="px-3.5 py-2.5 font-display text-[10.5px] text-muted-foreground whitespace-nowrap">
+                    {shortDate(d.updatedAt)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </section>
+  );
+}
+
 /** The old thirty shortcuts, as text, grouped, in one screen-inch. */
 const JUMP: { title: string; links: [string, string][] }[] = [
   { title: "Pipeline & sales", links: [
@@ -294,8 +454,8 @@ export default function Home() {
   const [scope, setScope] = useState<"mine" | "all">("mine");
   const [viewEmailActivityId, setViewEmailActivityId] = useState<string | null>(null);
 
-  const { loading, now, today, steady, ladder, counts, activity } = useOperationsHome(
-    displayName,
+  const { loading, error, now, today, steady, ladder, counts, activity, deals } = useOperationsHome(
+    { email, name: displayName },
     isAdmin && scope === "all",
   );
 
@@ -403,6 +563,13 @@ export default function Home() {
           </div>
         </div>
 
+        {error && (
+          <div role="alert" className="mt-5 rounded-lg border border-primary/45 bg-primary/10 px-3.5 py-2.5 text-[12.5px]">
+            <b className="font-semibold">Deals didn't load.</b>{" "}
+            <span className="text-muted-foreground">{error}</span>
+          </div>
+        )}
+
         {/* ── 1. Needs you ───────────────────────────────────── */}
         <section className="mt-6">
           <SectionHead
@@ -461,6 +628,8 @@ export default function Home() {
             )}
           </div>
         </section>
+
+        <AllDeals deals={deals} loading={loading} />
 
         {/* ── 2. Portfolio ───────────────────────────────────── */}
         <section className="mt-7">
