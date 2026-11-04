@@ -81,3 +81,36 @@ export const priorityMeta = (value: string): PriorityMeta =>
 
 export const statusMeta = (value: string): StatusMeta =>
   TICKET_STATUSES.find((s) => s.value === value) ?? TICKET_STATUSES[0];
+
+/**
+ * Split an email-style message into what the person wrote and the quoted
+ * history underneath it ("On … wrote:", "-----Original Message-----", a
+ * forwarded "From:" header, or a run of ">"-prefixed lines). Intake already
+ * trims most of this, but replies that slip through can be thousands of
+ * characters of repeated thread, which pushes the reply box off screen.
+ */
+export const splitQuotedText = (body: string): { main: string; quoted: string } => {
+  const text = String(body ?? "");
+  const lines = text.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const startsQuote =
+      /^\s*On .+wrote:\s*$/.test(line) ||
+      /^\s*-{2,}\s*(Original|Forwarded) Message\s*-{2,}/i.test(line) ||
+      (/^\s*From:\s.+/i.test(line) && i > 0) ||
+      (/^\s*>/.test(line) && lines.slice(i).every((l) => /^\s*(>|$)/.test(l)));
+    if (startsQuote) {
+      const main = lines.slice(0, i).join("\n").trim();
+      // Nothing above the quote: show it all rather than an empty message.
+      if (!main) return { main: text.trim(), quoted: "" };
+      return { main, quoted: lines.slice(i).join("\n").trim() };
+    }
+  }
+  return { main: text.trim(), quoted: "" };
+};
+
+/** One line of plain text for a collapsed message. */
+export const messagePreview = (body: string, max = 140): string => {
+  const flat = splitQuotedText(body).main.replace(/\s+/g, " ").trim();
+  return flat.length > max ? `${flat.slice(0, max - 1)}…` : flat;
+};

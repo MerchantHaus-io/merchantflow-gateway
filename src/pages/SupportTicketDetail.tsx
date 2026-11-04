@@ -33,6 +33,8 @@ import {
   Archive,
   ArchiveRestore,
   Clock,
+  ChevronsDownUp,
+  ChevronsUpDown,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
@@ -46,6 +48,7 @@ import {
   priorityMeta,
   statusMeta,
 } from "@/lib/support";
+import { ThreadMessageCard, type ThreadMessage } from "@/components/support/ThreadMessageCard";
 import type { SupportTicket, SupportTicketComment } from "@/types/db";
 
 type TicketWithRelations = SupportTicket & {
@@ -326,6 +329,68 @@ const SupportTicketDetail = () => {
     }
   };
 
+  // ── Thread: the opening message plus every comment, oldest first ──
+  type TimelineItem =
+    | { kind: "message"; message: ThreadMessage }
+    | { kind: "system"; id: string; body: string; at: string };
+
+  const timeline = React.useMemo<TimelineItem[]>(() => {
+    if (!ticket) return [];
+    const opening: TimelineItem = {
+      kind: "message",
+      message: {
+        id: "opening",
+        authorName: ticket.requester_name || ticket.requester_email,
+        badge: "requester",
+        tone: "customer",
+        at: ticket.created_at,
+        absoluteTime: true,
+        body: ticket.description ?? "",
+        linkify: true,
+        emptyText: "No description provided.",
+      },
+    };
+    const rest: TimelineItem[] = (comments ?? []).map((c) =>
+      c.author_type === "system"
+        ? { kind: "system", id: c.id, body: c.body, at: c.created_at }
+        : {
+            kind: "message",
+            message: {
+              id: c.id,
+              authorName: c.author_name || "Unknown",
+              badge: c.is_internal ? "internal" : c.author_type === "customer" ? "requester" : null,
+              tone: c.is_internal ? "internal" : c.author_type === "customer" ? "customer" : "agent",
+              at: c.created_at,
+              absoluteTime: false,
+              body: c.body,
+              linkify: false,
+            },
+          },
+    );
+    return [opening, ...rest];
+  }, [ticket, comments]);
+
+  const thread = React.useMemo(
+    () =>
+      timeline.flatMap((i) => (i.kind === "message" ? [i.message] : [])),
+    [timeline],
+  );
+
+  // Older messages start collapsed so the reply box stays in reach; the two
+  // most recent stay open. Short threads (3 or fewer) start fully open. A
+  // user's own toggle wins, and new messages arriving pick up the default.
+  const [expandOverrides, setExpandOverrides] = useState<Record<string, boolean>>({});
+  const defaultOpen = React.useMemo(() => {
+    const ids = thread.map((m) => m.id);
+    return new Set(ids.length <= 3 ? ids : ids.slice(-2));
+  }, [thread]);
+  const isExpanded = (msgId: string) => expandOverrides[msgId] ?? defaultOpen.has(msgId);
+  const toggleExpanded = (msgId: string) =>
+    setExpandOverrides((prev) => ({ ...prev, [msgId]: !isExpanded(msgId) }));
+  const allExpanded = thread.length > 0 && thread.every((m) => isExpanded(m.id));
+  const setAllExpanded = (open: boolean) =>
+    setExpandOverrides(Object.fromEntries(thread.map((m) => [m.id, open])));
+
   if (isLoading) {
     return (
       <AppLayout pageTitle="Ticket">
@@ -352,7 +417,6 @@ const SupportTicketDetail = () => {
 
   const cat = categoryMeta(ticket.category);
   const CatIcon = cat.icon;
-  const requesterDisplay = ticket.requester_name || ticket.requester_email;
 
   return (
     <AppLayout pageTitle={ticket.ticket_number}>
@@ -397,95 +461,58 @@ const SupportTicketDetail = () => {
 
         <div className="grid lg:grid-cols-3 gap-4">
           {/* Conversation */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="lg:col-span-2 space-y-4 min-w-0">
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Conversation</CardTitle>
+              <CardHeader className="pb-3 flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm">
+                  Conversation
+                  <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+                    {thread.length} message{thread.length === 1 ? "" : "s"}
+                  </span>
+                </CardTitle>
+                {thread.length > 1 && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs"
+                    onClick={() => setAllExpanded(!allExpanded)}
+                  >
+                    {allExpanded ? (
+                      <ChevronsDownUp className="h-3.5 w-3.5 mr-1" />
+                    ) : (
+                      <ChevronsUpDown className="h-3.5 w-3.5 mr-1" />
+                    )}
+                    {allExpanded ? "Collapse all" : "Expand all"}
+                  </Button>
+                )}
               </CardHeader>
-              <CardContent className="space-y-3">
-                {/* Opening message */}
-                <div className="rounded-lg border border-border bg-muted/40 p-3">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Avatar className="h-6 w-6">
-                      <AvatarFallback className="text-[9px] bg-primary/10 text-primary">
-                        {initials(requesterDisplay)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm font-medium">{requesterDisplay}</span>
-                    <Badge variant="outline" className="text-[10px]">
-                      Requester
-                    </Badge>
-                    <span className="text-xs text-muted-foreground ml-auto">
-                      {format(new Date(ticket.created_at), "MMM d, yyyy · h:mm a")}
-                    </span>
-                  </div>
-                  <div className="text-sm text-foreground/90 whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
-                    {ticket.description
-                      ? renderLinkedText(ticket.description)
-                      : <span className="text-muted-foreground italic">No description provided.</span>}
-                  </div>
-                </div>
-
-                {(comments ?? []).map((c) => {
-                  const isCustomer = c.author_type === "customer";
-                  const isSystem = c.author_type === "system";
-                  if (isSystem) {
-                    return (
-                      <div key={c.id} className="flex items-center gap-2 py-1 px-1">
-                        <Separator className="flex-1" />
-                        <span className="text-[11px] text-muted-foreground whitespace-nowrap">
-                          {c.body} · {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
-                        </span>
-                        <Separator className="flex-1" />
-                      </div>
-                    );
-                  }
-                  return (
-                    <div
-                      key={c.id}
-                      className={cn(
-                        "rounded-lg border p-3",
-                        c.is_internal
-                          ? "border-amber-500/40 bg-amber-500/5"
-                          : isCustomer
-                            ? "border-border bg-muted/40"
-                            : "border-primary/30 bg-primary/5",
-                      )}
-                    >
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <Avatar className="h-6 w-6">
-                          <AvatarFallback className="text-[9px] bg-muted">
-                            {initials(c.author_name || "?")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm font-medium">{c.author_name || "Unknown"}</span>
-                        {c.is_internal && (
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] gap-0.5 border-amber-500/40 text-amber-600 dark:text-amber-400"
-                          >
-                            <Lock className="h-2.5 w-2.5" />
-                            Internal
-                          </Badge>
-                        )}
-                        {isCustomer && (
-                          <Badge variant="outline" className="text-[10px]">
-                            Requester
-                          </Badge>
-                        )}
-                        <span className="text-xs text-muted-foreground ml-auto">
-                          {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
-                        </span>
-                      </div>
-                      <p className="text-sm text-foreground/90 whitespace-pre-wrap">{c.body}</p>
+              <CardContent className="space-y-2">
+                {timeline.map((item) =>
+                  item.kind === "system" ? (
+                    <div key={item.id} className="flex items-center gap-2 py-1 px-1">
+                      <Separator className="flex-1" />
+                      <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                        {item.body} · {formatDistanceToNow(new Date(item.at), { addSuffix: true })}
+                      </span>
+                      <Separator className="flex-1" />
                     </div>
-                  );
-                })}
+                  ) : (
+                    <ThreadMessageCard
+                      key={item.message.id}
+                      message={item.message}
+                      expanded={isExpanded(item.message.id)}
+                      onToggle={() => toggleExpanded(item.message.id)}
+                      render={renderLinkedText}
+                    />
+                  ),
+                )}
               </CardContent>
             </Card>
 
-            {/* Reply box */}
-            <Card>
+            {/* Reply box — pinned to the bottom of the view on desktop so a long
+                thread can't push it out of reach. Not on mobile, where the
+                bottom tab bar would cover it; collapsing handles that case. */}
+            <Card className="lg:sticky lg:bottom-0 lg:z-10 lg:shadow-[0_-8px_16px_-12px_hsl(var(--foreground)/0.25)]">
               <CardContent className="p-4 space-y-3">
                 <Textarea
                   value={reply}
