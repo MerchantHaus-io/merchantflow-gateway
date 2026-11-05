@@ -35,6 +35,9 @@ import {
   Clock,
   ChevronsDownUp,
   ChevronsUpDown,
+  ShieldBan,
+  Undo2,
+  Ban,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
@@ -47,7 +50,11 @@ import {
   categoryMeta,
   priorityMeta,
   statusMeta,
+  SPAM_STATUS,
+  emailDomain,
+  spamReasonLabel,
 } from "@/lib/support";
+import { BlockDomainConfirm } from "@/components/support/BlockedDomainsDialog";
 import { ThreadMessageCard, type ThreadMessage } from "@/components/support/ThreadMessageCard";
 import type { SupportTicket, SupportTicketComment } from "@/types/db";
 
@@ -107,6 +114,7 @@ const SupportTicketDetail = () => {
   const [isInternal, setIsInternal] = useState(false);
   const [sending, setSending] = useState(false);
   const [savingField, setSavingField] = useState<string | null>(null);
+  const [blockOpen, setBlockOpen] = useState(false);
 
   const authorName = resolveDisplayName(user?.email) ?? teamMemberName ?? user?.email ?? "Agent";
 
@@ -260,6 +268,14 @@ const SupportTicketDetail = () => {
       `${authorName} restored the ticket from archive.`,
     );
 
+  // Spam is a quiet move: no status email, which would confirm the address to
+  // the sender. The DB stamps who/when and the reason ('manual').
+  const markSpam = () =>
+    updateTicket({ status: "spam" }, "spam", `${authorName} marked the ticket as spam.`);
+
+  const restoreFromSpam = () =>
+    updateTicket({ status: "open" }, "spam", `${authorName} restored the ticket from spam.`);
+
   const handleStatusChange = async (newStatus: string) => {
     if (!ticket) return;
     const prevStatus = ticket.status;
@@ -288,10 +304,13 @@ const SupportTicketDetail = () => {
   };
 
 
+  // A spam ticket takes internal notes only: a public reply would email the sender.
+  const internalOnly = ticket?.status === "spam";
+
   const sendReply = async () => {
     if (!id || !reply.trim()) return;
     const message = reply.trim();
-    const wasInternal = isInternal;
+    const wasInternal = isInternal || internalOnly;
     setSending(true);
     try {
       const { error } = await supabase.from("support_ticket_comments").insert({
@@ -445,6 +464,16 @@ const SupportTicketDetail = () => {
                 {SOURCE_LABELS[ticket.source] ?? ticket.source}
               </span>
             </div>
+            {ticket.status === "spam" && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <ShieldBan className="h-3.5 w-3.5" />
+                {spamReasonLabel(ticket.spam_reason)}
+                {ticket.spam_marked_by_email && ` by ${ticket.spam_marked_by_email}`}
+                {ticket.spam_marked_at &&
+                  ` · ${formatDistanceToNow(new Date(ticket.spam_marked_at), { addSuffix: true })}`}
+                . Out of the queue and kept here; never auto-archived.
+              </div>
+            )}
             {!ticket.archived_at && ticket.status === "closed" && (() => {
               const d = daysUntilArchive(ticket.closed_at);
               if (d === null) return null;
@@ -517,15 +546,29 @@ const SupportTicketDetail = () => {
                 <Textarea
                   value={reply}
                   onChange={(e) => setReply(e.target.value)}
-                  placeholder={isInternal ? "Add an internal note (not visible to the client)..." : "Write a reply..."}
+                  placeholder={
+                    isInternal || internalOnly
+                      ? "Add an internal note (not visible to the client)..."
+                      : "Write a reply..."
+                  }
                   rows={4}
                 />
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div className="flex items-center gap-2">
-                    <Switch id="internal-toggle" checked={isInternal} onCheckedChange={setIsInternal} />
+                    <Switch
+                      id="internal-toggle"
+                      checked={isInternal || internalOnly}
+                      onCheckedChange={setIsInternal}
+                      disabled={internalOnly}
+                    />
                     <Label htmlFor="internal-toggle" className="text-sm cursor-pointer">
                       Internal note
                     </Label>
+                    {internalOnly && (
+                      <span className="text-[11px] text-muted-foreground">
+                        Public replies are off while the ticket is spam.
+                      </span>
+                    )}
                   </div>
                   <Button onClick={sendReply} disabled={sending || !reply.trim()}>
                     {sending ? (
@@ -533,7 +576,7 @@ const SupportTicketDetail = () => {
                     ) : (
                       <Send className="h-4 w-4 mr-1.5" />
                     )}
-                    {isInternal ? "Add Note" : "Send Reply"}
+                    {isInternal || internalOnly ? "Add Note" : "Send Reply"}
                   </Button>
                 </div>
               </CardContent>
@@ -554,7 +597,7 @@ const SupportTicketDetail = () => {
                     onValueChange={(v) =>
                       handleStatusChange(v)
                     }
-                    disabled={savingField === "status"}
+                    disabled={savingField === "status" || ticket.status === "spam"}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -565,6 +608,9 @@ const SupportTicketDetail = () => {
                           {s.label}
                         </SelectItem>
                       ))}
+                      {ticket.status === "spam" && (
+                        <SelectItem value={SPAM_STATUS.value}>{SPAM_STATUS.label}</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -691,6 +737,57 @@ const SupportTicketDetail = () => {
                     Closed tickets archive automatically after 7 days.
                   </p>
                 </div>
+
+                <Separator />
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Spam</Label>
+                  {ticket.status === "spam" ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full"
+                      onClick={restoreFromSpam}
+                      disabled={savingField === "spam"}
+                    >
+                      {savingField === "spam" ? (
+                        <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                      ) : (
+                        <Undo2 className="h-4 w-4 mr-1.5" />
+                      )}
+                      Restore from spam
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full text-muted-foreground"
+                      onClick={markSpam}
+                      disabled={savingField === "spam"}
+                    >
+                      {savingField === "spam" ? (
+                        <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                      ) : (
+                        <ShieldBan className="h-4 w-4 mr-1.5" />
+                      )}
+                      Mark as spam
+                    </Button>
+                  )}
+                  {emailDomain(ticket.requester_email) && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="w-full text-muted-foreground"
+                      onClick={() => setBlockOpen(true)}
+                    >
+                      <Ban className="h-4 w-4 mr-1.5" />
+                      <span className="truncate">Block {emailDomain(ticket.requester_email)}</span>
+                    </Button>
+                  )}
+                  <p className="text-[10px] text-muted-foreground/80">
+                    No email is sent either way. Restoring moves the ticket back to Open.
+                  </p>
+                </div>
               </CardContent>
             </Card>
 
@@ -733,6 +830,12 @@ const SupportTicketDetail = () => {
           </div>
         </div>
       </div>
+
+      <BlockDomainConfirm
+        domain={emailDomain(ticket.requester_email) ?? ""}
+        open={blockOpen}
+        onOpenChange={setBlockOpen}
+      />
     </AppLayout>
   );
 };

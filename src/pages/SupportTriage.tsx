@@ -20,7 +20,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, Plus, Inbox, Loader2, CheckCircle2, UserCheck, Building2, Hand, Archive, ArchiveRestore, Clock, X, UserMinus, MessageSquareReply } from "lucide-react";
+import { Search, Plus, Inbox, Loader2, CheckCircle2, UserCheck, Building2, Hand, Archive, ArchiveRestore, Clock, X, UserMinus, MessageSquareReply, ShieldBan, Undo2, Ban } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,12 +37,14 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { NewTicketDialog } from "@/components/support/NewTicketDialog";
+import { BlockedDomainsDialog } from "@/components/support/BlockedDomainsDialog";
 import {
   TICKET_CATEGORIES,
   TICKET_PRIORITIES,
   TICKET_STATUSES,
   categoryMeta,
   priorityMeta,
+  spamReasonLabel,
   statusMeta,
 } from "@/lib/support";
 import type { SupportTicket } from "@/types/db";
@@ -62,6 +64,7 @@ const daysUntilArchive = (closedAt: string | null | undefined): number | null =>
 
 // The Archived tab only loads the most recent archived tickets; the active
 // queue is bounded by the 7-day auto-archive so it is always loaded in full.
+// Spam is never auto-archived (it is retained), so it is paged like Archived.
 const ARCHIVED_PAGE_SIZE = 500;
 // PostgREST caps a response at 1000 rows; page through anything bigger.
 const PAGE = 1000;
@@ -85,7 +88,7 @@ const SupportTriage = () => {
   const isMobile = useIsMobile();
   const { user, teamMemberName } = useAuth();
 
-  const [view, setView] = useState<"all" | "unassigned" | "mine" | "archived">("all");
+  const [view, setView] = useState<"all" | "unassigned" | "mine" | "archived" | "spam">("all");
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -94,13 +97,15 @@ const SupportTriage = () => {
   const [claimingId, setClaimingId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkAction, setBulkAction] = useState<
-    "claim" | "archive" | "restore" | "release" | "close" | null
+    "claim" | "archive" | "restore" | "release" | "close" | "spam" | "unspam" | null
   >(null);
   const [confirmClose, setConfirmClose] = useState(false);
+  const [blockedDomainsOpen, setBlockedDomainsOpen] = useState(false);
   const [sortBy, setSortBy] = useState<SortKey>("updated");
 
-  // Active (unarchived) tickets. Loaded in full, paging past the 1000-row cap,
-  // so the queue and its counts are never silently truncated.
+  // Active (unarchived, not spam) tickets. Loaded in full, paging past the
+  // 1000-row cap, so the queue and its counts are never silently truncated.
+  // Spam is excluded here, not filtered later, so no view or count can show it.
   const { data: activeTickets, isLoading: activeLoading } = useQuery({
     queryKey: ["support-tickets", "active"],
     queryFn: async () => {
@@ -110,6 +115,7 @@ const SupportTriage = () => {
           .from("support_tickets")
           .select("*, account:accounts(id, name)")
           .is("archived_at", null)
+          .neq("status", "spam")
           .order("updated_at", { ascending: false })
           .order("id")
           .range(from, from + PAGE - 1)
@@ -136,6 +142,37 @@ const SupportTriage = () => {
         .returns<TicketRow[]>();
       if (error) throw error;
       return data ?? [];
+    },
+  });
+
+  // Spam (unarchived) — retained as tickets, out of the queue, fetched on demand.
+  const { data: spamTickets, isLoading: spamLoading } = useQuery({
+    queryKey: ["support-tickets", "spam"],
+    enabled: view === "spam",
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("support_tickets")
+        .select("*, account:accounts(id, name)")
+        .eq("status", "spam")
+        .is("archived_at", null)
+        .order("spam_marked_at", { ascending: false })
+        .limit(ARCHIVED_PAGE_SIZE)
+        .returns<TicketRow[]>();
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { data: spamCount = 0 } = useQuery({
+    queryKey: ["support-tickets", "spam-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("support_tickets")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "spam")
+        .is("archived_at", null);
+      if (error) throw error;
+      return count ?? 0;
     },
   });
 
@@ -184,7 +221,7 @@ const SupportTriage = () => {
 
   const isAwaitingReply = useCallback(
     (t: TicketRow) => {
-      if (t.archived_at || t.status === "closed") return false;
+      if (t.archived_at || t.status === "closed" || t.status === "spam") return false;
       const who = lastSpeaker?.get(t.id);
       // No public thread yet: waiting if nobody has picked it up.
       return who === undefined ? !t.assigned_to || t.status === "open" : who === "customer";
@@ -192,7 +229,8 @@ const SupportTriage = () => {
     [lastSpeaker],
   );
 
-  const isLoading = view === "archived" ? archivedLoading : activeLoading;
+  const isLoading =
+    view === "archived" ? archivedLoading : view === "spam" ? spamLoading : activeLoading;
 
   // Live updates — refresh the board whenever any ticket changes.
   useEffect(() => {
@@ -221,8 +259,9 @@ const SupportTriage = () => {
   }, [activeTickets, archivedCount]);
 
   const filtered = useMemo(() => {
-    let list = (view === "archived" ? archivedTickets : activeTickets) ?? [];
-    if (view !== "archived") {
+    let list =
+      (view === "archived" ? archivedTickets : view === "spam" ? spamTickets : activeTickets) ?? [];
+    if (view !== "archived" && view !== "spam") {
       if (view === "unassigned") list = list.filter((t) => !t.assigned_to && t.status !== "closed");
       if (view === "mine") list = list.filter((t) => t.assigned_to === user?.id);
     }
@@ -253,7 +292,7 @@ const SupportTriage = () => {
       sorted.sort((a, b) => awaiting(a) - awaiting(b) || rank(a) - rank(b) || age(a) - age(b));
     else sorted.sort((a, b) => updated(b) - updated(a));
     return sorted;
-  }, [activeTickets, archivedTickets, view, search, filterCategory, filterStatus, filterPriority, sortBy, isAwaitingReply, user?.id]);
+  }, [activeTickets, archivedTickets, spamTickets, view, search, filterCategory, filterStatus, filterPriority, sortBy, isAwaitingReply, user?.id]);
 
   // Drop selections that are no longer visible (tab/filter change, live update).
   useEffect(() => {
@@ -269,11 +308,16 @@ const SupportTriage = () => {
     () => filtered.filter((t) => selectedIds.has(t.id)),
     [filtered, selectedIds],
   );
-  const claimable = selected.filter((t) => !t.assigned_to && !t.archived_at);
-  const archivable = selected.filter((t) => !t.archived_at);
+  // Spam is excluded from every queue action explicitly, not only by the query:
+  // a bulk Close would email a blocked sender.
+  const notSpam = (t: TicketRow) => t.status !== "spam";
+  const claimable = selected.filter((t) => notSpam(t) && !t.assigned_to && !t.archived_at);
+  const archivable = selected.filter((t) => notSpam(t) && !t.archived_at);
   const restorable = selected.filter((t) => !!t.archived_at);
-  const releasable = selected.filter((t) => !!t.assigned_to && !t.archived_at);
-  const closable = selected.filter((t) => t.status !== "closed" && !t.archived_at);
+  const releasable = selected.filter((t) => notSpam(t) && !!t.assigned_to && !t.archived_at);
+  const closable = selected.filter((t) => notSpam(t) && t.status !== "closed" && !t.archived_at);
+  const spammable = selected.filter((t) => notSpam(t) && !t.archived_at);
+  const unspammable = selected.filter((t) => t.status === "spam");
   const allSelected = filtered.length > 0 && selected.length === filtered.length;
   const someSelected = selected.length > 0 && !allSelected;
 
@@ -471,6 +515,35 @@ const SupportTriage = () => {
     }
   };
 
+  // Spam is a quiet move: no status email (it would confirm the address to a
+  // spammer). The DB stamps who/when and sets spam_reason = 'manual'.
+  const handleBulkSpam = async (targets: TicketRow[], restore: boolean) => {
+    if (targets.length === 0) return;
+    setBulkAction(restore ? "unspam" : "spam");
+    const ids = targets.map((t) => t.id);
+    try {
+      const { error } = await supabase
+        .from("support_tickets")
+        .update({ status: restore ? "open" : "spam" })
+        .in("id", ids);
+      if (error) throw error;
+      await logSystemNotes(
+        ids,
+        restore ? `${agentName()} restored the ticket from spam.` : `${agentName()} marked the ticket as spam.`,
+      );
+      toast.success(
+        `${restore ? "Restored" : "Marked"} ${ids.length} ticket${ids.length === 1 ? "" : "s"}${restore ? " to Open" : " as spam"}`,
+      );
+      clearSelection();
+    } catch (err) {
+      console.error("Failed to update spam status:", err);
+      toast.error(`Could not ${restore ? "restore" : "mark"} the selected tickets${restore ? "" : " as spam"}.`);
+    } finally {
+      queryClient.invalidateQueries({ queryKey: ["support-tickets"] });
+      setBulkAction(null);
+    }
+  };
+
   const handleClaim = async (ticket: TicketRow) => {
     if (!user) return;
     setClaimingId(ticket.id);
@@ -607,12 +680,28 @@ const SupportTriage = () => {
               <Archive className="h-3.5 w-3.5 mr-1.5" />
               Archived
             </TabsTrigger>
+            <TabsTrigger value="spam">
+              <ShieldBan className="h-3.5 w-3.5 mr-1.5" />
+              Spam{spamCount > 0 && ` (${spamCount})`}
+            </TabsTrigger>
           </TabsList>
         </Tabs>
 
-        <p className="text-[11px] text-muted-foreground -mt-3">
-          Closed tickets are automatically archived 7 days after they're closed.
-        </p>
+        {view === "spam" ? (
+          <div className="flex flex-wrap items-center gap-2 -mt-3">
+            <p className="text-[11px] text-muted-foreground mr-auto">
+              Spam is kept as tickets and never auto-archived. Restoring moves a ticket back to Open.
+            </p>
+            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setBlockedDomainsOpen(true)}>
+              <Ban className="h-3.5 w-3.5 mr-1.5" />
+              Blocked domains
+            </Button>
+          </div>
+        ) : (
+          <p className="text-[11px] text-muted-foreground -mt-3">
+            Closed tickets are automatically archived 7 days after they're closed.
+          </p>
+        )}
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3">
@@ -682,6 +771,11 @@ const SupportTriage = () => {
             Showing the {ARCHIVED_PAGE_SIZE} most recently archived of {archivedCount}.
           </p>
         )}
+        {view === "spam" && spamCount > ARCHIVED_PAGE_SIZE && (
+          <p className="text-[11px] text-muted-foreground -mt-3">
+            Showing the {ARCHIVED_PAGE_SIZE} most recently marked of {spamCount}.
+          </p>
+        )}
 
         {/* Bulk actions */}
         {selected.length > 0 && (
@@ -689,7 +783,21 @@ const SupportTriage = () => {
             <span className="text-sm font-medium mr-auto">
               {selected.length} selected
             </span>
-            {view === "archived" ? (
+            {view === "spam" ? (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={bulkAction !== null || unspammable.length === 0}
+                onClick={() => handleBulkSpam(unspammable, true)}
+              >
+                {bulkAction === "unspam" ? (
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                ) : (
+                  <Undo2 className="h-3.5 w-3.5 mr-1.5" />
+                )}
+                Restore ({unspammable.length})
+              </Button>
+            ) : view === "archived" ? (
               <Button
                 size="sm"
                 variant="outline"
@@ -758,6 +866,19 @@ const SupportTriage = () => {
                   )}
                   Close ({closable.length})
                 </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={bulkAction !== null || spammable.length === 0}
+                  onClick={() => handleBulkSpam(spammable, false)}
+                >
+                  {bulkAction === "spam" ? (
+                    <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                  ) : (
+                    <ShieldBan className="h-3.5 w-3.5 mr-1.5" />
+                  )}
+                  Mark as spam ({spammable.length})
+                </Button>
               </>
             )}
             <Button
@@ -787,7 +908,9 @@ const SupportTriage = () => {
               <p className="text-xs text-muted-foreground/70">
                 {view === "archived"
                   ? "Closed tickets are archived here 7 days after closing."
-                  : view === "mine"
+                  : view === "spam"
+                    ? "Tickets marked as spam, or from a blocked domain, are kept here."
+                    : view === "mine"
                     ? "You haven't claimed any tickets yet."
                     : "New tickets from staff, the web form and the support inbox land here."}
               </p>
@@ -847,11 +970,32 @@ const SupportTriage = () => {
                       {t.requester_name || t.requester_email}
                       {t.account?.name && ` · ${t.account.name}`}
                     </p>
+                    {t.status === "spam" && (
+                      <p className="text-[11px] text-muted-foreground">
+                        {spamReasonLabel(t.spam_reason)}
+                        {t.spam_marked_at &&
+                          ` · ${formatDistanceToNow(new Date(t.spam_marked_at), { addSuffix: true })}`}
+                      </p>
+                    )}
                     <div className="flex items-center justify-between pt-1 border-t border-border/30">
                       <span className="text-xs text-muted-foreground">
                         {formatDistanceToNow(new Date(t.updated_at), { addSuffix: true })}
                       </span>
-                      {t.assigned_to ? (
+                      {t.status === "spam" ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs"
+                          disabled={bulkAction !== null}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleBulkSpam([t], true);
+                          }}
+                        >
+                          <Undo2 className="h-3 w-3 mr-1" />
+                          Restore
+                        </Button>
+                      ) : t.assigned_to ? (
                         <span className="flex items-center gap-1 text-xs text-muted-foreground">
                           <UserCheck className="h-3 w-3" />
                           {t.assigned_to_name || "Assigned"}
@@ -955,6 +1099,11 @@ const SupportTriage = () => {
                           <Badge variant="outline" className={cn("text-xs", st.badgeClass)}>
                             {t.archived_at ? "Archived" : st.label}
                           </Badge>
+                          {t.status === "spam" && (
+                            <span className="text-[10px] text-muted-foreground">
+                              {spamReasonLabel(t.spam_reason)}
+                            </span>
+                          )}
                           {isAwaitingReply(t) && (
                             <span className="text-[10px] text-sky-600 dark:text-sky-400 flex items-center gap-0.5">
                               <MessageSquareReply className="h-2.5 w-2.5" />
@@ -991,7 +1140,18 @@ const SupportTriage = () => {
                         {formatDistanceToNow(new Date(t.updated_at), { addSuffix: true })}
                       </TableCell>
                       <TableCell onClick={(e) => e.stopPropagation()}>
-                        {!t.assigned_to && (
+                        {t.status === "spam" ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 text-xs"
+                            disabled={bulkAction !== null}
+                            onClick={() => handleBulkSpam([t], true)}
+                          >
+                            <Undo2 className="h-3.5 w-3.5 mr-1" />
+                            Restore
+                          </Button>
+                        ) : !t.assigned_to && (
                           <Button
                             size="sm"
                             variant="outline"
@@ -1036,6 +1196,8 @@ const SupportTriage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <BlockedDomainsDialog open={blockedDomainsOpen} onOpenChange={setBlockedDomainsOpen} />
 
       <NewTicketDialog
         open={newTicketOpen}
