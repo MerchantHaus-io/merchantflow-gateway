@@ -130,6 +130,8 @@ export function AffiliatePayoutsPanel() {
   const [periods, setPeriods] = useState<PeriodOption[]>([]);
   const [months, setMonths] = useState<MonthRow[]>([]);
   const [basis, setBasis] = useState<BasisRow[]>([]);
+  /** account id → first month whose earnings were stopped by a void quote. */
+  const [voidMonths, setVoidMonths] = useState<Map<string, string>>(new Map());
   const [periodId, setPeriodId] = useState("");
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState<string | null>(null);
@@ -161,7 +163,25 @@ export function AffiliatePayoutsPanel() {
     setBalances(((balanceRes.data ?? []) as unknown[] as BalanceRow[]).filter((b) => !!b.referrer_id));
     setRuns((runRes.data ?? []) as PayoutRun[]);
     setMonths((monthRes.data ?? []) as MonthRow[]);
-    setBasis(((basisRes.data ?? []) as unknown[] as BasisRow[]).filter((b) => !!b.referrer_id));
+    const basisRows = ((basisRes.data ?? []) as unknown[] as BasisRow[]).filter((b) => !!b.referrer_id);
+    setBasis(basisRows);
+
+    // Void cut-off per referred merchant, straight from the DB's own
+    // definition (account_downstream_void_month) — never re-derived here.
+    const accountIds = Array.from(
+      new Set(
+        [...((monthRes.data ?? []) as MonthRow[]).map((m) => m.account_id), ...basisRows.map((b) => b.account_id)]
+          .filter((id): id is string => !!id),
+      ),
+    );
+    const cutoffs = await Promise.all(
+      accountIds.map(async (id) => {
+        const { data, error } = await supabase.rpc("account_downstream_void_month", { _account_id: id });
+        // Before migration 20261104120000 the function does not exist: treat as live.
+        return error || !data ? null : ([id, String(data)] as const);
+      }),
+    );
+    setVoidMonths(new Map(cutoffs.filter((c): c is readonly [string, string] => !!c)));
     const periodRows = (periodRes.data ?? []) as PeriodOption[];
     setPeriods(periodRows);
     setPeriodId((prev) => prev || periodRows[0]?.id || "");
@@ -231,8 +251,8 @@ export function AffiliatePayoutsPanel() {
    * wrong share or the wrong cost basis, and a billed month that never accrued.
    */
   const audit = useMemo(
-    () => auditCommissionLedger(months, basis, capsByPartner),
-    [months, basis, capsByPartner],
+    () => auditCommissionLedger(months, basis, capsByPartner, voidMonths),
+    [months, basis, capsByPartner, voidMonths],
   );
 
   const exportAudit = () => {
@@ -863,6 +883,13 @@ export function AffiliatePayoutsPanel() {
           Every credit recomputed from its own gateway month: billed less our cost, divided by{" "}
           {PARTNER_SHARE_DIVISOR}, then capped. A variance means the credit was worked out on a different share or a
           different cost basis. Billed and cost are internal figures — partners only ever see their own share.
+          {audit.skippedAfterVoid > 0 && (
+            <>
+              {" "}
+              {audit.skippedAfterVoid} month(s) at or after a voided quote are left out — those earnings were
+              stopped on purpose.
+            </>
+          )}
         </div>
         {audit.exceptions.length > 0 && (
           <div className="px-4 py-2 text-xs border-b bg-destructive/5 flex flex-wrap gap-x-5 gap-y-1">

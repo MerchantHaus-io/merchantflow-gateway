@@ -20,6 +20,7 @@ import {
   partnerShare,
   partnerShareForMonth,
   auditCommissionLedger,
+  isAfterVoid,
   bonusProgress,
 
 
@@ -486,5 +487,76 @@ describe("bonusProgress", () => {
     expect(bonusProgress(5).nextAt).toBe(10);
     expect(bonusProgress(5).toNext).toBe(5);
     expect(bonusProgress(0).nextAt).toBe(5);
+  });
+});
+
+describe("void quotes in the programme audit", () => {
+  const julyBasis = {
+    referrer_id: "p1",
+    account_id: "a1",
+    company_name: "the masque skin",
+    period_start: "2026-07-01",
+    period_end: "2026-07-31",
+    transaction_count: 6,
+  };
+  const augBasis = { ...julyBasis, period_start: "2026-08-01", period_end: "2026-08-31" };
+  const entry = (id: string, period_start: string, status = "payable", amount = 8.88) => ({
+    id,
+    referrer_id: "p1",
+    account_id: "a1",
+    amount,
+    status,
+    entry_type: "commission",
+    period_start,
+    period_end: period_start.replace(/-01$/, "-28"),
+  });
+
+  it("isAfterVoid compares the month against the account's cut-off", () => {
+    const cut = new Map([["a1", "2026-08-01"]]);
+    expect(isAfterVoid("a1", "2026-07-01", cut)).toBe(false);
+    expect(isAfterVoid("a1", "2026-08-01", cut)).toBe(true);
+    expect(isAfterVoid("a1", "2026-09-01T00:00:00Z", cut)).toBe(true);
+    expect(isAfterVoid("a2", "2026-09-01", cut)).toBe(false);
+    expect(isAfterVoid(null, "2026-09-01", cut)).toBe(false);
+    expect(isAfterVoid("a1", null, cut)).toBe(false);
+  });
+
+  it("skips ledger entries with status void", () => {
+    const report = auditCommissionLedger([entry("e1", "2026-07-01", "void", 99)], []);
+    expect(report.rows).toHaveLength(0);
+    expect(report.exceptions).toHaveLength(0);
+  });
+
+  it("does not flag a paid credit or a billed month at/after the void month", () => {
+    // August is the void month: a paid August credit survives the DB's void
+    // (paid entries are left alone) and the view hides August's gateway month,
+    // so without the cut-off it would read as an orphan.
+    const report = auditCommissionLedger(
+      [entry("e-jul", "2026-07-01"), entry("e-aug", "2026-08-01", "paid")],
+      [julyBasis, augBasis],
+      new Map(),
+      new Map([["a1", "2026-08-01"]]),
+    );
+    expect(report.rows.map((r) => r.periodStart)).toEqual(["2026-07-01"]);
+    expect(report.rows[0].verdict).toBe("match");
+    expect(report.exceptions).toHaveLength(0);
+    expect(report.skippedAfterVoid).toBe(2);
+  });
+
+  it("still flags a pre-void month that never accrued", () => {
+    const report = auditCommissionLedger(
+      [],
+      [julyBasis, augBasis],
+      new Map(),
+      new Map([["a1", "2026-08-01"]]),
+    );
+    expect(report.missing.map((r) => r.periodStart)).toEqual(["2026-07-01"]);
+    expect(report.skippedAfterVoid).toBe(1);
+  });
+
+  it("leaves a live account untouched", () => {
+    const report = auditCommissionLedger([entry("e-aug", "2026-08-01")], [augBasis]);
+    expect(report.rows[0].verdict).toBe("match");
+    expect(report.skippedAfterVoid).toBe(0);
   });
 });

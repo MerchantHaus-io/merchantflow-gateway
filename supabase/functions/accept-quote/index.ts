@@ -9,6 +9,8 @@
 // Hardened against:
 //   - expired or unknown tokens (404)
 //   - already-accepted quotes (409 — do not double-record)
+//   - void (withdrawn) quotes (409 `withdrawn: true`) — including one voided
+//     between load and accept, which the DB refuses with SQLSTATE 23514
 //   - missing signatory fields (400)
 //   - merchant tampering with line items (we ignore client-side prices and
 //     recompute / hash from the persisted quotes.lines_snapshot)
@@ -68,6 +70,18 @@ async function sha256(input: string): Promise<string> {
     .join("");
 }
 
+// A void quote has been withdrawn by MerchantHaus. Checked BEFORE expiry so a
+// withdrawn quote never reads as merely "expired", and before "accepted" so an
+// accepted-then-voided quote does not read as "already accepted".
+const WITHDRAWN_MESSAGE = "This quote has been withdrawn";
+const withdrawnResponse = () =>
+  json({ error: WITHDRAWN_MESSAGE, withdrawn: true }, 409);
+
+// trg_quote_acceptances_refuse_void raises `quote_void` (check_violation) when
+// the quote was voided after we loaded it.
+const isVoidRefusal = (err: { code?: string; message?: string } | null) =>
+  !!err && err.code === "23514" && /\bquote_void/.test(err.message ?? "");
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -96,6 +110,8 @@ async function handleLoad(
     return json({ error: "Lookup failed" }, 500);
   }
   if (!quote) return json({ error: "Quote not found or token invalid" }, 404);
+
+  if (quote.status === "void") return withdrawnResponse();
 
   const now = Date.now();
   const exp = quote.acceptance_token_expires_at
@@ -156,6 +172,7 @@ async function handleAccept(
   if (!quote) return json({ error: "Quote not found or token invalid" }, 404);
 
   // Validate state
+  if (quote.status === "void") return withdrawnResponse();
   const exp = quote.acceptance_token_expires_at
     ? new Date(quote.acceptance_token_expires_at).getTime()
     : (quote.valid_until ? new Date(quote.valid_until).getTime() : null);
@@ -214,6 +231,10 @@ async function handleAccept(
     .single();
 
   if (insertErr) {
+    if (isVoidRefusal(insertErr)) {
+      // Voided between the load above and this insert.
+      return withdrawnResponse();
+    }
     console.error("accept-quote insert error", insertErr);
     return json({ error: "Failed to record acceptance" }, 500);
   }
@@ -224,6 +245,13 @@ async function handleAccept(
     .update({ status: "accepted" })
     .eq("id", quote.id);
 
+  if (updateErr && isVoidRefusal(updateErr)) {
+    // Voided in the instant between the insert and this update
+    // (quote_void_terminal). The acceptance row stays as the audit record,
+    // but the quote is withdrawn: send no "accepted" emails.
+    console.warn("accept-quote: quote voided during acceptance", quote.id);
+    return withdrawnResponse();
+  }
   if (updateErr) {
     console.error("accept-quote status update failed", updateErr);
     // Don't abort — the audit row is the source of truth and a re-run can reconcile.
