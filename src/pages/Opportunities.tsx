@@ -61,6 +61,7 @@ import { cn } from "@/lib/utils";
 import OpportunityDetailModal from "@/components/OpportunityDetailModal";
 import { PricingBadges } from "@/components/PricingBadges";
 import NewApplicationModal from "@/components/NewApplicationModal";
+import { LeadIntakeDialog } from "@/components/LeadIntakeDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -211,6 +212,7 @@ const Opportunities = () => {
   const [sortField, setSortField] = useState<SortField>(persisted.sortField ?? 'updated');
   const [sortDirection, setSortDirection] = useState<SortDirection>(persisted.sortDirection ?? 'desc');
   const [showNewModal, setShowNewModal] = useState(false);
+  const [showLeadIntake, setShowLeadIntake] = useState(false);
   const [viewMode, setViewMode] = useState<'table' | 'cards'>(persisted.viewMode ?? 'table');
   const isMobile = useIsMobile();
   // #159: the table is fourteen columns with four inline Selects per row. On a
@@ -959,6 +961,15 @@ const Opportunities = () => {
       >
         <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Intelligence View
       </Button>
+      <Button
+        size="sm"
+        variant="teal"
+        className="h-8"
+        onClick={() => setShowLeadIntake(true)}
+        title="Paste a lead or drop a screenshot: details and a first email are filled in for you"
+      >
+        <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Lead intake
+      </Button>
       <Button size="sm" className="h-8" onClick={() => setShowNewModal(true)}>
         <Plus className="h-3.5 w-3.5 mr-1.5" /> New
       </Button>
@@ -1612,6 +1623,12 @@ const Opportunities = () => {
           open={showNewModal}
           onClose={() => setShowNewModal(false)}
           onSubmit={fetchOpportunities}
+        />
+
+        <LeadIntakeDialog
+          open={showLeadIntake}
+          onOpenChange={setShowLeadIntake}
+          onSaved={() => fetchOpportunities()}
         />
 
         {/* Bulk action confirmation (#66). Every bulk write goes through here

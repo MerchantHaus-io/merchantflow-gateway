@@ -39,6 +39,12 @@ verify_jwt = true
 [functions.analyze-statement]
 verify_jwt = true
 
+[functions.extract-lead]
+verify_jwt = true
+
+[functions.send-lead-outreach]
+verify_jwt = true
+
 [functions.nmi-transactions]
 verify_jwt = true
 
