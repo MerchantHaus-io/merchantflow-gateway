@@ -1,0 +1,3 @@
+# Architecture rules
+- Role checks resolve the caller's active organisation and require the target user's active membership; platform authority remains in platform_admins. This prevents an ISO role from conferring cross-ISO privilege.
+- Keep database role migrations separate from app and edge-function consumer changes; retain legacy role uniqueness until old conflict targets are migrated, to avoid breaking deployed callers.
