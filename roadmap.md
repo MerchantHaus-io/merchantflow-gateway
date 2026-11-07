@@ -23,6 +23,6 @@
 - [ ] Restore Google email/calendar sync — blocked until the Google project owner enables Gmail and Calendar APIs.
 
 ## Tenant split (Nov 7 2026)
-- [ ] Database only: tag existing user roles with MerchantHaus; enforce organisation-aware role checks and policies.
-- [ ] Audit current service-role functions for cross-organisation access, with evidence and prioritised fix batches.
-- [ ] Separate app phase: update direct role consumers; no app/function edits in the database phase.
+- [x] Database only: all 22 existing roles tagged MerchantHaus; scoped helpers and restrictive role policies applied. Read-only integration checks pass.
+- [x] Audit: 80 current entrypoints, 76 privileged directly/transitively; complete evidence and fix batches in docs/tenancy/07-service-role-audit.md.
+- [ ] Separate app/function phase: update direct role consumers and bypass paths; intentionally deferred to a separate session under the agreed split.
