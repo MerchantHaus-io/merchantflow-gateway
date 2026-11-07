@@ -11,9 +11,10 @@
 - [x] Phase 2a anchors stamped: accounts, opportunities, merchants, applications
 - [x] Phase 2b children stamped: contacts, principals, beneficial_owners, bank_accounts, merchant_consents, application_documents/secrets, documents, client_interactions, call_logs, calendar_events, validation/website reports, onboarding_wizard_states, nmi_boarding_submissions
 - [x] Phase 2c-2e stamped (11 Sep 2026): activity/collab, messaging/comms, quoting/billing/commissions, integrations — 50 tables, tenant_id NOT NULL + FK + index + default + trigger, all rows on legacy MerchantHaus tenant
-- [ ] Remaining stamping: `user_roles` (Phase 2f, ship alone), `billing_doc_sequences` PK change, the 10 uniqueness changes (ADR-007)
+- [x] Phase 2f: user_roles stamped MerchantHaus; organisation-aware SQL checks and restrictive policies applied (Nov 7).
+- [ ] Remaining: billing_doc_sequences PK change and uniqueness changes (ADR-007), including retiring legacy user_roles uniqueness after consumer rollout.
 - [x] Phase 3 first pass (11 Sep 2026): `tenant_visible(uuid)` helper; all 211 policies on tenant-stamped tables now AND a tenant term (reads and writes). Platform admins bypass. Anon intake still works via `default_tenant_id()` fallback.
-- [ ] Phase 4: tenant-scope the 60 service-role edge functions (RLS does not apply there)
+- [ ] Phase 4: harden service-role functions; current audit counts 76 privileged entrypoints, including shared-helper-only usage (RLS does not apply to privileged clients).
 
 - [x] Phase 5/8 first slice: `provision-tenant` worker + `/admin/tenants` console (create, step-by-step run, setup wizard, Ready/Active/Suspend, retry). Verified end to end on a throwaway tenant, since removed.
 
@@ -21,3 +22,8 @@
 - [x] Restore pricing category normalization; deployed worker and tested all six category inputs. Full production wizard run not performed.
 - [x] Correct Home's pending application count; signed-in Home shows 95 deals with no failing application requests.
 - [ ] Restore Google email/calendar sync — blocked until the Google project owner enables Gmail and Calendar APIs.
+
+## Tenant split (Nov 7 2026)
+- [x] Database only: all 22 existing roles tagged MerchantHaus; scoped helpers and restrictive role policies applied. Read-only integration checks pass.
+- [x] Audit: 80 current entrypoints, 76 privileged directly/transitively; complete evidence and fix batches in docs/tenancy/07-service-role-audit.md.
+- [ ] Separate app/function phase: update direct role consumers and bypass paths; intentionally deferred to a separate session under the agreed split.
