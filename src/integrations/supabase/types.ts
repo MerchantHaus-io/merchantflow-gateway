@@ -5863,6 +5863,7 @@ export type Database = {
           contact_id: string | null
           fee_schedule_hash: string | null
           ip_address: unknown
+          is_void: boolean | null
           opportunity_id: string | null
           quote_id: string | null
           quote_number: string | null
@@ -5870,7 +5871,6 @@ export type Database = {
           signatory_email: string | null
           signatory_name: string | null
           signatory_title: string | null
-          is_void: boolean | null
           status: string | null
           terms_version: string | null
           voided_at: string | null
@@ -6061,6 +6061,7 @@ export type Database = {
         Args: { p_content: string; p_receiver_email: string }
         Returns: undefined
       }
+      support_email_domain: { Args: { _email: string }; Returns: string }
       tenant_visible: { Args: { _tenant_id: string }; Returns: boolean }
     }
     Enums: {
