@@ -5,6 +5,21 @@ import { useDealSignals, emptyDealSignal } from "@/hooks/useDealSignals";
 import { dealAttention, NEEDS_ATTENTION_NOW, type DealAttention } from "@/lib/dealAttention";
 import { monthlyRevenueEstimate } from "@/lib/pipelineValue";
 import { dealBucket, isAssignedTo, type DealBucket } from "@/lib/dealBucket";
+import {
+  bookMonthsFromSyncLogs,
+  funnelStats,
+  headlineMonths,
+  liveMerchantCount,
+  merchantChanges,
+  pipelineCoverage,
+  teamActivity,
+  type ActivityRow,
+  type BookMonth,
+  type CommissionPeriodRow,
+  type CommissionRecordRow,
+  type MerchantRow,
+  type SyncLogRow,
+} from "@/lib/opsMetrics";
 
 export type { DealBucket };
 import {
@@ -72,11 +87,23 @@ export interface ActivityEntry {
   opportunityId: string;
 }
 
+export interface BookOfBusiness {
+  loading: boolean;
+  error: string | null;
+  /** One per month, oldest first, from the freshest sync of each. */
+  months: BookMonth[];
+  current: BookMonth | null;
+  previous: BookMonth | null;
+  inProgress: BookMonth | null;
+  /** Per-merchant change, from the latest complete *saved* period. */
+  merchantPeriod: CommissionPeriodRow | null;
+  merchants: MerchantRow[];
+}
+
 export interface OperationsCounts {
   activeDeals: number;
   weightedPipeline: number;
   stalled: number;
-  liveMerchants: number;
   openTickets: number;
   unassignedTickets: number;
   breachingTickets: number;
@@ -98,11 +125,18 @@ export function useOperationsHome(
   const [allOpportunities, setAllOpportunities] = useState<Opportunity[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
+  const [teamRows, setTeamRows] = useState<ActivityRow[]>([]);
+  const [bookState, setBookState] = useState<{
+    loading: boolean;
+    error: string | null;
+    logs: SyncLogRow[];
+    periods: CommissionPeriodRow[];
+    records: CommissionRecordRow[];
+  }>({ loading: true, error: null, logs: [], periods: [], records: [] });
   const [counts, setCounts] = useState<OperationsCounts>({
     activeDeals: 0,
     weightedPipeline: 0,
     stalled: 0,
-    liveMerchants: 0,
     openTickets: 0,
     unassignedTickets: 0,
     breachingTickets: 0,
@@ -288,7 +322,7 @@ export function useOperationsHome(
     const load = async () => {
       const head = { count: "exact" as const, head: true };
 
-      const [tickets, submissions, deletions, merchants] = await Promise.all([
+      const [tickets, submissions, deletions] = await Promise.all([
         supabase
           .from("support_tickets")
           .select("id, status, priority, assigned_to, created_at")
@@ -296,7 +330,6 @@ export function useOperationsHome(
           .not("status", "in", '("closed","resolved","spam")'),
         supabase.from("applications").select("*", head).eq("status", "pending"),
         supabase.from("deletion_requests").select("*", head).eq("status", "pending"),
-        supabase.from("merchants").select("*", head),
       ]);
 
       if (cancelled) return;
@@ -311,7 +344,6 @@ export function useOperationsHome(
         activeDeals: opportunities.length,
         weightedPipeline: opportunities.reduce((sum, o) => sum + monthlyRevenueEstimate(o), 0),
         stalled: now.filter((i) => i.attention.text.startsWith("Stalled")).length,
-        liveMerchants: merchants.count ?? 0,
         openTickets: openTickets.length,
         unassignedTickets: openTickets.filter((t) => !t.assigned_to).length,
         breachingTickets: breaching.length,
@@ -326,18 +358,28 @@ export function useOperationsHome(
     };
   }, [opportunities, now]);
 
-  // ── Activity feed ──────────────────────────────────────────
+  // ── Activity feed + two weeks of team activity ─────────────
   useEffect(() => {
     let cancelled = false;
 
     const load = async () => {
-      const { data } = await supabase
-        .from("activities")
-        .select("id, type, description, user_email, created_at, opportunity_id")
-        .order("created_at", { ascending: false })
-        .limit(10);
+      const since = new Date(Date.now() - 14 * 86_400_000).toISOString();
+      const [{ data }, { data: recent }] = await Promise.all([
+        supabase
+          .from("activities")
+          .select("id, type, description, user_email, created_at, opportunity_id")
+          .order("created_at", { ascending: false })
+          .limit(10),
+        supabase
+          .from("activities")
+          .select("type, user_email, created_at")
+          .gte("created_at", since)
+          .order("created_at", { ascending: false })
+          .limit(2000),
+      ]);
 
       if (cancelled) return;
+      setTeamRows((recent ?? []) as ActivityRow[]);
       setActivity(
         (data ?? []).map((a) => ({
           id: a.id,
@@ -356,19 +398,77 @@ export function useOperationsHome(
     };
   }, []);
 
-  return { loading, error, now, today, steady, ladder, counts, activity, deals };
-}
+  // ── Book of business ───────────────────────────────────────
+  // Monthly totals come from commission_sync_logs: every nmi-commissions run
+  // logs its summary, but commission_periods/records are written only when the
+  // caller asks to persist, so they lag. Per-merchant rows exist only in the
+  // persisted tables, so the screen labels them with the date they were saved.
+  useEffect(() => {
+    let cancelled = false;
 
-/*
- * Left deliberately unwired, because guessing a column name here would put a
- * wrong number on the front door:
- *
- *   • Residual run-rate      → nmi_partner_residuals
- *   • Processing volume MTD  → kurv_transactions_daily
- *   • Rep commission accrued → commission_records + commission_periods
- *
- * Each of those tables exists. Confirm its amount/period columns against the
- * live schema, then add them to `counts` the same way. Until then the tiles
- * that need them render an em dash rather than an estimate — a blank is
- * honest, a plausible-looking figure is not.
- */
+    const load = async () => {
+      try {
+        const [logs, periods, records] = await Promise.all([
+          supabase
+            .from("commission_sync_logs")
+            .select("period_year, period_month, created_at, merchant_count, raw_response")
+            .eq("status", "success")
+            .order("created_at", { ascending: false })
+            .limit(300),
+          supabase.from("commission_periods").select("id, period_start, period_end, fetched_at"),
+          supabase
+            .from("commission_records")
+            .select("period_id, account_id, company_name, transaction_count, transaction_volume")
+            .limit(PAGE_SIZE),
+        ]);
+        const failed = logs.error ?? periods.error ?? records.error;
+        if (failed) throw failed;
+        if (cancelled) return;
+        setBookState({
+          loading: false,
+          error: null,
+          logs: (logs.data ?? []) as unknown as SyncLogRow[],
+          periods: (periods.data ?? []) as CommissionPeriodRow[],
+          records: (records.data ?? []) as CommissionRecordRow[],
+        });
+      } catch (err) {
+        console.error("Operations: failed to load book of business", err);
+        if (!cancelled) {
+          setBookState((prev) => ({
+            ...prev,
+            loading: false,
+            error: (err as { message?: string })?.message ?? "Could not load the book of business.",
+          }));
+        }
+      }
+    };
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const book = useMemo<BookOfBusiness>(() => {
+    const months = bookMonthsFromSyncLogs(bookState.logs);
+    const { period, rows } = merchantChanges(bookState.periods, bookState.records);
+    return {
+      loading: bookState.loading,
+      error: bookState.error,
+      months,
+      ...headlineMonths(months),
+      merchantPeriod: period,
+      merchants: rows,
+    };
+  }, [bookState]);
+
+  const liveMerchants = useMemo(() => liveMerchantCount(allOpportunities), [allOpportunities]);
+  const funnel = useMemo(() => funnelStats(allOpportunities, new Date()), [allOpportunities]);
+  const coverage = useMemo(() => pipelineCoverage(opportunities), [opportunities]);
+  const team = useMemo(() => teamActivity(teamRows, new Date()), [teamRows]);
+
+  return {
+    loading, error, now, today, steady, ladder, counts, activity, deals,
+    book, liveMerchants, funnel, coverage, team,
+  };
+}
