@@ -4729,6 +4729,33 @@ export type Database = {
           },
         ]
       }
+      support_blocked_domains: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          created_by_email: string | null
+          domain: string
+          id: string
+          tenant_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          created_by_email?: string | null
+          domain: string
+          id?: string
+          tenant_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          created_by_email?: string | null
+          domain?: string
+          id?: string
+          tenant_id?: string | null
+        }
+        Relationships: []
+      }
       support_ticket_comments: {
         Row: {
           author_id: string | null
@@ -4803,6 +4830,10 @@ export type Database = {
           requester_email: string
           requester_name: string | null
           source: string
+          spam_marked_at: string | null
+          spam_marked_by: string | null
+          spam_marked_by_email: string | null
+          spam_reason: string | null
           status: string
           subject: string
           tenant_id: string
@@ -4831,6 +4862,10 @@ export type Database = {
           requester_email: string
           requester_name?: string | null
           source?: string
+          spam_marked_at?: string | null
+          spam_marked_by?: string | null
+          spam_marked_by_email?: string | null
+          spam_reason?: string | null
           status?: string
           subject: string
           tenant_id?: string
@@ -4859,6 +4894,10 @@ export type Database = {
           requester_email?: string
           requester_name?: string | null
           source?: string
+          spam_marked_at?: string | null
+          spam_marked_by?: string | null
+          spam_marked_by_email?: string | null
+          spam_reason?: string | null
           status?: string
           subject?: string
           tenant_id?: string
@@ -5988,6 +6027,7 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       is_admin_email: { Args: never; Returns: boolean }
       is_blocked_recipient: { Args: { _email: string }; Returns: boolean }
+      is_blocked_support_domain: { Args: { _email: string }; Returns: boolean }
       is_internal_staff: { Args: never; Returns: boolean }
       is_merchanthaus_staff: { Args: never; Returns: boolean }
       is_platform_admin: { Args: never; Returns: boolean }

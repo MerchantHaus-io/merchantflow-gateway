@@ -156,9 +156,22 @@ serve(async (req) => {
 
         // Reopen, and bring an archived ticket back into the active queue —
         // reopening alone leaves the reply hidden under the Archived tab.
+        // A spam ticket stays spam (and where it is): a reply must not put it
+        // back in the queue. A closed ticket whose sender's domain has since
+        // been blocked goes to spam rather than reopening.
         const reopen: Record<string, unknown> = {};
-        if (existing.status === "closed") reopen.status = "open";
-        if (existing.archived_at) reopen.archived_at = null;
+        if (existing.status !== "spam") {
+          if (existing.status === "closed") {
+            const { data: blocked } = await supabase.rpc("is_blocked_support_domain", { _email: email });
+            if (blocked === true) {
+              reopen.status = "spam";
+              reopen.spam_reason = "blocked_domain";
+            } else {
+              reopen.status = "open";
+            }
+          }
+          if (existing.archived_at && reopen.status !== "spam") reopen.archived_at = null;
+        }
         if (Object.keys(reopen).length) {
           await supabase.from("support_tickets").update(reopen).eq("id", existing.id);
         }
@@ -185,12 +198,18 @@ serve(async (req) => {
         account_id,
         contact_id,
       })
-      .select("id, ticket_number")
+      .select("id, ticket_number, status")
       .single();
 
     if (error) {
       console.error("Failed to create ticket from inbound email:", error);
       return json({ error: "Could not create ticket" }, 500);
+    }
+
+    // A blocked sender's ticket lands as spam (DB trigger). Never auto-reply
+    // to it: an acknowledgement confirms the address is live.
+    if (ticket.status === "spam") {
+      return json({ ok: true, created: ticket.ticket_number, spam: true });
     }
 
     await sendEmail(

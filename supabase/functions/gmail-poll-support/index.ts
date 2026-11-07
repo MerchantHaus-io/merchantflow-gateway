@@ -208,10 +208,23 @@ serve(async (req) => {
             gmail_thread_id: m.threadId,
             gmail_message_id: messageId || null,
           };
-          if (!isInternal && existing.status === "closed") patch.status = "open";
+          // A spam ticket stays spam (and where it is): a reply must not put it
+          // back in the queue. A closed ticket whose sender's domain has since
+          // been blocked goes to spam rather than reopening.
+          if (!isInternal && existing.status === "closed") {
+            const { data: blocked } = await supabase.rpc("is_blocked_support_domain", { _email: email });
+            if (blocked === true) {
+              patch.status = "spam";
+              patch.spam_reason = "blocked_domain";
+            } else {
+              patch.status = "open";
+            }
+          }
           // A customer reply must bring an archived ticket back into the active
           // queue — reopening alone leaves it hidden under the Archived tab.
-          if (!isInternal && existing.archived_at) patch.archived_at = null;
+          if (!isInternal && existing.archived_at && existing.status !== "spam" && patch.status !== "spam") {
+            patch.archived_at = null;
+          }
           await supabase.from("support_tickets").update(patch).eq("id", existing.id);
           results.push({ id: m.id, threaded: existing.ticket_number });
         }
@@ -234,49 +247,55 @@ serve(async (req) => {
             gmail_thread_id: m.threadId,
             gmail_message_id: messageId || null,
           })
-          .select("id, ticket_number")
+          .select("id, ticket_number, status")
           .single();
         if (error) {
           results.push({ id: m.id, error: error.message });
           continue;
         }
 
+        // A blocked sender's ticket lands as spam (DB trigger). Never auto-reply
+        // to it: an acknowledgement confirms the address is live.
+        const isSpam = ticket.status === "spam";
+
         // Acknowledge the requester so an email-sourced ticket gets the same
         // "we've received your request" confirmation the web form sends. Sent
         // as a reply on their own thread; failure must not block polling.
-        try {
-          const cleanSubject = subject.replace(/^\s*(re|fwd?):\s*/i, "").trim() || "your request";
-          const firstName = (name || "there").split(/\s+/)[0] || "there";
-          const ackHtml = renderBrandedEmail({
-            eyebrow: "Support",
-            preheader: `We've logged your request — your reference is ${ticket.ticket_number}.`,
-            signOff: "The Merchant Haus Support Team",
-            body: `
-              <p style="margin:0 0 16px;">Hi ${escapeHtml(firstName)},</p>
-              <p style="margin:0 0 16px;">Thanks for getting in touch. We've logged your email as a support ticket and our team will be on it shortly — we'll keep you posted at every step.</p>
-              ${infoCard([
-                { label: "Ticket reference", value: `<strong>${escapeHtml(ticket.ticket_number)}</strong>` },
-                { label: "Subject", value: escapeHtml(cleanSubject) },
-              ])}
-              <p style="margin:0 0 16px;">There's nothing more you need to do right now. To add anything, just reply to this email and it stays attached to the same ticket.</p>
-            `,
-          });
-          const ack = await sendGmail({
-            from: `Merchant Haus Support <${SUPPORT_INBOX}>`,
-            to: email,
-            subject: `Re: [${ticket.ticket_number}] ${cleanSubject}`,
-            html: ackHtml,
-            replyTo: SUPPORT_INBOX,
-            threadId: m.threadId,
-            inReplyTo: messageId || undefined,
-            references: messageId || undefined,
-          });
-          if (!ack.ok) console.error("Ack email failed:", ack.error);
-        } catch (ackErr) {
-          console.error("Ack email threw:", ackErr);
+        if (!isSpam) {
+          try {
+            const cleanSubject = subject.replace(/^\s*(re|fwd?):\s*/i, "").trim() || "your request";
+            const firstName = (name || "there").split(/\s+/)[0] || "there";
+            const ackHtml = renderBrandedEmail({
+              eyebrow: "Support",
+              preheader: `We've logged your request — your reference is ${ticket.ticket_number}.`,
+              signOff: "The Merchant Haus Support Team",
+              body: `
+                <p style="margin:0 0 16px;">Hi ${escapeHtml(firstName)},</p>
+                <p style="margin:0 0 16px;">Thanks for getting in touch. We've logged your email as a support ticket and our team will be on it shortly — we'll keep you posted at every step.</p>
+                ${infoCard([
+                  { label: "Ticket reference", value: `<strong>${escapeHtml(ticket.ticket_number)}</strong>` },
+                  { label: "Subject", value: escapeHtml(cleanSubject) },
+                ])}
+                <p style="margin:0 0 16px;">There's nothing more you need to do right now. To add anything, just reply to this email and it stays attached to the same ticket.</p>
+              `,
+            });
+            const ack = await sendGmail({
+              from: `Merchant Haus Support <${SUPPORT_INBOX}>`,
+              to: email,
+              subject: `Re: [${ticket.ticket_number}] ${cleanSubject}`,
+              html: ackHtml,
+              replyTo: SUPPORT_INBOX,
+              threadId: m.threadId,
+              inReplyTo: messageId || undefined,
+              references: messageId || undefined,
+            });
+            if (!ack.ok) console.error("Ack email failed:", ack.error);
+          } catch (ackErr) {
+            console.error("Ack email threw:", ackErr);
+          }
         }
 
-        results.push({ id: m.id, created: ticket.ticket_number, messageId });
+        results.push({ id: m.id, created: ticket.ticket_number, messageId, ...(isSpam ? { spam: true } : {}) });
       }
 
       // Mark processed: remove UNREAD label so we don't re-poll.

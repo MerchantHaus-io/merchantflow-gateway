@@ -7,14 +7,15 @@ export default defineTool({
   name: "list_support_tickets",
   title: "List support tickets",
   description:
-    "List support tickets with subject, requester, status and priority. Archived tickets are excluded unless requested.",
+    "List support tickets with subject, requester, status and priority. Archived and spam tickets are excluded unless requested.",
   inputSchema: {
     status: z.string().trim().min(1).optional().describe("Ticket status to filter by, e.g. 'open' or 'closed'."),
     include_archived: z.boolean().optional().describe("Include archived tickets (default false)."),
+    include_spam: z.boolean().optional().describe("Include tickets marked spam (default false). Ignored when status is 'spam'."),
     limit: z.number().int().min(1).max(100).optional().describe("Maximum rows to return (default 25)."),
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
-  handler: async ({ status, include_archived, limit }, ctx) => {
+  handler: async ({ status, include_archived, include_spam, limit }, ctx) => {
     if (!ctx.isAuthenticated()) return notAuthenticated();
     const supabase = supabaseForUser(ctx);
 
@@ -28,6 +29,7 @@ export default defineTool({
 
     if (status) builder = builder.eq("status", status);
     if (!include_archived) builder = builder.is("archived_at", null);
+    if (!include_spam && status !== "spam") builder = builder.neq("status", "spam");
 
     const { data, error } = await builder;
     if (error) return toError(error.message);
