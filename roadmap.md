@@ -16,3 +16,8 @@
 - [ ] Phase 4: tenant-scope the 60 service-role edge functions (RLS does not apply there)
 
 - [x] Phase 5/8 first slice: `provision-tenant` worker + `/admin/tenants` console (create, step-by-step run, setup wizard, Ready/Active/Suspend, retry). Verified end to end on a throwaway tenant, since removed.
+
+## Monitoring fixes (Nov 7 2026)
+- [x] Restore pricing category normalization; deployed worker and tested all six category inputs. Full production wizard run not performed.
+- [x] Correct Home's pending application count; signed-in Home shows 95 deals with no failing application requests.
+- [ ] Restore Google email/calendar sync — blocked until the Google project owner enables Gmail and Calendar APIs.

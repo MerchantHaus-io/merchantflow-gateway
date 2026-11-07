@@ -294,7 +294,7 @@ export function useOperationsHome(
           .select("id, status, priority, assigned_to, created_at")
           .is("archived_at", null)
           .not("status", "in", '("closed","resolved","spam")'),
-        supabase.from("applications").select("*", head).is("reviewed_at", null),
+        supabase.from("applications").select("*", head).eq("status", "pending"),
         supabase.from("deletion_requests").select("*", head).eq("status", "pending"),
         supabase.from("merchants").select("*", head),
       ]);

@@ -290,6 +290,15 @@ const HEX = /^#[0-9a-fA-F]{6}$/;
 const DOMAIN = /^(?!-)[a-z0-9-]{1,63}(\.[a-z0-9-]{1,63})+$/;
 const TEAM_ROLES = ["owner", "admin", "member"];
 
+function normalisePricingCategory(value: unknown): string {
+  // Older wizard drafts used "platform" for gateway fees.
+  if (value == null || value === "platform") return "gateway_fee";
+  if (typeof value === "string" && ["plan", "gateway_fee", "extra", "one_time"].includes(value)) {
+    return value;
+  }
+  throw new Error("Unknown pricing category");
+}
+
 /**
  * Validates one wizard step's data and writes its real artifact, so a ticked
  * step always corresponds to configuration that exists. Throws on bad input.
