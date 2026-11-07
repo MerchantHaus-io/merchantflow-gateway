@@ -21,3 +21,8 @@
 - [x] Restore pricing category normalization; deployed worker and tested all six category inputs. Full production wizard run not performed.
 - [x] Correct Home's pending application count; signed-in Home shows 95 deals with no failing application requests.
 - [ ] Restore Google email/calendar sync — blocked until the Google project owner enables Gmail and Calendar APIs.
+
+## Tenant split (Nov 7 2026)
+- [ ] Database only: tag existing user roles with MerchantHaus; enforce organisation-aware role checks and policies.
+- [ ] Audit current service-role functions for cross-organisation access, with evidence and prioritised fix batches.
+- [ ] Separate app phase: update direct role consumers; no app/function edits in the database phase.
