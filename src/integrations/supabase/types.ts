@@ -3886,6 +3886,9 @@ export type Database = {
           tier_name: string
           updated_at: string
           valid_until: string | null
+          voided_at: string | null
+          voided_by: string | null
+          voided_by_email: string | null
         }
         Insert: {
           acceptance_token?: string | null
@@ -3927,6 +3930,9 @@ export type Database = {
           tier_name: string
           updated_at?: string
           valid_until?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+          voided_by_email?: string | null
         }
         Update: {
           acceptance_token?: string | null
@@ -3968,6 +3974,9 @@ export type Database = {
           tier_name?: string
           updated_at?: string
           valid_until?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+          voided_by_email?: string | null
         }
         Relationships: [
           {
@@ -5822,8 +5831,11 @@ export type Database = {
           signatory_email: string | null
           signatory_name: string | null
           signatory_title: string | null
+          is_void: boolean | null
           status: string | null
           terms_version: string | null
+          voided_at: string | null
+          voided_by_email: string | null
         }
         Relationships: [
           {
@@ -5922,6 +5934,10 @@ export type Database = {
       }
     }
     Functions: {
+      account_downstream_void_month: {
+        Args: { _account_id: string }
+        Returns: string
+      }
       archive_stale_closed_tickets: { Args: never; Returns: number }
       build_referrer_ledger: {
         Args: never

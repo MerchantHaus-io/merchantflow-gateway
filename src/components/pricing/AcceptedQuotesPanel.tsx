@@ -2,14 +2,29 @@
 // generate the Merchant Services Agreement PDF in one click. The PDF is
 // pre-stamped with the acceptance audit (signatory, IP, fee-schedule hash,
 // terms version) so it can be downloaded and sent without further editing.
+//
+// An accepted quote can also be voided here (status 'void'). The DB keeps the
+// signed acceptance row, stamps the void, and stops partner earnings for the
+// merchant from the void month — nothing of that is done client-side. A void
+// quote never offers Generate Contract (`quote_acceptance_summary.is_void`).
 
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, FileText, Loader2, RefreshCw, Send, ShieldCheck } from "lucide-react";
+import { Ban, CheckCircle2, FileText, Loader2, RefreshCw, Send, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +41,7 @@ import {
 } from "@/lib/quotePdf";
 import { QUOTE_TERMS_VERSION } from "@/config/quoteSchedule";
 import { asArray } from "@/lib/utils";
+import { isQuoteVoid, voidConfirmDescription } from "@/lib/quote-schema";
 
 interface AcceptanceRow {
   quote_id: string;
@@ -42,7 +58,12 @@ interface AcceptanceRow {
   terms_version: string | null;
   ip_address: string | null;
   fee_schedule_hash: string | null;
+  /** Present once migration 20261104120000 is applied. */
+  is_void?: boolean | null;
 }
+
+/** A void quote — by the view's flag or its status — must not offer a contract. */
+const rowIsVoid = (r: AcceptanceRow) => r.is_void === true || isQuoteVoid(r.status);
 
 interface FullQuote {
   id: string;
@@ -116,6 +137,8 @@ export function AcceptedQuotesPanel() {
   const [rows, setRows] = useState<AcceptanceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeQuoteId, setActiveQuoteId] = useState<string | null>(null);
+  const [pendingVoid, setPendingVoid] = useState<AcceptanceRow | null>(null);
+  const [voidingId, setVoidingId] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -128,7 +151,7 @@ export function AcceptedQuotesPanel() {
     if (error) {
       toast.error(`Failed to load accepted quotes: ${error.message}`);
     } else {
-      setRows((data as AcceptanceRow[]) ?? []);
+      setRows(((data as AcceptanceRow[]) ?? []).filter((r) => !rowIsVoid(r)));
     }
     setLoading(false);
   };
@@ -138,9 +161,32 @@ export function AcceptedQuotesPanel() {
   }, []);
 
   const active = useMemo(
-    () => rows.find((r) => r.quote_id === activeQuoteId) ?? null,
+    () => rows.find((r) => r.quote_id === activeQuoteId && !rowIsVoid(r)) ?? null,
     [rows, activeQuoteId],
   );
+
+  const handleVoid = async (row: AcceptanceRow) => {
+    setPendingVoid(null);
+    setVoidingId(row.quote_id);
+    const { data, error } = await supabase
+      .from("quotes")
+      .update({ status: "void" })
+      .eq("id", row.quote_id)
+      .neq("status", "void")
+      .select("id");
+    setVoidingId(null);
+    if (error) {
+      toast.error(`Couldn't void quote: ${error.message}`);
+      return;
+    }
+    if (!data || data.length === 0) {
+      toast.error(`${row.quote_number} was already voided.`);
+    } else {
+      toast.success(`${row.quote_number} voided. Partner earnings for this merchant stop from this month.`);
+    }
+    if (activeQuoteId === row.quote_id) setActiveQuoteId(null);
+    setRows((prev) => prev.filter((r) => r.quote_id !== row.quote_id));
+  };
 
   return (
     <section className="rounded-2xl border border-border bg-card p-6">
@@ -211,10 +257,26 @@ export function AcceptedQuotesPanel() {
                   <td className="py-3 text-xs text-muted-foreground">
                     {formatAcceptedAt(r.accepted_at)}
                   </td>
-                  <td className="py-3 text-right">
+                  <td className="py-3 text-right whitespace-nowrap">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setPendingVoid(r)}
+                      disabled={voidingId === r.quote_id}
+                      className="h-8 px-2 mr-1 text-muted-foreground hover:text-destructive"
+                      aria-label={`Void ${r.quote_number}`}
+                    >
+                      {voidingId === r.quote_id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Ban className="h-3.5 w-3.5" />
+                      )}
+                      <span className="ml-1 text-xs">Void</span>
+                    </Button>
                     <Button
                       size="sm"
                       onClick={() => setActiveQuoteId(r.quote_id)}
+                      disabled={voidingId === r.quote_id}
                       className="bg-neutral-900 hover:bg-neutral-800 text-white border-l-[3px] border-l-[#c81030] h-8"
                     >
                       <FileText className="h-3.5 w-3.5 mr-1.5" /> Generate Contract
@@ -226,6 +288,31 @@ export function AcceptedQuotesPanel() {
           </table>
         </div>
       )}
+
+      <AlertDialog open={!!pendingVoid} onOpenChange={(o) => !o && setPendingVoid(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Void accepted quote {pendingVoid?.quote_number}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingVoid &&
+                voidConfirmDescription({
+                  quoteNumber: pendingVoid.quote_number,
+                  businessName: pendingVoid.client_business_name,
+                  status: "accepted",
+                })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => pendingVoid && handleVoid(pendingVoid)}
+            >
+              Void quote
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {active && (
         <GenerateContractDialog
@@ -257,13 +344,16 @@ function GenerateContractDialog({
       const { data, error } = await supabase
         .from("quotes")
         .select(
-          "id, quote_number, tier_name, billing_cycle, monthly_resale, annual_resale, client_business_name, client_contact_name, client_email, client_phone, sender_name, sender_title, sender_company, sender_email, sender_phone, lines_snapshot, extras_snapshot",
+          "id, quote_number, status, tier_name, billing_cycle, monthly_resale, annual_resale, client_business_name, client_contact_name, client_email, client_phone, sender_name, sender_title, sender_company, sender_email, sender_phone, lines_snapshot, extras_snapshot",
         )
         .eq("id", summary.quote_id)
         .maybeSingle();
       if (cancelled) return;
       if (error || !data) {
         toast.error(`Couldn't load quote: ${error?.message ?? "not found"}`);
+      } else if (isQuoteVoid((data as { status?: string }).status)) {
+        // Voided since the list loaded (e.g. by another rep): no contract.
+        toast.error(`${summary.quote_number} has been voided — no contract can be generated.`);
       } else {
         setQuote(data as unknown as FullQuote);
       }
@@ -272,7 +362,7 @@ function GenerateContractDialog({
     return () => {
       cancelled = true;
     };
-  }, [summary.quote_id]);
+  }, [summary.quote_id, summary.quote_number]);
 
   const buildMsaInput = (): MsaPdfInput | null => {
     if (!quote) return null;

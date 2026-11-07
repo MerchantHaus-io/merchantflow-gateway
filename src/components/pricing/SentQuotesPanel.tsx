@@ -1,16 +1,15 @@
 // Lists quotes that have been generated and sent but NOT accepted (sent,
-// rejected, expired) and lets a rep delete one — e.g. a quote sent with the
-// wrong pricing, to the wrong merchant, or superseded by a newer quote.
+// rejected, expired) and lets a rep void or delete one — e.g. a quote sent
+// with the wrong pricing, to the wrong merchant, or superseded by a newer one.
 //
-// Accepted quotes are deliberately not deletable here: deleting a quote
-// cascades away its `quote_acceptances` row, which is the signed audit record
-// of the merchant's acceptance. Those need a "void" status instead.
-//
-// Deleting a sent quote also kills its /q/:token acceptance link — the
-// accept-quote edge function returns "not found" for it from then on.
+// Void keeps the row (status 'void', stamped by the DB) and the merchant's
+// /q/:token link then shows "withdrawn". Delete removes it outright and the
+// link returns "not found". Accepted quotes are voided from the Accepted
+// panel and never deleted: deleting cascades away the `quote_acceptances`
+// row, which is the signed audit record of the merchant's acceptance.
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, RefreshCw, Send, Trash2 } from "lucide-react";
+import { Ban, Loader2, RefreshCw, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -27,6 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { voidConfirmDescription } from "@/lib/quote-schema";
 
 type SentQuote = {
   id: string;
@@ -85,6 +85,8 @@ export function SentQuotesPanel({ refreshSignal }: SentQuotesPanelProps) {
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [pending, setPending] = useState<SentQuote | null>(null);
+  const [voidingId, setVoidingId] = useState<string | null>(null);
+  const [pendingVoid, setPendingVoid] = useState<SentQuote | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -131,6 +133,31 @@ export function SentQuotesPanel({ refreshSignal }: SentQuotesPanelProps) {
     toast.success(`${quote.quote_number} deleted.`);
   };
 
+  const handleVoid = async (quote: SentQuote) => {
+    setPendingVoid(null);
+    setVoidingId(quote.id);
+    // Only the statuses this panel lists: a quote accepted since the list
+    // loaded is voided from the Accepted panel, where the earnings warning is.
+    const { data, error } = await supabase
+      .from("quotes")
+      .update({ status: "void" })
+      .eq("id", quote.id)
+      .in("status", DELETABLE_STATUSES)
+      .select("id");
+    setVoidingId(null);
+    if (error) {
+      toast.error(`Couldn't void quote: ${error.message}`);
+      return;
+    }
+    if (!data || data.length === 0) {
+      toast.error(`${quote.quote_number} changed in the meantime, so it was not voided.`);
+      void load();
+      return;
+    }
+    setRows((prev) => prev.filter((r) => r.id !== quote.id));
+    toast.success(`${quote.quote_number} voided — its acceptance link now shows it as withdrawn.`);
+  };
+
   return (
     <section className="rounded-2xl border border-border bg-card p-6">
       <div className="flex items-center justify-between gap-3 mb-4">
@@ -140,8 +167,9 @@ export function SentQuotesPanel({ refreshSignal }: SentQuotesPanelProps) {
             Sent quotes
           </h2>
           <p className="text-xs text-muted-foreground mt-1">
-            Quotes that went out and haven't been accepted. Delete one that was sent in
-            error — its acceptance link stops working immediately.
+            Quotes that went out and haven't been accepted. Void one that was sent in
+            error (kept for the record) or delete it — either way its acceptance link
+            stops working immediately.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading} aria-label="Refresh sent quotes">
@@ -206,8 +234,23 @@ export function SentQuotesPanel({ refreshSignal }: SentQuotesPanelProps) {
                     <Button
                       size="sm"
                       variant="ghost"
+                      onClick={() => setPendingVoid(r)}
+                      disabled={voidingId === r.id || deletingId === r.id}
+                      className="h-8 px-2 text-muted-foreground hover:text-destructive"
+                      aria-label={`Void ${r.quote_number}`}
+                    >
+                      {voidingId === r.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Ban className="h-3.5 w-3.5" />
+                      )}
+                      <span className="ml-1 text-xs">Void</span>
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
                       onClick={() => setPending(r)}
-                      disabled={deletingId === r.id}
+                      disabled={deletingId === r.id || voidingId === r.id}
                       className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
                       aria-label={`Delete ${r.quote_number}`}
                     >
@@ -224,6 +267,31 @@ export function SentQuotesPanel({ refreshSignal }: SentQuotesPanelProps) {
           </table>
         </div>
       )}
+
+      <AlertDialog open={!!pendingVoid} onOpenChange={(o) => !o && setPendingVoid(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Void {pendingVoid?.quote_number}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingVoid &&
+                voidConfirmDescription({
+                  quoteNumber: pendingVoid.quote_number,
+                  businessName: pendingVoid.client_business_name,
+                  status: pendingVoid.status,
+                })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => pendingVoid && handleVoid(pendingVoid)}
+            >
+              Void quote
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={!!pending} onOpenChange={(o) => !o && setPending(null)}>
         <AlertDialogContent>

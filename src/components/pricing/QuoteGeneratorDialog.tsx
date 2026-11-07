@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAutoSave } from "@/hooks/useAutoSave";
-import { assertValidQuoteWrite } from "@/lib/quote-schema";
+import { assertValidQuoteWrite, isQuoteVoid, isQuoteVoidRefusal, QUOTE_VOIDED_MESSAGE } from "@/lib/quote-schema";
 import { AutoSaveIndicator } from "@/components/AutoSaveIndicator";
 import {
   Building2,
@@ -631,6 +631,18 @@ export function QuoteGeneratorDialog({
     if (!ok) return;
     try {
       setSending(true);
+      // A draft reopened from "Saved drafts" may have been voided since. Don't
+      // email the merchant a link that would only say "withdrawn".
+      const { data: existing } = await supabase
+        .from("quotes")
+        .select("status")
+        .eq("quote_number", quoteNumber)
+        .maybeSingle();
+      if (isQuoteVoid((existing as { status?: string } | null)?.status)) {
+        setFinalized(true);
+        toast.error(QUOTE_VOIDED_MESSAGE);
+        return;
+      }
       const doc = await buildPdf();
       const dataUri = doc.output("datauristring");
       const base64 = dataUri.split(",")[1];
@@ -742,9 +754,15 @@ export function QuoteGeneratorDialog({
       assertValidQuoteWrite(row);
       // Upsert by quote_number so auto-save reuses the same draft row and the
       // final "sent" insert flips the existing draft to sent.
-      return await supabase
+      const result = await supabase
         .from("quotes")
         .upsert(row as any, { onConflict: "quote_number" });
+      // The quote was voided elsewhere: the DB refuses any status change
+      // (quote_void_terminal). Say so plainly instead of a raw SQL message.
+      if (isQuoteVoidRefusal(result.error)) {
+        return { ...result, error: { ...result.error!, message: QUOTE_VOIDED_MESSAGE } };
+      }
+      return result;
     },
     [
       quoteNumber, opportunityId, accountId, contactId, tier.id, tier.name,
@@ -779,6 +797,12 @@ export function QuoteGeneratorDialog({
     enabled: autoSaveEnabled,
     onSave: async () => {
       const { error } = await persistQuote("draft");
+      if (error && error.message === QUOTE_VOIDED_MESSAGE) {
+        // Stop auto-saving a void quote; every further attempt would fail.
+        setFinalized(true);
+        toast.error(QUOTE_VOIDED_MESSAGE);
+        return;
+      }
       if (error) throw error;
     },
   });

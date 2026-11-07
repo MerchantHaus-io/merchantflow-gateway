@@ -23,8 +23,9 @@ import { Select,
 } from "@/components/ui/select";
 import { asArray } from "@/lib/utils";
 import { stripInternalCostRefs } from "@/lib/redactCost";
+import { isWithdrawnPayload } from "@/lib/quote-schema";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { CheckCircle2, Loader2, ShieldCheck, AlertTriangle } from "lucide-react";
+import { CheckCircle2, Loader2, ShieldCheck, AlertTriangle, Ban } from "lucide-react";
 import merchantHausLogo from "@/assets/merchanthaus-logo.png";
 import { QUOTE_TERMS_VERSION } from "@/config/quoteSchedule";
 import {
@@ -88,6 +89,23 @@ interface PublicQuote {
   } | null;
 }
 
+/**
+ * supabase.functions.invoke turns a non-2xx into an error whose `context` is
+ * the raw Response; the edge function's JSON body (e.g. `withdrawn: true` on a
+ * void quote's 409) is only readable from there.
+ */
+async function invokeErrorBody(error: unknown): Promise<unknown> {
+  const ctx = (error as { context?: { clone?: () => Response; json?: () => Promise<unknown> } })
+    ?.context;
+  if (!ctx) return null;
+  try {
+    const res = typeof ctx.clone === "function" ? ctx.clone() : ctx;
+    return await (res as { json: () => Promise<unknown> }).json();
+  } catch {
+    return null;
+  }
+}
+
 const fmt = (n: number) =>
   new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -102,6 +120,8 @@ function QuoteAcceptanceInner() {
   const [quote, setQuote] = useState<PublicQuote | null>(null);
   const [alreadyAccepted, setAlreadyAccepted] = useState(false);
   const [acceptedNow, setAcceptedNow] = useState(false);
+  // The quote was voided by MerchantHaus (accept-quote 409 `withdrawn`).
+  const [withdrawn, setWithdrawn] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Form state
@@ -127,8 +147,19 @@ function QuoteAcceptanceInner() {
         });
         if (cancelled) return;
         if (error) {
-          const msg = (error as Error).message || "Failed to load quote";
-          setError(msg);
+          const body = await invokeErrorBody(error);
+          if (cancelled) return;
+          if (isWithdrawnPayload(body)) {
+            setWithdrawn(true);
+          } else {
+            const msg =
+              (body as { error?: string } | null)?.error ||
+              (error as Error).message ||
+              "Failed to load quote";
+            setError(msg);
+          }
+        } else if (isWithdrawnPayload(data)) {
+          setWithdrawn(true);
         } else if ((data as { error?: string })?.error) {
           setError((data as { error: string }).error);
         } else {
@@ -250,7 +281,19 @@ function QuoteAcceptanceInner() {
             : undefined,
         },
       });
-      if (error) throw error;
+      if (error) {
+        const body = await invokeErrorBody(error);
+        if (isWithdrawnPayload(body)) {
+          setWithdrawn(true);
+          return;
+        }
+        const msg = (body as { error?: string } | null)?.error;
+        throw msg ? new Error(msg) : error;
+      }
+      if (isWithdrawnPayload(data)) {
+        setWithdrawn(true);
+        return;
+      }
       const payload = data as { ok?: boolean; error?: string };
       if (payload?.error) throw new Error(payload.error);
       setAcceptedNow(true);
@@ -269,6 +312,29 @@ function QuoteAcceptanceInner() {
         <div className="flex items-center gap-3 text-muted-foreground py-24 justify-center">
           <Loader2 className="h-5 w-5 animate-spin" />
           <span className="text-sm">Loading your quote…</span>
+        </div>
+      </Shell>
+    );
+  }
+
+  if (withdrawn) {
+    // Merchant-facing: say only that it was withdrawn. No reason exists, and
+    // nothing about pricing, cost or partners belongs here.
+    return (
+      <Shell>
+        <div className="mh-enter max-w-xl mx-auto py-16 text-center">
+          <Ban className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
+          <h1 className="font-bold text-3xl mb-3">This quote has been withdrawn.</h1>
+          <p className="text-muted-foreground text-sm">
+            MerchantHaus has withdrawn this quote, so it can no longer be accepted. If
+            you were expecting to sign it, reply to the email this link came from and
+            your MerchantHaus contact can send you a current quote.
+          </p>
+          {quote?.quote_number && (
+            <div className="mt-6 bg-muted border border-border rounded-lg px-4 py-3 inline-block text-left text-xs text-muted-foreground font-mono">
+              Quote {quote.quote_number}
+            </div>
+          )}
         </div>
       </Shell>
     );

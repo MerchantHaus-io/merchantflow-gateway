@@ -8,8 +8,12 @@
 //
 // Data: opportunities ← quotes (opportunity_id) ← quote_acceptance_summary
 // (latest acceptance per quote). When an opportunity has multiple quotes we
-// surface the most advanced one (accepted > sent > draft > rejected/expired),
-// tie-broken by most recent.
+// surface the most advanced one (accepted > sent > draft > rejected/expired >
+// void), tie-broken by most recent.
+//
+// A void quote (withdrawn; see migration 20261104120000) keeps its signed
+// acceptance row, so it can still carry a signatory — but it is never a
+// contract. `quote_acceptance_summary.is_void` is what decides that.
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
@@ -49,7 +53,8 @@ type QuoteState =
   | "sent"
   | "accepted"
   | "rejected"
-  | "expired";
+  | "expired"
+  | "void";
 
 const STATE_LABEL: Record<QuoteState, string> = {
   none: "No quote",
@@ -58,15 +63,17 @@ const STATE_LABEL: Record<QuoteState, string> = {
   accepted: "Accepted & Signed",
   rejected: "Rejected",
   expired: "Expired",
+  void: "Void",
 };
 
 // Higher = more advanced; used to pick the "primary" quote per opportunity.
 const STATE_RANK: Record<QuoteState, number> = {
-  accepted: 5,
-  sent: 4,
-  draft: 3,
-  rejected: 2,
-  expired: 1,
+  accepted: 6,
+  sent: 5,
+  draft: 4,
+  rejected: 3,
+  expired: 2,
+  void: 1,
   none: 0,
 };
 
@@ -77,6 +84,7 @@ const STATE_BADGE: Record<QuoteState, string> = {
   accepted: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30",
   rejected: "bg-destructive/10 text-destructive border border-destructive/30",
   expired: "bg-neutral-500/10 text-neutral-500 border border-neutral-500/30",
+  void: "bg-neutral-500/10 text-neutral-500 border border-dashed border-neutral-500/40 line-through decoration-neutral-500/60",
 };
 
 interface QuoteRow {
@@ -98,6 +106,8 @@ interface AcceptanceRow {
   signatory_name: string | null;
   signatory_title: string | null;
   accepted_at: string | null;
+  /** True for a void quote (migration 20261104120000). */
+  is_void?: boolean | null;
 }
 
 interface OppRow {
@@ -132,6 +142,7 @@ const normalizeState = (s: string | null | undefined): QuoteState => {
     case "accepted":
     case "rejected":
     case "expired":
+    case "void":
       return s;
     default:
       return "draft";
@@ -174,7 +185,7 @@ export default function QuotesContracts() {
           .not("opportunity_id", "is", null),
         supabase
           .from("quote_acceptance_summary")
-          .select("quote_id, signatory_name, signatory_title, accepted_at"),
+          .select("quote_id, signatory_name, signatory_title, accepted_at, is_void"),
       ]);
 
       if (oppRes.error) throw oppRes.error;
@@ -208,8 +219,14 @@ export default function QuotesContracts() {
             return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
           })[0];
 
-        const state: QuoteState = primary ? normalizeState(primary.status) : "none";
         const accept = primary ? acceptByQuote.get(primary.id) : undefined;
+        // The view's is_void wins over a stale status: a void quote is never
+        // "Accepted & Signed" and so never a contract.
+        const state: QuoteState = !primary
+          ? "none"
+          : accept?.is_void
+            ? "void"
+            : normalizeState(primary.status);
 
         return {
           oppId: o.id,
@@ -350,6 +367,7 @@ export default function QuotesContracts() {
                 <SelectItem value="accepted">Accepted &amp; Signed</SelectItem>
                 <SelectItem value="rejected">Rejected</SelectItem>
                 <SelectItem value="expired">Expired</SelectItem>
+                <SelectItem value="void">Void</SelectItem>
               </SelectContent>
             </Select>
             <Select value={ownerFilter} onValueChange={setOwnerFilter}>

@@ -46,6 +46,7 @@ import {
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { Building2, Loader2, Plus, Trash2, UserPlus, Users } from "lucide-react";
+import { countsAsLiveQuote } from "@/lib/quote-schema";
 
 type MemberRole = "owner" | "admin" | "member";
 
@@ -309,9 +310,11 @@ const Organisation = () => {
   };
 
   const quoteTotals = useMemo(() => {
-    const accepted = quotes.filter((q) => q.status === "accepted");
+    // Void (withdrawn) quotes stay in the list below but are not counted.
+    const live = quotes.filter((q) => countsAsLiveQuote(q.status));
+    const accepted = live.filter((q) => q.status === "accepted");
     const monthly = accepted.reduce((sum, q) => sum + Number(q.monthly_resale ?? 0), 0);
-    return { count: quotes.length, accepted: accepted.length, monthly };
+    return { count: live.length, accepted: accepted.length, monthly };
   }, [quotes]);
 
   if (loading) {

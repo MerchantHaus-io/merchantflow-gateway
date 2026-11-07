@@ -523,7 +523,30 @@ export interface AuditReport {
   missing: AuditRow[];
   /** Credits with no gateway month behind them. */
   orphans: AuditRow[];
+  /**
+   * Credits and gateway months left out because the merchant's accepted quote
+   * was voided and the month is at/after the void month. The DB stops those
+   * earnings (account_downstream_void_month); the audit must not flag them.
+   */
+  skippedAfterVoid: number;
 }
+
+/**
+ * True when `periodStart` falls in or after the account's void cut-off month.
+ * `voidMonths` maps account id → first stopped month (YYYY-MM-DD), exactly as
+ * `public.account_downstream_void_month()` returns it; an account absent from
+ * the map is live.
+ */
+export const isAfterVoid = (
+  accountId: string | null,
+  periodStart: string | null,
+  voidMonths: Map<string, string>,
+): boolean => {
+  if (!accountId || !periodStart) return false;
+  const cutoff = voidMonths.get(accountId);
+  if (!cutoff) return false;
+  return periodStart.slice(0, 10) >= cutoff.slice(0, 10);
+};
 
 const auditKey = (referrerId: string, accountId: string | null, periodStart: string | null) =>
   `${referrerId}|${accountId ?? ""}|${(periodStart ?? "").slice(0, 10)}`;
@@ -542,28 +565,44 @@ export const AUDIT_VERDICT_LABEL: Record<AuditVerdict, string> = {
  * `basisByReferrer` maps a referrer id to the gateway months belonging to the
  * merchants they referred. `caps` is the per-merchant monthly cap for each
  * partner; anything missing falls back to the programme default.
+ *
+ * `voidMonths` (account id → void cut-off month) comes from
+ * `account_downstream_void_month()`. Entries with ledger status `void`, and
+ * any credit or gateway month at/after an account's void month, are skipped:
+ * those earnings were stopped on purpose, not mis-credited.
  */
 export const auditCommissionLedger = (
   entries: AuditLedgerEntry[],
   basis: (AuditBasisRecord & { referrer_id: string })[],
   caps: Map<string, number> = new Map(),
+  voidMonths: Map<string, string> = new Map(),
 ): AuditReport => {
   const capFor = (referrerId: string) => {
     const c = caps.get(referrerId);
     return c === undefined ? DEFAULT_MONTHLY_CAP : num(c);
   };
 
+  let skippedAfterVoid = 0;
+  const liveBasis = basis.filter((b) => {
+    if (!isAfterVoid(b.account_id, b.period_start, voidMonths)) return true;
+    skippedAfterVoid += 1;
+    return false;
+  });
+
   const basisByKey = new Map<string, AuditBasisRecord & { referrer_id: string }>();
-  for (const b of basis) {
+  for (const b of liveBasis) {
     basisByKey.set(auditKey(b.referrer_id, b.account_id, b.period_start), b);
   }
 
   const rows: AuditRow[] = [];
   const seenKeys = new Set<string>();
 
-  const commissions = entries.filter(
-    (e) => e.entry_type === "commission" && e.status !== "void",
-  );
+  const commissions = entries.filter((e) => {
+    if (e.entry_type !== "commission" || e.status === "void") return false;
+    if (!isAfterVoid(e.account_id, e.period_start, voidMonths)) return true;
+    skippedAfterVoid += 1;
+    return false;
+  });
 
   for (const e of commissions) {
     const key = auditKey(e.referrer_id, e.account_id, e.period_start);
@@ -622,7 +661,7 @@ export const auditCommissionLedger = (
   }
 
   // Gateway months that were billed but never turned into a credit.
-  for (const b of basis) {
+  for (const b of liveBasis) {
     const key = auditKey(b.referrer_id, b.account_id, b.period_start);
     if (seenKeys.has(key)) continue;
     const txnCount = Math.max(0, num(b.transaction_count));
@@ -669,6 +708,7 @@ export const auditCommissionLedger = (
     exceptions: rows.filter((r) => r.verdict !== "match"),
     missing: rows.filter((r) => r.verdict === "missing"),
     orphans: rows.filter((r) => r.verdict === "orphan"),
+    skippedAfterVoid,
   };
 };
 
