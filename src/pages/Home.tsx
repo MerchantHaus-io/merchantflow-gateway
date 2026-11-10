@@ -9,7 +9,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useOperationsHome, type DealBucket, type DealRow, type QueueItem } from "@/hooks/useOperationsHome";
 import { Input } from "@/components/ui/input";
-import { EMAIL_TO_USER } from "@/types/opportunity";
+import { EMAIL_TO_USER, OUTCOME_CONFIG, resolveDisplayName, type OutcomeStatus } from "@/types/opportunity";
+import { pctChange, type BookMonth, type FunnelStats, type MerchantRow, type MerchantTrend, type RepActivity } from "@/lib/opsMetrics";
+import type { BookOfBusiness } from "@/hooks/useOperationsHome";
 import { type AttentionTone } from "@/lib/dealAttention";
 import { cn } from "@/lib/utils";
 import { SentEmailDialog } from "@/components/SentEmailDialog";
@@ -94,6 +96,15 @@ const TONE_ICON: Record<AttentionTone, typeof Clock> = {
 
 const money = (n: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+
+/** Cents matter while our monthly revenue is still small; drop them from $100. */
+const moneyFine = (n: number) =>
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: Math.abs(n) < 100 ? 2 : 0,
+    minimumFractionDigits: Math.abs(n) < 100 ? 2 : 0,
+  }).format(n);
 
 const compact = (n: number) =>
   new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(n);
@@ -253,6 +264,341 @@ function Tile({
         </span>
       )}
     </Link>
+  );
+}
+
+const monthLabel = (m: BookMonth | null) =>
+  m ? m.start.toLocaleDateString([], { month: "short", year: "numeric" }) : "—";
+
+/** "+12%" / "−40%" against the comparison month, or a plain caption. */
+function vsPrevious(current: number | undefined, previous: number | undefined, prevLabel: string) {
+  const pct = current != null && previous != null ? pctChange(current, previous) : null;
+  if (pct == null) return { delta: "no prior month", dir: "flat" as const };
+  const rounded = Math.round(pct);
+  return {
+    delta: `${rounded > 0 ? "+" : rounded < 0 ? "−" : ""}${Math.abs(rounded)}% vs ${prevLabel}`,
+    dir: rounded > 0 ? ("up" as const) : rounded < 0 ? ("down" as const) : ("flat" as const),
+  };
+}
+
+const TREND_LABEL: Record<MerchantTrend, string> = {
+  quiet: "Gone quiet",
+  down: "Volume down",
+  new: "New",
+  up: "Volume up",
+  steady: "Steady",
+};
+
+const TREND_CLASS: Record<MerchantTrend, string> = {
+  quiet: "text-primary border-primary/40 bg-primary/10",
+  down: "text-warning border-warning/40 bg-warning/10",
+  new: "text-success border-success/40 bg-success/10",
+  up: "text-success border-success/40 bg-success/10",
+  steady: "text-muted-foreground border-border bg-muted/40",
+};
+
+const shortDay = (iso: string) =>
+  new Date(iso).toLocaleDateString([], { day: "numeric", month: "short" });
+
+/**
+ * What the book actually did. Monthly totals are the freshest sync of each
+ * month; per-merchant rows are the latest complete *saved* period, labelled
+ * with its save date, because the sync does not save on its own.
+ */
+function BookSection({ book }: { book: BookOfBusiness }) {
+  const recent = book.months.slice(-6);
+  const maxVol = Math.max(1, ...recent.map((m) => m.volume));
+  const lastSync = book.months.reduce<string | null>(
+    (latest, m) => (!latest || m.syncedAt > latest ? m.syncedAt : latest),
+    null,
+  );
+  const stale = lastSync ? Date.now() - new Date(lastSync).getTime() > 7 * 86_400_000 : true;
+  const flagged = book.merchants.filter((m) => m.trend === "quiet" || m.trend === "down").length;
+
+  return (
+    <section className="mt-7">
+      <SectionHead
+        title="Book of business"
+        count={flagged || undefined}
+        note={lastSync ? `NMI sync ${shortDay(lastSync)}` : "Never synced"}
+        action="Commissions"
+        actionTo="/commissions"
+      />
+      {stale && !book.loading && (
+        <div className="mb-2 rounded-md border border-warning/45 bg-warning/10 px-3 py-2 text-[12px]">
+          <b className="font-semibold">These figures may be out of date.</b>{" "}
+          <span className="text-muted-foreground">
+            {lastSync ? `The last NMI sync ran ${shortDay(lastSync)}.` : "NMI has never been synced."} Run a sync from
+            Commissions to refresh them.
+          </span>
+        </div>
+      )}
+      {book.error ? (
+        <div className="rounded-lg border border-primary/45 bg-primary/10 px-3.5 py-2.5 text-[12.5px]">
+          <b className="font-semibold">The book didn't load.</b> <span className="text-muted-foreground">{book.error}</span>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)] gap-3">
+          {/* Monthly volume */}
+          <div className="rounded-lg border border-border/55 bg-card/60 p-3.5">
+            <div className="font-display text-[9.5px] uppercase tracking-[0.13em] text-muted-foreground mb-3">
+              Processing volume by month
+            </div>
+            {book.loading ? (
+              <div className="py-8 text-center text-sm text-muted-foreground">Loading…</div>
+            ) : recent.length === 0 ? (
+              <div className="py-8 text-center text-[12.5px] text-muted-foreground">No synced months yet.</div>
+            ) : (
+              <div className="space-y-1.5">
+                {recent.map((m) => (
+                  <div key={`${m.year}-${m.month}`} className="grid grid-cols-[64px_1fr_76px] items-center gap-2.5">
+                    <span className="font-display text-[10px] uppercase tracking-[0.06em] text-muted-foreground">
+                      {monthLabel(m)}
+                    </span>
+                    <span className="h-[9px] rounded-sm bg-muted overflow-hidden">
+                      <i
+                        className={cn("block h-full", m.complete ? "bg-foreground/45" : "bg-foreground/20")}
+                        style={{ width: `${(m.volume / maxVol) * 100}%` }}
+                      />
+                    </span>
+                    <span className="font-display text-[11px] text-right tabular-nums">
+                      {compact(m.volume)}
+                      {!m.complete && (
+                        <span className="block text-[8.5px] uppercase tracking-[0.06em] text-muted-foreground">
+                          {m === book.inProgress ? "to date" : "partial"}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                ))}
+                <p className="pt-1.5 text-[10.5px] text-muted-foreground">
+                  Faded bars are months whose last sync ran before the month ended.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Per merchant */}
+          <div className="rounded-lg border border-border/55 bg-card/60 overflow-x-auto">
+            <div className="flex items-center gap-2 px-3.5 pt-3 pb-2">
+              <span className="font-display text-[9.5px] uppercase tracking-[0.13em] text-muted-foreground">
+                By merchant
+              </span>
+              {book.merchantPeriod && (
+                <span className="text-[10.5px] text-muted-foreground ml-auto">
+                  {new Date(`${book.merchantPeriod.period_start}T12:00:00`).toLocaleDateString([], {
+                    month: "long",
+                    year: "numeric",
+                  })}
+                  {book.merchantPeriod.fetched_at && ` · saved ${shortDay(book.merchantPeriod.fetched_at)}`}
+                </span>
+              )}
+            </div>
+            {book.loading ? (
+              <div className="p-6 text-center text-sm text-muted-foreground">Loading…</div>
+            ) : book.merchants.length === 0 ? (
+              <div className="p-6 text-center text-[12.5px] text-muted-foreground">
+                No complete month has been saved yet. Sync a finished month with "save" on Commissions to see
+                per-merchant change.
+              </div>
+            ) : (
+              <table className="w-full text-sm min-w-[460px]">
+                <thead>
+                  <tr className="border-y border-border/50 text-left">
+                    {["Merchant", "Volume", "Txns", "Change", ""].map((h, i) => (
+                      <th
+                        key={i}
+                        className={cn(
+                          "font-display text-[9.5px] font-bold uppercase tracking-[0.12em] text-muted-foreground px-3.5 py-1.5",
+                          i > 0 && i < 4 && "text-right",
+                        )}
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {book.merchants.map((m: MerchantRow) => (
+                    <tr key={m.accountId ?? m.name} className="border-b border-border/50 last:border-0">
+                      <td className="px-3.5 py-2 text-[12.5px] font-medium max-w-[220px] truncate">
+                        {m.accountId ? (
+                          <Link to={`/live-billing/${m.accountId}`} className="hover:underline">{m.name}</Link>
+                        ) : (
+                          m.name
+                        )}
+                      </td>
+                      <td className="px-3.5 py-2 text-right font-display text-[12px] tabular-nums">{money(m.volume)}</td>
+                      <td className="px-3.5 py-2 text-right font-display text-[12px] tabular-nums">{m.transactions}</td>
+                      <td
+                        className={cn(
+                          "px-3.5 py-2 text-right font-display text-[11px] tabular-nums",
+                          m.change == null ? "text-muted-foreground" : m.change < 0 ? "text-primary" : "text-success",
+                        )}
+                      >
+                        {m.change == null ? "—" : `${m.change > 0 ? "+" : ""}${Math.round(m.change)}%`}
+                      </td>
+                      <td className="px-3.5 py-2 text-right">
+                        <span
+                          className={cn(
+                            "font-display text-[9px] uppercase tracking-[0.08em] border rounded px-1.5 py-px whitespace-nowrap",
+                            TREND_CLASS[m.trend],
+                          )}
+                        >
+                          {TREND_LABEL[m.trend]}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+const outcomeLabel = (outcome: string) =>
+  outcome === "no_outcome"
+    ? "No outcome recorded"
+    : (OUTCOME_CONFIG[outcome as OutcomeStatus]?.label ?? outcome.replace(/_/g, " "));
+
+const pct = (n: number | null) => (n == null ? "—" : `${Math.round(n * 100)}%`);
+
+/** Deals in, deals out, and why the lost ones died. */
+function FunnelSection({ funnel, ladder }: { funnel: FunnelStats; ladder: { stage: string; label: string; count: number; flagged: number }[] }) {
+  const maxReason = Math.max(1, ...funnel.lossReasons.map((r) => r.count));
+  const openStages = ladder.filter((l) => l.count > 0);
+  return (
+    <section>
+      <SectionHead title="Funnel" note={`Last ${funnel.windowDays} days`} action="Reports" actionTo="/reports" />
+      <div className="rounded-lg border border-border/55 bg-card/60">
+        <div className="grid grid-cols-4 divide-x divide-border/50 border-b border-border/50">
+          {[
+            ["Created", String(funnel.created)],
+            ["Won", String(funnel.won)],
+            ["Lost", String(funnel.lost)],
+            ["Win rate", pct(funnel.winRate)],
+          ].map(([label, value]) => (
+            <div key={label} className="px-3.5 py-3">
+              <div className="font-display text-[9.5px] uppercase tracking-[0.13em] text-muted-foreground">{label}</div>
+              <div className="font-display text-[20px] font-bold tabular-nums mt-1">{value}</div>
+            </div>
+          ))}
+        </div>
+        <div className="px-3.5 pt-3 pb-1 text-[11px] text-muted-foreground">
+          All time: {funnel.allTime.won} won of {funnel.allTime.decided} decided ({pct(funnel.allTime.winRate)}).
+        </div>
+
+        <div className="px-3.5 py-2.5">
+          <div className="font-display text-[9.5px] uppercase tracking-[0.13em] text-muted-foreground mb-2">
+            Why deals were lost
+          </div>
+          {funnel.lossReasons.length === 0 ? (
+            <div className="text-[12.5px] text-muted-foreground pb-1">No deals lost in this window.</div>
+          ) : (
+            <div className="space-y-1.5">
+              {funnel.lossReasons.map((r) => (
+                <div key={r.outcome} className="grid grid-cols-[150px_1fr_28px] items-center gap-2.5">
+                  <span className="text-[12px] truncate">{outcomeLabel(r.outcome)}</span>
+                  <span className="h-[7px] rounded-sm bg-muted overflow-hidden">
+                    <i className="block h-full bg-foreground/35" style={{ width: `${(r.count / maxReason) * 100}%` }} />
+                  </span>
+                  <span className="font-display text-[11px] text-right tabular-nums">{r.count}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="px-3.5 py-2.5 border-t border-border/50">
+          <div className="font-display text-[9.5px] uppercase tracking-[0.13em] text-muted-foreground mb-1.5">
+            Open now, by stage
+          </div>
+          {openStages.length === 0 ? (
+            <div className="text-[12.5px] text-muted-foreground">No open deals.</div>
+          ) : (
+            <div className="flex flex-wrap gap-1.5">
+              {openStages.map((l) => (
+                <Link
+                  key={l.stage}
+                  to={`/opportunities?stage=${l.stage}`}
+                  className={cn(
+                    "text-[11.5px] rounded border px-2 py-0.5 hover:bg-muted/50 transition-colors",
+                    l.flagged ? "border-primary/40 text-primary" : "border-border/60 text-muted-foreground",
+                  )}
+                >
+                  {l.label} <b className="tabular-nums">{l.count}</b>
+                  {l.flagged > 0 && ` · ${l.flagged} flagged`}
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/** Who did the work this week, by kind, against the week before. */
+function TeamSection({ team }: { team: RepActivity[] }) {
+  return (
+    <section>
+      <SectionHead title="Team activity" note="Last 7 days" />
+      <div className="rounded-lg border border-border/55 bg-card/60 overflow-x-auto">
+        {team.length === 0 ? (
+          <div className="p-6 text-center text-[12.5px] text-muted-foreground">
+            No emails, tasks, stage moves or notes logged in the last two weeks.
+          </div>
+        ) : (
+          <table className="w-full text-sm min-w-[420px]">
+            <thead>
+              <tr className="border-b border-border/50 text-left">
+                {["Rep", "Emails", "Tasks done", "Moves", "Notes", "Total"].map((h, i) => (
+                  <th
+                    key={h}
+                    className={cn(
+                      "font-display text-[9.5px] font-bold uppercase tracking-[0.12em] text-muted-foreground px-3 py-2",
+                      i > 0 && "text-right",
+                    )}
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {team.map((r) => {
+                const delta = r.thisWeekTotal - r.lastWeekTotal;
+                return (
+                  <tr key={r.actor} className="border-b border-border/50 last:border-0">
+                    <td className="px-3 py-2 text-[12.5px] font-medium truncate max-w-[160px]">{resolveDisplayName(r.actor)}</td>
+                    {(["emails", "tasks", "moves", "notes"] as const).map((k) => (
+                      <td key={k} className={cn("px-3 py-2 text-right font-display text-[12px] tabular-nums", !r.thisWeek[k] && "text-muted-foreground/50")}>
+                        {r.thisWeek[k]}
+                      </td>
+                    ))}
+                    <td className="px-3 py-2 text-right font-display text-[12px] tabular-nums">
+                      <b>{r.thisWeekTotal}</b>
+                      <span
+                        className={cn(
+                          "block text-[9.5px] font-normal",
+                          delta > 0 ? "text-success" : delta < 0 ? "text-primary" : "text-muted-foreground",
+                        )}
+                      >
+                        {delta === 0 ? "same as last wk" : `${delta > 0 ? "+" : "−"}${Math.abs(delta)} vs last wk`}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -453,47 +799,87 @@ export default function Home() {
   const [role, setRole] = useState<RoleView>(isAdmin ? "admin" : "sales");
   const [scope, setScope] = useState<"mine" | "all">("mine");
   const [viewEmailActivityId, setViewEmailActivityId] = useState<string | null>(null);
+  const [showAllActivity, setShowAllActivity] = useState(false);
 
-  const { loading, error, now, today, steady, ladder, counts, activity, deals } = useOperationsHome(
-    { email, name: displayName },
-    isAdmin && scope === "all",
-  );
-
-  const maxStage = useMemo(() => Math.max(1, ...ladder.map((l) => l.count)), [ladder]);
+  const {
+    loading, error, now, today, steady, ladder, counts, activity, deals,
+    book, liveMerchants, funnel, coverage, team,
+  } = useOperationsHome({ email, name: displayName }, isAdmin && scope === "all");
 
   const tiles = useMemo(() => {
-    const shared = [
-      { label: "Weighted pipeline", value: compact(counts.weightedPipeline), delta: "per month, est.", dir: "flat" as const, to: "/reports" },
-      { label: "Active deals", value: String(counts.activeDeals), delta: `${steady} steady`, dir: "flat" as const, to: "/pipeline" },
-      { label: "Stalled 14d+", value: String(counts.stalled), delta: counts.stalled ? "needs chasing" : "none", dir: counts.stalled ? ("down" as const) : ("flat" as const), to: "/pipeline", attn: counts.stalled > 0 },
-      { label: "Live merchants", value: String(counts.liveMerchants), delta: "in the book", dir: "flat" as const, to: "/live-billing" },
-    ];
+    const cur = book.current;
+    const prevLabel = monthLabel(book.previous);
+    const volumeDelta = vsPrevious(cur?.volume, book.previous?.volume, prevLabel);
+    const revenueDelta = vsPrevious(cur?.revenue, book.previous?.revenue, prevLabel);
+
+    const live = {
+      label: "Live merchants",
+      value: String(liveMerchants),
+      delta: cur ? `${cur.merchants} processed in ${monthLabel(cur)}` : "won accounts",
+      dir: "flat" as const,
+      to: "/live-billing",
+    };
+    const volume = {
+      label: cur ? `Volume · ${monthLabel(cur)}` : "Processing volume",
+      value: cur ? compact(cur.volume) : "—",
+      unit: cur ? ` · ${cur.transactions} txns` : undefined,
+      ...(cur ? volumeDelta : { delta: "no complete month synced", dir: "flat" as const }),
+      to: "/commissions",
+      attn: volumeDelta.dir === "down",
+    };
+    const revenue = {
+      label: cur ? `Our revenue · ${monthLabel(cur)}` : "Our revenue",
+      value: cur ? moneyFine(cur.revenue) : "—",
+      ...(cur ? { ...revenueDelta, delta: `residual + gateway · ${revenueDelta.delta}` } : { delta: "no complete month synced", dir: "flat" as const }),
+      to: "/commissions",
+    };
+    const winRate = {
+      label: `Win rate · ${funnel.windowDays}d`,
+      value: pct(funnel.winRate),
+      delta: `${funnel.won} won · ${funnel.lost} lost`,
+      dir: "flat" as const,
+      to: "/reports",
+    };
+    const activeDeals = {
+      label: "Active deals",
+      value: String(counts.activeDeals),
+      delta: counts.stalled ? `${counts.stalled} stalled 14d+` : `${steady} steady`,
+      dir: counts.stalled ? ("down" as const) : ("flat" as const),
+      to: "/pipeline",
+      attn: counts.stalled > 0,
+    };
+    const pipeline = {
+      label: "Weighted pipeline",
+      value: compact(counts.weightedPipeline),
+      unit: "/mo",
+      // The estimate needs a monthly volume; say how many deals carry one.
+      delta: `${coverage.valued} of ${coverage.total} deals have volume`,
+      dir: "flat" as const,
+      to: "/pipeline",
+    };
+    const tickets = {
+      label: "Open tickets",
+      value: String(counts.openTickets),
+      delta: counts.breachingTickets ? `${counts.breachingTickets} breaching SLA` : `${counts.unassignedTickets} unassigned`,
+      dir: counts.breachingTickets ? ("down" as const) : ("flat" as const),
+      to: "/support",
+      attn: counts.breachingTickets > 0,
+    };
 
     if (role === "support") {
       return [
-        { label: "Open tickets", value: String(counts.openTickets), delta: "unclosed", dir: "flat" as const, to: "/support" },
+        tickets,
         { label: "Breaching SLA", value: String(counts.breachingTickets), delta: counts.breachingTickets ? "past response budget" : "all inside SLA", dir: counts.breachingTickets ? ("down" as const) : ("flat" as const), to: "/support", attn: counts.breachingTickets > 0 },
-        { label: "Unassigned", value: String(counts.unassignedTickets), delta: "nobody owns these", dir: counts.unassignedTickets ? ("down" as const) : ("flat" as const), to: "/support" },
-        ...shared.slice(3),
+        { label: "Unassigned tickets", value: String(counts.unassignedTickets), delta: counts.unassignedTickets ? "nobody owns these" : "all owned", dir: counts.unassignedTickets ? ("down" as const) : ("flat" as const), to: "/support" },
+        live,
+        volume,
+        activeDeals,
       ];
     }
-
-    if (role === "admin") {
-      return [
-        ...shared.slice(0, 2),
-        { label: "Submissions unreviewed", value: String(counts.unreviewedSubmissions), delta: "from /merchant-apply", dir: counts.unreviewedSubmissions ? ("down" as const) : ("flat" as const), to: "/admin/web-submissions", attn: counts.unreviewedSubmissions > 0 },
-        { label: "Compliance queue", value: String(counts.openDeletionRequests), delta: "deletion requests", dir: counts.openDeletionRequests ? ("down" as const) : ("flat" as const), to: "/admin/deletion-requests", attn: counts.openDeletionRequests > 0 },
-        { label: "Open tickets", value: String(counts.openTickets), delta: `${counts.breachingTickets} breaching`, dir: "flat" as const, to: "/support" },
-        ...shared.slice(3),
-      ];
-    }
-
-    return [
-      ...shared,
-      { label: "Residual run-rate", value: "—", delta: "wire nmi_partner_residuals", dir: "flat" as const, to: "/commissions" },
-      { label: "Open tickets", value: String(counts.openTickets), delta: `${counts.unassignedTickets} unassigned`, dir: "flat" as const, to: "/support" },
-    ];
-  }, [role, counts, steady]);
+    if (role === "admin") return [volume, revenue, live, winRate, activeDeals, tickets];
+    if (role === "am") return [live, volume, revenue, tickets, winRate, activeDeals];
+    return [activeDeals, pipeline, winRate, live, volume, revenue];
+  }, [role, counts, steady, book, liveMerchants, funnel, coverage]);
 
   return (
     <AppLayout>
@@ -507,7 +893,8 @@ export default function Home() {
               {[
                 <><b className="text-foreground font-bold">{counts.activeDeals}</b> active deals</>,
                 <><b className={cn("font-bold", now.length ? "text-primary" : "text-foreground")}>{now.length}</b> need you now</>,
-                <><b className="text-foreground font-bold">{money(counts.weightedPipeline)}</b> weighted /mo</>,
+                <><b className="text-foreground font-bold">{liveMerchants}</b> live merchants</>,
+                <><b className="text-foreground font-bold">{book.current ? compact(book.current.volume) : "—"}</b> volume {book.current ? monthLabel(book.current) : ""}</>,
                 <><b className={cn("font-bold", counts.breachingTickets ? "text-warning" : "text-foreground")}>{counts.breachingTickets}</b> breaching SLA</>,
               ].map((f, i) => (
                 <span key={i} className="font-display text-[10px] uppercase tracking-[0.11em] text-muted-foreground flex items-center gap-2.5">
@@ -629,107 +1016,95 @@ export default function Home() {
           </div>
         </section>
 
-        <AllDeals deals={deals} loading={loading} />
-
-        {/* ── 2. Portfolio ───────────────────────────────────── */}
+        {/* ── 2. At a glance ─────────────────────────────────── */}
         <section className="mt-7">
-          <SectionHead title="Portfolio" note="Current" action="Reports" actionTo="/reports" />
+          <SectionHead title="At a glance" note={ROLE_LABEL[role]} />
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2.5">
             {tiles.map((t) => <Tile key={t.label} {...t} />)}
           </div>
         </section>
 
-        {/* ── 3. Pipeline + activity ─────────────────────────── */}
+        {/* ── 3. Book of business ────────────────────────────── */}
+        <BookSection book={book} />
+
+        {/* ── 4. Funnel + team ───────────────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-7 items-start">
+          <FunnelSection funnel={funnel} ladder={ladder} />
+          <TeamSection team={team} />
+        </div>
+
+        {/* ── 5. Latest activity + system ────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] gap-6 mt-7 items-start">
           <section>
-            <SectionHead title="Pipeline by stage" note={`${counts.activeDeals} deals`} />
-            <div className="rounded-lg border border-border/55 bg-card/60 py-1">
-              {ladder.map((bucket) => {
-                const pct = (bucket.count / maxStage) * 100;
-                const flagPct = bucket.count ? (bucket.flagged / bucket.count) * pct : 0;
-                return (
-                  <Link
-                    key={bucket.stage}
-                    to={`/opportunities?stage=${bucket.stage}`}
-                    className="grid grid-cols-[130px_1fr_40px_72px] items-center gap-3 px-3.5 h-[30px] hover:bg-muted/40 transition-colors"
-                  >
-                    <span className="font-display text-[9.5px] uppercase tracking-[0.07em] text-muted-foreground truncate">
-                      {bucket.label}
-                    </span>
-                    <span className="h-[7px] rounded-sm bg-muted overflow-hidden flex">
-                      <i className="block h-full bg-foreground/30" style={{ width: `${pct - flagPct}%` }} />
-                      <i className="block h-full bg-primary/85" style={{ width: `${flagPct}%` }} />
-                    </span>
-                    <span className="font-display text-xs text-right tabular-nums">{bucket.count}</span>
-                    <span className={cn("font-display text-[9.5px] uppercase tracking-[0.06em] text-right", bucket.flagged ? "text-primary" : "text-muted-foreground/40")}>
-                      {bucket.flagged ? `${bucket.flagged} flagged` : "—"}
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
-
-          <section>
-            <SectionHead title="Activity" note="Latest" />
+            <SectionHead title="Latest activity" note={showAllActivity ? "Last 10" : "Last 5"} />
             <div className="rounded-lg border border-border/55 bg-card/60">
               {activity.length === 0 ? (
                 <div className="p-6 text-center text-[12.5px] text-muted-foreground">No activity recorded yet.</div>
               ) : (
-                activity.map((a) => (
-                  <div key={a.id} className="grid grid-cols-[58px_1fr] gap-2.5 px-3.5 py-2 border-b border-border/50 last:border-0">
-                    <span
-                      className="font-display text-[10px] text-muted-foreground pt-0.5 leading-tight"
-                      title={new Date(a.at).toLocaleString([], { dateStyle: "full", timeStyle: "short" })}
-                    >
-                      <span className="block text-foreground/70">{activityDayLabel(a.at)}</span>
-                      {new Date(a.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </span>
-                    <span className="text-[12.5px] leading-snug text-muted-foreground">
-                      <b className="text-foreground font-semibold">{a.actor ?? "System"}</b>{" "}
-                      {a.description ?? a.type}
-                      <span className="font-display text-[9px] uppercase tracking-[0.08em] border border-border rounded px-1 py-px ml-1.5 whitespace-nowrap">
-                        {a.type}
+                <>
+                  {(showAllActivity ? activity : activity.slice(0, 5)).map((a) => (
+                    <div key={a.id} className="grid grid-cols-[58px_1fr] gap-2.5 px-3.5 py-2 border-b border-border/50 last:border-0">
+                      <span
+                        className="font-display text-[10px] text-muted-foreground pt-0.5 leading-tight"
+                        title={new Date(a.at).toLocaleString([], { dateStyle: "full", timeStyle: "short" })}
+                      >
+                        <span className="block text-foreground/70">{activityDayLabel(a.at)}</span>
+                        {new Date(a.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </span>
-                      {isViewableEmailActivity(a.type, a.description) && (
-                        <button
-                          type="button"
-                          onClick={() => setViewEmailActivityId(a.id)}
-                          className="ml-1.5 inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline whitespace-nowrap"
-                        >
-                          <Mail className="h-3 w-3" />
-                          View email
-                        </button>
-                      )}
-                    </span>
-                  </div>
-                ))
+                      <span className="text-[12.5px] leading-snug text-muted-foreground">
+                        <b className="text-foreground font-semibold">{a.actor ? resolveDisplayName(a.actor) : "System"}</b>{" "}
+                        {a.description ?? a.type.replace(/_/g, " ")}
+                        {isViewableEmailActivity(a.type, a.description) && (
+                          <button
+                            type="button"
+                            onClick={() => setViewEmailActivityId(a.id)}
+                            className="ml-1.5 inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline whitespace-nowrap"
+                          >
+                            <Mail className="h-3 w-3" />
+                            View email
+                          </button>
+                        )}
+                      </span>
+                    </div>
+                  ))}
+                  {activity.length > 5 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllActivity((v) => !v)}
+                      className="w-full px-3.5 py-2 text-xs text-muted-foreground hover:text-foreground text-left"
+                    >
+                      {showAllActivity ? "Show fewer" : `Show ${activity.length - 5} more`}
+                    </button>
+                  )}
+                </>
               )}
             </div>
+          </section>
 
-            <div className="mt-5">
-              <SectionHead title="System & compliance" action="Observability" actionTo="/admin/observability" />
-              <div className="rounded-lg border border-border/55 bg-card/60">
-                {[
-                  ["Submissions unreviewed", counts.unreviewedSubmissions, "/admin/web-submissions"],
-                  ["Deletion requests pending", counts.openDeletionRequests, "/admin/deletion-requests"],
-                  ["Tickets unassigned", counts.unassignedTickets, "/support"],
-                  ["Tickets breaching SLA", counts.breachingTickets, "/support"],
-                ].map(([label, n, to]) => (
-                  <Link key={String(label)} to={String(to)} className="grid grid-cols-[9px_1fr_auto] items-center gap-2.5 px-3.5 py-2.5 border-b border-border/50 last:border-0 hover:bg-muted/40 transition-colors">
-                    <span className={cn("h-[7px] w-[7px] rounded-full", Number(n) > 0 ? "bg-warning" : "bg-success")} />
-                    <span className="text-[12.5px]">{label}</span>
-                    <span className={cn("font-display text-[10.5px] tabular-nums", Number(n) > 0 ? "text-warning" : "text-muted-foreground")}>
-                      {Number(n) > 0 ? `${n} outstanding` : "Clear"}
-                    </span>
-                  </Link>
-                ))}
-              </div>
+          <section>
+            <SectionHead title="System & compliance" action="Observability" actionTo="/admin/observability" />
+            <div className="rounded-lg border border-border/55 bg-card/60">
+              {[
+                ["Submissions unreviewed", counts.unreviewedSubmissions, "/admin/web-submissions"],
+                ["Deletion requests pending", counts.openDeletionRequests, "/admin/deletion-requests"],
+                ["Tickets unassigned", counts.unassignedTickets, "/support"],
+                ["Tickets breaching SLA", counts.breachingTickets, "/support"],
+              ].map(([label, n, to]) => (
+                <Link key={String(label)} to={String(to)} className="grid grid-cols-[9px_1fr_auto] items-center gap-2.5 px-3.5 py-2.5 border-b border-border/50 last:border-0 hover:bg-muted/40 transition-colors">
+                  <span className={cn("h-[7px] w-[7px] rounded-full", Number(n) > 0 ? "bg-warning" : "bg-success")} />
+                  <span className="text-[12.5px]">{label}</span>
+                  <span className={cn("font-display text-[10.5px] tabular-nums", Number(n) > 0 ? "text-warning" : "text-muted-foreground")}>
+                    {Number(n) > 0 ? `${n} outstanding` : "Clear"}
+                  </span>
+                </Link>
+              ))}
             </div>
           </section>
         </div>
 
-        {/* ── 4. Jump to ─────────────────────────────────────── */}
+        <AllDeals deals={deals} loading={loading} />
+
+        {/* ── 6. Jump to ─────────────────────────────────────── */}
         <section className="mt-7">
           <SectionHead title="Jump to" note="29 surfaces" />
           <div className="rounded-lg border border-border/55 bg-card/60 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4">
