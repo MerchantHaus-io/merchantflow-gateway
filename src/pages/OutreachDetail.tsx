@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { GmailEditor } from "@/components/GmailEditor";
+import { CadenceWorkspace } from "@/components/outreach/CadenceWorkspace";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -474,8 +475,9 @@ export default function OutreachDetail() {
 
           {/* ── Tabs ── */}
           <div className="px-6 pt-5 pb-6">
-            <Tabs defaultValue="leads" className="space-y-4">
-              <TabsList className="h-9">
+            <Tabs defaultValue="execution" className="space-y-4">
+              <TabsList className="h-auto flex flex-wrap justify-start">
+                <TabsTrigger value="execution" className="text-xs gap-1.5"><UserCheck className="h-3.5 w-3.5" />12-touch execution</TabsTrigger>
                 <TabsTrigger value="leads" className="text-xs gap-1.5">
                   <Users className="h-3.5 w-3.5" />Lead List <span className="ml-1 opacity-60">({contacts.length})</span>
                 </TabsTrigger>
@@ -486,6 +488,10 @@ export default function OutreachDetail() {
                   <Clock className="h-3.5 w-3.5" />Activity Timeline
                 </TabsTrigger>
               </TabsList>
+
+              <TabsContent value="execution" className="mt-0">
+                <CadenceWorkspace campaignId={campaign.id} contacts={contacts} />
+              </TabsContent>
 
               {/* ══ LEADS TAB ══ */}
               <TabsContent value="leads" className="space-y-3 mt-0">

@@ -3,3 +3,5 @@
 - Keep database role migrations separate from app and edge-function consumer changes; retain legacy role uniqueness until old conflict targets are migrated, to avoid breaking deployed callers.
 - Store manual multichannel outreach in outreach_enrollments/outreach_touches, with cadence_active contacts excluded from legacy bulk email delivery; this prevents manual phone/LinkedIn steps from becoming automatic emails.
 - Resolve outreach assignees from active same-organisation memberships and role records, never sender fields supplied by the browser; this protects sender identity and tenant boundaries.
+- Keep outreach execution in dedicated campaign workspace and authenticated outreach functions; use per-assignee Google accounts, stable message IDs and conditional send claims so manual touches stay isolated from bulk delivery.
+- Ground per-contact outreach research in provider-cited company sources through server-only streamed Responses helpers; preserve edited drafts and persist access denials instead of retrying or switching providers.
