@@ -27,3 +27,8 @@
 - [x] Database only: all 22 existing roles tagged MerchantHaus; scoped helpers and restrictive role policies applied. Read-only integration checks pass.
 - [x] Audit: 80 current entrypoints, 76 privileged directly/transitively; complete evidence and fix batches in docs/tenancy/07-service-role-audit.md.
 - [ ] Separate app/function phase: update direct role consumers and bypass paths; intentionally deferred to a separate session under the agreed split.
+
+## Lead outreach upgrade (Nov 23 2026)
+- [x] Data-only phase: PDF-based 12-touch template, working-day scheduling, contact assignments, touch outcomes, research/draft storage, reply-stop and next-step notifications. Verified 17 live checks and duplicate-safe assigned-person reminder delivery; throwaway records removed; app build OK and lint 0 errors.
+- [ ] Separate app/function session (required by migration/client separation): team execution queue, CSV preview/import/enrolment, Quo call routing, assigned-person email preview/send and threading, reply webhook wiring and warm handoff to Darryn.
+- [ ] Separate app/function session: tenant-scoped AI research with cited evidence and editable per-contact messages; verify the complete flow signed in without sending unsolicited test outreach.

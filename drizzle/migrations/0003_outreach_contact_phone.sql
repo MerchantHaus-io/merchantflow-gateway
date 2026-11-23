@@ -1,0 +1,2 @@
+ALTER TABLE public.outreach_contacts ADD COLUMN IF NOT EXISTS phone text;
+COMMENT ON COLUMN public.outreach_contacts.phone IS 'Contact phone number for rep-initiated Quo calls; CSV import should normalize and validate before enrolment.';

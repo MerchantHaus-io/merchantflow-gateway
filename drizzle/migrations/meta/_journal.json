@@ -8,6 +8,27 @@
       "when": 1794014593192,
       "tag": "0000_tenant_scope_user_roles",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1795455614028,
+      "tag": "0001_outreach_twelve_touch_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795455670174,
+      "tag": "0002_outreach_stop_after_assignment_changes",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795455714910,
+      "tag": "0003_outreach_contact_phone",
+      "breakpoints": true
     }
   ]
 }

@@ -3408,6 +3408,7 @@ export type Database = {
           last_name: string | null
           last_step_sent_at: string | null
           opportunity_id: string | null
+          phone: string | null
           replied_at: string | null
           reply_snippet: string | null
           resend_message_id: string | null
@@ -3430,6 +3431,7 @@ export type Database = {
           last_name?: string | null
           last_step_sent_at?: string | null
           opportunity_id?: string | null
+          phone?: string | null
           replied_at?: string | null
           reply_snippet?: string | null
           resend_message_id?: string | null
@@ -3452,6 +3454,7 @@ export type Database = {
           last_name?: string | null
           last_step_sent_at?: string | null
           opportunity_id?: string | null
+          phone?: string | null
           replied_at?: string | null
           reply_snippet?: string | null
           resend_message_id?: string | null
@@ -3477,6 +3480,184 @@ export type Database = {
           },
           {
             foreignKeyName: "outreach_contacts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outreach_enrollments: {
+        Row: {
+          assigned_email: string
+          assigned_user_id: string
+          campaign_id: string
+          contact_id: string
+          contact_timezone: string
+          created_at: string
+          id: string
+          linkedin_url: string | null
+          research: Json
+          research_error: string | null
+          research_run_id: string | null
+          research_sources: Json
+          research_status: string
+          researched_at: string | null
+          start_on: string
+          status: string
+          tenant_id: string
+          updated_at: string
+          website_url: string | null
+        }
+        Insert: {
+          assigned_email: string
+          assigned_user_id: string
+          campaign_id: string
+          contact_id: string
+          contact_timezone?: string
+          created_at?: string
+          id?: string
+          linkedin_url?: string | null
+          research?: Json
+          research_error?: string | null
+          research_run_id?: string | null
+          research_sources?: Json
+          research_status?: string
+          researched_at?: string | null
+          start_on: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          website_url?: string | null
+        }
+        Update: {
+          assigned_email?: string
+          assigned_user_id?: string
+          campaign_id?: string
+          contact_id?: string
+          contact_timezone?: string
+          created_at?: string
+          id?: string
+          linkedin_url?: string | null
+          research?: Json
+          research_error?: string | null
+          research_run_id?: string | null
+          research_sources?: Json
+          research_status?: string
+          researched_at?: string | null
+          start_on?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_enrollments_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_enrollments_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: true
+            referencedRelation: "outreach_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_enrollments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outreach_touches: {
+        Row: {
+          channel: string
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          draft_text: string
+          due_at: string
+          enrollment_id: string
+          id: string
+          notes: string | null
+          notified_at: string | null
+          outcome: string | null
+          provider_message_id: string | null
+          provider_thread_id: string | null
+          reply_word_for_word: string | null
+          status: string
+          subject: string
+          tenant_id: string
+          thread_touch: number | null
+          title: string
+          touch_number: number
+          updated_at: string
+          working_day: number
+        }
+        Insert: {
+          channel: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          draft_text?: string
+          due_at: string
+          enrollment_id: string
+          id?: string
+          notes?: string | null
+          notified_at?: string | null
+          outcome?: string | null
+          provider_message_id?: string | null
+          provider_thread_id?: string | null
+          reply_word_for_word?: string | null
+          status?: string
+          subject?: string
+          tenant_id: string
+          thread_touch?: number | null
+          title: string
+          touch_number: number
+          updated_at?: string
+          working_day: number
+        }
+        Update: {
+          channel?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          draft_text?: string
+          due_at?: string
+          enrollment_id?: string
+          id?: string
+          notes?: string | null
+          notified_at?: string | null
+          outcome?: string | null
+          provider_message_id?: string | null
+          provider_thread_id?: string | null
+          reply_word_for_word?: string | null
+          status?: string
+          subject?: string
+          tenant_id?: string
+          thread_touch?: number | null
+          title?: string
+          touch_number?: number
+          updated_at?: string
+          working_day?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_touches_enrollment_id_tenant_id_fkey"
+            columns: ["enrollment_id", "tenant_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_enrollments"
+            referencedColumns: ["id", "tenant_id"]
+          },
+          {
+            foreignKeyName: "outreach_touches_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -6061,6 +6242,28 @@ export type Database = {
         Args: { p_doc_type: string; p_year: number }
         Returns: string
       }
+      outreach_due_at: {
+        Args: {
+          contact_zone?: string
+          day_number: number
+          start_on: string
+          touch_channel: string
+          touch_no?: number
+        }
+        Returns: string
+      }
+      outreach_notify_due: { Args: never; Returns: number }
+      outreach_touch_template: {
+        Args: never
+        Returns: {
+          channel: string
+          thread_touch: number
+          title: string
+          touch_number: number
+          working_day: number
+        }[]
+      }
+      outreach_working_day: { Args: { d: string }; Returns: boolean }
       partner_commission_rate: { Args: never; Returns: number }
       partner_share: {
         Args: { _cap?: number; _net: number; _rate?: number }
