@@ -1,4 +1,7 @@
 
+## Selected security fixes (Nov 23 2026)
+- [x] Restricted only the three selected billing-counter and file-read policies; five live regression checks pass, including real signed downloads for shared chat and merchant files plus anonymous helper denial. Finding statuses updated after verification.
+
 ## Affiliate programme (Sep 4 2026)
 - [x] Self-serve affiliate sign-up (pending admin approval)
 - [x] Referral credit ledger (commission, bonus, clawback, adjustments)

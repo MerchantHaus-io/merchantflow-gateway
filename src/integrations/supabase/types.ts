@@ -6261,6 +6261,8 @@ export type Database = {
           promoted: number
         }[]
       }
+      can_read_chat_attachment: { Args: { _name: string }; Returns: boolean }
+      can_read_merchant_file: { Args: { _name: string }; Returns: boolean }
       current_referrer_id: { Args: never; Returns: string }
       current_tenant_id: { Args: never; Returns: string }
       current_user_email: { Args: never; Returns: string }

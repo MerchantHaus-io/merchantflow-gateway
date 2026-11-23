@@ -36,6 +36,13 @@
       "when": 1795461282371,
       "tag": "0004_outreach_tami_contact_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1795462403193,
+      "tag": "0005_scope_selected_sequence_and_file_reads",
+      "breakpoints": true
     }
   ]
 }

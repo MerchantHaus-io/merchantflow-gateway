@@ -7,3 +7,4 @@
 - Ground per-contact outreach research in provider-cited company sources through server-only streamed Responses helpers; preserve edited drafts and persist access denials instead of retrying or switching providers.
 - Store imported business/address/alternate-phone context on outreach_contacts, separate from enrollment research; source labels and estimates must not become consent, verified facts or pipeline volume.
 - Share a whitelist-based outreach import normalizer between CSV review and enrollment functions; this keeps phone groups, URL safety and stored source context consistent without accepting browser-supplied status or tenancy fields.
+- Authorize shared file reads through invoker helpers and same-organisation parent records; retain uploader access for chat previews and participant checks for private messages, so sharing cannot bypass tenancy.
