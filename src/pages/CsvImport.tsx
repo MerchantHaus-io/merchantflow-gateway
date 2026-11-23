@@ -1,3 +1,4 @@
+import { parse } from 'csv-parse/browser/esm/sync';
 import { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -86,17 +87,14 @@ const CsvImport = () => {
   }, []);
 
   const parseCsv = (text: string) => {
-    const [headerLine, ...rows] = text
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter(Boolean);
-    if (!headerLine) return;
-
-    const parsedHeaders = headerLine.split(",").map((header) => header.trim());
+    let records: string[][];
+    try { records = parse(text, { bom: true, skip_empty_lines: true, trim: true, relax_column_count: true }); }
+    catch { toast.error("This CSV could not be read. Check that quoted values are closed."); return; }
+    const [parsedHeaders, ...rows] = records;
+    if (!parsedHeaders) return;
     setHeaders(parsedHeaders);
 
-    const entries: CsvEntry[] = rows.map((row, index) => {
-      const cells = row.split(",");
+    const entries: CsvEntry[] = rows.map((cells, index) => {
       const raw = parsedHeaders.reduce<Record<string, string>>((acc, header, idx) => {
         acc[header] = cells[idx]?.trim() || "";
         return acc;
