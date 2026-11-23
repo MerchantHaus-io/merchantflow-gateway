@@ -1,13 +1,14 @@
 import { z } from 'npm:zod@3';
 import { outreachSession, enrollmentFor, activeAssignee, OutreachError, json, corsHeaders, type OutreachSession } from '../_shared/outreach-session.ts';
 import { emailIssue, canSend, publicHttps, outreachWindow, manualOutcomeIssue } from '../_shared/outreach-policy.ts';
+import { normalizeImport } from '../_shared/outreach-import.ts';
 
 const uuid = z.string().uuid();
 const address = z.string().trim().email().max(254);
 const text = z.string().max(5000);
 const RequestSchema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('team') }),
-  z.object({ action: z.literal('enroll'), campaign_id: uuid, contact_id: uuid.optional(), assigned_user_id: uuid, start_on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), timezone: z.string().max(80), website: z.string().max(2048).optional(), linkedin: z.string().max(2048).optional(), contact: z.object({ email: address, first_name: z.string().max(100), last_name: z.string().max(100), company: z.string().max(200), phone: z.string().max(40) }).optional() }),
+  z.object({ action: z.literal('enroll'), campaign_id: uuid, contact_id: uuid.optional(), assigned_user_id: uuid, start_on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), timezone: z.string().max(80), website: z.string().max(2048).optional(), linkedin: z.string().max(2048).optional(), import_data: z.record(z.string().max(5000)).optional(), contact: z.object({ email: address, first_name: z.string().max(100), last_name: z.string().max(100), company: z.string().max(200), phone: z.string().max(40) }).optional() }),
   z.object({ action: z.literal('send'), enrollment_id: uuid, touch_id: uuid, subject: z.string().trim().min(1).max(200), draft_text: text }),
   z.object({ action: z.literal('check_replies'), enrollment_id: uuid }),
   z.object({ action: z.literal('complete'), enrollment_id: uuid, touch_id: uuid, outcome: z.enum(['no_answer', 'voicemail', 'connected', 'meeting_booked', 'positive', 'maybe', 'not_interested', 'replied']), notes: text, reply: text, provider_ref: z.string().max(200) }),
@@ -77,19 +78,23 @@ Deno.serve(async req => {
       if (!campaign) throw new OutreachError('Campaign not found', 404);
       const member = await activeAssignee(s, body.assigned_user_id);
       if ((body.website && !publicHttps(body.website)) || (body.linkedin && (!publicHttps(body.linkedin) || !/(^|\.)linkedin\.com$/.test(new URL(body.linkedin).hostname)))) throw new OutreachError('Use a public HTTPS website and LinkedIn profile');
+      try { new Intl.DateTimeFormat('en', { timeZone: body.timezone }); } catch { throw new OutreachError('Choose a valid contact timezone'); }
+      let imported: ReturnType<typeof normalizeImport> | undefined;
+      try { if (body.import_data) imported = normalizeImport(body.import_data); } catch (e) { throw new OutreachError(e instanceof Error ? e.message : 'Invalid imported contact'); }
+      if (imported && (imported.row.email !== body.contact?.email.toLowerCase() || imported.row.first_name.length > 100 || imported.row.last_name.length > 100 || imported.row.company.length > 200)) throw new OutreachError('Check the imported name, company and email');
       let contactId = body.contact_id;
       if (!contactId) {
         if (!body.contact) throw new OutreachError('Contact details are required');
         const { data: duplicate } = await s.db.from('outreach_contacts').select('id').eq('campaign_id', campaign.id).eq('tenant_id', s.tenant).ilike('email', body.contact.email).limit(1);
         contactId = duplicate?.[0]?.id;
         if (!contactId) {
-          const { data, error } = await s.db.from('outreach_contacts').insert({ ...body.contact, email: body.contact.email.toLowerCase(), campaign_id: campaign.id, tenant_id: s.tenant }).select('id').single(); check(error); contactId = data?.id;
+          const { data, error } = await s.db.from('outreach_contacts').insert({ ...body.contact, ...imported?.contact, email: body.contact.email.toLowerCase(), campaign_id: campaign.id, tenant_id: s.tenant }).select('id').single(); check(error); contactId = data?.id;
         }
       }
       if (!contactId) throw new OutreachError('Contact could not be saved');
       const { data: existing } = await s.db.from('outreach_enrollments').select('id').eq('contact_id', contactId).eq('tenant_id', s.tenant).maybeSingle();
       if (existing) return json({ enrollment_id: existing.id, existing: true });
-      const { data, error } = await s.db.from('outreach_enrollments').insert({ tenant_id: s.tenant, campaign_id: campaign.id, contact_id: contactId, assigned_user_id: member.user_id, assigned_email: member.email, start_on: body.start_on, contact_timezone: body.timezone, website_url: body.website || null, linkedin_url: body.linkedin || null }).select('id').single(); check(error);
+      const { data, error } = await s.db.from('outreach_enrollments').insert({ tenant_id: s.tenant, campaign_id: campaign.id, contact_id: contactId, assigned_user_id: member.user_id, assigned_email: member.email, start_on: body.start_on, contact_timezone: body.timezone, website_url: imported?.contact.website_url || body.website || null, linkedin_url: imported?.contact.linkedin_url || body.linkedin || null }).select('id').single(); check(error);
       return json({ enrollment_id: data?.id });
     }
     const { enrollment, contact } = await enrollmentFor(s, body.enrollment_id);

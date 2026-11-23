@@ -2,7 +2,7 @@
 
 ## Status — 23 November 2026
 
-Storage foundation applied in a database-only session. The mapping controls and importer have **not yet been updated**. The sample has 14 contacts and 161 columns; no sample contacts were imported or contacted. Continue in a separate app/function session under the project's database/client separation rule.
+Storage foundation applied in a database-only session; the separate app/function update now adds TAMI auto-mapping, grouped editable column selections and paginated expandable contact previews. Both campaign-header and execution CSV uploads route through the same review before enrollment. The sample has 14 contacts and 161 columns: 13 pass validation; row 11 has an invalid contact email and is reported as skipped. No sample contacts were imported or contacted.
 
 ## Mapping contract for the next app/function session
 
@@ -57,3 +57,9 @@ Storage foundation applied in a database-only session. The mapping controls and 
 ## Verification
 
 `python3 scripts/check-tami-storage.py` performs read-only live schema checks for each required field group, optional business context, safe empty phone-list defaults and unchanged enabled RLS. It imports no leads and sends no messages. This is storage verification, not an end-to-end import claim.
+
+- `npx vitest run src/lib/outreachImport.test.ts src/lib/outreachCadence.test.ts`: 26 passing tests, covering required fields, separate phone lists, placeholders, websites, LinkedIn, Windows timezones, editable mappings and untrusted context boundaries.
+- Supplied sample parsed without writing data: 13 valid, one invalid email, no timezone warnings; all three Windows labels converted to IANA zones.
+- Deployed `outreach-execute`; a real authenticated disposable enrollment persisted names, email, full address/state/ZIP, distinct phone groups, company links, source context and a Pacific timezone with exactly 12 pending touches. Temporary records were removed; no communication was delivered.
+- Browser upload/readback verification remains incomplete: initial update notice and page-loading waits blocked early attempts, then the file-upload action timed out before opening the review. Stopped the upload walkthrough after three attempts. A separate queue-readback attempt also timed out waiting for the campaign heading. No desktop/mobile review screenshot or full UI end-to-end success is claimed.
+- Preview compilation reports build OK; lint: zero errors, 323 inherited warnings. Deno check passed with `--node-modules-dir=auto`; the default resolver initially failed on the existing SDK CORS subpath. Mechanical design detector returned no findings. Manual application build/typecheck was not run because the platform runs these checks automatically.

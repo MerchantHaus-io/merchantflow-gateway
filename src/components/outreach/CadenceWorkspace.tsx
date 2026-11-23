@@ -12,8 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
+import { CsvContactReview } from './CsvContactReview';
 import { Mail, Phone, Linkedin, Upload, UserPlus, Search, RefreshCw, ArrowRight, Pause, Play, Check, SkipForward, CalendarClock, Sparkles, ExternalLink, Send, Square, AlertCircle } from 'lucide-react';
-import { CSV_FIELDS, guessMapping, previewCsv, readCsv, nextTouch, ctDate, ctInputToUtc, emailIssue, type CsvField } from '@/lib/outreachCadence';
+import { guessMapping, previewCsv, readCsv, nextTouch, ctDate, ctInputToUtc, emailIssue, type CsvField } from '@/lib/outreachCadence';
 import { toast } from 'sonner';
 
 type Contact = Tables<'outreach_contacts'>;
@@ -36,7 +38,7 @@ function TeamSelect({ team, value, onChange }: { team: Team[]; value: string; on
   return <Select value={value} onValueChange={onChange}><SelectTrigger aria-label="Assigned teammate"><SelectValue placeholder="Choose teammate" /></SelectTrigger><SelectContent>{team.map(m => <SelectItem key={m.user_id} value={m.user_id}>{m.name}</SelectItem>)}</SelectContent></Select>;
 }
 
-export function CadenceWorkspace({ campaignId, contacts }: { campaignId: string; contacts: Contact[] }) {
+export function CadenceWorkspace({ campaignId, contacts, importFile, onImportFileRead }: { campaignId: string; contacts: Contact[]; importFile?: File | null; onImportFileRead?: (file: File | null) => void }) {
   const { user } = useAuth();
   const client = useQueryClient();
   const upload = useRef<HTMLInputElement>(null);
@@ -48,6 +50,22 @@ export function CadenceWorkspace({ campaignId, contacts }: { campaignId: string;
   const [csv, setCsv] = useState<ReturnType<typeof readCsv> | null>(null);
   const [mapping, setMapping] = useState<Record<CsvField, string>>(guessMapping([]));
   const [busy, setBusy] = useState(false); const [importReport, setImportReport] = useState<string[]>([]);
+  const [defaultReviewed, setDefaultReviewed] = useState(false);
+  const [progress, setProgress] = useState('');
+  const [importedEmails, setImportedEmails] = useState<string[]>([]);
+  useEffect(() => {
+    if (!importFile) return;
+    let active = true;
+    (async () => {
+      try {
+        if (importFile.size > 2 * 1024 * 1024) throw new Error('CSV must be smaller than 2 MB');
+        const parsed = readCsv(await importFile.text());
+        if (active) { setCsv(parsed); setMapping(guessMapping(parsed.headers)); setImportReport([]); setDefaultReviewed(false); setImportedEmails([]); }
+      } catch (e) { if (active) toast.error(e instanceof Error ? e.message : 'CSV could not be read'); }
+      finally { if (active) onImportFileRead?.(null); }
+    })();
+    return () => { active = false; };
+  }, [importFile, onImportFileRead]);
   const teamQuery = useQuery({ queryKey: ['outreach-team', campaignId], queryFn: async () => (await execute({ action: 'team' })).team as Team[], staleTime: 60000 });
   const team = teamQuery.data || [];
   useEffect(() => { if (!assignee && team.length) setAssignee(team.find(m => m.user_id === user?.id)?.user_id || team[0].user_id); }, [team, user?.id, assignee]);
@@ -71,7 +89,7 @@ export function CadenceWorkspace({ campaignId, contacts }: { campaignId: string;
     return [r.c?.email, r.c?.company, r.c?.first_name, r.e.assigned_email].some(v => v?.toLowerCase().includes(search.toLowerCase()));
   }).sort((a, b) => (a.next?.due_at || '').localeCompare(b.next?.due_at || ''));
   const current = rows.find(r => r.e.id === selected);
-  const preview = useMemo(() => csv ? previewCsv(csv.headers, csv.rows, mapping, contacts.map(c => c.email)) : null, [csv, mapping, contacts]);
+  const preview = useMemo(() => csv ? previewCsv(csv.headers, csv.rows, mapping, [...contacts.map(c => c.email), ...importedEmails]) : null, [csv, mapping, contacts, importedEmails]);
   const available = contacts.filter(c => !enrollments.some(e => e.contact_id === c.id) && !['replied', 'opted_out', 'bounced', 'converted'].includes(c.status));
   async function enroll() {
     setBusy(true);
@@ -81,18 +99,24 @@ export function CadenceWorkspace({ campaignId, contacts }: { campaignId: string;
     } catch (e) { toast.error(e instanceof Error ? e.message : 'Enrolment failed'); } finally { setBusy(false); }
   }
   async function importContacts() {
-    if (!preview) return;
-    setBusy(true); const report: string[] = []; let count = 0;
+    if (!preview || busy || (preview.warnings.length && !defaultReviewed)) return;
+    setBusy(true); const report: string[] = []; const imported: string[] = []; let count = 0;
+    let processed = 0;
     // Serial bounded batches preserve per-row results; retries never silently send contact emails.
     for (const row of preview.accepted) {
+      setProgress(`Processing ${++processed} of ${preview.accepted.length}`);
       const owner = row.assignee ? team.find(m => m.email.toLowerCase() === row.assignee.toLowerCase() || m.name.toLowerCase() === row.assignee.toLowerCase())?.user_id : assignee;
       if (!owner) { report.push(`${row.email}: unknown assignee`); continue; }
       try {
-        await execute({ action: 'enroll', campaign_id: campaignId, assigned_user_id: owner, start_on: startOn, timezone: row.timezone || timezone, website: row.website, linkedin: row.linkedin, contact: { email: row.email, first_name: row.first_name, last_name: row.last_name, company: row.company, phone: row.phone } }); count++;
+        const result = await execute({ action: 'enroll', campaign_id: campaignId, assigned_user_id: owner, start_on: startOn, timezone: row.timezone || timezone, website: row.website, linkedin: row.linkedin, import_data: row, contact: { email: row.email, first_name: row.first_name, last_name: row.last_name, company: row.company, phone: row.phone } });
+        imported.push(row.email); if (result.existing) report.push(`${row.email}: already enrolled`); else count++;
       } catch (e) { report.push(`${row.email}: ${e instanceof Error ? e.message : 'Failed'}`); }
     }
     setImportReport([`${count} enrolled; ${report.length + preview.issues.length} skipped`, ...preview.issues, ...report]);
-    await refresh(); setBusy(false); toast.success(`${count} contacts enrolled`);
+    setImportedEmails(previous => [...previous, ...imported]);
+    try { await refresh(); setFilter('all'); if (count) toast.success(`${count} contacts enrolled`); else toast.info('No new contacts enrolled — review the import results'); }
+    catch { toast.error('Contacts saved; refresh the list to see the latest results'); }
+    finally { setBusy(false); setProgress(''); }
   }
   return <section className="space-y-5">
     <div className="flex flex-wrap gap-x-8 gap-y-3 border-b border-border pb-4">
@@ -113,7 +137,7 @@ export function CadenceWorkspace({ campaignId, contacts }: { campaignId: string;
       <Button onClick={() => setAddOpen(true)} disabled={!team.length}><UserPlus className="h-4 w-4" />Enrol contact</Button>
       <input ref={upload} type="file" accept=".csv,text/csv" className="hidden" aria-label="Upload cadence CSV" onChange={async e => {
         const file = e.target.files?.[0]; if (!file) return;
-        try { if (file.size > 2 * 1024 * 1024) throw new Error('CSV must be smaller than 2 MB'); const parsed = readCsv(await file.text()); setCsv(parsed); setMapping(guessMapping(parsed.headers)); } catch (e) { toast.error(e instanceof Error ? e.message : 'CSV could not be read'); }
+        try { if (file.size > 2 * 1024 * 1024) throw new Error('CSV must be smaller than 2 MB'); const parsed = readCsv(await file.text()); setCsv(parsed); setMapping(guessMapping(parsed.headers)); setDefaultReviewed(false); setImportedEmails([]); } catch (e) { toast.error(e instanceof Error ? e.message : 'CSV could not be read'); }
         if (upload.current) upload.current.value = '';
       }} />
     </div>
@@ -130,12 +154,13 @@ export function CadenceWorkspace({ campaignId, contacts }: { campaignId: string;
       <div className="grid grid-cols-2 gap-3"><div><Label htmlFor="cadence-start">Start date · Cape Town</Label><Input id="cadence-start" type="date" value={startOn} onChange={e => setStartOn(e.target.value)} /></div><div><Label>Contact timezone</Label><Select value={timezone} onValueChange={setTimezone}><SelectTrigger aria-label="Contact timezone"><SelectValue /></SelectTrigger><SelectContent>{['America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles'].map(z => <SelectItem value={z} key={z}>{z.split('/')[1].replace('_', ' ')}</SelectItem>)}</SelectContent></Select></div></div>
       <Button onClick={enroll} loading={busy} disabled={!assignee || !startOn || (existing === 'new' && !form.email)}>Enrol in 12-touch cadence</Button>
     </DialogContent></Dialog>
-    <Dialog open={!!csv} onOpenChange={v => { if (!busy && !v) setCsv(null); }}><DialogContent className="sm:max-w-4xl max-h-[90dvh] overflow-y-auto"><DialogHeader><DialogTitle>CSV import review</DialogTitle><DialogDescription>{csv?.rows.length} rows · {preview?.accepted.length} valid · {preview?.issues.length} skipped</DialogDescription></DialogHeader>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">{CSV_FIELDS.map(f => <div key={f}><Label>{f.replace(/_/g, ' ')}</Label><Select value={mapping[f] || '__none'} onValueChange={v => setMapping({ ...mapping, [f]: v === '__none' ? '' : v })}><SelectTrigger aria-label={`Map ${f}`}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="__none">Not supplied</SelectItem>{csv?.headers.map((h, i) => <SelectItem key={i} value={h}>{h}</SelectItem>)}</SelectContent></Select></div>)}</div>
-      <div className="grid sm:grid-cols-3 gap-3"><div><Label>Default assignee</Label><TeamSelect team={team} value={assignee} onChange={setAssignee} /></div><div><Label htmlFor="csv-start">Start date · Cape Town</Label><Input id="csv-start" type="date" value={startOn} onChange={e => setStartOn(e.target.value)} /></div><div><Label>Default timezone</Label><Select value={timezone} onValueChange={setTimezone}><SelectTrigger aria-label="Default contact timezone"><SelectValue /></SelectTrigger><SelectContent>{['America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles'].map(z => <SelectItem key={z} value={z}>{z.split('/')[1]}</SelectItem>)}</SelectContent></Select></div></div>
-      <div className="overflow-x-auto max-h-56 border-y border-border"><Table><TableHeader><TableRow><TableHead>Email</TableHead><TableHead>Company</TableHead><TableHead>Phone</TableHead><TableHead>Assignee</TableHead></TableRow></TableHeader><TableBody>{preview?.accepted.slice(0, 10).map(r => <TableRow key={r.email}><TableCell className="text-xs">{r.email}</TableCell><TableCell className="text-xs">{r.company}</TableCell><TableCell className="text-xs">{r.phone}</TableCell><TableCell className="text-xs">{r.assignee || team.find(t => t.user_id === assignee)?.name}</TableCell></TableRow>)}</TableBody></Table></div>
+    <Dialog open={!!csv} onOpenChange={v => { if (!busy && !v) setCsv(null); }}><DialogContent className="sm:max-w-4xl max-h-[90dvh] overflow-y-auto [overflow-wrap:anywhere]" onEscapeKeyDown={e => { if (busy) e.preventDefault(); }} onPointerDownOutside={e => { if (busy) e.preventDefault(); }}><DialogHeader><DialogTitle>CSV import review</DialogTitle><DialogDescription>{csv?.rows.length} rows · {preview?.accepted.length} ready · {preview?.issues.length} skipped</DialogDescription></DialogHeader>
+      {csv && <CsvContactReview headers={csv.headers} mapping={mapping} onMapping={value => { setMapping(value); setDefaultReviewed(false); }} contacts={preview?.accepted || []} busy={busy} />}
+      <fieldset disabled={busy} className="grid min-w-0 gap-3 sm:grid-cols-3"><div className="min-w-0"><Label>Default assignee</Label><TeamSelect team={team} value={assignee} onChange={setAssignee} /></div><div className="min-w-0"><Label htmlFor="csv-start">Start date · Cape Town</Label><Input id="csv-start" type="date" value={startOn} onChange={e => setStartOn(e.target.value)} /></div><div className="min-w-0"><Label>Default timezone</Label><Select disabled={busy} value={timezone} onValueChange={value => { setTimezone(value); setDefaultReviewed(false); }}><SelectTrigger aria-label="Default contact timezone"><SelectValue /></SelectTrigger><SelectContent>{['America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles'].map(z => <SelectItem key={z} value={z}>{z.split('/')[1]}</SelectItem>)}</SelectContent></Select></div></fieldset>
+      {!!preview?.warnings.length && <div className="space-y-2 border-y border-border py-3"><div className="max-h-28 overflow-auto text-sm text-muted-foreground">{preview.warnings.map(w => <p key={w}>{w}</p>)}</div><div className="flex items-start gap-2"><Checkbox id="csv-default-reviewed" disabled={busy} checked={defaultReviewed} onCheckedChange={v => setDefaultReviewed(v === true)} /><Label htmlFor="csv-default-reviewed">Use {timezone} for these contacts</Label></div></div>}
       {!!(importReport.length || preview?.issues.length) && <div role="status" className="text-xs text-muted-foreground max-h-28 overflow-auto">{(importReport.length ? importReport : preview?.issues || []).map((r, i) => <p key={i}>{r}</p>)}</div>}
-      <div className="flex justify-end gap-2"><Button variant="outline" disabled={busy} onClick={() => setCsv(null)}>Done</Button><Button loading={busy} disabled={!preview?.accepted.length || !assignee} onClick={importContacts}><Upload className="h-4 w-4" />Import and enrol {preview?.accepted.length || 0}</Button></div>
+      {progress && <p role="status" className="text-sm text-muted-foreground">{progress}</p>}
+      <div className="flex flex-wrap justify-end gap-2"><Button variant="outline" disabled={busy} onClick={() => setCsv(null)}>Done</Button><Button loading={busy} disabled={busy || !preview?.accepted.length || !assignee || !startOn || (!!preview?.warnings.length && !defaultReviewed)} onClick={importContacts}><Upload className="h-4 w-4" />Import and enrol {preview?.accepted.length || 0}</Button></div>
     </DialogContent></Dialog>
     <Sheet open={!!selected} onOpenChange={v => { if (!v) setSelected(null); }}><SheetContent className="z-[60] w-full sm:max-w-2xl overflow-y-auto pb-32"><SheetHeader><SheetTitle className="pr-8 break-words">{current?.c?.company || current?.c?.email || 'Contact cadence'}</SheetTitle><SheetDescription className="break-words">{current?.c?.email} · {current?.e.status}</SheetDescription></SheetHeader>{current && <ContactCadence key={current.e.id} enrollment={current.e} contact={current.c} touches={current.steps} team={team} userId={user?.id} refresh={refresh} />}</SheetContent></Sheet>
   </section>;

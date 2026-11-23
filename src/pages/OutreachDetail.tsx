@@ -110,6 +110,8 @@ export default function OutreachDetail() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [activeTab, setActiveTab] = useState('execution');
 
   const [sending, setSending]             = useState(false);
   const [previewOpen, setPreviewOpen]     = useState(false);
@@ -212,50 +214,8 @@ export default function OutreachDetail() {
   const handleCsv = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !id) return;
-    const text = await file.text();
-    const lines = text.split("\n").filter(l => l.trim());
-    if (lines.length < 2) { toast.error("CSV must have a header row and data"); return; }
-
-    const rawHeaders = lines[0].split(",").map(h => h.trim().replace(/['"]/g, "").toLowerCase());
-
-    // Flexible header matching for: Last, First Name, Email, Phone Number
-    const findIdx = (...keys: string[]) => rawHeaders.findIndex(h => keys.some(k => h.includes(k)));
-    const emailIdx   = findIdx("email");
-    const firstIdx   = findIdx("first");
-    const lastIdx    = findIdx("last");
-    const phoneIdx   = findIdx("phone");
-    const companyIdx = findIdx("company", "business", "dba");
-
-    if (emailIdx === -1) { toast.error("CSV must have an 'email' column"); return; }
-
-    const rows = lines.slice(1)
-      .map(line => {
-        // Handle quoted CSV values
-        const cols = line.match(/(".*?"|[^,]+|(?<=,)(?=,))/g)?.map(c => c.replace(/^"|"$/g, "").trim()) || line.split(",").map(c => c.trim().replace(/^"|"$/g, ""));
-        return {
-          campaign_id: id,
-          email:      cols[emailIdx] || "",
-          first_name: firstIdx  >= 0 ? (cols[firstIdx]  || null) : null,
-          last_name:  lastIdx   >= 0 ? (cols[lastIdx]   || null) : null,
-          phone:      phoneIdx  >= 0 ? (cols[phoneIdx]  || null) : null,
-          company:    companyIdx >= 0 ? (cols[companyIdx] || null) : null,
-        };
-      })
-      .filter(r => r.email && r.email.includes("@"));
-
-    if (rows.length === 0) { toast.error("No valid email addresses found"); return; }
-
-    const { error } = await supabase.from("outreach_contacts").insert(rows);
-    if (error) { toast.error((await import('@/lib/friendly-errors')).getFriendlyError(error)); return; }
-
-    await supabase.from("outreach_campaigns")
-      .update({ total_contacts: (campaign?.total_contacts || 0) + rows.length })
-      .eq("id", id);
-
-    queryClient.invalidateQueries({ queryKey: ["outreach-contacts", id] });
-    queryClient.invalidateQueries({ queryKey: ["outreach-campaign", id] });
-    queryClient.invalidateQueries({ queryKey: ["outreach-campaigns"] });
-    toast.success(`${rows.length} leads imported to list`);
+    setImportFile(file);
+    setActiveTab('execution');
     if (fileRef.current) fileRef.current.value = "";
   };
 
@@ -475,7 +435,7 @@ export default function OutreachDetail() {
 
           {/* ── Tabs ── */}
           <div className="px-6 pt-5 pb-6">
-            <Tabs defaultValue="execution" className="space-y-4">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
               <TabsList className="h-auto flex flex-wrap justify-start">
                 <TabsTrigger value="execution" className="text-xs gap-1.5"><UserCheck className="h-3.5 w-3.5" />12-touch execution</TabsTrigger>
                 <TabsTrigger value="leads" className="text-xs gap-1.5">
@@ -490,7 +450,7 @@ export default function OutreachDetail() {
               </TabsList>
 
               <TabsContent value="execution" className="mt-0">
-                <CadenceWorkspace campaignId={campaign.id} contacts={contacts} />
+                <CadenceWorkspace campaignId={campaign.id} contacts={contacts} importFile={importFile} onImportFileRead={setImportFile} />
               </TabsContent>
 
               {/* ══ LEADS TAB ══ */}
