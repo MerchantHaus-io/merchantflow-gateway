@@ -3395,73 +3395,157 @@ export type Database = {
       }
       outreach_contacts: {
         Row: {
+          address_city: string | null
+          address_country: string | null
+          address_country_code: string | null
+          address_state: string | null
+          address_state_code: string | null
+          address_street: string | null
+          address_zip: string | null
           bounce_reason: string | null
           bounced_at: string | null
           campaign_id: string
           company: string | null
+          company_description: string | null
+          company_phone_numbers: string[]
+          company_primary_phone: string | null
+          contact_phone_numbers: string[]
           converted_at: string | null
           created_at: string
           current_step: number
+          direct_phone: string | null
           email: string
+          email_quality: string | null
+          employee_count: string | null
+          employee_range: string | null
+          estimated_online_turnover: string | null
           first_name: string | null
           id: string
+          industry: string | null
+          job_title: string | null
           last_name: string | null
           last_step_sent_at: string | null
+          linkedin_url: string | null
+          mobile_phone: string | null
           opportunity_id: string | null
+          payment_providers: string | null
           phone: string | null
           replied_at: string | null
           reply_snippet: string | null
+          reported_turnover: string | null
           resend_message_id: string | null
           sent_at: string | null
+          source_company_id: string | null
+          source_contact_id: string | null
+          source_system: string | null
           status: string
+          sub_industry: string | null
           tenant_id: string
           updated_at: string
+          website_technology: string | null
+          website_url: string | null
         }
         Insert: {
+          address_city?: string | null
+          address_country?: string | null
+          address_country_code?: string | null
+          address_state?: string | null
+          address_state_code?: string | null
+          address_street?: string | null
+          address_zip?: string | null
           bounce_reason?: string | null
           bounced_at?: string | null
           campaign_id: string
           company?: string | null
+          company_description?: string | null
+          company_phone_numbers?: string[]
+          company_primary_phone?: string | null
+          contact_phone_numbers?: string[]
           converted_at?: string | null
           created_at?: string
           current_step?: number
+          direct_phone?: string | null
           email: string
+          email_quality?: string | null
+          employee_count?: string | null
+          employee_range?: string | null
+          estimated_online_turnover?: string | null
           first_name?: string | null
           id?: string
+          industry?: string | null
+          job_title?: string | null
           last_name?: string | null
           last_step_sent_at?: string | null
+          linkedin_url?: string | null
+          mobile_phone?: string | null
           opportunity_id?: string | null
+          payment_providers?: string | null
           phone?: string | null
           replied_at?: string | null
           reply_snippet?: string | null
+          reported_turnover?: string | null
           resend_message_id?: string | null
           sent_at?: string | null
+          source_company_id?: string | null
+          source_contact_id?: string | null
+          source_system?: string | null
           status?: string
+          sub_industry?: string | null
           tenant_id?: string
           updated_at?: string
+          website_technology?: string | null
+          website_url?: string | null
         }
         Update: {
+          address_city?: string | null
+          address_country?: string | null
+          address_country_code?: string | null
+          address_state?: string | null
+          address_state_code?: string | null
+          address_street?: string | null
+          address_zip?: string | null
           bounce_reason?: string | null
           bounced_at?: string | null
           campaign_id?: string
           company?: string | null
+          company_description?: string | null
+          company_phone_numbers?: string[]
+          company_primary_phone?: string | null
+          contact_phone_numbers?: string[]
           converted_at?: string | null
           created_at?: string
           current_step?: number
+          direct_phone?: string | null
           email?: string
+          email_quality?: string | null
+          employee_count?: string | null
+          employee_range?: string | null
+          estimated_online_turnover?: string | null
           first_name?: string | null
           id?: string
+          industry?: string | null
+          job_title?: string | null
           last_name?: string | null
           last_step_sent_at?: string | null
+          linkedin_url?: string | null
+          mobile_phone?: string | null
           opportunity_id?: string | null
+          payment_providers?: string | null
           phone?: string | null
           replied_at?: string | null
           reply_snippet?: string | null
+          reported_turnover?: string | null
           resend_message_id?: string | null
           sent_at?: string | null
+          source_company_id?: string | null
+          source_contact_id?: string | null
+          source_system?: string | null
           status?: string
+          sub_industry?: string | null
           tenant_id?: string
           updated_at?: string
+          website_technology?: string | null
+          website_url?: string | null
         }
         Relationships: [
           {

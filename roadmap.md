@@ -29,6 +29,8 @@
 - [ ] Separate app/function phase: update direct role consumers and bypass paths; intentionally deferred to a separate session under the agreed split.
 
 ## Lead outreach upgrade (Nov 23 2026)
+- [x] TAMI storage foundation: separate address/state, phone groups, links and business/source context added without changing existing access rules. No leads imported.
+- [ ] TAMI CSV mapping in separate app/function session: implement docs/tami-lead-import.md, expanded review, cleaned phone lists, HTTPS domains, Windows timezone conversion and persistence; database/client separation prevents combining this with the storage migration.
 - [x] Execution workspace: manual enrolment, CSV column mapping/preview/duplicate report, Mine/Team queue, ordered touch history and editable drafts. Signed-in walkthrough enrolled three disposable contacts, completed touch 1, saved email preview; all test records removed. Mobile queue has no page overflow.
 - [x] AI: server-scoped streamed Responses research and twelve drafts, provider-cited company sources, cancellation and edit preservation. Live company test reached ready with five sources, ten new drafts plus two preserved edits; no contact delivery.
 - [ ] Email delivery and automatic reply wiring: per-assignee Gmail identity/thread/send claims implemented; live reply check is blocked by expired Google connection. Assignee must reconnect; no email was sent. Automatic reply webhook/sync wiring remains pending; manual checks and pre-send thread checks exist.

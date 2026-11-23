@@ -5,3 +5,4 @@
 - Resolve outreach assignees from active same-organisation memberships and role records, never sender fields supplied by the browser; this protects sender identity and tenant boundaries.
 - Keep outreach execution in dedicated campaign workspace and authenticated outreach functions; use per-assignee Google accounts, stable message IDs and conditional send claims so manual touches stay isolated from bulk delivery.
 - Ground per-contact outreach research in provider-cited company sources through server-only streamed Responses helpers; preserve edited drafts and persist access denials instead of retrying or switching providers.
+- Store imported business/address/alternate-phone context on outreach_contacts, separate from enrollment research; source labels and estimates must not become consent, verified facts or pipeline volume.
