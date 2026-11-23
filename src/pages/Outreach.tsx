@@ -26,6 +26,9 @@ import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { readCsv, guessMapping, previewCsv } from "@/lib/outreachCadence";
+
+type CsvLead = { email: string; first_name: string | null; last_name: string | null; company: string | null; phone: string | null; website_url: string | null; linkedin_url: string | null; job_title: string | null };
 
 const STATUS_CFG: Record<string, { label: string; pill: string; dot: string }> = {
   draft:     { label: "Draft",     pill: "bg-muted text-muted-foreground border-transparent",                           dot: "bg-muted-foreground" },
@@ -135,7 +138,7 @@ export default function Outreach() {
   const [previewStepIdx, setPreviewStepIdx] = useState(0);
 
   // CSV target list state
-  const [csvLeads, setCsvLeads] = useState<Array<{ email: string; first_name: string | null; last_name: string | null; company: string | null }>>([]);
+  const [csvLeads, setCsvLeads] = useState<CsvLead[]>([]);
   const [csvFileName, setCsvFileName] = useState("");
 
   // Auto-populate branded signature when dialog opens
@@ -168,25 +171,16 @@ export default function Outreach() {
     const file = e.target.files?.[0];
     if (!file) return;
     setCsvFileName(file.name);
-    const text = await file.text();
-    const lines = text.split("\n").filter(l => l.trim());
-    if (lines.length < 2) { toast.error("CSV needs a header and data rows"); return; }
-    const rawHeaders = lines[0].split(",").map(h => h.trim().replace(/['"]/g, "").toLowerCase());
-    const findIdx = (...keys: string[]) => rawHeaders.findIndex(h => keys.some(k => h.includes(k)));
-    const emailIdx = findIdx("email");
-    const firstIdx = findIdx("first");
-    const lastIdx = findIdx("last");
-    const companyIdx = findIdx("company", "business", "dba");
-    if (emailIdx === -1) { toast.error("CSV must have an 'email' column"); return; }
-    const rows = lines.slice(1).map(line => {
-      const cols = line.split(",").map(c => c.replace(/^[\s"]+|[\s"]+$/g, ""));
-      return {
-        email: cols[emailIdx] || "",
-        first_name: firstIdx >= 0 ? (cols[firstIdx] || null) : null,
-        last_name: lastIdx >= 0 ? (cols[lastIdx] || null) : null,
-        company: companyIdx >= 0 ? (cols[companyIdx] || null) : null,
-      };
-    }).filter(r => r.email && r.email.includes("@"));
+    let rows: CsvLead[] = [];
+    try {
+      const { headers, rows: records } = readCsv(await file.text());
+      const map = guessMapping(headers);
+      if (!map.email) { toast.error("CSV must have an email column"); return; }
+      const { accepted, issues } = previewCsv(headers, records, map, []);
+      const orNull = (v: string) => v || null;
+      rows = accepted.map(c => ({ email: c.email, first_name: orNull(c.first_name), last_name: orNull(c.last_name), company: orNull(c.company), phone: orNull(c.phone), website_url: orNull(c.website), linkedin_url: orNull(c.linkedin), job_title: orNull(c.job_title) }));
+      if (issues.length) toast.warning(`${issues.length} row(s) skipped: ${issues.slice(0, 3).join("; ")}`);
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Could not read CSV"); return; }
     if (rows.length === 0) { toast.error("No valid email addresses found"); return; }
     setCsvLeads(rows);
     toast.success(`${rows.length} leads parsed from CSV`);
@@ -398,7 +392,7 @@ export default function Outreach() {
                        <p className="text-[10px] font-bold text-primary uppercase tracking-wide">CSV Format</p>
                        <p className="text-[10px] text-muted-foreground">Your CSV should include headers:</p>
                        <code className="block text-[10px] font-mono text-foreground bg-background/80 rounded p-1.5 border border-border/50 leading-relaxed">
-                         First Name, Last Name,<br/>Email, Phone, Company
+                         First Name, Last Name, Company,<br/>Website, Phone, Email,<br/>Job Title, LinkedIn URL
                        </code>
                      </div>
                    </div>
@@ -530,13 +524,17 @@ export default function Outreach() {
                          )}
                        </div>
                        {csvLeads.length > 0 && (
-                         <div className="max-h-32 overflow-y-auto rounded border border-border/40 bg-background/50">
+                         <div className="max-h-48 overflow-auto rounded border border-border/40 bg-background/50">
                            <Table>
                              <TableHeader>
                                <TableRow className="border-border/40">
                                  <TableHead className="h-7 text-[10px]">Name</TableHead>
                                  <TableHead className="h-7 text-[10px]">Email</TableHead>
                                  <TableHead className="h-7 text-[10px]">Company</TableHead>
+                                 <TableHead className="h-7 text-[10px]">Title</TableHead>
+                                 <TableHead className="h-7 text-[10px]">Phone</TableHead>
+                                 <TableHead className="h-7 text-[10px]">Website</TableHead>
+                                 <TableHead className="h-7 text-[10px]">LinkedIn</TableHead>
                                </TableRow>
                              </TableHeader>
                              <TableBody>
@@ -545,16 +543,20 @@ export default function Outreach() {
                                    <TableCell className="py-1 text-xs">{[l.first_name, l.last_name].filter(Boolean).join(" ") || "—"}</TableCell>
                                    <TableCell className="py-1 text-xs text-muted-foreground">{l.email}</TableCell>
                                    <TableCell className="py-1 text-xs text-muted-foreground">{l.company || "—"}</TableCell>
+                                   <TableCell className="py-1 text-xs text-muted-foreground">{l.job_title || "—"}</TableCell>
+                                   <TableCell className="py-1 text-xs text-muted-foreground whitespace-nowrap">{l.phone || "—"}</TableCell>
+                                   <TableCell className="py-1 text-xs text-muted-foreground break-all">{l.website_url?.replace(/^https:\/\/|\/$/g, "") || "—"}</TableCell>
+                                   <TableCell className="py-1 text-xs text-muted-foreground">{l.linkedin_url ? "Yes" : "—"}</TableCell>
                                  </TableRow>
                                ))}
                                {csvLeads.length > 10 && (
-                                 <TableRow><TableCell colSpan={3} className="py-1 text-xs text-muted-foreground text-center">+ {csvLeads.length - 10} more</TableCell></TableRow>
+                                 <TableRow><TableCell colSpan={7} className="py-1 text-xs text-muted-foreground text-center">+ {csvLeads.length - 10} more</TableCell></TableRow>
                                )}
                              </TableBody>
                            </Table>
                          </div>
                        )}
-                       <p className="text-[10px] text-muted-foreground">CSV headers: email, first_name, last_name, company. You can also add leads later.</p>
+                       <p className="text-[10px] text-muted-foreground">TAMI exports are matched automatically: name, company, website, phone, email, job title and LinkedIn. You can also add leads later.</p>
                      </div>
 
                       {/* ── Phase: Compose → "Next: Review" button ── */}
