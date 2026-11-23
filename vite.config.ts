@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
-  plugins: [react(), mcpPlugin(), mode === "development" && componentTagger()].filter(Boolean),
+  plugins: [react(), mcpPlugin(), ...(mode === "development" ? [componentTagger()] : [])],
 
   resolve: {
     alias: {

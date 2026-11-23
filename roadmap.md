@@ -1,6 +1,8 @@
 
 ## Selected security fixes (Nov 23 2026)
 - [x] Restricted only the three selected billing-counter and file-read policies; five live regression checks pass, including real signed downloads for shared chat and merchant files plus anonymous helper denial. Finding statuses updated after verification.
+- [x] Follow-up source sweep: reviewed chat/notices, document previews/downloads/uploads, boarding/application conversion, billing archives/number allocation, AI document tools, Gmail attachment sync, backups and retention jobs; preview dependency mismatch repaired without changing permissions or settled records.
+- [ ] Additional access work requires user approval under the three-finding scope: billing archive path coverage, long-lived existing attachment links, privileged AI/statement/classification reads, numbering permission checks and organisation scoping in integration/maintenance jobs. These paths were read, not run or changed.
 
 ## Affiliate programme (Sep 4 2026)
 - [x] Self-serve affiliate sign-up (pending admin approval)
