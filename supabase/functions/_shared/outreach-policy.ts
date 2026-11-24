@@ -39,3 +39,28 @@ export function publicHttps(value: string): string | null {
     return u.href;
   } catch { return null; }
 }
+/**
+ * Logic 2026-11-24.2, rule 26. A thin website (the model returned no facts) still
+ * gets honest drafts, flagged so the rep adds a detail. Facts the model DID claim
+ * but that could not be verified against the company site are a different case:
+ * the drafts may lean on unverified claims, so nothing is saved.
+ */
+export function researchPersonalisation(modelFactCount: number, verifiedFactCount: number, summary: string): { error: string } | { personalisation: 'low' | 'normal'; summary: string } {
+  if (modelFactCount > 0 && verifiedFactCount === 0) return { error: 'The AI’s company facts could not be verified against the company website; no drafts were saved' };
+  if (modelFactCount > 0) return { personalisation: 'normal', summary };
+  const flagged = /low personali[sz]ation/i.test(summary) ? summary : `Low personalisation: rep should add a detail. ${summary}`.trim();
+  return { personalisation: 'low', summary: flagged };
+}
+
+export interface StoredAiDraft { subject: string; text: string }
+/**
+ * The previous AI output for one touch, as stored in research.ai_drafts. A re-run may
+ * refresh a pending draft only when BOTH its subject and text still equal this, so any
+ * rep edit (subject-only included) is preserved. Legacy string entries carry no subject
+ * and are never refreshed.
+ */
+export function storedAiDraft(entry: unknown): StoredAiDraft | null {
+  if (!entry || typeof entry !== 'object') return null;
+  const { subject, text } = entry as Record<string, unknown>;
+  return typeof subject === 'string' && typeof text === 'string' && text ? { subject, text } : null;
+}
