@@ -33,6 +33,8 @@ export interface StreamResearchOptions {
 
 export interface StreamResearchResult {
   saved: number;
+  /** 'low' when the site gave nothing citable (logic rule 26); drafts need a rep-added detail. */
+  personalisation?: 'low' | 'normal';
 }
 
 const toStatus = (status: unknown, fallback: number): ResearchStatus => {
@@ -78,6 +80,7 @@ export async function streamResearch(enrollmentId: string, { signal, onProgress 
   let buffer = '';
   const decoder = new TextDecoder();
   let saved: number | null = null;
+  let personalisation: StreamResearchResult['personalisation'];
   while (true) {
     const read = await reader.read();
     if (read.done) break;
@@ -91,11 +94,11 @@ export async function streamResearch(enrollmentId: string, { signal, onProgress 
       if (item.type === 'denied') throw new ResearchError(item.message, 'denied');
       if (item.type === 'error') throw new ResearchError(item.message, toStatus(item.status, 500));
       if (item.type === 'progress') onProgress?.(item.message);
-      if (item.type === 'done') saved = typeof item.saved === 'number' ? item.saved : 0;
+      if (item.type === 'done') { saved = typeof item.saved === 'number' ? item.saved : 0; if (item.personalisation === 'low' || item.personalisation === 'normal') personalisation = item.personalisation; }
     }
   }
   if (saved === null) throw new ResearchError('Research did not finish; no messages were sent', 500);
-  return { saved };
+  return { saved, personalisation };
 }
 
 export interface ResearchBatchOptions {
@@ -106,7 +109,7 @@ export interface ResearchBatchOptions {
 }
 
 export interface ResearchBatchResult {
-  done: { id: string; saved: number }[];
+  done: { id: string; saved: number; personalisation?: 'low' | 'normal' }[];
   failed: { id: string; message: string }[];
   skipped: { id: string; reason: string }[];
   /** Eligible enrollments not processed (cap reached or batch stopped). */
@@ -138,9 +141,9 @@ export async function researchBatch(enrollments: ResearchEnrollment[], { run = s
     if (signal?.aborted) { result.stoppedReason = 'aborted'; break; }
     onItem?.({ id: enrollment.id, outcome: 'running' });
     try {
-      const { saved } = await run(enrollment.id, { signal });
+      const { saved, personalisation } = await run(enrollment.id, { signal });
       processed += 1;
-      result.done.push({ id: enrollment.id, saved });
+      result.done.push({ id: enrollment.id, saved, personalisation });
       onItem?.({ id: enrollment.id, outcome: 'done', saved });
     } catch (e) {
       if (isAbort(e) || signal?.aborted) { result.stoppedReason = 'aborted'; break; }

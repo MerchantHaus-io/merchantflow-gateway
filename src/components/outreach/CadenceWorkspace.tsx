@@ -141,7 +141,8 @@ export function CadenceWorkspace({ campaignId, contacts, importFile, onImportFil
     setBulkStatus(`Researching 1 of ${total}`);
     try {
       const result = await researchBatch(list, { limit: BULK_RESEARCH_LIMIT, signal: controller.signal, onItem: event => { if (event.outcome === 'running') setBulkStatus(`Researching ${++started} of ${total} · ${names.get(event.id) || 'contact'}`); } });
-      const summary = `${result.done.length} researched · ${result.failed.length} failed · ${result.skipped.length} skipped · ${result.remaining} remaining`;
+      const low = result.done.filter(d => d.personalisation === 'low').length;
+      const summary = `${result.done.length} researched${low ? ` (${low} low personalisation: add a detail before sending)` : ''} · ${result.failed.length} failed · ${result.skipped.length} skipped · ${result.remaining} remaining`;
       const firstFailure = result.failed[0] ? `${names.get(result.failed[0].id) || 'Contact'}: ${result.failed[0].message}` : '';
       const description = [summary, firstFailure].filter(Boolean).join('\n');
       if (result.stoppedReason === 'denied') toast.error(`Research stopped: ${result.stoppedMessage || 'AI provider denied the request'}`, { description });
@@ -275,8 +276,10 @@ function ContactCadence({ enrollment, contact, touches, team, userId, refresh }:
   async function ai() {
     abort.current = new AbortController(); setAiStatus('Researching company…'); setBusy(true);
     try {
-      const { saved } = await streamResearch(enrollment.id, { signal: abort.current.signal, onProgress: setAiStatus });
-      toast.success(`${saved} drafts saved; existing edits preserved`);
+      const { saved, personalisation } = await streamResearch(enrollment.id, { signal: abort.current.signal, onProgress: setAiStatus });
+      if (personalisation === 'low') toast.warning(`${saved} drafts saved with low personalisation`, { description: 'The website gave nothing specific to cite. Add a detail to each email before sending.' });
+      else if (saved === 0) toast.info('No drafts changed', { description: 'Every draft has been edited or completed; your edits were preserved.' });
+      else toast.success(`${saved} drafts saved; existing edits preserved`);
     } catch (e) { if (e instanceof Error && e.name === 'AbortError') toast.info('Research stopped'); else toast.error(e instanceof Error ? e.message : 'Research failed'); }
     finally { setAiStatus(''); setBusy(false); abort.current = null; await refresh(); }
   }
