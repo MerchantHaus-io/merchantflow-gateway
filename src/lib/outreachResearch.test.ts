@@ -142,7 +142,10 @@ describe('outreach-prompt (swap point)', () => {
     expect(text).toMatch(/no long dashes/);
     expect(text).toMatch(/touches 4 and 10: contribute a useful observation/);
     expect(text).toMatch(/Touch 7 \(a DM if connected/);
-    expect(text).toMatch(/do not repeat the original pitch or meeting ask/);
+    expect(text).toMatch(/touch 11 asks who the right person is/);
+    expect(text).toMatch(/Neither should repeat the original pitch or meeting ask/);
+    expect(text).toMatch(/a supplied post, or otherwise their company's public work/);
+    expect(text).toMatch(/In comments \(touches 4 and 10\), only suggest moving to a direct message/);
     expect(text).toMatch(/Humour is optional/);
     expect(text).toMatch(/Never invent a pain point/);
     expect(text).toMatch(/promise a trial/);
@@ -150,6 +153,11 @@ describe('outreach-prompt (swap point)', () => {
 
   it('suggests no prices, rates or figures the email policy would reject', () => {
     expect(text).not.toMatch(/[$€£]|\d+(?:\.\d+)?\s*%/);
+    // The compliance line legitimately says "no pricing/rates"; the voice rules
+    // themselves must not use any word emailIssue rejects.
+    const voice = text.slice(text.indexOf('VOICE:'), text.indexOf('Use the assigned sender'));
+    expect(voice.length).toBeGreaterThan(0);
+    expect(voice).not.toMatch(/\b(?:pricing|wholesale|markup|partner cost|basis points)\b/i);
   });
 
   it('includes the host and sender name', () => {
