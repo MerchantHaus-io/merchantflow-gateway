@@ -148,3 +148,15 @@ treatment that 2D-5 removed from `/scoping` is still present, verbatim, on
 `src/pages/QuickScope.tsx:191`
 **Why not fixed:** explicitly out of scope for 2D-5 (Scoping.tsx only)
 **Severity:** real
+
+## 24 Nov 2026 — outreach suppressions (drizzle 0006)
+
+**What:** `anon` and `authenticated` hold TRUNCATE (and the rest of the default
+table rights) on `public.outreach_enrollments` in production via the default
+ACLs in `public`. 0001 only GRANTs SELECT/INSERT/UPDATE/DELETE and never
+REVOKEs, so the defaults stand. TRUNCATE is not subject to RLS, so any
+signed-in user (and anon) can wipe every tenant's enrolments. `outreach_touches`
+was created the same way in 0001 and is likely in the same state (not checked).
+**Where:** `drizzle/migrations/0001_outreach_twelve_touch_foundation.sql` (outreach_enrollments / outreach_touches grants)
+**Why not fixed:** outside the 0006 item; needs its own migration (REVOKE ALL then re-GRANT)
+**Severity:** real

@@ -43,6 +43,13 @@
       "when": 1795462403193,
       "tag": "0005_scope_selected_sequence_and_file_reads",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795483499688,
+      "tag": "0006_outreach_suppressions",
+      "breakpoints": true
     }
   ]
 }
