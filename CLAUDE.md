@@ -138,8 +138,8 @@ back after editing them.
 | Check | Current state | As of |
 |---|---|---|
 | `npx tsc --noEmit -p tsconfig.app.json` | silent | 4 Sep 2026 |
-| `npm run lint` | **0 errors**, 325 warnings | 4 Sep 2026 |
-| `npx vitest run` | 230 passing, 18 files | 4 Sep 2026 |
+| `npm run lint` | **0 errors**, 323 warnings | 24 Nov 2026 |
+| `npx vitest run` | 413 passing, 33 files | 24 Nov 2026 |
 | `npm run build` | succeeds; chunk-size warnings are expected | 4 Sep 2026 |
 
 A rise in the lint **error** count is a regression. Inherited warnings are not.
@@ -162,6 +162,10 @@ every test passes. Re-dated 4 Sep 2026 at 230 / 18: 211 / 18 was the measured
 baseline before the affiliate programme-basis work, which added 19 tests to
 `src/lib/affiliatePayouts.test.ts`. The warning count moved 330 -> 325 on
 unrelated commits; `npx eslint` on the changed files reports zero.
+
+Re-dated 24 Nov 2026 at 413 / 33 and 323 warnings: the outreach cadence revamp
+(PR #142, the AI logic work after it) added the outreach queue, activity,
+analytics, research and draft-check test files. Every test passes.
 
 **The error row went to 1 and back to 0, and the reason is worth keeping.**
 `src/integrations/supabase/previewAuthStorage.ts:38` tripped `prefer-const`

@@ -3,7 +3,7 @@ import { Output } from 'npm:ai@6';
 import { createResponsesCall } from '../_shared/outreach-responses.ts';
 import { getLovableAiGatewayResponseHeaders } from '../_shared/outreach-run-id.ts';
 import { outreachSession, enrollmentFor, activeAssignee, OutreachError, json, corsHeaders } from '../_shared/outreach-session.ts';
-import { publicHttps, emailIssue, citationUrl, withoutCitations, researchPersonalisation } from '../_shared/outreach-policy.ts';
+import { publicHttps, emailIssue, citationUrl, withoutCitations, researchPersonalisation, storedAiDraft, type StoredAiDraft } from '../_shared/outreach-policy.ts';
 import { OUTREACH_AI_LOGIC_VERSION, buildResearchInstructions, buildResearchInput } from '../_shared/outreach-prompt.ts';
 
 const inputSchema = z.object({ enrollment_id: z.string().uuid() });
@@ -62,23 +62,36 @@ Deno.serve(async req => {
             const touch = touches?.find(t => t.touch_number === draft.touch_number);
             if (touch?.channel === 'email') { const issue = emailIssue(draft.subject, draft.text); if (issue) throw new OutreachError(`Touch ${draft.touch_number}: ${issue}`, 422); }
           }
-          // Do not silently overwrite drafts the teammate has already edited. A draft that is
-          // still exactly the previous AI output (unedited) may be refreshed by a re-run.
-          const previous = ((enrollment.research as { ai_drafts?: Record<string, string> } | null)?.ai_drafts) || {};
-          const aiDrafts: Record<string, string> = {};
+          // Do not silently overwrite drafts the teammate has already edited. A draft whose
+          // subject AND text still equal the previous AI output (unedited) may be refreshed.
+          // `stored` tracks what AI text each row actually holds, so it is persisted even if
+          // a write fails partway; otherwise refreshed rows would look rep-edited forever.
+          const priorResearch = (enrollment.research || {}) as Record<string, unknown>;
+          const previous = (priorResearch.ai_drafts || {}) as Record<string, unknown>;
+          const stored: Record<string, unknown> = { ...previous };
           let saved = 0;
-          for (const draft of result.drafts) {
-            aiDrafts[String(draft.touch_number)] = draft.text;
-            const target = () => s.db.from('outreach_touches').update({ subject: draft.subject, draft_text: draft.text }).eq('tenant_id', s.tenant).eq('enrollment_id', enrollment.id).eq('touch_number', draft.touch_number).eq('status', 'pending');
-            const { data, error: writeError } = await target().eq('draft_text', '').select('id');
-            if (writeError) throw new OutreachError(writeError.message); saved += data?.length || 0;
-            const prior = previous[String(draft.touch_number)];
-            if (!data?.length && prior) {
-              const { data: refreshed, error: refreshError } = await target().eq('draft_text', prior).select('id');
-              if (refreshError) throw new OutreachError(refreshError.message); saved += refreshed?.length || 0;
+          try {
+            for (const draft of result.drafts) {
+              const key = String(draft.touch_number);
+              const fresh: StoredAiDraft = { subject: draft.subject, text: draft.text };
+              const target = () => s.db.from('outreach_touches').update({ subject: draft.subject, draft_text: draft.text }).eq('tenant_id', s.tenant).eq('enrollment_id', enrollment.id).eq('touch_number', draft.touch_number).eq('status', 'pending');
+              const { data, error: writeError } = await target().eq('draft_text', '').select('id');
+              if (writeError) throw new OutreachError(writeError.message);
+              let written = data?.length || 0;
+              const prior = storedAiDraft(previous[key]);
+              if (!written && prior) {
+                const { data: refreshed, error: refreshError } = await target().eq('draft_text', prior.text).eq('subject', prior.subject).select('id');
+                if (refreshError) throw new OutreachError(refreshError.message);
+                written = refreshed?.length || 0;
+              }
+              if (written) stored[key] = fresh;
+              saved += written;
             }
+          } catch (writeFailure) {
+            if (saved) await s.db.from('outreach_enrollments').update({ research: { ...priorResearch, ai_drafts: stored } }).eq('tenant_id', s.tenant).eq('id', enrollment.id);
+            throw writeFailure;
           }
-          const { error: saveError } = await s.db.from('outreach_enrollments').update({ research: { summary, facts, logic_version: OUTREACH_AI_LOGIC_VERSION, personalisation, ai_drafts: aiDrafts }, research_sources: sources, research_status: 'ready', research_error: null, research_run_id: call.runIdFetch.getRunId(), researched_at: new Date().toISOString() }).eq('tenant_id', s.tenant).eq('id', enrollment.id);
+          const { error: saveError } = await s.db.from('outreach_enrollments').update({ research: { summary, facts, logic_version: OUTREACH_AI_LOGIC_VERSION, personalisation, ai_drafts: stored }, research_sources: sources, research_status: 'ready', research_error: null, research_run_id: call.runIdFetch.getRunId(), researched_at: new Date().toISOString() }).eq('tenant_id', s.tenant).eq('id', enrollment.id);
           if (saveError) throw new OutreachError(saveError.message);
           emit({ type: 'done', saved, sources, personalisation });
         } catch (err) {

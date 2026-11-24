@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { draftIssues, wordCount, EMAIL_TOUCHES, type CheckedResult } from '../../supabase/functions/_shared/outreach-draft-check';
-import { emailIssue, researchPersonalisation } from '../../supabase/functions/_shared/outreach-policy';
+import { emailIssue, researchPersonalisation, storedAiDraft } from '../../supabase/functions/_shared/outreach-policy';
 
 // The fully worked 12-touch example from the outreach logic research
 // (fictional merchant "Fernbrook Outdoor Supply"). It is the golden "good" case.
@@ -100,6 +100,16 @@ describe('draftIssues — universal checks', () => {
     expect(draftIssues(noLabel, { host })).toContain('Touch 4: missing the "Comment:" label before the paste-ready comment');
     const skip = withDraft(fernbrook, 4, { text: 'REP: Comment only if Maya posted recently. Otherwise skip. Nothing related on the site, so like a recent company post instead.' });
     expect(draftIssues(skip, { host })).toEqual([]);
+  });
+});
+
+describe('storedAiDraft (re-run refresh guard)', () => {
+  it('returns subject and text for current entries', () => {
+    expect(storedAiDraft({ subject: 'Gear Club renewals', text: 'Hi Maya' })).toEqual({ subject: 'Gear Club renewals', text: 'Hi Maya' });
+  });
+
+  it('never refreshes legacy text-only, empty or malformed entries', () => {
+    for (const entry of ['Hi Maya', undefined, null, {}, { text: 'Hi Maya' }, { subject: 'S', text: '' }, { subject: 1, text: 'x' }]) expect(storedAiDraft(entry)).toBeNull();
   });
 });
 
