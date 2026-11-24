@@ -64,3 +64,17 @@ export function storedAiDraft(entry: unknown): StoredAiDraft | null {
   const { subject, text } = entry as Record<string, unknown>;
   return typeof subject === 'string' && typeof text === 'string' && text ? { subject, text } : null;
 }
+
+/**
+ * Gmail search for ANY message from the contact since the cadence started. Catches
+ * opt-outs that arrive outside the cadence thread, e.g. a List-Unsubscribe mailto
+ * (a new message with subject "unsubscribe" and no In-Reply-To). Returns null when
+ * the inputs cannot form a safe query.
+ */
+export function contactMailSearch(email: string, startOn: string | null | undefined): string | null {
+  const address = email.trim().toLowerCase();
+  if (!/^[^\s@"'<>()]+@[^\s@"'<>()]+$/.test(address) || !startOn || !/^\d{4}-\d{2}-\d{2}$/.test(startOn)) return null;
+  // Gmail's after: is day-granular; start one day early so a same-day opt-out is never missed.
+  const day = new Date(`${startOn}T00:00:00Z`); day.setUTCDate(day.getUTCDate() - 1);
+  return `from:${address} after:${day.toISOString().slice(0, 10).replace(/-/g, '/')}`;
+}

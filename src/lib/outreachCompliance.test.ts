@@ -35,3 +35,17 @@ describe('CAN-SPAM outreach footer', () => {
     expect(complianceFooterHtml()).not.toContain('?');
   });
 });
+
+describe('contactMailSearch (out-of-thread opt-outs stop the cadence)', () => {
+  it('searches for any message from the contact since the day before the cadence started', async () => {
+    const { contactMailSearch } = await import('../../supabase/functions/_shared/outreach-policy');
+    expect(contactMailSearch('Maya@Fernbrook.example', '2026-11-24')).toBe('from:maya@fernbrook.example after:2026/11/23');
+    expect(contactMailSearch('a+b@x.example', '2026-03-01')).toBe('from:a+b@x.example after:2026/02/28');
+  });
+
+  it('refuses inputs that cannot form a safe Gmail query', async () => {
+    const { contactMailSearch } = await import('../../supabase/functions/_shared/outreach-policy');
+    for (const [email, start] of [['not an email', '2026-11-24'], ['a@b.example OR from:x', '2026-11-24'], ['a@b.example', null], ['a@b.example', '24/11/2026'], ['"a"@b.example', '2026-11-24']] as const)
+      expect(contactMailSearch(email, start)).toBeNull();
+  });
+});
