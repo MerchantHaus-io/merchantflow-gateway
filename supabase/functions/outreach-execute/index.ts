@@ -44,7 +44,7 @@ async function gmail(s: OutreachSession, userId: string) {
   if (profile.emailAddress?.toLowerCase() !== member.email.toLowerCase()) throw new OutreachError('Connected Google account does not match the assigned person', 403);
   return { call, email: member.email };
 }
-async function detectReply(s: OutreachSession, enrollment: { id: string; start_on?: string | null }, contact: { id: string; email: string }, mail: Awaited<ReturnType<typeof gmail>>) {
+async function detectReply(s: OutreachSession, enrollment: { id: string; created_at?: string | null }, contact: { id: string; email: string }, mail: Awaited<ReturnType<typeof gmail>>) {
   const { data: sent, error } = await s.db.from('outreach_touches').select('provider_thread_id').eq('enrollment_id', enrollment.id).eq('tenant_id', s.tenant).eq('status', 'completed').eq('channel', 'email'); check(error);
   const threads = [...new Set((sent || []).map(t => t.provider_thread_id).filter(Boolean))];
   for (const thread of threads) {
@@ -61,7 +61,7 @@ async function detectReply(s: OutreachSession, enrollment: { id: string; start_o
   }
   // A message from the contact outside the cadence threads (e.g. a List-Unsubscribe
   // mailto, which starts a new thread) also stops outreach.
-  const query = contactMailSearch(contact.email, enrollment.start_on);
+  const query = contactMailSearch(contact.email, enrollment.created_at);
   if (query) {
     const found = await mail.call(`messages?q=${encodeURIComponent(query)}&maxResults=1`);
     const first = found.messages?.[0];
@@ -171,13 +171,21 @@ Deno.serve(async req => {
     }
     const { data: claim, error: claimError } = await s.db.from('outreach_touches').update({ provider_message_id: `sending:${touch.id}`, subject: body.subject, draft_text: body.draft_text }).eq('id', touch.id).eq('tenant_id', s.tenant).eq('status', 'pending').is('provider_message_id', null).select('id'); check(claimError);
     if (!claim?.length) throw new OutreachError('Another send is in progress', 409);
-    // Re-read suppression and replies immediately before provider delivery.
-    const fresh = await enrollmentFor(s, enrollment.id);
-    // Nothing has been sent yet: release the claim before refusing, so the touch is never stuck as "unconfirmed".
-    const releaseClaim = async () => { await s.db.from('outreach_touches').update({ provider_message_id: null }).eq('id', touch.id).eq('tenant_id', s.tenant).eq('provider_message_id', `sending:${touch.id}`); };
-    if (!canSend(fresh.enrollment, fresh.contact, s.user.id, false) || await detectReply(s, fresh.enrollment, fresh.contact, mail)) { await releaseClaim(); throw new OutreachError('Contact replied or outreach stopped', 409); }
-    const ref = prior?.payload?.headers?.find(h => h.name.toLowerCase() === 'message-id')?.value;
-    if (prior && !ref) { await releaseClaim(); throw new OutreachError('Original message threading reference is missing', 409); }
+    // Everything between the claim and messages/send is a definite non-send: any refusal or
+    // error there releases the claim, so the touch is never stuck as "unconfirmed". The send
+    // itself stays outside, so an uncertain send keeps its claim.
+    const releaseClaim = async () => {
+      const { error: releaseError } = await s.db.from('outreach_touches').update({ provider_message_id: null }).eq('id', touch.id).eq('tenant_id', s.tenant).eq('provider_message_id', `sending:${touch.id}`);
+      if (releaseError) console.error('outreach-execute: failed to release send claim', touch.id, releaseError.message);
+    };
+    let ref: string | undefined;
+    try {
+      // Re-read suppression and replies immediately before provider delivery.
+      const fresh = await enrollmentFor(s, enrollment.id);
+      if (!canSend(fresh.enrollment, fresh.contact, s.user.id, false) || await detectReply(s, fresh.enrollment, fresh.contact, mail)) throw new OutreachError('Contact replied or outreach stopped', 409);
+      ref = prior?.payload?.headers?.find(h => h.name.toLowerCase() === 'message-id')?.value;
+      if (prior && !ref) throw new OutreachError('Original message threading reference is missing', 409);
+    } catch (preSend) { await releaseClaim(); throw preSend; }
     const subject = prior ? `Re: ${prior.subject.replace(/^Re:\s*/i, '')}` : body.subject;
     const raw = [`From: ${mail.email}`, `To: ${contact.email}`, `Subject: =?UTF-8?B?${btoa(Array.from(new TextEncoder().encode(subject), b => String.fromCharCode(b)).join(''))}?=`, `Message-ID: ${messageId}`, `List-Unsubscribe: ${unsubscribe}`, 'MIME-Version: 1.0', 'Content-Type: text/html; charset=UTF-8', ...(ref ? [`In-Reply-To: ${ref}`, `References: ${ref}`] : []), '', escape(body.draft_text).replace(/\n/g, '<br>') + complianceFooterHtml()].join('\r\n');
     const sent = await mail.call('messages/send', { method: 'POST', body: JSON.stringify({ raw: b64(raw), ...(prior ? { threadId: prior.threadId } : {}) }) });
