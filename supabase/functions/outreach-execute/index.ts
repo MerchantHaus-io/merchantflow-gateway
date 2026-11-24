@@ -17,6 +17,7 @@ const RequestSchema = z.discriminatedUnion('action', [
 function check(error: { message: string } | null) { if (error) throw new OutreachError(error.message); }
 function b64(value: string) { return btoa(Array.from(new TextEncoder().encode(value), b => String.fromCharCode(b)).join('')).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
 function escape(value: string) { return value.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] || c)); }
+function contactName(c: { first_name?: string | null; last_name?: string | null }) { return [c.first_name, c.last_name].map(v => (v || '').trim()).filter(Boolean).join(' ') || null; }
 type GmailMessage = { id: string; threadId: string; snippet?: string; payload?: { headers?: { name: string; value: string }[] } };
 type GmailResult = GmailMessage & { emailAddress?: string; messages?: GmailMessage[] };
 async function gmail(s: OutreachSession, userId: string) {
@@ -106,12 +107,23 @@ Deno.serve(async req => {
     }
     if (body.action === 'complete') {
       await activeAssignee(s, enrollment.assigned_user_id);
-      const { data: touch } = await s.db.from('outreach_touches').select('id,channel,touch_number,status').eq('id', body.touch_id).eq('enrollment_id', enrollment.id).eq('tenant_id', s.tenant).single();
+      const { data: touch } = await s.db.from('outreach_touches').select('id,channel,touch_number,status,title').eq('id', body.touch_id).eq('enrollment_id', enrollment.id).eq('tenant_id', s.tenant).single();
       const { count, error: orderError } = await s.db.from('outreach_touches').select('id', { count: 'exact', head: true }).eq('enrollment_id', enrollment.id).eq('tenant_id', s.tenant).lt('touch_number', touch?.touch_number || 1).not('status', 'in', '(completed,skipped)'); check(orderError);
       if (!touch || touch.channel === 'email' || touch.status !== 'pending' || !canSend(enrollment, contact, s.user.id, Boolean(count))) throw new OutreachError('Only the assignee can complete the next active manual touch', 403);
       const outcomeIssue = manualOutcomeIssue(touch.touch_number, body.outcome, body.reply);
       if (outcomeIssue) throw new OutreachError(outcomeIssue);
       const { error } = await s.db.from('outreach_touches').update({ status: 'completed', outcome: body.outcome, notes: body.notes, reply_word_for_word: body.reply || null, provider_message_id: body.provider_ref || null }).eq('id', touch.id).eq('tenant_id', s.tenant); check(error);
+      // Log the completed call / LinkedIn touch on the account record, as 'send' does for emails. Never fail the touch.
+      if (contact.opportunity_id) {
+        const { data: opportunity } = await s.db.from('opportunities').select('account_id').eq('id', contact.opportunity_id).eq('tenant_id', s.tenant).maybeSingle();
+        if (opportunity?.account_id) {
+          const isCall = touch.channel === 'call';
+          const repNotes = body.notes.split('\n').filter((line: string) => !/^[A-Z][a-z]{2} \d{1,2}, \d{1,2}:\d{2}\s?(AM|PM) CT — (Skipped|Snoozed): /.test(line.trim())).join('\n').trim();
+          const activityNotes = [repNotes, body.reply.trim() ? `Reply (verbatim): ${body.reply.trim()}` : ''].filter(Boolean).join('\n\n') || null;
+          const { error: logError } = await s.db.from('client_interactions').insert({ tenant_id: s.tenant, account_id: opportunity.account_id, interaction_type: isCall ? 'call' : 'note', channel: isCall ? 'phone' : 'linkedin', subject: `Touch ${touch.touch_number}/12 · ${touch.title || (isCall ? 'Call' : 'LinkedIn')}`, notes: activityNotes, outcome: body.outcome, contact_email: contact.email, contact_name: contactName(contact), contact_phone: contact.direct_phone || contact.mobile_phone || contact.phone || null, created_by: s.user.id, created_by_email: s.user.email || null, status: 'resolved' });
+          if (logError) return json({ success: true, warning: 'Touch completed; account interaction logging needs attention' });
+        }
+      }
       return json({ success: true });
     }
     const mail = await gmail(s, enrollment.assigned_user_id);
@@ -157,7 +169,7 @@ Deno.serve(async req => {
     if (contact.opportunity_id) {
       const { data: opportunity } = await s.db.from('opportunities').select('account_id').eq('id', contact.opportunity_id).eq('tenant_id', s.tenant).maybeSingle();
       if (opportunity?.account_id) {
-        const { error: logError } = await s.db.from('client_interactions').insert({ tenant_id: s.tenant, account_id: opportunity.account_id, interaction_type: 'email', channel: 'email', subject, notes: body.draft_text, contact_email: contact.email, created_by: s.user.id, created_by_email: mail.email, outcome: 'sent' });
+        const { error: logError } = await s.db.from('client_interactions').insert({ tenant_id: s.tenant, account_id: opportunity.account_id, interaction_type: 'email', channel: 'email', subject, notes: body.draft_text, contact_email: contact.email, contact_name: contactName(contact), created_by: s.user.id, created_by_email: mail.email, outcome: 'sent', status: 'closed' });
         if (logError) return json({ success: true, warning: 'Email sent; account interaction logging needs attention' });
       }
     }
