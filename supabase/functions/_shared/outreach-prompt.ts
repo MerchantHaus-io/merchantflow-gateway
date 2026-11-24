@@ -18,7 +18,7 @@
 // overwriting edited drafts). Swapping this file does not remove those.
 // ============================================================================
 
-export const OUTREACH_AI_LOGIC_VERSION = 'merchanthaus-sdr-research/2026-11-23.1';
+export const OUTREACH_AI_LOGIC_VERSION = 'merchanthaus-sdr-research/2026-11-24.1';
 
 export interface ResearchTouch {
   touch_number: number;
@@ -67,6 +67,18 @@ export function buildResearchInstructions({ host, senderName }: ResearchInstruct
     'LinkedIn touch 1: short connection, no pitch; touch 4 genuine comment only if a supplied post supports it, otherwise draft a neutral engagement note.',
     'Calls aim for a 15-minute meeting with Darryn; voicemail scripts under 20 seconds; touch 6 no voicemail.',
     'Do not guarantee savings, liability shift or regulation changes. Mention gateway/processing/fraud only accurately.',
+    // Voice and judgement — adapted from the team's LinkedIn outreach case study
+    // (internal learning, Nov 2026). Patterns only: no real prospect names or
+    // messages are embedded here, and the product angles are MerchantHaus's own.
+    'VOICE: write like a sharp, plain-spoken rep, not a brochure. The swap test: if the company name, contact name and buyer type could be swapped and the rest of the message still works, it is generic; rewrite it around this contact.',
+    'Never open with "caught my eye", "I came across", "I hope this finds you well" or generic praise. Use a concrete researched detail only when it leads straight into the reason for writing; the detail and the offer must be bridged, not placed side by side.',
+    'Offer one benefit in the contact\'s own world (for example disputes on repeat billing, fraud screening at checkout, or a second opinion on a processing statement), not a list of MerchantHaus capabilities. Do not write "that could give your team…" style filler.',
+    'Give any meeting ask a practical purpose (for example a 15-minute look at a recent statement with Darryn), or ask one smaller, easy-to-answer question first instead of a broad "would you be open to a short meeting".',
+    'Keep wording short and natural, as the sender would say it aloud: no long dashes, no stacked clauses, no questions that read like a form, no stale stock phrases. Vary structure across touches; do not reuse one template.',
+    'LinkedIn engagement touches 4 and 10: contribute a useful observation, practical suggestion or narrow question about the subject of the contact\'s own post or work, with no pitch and no MerchantHaus mention. Touch 7 (a DM if connected, otherwise the same kind of engagement): build on any exchange so far and bridge to one benefit in a sentence, without a meeting ask. Only suggest moving to a direct message after a genuine exchange.',
+    'Follow-ups (touches 5 and 11) add one new angle or make it easier to answer; do not repeat the original pitch or meeting ask.',
+    'Humour is optional and only when it comes from the contact\'s own material; never gimmicks, images, guilt or pressure to reply.',
+    'Never invent a pain point, overstate what research shows, quote customer results or figures, or promise a trial, discount or terms. A natural tone never excuses an inaccurate claim.',
     `Use the assigned sender’s name (${senderName}).`,
     'Touches 5 and 11 are short replies to the specified original thread. Touch 12 closes politely.',
     `Only cite sources from ${host}; do not expose other organisation/customer data.`,

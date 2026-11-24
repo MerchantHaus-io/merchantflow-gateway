@@ -134,6 +134,24 @@ describe('outreach-prompt (swap point)', () => {
     expect(text).toMatch(/identifier only/);
   });
 
+  it('carries the case-study voice rules', () => {
+    expect(text).toMatch(/swap test/);
+    expect(text).toMatch(/caught my eye/);
+    expect(text).toMatch(/one benefit in the contact's own world/);
+    expect(text).toMatch(/practical purpose/);
+    expect(text).toMatch(/no long dashes/);
+    expect(text).toMatch(/touches 4 and 10: contribute a useful observation/);
+    expect(text).toMatch(/Touch 7 \(a DM if connected/);
+    expect(text).toMatch(/do not repeat the original pitch or meeting ask/);
+    expect(text).toMatch(/Humour is optional/);
+    expect(text).toMatch(/Never invent a pain point/);
+    expect(text).toMatch(/promise a trial/);
+  });
+
+  it('suggests no prices, rates or figures the email policy would reject', () => {
+    expect(text).not.toMatch(/[$€£]|\d+(?:\.\d+)?\s*%/);
+  });
+
   it('includes the host and sender name', () => {
     expect(text).toContain('Only cite sources from acme.example');
     expect(text).toContain('Jordan Rep');
