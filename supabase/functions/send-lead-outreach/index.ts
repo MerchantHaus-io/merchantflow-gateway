@@ -10,6 +10,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { requireRole } from "../_shared/require-auth.ts";
 import { escapeHtml } from "../_shared/email-layout.ts";
 import { isBlockedRecipient } from "../_shared/blocked-emails.ts";
+import { complianceFooterText, listUnsubscribe, withComplianceFooterHtml } from "../_shared/outreach-compliance.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -87,7 +88,7 @@ serve(async (req) => {
     const resp = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: FROM, to: [to], reply_to: REPLY_TO, subject, html: textToHtml(text), text }),
+      body: JSON.stringify({ from: FROM, to: [to], reply_to: REPLY_TO, subject, html: withComplianceFooterHtml(textToHtml(text)), text: `${text}\n\n${complianceFooterText()}`, headers: { "List-Unsubscribe": listUnsubscribe(REPLY_TO) } }),
     });
     const result = await resp.json().catch(() => ({}));
 

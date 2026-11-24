@@ -2,6 +2,7 @@ import { z } from 'npm:zod@3';
 import { outreachSession, enrollmentFor, activeAssignee, OutreachError, json, corsHeaders, type OutreachSession } from '../_shared/outreach-session.ts';
 import { emailIssue, canSend, publicHttps, outreachWindow, manualOutcomeIssue } from '../_shared/outreach-policy.ts';
 import { normalizeImport } from '../_shared/outreach-import.ts';
+import { complianceFooterHtml, listUnsubscribe } from '../_shared/outreach-compliance.ts';
 
 const uuid = z.string().uuid();
 const address = z.string().trim().email().max(254);
@@ -162,7 +163,7 @@ Deno.serve(async req => {
     const ref = prior?.payload?.headers?.find(h => h.name.toLowerCase() === 'message-id')?.value;
     if (prior && !ref) throw new OutreachError('Original message threading reference is missing', 409);
     const subject = prior ? `Re: ${prior.subject.replace(/^Re:\s*/i, '')}` : body.subject;
-    const raw = [`From: ${mail.email}`, `To: ${contact.email}`, `Subject: =?UTF-8?B?${btoa(Array.from(new TextEncoder().encode(subject), b => String.fromCharCode(b)).join(''))}?=`, `Message-ID: ${messageId}`, 'MIME-Version: 1.0', 'Content-Type: text/html; charset=UTF-8', ...(ref ? [`In-Reply-To: ${ref}`, `References: ${ref}`] : []), '', escape(body.draft_text).replace(/\n/g, '<br>')].join('\r\n');
+    const raw = [`From: ${mail.email}`, `To: ${contact.email}`, `Subject: =?UTF-8?B?${btoa(Array.from(new TextEncoder().encode(subject), b => String.fromCharCode(b)).join(''))}?=`, `Message-ID: ${messageId}`, `List-Unsubscribe: ${listUnsubscribe(mail.email)}`, 'MIME-Version: 1.0', 'Content-Type: text/html; charset=UTF-8', ...(ref ? [`In-Reply-To: ${ref}`, `References: ${ref}`] : []), '', escape(body.draft_text).replace(/\n/g, '<br>') + complianceFooterHtml()].join('\r\n');
     const sent = await mail.call('messages/send', { method: 'POST', body: JSON.stringify({ raw: b64(raw), ...(prior ? { threadId: prior.threadId } : {}) }) });
     if (!sent.id) throw new OutreachError('Google did not confirm delivery; check Sent before retrying', 502);
     const { error } = await s.db.from('outreach_touches').update({ status: 'completed', provider_message_id: sent.id, provider_thread_id: sent.threadId, outcome: 'sent', subject, draft_text: body.draft_text }).eq('id', touch.id).eq('tenant_id', s.tenant); check(error);

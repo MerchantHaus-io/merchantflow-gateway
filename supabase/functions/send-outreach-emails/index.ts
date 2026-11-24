@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { listUnsubscribe, withComplianceFooterHtml } from "../_shared/outreach-compliance.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -106,7 +107,8 @@ serve(async (req) => {
             from: `${campaign.from_name} <${campaign.from_email}>`,
             to: [contact.email],
             subject,
-            html,
+            html: withComplianceFooterHtml(html),
+            headers: { "List-Unsubscribe": listUnsubscribe(campaign.from_email) },
           }),
         });
 
