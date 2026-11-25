@@ -57,6 +57,13 @@
       "when": 1795621819942,
       "tag": "0007_apply_pending_0006",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1795700000000,
+      "tag": "0008_outreach_table_grants",
+      "breakpoints": true
     }
   ]
 }
