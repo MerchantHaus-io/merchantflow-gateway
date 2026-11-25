@@ -69,8 +69,9 @@ const BODY_CORE_PHRASES = new Set([
 
 const NEGATION = /\b(dont|do not|not|never|doesnt|isnt|wont|cant)\b/;
 const TRAILING_COURTESY = /(?:\s|^)(?:thanks|thank you|thx|cheers)$/;
-// Courtesy that may precede the request: "No thanks, remove me", "Not interested, please remove me".
-const LEADING_COURTESY = /^(?:no|not interested)(?: thanks| thank you)?\s+/;
+// Courtesy that may precede the request: "No thanks, remove me", "Not interested, please
+// remove me", "Thanks, but please remove me".
+const LEADING_COURTESY = /^(?:(?:no|not interested)(?: thanks| thank you)?|(?:thanks|thank you|thx)(?: but)?)\s+/;
 const COURTESY_ONLY = /^(?:(?:ok|okay|no|thanks|thank you|thx|cheers|no thanks|no thank you)\s*)*$/;
 
 /**
@@ -94,11 +95,13 @@ function isOptOutPhrase(phrase: string, allowed: Set<string>): boolean {
 /**
  * Cuts quoted reply text and mail-client tails: from the first line starting with
  * '>', or the earliest of an "On … wrote:" marker, "Sent from my …", "Get Outlook
- * for …", a run of 3+ underscores or dashes (incl. "-----Original Message-----"),
- * or a forwarded "From: … Sent:" header. Snippets are one line, so markers are
+ * for …", "--Original Message" (any run of 2+ dashes), Outlook's long rule of 10+
+ * underscores, or a forwarded "From: … Sent:" header. A short free-text dash run
+ * ("Unsubscribe ---- just kidding") deliberately does NOT cut, and there is no
+ * "-- Name" signature rule: "Unsubscribe -- Jane" stays false (falls back to 'replied'). Snippets are one line, so markers are
  * matched anywhere in a line, not only at its start.
  */
-const TAIL_MARKERS = [/\bOn\s.{0,200}?wrote:/i, /\bSent from my\b/i, /\bGet Outlook for\b/i, /_{3,}|-{3,}/, /\bFrom:\s[\s\S]{0,300}?\bSent:/i];
+const TAIL_MARKERS = [/\bOn\s.{0,200}?wrote:/i, /\bSent from my\b/i, /\bGet Outlook for\b/i, /-{2,}\s*original message/i, /_{10,}/, /\bFrom:\s[\s\S]{0,300}?\bSent:/i];
 function stripQuoted(body: string): string {
   const kept: string[] = [];
   for (const line of body.replace(/\r\n?/g, '\n').split('\n')) {

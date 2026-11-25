@@ -43,11 +43,16 @@ describe('isUnsubscribeRequest', () => {
     'No, thank you. Please remove me.',
     'Unsubscribe Sent from my iPhone',
     'Unsubscribe Get Outlook for iOS',
-    'Unsubscribe ________ From: Sam <s@x.com> Sent: Monday, November 24, 2026 4:00 PM To: Jane Subject: Quick question',
+    'Unsubscribe ________________________________ From: Sam <s@x.com> Sent: Monday, November 24, 2026 4:00 PM To: Jane Subject: Quick question',
     'Unsubscribe -----Original Message----- From: Sam <s@x.com> Sent: Monday',
     'Unsubscribe From: Sam <s@x.com> Sent: Monday, November 24, 2026',
     'Stop sending me these',
     'remove me from list',
+    'Thanks, but please remove me',
+    'Thanks! Remove me',
+    'Thank you, but unsubscribe me',
+    'Unsubscribe\n\n________________________________\nFrom: Sam <s@x.com>\nSent: Monday',
+    'Unsubscribe --Original Message-- From: Sam',
   ])('body %j is an opt-out', body => {
     expect(isUnsubscribeRequest('Re: Quick question about your card fees', body)).toBe(true);
   });
@@ -76,6 +81,12 @@ describe('isUnsubscribeRequest', () => {
     "No, don't remove me",
     'Not interested right now, but do not remove me',
     'Sent from my iPhone',
+    'Unsubscribe ---- just kidding',
+    'Stop --- not you, Sam, I meant the other vendor',
+    'Remove me ---- Actually wait, send pricing',
+    'Unsubscribe -- Jane',
+    'Unsubscribe ________ later maybe',
+    "Thanks, but don't remove me",
   ])('body %j is not an opt-out', body => {
     expect(isUnsubscribeRequest('Re: Quick question about your card fees', body)).toBe(false);
   });
