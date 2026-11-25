@@ -91,7 +91,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { title: "All Opportunities", mobileTitle: "Deals", url: "/opportunities", icon: Briefcase, description: "Browse & search all opportunities" },
       { title: "Quotes & Contracts", mobileTitle: "Quotes", url: "/quotes-contracts", icon: FileSignature, description: "Quote & signature status across every opportunity" },
       { title: "Tasks", url: "/tasks", icon: ListChecks, description: "Manage your tasks" },
-      { title: "Email Outreach", mobileTitle: "Outreach", url: "/outreach", icon: Send, description: "Campaign tracker & email sender" },
+      { title: "Outreach Sequences", mobileTitle: "Sequences", url: "/outreach", icon: Send, description: "12-touch sequences, task queue & AI drafts" },
       { title: "Web Submissions", mobileTitle: "Web Subs", url: "/admin/web-submissions", icon: Globe, description: "Incoming merchant applications" },
     ],
   },

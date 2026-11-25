@@ -31,7 +31,7 @@ const SEARCH_ITEMS: SearchItem[] = [
   { title: "Statement Analyzer", url: "/tools/statement-analysis", icon: ScanSearch, keywords: "statement analysis fee benchmark savings proposal pdf overcharge" },
   { title: "Revenue Calculator", url: "/tools/revenue-calculator", icon: Calculator, keywords: "money estimate" },
   { title: "Quote Builder", url: "/tools/quote-builder", icon: Calculator, keywords: "quote pricing pdf gateway" },
-  { title: "Email Outreach", url: "/outreach", icon: Send, keywords: "campaigns email marketing" },
+  { title: "Outreach Sequences", url: "/outreach", icon: Send, keywords: "sequences cadence email outreach" },
   { title: "Web Submissions", url: "/admin/web-submissions", icon: Globe, keywords: "applications incoming" },
   { title: "Live & Billing", url: "/live-billing", icon: BadgeDollarSign, keywords: "accounts billing" },
   { title: "Preboarding Wizard", url: "/tools/preboarding-wizard", icon: Sparkles, keywords: "onboarding setup" },
