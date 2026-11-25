@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "13.0.5"
   }
   public: {
     Tables: {
@@ -3659,6 +3659,44 @@ export type Database = {
           },
         ]
       }
+      outreach_suppressions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          email: string
+          id: string
+          reason: string
+          source: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          email: string
+          id?: string
+          reason: string
+          source?: string
+          tenant_id?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          id?: string
+          reason?: string
+          source?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_suppressions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       outreach_touches: {
         Row: {
           channel: string
@@ -6337,6 +6375,10 @@ export type Database = {
           touch_no?: number
         }
         Returns: string
+      }
+      outreach_email_suppressed: {
+        Args: { p_email: string; p_tenant: string }
+        Returns: boolean
       }
       outreach_notify_due: { Args: never; Returns: number }
       outreach_touch_template: {

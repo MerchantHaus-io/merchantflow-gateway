@@ -50,6 +50,13 @@
       "when": 1795483499688,
       "tag": "0006_outreach_suppressions",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795621819942,
+      "tag": "0007_apply_pending_0006",
+      "breakpoints": true
     }
   ]
 }
