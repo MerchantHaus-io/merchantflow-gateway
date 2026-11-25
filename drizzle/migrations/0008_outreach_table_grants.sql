@@ -1,10 +1,12 @@
 -- Tighten table privileges on the five outreach tables created before 0006.
 --
 -- Verified in production on 25 Nov 2026 (read-only) before writing this:
---   * anon, authenticated and service_role each hold arwdDxtm (SELECT, INSERT, UPDATE,
---     DELETE, TRUNCATE, REFERENCES, TRIGGER) on public.cadence_steps,
---     public.outreach_campaigns, public.outreach_contacts, public.outreach_enrollments
---     and public.outreach_touches. They are inherited from
+--   * production is PostgreSQL 17.6. All five tables below are owned by postgres.
+--   * anon, authenticated and service_role each hold arwdDxtm, which on PG17 is eight
+--     privileges (SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER,
+--     MAINTAIN), on public.cadence_steps, public.outreach_campaigns,
+--     public.outreach_contacts, public.outreach_enrollments and public.outreach_touches.
+--     anon and authenticated are members of no roles. They are inherited from
 --     ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
 --     (tables: anon/authenticated/service_role = arwdDxtm). 0001 only GRANTed, and the
 --     20260302* Lovable migrations never granted or revoked anything.
@@ -38,21 +40,22 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.cadence_steps, public.outreach_ca
 -- schema public, which is who runs these migrations (verified current_user=postgres,
 -- not superuser; postgres may always alter its own defaults). It does not touch
 -- existing objects, sequences, functions, service_role, or supabase_admin's separate
--- defaults (postgres cannot alter those). No client path uses TRUNCATE, REFERENCES or
--- TRIGGER (PostgREST cannot issue them), so new Lovable tables keep working via their
--- SELECT/INSERT/UPDATE/DELETE defaults.
-ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE TRUNCATE, REFERENCES, TRIGGER ON TABLES FROM anon, authenticated;
+-- defaults (postgres cannot alter those). No client path uses TRUNCATE, REFERENCES,
+-- TRIGGER or MAINTAIN (VACUUM/ANALYZE/REINDEX/CLUSTER/LOCK TABLE/REFRESH MATERIALIZED
+-- VIEW); PostgREST cannot issue any of them, so new Lovable tables keep working via
+-- their SELECT/INSERT/UPDATE/DELETE defaults.
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE TRUNCATE, REFERENCES, TRIGGER, MAINTAIN ON TABLES FROM anon, authenticated;
 
 DO $$
 DECLARE t text; p text;
 BEGIN
   FOREACH t IN ARRAY ARRAY['cadence_steps','outreach_campaigns','outreach_contacts','outreach_enrollments','outreach_touches'] LOOP
-    FOREACH p IN ARRAY ARRAY['SELECT','INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER'] LOOP
+    FOREACH p IN ARRAY ARRAY['SELECT','INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER','MAINTAIN'] LOOP
       IF has_table_privilege('anon', ('public.'||t)::regclass, p) THEN
         RAISE EXCEPTION 'Grant verification failed: anon holds % on public.%', p, t;
       END IF;
     END LOOP;
-    FOREACH p IN ARRAY ARRAY['TRUNCATE','REFERENCES','TRIGGER'] LOOP
+    FOREACH p IN ARRAY ARRAY['TRUNCATE','REFERENCES','TRIGGER','MAINTAIN'] LOOP
       IF has_table_privilege('authenticated', ('public.'||t)::regclass, p) THEN
         RAISE EXCEPTION 'Grant verification failed: authenticated holds % on public.%', p, t;
       END IF;
@@ -66,4 +69,10 @@ BEGIN
       END IF;
     END LOOP;
   END LOOP;
+  IF EXISTS (SELECT 1 FROM pg_default_acl d, aclexplode(d.defaclacl) a
+             WHERE d.defaclrole='postgres'::regrole AND d.defaclnamespace='public'::regnamespace AND d.defaclobjtype='r'
+               AND a.grantee IN ('anon'::regrole,'authenticated'::regrole)
+               AND a.privilege_type IN ('TRUNCATE','REFERENCES','TRIGGER','MAINTAIN')) THEN
+    RAISE EXCEPTION 'Default privilege verification failed: postgres defaults in public still grant TRUNCATE/REFERENCES/TRIGGER/MAINTAIN to anon or authenticated';
+  END IF;
 END $$;
