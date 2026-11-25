@@ -21,6 +21,8 @@ import { ActivityTimeline } from './ActivityTimeline';
 import { SequenceAnalytics } from './SequenceAnalytics';
 import { buildQueue, queueCounts, type QueueChannelFilter, type QueueItem, type QueueScope } from '@/lib/outreachQueue';
 import { eligibleForResearch, researchBatch, streamResearch } from '@/lib/outreachResearch';
+import { canCreateDeal, createDealFromOutreach, type ConvertClient } from '@/lib/outreachConvert';
+import { Link } from 'react-router-dom';
 import { Mail, Phone, Linkedin, Upload, UserPlus, Search, RefreshCw, ArrowRight, Pause, Play, Check, SkipForward, CalendarClock, Sparkles, ExternalLink, Send, Square, AlertCircle } from 'lucide-react';
 import { guessMapping, previewCsv, readCsv, nextTouch, ctDate, ctInputToUtc, emailIssue, type CsvField } from '@/lib/outreachCadence';
 import { toast } from 'sonner';
@@ -314,6 +316,12 @@ function ContactCadence({ enrollment, contact, touches, team, userId, refresh }:
       {touch.completed_at && <p className="text-xs text-muted-foreground">Completed {ctDate(touch.completed_at)} · {touch.outcome}{touch.provider_message_id ? ` · ${touch.provider_message_id}` : ''}</p>}
     </div>}
     {enrollment.status === 'replied' && <div className="border-t border-border pt-4 space-y-3"><h3 className="font-semibold">Warm reply · 15-minute call handoff</h3><p className="text-sm text-muted-foreground break-words">{contact?.reply_snippet}</p><TeamSelect team={team} value={handoffId} onChange={setHandoffId} /><Button disabled={busy || !handoffId} onClick={() => task(() => execute({ action: 'handoff', enrollment_id: enrollment.id, recipient_id: handoffId, reply: reply || contact?.reply_snippet || 'Positive/maybe reply — arrange a 15-minute call' }), 'Handoff notification delivered')}><ArrowRight className="h-4 w-4" />Notify handoff owner</Button></div>}
+    {contact?.opportunity_id
+      ? <div className="border-t border-border pt-4 flex flex-wrap items-center justify-between gap-2"><p className="text-sm">In the pipeline as a discovery deal.</p><Button asChild variant="outline" size="sm"><Link to={`/opportunities/${contact.opportunity_id}`}>Open deal<ArrowRight className="h-4 w-4" /></Link></Button></div>
+      : contact && canCreateDeal(contact, enrollment.status, touches.map(t => t.outcome)) && <div className="border-t border-border pt-4 space-y-2"><h3 className="font-semibold">Move to pipeline</h3><p className="text-sm text-muted-foreground">Creates the account, contact and a discovery deal, and stops this sequence.</p><Button disabled={busy} onClick={() => task(async () => {
+          const { data: campaign } = await supabase.from('outreach_campaigns').select('name').eq('id', enrollment.campaign_id).maybeSingle();
+          await createDealFromOutreach(supabase as unknown as ConvertClient, contact, campaign?.name || 'Outreach sequence');
+        }, `${contact.company || contact.email} added to the pipeline`)}><ArrowRight className="h-4 w-4" />Create deal</Button></div>}
     <div className="border-t border-border pt-4 space-y-3"><h3 className="text-sm font-semibold">Activity</h3><ActivityTimeline enrollment={enrollment} contact={contact} touches={touches} names={names} /></div>
   </div>;
 }

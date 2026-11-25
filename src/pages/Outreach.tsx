@@ -84,7 +84,7 @@ export default function Outreach() {
       // cadence; the 12-touch sequence does not use them, so they are stored empty.
       const { data, error } = await supabase.from("outreach_campaigns").insert({
         name: name.trim(), subject: "", body_html: "",
-        created_by: user?.id || "", created_by_email: user?.email || "",
+        created_by: user!.id, created_by_email: user!.email || "",
       }).select("id").single();
       if (error) throw error;
       return data.id;
@@ -100,8 +100,10 @@ export default function Outreach() {
 
   const del = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("outreach_campaigns").delete().eq("id", id);
+      const { data, error } = await supabase.from("outreach_campaigns").delete().eq("id", id).select("id");
       if (error) throw error;
+      // RLS returns 0 rows (not an error) when this user may not delete; never report a false success.
+      if (!data?.length) throw new Error("This sequence could not be deleted. Only internal staff can delete sequences.");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["outreach-campaigns"] });
@@ -111,7 +113,7 @@ export default function Outreach() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const canCreate = name.trim().length > 0 && !create.isPending;
+  const canCreate = !!user?.id && name.trim().length > 0 && !create.isPending;
 
   return (
     <AppLayout>
@@ -152,7 +154,7 @@ export default function Outreach() {
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Delete “{pendingDelete?.name}”?</AlertDialogTitle>
-              <AlertDialogDescription>This removes the sequence. It cannot be undone.</AlertDialogDescription>
+              <AlertDialogDescription>This deletes the sequence together with every enrolled contact, their 12 touches, drafts and research. It cannot be undone.</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
