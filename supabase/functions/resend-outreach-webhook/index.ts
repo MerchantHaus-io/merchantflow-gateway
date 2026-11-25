@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { verifySvixSignature, rejectWebhook } from "../_shared/webhook-verify.ts";
+import { isUniqueViolation, normalizeOutreachEmail } from "../_shared/outreach-suppression.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -48,7 +49,7 @@ serve(async (req) => {
     // Find the outreach contact by resend_message_id
     const { data: contact, error: findErr } = await supabase
       .from("outreach_contacts")
-      .select("id, campaign_id, status")
+      .select("id, campaign_id, status, email, tenant_id")
       .eq("resend_message_id", emailId)
       .single();
 
@@ -57,6 +58,27 @@ serve(async (req) => {
       return new Response(JSON.stringify({ ok: true, skipped: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // A spam complaint suppresses the address for the organisation whatever the
+    // contact's current status. A duplicate (23505) means it is already suppressed.
+    // Any other insert error returns 500 so Resend retries the webhook.
+    if (eventType === "email.complained") {
+      const email = normalizeOutreachEmail(contact.email);
+      if (!contact.tenant_id || !email) {
+        console.error("resend-outreach-webhook: cannot suppress complaint without tenant and email, contact", contact.id);
+      } else {
+        const { error: suppressErr } = await supabase
+          .from("outreach_suppressions")
+          .insert({ tenant_id: contact.tenant_id, email, reason: "complaint", source: "resend_webhook" });
+        if (suppressErr && !isUniqueViolation(suppressErr)) {
+          console.error("resend-outreach-webhook: suppression insert failed for contact", contact.id, suppressErr);
+          return new Response(JSON.stringify({ error: "Failed to record complaint suppression" }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
     }
 
     // Process based on event type

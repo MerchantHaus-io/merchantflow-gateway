@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { listUnsubscribe, withComplianceFooterHtml } from "../_shared/outreach-compliance.ts";
+import { isAddressSuppressed } from "../_shared/outreach-suppression.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -91,8 +92,28 @@ serve(async (req) => {
 
     let sentCount = 0;
     let bouncedCount = 0;
+    let skippedCount = 0;
+    let suppressionCheckFailed = 0;
+    const skipped: { contact_id: string; reason: "suppressed" | "suppression_check_failed" }[] = [];
 
     for (const contact of contacts) {
+      // An address on the organisation's suppression list is never mailed. A skipped
+      // contact keeps its status (never marked bounced). Fail closed: if the check
+      // itself errors, the contact is skipped too.
+      try {
+        if (await isAddressSuppressed(supabase, contact.tenant_id, contact.email)) {
+          skippedCount++;
+          skipped.push({ contact_id: contact.id, reason: "suppressed" });
+          console.log("send-outreach-emails: skipped suppressed contact", contact.id);
+          continue;
+        }
+      } catch (checkErr: unknown) {
+        suppressionCheckFailed++;
+        skipped.push({ contact_id: contact.id, reason: "suppression_check_failed" });
+        console.error("send-outreach-emails: suppression check failed for contact", contact.id, checkErr);
+        continue;
+      }
+
       let html = bodyHtml;
       html = html.replace(/\{\{first_name\}\}/g, contact.first_name || "");
       html = html.replace(/\{\{last_name\}\}/g, contact.last_name || "");
@@ -173,7 +194,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ sent: sentCount, bounced: bouncedCount }),
+      JSON.stringify({ sent: sentCount, bounced: bouncedCount, skipped: skippedCount, suppressionCheckFailed, skipped_contacts: skipped }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err: unknown) {

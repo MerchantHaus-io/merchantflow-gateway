@@ -3,6 +3,7 @@ import { outreachSession, enrollmentFor, activeAssignee, OutreachError, json, co
 import { emailIssue, canSend, publicHttps, outreachWindow, manualOutcomeIssue, contactMailSearch } from '../_shared/outreach-policy.ts';
 import { normalizeImport } from '../_shared/outreach-import.ts';
 import { complianceFooterHtml, listUnsubscribe } from '../_shared/outreach-compliance.ts';
+import { isAddressSuppressed, isUnsubscribeRequest, isUniqueViolation, normalizeOutreachEmail } from '../_shared/outreach-suppression.ts';
 
 const uuid = z.string().uuid();
 const address = z.string().trim().email().max(254);
@@ -45,6 +46,21 @@ async function gmail(s: OutreachSession, userId: string) {
   return { call, email: member.email };
 }
 async function detectReply(s: OutreachSession, enrollment: { id: string; created_at?: string | null }, contact: { id: string; email: string }, mail: Awaited<ReturnType<typeof gmail>>) {
+  // Stops the contact on a reply. An unsubscribe reply is recorded on the suppression
+  // list FIRST (so its reason is 'unsubscribe', not the opt-out trigger's 'manual'),
+  // then the contact is opted out rather than marked replied.
+  const stop = async (message: GmailMessage, fallbackSnippet: string) => {
+    const subject = message.payload?.headers?.find(h => h.name.toLowerCase() === 'subject')?.value || null;
+    const optOut = isUnsubscribeRequest(subject, message.snippet || null);
+    if (optOut) {
+      const email = normalizeOutreachEmail(contact.email);
+      if (email) {
+        const { error: suppressError } = await s.admin.from('outreach_suppressions').insert({ tenant_id: s.tenant, email, reason: 'unsubscribe', source: 'reply_detect' });
+        if (suppressError && !isUniqueViolation(suppressError)) check(suppressError);
+      }
+    }
+    const { error: stopped } = await s.db.from('outreach_contacts').update({ status: optOut ? 'opted_out' : 'replied', replied_at: new Date().toISOString(), reply_snippet: message.snippet || fallbackSnippet }).eq('id', contact.id).eq('tenant_id', s.tenant); check(stopped);
+  };
   const { data: sent, error } = await s.db.from('outreach_touches').select('provider_thread_id').eq('enrollment_id', enrollment.id).eq('tenant_id', s.tenant).eq('status', 'completed').eq('channel', 'email'); check(error);
   const threads = [...new Set((sent || []).map(t => t.provider_thread_id).filter(Boolean))];
   for (const thread of threads) {
@@ -55,7 +71,7 @@ async function detectReply(s: OutreachSession, enrollment: { id: string; created
       return parsed === contact.email.toLowerCase();
     });
     if (reply) {
-      const { error: stopped } = await s.db.from('outreach_contacts').update({ status: 'replied', replied_at: new Date().toISOString(), reply_snippet: reply.snippet || 'Reply received in Google email' }).eq('id', contact.id).eq('tenant_id', s.tenant); check(stopped);
+      await stop(reply, 'Reply received in Google email');
       return true;
     }
   }
@@ -67,7 +83,7 @@ async function detectReply(s: OutreachSession, enrollment: { id: string; created
     const first = found.messages?.[0];
     if (first) {
       const message = await mail.call(`messages/${encodeURIComponent(first.id)}?format=metadata`);
-      const { error: stopped } = await s.db.from('outreach_contacts').update({ status: 'replied', replied_at: new Date().toISOString(), reply_snippet: message.snippet || 'Message received from contact in Google email' }).eq('id', contact.id).eq('tenant_id', s.tenant); check(stopped);
+      await stop(message, 'Message received from contact in Google email');
       return true;
     }
   }
@@ -102,12 +118,16 @@ Deno.serve(async req => {
         const { data: duplicate } = await s.db.from('outreach_contacts').select('id').eq('campaign_id', campaign.id).eq('tenant_id', s.tenant).ilike('email', body.contact.email).limit(1);
         contactId = duplicate?.[0]?.id;
         if (!contactId) {
+          if (await isAddressSuppressed(s.admin, s.tenant, body.contact.email)) throw new OutreachError('This address has opted out of outreach and cannot be enrolled', 409);
           const { data, error } = await s.db.from('outreach_contacts').insert({ ...body.contact, ...imported?.contact, email: body.contact.email.toLowerCase(), campaign_id: campaign.id, tenant_id: s.tenant }).select('id').single(); check(error); contactId = data?.id;
         }
       }
       if (!contactId) throw new OutreachError('Contact could not be saved');
       const { data: existing } = await s.db.from('outreach_enrollments').select('id').eq('contact_id', contactId).eq('tenant_id', s.tenant).maybeSingle();
       if (existing) return json({ enrollment_id: existing.id, existing: true });
+      const { data: enrollee, error: enrolleeError } = await s.db.from('outreach_contacts').select('email').eq('id', contactId).eq('tenant_id', s.tenant).maybeSingle(); check(enrolleeError);
+      if (!enrollee) throw new OutreachError('Contact not found', 404);
+      if (await isAddressSuppressed(s.admin, s.tenant, enrollee.email)) throw new OutreachError('This address has opted out of outreach and cannot be enrolled', 409);
       const { data, error } = await s.db.from('outreach_enrollments').insert({ tenant_id: s.tenant, campaign_id: campaign.id, contact_id: contactId, assigned_user_id: member.user_id, assigned_email: member.email, start_on: body.start_on, contact_timezone: body.timezone, website_url: imported?.contact.website_url || body.website || null, linkedin_url: imported?.contact.linkedin_url || body.linkedin || null }).select('id').single(); check(error);
       return json({ enrollment_id: data?.id });
     }
@@ -183,6 +203,7 @@ Deno.serve(async req => {
       // Re-read suppression and replies immediately before provider delivery.
       const fresh = await enrollmentFor(s, enrollment.id);
       if (!canSend(fresh.enrollment, fresh.contact, s.user.id, false) || await detectReply(s, fresh.enrollment, fresh.contact, mail)) throw new OutreachError('Contact replied or outreach stopped', 409);
+      if (await isAddressSuppressed(s.admin, s.tenant, fresh.contact.email)) throw new OutreachError('This address has opted out of outreach and cannot be emailed', 409);
       ref = prior?.payload?.headers?.find(h => h.name.toLowerCase() === 'message-id')?.value;
       if (prior && !ref) throw new OutreachError('Original message threading reference is missing', 409);
     } catch (preSend) { await releaseClaim(); throw preSend; }
