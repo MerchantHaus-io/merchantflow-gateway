@@ -64,3 +64,18 @@ export function storedAiDraft(entry: unknown): StoredAiDraft | null {
   const { subject, text } = entry as Record<string, unknown>;
   return typeof subject === 'string' && typeof text === 'string' && text ? { subject, text } : null;
 }
+
+/**
+ * Gmail search for ANY message from the contact since they were enrolled. Catches
+ * opt-outs that arrive outside the cadence thread, e.g. a List-Unsubscribe mailto
+ * (a new message with subject "unsubscribe" and no In-Reply-To). Uses the enrolment's
+ * creation time to the second (not the editable start date), so mail sent before
+ * enrolment never stops a cadence, and excludes Google Chat. Returns null when the
+ * inputs cannot form a safe query.
+ */
+export function contactMailSearch(email: string, enrolledAt: string | null | undefined): string | null {
+  const address = email.trim().toLowerCase();
+  const seconds = enrolledAt ? Math.floor(Date.parse(enrolledAt) / 1000) : NaN;
+  if (!/^[^\s@"'<>()]+@[^\s@"'<>()]+$/.test(address) || !Number.isFinite(seconds) || seconds <= 0) return null;
+  return `from:${address} after:${seconds} -in:chats`;
+}

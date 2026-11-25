@@ -35,3 +35,22 @@ describe('CAN-SPAM outreach footer', () => {
     expect(complianceFooterHtml()).not.toContain('?');
   });
 });
+
+describe('contactMailSearch (out-of-thread opt-outs stop the cadence)', () => {
+  it('searches from the enrolment creation time, to the second, excluding chats', async () => {
+    const { contactMailSearch } = await import('../../supabase/functions/_shared/outreach-policy');
+    expect(contactMailSearch('Maya@Fernbrook.example', '2026-11-24T15:30:05.123Z')).toBe('from:maya@fernbrook.example after:1795534205 -in:chats');
+    expect(contactMailSearch('a+b@x.example', '2026-11-24T15:30:05+00:00')).toBe('from:a+b@x.example after:1795534205 -in:chats');
+  });
+
+  it('a backdated start date cannot widen the window: only created_at is used', async () => {
+    const { contactMailSearch } = await import('../../supabase/functions/_shared/outreach-policy');
+    expect(contactMailSearch('a@b.example', '2026-11-24T00:00:00Z')).toContain(`after:${Date.parse('2026-11-24T00:00:00Z') / 1000}`);
+  });
+
+  it('refuses inputs that cannot form a safe Gmail query', async () => {
+    const { contactMailSearch } = await import('../../supabase/functions/_shared/outreach-policy');
+    for (const [email, at] of [['not an email', '2026-11-24T00:00:00Z'], ['a@b.example OR from:x', '2026-11-24T00:00:00Z'], ['a@b.example', null], ['a@b.example', 'not a date'], ['"a"@b.example', '2026-11-24T00:00:00Z']] as const)
+      expect(contactMailSearch(email, at)).toBeNull();
+  });
+});

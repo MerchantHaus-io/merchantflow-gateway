@@ -1,6 +1,6 @@
 import { z } from 'npm:zod@3';
 import { outreachSession, enrollmentFor, activeAssignee, OutreachError, json, corsHeaders, type OutreachSession } from '../_shared/outreach-session.ts';
-import { emailIssue, canSend, publicHttps, outreachWindow, manualOutcomeIssue } from '../_shared/outreach-policy.ts';
+import { emailIssue, canSend, publicHttps, outreachWindow, manualOutcomeIssue, contactMailSearch } from '../_shared/outreach-policy.ts';
 import { normalizeImport } from '../_shared/outreach-import.ts';
 import { complianceFooterHtml, listUnsubscribe } from '../_shared/outreach-compliance.ts';
 
@@ -44,7 +44,7 @@ async function gmail(s: OutreachSession, userId: string) {
   if (profile.emailAddress?.toLowerCase() !== member.email.toLowerCase()) throw new OutreachError('Connected Google account does not match the assigned person', 403);
   return { call, email: member.email };
 }
-async function detectReply(s: OutreachSession, enrollment: { id: string }, contact: { id: string; email: string }, mail: Awaited<ReturnType<typeof gmail>>) {
+async function detectReply(s: OutreachSession, enrollment: { id: string; created_at?: string | null }, contact: { id: string; email: string }, mail: Awaited<ReturnType<typeof gmail>>) {
   const { data: sent, error } = await s.db.from('outreach_touches').select('provider_thread_id').eq('enrollment_id', enrollment.id).eq('tenant_id', s.tenant).eq('status', 'completed').eq('channel', 'email'); check(error);
   const threads = [...new Set((sent || []).map(t => t.provider_thread_id).filter(Boolean))];
   for (const thread of threads) {
@@ -56,6 +56,18 @@ async function detectReply(s: OutreachSession, enrollment: { id: string }, conta
     });
     if (reply) {
       const { error: stopped } = await s.db.from('outreach_contacts').update({ status: 'replied', replied_at: new Date().toISOString(), reply_snippet: reply.snippet || 'Reply received in Google email' }).eq('id', contact.id).eq('tenant_id', s.tenant); check(stopped);
+      return true;
+    }
+  }
+  // A message from the contact outside the cadence threads (e.g. a List-Unsubscribe
+  // mailto, which starts a new thread) also stops outreach.
+  const query = contactMailSearch(contact.email, enrollment.created_at);
+  if (query) {
+    const found = await mail.call(`messages?q=${encodeURIComponent(query)}&maxResults=1`);
+    const first = found.messages?.[0];
+    if (first) {
+      const message = await mail.call(`messages/${encodeURIComponent(first.id)}?format=metadata`);
+      const { error: stopped } = await s.db.from('outreach_contacts').update({ status: 'replied', replied_at: new Date().toISOString(), reply_snippet: message.snippet || 'Message received from contact in Google email' }).eq('id', contact.id).eq('tenant_id', s.tenant); check(stopped);
       return true;
     }
   }
@@ -142,6 +154,8 @@ Deno.serve(async req => {
     if (!outreachWindow(new Date()) || !workingDay) throw new OutreachError('Outreach runs on working days, 16:00–20:00 Cape Town');
     // A stable RFC id plus a compare-and-set claim prevents duplicate sends. Uncertain sends stay claimed.
     const messageId = `<outreach-${touch.id}@${mail.email.split('@')[1]}>`;
+    // Built before the send claim below, so a bad address can never leave a stuck claim.
+    const unsubscribe = listUnsubscribe(mail.email);
     let prior: (GmailResult & { subject: string }) | null = null;
     if (touch.thread_touch) {
       const { data: parent } = await s.db.from('outreach_touches').select('provider_message_id,provider_thread_id,subject').eq('enrollment_id', enrollment.id).eq('tenant_id', s.tenant).eq('touch_number', touch.thread_touch).single();
@@ -157,13 +171,23 @@ Deno.serve(async req => {
     }
     const { data: claim, error: claimError } = await s.db.from('outreach_touches').update({ provider_message_id: `sending:${touch.id}`, subject: body.subject, draft_text: body.draft_text }).eq('id', touch.id).eq('tenant_id', s.tenant).eq('status', 'pending').is('provider_message_id', null).select('id'); check(claimError);
     if (!claim?.length) throw new OutreachError('Another send is in progress', 409);
-    // Re-read suppression and replies immediately before provider delivery.
-    const fresh = await enrollmentFor(s, enrollment.id);
-    if (!canSend(fresh.enrollment, fresh.contact, s.user.id, false) || await detectReply(s, fresh.enrollment, fresh.contact, mail)) throw new OutreachError('Contact replied or outreach stopped', 409);
-    const ref = prior?.payload?.headers?.find(h => h.name.toLowerCase() === 'message-id')?.value;
-    if (prior && !ref) throw new OutreachError('Original message threading reference is missing', 409);
+    // Everything between the claim and messages/send is a definite non-send: any refusal or
+    // error there releases the claim, so the touch is never stuck as "unconfirmed". The send
+    // itself stays outside, so an uncertain send keeps its claim.
+    const releaseClaim = async () => {
+      const { error: releaseError } = await s.db.from('outreach_touches').update({ provider_message_id: null }).eq('id', touch.id).eq('tenant_id', s.tenant).eq('provider_message_id', `sending:${touch.id}`);
+      if (releaseError) console.error('outreach-execute: failed to release send claim', touch.id, releaseError.message);
+    };
+    let ref: string | undefined;
+    try {
+      // Re-read suppression and replies immediately before provider delivery.
+      const fresh = await enrollmentFor(s, enrollment.id);
+      if (!canSend(fresh.enrollment, fresh.contact, s.user.id, false) || await detectReply(s, fresh.enrollment, fresh.contact, mail)) throw new OutreachError('Contact replied or outreach stopped', 409);
+      ref = prior?.payload?.headers?.find(h => h.name.toLowerCase() === 'message-id')?.value;
+      if (prior && !ref) throw new OutreachError('Original message threading reference is missing', 409);
+    } catch (preSend) { await releaseClaim(); throw preSend; }
     const subject = prior ? `Re: ${prior.subject.replace(/^Re:\s*/i, '')}` : body.subject;
-    const raw = [`From: ${mail.email}`, `To: ${contact.email}`, `Subject: =?UTF-8?B?${btoa(Array.from(new TextEncoder().encode(subject), b => String.fromCharCode(b)).join(''))}?=`, `Message-ID: ${messageId}`, `List-Unsubscribe: ${listUnsubscribe(mail.email)}`, 'MIME-Version: 1.0', 'Content-Type: text/html; charset=UTF-8', ...(ref ? [`In-Reply-To: ${ref}`, `References: ${ref}`] : []), '', escape(body.draft_text).replace(/\n/g, '<br>') + complianceFooterHtml()].join('\r\n');
+    const raw = [`From: ${mail.email}`, `To: ${contact.email}`, `Subject: =?UTF-8?B?${btoa(Array.from(new TextEncoder().encode(subject), b => String.fromCharCode(b)).join(''))}?=`, `Message-ID: ${messageId}`, `List-Unsubscribe: ${unsubscribe}`, 'MIME-Version: 1.0', 'Content-Type: text/html; charset=UTF-8', ...(ref ? [`In-Reply-To: ${ref}`, `References: ${ref}`] : []), '', escape(body.draft_text).replace(/\n/g, '<br>') + complianceFooterHtml()].join('\r\n');
     const sent = await mail.call('messages/send', { method: 'POST', body: JSON.stringify({ raw: b64(raw), ...(prior ? { threadId: prior.threadId } : {}) }) });
     if (!sent.id) throw new OutreachError('Google did not confirm delivery; check Sent before retrying', 502);
     const { error } = await s.db.from('outreach_touches').update({ status: 'completed', provider_message_id: sent.id, provider_thread_id: sent.threadId, outcome: 'sent', subject, draft_text: body.draft_text }).eq('id', touch.id).eq('tenant_id', s.tenant); check(error);

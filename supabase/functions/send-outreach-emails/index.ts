@@ -38,6 +38,9 @@ serve(async (req) => {
       .single();
 
     if (campErr || !campaign) throw new Error("Campaign not found");
+    // Validate the opt-out address once, before any contact is touched: a bad from_email
+    // must fail the request, not mark every contact bounced.
+    const unsubscribe = listUnsubscribe(campaign.from_email);
 
     // Determine subject and body
     let subject = campaign.subject;
@@ -108,7 +111,7 @@ serve(async (req) => {
             to: [contact.email],
             subject,
             html: withComplianceFooterHtml(html),
-            headers: { "List-Unsubscribe": listUnsubscribe(campaign.from_email) },
+            headers: { "List-Unsubscribe": unsubscribe },
           }),
         });
 
