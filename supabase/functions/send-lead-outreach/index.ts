@@ -11,6 +11,7 @@ import { requireRole } from "../_shared/require-auth.ts";
 import { escapeHtml } from "../_shared/email-layout.ts";
 import { isBlockedRecipient } from "../_shared/blocked-emails.ts";
 import { complianceFooterText, listUnsubscribe, withComplianceFooterHtml } from "../_shared/outreach-compliance.ts";
+import { isAddressSuppressed } from "../_shared/outreach-suppression.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -84,6 +85,31 @@ serve(async (req) => {
     if (oppErr || !opp) return json({ error: "Lead not found." }, 404);
     const contactEmail = String((opp as { contact?: { email?: string } }).contact?.email ?? "").trim().toLowerCase();
     if (contactEmail !== to) return json({ error: "The address doesn't match the lead's contact." }, 400);
+
+    // Honour the organisation's suppression list and any hard bounce before sending.
+    // Fail closed: without a tenant, or if either lookup errors, nothing is sent.
+    const tenantId = (opp as { tenant_id?: string | null }).tenant_id ?? null;
+    if (!tenantId) return json({ error: "Lead has no organisation; cannot check the suppression list." }, 500);
+    let suppressed: boolean;
+    try {
+      suppressed = await isAddressSuppressed(admin, tenantId, to);
+    } catch (e) {
+      console.error("send-lead-outreach suppression check failed:", e);
+      return json({ error: "Could not check the suppression list; nothing was sent." }, 500);
+    }
+    if (suppressed) return json({ error: "Recipient has opted out of outreach and cannot be emailed", code: "recipient_suppressed" }, 409);
+    const { data: bounced, error: bouncedErr } = await admin
+      .from("outreach_contacts")
+      .select("id")
+      .eq("tenant_id", tenantId)
+      .ilike("email", to.replace(/[\\%_]/g, (c) => `\\${c}`))
+      .eq("status", "bounced")
+      .limit(1);
+    if (bouncedErr) {
+      console.error("send-lead-outreach bounce check failed:", bouncedErr);
+      return json({ error: "Could not check for previous bounces; nothing was sent." }, 500);
+    }
+    if (bounced && bounced.length > 0) return json({ error: "This address has hard-bounced before and cannot be emailed", code: "recipient_bounced" }, 409);
 
     const resp = await fetch("https://api.resend.com/emails", {
       method: "POST",
