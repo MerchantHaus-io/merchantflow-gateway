@@ -49,9 +49,9 @@ async function detectReply(s: OutreachSession, enrollment: { id: string; created
   // Stops the contact on a reply. An unsubscribe reply is recorded on the suppression
   // list FIRST (so its reason is 'unsubscribe', not the opt-out trigger's 'manual'),
   // then the contact is opted out rather than marked replied.
+  const isOptOut = (message: GmailMessage) => isUnsubscribeRequest(message.payload?.headers?.find(h => h.name.toLowerCase() === 'subject')?.value || null, message.snippet || null);
   const stop = async (message: GmailMessage, fallbackSnippet: string) => {
-    const subject = message.payload?.headers?.find(h => h.name.toLowerCase() === 'subject')?.value || null;
-    const optOut = isUnsubscribeRequest(subject, message.snippet || null);
+    const optOut = isOptOut(message);
     if (optOut) {
       const email = normalizeOutreachEmail(contact.email);
       if (email) {
@@ -65,11 +65,13 @@ async function detectReply(s: OutreachSession, enrollment: { id: string; created
   const threads = [...new Set((sent || []).map(t => t.provider_thread_id).filter(Boolean))];
   for (const thread of threads) {
     const result = await mail.call(`threads/${encodeURIComponent(String(thread))}?format=metadata`);
-    const reply = result.messages?.find(m => {
+    const fromContact = (result.messages || []).filter(m => {
       const from = m.payload?.headers?.find(h => h.name.toLowerCase() === 'from')?.value || '';
       const parsed = (from.match(/<([^>]+)>/)?.[1] || from).trim().toLowerCase();
       return parsed === contact.email.toLowerCase();
     });
+    // Any opt-out among the contact's messages in the thread wins; otherwise the first reply, as before.
+    const reply = fromContact.find(isOptOut) || fromContact[0];
     if (reply) {
       await stop(reply, 'Reply received in Google email');
       return true;

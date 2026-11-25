@@ -38,6 +38,16 @@ describe('isUnsubscribeRequest', () => {
     'Unsubscribe\n\nOn Mon, Nov 24, 2026 at 4:00 PM Sam <sam@merchanthaus.io> wrote:\n> Hi Jane, quick question about your processing',
     'remove me On Mon, Nov 24, 2026 at 4:00 PM Sam <sam@merchanthaus.io> wrote: Hi Jane, to stop these emails reply unsubscribe',
     'stop\n> To stop these emails, reply "unsubscribe"',
+    'No thanks, remove me',
+    'Not interested, please remove me',
+    'No, thank you. Please remove me.',
+    'Unsubscribe Sent from my iPhone',
+    'Unsubscribe Get Outlook for iOS',
+    'Unsubscribe ________ From: Sam <s@x.com> Sent: Monday, November 24, 2026 4:00 PM To: Jane Subject: Quick question',
+    'Unsubscribe -----Original Message----- From: Sam <s@x.com> Sent: Monday',
+    'Unsubscribe From: Sam <s@x.com> Sent: Monday, November 24, 2026',
+    'Stop sending me these',
+    'remove me from list',
   ])('body %j is an opt-out', body => {
     expect(isUnsubscribeRequest('Re: Quick question about your card fees', body)).toBe(true);
   });
@@ -56,6 +66,16 @@ describe('isUnsubscribeRequest', () => {
     '',
     '   ',
     '> unsubscribe',
+    'Unsubscribe?',
+    'stop?',
+    'remove me?',
+    'Stop by Tuesday?',
+    'Not interested',
+    'No thanks',
+    'Not interested, thanks',
+    "No, don't remove me",
+    'Not interested right now, but do not remove me',
+    'Sent from my iPhone',
   ])('body %j is not an opt-out', body => {
     expect(isUnsubscribeRequest('Re: Quick question about your card fees', body)).toBe(false);
   });
@@ -64,6 +84,24 @@ describe('isUnsubscribeRequest', () => {
     expect(isUnsubscribeRequest('Re: How do I unsubscribe from my processor?', 'Interested, call me')).toBe(false);
     expect(isUnsubscribeRequest("Re: don't stop", null)).toBe(false);
     expect(isUnsubscribeRequest('Re: Stop by Friday?', null)).toBe(false);
+  });
+
+  it('an opt-out subject counts only when the body is empty, courtesy-only or itself an opt-out', () => {
+    // Our List-Unsubscribe mailto pre-fills the subject "unsubscribe".
+    expect(isUnsubscribeRequest('unsubscribe', "Actually I'm interested, call me")).toBe(false);
+    expect(isUnsubscribeRequest('unsubscribe', 'Actually I&#39;m interested, call me')).toBe(false);
+    expect(isUnsubscribeRequest('Re: stop', 'Can you send pricing first?')).toBe(false);
+    expect(isUnsubscribeRequest('unsubscribe', 'Unsubscribe?')).toBe(false);
+    expect(isUnsubscribeRequest('unsubscribe', '')).toBe(true);
+    expect(isUnsubscribeRequest('unsubscribe', 'Thanks')).toBe(true);
+    expect(isUnsubscribeRequest('unsubscribe', 'Sent from my iPhone')).toBe(true);
+    expect(isUnsubscribeRequest('unsubscribe', 'please remove me')).toBe(true);
+  });
+
+  it('a question subject is never an opt-out', () => {
+    expect(isUnsubscribeRequest('Unsubscribe?', null)).toBe(false);
+    expect(isUnsubscribeRequest('Re: stop?', '')).toBe(false);
+    expect(isUnsubscribeRequest('remove me?', null)).toBe(false);
   });
 
   it('is false with nothing to read', () => {

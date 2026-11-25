@@ -26,7 +26,7 @@ const decodeEntities = (value: string) =>
 function normalizePhrase(value: string): string {
   return value
     .toLowerCase()
-    .replace(/[‘’'`]/g, '')
+    .replace(/[\u2018\u2019'`]/g, '')
     .replace(/[^a-z0-9\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
@@ -39,18 +39,28 @@ const BODY_CORE_PHRASES = new Set([
   'unsubscribe me',
   'unsubscribe me from your list',
   'unsubscribe me from this list',
+  'unsubscribe me from the list',
   'unsubscribe me from your mailing list',
   'remove me',
+  'remove me from list',
   'remove me from your list',
   'remove me from this list',
+  'remove me from the list',
   'remove me from your mailing list',
   'remove me from your email list',
   'stop',
   'stop emailing me',
   'stop emailing',
   'stop sending me emails',
+  'stop sending me these',
+  'stop sending me these emails',
+  'stop sending these',
+  'stop sending these emails',
+  'stop sending emails',
+  'stop contacting me',
   'take me off your list',
   'take me off this list',
+  'take me off the list',
   'take me off your mailing list',
   'take me off your email list',
   'opt out',
@@ -58,44 +68,71 @@ const BODY_CORE_PHRASES = new Set([
 ]);
 
 const NEGATION = /\b(dont|do not|not|never|doesnt|isnt|wont|cant)\b/;
+const TRAILING_COURTESY = /(?:\s|^)(?:thanks|thank you|thx|cheers)$/;
+// Courtesy that may precede the request: "No thanks, remove me", "Not interested, please remove me".
+const LEADING_COURTESY = /^(?:no|not interested)(?: thanks| thank you)?\s+/;
+const COURTESY_ONLY = /^(?:(?:ok|okay|no|thanks|thank you|thx|cheers|no thanks|no thank you)\s*)*$/;
 
+/**
+ * Strips courtesy around the phrase (trailing thanks, a leading "no thanks" /
+ * "not interested", "please"), THEN applies the negation guard to what is left,
+ * so "not interested, remove me" passes and "do not remove me" does not.
+ */
 function isOptOutPhrase(phrase: string, allowed: Set<string>): boolean {
-  if (!phrase || NEGATION.test(phrase)) return false;
-  let core = phrase.replace(/\s*\b(thanks|thank you|thx|cheers)$/, '').trim();
-  core = core.replace(/^please\s+/, '').replace(/\s+please$/, '').trim();
+  let core = phrase;
+  let previous = '';
+  while (previous !== core) {
+    previous = core;
+    core = core.replace(TRAILING_COURTESY, '').trim();
+    core = core.replace(LEADING_COURTESY, '').trim();
+    core = core.replace(/^please\s+/, '').replace(/\s+please$/, '').trim();
+  }
+  if (!core || NEGATION.test(core)) return false;
   return allowed.has(core);
 }
 
-/** Cuts quoted reply text: from the first line starting with '>' or an "On … wrote:" marker. */
+/**
+ * Cuts quoted reply text and mail-client tails: from the first line starting with
+ * '>', or the earliest of an "On … wrote:" marker, "Sent from my …", "Get Outlook
+ * for …", a run of 3+ underscores or dashes (incl. "-----Original Message-----"),
+ * or a forwarded "From: … Sent:" header. Snippets are one line, so markers are
+ * matched anywhere in a line, not only at its start.
+ */
+const TAIL_MARKERS = [/\bOn\s.{0,200}?wrote:/i, /\bSent from my\b/i, /\bGet Outlook for\b/i, /_{3,}|-{3,}/, /\bFrom:\s[\s\S]{0,300}?\bSent:/i];
 function stripQuoted(body: string): string {
   const kept: string[] = [];
   for (const line of body.replace(/\r\n?/g, '\n').split('\n')) {
     if (/^\s*>/.test(line)) break;
-    const marker = line.search(/\bOn\s.{0,200}?wrote:/i);
-    if (marker >= 0) { kept.push(line.slice(0, marker)); break; }
+    const cuts = TAIL_MARKERS.map(re => line.search(re)).filter(i => i >= 0);
+    if (cuts.length) { kept.push(line.slice(0, Math.min(...cuts))); break; }
     kept.push(line);
   }
   return kept.join('\n');
 }
 
 /**
- * True only when the reply is essentially nothing but an opt-out request: the
- * subject (minus Re:/Fwd: prefixes) is exactly an opt-out word, or the body,
- * once quoted text is cut, is a whole-message opt-out phrase from the
- * allow-list. Anything negated, longer, or merely containing the word is false.
+ * True only when the reply is essentially nothing but an opt-out request.
+ *  - Body: once quoted text and client signatures are cut, the whole message is an
+ *    allow-listed opt-out phrase (with optional courtesy around it).
+ *  - Subject: exactly an opt-out word (after Re:/Fwd: prefixes) counts only when the
+ *    cleaned body is empty, courtesy-only, or itself an opt-out. Any other body
+ *    vetoes it: our List-Unsubscribe mailto pre-fills the subject "unsubscribe",
+ *    so a contact can send that subject with "Actually I'm interested, call me".
+ *  - A question ("Unsubscribe?", "remove me?") is never an opt-out: missing one
+ *    only falls back to 'replied', a false opt-out loses a lead.
+ * Anything negated, longer, or merely containing the word is false.
  */
 export function isUnsubscribeRequest(subject?: string | null, snippet?: string | null): boolean {
-  if (typeof subject === 'string' && subject.trim()) {
-    let s = decodeEntities(subject).trim();
-    let previous = '';
-    while (previous !== s) { previous = s; s = s.replace(/^\s*(re|fwd?|fw)\s*(\[\d+\])?\s*:\s*/i, ''); }
-    if (isOptOutPhrase(normalizePhrase(s), SUBJECT_PHRASES)) return true;
-  }
-  if (typeof snippet === 'string' && snippet.trim()) {
-    const body = normalizePhrase(stripQuoted(decodeEntities(snippet)));
-    if (isOptOutPhrase(body, BODY_CORE_PHRASES)) return true;
-  }
-  return false;
+  const rawBody = typeof snippet === 'string' ? stripQuoted(decodeEntities(snippet)).trim() : '';
+  const body = normalizePhrase(rawBody);
+  const bodyOptOut = Boolean(body) && !rawBody.includes('?') && isOptOutPhrase(body, BODY_CORE_PHRASES);
+  if (bodyOptOut) return true;
+  if (typeof subject !== 'string' || !subject.trim()) return false;
+  let s = decodeEntities(subject).trim();
+  let previous = '';
+  while (previous !== s) { previous = s; s = s.replace(/^\s*(re|fwd?|fw)\s*(\[\d+\])?\s*:\s*/i, ''); }
+  if (s.includes('?') || !isOptOutPhrase(normalizePhrase(s), SUBJECT_PHRASES)) return false;
+  return COURTESY_ONLY.test(body);
 }
 
 export type RpcClient = {
