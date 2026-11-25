@@ -765,7 +765,7 @@ function AllDeals({ deals, loading }: { deals: DealRow[]; loading: boolean }) {
 const JUMP: { title: string; links: [string, string][] }[] = [
   { title: "Pipeline & sales", links: [
     ["Pipeline board", "/pipeline"], ["Opportunities", "/opportunities"],
-    ["Quotes & contracts", "/quotes-contracts"], ["Email outreach", "/outreach"],
+    ["Quotes & contracts", "/quotes-contracts"], ["Outreach sequences", "/outreach"],
     ["Web submissions", "/admin/web-submissions"], ["Tasks", "/tasks"], ["Calendar", "/calendar"],
   ]},
   { title: "Book of business", links: [
